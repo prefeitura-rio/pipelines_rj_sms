@@ -7,7 +7,7 @@ from pipelines.constants import constants
 from pipelines.exemplo.nome_do_objetivo.tasks import greet
 
 with Flow(
-    name="rj-sms: Nome do objetivo - Descrição detalhada do objetivo",
+    name="rj-sms: Nome do objetivo - Descrição do objetivo",
 ) as exemplo__nome_do_objetivo__greet_flow:
     # Parameters
     name = Parameter("name", default="rj_sms")
