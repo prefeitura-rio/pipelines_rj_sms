@@ -1,0 +1,26 @@
+name: 'queries'
+version: '1.0.0'
+config-version: 2
+
+profile: 'queries'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+
+models:
+  +persist_docs:
+    relation: true
+    columns: true
+  queries:
+    example:
+      +materialized: view
+      +schema: example

@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "pipelines"
+version = "0.1.0"
+description = ""
+authors = ["Gabriel Gazola Milan <gabriel.gazola@poli.ufrj.br>"]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.11"
+dbt-bigquery = "^1.6.1"
+google-cloud-storage = "^2.10.0"
+prefect = "1.4.1"
+prefeitura-rio = "1.1.2"
+
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.7.0"
+flake8 = "^6.1.0"
+pre-commit = "^3.3.3"
+taskipy = "^1.12.0"
+isort = "^5.12.0"
+
+
+[tool.poetry.group.ci]
+optional = true
+
+[tool.poetry.group.ci.dependencies]
+networkx = "^3.1"
+loguru = "^0.7.0"
+typer = "^0.9.0"
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+include = "\\.pyi?$"
+
+[tool.isort]
+profile = "black"
+
+[tool.taskipy.tasks]
+lint = "black . && isort . && flake8 ."
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

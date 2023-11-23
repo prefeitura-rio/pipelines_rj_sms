@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  code-tree-analysis:
+    name: Code tree analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python version
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: Install Python dependencies for deploying
+        run: |-
+          pip install -U pip poetry
+          poetry config virtualenvs.create false
+          poetry install --with dev --with ci
+
+      - name: Check if `prefect build` works
+        run: |
+          prefect build
+
+      - name: Get changed files for code tree analysis
+        id: files
+        uses: Ana06/get-changed-files@v2.1.0
+
+      - name: Perform code tree analysis
+        id: code-tree-analysis
+        continue-on-error: true
+        run: |
+          python .github/workflows/scripts/code_tree_analysis.py "${{ steps.files.outputs.all }}"
+
+      - name: Delete previous comments
+        uses: izhangzhihao/delete-comment@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          delete_user_name: github-actions[bot]
+          issue_number: ${{ github.event.number }}  # remove comments from the current PR
+
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v1
+        with:
+          message: "${{ steps.code-tree-analysis.outputs.pr-message }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

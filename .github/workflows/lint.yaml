@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5
+
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf
+        with:
+          dockerfile: Dockerfile
+
+      - name: Set up Python
+        uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e
+        with:
+          python-version: "3.10"
+
+      - name: Set up Poetry and upgrade pip
+        run: |
+          pip install -U pip poetry
+
+      - name: Install dependencies
+        run: |
+          poetry config virtualenvs.create false && poetry install --with dev --with ci
+
+      - name: Lint with black, isort and flake8
+        run: |
+          task lint
