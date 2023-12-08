@@ -12,6 +12,7 @@ prefect = "1.4.1"
 prefeitura-rio = "1.1.2"
 dbt-core = "1.7.0"
 python-git = "^2018.2.1"
+gitpython = "^3.1.40"
 
 
 [tool.poetry.group.dev]
