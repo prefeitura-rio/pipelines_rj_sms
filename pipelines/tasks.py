@@ -25,10 +25,10 @@ def execute_dbt(
     repo_url = "https://github.com/prefeitura-rio/queries-rj-sms.git"
     path = "pipelines/github/queries-rj-sms/"
     try:
-        #if os.path.exists(path):
-        #    shutil.rmtree(path, ignore_errors=True)
-        #repo = git.Repo.clone_from(repo_url, path)
-        #log(f"Cloned repository in {path}")
+        if os.path.exists(path):
+            shutil.rmtree(path, ignore_errors=True)
+        repo = git.Repo.clone_from(repo_url, path)
+        log(f"Cloned repository in {path}")
         #Execute DBT
         dbt = dbtRunner()
         if not model:
