@@ -13,13 +13,15 @@ from pipelines.tasks import (
 
 with Flow(
     name="SMS: Test DBT - Executar uma query dbt"
-) as test_execute_dbt:
+) as test_execute_dbt_flow:
     
+
+    # Tasks
     execute_dbt = execute_dbt(
         command='run',
         model='raw_cnes__estabelecimento'
     )
 
 # Storage and run configs
-test_execute_dbt.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-test_execute_dbt.run_config = KubernetesRun(image=constants.DOCKER_IMAGE.value)
+test_execute_dbt_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+test_execute_dbt_flow.run_config = KubernetesRun(image=constants.DOCKER_IMAGE.value)
