@@ -17,7 +17,7 @@ with Flow(
     
 
     # Tasks
-    execute_dbt = execute_dbt(
+    execute_dbt_task = execute_dbt(
         command='run',
         model='raw_cnes__estabelecimento'
     )
