@@ -4,6 +4,9 @@
 Vitacare healthrecord dumping flows
 """
 from prefect import Flow
+from prefect.run_configs import KubernetesRun
+from prefect.storage import GCS
+from pipelines.constants import constants
 from pipelines.tasks import (
     execute_dbt
 )
@@ -16,3 +19,7 @@ with Flow(
         command='run',
         model='raw_cnes__estabelecimento'
     )
+
+# Storage and run configs
+test_execute_dbt.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+test_execute_dbt.run_config = KubernetesRun(image=constants.DOCKER_IMAGE.value)
