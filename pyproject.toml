@@ -10,6 +10,8 @@ dbt-bigquery = "^1.6.1"
 google-cloud-storage = "^2.10.0"
 prefect = "1.4.1"
 prefeitura-rio = "1.1.2"
+pandas = "^2.1.4"
+basedosdados = {version = "2.0.0b14", extras = ["upload"]}
 
 
 [tool.poetry.group.dev]
