@@ -79,22 +79,22 @@ with Flow(
     )
     add_multiple_date_column_task.set_upstream(conform_task)
 
-    upload_to_datalake_task = create_partitions_and_upload_multiple_tables_to_datalake(
-        path_files=conform_task,
-        partition_folder=create_folders_task["partition_directory"],
-        partition_date=file_to_download_task["snapshot"],
-        dataset_id=dataset_id,
-        dump_mode="append",
-    )
-    upload_to_datalake_task.set_upstream(add_multiple_date_column_task)
+#    upload_to_datalake_task = create_partitions_and_upload_multiple_tables_to_datalake(
+#        path_files=conform_task,
+#        partition_folder=create_folders_task["partition_directory"],
+#        partition_date=file_to_download_task["snapshot"],
+#        dataset_id=dataset_id,
+#        dump_mode="append",
+#    )
+#    upload_to_datalake_task.set_upstream(add_multiple_date_column_task)
 
 
-dump_cnes.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-dump_cnes.run_config = KubernetesRun(
-    image=constants.DOCKER_IMAGE.value,
-    labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
-    ],
-)
+#dump_cnes.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+#dump_cnes.run_config = KubernetesRun(
+#    image=constants.DOCKER_IMAGE.value,
+#    labels=[
+#        constants.RJ_SMS_AGENT_LABEL.value,
+#    ],
+#)
 
 #ßdump_cnes.schedule = every_sunday_at_six_am
