@@ -89,7 +89,7 @@ with Flow(
 #    upload_to_datalake_task.set_upstream(add_multiple_date_column_task)
 
 
-#dump_cnes.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+dump_cnes.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 dump_cnes.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
