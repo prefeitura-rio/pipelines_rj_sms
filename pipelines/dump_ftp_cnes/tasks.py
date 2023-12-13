@@ -15,7 +15,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.dump_ftp_cnes.constants import constants
 from pipelines.tasks import (
     list_files_ftp,
-    #upload_to_datalake,
+    upload_to_datalake,
     download_ftp,
     create_partitions,
 )
@@ -179,16 +179,16 @@ def upload_multiple_tables_to_datalake(
         table_id = re.sub(r"\d{6}", "", file_name)
         table_id = table_id.replace(".csv", "")
 
-        #upload_to_datalake.run(
-        #    input_path=file,
-        #    dataset_id=dataset_id,
-        #    table_id=table_id,
-        #    if_exists="replace",
-        #    csv_delimiter=";",
-        #    if_storage_data_exists="replace",
-        #    biglake_table=True,
-        #    dump_mode=dump_mode,
-        #)
+        upload_to_datalake.run(
+           input_path=file,
+           dataset_id=dataset_id,
+           table_id=table_id,
+           if_exists="replace",
+           csv_delimiter=";",
+           if_storage_data_exists="replace",
+           biglake_table=True,
+           dump_mode=dump_mode,
+        )
 
 
 @task
@@ -286,13 +286,13 @@ def create_partitions_and_upload_multiple_tables_to_datalake(
             partition_date=partition_date,
         )
 
-        # upload_to_datalake.run(
-        #     input_path=table_partition_folder,
-        #     dataset_id=dataset_id,
-        #     table_id=table_id,
-        #     if_exists="replace",
-        #     csv_delimiter=";",
-        #     if_storage_data_exists="replace",
-        #     biglake_table=True,
-        #     dump_mode=dump_mode,
-        # )
+        upload_to_datalake.run(
+            input_path=table_partition_folder,
+            dataset_id=dataset_id,
+            table_id=table_id,
+            if_exists="replace",
+            csv_delimiter=";",
+            if_storage_data_exists="replace",
+            biglake_table=True,
+            dump_mode=dump_mode,
+        )
