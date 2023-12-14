@@ -18,6 +18,7 @@ from pipelines.dump_ftp_cnes.tasks import (
     download_ftp_cnes,
     check_file_to_download,
 )
+from prefeitura_rio.pipelines_utils.logging import log
 #from pipelines.dump_ftp_cnes.schedules import every_sunday_at_six_am
 
 
@@ -78,7 +79,8 @@ with Flow(
         sep=";",
     )
     add_multiple_date_column_task.set_upstream(conform_task)
-
+    log('add_multiple_date_column_task finalizado')
+    
     upload_to_datalake_task = create_partitions_and_upload_multiple_tables_to_datalake(
         path_files=conform_task,
         partition_folder=create_folders_task["partition_directory"],
