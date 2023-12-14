@@ -209,7 +209,7 @@ def add_multiple_date_column(directory: str, sep=";", snapshot_date=None):
 
     # iterate over each csv file
     for n, csv_file in enumerate(csv_files):
-        log(f"Adding date metadata to {n+1}/{len(csv_files)} files ...")
+        #log(f"Adding date metadata to {n+1}/{len(csv_files)} files ...")
         # construct the full file path
 
         filepath = os.path.join(directory, csv_file)
@@ -219,7 +219,7 @@ def add_multiple_date_column(directory: str, sep=";", snapshot_date=None):
         df["_data_snapshot"] = snapshot_date
 
         df.to_csv(filepath, index=False, sep=sep, encoding="utf-8")
-        log(f"Column added to {filepath}")
+        #log(f"Column added to {filepath}")
 
 
 @task(max_retries=5, retry_delay=timedelta(seconds=5), timeout=timedelta(seconds=600))
