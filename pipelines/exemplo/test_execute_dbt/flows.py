@@ -24,4 +24,9 @@ with Flow(
 
 # Storage and run configs
 test_execute_dbt_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-test_execute_dbt_flow.run_config = KubernetesRun(image=constants.DOCKER_IMAGE.value)
+test_execute_dbt_flow.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+)
