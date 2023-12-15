@@ -136,7 +136,8 @@ def conform_csv_to_gcp(directory: str):
                 first_line = f.readline()
 
                 # modify the first line
-                modified_first_line = first_line.replace("TO_CHAR(", "")
+                modified_first_line = first_line.replace("TO_CHAR(A.", "")
+                modified_first_line = modified_first_line.replace("TO_CHAR(", "")
                 modified_first_line = modified_first_line.replace(",'DD/MM/YYYY')", "")
 
                 # write the modified first line to the temporary file
