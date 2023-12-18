@@ -13,7 +13,7 @@ from pipelines.tasks import (
 from pipelines.execute_dbt.schedules import every_day_at_six_am
 
 with Flow(
-    name="SMS: Build DBT - Executar o comando BUILD no projeto queries-rj-sms"
+    name="SMS: Run DBT - Executar o comando RUN no projeto queries-rj-sms"
 ) as execute_dbt_flow:
     
 
