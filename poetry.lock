@@ -475,13 +475,13 @@ typing-extensions = ">=4.4,<5.0"
 
 [[package]]
 name = "distlib"
-version = "0.3.7"
+version = "0.3.8"
 description = "Distribution utilities"
 optional = false
 python-versions = "*"
 files = [
-    {file = "distlib-0.3.7-py2.py3-none-any.whl", hash = "sha256:2e24928bc811348f0feb63014e97aaae3037f2cf48712d51ae61df7fd6075057"},
-    {file = "distlib-0.3.7.tar.gz", hash = "sha256:9dafe54b34a028eafd95039d5e5d4851a13734540f1331060d31c9916e7147a8"},
+    {file = "distlib-0.3.8-py2.py3-none-any.whl", hash = "sha256:034db59a0b96f8ca18035f36290806a9a6e6bd9d1ff91e45a7f172eb17e51784"},
+    {file = "distlib-0.3.8.tar.gz", hash = "sha256:1530ea13e350031b6312d8580ddb6b27a104275a31106523b8f123787f494f64"},
 ]
 
 [[package]]
@@ -1929,20 +1929,6 @@ files = [
 six = ">=1.5"
 
 [[package]]
-name = "python-git"
-version = "2018.2.1"
-description = "Automate boring git tasks"
-optional = false
-python-versions = "*"
-files = [
-    {file = "python-git-2018.2.1.tar.gz", hash = "sha256:2da0a75b562bc966d8a3bc1d6a2f8fd9f0fb3a3d3f2eff2239213bcc400bde82"},
-    {file = "python_git-2018.2.1-py3-none-any.whl", hash = "sha256:87ef4aef32a65f44e301cff42e5d5f660a2ba8d6b9d7c021faedbb9028a57ba9"},
-]
-
-[package.dependencies]
-send2trash = "*"
-
-[[package]]
 name = "python-slugify"
 version = "8.0.1"
 description = "A Python slugify application that also handles Unicode"
@@ -2231,22 +2217,6 @@ files = [
 
 [package.dependencies]
 pyasn1 = ">=0.1.3"
-
-[[package]]
-name = "send2trash"
-version = "1.8.2"
-description = "Send file to trash natively under Mac OS X, Windows and Linux"
-optional = false
-python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
-files = [
-    {file = "Send2Trash-1.8.2-py3-none-any.whl", hash = "sha256:a384719d99c07ce1eefd6905d2decb6f8b7ed054025bb0e618919f945de4f679"},
-    {file = "Send2Trash-1.8.2.tar.gz", hash = "sha256:c132d59fa44b9ca2b1699af5c86f57ce9f4c5eb56629d5d55fbb7a35f84e2312"},
-]
-
-[package.extras]
-nativelib = ["pyobjc-framework-Cocoa", "pywin32"]
-objc = ["pyobjc-framework-Cocoa"]
-win32 = ["pywin32"]
 
 [[package]]
 name = "setuptools"
@@ -2546,4 +2516,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "9315073b18420cd7e97588cd128bb657e3ec2d82a0dbdced22808427fe5d229d"
+content-hash = "996dd52cb4e9e9299f81f2b481b0ec47c7cf23b8c0bc5c4c4fe46521b1247453"
