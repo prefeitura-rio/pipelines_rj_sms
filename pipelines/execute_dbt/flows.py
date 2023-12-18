@@ -20,7 +20,7 @@ with Flow(
     # Tasks
     execute_dbt_task = execute_dbt(
         command='run',
-        target='dev'
+        target='prod'
     )
 
 # Storage and run configs
