@@ -20,7 +20,6 @@ from pipelines.tasks import (
     create_partitions,
 )
 
-
 @task
 def check_newest_file_version(
     host: str, user: str, password: str, directory: str, file_name: str
