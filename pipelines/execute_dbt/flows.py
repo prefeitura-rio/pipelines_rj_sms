@@ -3,7 +3,7 @@
 """
 DBT flows
 """
-from prefect import Flow
+from prefect import Flow, Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from pipelines.constants import constants
@@ -16,11 +16,15 @@ with Flow(
     name="SMS: Run DBT - Executar o comando RUN no projeto queries-rj-sms"
 ) as execute_dbt_flow:
     
+    command = Parameter("command", default='run', required=False)
+    target = Parameter("target", default='dev', required=False)
+    model = Parameter("model", default=None, required=False)
 
     # Tasks
     execute_dbt_task = execute_dbt(
-        command='run',
-        target='prod'
+       command=command,
+       target=target,
+       model=model
     )
 
 # Storage and run configs

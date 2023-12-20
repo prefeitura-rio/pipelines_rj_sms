@@ -5,13 +5,14 @@ import shutil
 from prefect import task
 from dbt.cli.main import dbtRunner, dbtRunnerResult
 from prefeitura_rio.pipelines_utils.logging import log
+from prefect.engine.signals import FAIL
 
 
 @task
 def execute_dbt(
-    command: str, 
-    model: str = '',
-    target: str = 'dev'
+    command: str = 'run', 
+    target: str = 'dev',
+    model: str = ''
 ):
     """
     Download repository and execute commands in DBT.
@@ -36,8 +37,13 @@ def execute_dbt(
         else:
             cli_args = [command, "--profiles-dir", path, "--project-dir", path, "--target", target, "--models", model]
         res: dbtRunnerResult = dbt.invoke(cli_args)
-        for r in res.result:
-            log(f"{r.node.name}: {r.status}")
+        try:
+            for r in res.result:
+                log(f"{r.node.name}: {r.status}")
+                if r.status == "fail":
+                    raise FAIL(str(f"DBT task {r.node.name} failed."))
+        except Exception as e:
+            log(f"An error occurred: {e}")
     except git.GitCommandError as e:
         log(f"Error when cloning repository: {e}")
 
