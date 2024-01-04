@@ -32,10 +32,10 @@ from pipelines.dump_api_vitai.tasks import build_date_param, build_url
 
 
 with Flow(
-    name="Dump Vitai - Ingerir dados do prontuário Vitai",
+    name="rj-sms: Dump Vitai - Ingerir dados do prontuário Vitai",
     #    skip_if_running=True,
     #    parallelism=30,
-) as dump_vitai:
+) as sms_dump_vitai:
     #####################################
     # Parameters
     #####################################
@@ -123,9 +123,9 @@ with Flow(
     upload_to_datalake_task.set_upstream(create_partitions_task)
 
 
-dump_vitai.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-dump_vitai.executor = LocalDaskExecutor(num_workers=10)
-dump_vitai.run_config = KubernetesRun(
+sms_dump_vitai.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_vitai.executor = LocalDaskExecutor(num_workers=10)
+sms_dump_vitai.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
