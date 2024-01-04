@@ -42,7 +42,6 @@ def inject_bd_credentials(environment: str = 'dev') -> None:
     service_account_name = "BASEDOSDADOS_CREDENTIALS_PROD"
     service_account = base64.b64decode(os.environ[service_account_name])
 
-    # create folder if it doesn't exist
     if not os.path.exists("/tmp"):
         os.makedirs("/tmp")
 
