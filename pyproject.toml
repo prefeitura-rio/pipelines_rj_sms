@@ -16,6 +16,7 @@ prefeitura-rio = { git = "https://github.com/prefeitura-rio/prefeitura-rio", rev
 python-dotenv = "^1.0.0"
 azure-storage-blob = "^12.19.0"
 pandas = "^2.1.4"
+gitpython = "^3.1.40"
 
 
 [tool.poetry.group.dev]

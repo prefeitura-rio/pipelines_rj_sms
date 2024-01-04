@@ -32,7 +32,7 @@ from pipelines.dump_api_vitai.tasks import build_date_param, build_url
 
 
 with Flow(
-    name="SMS: Dump Vitai - Ingerir dados do prontuário Vitai",
+    name="Dump Vitai - Ingerir dados do prontuário Vitai",
     #    skip_if_running=True,
     #    parallelism=30,
 ) as dump_vitai:
