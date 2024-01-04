@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103, R0913
+# pylint: disable=C0103, R0913, C0301, W3101
+# flake8: noqa: E501
 """
 General utilities for SMS pipelines.
 """
@@ -44,27 +45,13 @@ def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
 
 @task
 def inject_gcp_credentials(environment: str = 'dev') -> None:
+    """
+    Injects GCP credentials into the specified environment.
+
+    Args:
+        environment (str, optional): The environment to inject the credentials into. Defaults to 'dev'.
+    """
     inject_bd_credentials(environment=environment)
-    log("GCP credentials injected")
-    log(f"BASEDOSDADOS_CONFIG: {os.environ['BASEDOSDADOS_CONFIG']}")
-    log(f"BASEDOSDADOS_CREDENTIALS_PROD: {os.environ['BASEDOSDADOS_CREDENTIALS_PROD']}")
-    log(f"BASEDOSDADOS_CREDENTIALS_STAGING: {os.environ['BASEDOSDADOS_CREDENTIALS_STAGING']}")
-    log(f"GOOGLE_APPLICATION_CREDENTIALS: {os.environ['GOOGLE_APPLICATION_CREDENTIALS']}")
-
-
-
-# @task
-# def get_username_and_password(secret_path: str):
-#    """
-#    Retrieves the username and password from a secret stored in a vault.
-#
-#    Args:
-#        secret_path (str): The path to the secret in the vault.
-#
-#    Returns:
-#        Tuple[str, str]: A tuple containing the username and password retrieved from the secret.
-#    """
-#    return get_username_and_password_from_secret(secret_path)
 
 
 @task
@@ -97,7 +84,7 @@ def create_folders():
         log(f"Folders created: {folders}")
         return folders
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=W0703
         sys.exit(f"Failed to create folders: {e}")
 
 
@@ -454,7 +441,7 @@ def clean_ascii(input_file_path):
 
             return output_file_path
 
-    except Exception as e:
+    except Exception as e: # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
 
 
@@ -513,7 +500,7 @@ def from_json_to_csv(input_path, sep=";"):
             log("JSON converted to CSV")
             return output_path
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
         return None
 
@@ -686,5 +673,5 @@ def upload_to_datalake(
                 )
         log("Data uploaded to BigQuery")
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")

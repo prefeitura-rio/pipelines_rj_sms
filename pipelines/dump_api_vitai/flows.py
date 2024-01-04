@@ -68,7 +68,7 @@ with Flow(
 
     ####################################
     # Tasks section #1 - Get data
-    #####################################   
+    #####################################
     get_secret_task = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_KEY, environment="prod"
     )

@@ -1,6 +1,12 @@
+# -*- coding: utf-8 -*-
+# pylint: disable= C0301
+# flake8: noqa: E501
+"""
+Utilities for infisical.
+"""
+
 import os
 import base64
-from prefect.engine.state import State
 from prefeitura_rio.pipelines_utils.infisical import (
     get_infisical_client,
     inject_env,
@@ -43,4 +49,3 @@ def inject_bd_credentials(environment: str = 'dev') -> None:
     with open("/tmp/credentials.json", "wb") as credentials_file:
         credentials_file.write(service_account)
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/tmp/credentials.json"
-
