@@ -40,7 +40,6 @@ def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
 
     """
     secret = get_secret(secret_name=secret_name, path=secret_path, environment=environment)
-    log(secret[secret_name])
     return secret[secret_name]
 
 @task
