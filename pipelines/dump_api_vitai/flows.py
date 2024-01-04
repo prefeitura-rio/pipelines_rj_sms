@@ -41,7 +41,7 @@ with Flow(
     #####################################
 
     # Flow
-    RENAME_FLOW = Parameter("rename_flow", default=True)
+    RENAME_FLOW = Parameter("rename_flow", default=False)
 
     # INFISICAL
     INFISICAL_PATH = vitai_constants.INFISICAL_PATH.value
