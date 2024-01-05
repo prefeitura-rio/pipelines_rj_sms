@@ -54,7 +54,7 @@ def download_repository():
 @task
 def execute_dbt(repository_path: str, command: str = "run", target: str = "dev", model: str = ""):
     """
-    Download repository and execute commands in DBT.
+    Execute commands in DBT.
 
     Args:
         command (str): Command to be executed by DBT. Can be "run", "build" or "test".
@@ -91,7 +91,6 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
         res: dbtRunnerResult = dbt.invoke(cli_args)
         try:
             failures = [r.node.name for r in res.result if r.status == "fail"]
-            log(f"DBT tasks executed: {res.result}")
             if failures:
                 raise FAIL(f"{len(failures)} tasks failed: {failures}")
         except Exception as e:
