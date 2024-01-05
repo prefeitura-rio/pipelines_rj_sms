@@ -28,7 +28,6 @@ with Flow(name="rj-sms: DBT - Executar comando no projeto queries-rj-sms") as sm
 
     # DBT
     COMMAND = Parameter("command", default="test", required=False)
-    TARGET = Parameter("target", default="dev", required=False)
     MODEL = Parameter("model", default=None, required=False)
 
     # GCP
@@ -52,7 +51,7 @@ with Flow(name="rj-sms: DBT - Executar comando no projeto queries-rj-sms") as sm
     download_repository_task.set_upstream(inject_gcp_credentials_task)
 
     execute_dbt_task = execute_dbt(
-        repository_path=download_repository_task, command=COMMAND, target=TARGET, model=MODEL
+        repository_path=download_repository_task, command=COMMAND, target=ENVIRONMENT, model=MODEL
     )
     execute_dbt_task.set_upstream(download_repository_task)
 
