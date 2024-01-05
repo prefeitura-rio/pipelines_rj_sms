@@ -8,11 +8,11 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefect.executors import LocalDaskExecutor
 from prefeitura_rio.pipelines_utils.custom import Flow
-from prefeitura_rio.pipelines_utils.prefect import task_rename_current_flow_run_dataset_table
 from pipelines.constants import constants
 from pipelines.execute_dbt.tasks import (
     download_repository,
     execute_dbt,
+    rename_current_flow_run_dbt,
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
@@ -24,7 +24,7 @@ with Flow(name="rj-sms: DBT - Executar comando no projeto queries-rj-sms") as sm
     #####################################
 
     # Flow
-    RENAME_FLOW = Parameter("rename_flow", default=False)
+    RENAME_FLOW = Parameter("rename_flow", default=True)
 
     # DBT
     COMMAND = Parameter("command", default="test", required=False)
@@ -36,10 +36,10 @@ with Flow(name="rj-sms: DBT - Executar comando no projeto queries-rj-sms") as sm
     #####################################
     # Set environment
     ####################################
-    # with case(RENAME_FLOW, True):
-    #    rename_flow_task = task_rename_current_flow_run_dataset_table(
-    #        prefix="SMS Dump Vitai: ", dataset_id=TABLE_ID, table_id=""
-    #    )
+    with case(RENAME_FLOW, True):
+        rename_flow_task = rename_current_flow_run_dbt(
+            command=COMMAND, model=MODEL, target=ENVIRONMENT
+        )
 
     inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
 
