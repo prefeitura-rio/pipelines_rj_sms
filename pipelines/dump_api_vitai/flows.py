@@ -130,8 +130,7 @@ sms_dump_vitai.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    cpu_request="500m",
-    memory_request="1536Mi"
+    memory_limit="16Gi"
 )
 
 # dump_vitai.schedule = vitai_daily_update_schedule
