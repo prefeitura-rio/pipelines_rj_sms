@@ -15,8 +15,7 @@ from pipelines.execute_dbt.tasks import (
     rename_current_flow_run_dbt,
 )
 from pipelines.utils.tasks import inject_gcp_credentials
-
-# from pipelines.execute_dbt.schedules import every_day_at_six_am
+from pipelines.execute_dbt.schedules import dbt_daily_update_schedule
 
 with Flow(name="rj-sms: DBT - Executar comando no projeto queries-rj-sms") as sms_execute_dbt:
     #####################################
@@ -24,7 +23,7 @@ with Flow(name="rj-sms: DBT - Executar comando no projeto queries-rj-sms") as sm
     #####################################
 
     # Flow
-    RENAME_FLOW = Parameter("rename_flow", default=True)
+    RENAME_FLOW = Parameter("rename_flow", default=False)
 
     # DBT
     COMMAND = Parameter("command", default="test", required=False)
@@ -65,4 +64,4 @@ sms_execute_dbt.run_config = KubernetesRun(
     ],
 )
 
-# execute_dbt_flow.schedule = every_day_at_six_am
+sms_execute_dbt.schedule = dbt_daily_update_schedule

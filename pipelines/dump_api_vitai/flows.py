@@ -26,15 +26,13 @@ from pipelines.utils.tasks import (
 )
 from pipelines.dump_api_vitai.tasks import build_date_param, build_url
 
-# from pipelines.dump_api_vitai.schedules import (
-#    vitai_daily_update_schedule,
-# )
+from pipelines.dump_api_vitai.schedules import (
+    vitai_daily_update_schedule,
+)
 
 
 with Flow(
     name="rj-sms: Dump Vitai - Ingerir dados do prontuário Vitai",
-    #    skip_if_running=True,
-    #    parallelism=30,
 ) as sms_dump_vitai:
     #####################################
     # Parameters
@@ -48,7 +46,7 @@ with Flow(
     INFISICAL_KEY = vitai_constants.INFISICAL_KEY.value
 
     # Vitai API
-    ENDPOINT = Parameter("endpoint", default="posicao", required=True)
+    ENDPOINT = Parameter("endpoint", required=True)
     DATE = Parameter("date", default=None)
 
     # GCP
@@ -61,7 +59,7 @@ with Flow(
     ####################################
     with case(RENAME_FLOW, True):
         rename_flow_task = task_rename_current_flow_run_dataset_table(
-            prefix="SMS Dump Vitai: ", dataset_id=TABLE_ID, table_id=""
+            prefix="Dump Vitai: ", dataset_id=TABLE_ID, table_id=DATASET_ID
         )
 
     inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
@@ -133,4 +131,4 @@ sms_dump_vitai.run_config = KubernetesRun(
     memory_limit="2Gi"
 )
 
-# dump_vitai.schedule = vitai_daily_update_schedule
+sms_dump_vitai.schedule = vitai_daily_update_schedule

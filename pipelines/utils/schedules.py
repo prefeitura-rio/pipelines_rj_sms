@@ -10,6 +10,13 @@ from typing import List
 from prefect.schedules.clocks import IntervalClock
 
 
+def untuple_clocks(clocks):
+    """
+    Converts a list of tuples to a list of clocks.
+    """
+    return [clock[0] if isinstance(clock, tuple) else clock for clock in clocks]
+
+
 def generate_dump_api_schedules(  # pylint: disable=too-many-arguments,too-many-locals
     interval: timedelta,
     start_date: datetime,
