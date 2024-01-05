@@ -8,7 +8,8 @@ Tasks for execute_dbt
 import os
 import shutil
 import git
-from prefect import task, context
+import prefect
+from prefect import task
 from prefect.client import Client
 from prefect.engine.signals import FAIL
 from dbt.cli.main import dbtRunner, dbtRunnerResult
@@ -105,7 +106,7 @@ def rename_current_flow_run_dbt(command: str, model: str, target: str) -> None:
     """
     Rename the current flow run.
     """
-    flow_run_id = context.get("flow_run_id")
+    flow_run_id = prefect.context.get("flow_run_id")
     client = Client()
 
     if model:
