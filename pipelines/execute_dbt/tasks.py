@@ -90,10 +90,10 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
             ]
         res: dbtRunnerResult = dbt.invoke(cli_args)
         try:
-            failures = [r for r in res.result if r.status == "fail"]
+            failures = [r.node.name for r in res.result if r.status == "fail"]
             log(f"DBT tasks executed: {res.result}")
             if failures:
-                raise FAIL(str(f"DBT failed tasks: {failures}"))
+                raise FAIL(f"{len(failures)} tasks failed: {failures}")
         except Exception as e:
             log(f"An error occurred: {e}")
     except git.GitCommandError as e:
