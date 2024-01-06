@@ -5,11 +5,8 @@ Schedules for the dbt execute pipeline
 """
 
 from datetime import timedelta, datetime
-
 from prefect.schedules import Schedule
 import pytz
-
-
 from pipelines.constants import constants
 from pipelines.utils.schedules import (
     untuple_clocks,
@@ -35,7 +32,7 @@ flow_parameters = [
 
 dbt_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 7, 15, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 7, 25, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
@@ -43,4 +40,4 @@ dbt_clocks = generate_dump_api_schedules(
     runs_interval_minutes=10,
 )
 
-dbt_daily_update_schedule = Schedule(clocks=untuple_clocks(dbt_clocks))
+dbt_clocks_daily_update_schedule = Schedule(clocks=untuple_clocks(dbt_clocks))

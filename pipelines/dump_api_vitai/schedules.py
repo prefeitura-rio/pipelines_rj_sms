@@ -5,11 +5,8 @@ Schedules for the vitai dump pipeline
 """
 
 from datetime import timedelta, datetime
-
 from prefect.schedules import Schedule
 import pytz
-
-
 from pipelines.constants import constants
 from pipelines.dump_api_vitai.constants import (
     constants as vitai_constants,
