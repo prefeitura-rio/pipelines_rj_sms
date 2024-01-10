@@ -17,7 +17,7 @@ from pipelines.execute_dbt.tasks import (
 from pipelines.utils.tasks import inject_gcp_credentials
 from pipelines.execute_dbt.schedules import dbt_daily_update_schedule
 
-with Flow(name="rj-sms: DBT - Executar comando no projeto queries-rj-sms") as sms_execute_dbt:
+with Flow(name="DBT - Executar comando no projeto queries-rj-sms") as sms_execute_dbt:
     #####################################
     # Parameters
     #####################################
