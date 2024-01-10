@@ -32,7 +32,7 @@ from pipelines.dump_api_vitai.schedules import (
 
 
 with Flow(
-    name="rj-sms: Dump Vitai - Ingerir dados do prontuário Vitai",
+    name="Dump Vitai - Ingerir dados do prontuário Vitai",
 ) as sms_dump_vitai:
     #####################################
     # Parameters
