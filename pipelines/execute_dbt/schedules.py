@@ -20,13 +20,11 @@ from pipelines.utils.schedules import (
 flow_parameters = [
     {
         "command": "run",
-        "model": None,
         "environment": "prod",
         "rename_flow": True
     },
     {
         "command": "test",
-        "model": None,
         "environment": "prod",
         "rename_flow": True
     },
