@@ -35,12 +35,14 @@ with Flow(name="DBT - Executar comando no projeto queries-rj-sms") as sms_execut
     #####################################
     # Set environment
     ####################################
+    inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
+
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run_dbt(
             command=COMMAND, model=MODEL, target=ENVIRONMENT
         )
+        rename_flow_task.set_upstream(inject_gcp_credentials_task)
 
-    inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
 
     ####################################
     # Tasks section #1 - Download repository and execute commands in DBT

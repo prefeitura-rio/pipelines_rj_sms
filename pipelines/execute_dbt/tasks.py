@@ -113,4 +113,3 @@ def rename_current_flow_run_dbt(command: str, model: str, target: str) -> None:
         client.set_flow_run_name(flow_run_id, f"dbt {command} --model {model} --target {target}")
     else:
         client.set_flow_run_name(flow_run_id, f"dbt {command} --target {target}")
-    

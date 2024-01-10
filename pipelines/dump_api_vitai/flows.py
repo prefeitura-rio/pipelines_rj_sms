@@ -57,12 +57,13 @@ with Flow(
     #####################################
     # Set environment
     ####################################
+    inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
+
     with case(RENAME_FLOW, True):
         rename_flow_task = task_rename_current_flow_run_dataset_table(
             prefix="Dump Vitai: ", dataset_id=TABLE_ID, table_id=DATASET_ID
         )
-
-    inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
+        rename_flow_task.set_upstream(inject_gcp_credentials_task)
 
     ####################################
     # Tasks section #1 - Get data
