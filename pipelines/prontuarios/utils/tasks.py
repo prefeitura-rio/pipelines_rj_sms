@@ -22,10 +22,10 @@ from datetime import date, timedelta
 def extract_tabledata_from_db(
     db_url: str,
     tablename: str,
-    min_date: str = None,
-    max_date: str = None,
-    columns_list: list[str] | str = '*',
-    date_lookup_field: str = 'updated_at'
+    min_date: str=None,
+    max_date: str=None,
+    columns_list: list[str] | str='*',
+    date_lookup_field: str='updated_at'
 ) -> pd.DataFrame:
     """
     Extract data from a table from a given date
@@ -43,17 +43,17 @@ def extract_tabledata_from_db(
     """
     assert isinstance(columns_list, list) or columns_list == '*', "columns_list must be a list or '*'"
 
-    query = f"SELECT {', '.join(columns_list)} FROM {tablename}"
+    query=f"SELECT {', '.join(columns_list)} FROM {tablename}"
 
     if min_date or max_date:
-        filter_parts = []
+        filter_parts=[]
         if min_date:
             filter_parts.append( f"{date_lookup_field} >= '{min_date}'" )
         if max_date:
             filter_parts.append( f"{date_lookup_field} < '{max_date}'" )
         query += " WHERE " + " AND ".join(filter_parts)
 
-    result = pd.read_sql(query, db_url)
+    result=pd.read_sql(query, db_url)
     return result
 
 @task
@@ -67,18 +67,18 @@ def get_api_token(environment: str) -> str:
     Returns:
         str: API Token
     """
-    api_url = prontuario_constants.API_URL.value.get(environment)
-    api_username = get_secret_key.run(
+    api_url=prontuario_constants.API_URL.value.get(environment)
+    api_username=get_secret_key.run(
         secret_path=smsrio_constants.SMSRIO_INFISICAL_PATH.value,
         secret_name=smsrio_constants.SMSRIO_INFISICAL_API_USERNAME.value,
         environment=environment
     )
-    api_password = get_secret_key.run(
+    api_password=get_secret_key.run(
         secret_path=smsrio_constants.SMSRIO_INFISICAL_PATH.value,
         secret_name=smsrio_constants.SMSRIO_INFISICAL_API_PASSWORD.value,
         environment=environment
     )
-    response = requests.post(
+    response=requests.post(
         url=f"{api_url}auth/token",
         timeout=90,
         headers={
@@ -104,11 +104,11 @@ def get_scheduled_window() -> tuple[date, date]:
     Returns:
         tuple[date, date]: Window start and end dates
     """
-    scheduled_start_time = prefect.context.get("scheduled_start_time")
-    scheduled_date = scheduled_start_time.date()
+    scheduled_start_time=prefect.context.get("scheduled_start_time")
+    scheduled_date=scheduled_start_time.date()
 
-    window_start = scheduled_date - timedelta(days=1)
-    window_end = scheduled_date
+    window_start=scheduled_date - timedelta(days=1)
+    window_end=scheduled_date
     return window_start, window_end
 
 
@@ -123,7 +123,7 @@ def transform_filter_invalid_cpf(dataframe:pd.DataFrame, cpf_column:str) -> pd.D
     Returns:
         pd.DataFrame: Filtered dataframe
     """
-    filtered_dataframe = dataframe[dataframe[cpf_column].apply(
+    filtered_dataframe=dataframe[dataframe[cpf_column].apply(
         lambda cpf: CPF().validate(cpf)
     ) ]
 
@@ -133,7 +133,7 @@ def transform_filter_invalid_cpf(dataframe:pd.DataFrame, cpf_column:str) -> pd.D
 
 
 @task
-def transform_to_raw_format(json_data, cnes):
+def transform_to_raw_format(json_data:dict, cnes:str) -> dict:
     """
     Transform data to raw format
 
@@ -151,7 +151,12 @@ def transform_to_raw_format(json_data, cnes):
 
 
 @task
-def load_to_api(request_body, endpoint_name, api_token, environment):
+def load_to_api(
+    request_body: dict,
+    endpoint_name: str,
+    api_token: str,
+    environment: str
+) -> None:
     """
     Load data to raw endpoint
 
@@ -160,17 +165,28 @@ def load_to_api(request_body, endpoint_name, api_token, environment):
         endpoint_name (str): Endpoint name
         identifier_column (str, optional): Identifier column. Defaults to "patient_cpf".
     """    
-    api_url = prontuario_constants.API_URL.value.get(environment)
-    request_response = requests.post(
-        url     = f"{api_url}{endpoint_name}", 
-        headers = {'Authorization': f'Bearer {api_token}'},
-        timeout = 90,
-        json    = request_body
+    api_url=prontuario_constants.API_URL.value.get(environment)
+    request_response=requests.post(
+        url=f"{api_url}{endpoint_name}", 
+        headers={'Authorization': f'Bearer {api_token}'},
+        timeout=90,
+        json=request_body
     )
 
     if request_response.status_code != 201:
         raise Exception(f"Error loading data to {endpoint_name} {request_response.json()}")
     
+
 @task
-def transform_create_input_batches(input_list, batch_size=250):
+def transform_create_input_batches(input_list: list, batch_size: int=250):
+    """
+    Transform input list into batches
+
+    Args:
+        input_list (list): Input list
+        batch_size (int, optional): Batch size. Defaults to 250.
+    
+    Returns:
+        list[list]: List of batches
+    """
     return [input_list[i:i+batch_size] for i in range(0, len(input_list), batch_size)]

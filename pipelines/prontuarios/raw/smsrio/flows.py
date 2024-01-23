@@ -39,58 +39,62 @@ with Flow(
     #####################################
     # Parameters
     #####################################
-    ENVIRONMENT = Parameter("environment", default="dev")
-    CNES = Parameter("cnes")
+    ENVIRONMENT=Parameter("environment", default="dev")
+    CNES=Parameter("cnes")
 
     #####################################
     # Set environment
     ####################################
-    database_url = get_database_url(ENVIRONMENT)
-    api_token = get_api_token(ENVIRONMENT)
+    database_url=get_database_url(ENVIRONMENT)
+    api_token=get_api_token(ENVIRONMENT)
 
     ####################################
-    # Task
+    # Task Section #1 - Get data
     ####################################
-    window_start, window_end = get_scheduled_window()
+    window_start, window_end=get_scheduled_window()
 
-    patient_data = extract_tabledata_from_db(
-        db_url              = database_url,
-        tablename           = "tb_pacientes",
-        min_date            = window_start,
-        max_date            = window_end,
-        date_lookup_field   = "timestamp",
+    patient_data=extract_tabledata_from_db(
+        db_url=database_url,
+        tablename="tb_pacientes",
+        min_date=window_start,
+        max_date=window_end,
+        date_lookup_field="timestamp",
     )
 
-    cns_data = extract_tabledata_from_db(
-        db_url              = database_url,
-        tablename           = "tb_cns_provisorios",
-        min_date            = window_start,
-        max_date            = window_end,
-        date_lookup_field   = "timestamp",
+    cns_data=extract_tabledata_from_db(
+        db_url=database_url,
+        tablename="tb_cns_provisorios",
+        min_date=window_start,
+        max_date=window_end,
+        date_lookup_field="timestamp",
     )
 
-    patient_data = transform_standardize_columns_names(
-        dataframe   = patient_data,
-        columns_map = {'cpf': 'patient_cpf'}
+    ####################################
+    # Task Section #2 - Transform and merge data
+    ####################################
+    patient_data=transform_standardize_columns_names(
+        dataframe=patient_data,
+        columns_map={'cpf': 'patient_cpf'}
     )
 
-    patient_data = transform_filter_invalid_cpf(
-        dataframe = patient_data,
-        cpf_column = 'patient_cpf'
+    patient_data=transform_filter_invalid_cpf(
+        dataframe=patient_data,
+        cpf_column='patient_cpf'
     )
 
-    merged_data = transform_merge_patient_and_cns_data(
-        patient_data    = patient_data,
-        cns_data        = cns_data,
+    merged_data=transform_merge_patient_and_cns_data(
+        patient_data=patient_data,
+        cns_data=cns_data,
     )
 
-    json_list = transform_data_to_json(merged_data)
+    ####################################
+    # Task Section #3 - Prepare data to load
+    ####################################
+    json_list=transform_data_to_json(merged_data)
 
-    json_list_batches = transform_create_input_batches(
-        input_list = json_list
-    )
+    json_list_batches=transform_create_input_batches(json_list)
 
-    request_bodies = transform_to_raw_format.map(
+    request_bodies=transform_to_raw_format.map(
         json_list_batches,
         unmapped(CNES),
     )
@@ -103,9 +107,9 @@ with Flow(
     )
 
 
-sms_prontuarios_raw_smsrio.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=10)
-sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
+sms_prontuarios_raw_smsrio.storage=GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_prontuarios_raw_smsrio.executor=LocalDaskExecutor(num_workers=10)
+sms_prontuarios_raw_smsrio.run_config=KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -113,4 +117,4 @@ sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
     memory_limit="2Gi"
 )
 
-sms_prontuarios_raw_smsrio.schedule = smsrio_daily_update_schedule
+#sms_prontuarios_raw_smsrio.schedule=smsrio_daily_update_schedule
