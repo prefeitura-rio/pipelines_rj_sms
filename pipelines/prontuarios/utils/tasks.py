@@ -1,4 +1,3 @@
-import json
 from validate_docbr import CPF
 
 from datetime import timedelta, date
@@ -33,12 +32,12 @@ def transform_create_input_batches(input_list, batch_size=250):
 
 @task
 def extract_tabledata_from_db(
-    db_url              : str,
-    tablename           : str,
-    min_date            : str = None,
-    max_date            : str = None,
-    columns_list        : list[str] | str = '*',
-    date_lookup_field   : str = 'updated_at'
+    db_url: str,
+    tablename: str,
+    min_date: str = None,
+    max_date: str = None,
+    columns_list: list[str] | str = '*',
+    date_lookup_field: str = 'updated_at'
 ) -> pd.DataFrame:
     """
     Extract data from a table from a given date
@@ -107,7 +106,7 @@ def get_api_token(environment: str) -> str:
         return response.json()['access_token']
     else:
         raise Exception(
-            f"Error getting API token",
+            "Error getting API token",
             f"({response.status_code}) - {response.json()}"
         )
 
