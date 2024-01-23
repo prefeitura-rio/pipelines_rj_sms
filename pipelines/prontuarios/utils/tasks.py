@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# flake8: noqa: E203
+
 from validate_docbr import CPF
 
 from datetime import timedelta, date
@@ -90,10 +93,7 @@ def get_api_token(environment: str) -> str:
     if response.status_code == 200:
         return response.json()['access_token']
     else:
-        raise Exception(
-            "Error getting API token",
-            f"({response.status_code}) - {response.json()}"
-        )
+        raise Exception(f"Error getting API token ({response.status_code}) - {response.json()}")
 
 
 @task
