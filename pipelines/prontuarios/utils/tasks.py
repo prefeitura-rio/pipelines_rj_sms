@@ -169,11 +169,8 @@ def load_to_api(request_body, endpoint_name, api_token, environment):
     )
 
     if request_response.status_code != 201:
-        raise Exception(
-            f"Error loading data to endpoint {endpoint_name}",
-            f"({request_response.status_code}) - {request_response.json()}"
-        )
+        raise Exception(f"Error loading data to {endpoint_name} {request_response.json()}")
     
 @task
 def transform_create_input_batches(input_list, batch_size=250):
-    return [input_list[i:i + batch_size] for i in range(0, len(input_list), batch_size)]
+    return [input_list[i:i+batch_size] for i in range(0, len(input_list), batch_size)]
