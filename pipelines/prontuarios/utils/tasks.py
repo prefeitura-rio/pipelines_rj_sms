@@ -17,16 +17,6 @@ from datetime import date, timedelta
 
 @task
 def transform_create_input_batches(input_list, batch_size=250):
-    """
-    Create input batches
-
-    Args:
-        input (list): Input data
-        batch_size (int, optional): Batch size. Defaults to 250.
-
-    Returns:
-        list: Input batches
-    """
     return [input_list[i:i + batch_size] for i in range(0, len(input_list), batch_size)]
 
 
