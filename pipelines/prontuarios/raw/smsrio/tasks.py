@@ -4,7 +4,10 @@ Tasks for Raw Data
 """
 import json
 
+import prefect
 from prefect import task
+from prefect.client import Client
+
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.utils.tasks import (
     get_secret_key
@@ -95,3 +98,19 @@ def transform_merge_patient_and_cns_data(patient_data, cns_data):
     patient_data['cns_provisorios'] = patient_data['cns'].apply(get_all_patient_cns_values)
 
     return patient_data
+
+
+@task
+def rename_current_flow_run(environment: str, cnes:str) -> None:
+    """
+    Rename the current flow run.
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_name = prefect.context.get("flow_run_name")
+    flow_run_scheduled_time = prefect.context.get("scheduled_start_time")
+
+    client = Client()
+    client.set_flow_run_name(
+        flow_run_id,
+        f"{flow_run_name} ({cnes}):{flow_run_scheduled_time} in env={environment}"
+    )

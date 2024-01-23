@@ -3,7 +3,7 @@
 """
 Raw Data Extraction and Load
 """
-from prefect import unmapped
+from prefect import case, unmapped
 from prefect import Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -14,6 +14,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 
 from pipelines.prontuarios.raw.smsrio.tasks import (
+    rename_current_flow_run,
     get_database_url,
     transform_merge_patient_and_cns_data,
     transform_standardize_columns_names,
@@ -41,12 +42,16 @@ with Flow(
     #####################################
     ENVIRONMENT=Parameter("environment", default="dev")
     CNES=Parameter("cnes")
+    RENAME_FLOW = Parameter("rename_flow", default=False)
 
     #####################################
     # Set environment
     ####################################
     database_url=get_database_url(ENVIRONMENT)
     api_token=get_api_token(ENVIRONMENT)
+
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(ENVIRONMENT, CNES)
 
     ####################################
     # Task Section #1 - Get data
