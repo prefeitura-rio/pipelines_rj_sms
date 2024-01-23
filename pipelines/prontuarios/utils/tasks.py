@@ -16,11 +16,6 @@ from datetime import date, timedelta
 
 
 @task
-def transform_create_input_batches(input_list, batch_size=250):
-    return [input_list[i:i + batch_size] for i in range(0, len(input_list), batch_size)]
-
-
-@task
 def extract_tabledata_from_db(
     db_url: str,
     tablename: str,
@@ -178,3 +173,7 @@ def load_to_api(request_body, endpoint_name, api_token, environment):
             f"Error loading data to endpoint {endpoint_name}",
             f"({request_response.status_code}) - {request_response.json()}"
         )
+    
+@task
+def transform_create_input_batches(input_list, batch_size=250):
+    return [input_list[i:i + batch_size] for i in range(0, len(input_list), batch_size)]
