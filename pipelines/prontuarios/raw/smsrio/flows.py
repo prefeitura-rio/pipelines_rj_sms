@@ -13,6 +13,9 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 
+from pipelines.utils.tasks import (
+    inject_gcp_credentials,
+)
 from pipelines.prontuarios.raw.smsrio.tasks import (
     rename_current_flow_run,
     get_database_url,
@@ -21,7 +24,7 @@ from pipelines.prontuarios.raw.smsrio.tasks import (
     transform_data_to_json,
 )
 from pipelines.prontuarios.utils.tasks import (
-    #get_scheduled_window,
+    get_scheduled_window,
     get_api_token,
     extract_tabledata_from_db,
     transform_filter_invalid_cpf,
@@ -49,9 +52,12 @@ with Flow(
     #####################################
     # Set environment
     ####################################
+    inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
+
     database_url=get_database_url(
         environment=ENVIRONMENT
     )
+    database_url.set_upstream(inject_gcp_credentials_task)
 
     api_token=get_api_token(
         environment=ENVIRONMENT
@@ -68,23 +74,23 @@ with Flow(
     ####################################
     # Task Section #1 - Get data
     ####################################
-    #window_start, window_end=get_scheduled_window()
-    #window_start.set_upstream(api_token)
+    window_start, window_end=get_scheduled_window()
+    window_start.set_upstream(api_token)
 
     patient_data=extract_tabledata_from_db(
         db_url=database_url,
         tablename="tb_pacientes",
-        min_date="2024-01-01",
-        max_date="2024-01-02",
+        min_date=window_start,
+        max_date=window_end,
         date_lookup_field="timestamp",
     )
-    patient_data.set_upstream(api_token)
+    patient_data.set_upstream(window_start)
 
     cns_data=extract_tabledata_from_db(
         db_url=database_url,
         tablename="tb_cns_provisorios",
-        min_date="2024-01-01",
-        max_date="2024-01-02",
+        min_date=window_start,
+        max_date=window_end,
         date_lookup_field="timestamp",
     )
     cns_data.set_upstream(patient_data)
