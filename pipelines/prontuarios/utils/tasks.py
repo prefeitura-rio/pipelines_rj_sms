@@ -124,7 +124,7 @@ def transform_filter_invalid_cpf(dataframe:pd.DataFrame, cpf_column:str) -> pd.D
         pd.DataFrame: Filtered dataframe
     """
     filtered_dataframe = dataframe[dataframe[cpf_column].apply(
-        lambda cpf : CPF().validate(cpf)
+        lambda cpf: CPF().validate(cpf)
     ) ]
 
     log(f"Filtered {dataframe.shape[0] - filtered_dataframe.shape[0]} invalid CPFs")
@@ -145,8 +145,8 @@ def transform_to_raw_format(json_data, cnes):
         dict: Transformed data
     """
     return {
-        "data_list" : json_data,
-        "cnes"      : cnes
+        "data_list": json_data,
+        "cnes": cnes
     }
 
 
