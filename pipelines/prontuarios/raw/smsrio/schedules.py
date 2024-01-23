@@ -22,15 +22,14 @@ from pipelines.utils.schedules import (
 
 smsrio_flow_parameters = [
     {
-        "from_file"         : True,
-        "file_base_path"    : "posicao",
-        "environment"       : "dev"
+        "cnes"         : '999992',
+        "environment"  : "dev"
     }
 ]
 
 smsrio_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2024, 1, 1, 15, 12, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 1, 1, 5, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
