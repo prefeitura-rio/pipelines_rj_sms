@@ -21,7 +21,7 @@ from pipelines.prontuarios.raw.smsrio.tasks import (
     transform_data_to_json,
 )
 from pipelines.prontuarios.utils.tasks import (
-    get_scheduled_window,
+    #get_scheduled_window,
     get_api_token,
     extract_tabledata_from_db,
     transform_filter_invalid_cpf,
