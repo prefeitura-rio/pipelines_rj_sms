@@ -141,7 +141,7 @@ sms_dump_cnes.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="4Gi",
+    memory_limit="8Gi",
 )
 
 sms_dump_cnes.schedule = every_sunday_at_six_am

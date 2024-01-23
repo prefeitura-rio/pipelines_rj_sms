@@ -150,6 +150,7 @@ def conform_csv_to_gcp(directory: str):
                 modified_first_line = first_line.replace("TO_CHAR(", "")
                 modified_first_line = modified_first_line.replace(",'DD/MM/YYYY')", "")
                 modified_first_line = modified_first_line.replace("A.DT", "DT")
+                modified_first_line = modified_first_line.replace("'CO_CPF'", "CO_CPF")
 
                 # write the modified first line to the temporary file
                 tf.write(modified_first_line)
