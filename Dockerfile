@@ -8,7 +8,8 @@ FROM python:${PYTHON_VERSION}
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get install pkg-config
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
