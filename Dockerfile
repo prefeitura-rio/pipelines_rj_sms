@@ -11,7 +11,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install build dependencies
-RUN apt-get install pkg-config
+RUN apt-get -y --no-install-recommends install pkg-config
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
