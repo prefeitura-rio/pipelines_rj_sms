@@ -27,8 +27,8 @@ from pipelines.dump_ftp_cnes.tasks import (
     convert_csv_to_parquet,
     create_partitions_and_upload_multiple_tables_to_datalake,
 )
-from pipelines.dump_api_vitai.schedules import (
-    vitai_daily_update_schedule,
+from pipelines.dump_ftp_cnes.schedules import (
+    every_sunday_at_six_am,
 )
 
 
@@ -126,8 +126,6 @@ with Flow(
     )
     convert_csv_to_parquet_task.set_upstream(add_multiple_date_column_task)
 
-    # TODO: salver no BQ usando o pacote do Prefeitura Rio
-
     upload_to_datalake_task = create_partitions_and_upload_multiple_tables_to_datalake(
         path_files=convert_csv_to_parquet_task,
         partition_folder=create_folders_task["partition_directory"],
@@ -148,4 +146,4 @@ sms_dump_cnes.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-sms_dump_cnes.schedule = vitai_daily_update_schedule
+sms_dump_cnes.schedule = every_sunday_at_six_am

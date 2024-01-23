@@ -5,7 +5,7 @@ Tasks for dump_ftp_cnes
 
 import os
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime
 import tempfile
 import re
 import pandas as pd
@@ -265,7 +265,6 @@ def convert_csv_to_parquet(directory: str, sep=";"):
     return parquet_files
 
 
-# @task(max_retries=5, retry_delay=timedelta(seconds=5), timeout=timedelta(seconds=600))
 @task
 def download_ftp_cnes(host, user, password, directory, file_name, output_path):
     """
@@ -339,16 +338,3 @@ def create_partitions_and_upload_multiple_tables_to_datalake(
             biglake_table=True,
             source_format="parquet",
         )
-        
-        # upload_to_datalake.run(
-        #    input_path=table_partition_folder,
-        #    dataset_id=dataset_id,
-        #    table_id=table_id,
-        #    biglake_table=True,
-        #    dump_mode=dump_mode,
-
-        #    if_exists="replace",
-        #    csv_delimiter=";",
-        #    if_storage_data_exists="replace",
-
-        # )
