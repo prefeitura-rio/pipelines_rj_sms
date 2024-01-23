@@ -92,8 +92,6 @@ with Flow(
     create_folders_task = create_folders()
     create_folders_task.set_upstream(file_to_download_task)  # pylint: disable=E1101
 
-    # TODO: revisar retry da task
-
     download_task = download_ftp_cnes(
         host=FTP_SERVER,
         user="",
