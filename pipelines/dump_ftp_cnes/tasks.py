@@ -14,6 +14,7 @@ import prefect
 from prefect import task
 from prefect.client import Client
 from prefeitura_rio.pipelines_utils.logging import log
+from prefeitura_rio.pipelines_utils.bd import create_table_and_upload_to_gcs
 from pipelines.dump_ftp_cnes.constants import constants
 from pipelines.utils.tasks import (
     list_files_ftp,
@@ -34,9 +35,7 @@ def rename_current_flow_run_cnes(prefix: str, file: str):
 
 
 @task
-def check_newest_file_version(
-    host: str, user: str, password: str, directory: str, file_name: str
-):
+def check_newest_file_version(host: str, user: str, password: str, directory: str, file_name: str):
     """
     Check the newest version of a file in a given FTP directory.
 
@@ -150,6 +149,7 @@ def conform_csv_to_gcp(directory: str):
                 # modify the first line
                 modified_first_line = first_line.replace("TO_CHAR(", "")
                 modified_first_line = modified_first_line.replace(",'DD/MM/YYYY')", "")
+                modified_first_line = modified_first_line.replace("A.DT", "DT")
 
                 # write the modified first line to the temporary file
                 tf.write(modified_first_line)
@@ -167,9 +167,7 @@ def conform_csv_to_gcp(directory: str):
 
 
 @task
-def upload_multiple_tables_to_datalake(
-    path_files: str, dataset_id: str, dump_mode: str
-):
+def upload_multiple_tables_to_datalake(path_files: str, dataset_id: str, dump_mode: str):
     """
     Uploads multiple tables to datalake.
 
@@ -234,7 +232,41 @@ def add_multiple_date_column(directory: str, sep=";", snapshot_date=None):
         log(f"Column added to {filepath}")
 
 
-@task(max_retries=5, retry_delay=timedelta(seconds=5), timeout=timedelta(seconds=600))
+@task
+def convert_csv_to_parquet(directory: str, sep=";"):
+    """
+    Convert CSV files in the specified directory to Parquet format.
+
+    Args:
+        directory (str): The directory path where the CSV files are located.
+        sep (str, optional): The delimiter used in the CSV files. Defaults to ";".
+
+    Returns:
+        list: A list of file paths for the converted Parquet files.
+    """
+    # list all csv files in the directory
+    csv_files = [f for f in os.listdir(directory) if f.endswith(".csv")]
+
+    # iterate over each csv file
+    for n, csv_file in enumerate(csv_files):
+        log(f"Creating parquet file: {n+1}/{len(csv_files)} files ...")
+        # construct the full file path
+
+        filepath = os.path.join(directory, csv_file)
+
+        df = pd.read_csv(filepath, sep=sep, keep_default_na=False, dtype="str")
+        df.to_parquet(filepath.replace(".csv", ".parquet"), index=False)
+
+        log(f"Parquet file created {filepath.replace('.csv', '.parquet')}")
+
+    parquet_files = [
+        os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(".parquet")
+    ]
+    return parquet_files
+
+
+# @task(max_retries=5, retry_delay=timedelta(seconds=5), timeout=timedelta(seconds=600))
+@task
 def download_ftp_cnes(host, user, password, directory, file_name, output_path):
     """
     Downloads a file from an FTP server.
@@ -279,6 +311,7 @@ def create_partitions_and_upload_multiple_tables_to_datalake(
     Returns:
         None
     """
+
     for n, file in enumerate(path_files):
         log(f"Uploading {n+1}/{len(path_files)} files to datalake...")
 
@@ -287,7 +320,7 @@ def create_partitions_and_upload_multiple_tables_to_datalake(
 
         # replace 6 digits numbers from string
         table_id = re.sub(r"\d{6}", "", file_name)
-        table_id = table_id.replace(".csv", "")
+        table_id = table_id.replace(".parquet", "")
 
         table_partition_folder = os.path.join(partition_folder, table_id)
 
@@ -298,13 +331,24 @@ def create_partitions_and_upload_multiple_tables_to_datalake(
             partition_date=partition_date,
         )
 
-        upload_to_datalake.run(
-            input_path=table_partition_folder,
+        create_table_and_upload_to_gcs(
+            data_path=table_partition_folder,
             dataset_id=dataset_id,
             table_id=table_id,
-            if_exists="replace",
-            csv_delimiter=";",
-            if_storage_data_exists="replace",
-            biglake_table=True,
             dump_mode=dump_mode,
+            biglake_table=True,
+            source_format="parquet",
         )
+        
+        # upload_to_datalake.run(
+        #    input_path=table_partition_folder,
+        #    dataset_id=dataset_id,
+        #    table_id=table_id,
+        #    biglake_table=True,
+        #    dump_mode=dump_mode,
+
+        #    if_exists="replace",
+        #    csv_delimiter=";",
+        #    if_storage_data_exists="replace",
+
+        # )

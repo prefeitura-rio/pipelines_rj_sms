@@ -576,7 +576,7 @@ def create_partitions(data_path: str, partition_directory: str, level="day", par
                     )
 
             ano_particao = parsed_date.strftime("%Y")
-            mes_particao = parsed_date.strftime("%Y-%m")
+            mes_particao = parsed_date.strftime("%m")
 
             output_directory = f"{partition_directory}/ano_particao={int(ano_particao)}/mes_particao={mes_particao}"  # noqa: E501
 

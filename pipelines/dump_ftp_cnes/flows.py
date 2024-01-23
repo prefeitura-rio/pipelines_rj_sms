@@ -19,12 +19,13 @@ from pipelines.utils.tasks import (
     unzip_file,
 )
 from pipelines.dump_ftp_cnes.tasks import (
-    rename_current_flow_run_cnes, 
+    rename_current_flow_run_cnes,
     check_file_to_download,
     download_ftp_cnes,
     conform_csv_to_gcp,
     add_multiple_date_column,
-
+    convert_csv_to_parquet,
+    create_partitions_and_upload_multiple_tables_to_datalake,
 )
 from pipelines.dump_api_vitai.schedules import (
     vitai_daily_update_schedule,
@@ -56,7 +57,6 @@ with Flow(
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
     DATASET_ID = Parameter("dataset_id", default=cnes_constants.DATASET_ID.value)
-    TABLE_ID = Parameter("table_id", required=True)
 
     #####################################
     # Set environment
@@ -77,6 +77,7 @@ with Flow(
         directory=FTP_FILE_PATH,
         file_name=BASE_FILE,
     )
+    file_to_download_task.set_upstream(inject_gcp_credentials_task)
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run_cnes(
@@ -87,9 +88,11 @@ with Flow(
     ####################################
     # Tasks section #2 - Get data
     #####################################
-        
+
     create_folders_task = create_folders()
     create_folders_task.set_upstream(file_to_download_task)  # pylint: disable=E1101
+
+    # TODO: revisar retry da task
 
     download_task = download_ftp_cnes(
         host=FTP_SERVER,
@@ -105,9 +108,7 @@ with Flow(
     # Tasks section #2 - Transform data and Create table
     #####################################
 
-    unzip_task = unzip_file(
-        file_path=download_task, output_path=create_folders_task["raw"]
-    )
+    unzip_task = unzip_file(file_path=download_task, output_path=create_folders_task["raw"])
     unzip_task.set_upstream(download_task)
 
     conform_task = conform_csv_to_gcp(create_folders_task["raw"])
@@ -120,13 +121,21 @@ with Flow(
     )
     add_multiple_date_column_task.set_upstream(conform_task)
 
-    # TODO: salvar como parquet
-
-    # TODO: mudar como a partição mês é persistida para ficar conforme com o padrão do Escritório
-
-    # TODO: mudar a task para criar a tabela no BigQuery
+    convert_csv_to_parquet_task = convert_csv_to_parquet(
+        directory=create_folders_task["raw"], sep=";"
+    )
+    convert_csv_to_parquet_task.set_upstream(add_multiple_date_column_task)
 
     # TODO: salver no BQ usando o pacote do Prefeitura Rio
+
+    upload_to_datalake_task = create_partitions_and_upload_multiple_tables_to_datalake(
+        path_files=convert_csv_to_parquet_task,
+        partition_folder=create_folders_task["partition_directory"],
+        partition_date=file_to_download_task["snapshot"],
+        dataset_id=DATASET_ID,
+        dump_mode="append",
+    )
+    upload_to_datalake_task.set_upstream(add_multiple_date_column_task)
 
 
 sms_dump_cnes.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
@@ -136,7 +145,7 @@ sms_dump_cnes.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi"
+    memory_limit="2Gi",
 )
 
 sms_dump_cnes.schedule = vitai_daily_update_schedule
