@@ -41,7 +41,6 @@ def extract_patient_data_from_db(
     time_window_start: date=None,
     time_window_duration: int=1,
 ) -> pd.DataFrame:
-    
     query = """
         SELECT
             cns, cpf as patient_cpf, nome, nome_mae, nome_pai, dt_nasc, sexo,
@@ -51,7 +50,6 @@ def extract_patient_data_from_db(
             cod_mun_nasc, uf_nasc, cod_pais_nasc,
             telefone, email, tp_telefone
         FROM tb_pacientes"""
-    
     if time_window_start:
         time_window_end=time_window_start + timedelta(days=time_window_duration)
         query += f" WHERE timestamp >= '{time_window_start}' AND timestamp < '{time_window_end}'"
@@ -66,13 +64,11 @@ def extract_cns_data_from_db(
     time_window_start: date=None,
     time_window_duration: int=1,
 ) -> pd.DataFrame:
-   
     query = """
         SELECT 
             cns, cns_provisorio
-        FROM tb_cns_provisorios
-        """
-   
+        FROM tb_cns_provisorios"""
+
     if time_window_start:
         time_window_end=time_window_start + timedelta(days=time_window_duration)
         query += f"""
@@ -103,7 +99,7 @@ def transform_data_to_json(dataframe, identifier_column="patient_cpf"):
     data_list = []
     for _, row in dataframe.iterrows():
         row_as_json = row.to_json(date_format='iso')
-        
+
         data_list.append(
             {
                 identifier_column: row[identifier_column],
@@ -111,7 +107,7 @@ def transform_data_to_json(dataframe, identifier_column="patient_cpf"):
             }
         )
     return data_list
-    
+
 
 @task
 def transform_merge_patient_and_cns_data(patient_data, cns_data):
@@ -130,7 +126,7 @@ def transform_merge_patient_and_cns_data(patient_data, cns_data):
 
         if patient_cns_rows.empty:
             return []
-        
+
         return patient_cns_rows['cns_provisorio'].tolist()
 
     patient_data['cns_provisorios'] = patient_data['cns'].apply(get_all_patient_cns_values)
