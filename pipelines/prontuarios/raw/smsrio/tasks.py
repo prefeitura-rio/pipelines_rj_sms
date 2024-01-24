@@ -65,7 +65,7 @@ def extract_cns_data_from_db(
     time_window_duration: int=1,
 ) -> pd.DataFrame:
     query = """
-        SELECT 
+        SELECT
             cns, cns_provisorio
         FROM tb_cns_provisorios"""
 
@@ -73,8 +73,8 @@ def extract_cns_data_from_db(
         time_window_end=time_window_start + timedelta(days=time_window_duration)
         query += f"""
             WHERE cns IN (
-                SELECT cns 
-                FROM tb_pacientes 
+                SELECT cns
+                FROM tb_pacientes
                 WHERE timestamp >= '{time_window_start}' AND timestamp < '{time_window_end}'
             )"""
 
