@@ -3,6 +3,8 @@
 Tasks for Raw Data
 """
 import json
+from datetime import timedelta, date
+import pandas as pd
 
 import prefect
 from prefect import task
@@ -34,19 +36,55 @@ def get_database_url(environment):
 
 
 @task
-def transform_standardize_columns_names(dataframe, columns_map):
-    """
-    Standardize columns names
-
-    Args:
-        dataframe (pd.DataFrame): Dataframe to standardize
-        columns_map (dict): Columns map
+def extract_patient_data_from_db(
+    db_url: str,
+    time_window_start: date=None,
+    time_window_duration: int=1,
+) -> pd.DataFrame:
     
-    Returns:
-        pd.DataFrame: Dataframe with standardized columns names
-    """
-    dataframe = dataframe.rename(columns=columns_map)
-    return dataframe
+    query = """
+        SELECT
+            cns, cpf as patient_cpf, nome, nome_mae, nome_pai, dt_nasc, sexo,
+            racaCor, nacionalidade, obito, dt_obito,
+            end_tp_logrado_cod, end_logrado, end_numero, end_comunidade,
+            end_complem, end_bairro, end_cep, cod_mun_res, uf_res,
+            cod_mun_nasc, uf_nasc, cod_pais_nasc,
+            telefone, email, tp_telefone
+        FROM tb_pacientes"""
+    
+    if time_window_start:
+        time_window_end=time_window_start + timedelta(days=time_window_duration)
+        query += f" WHERE timestamp >= '{time_window_start}' AND timestamp < '{time_window_end}'"
+
+    patients=pd.read_sql(query, db_url)
+
+    return patients
+
+@task
+def extract_cns_data_from_db(
+    db_url: str,
+    time_window_start: date=None,
+    time_window_duration: int=1,
+) -> pd.DataFrame:
+   
+    query = """
+        SELECT 
+            cns, cns_provisorio
+        FROM tb_cns_provisorios
+        """
+   
+    if time_window_start:
+        time_window_end=time_window_start + timedelta(days=time_window_duration)
+        query += f"""
+            WHERE cns IN (
+                SELECT cns 
+                FROM tb_pacientes 
+                WHERE timestamp >= '{time_window_start}' AND timestamp < '{time_window_end}'
+            )"""
+
+    patient_cns=pd.read_sql(query, db_url)
+
+    return patient_cns
 
 
 @task
@@ -106,11 +144,10 @@ def rename_current_flow_run(environment: str, cnes:str) -> None:
     Rename the current flow run.
     """
     flow_run_id = prefect.context.get("flow_run_id")
-    flow_run_name = prefect.context.get("flow_run_name")
-    flow_run_scheduled_time = prefect.context.get("scheduled_start_time")
+    flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
 
     client = Client()
     client.set_flow_run_name(
         flow_run_id,
-        f"{flow_run_name} ({cnes}):{flow_run_scheduled_time} in env={environment}"
+        f"(cnes={cnes}, env={environment}): {flow_run_scheduled_time}"
     )

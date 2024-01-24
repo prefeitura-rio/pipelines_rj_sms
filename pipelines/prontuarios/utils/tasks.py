@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E203
+from datetime import timedelta, date
+import prefect
+import pandas as pd
+import requests
 
 from validate_docbr import CPF
-
-from datetime import timedelta, date
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.prontuarios.utils.constants import constants as prontuario_constants
@@ -11,48 +13,8 @@ from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_const
 from pipelines.utils.tasks import (
     get_secret_key
 )
-import prefect
-import pandas as pd
-import requests
-
-from datetime import date, timedelta
 
 
-@task
-def extract_tabledata_from_db(
-    db_url: str,
-    tablename: str,
-    time_window_start: date=None,
-    time_window_duration: int=1,
-    columns_list: list[str] | str='*',
-    date_lookup_field: str='updated_at'
-) -> pd.DataFrame:
-    """
-    Extract data from a table from a given date
-
-    Args:
-        db_url (str): Database url (as in sqlalchemy)
-        tablename (str): Table name
-        time_window_start (date, optional): Start date of the time window. Defaults to None.
-        time_window_duration (int, optional): Time window duration in days. Defaults to 1.
-        columns_list (list[str], optional): List of columns to extract. Defaults to ['*'].
-        date_lookup_field (str, optional): Date field to filter. Defaults to 'updated_at'.
-
-    Returns:
-        pd.DataFrame: Dataframe with the extracted data
-    """
-    assert isinstance(columns_list, list) or columns_list == '*', "columns_list must be a list or '*'"
-
-    query=f"SELECT {', '.join(columns_list)} FROM {tablename}"
-
-    if time_window_start:
-        time_window_end=time_window_start + timedelta(days=time_window_duration)
-
-        query += f" WHERE {date_lookup_field} >= '{time_window_start}'"
-        query += f" AND {date_lookup_field} < '{time_window_end}';"
-
-    result=pd.read_sql(query, db_url)
-    return result
 
 @task
 def get_api_token(environment: str) -> str:
@@ -170,7 +132,7 @@ def load_to_api(
 
     if request_response.status_code != 201:
         raise Exception(f"Error loading data to {endpoint_name} {request_response.json()}")
-    
+   
 
 @task
 def transform_create_input_batches(input_list: list, batch_size: int=250):
@@ -185,3 +147,4 @@ def transform_create_input_batches(input_list: list, batch_size: int=250):
         list[list]: List of batches
     """
     return [input_list[i:i+batch_size] for i in range(0, len(input_list), batch_size)]
+

@@ -19,14 +19,14 @@ from pipelines.utils.tasks import (
 from pipelines.prontuarios.raw.smsrio.tasks import (
     rename_current_flow_run,
     get_database_url,
+    extract_patient_data_from_db,
+    extract_cns_data_from_db,
     transform_merge_patient_and_cns_data,
-    transform_standardize_columns_names,
     transform_data_to_json,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_target_day,
     get_api_token,
-    extract_tabledata_from_db,
     transform_filter_invalid_cpf,
     transform_create_input_batches,
     transform_to_raw_format,
@@ -78,35 +78,26 @@ with Flow(
         upstream_tasks=[credential_injection]
     )
 
-    patient_data=extract_tabledata_from_db(
+    patient_data=extract_patient_data_from_db(
         db_url=database_url,
-        tablename="tb_pacientes",
         time_window_start=target_day,
         time_window_duration=1,
-        date_lookup_field="timestamp",
         upstream_tasks=[credential_injection]
     )
 
-    cns_data=extract_tabledata_from_db(
+    cns_data=extract_cns_data_from_db(
         db_url=database_url,
-        tablename="tb_cns_provisorios",
         time_window_start=target_day,
         time_window_duration=1,
-        date_lookup_field="timestamp",
         upstream_tasks=[credential_injection]
     )
 
     ####################################
     # Task Section #2 - Transform and merge data
     ####################################
-    standardized_patient_data=transform_standardize_columns_names(
-        dataframe=patient_data,
-        columns_map={'cpf': 'patient_cpf'},
-        upstream_tasks=[credential_injection]
-    )
 
     valid_patient_data=transform_filter_invalid_cpf(
-        dataframe=standardized_patient_data,
+        dataframe=patient_data,
         cpf_column='patient_cpf',
         upstream_tasks=[credential_injection]
     )
@@ -137,6 +128,9 @@ with Flow(
         upstream_tasks=[unmapped(credential_injection)]
     )
 
+    ####################################
+    # Task Section #4 - Loading data
+    ####################################
     load_to_api_task = load_to_api.map(
         request_body=request_bodies,
         endpoint_name=unmapped("raw/patientrecords"),
