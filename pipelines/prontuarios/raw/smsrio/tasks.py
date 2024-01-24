@@ -35,7 +35,7 @@ def get_database_url(environment):
     return database_url
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def extract_patient_data_from_db(
     db_url: str,
     time_window_start: date=None,
@@ -58,7 +58,7 @@ def extract_patient_data_from_db(
 
     return patients
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def extract_cns_data_from_db(
     db_url: str,
     time_window_start: date=None,
