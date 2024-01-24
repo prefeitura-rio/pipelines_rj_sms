@@ -24,7 +24,7 @@ from pipelines.prontuarios.raw.smsrio.tasks import (
     transform_data_to_json,
 )
 from pipelines.prontuarios.utils.tasks import (
-    get_scheduled_window,
+    get_target_day,
     get_api_token,
     extract_tabledata_from_db,
     transform_filter_invalid_cpf,
@@ -74,23 +74,23 @@ with Flow(
     ####################################
     # Task Section #1 - Get data
     ####################################
-    window_start, window_end=get_scheduled_window()
-    window_start.set_upstream(api_token)
+    target_day=get_target_day()
+    target_day.set_upstream(api_token)
 
     patient_data=extract_tabledata_from_db(
         db_url=database_url,
         tablename="tb_pacientes",
-        min_date=window_start,
-        max_date=window_end,
+        time_window_start=target_day,
+        time_window_duration=1,
         date_lookup_field="timestamp",
     )
-    patient_data.set_upstream(window_start)
+    patient_data.set_upstream(target_day)
 
     cns_data=extract_tabledata_from_db(
         db_url=database_url,
         tablename="tb_cns_provisorios",
-        min_date=window_start,
-        max_date=window_end,
+        time_window_start=target_day,
+        time_window_duration=1,
         date_lookup_field="timestamp",
     )
     cns_data.set_upstream(patient_data)
@@ -155,4 +155,4 @@ sms_prontuarios_raw_smsrio.run_config=KubernetesRun(
     memory_limit="2Gi"
 )
 
-sms_prontuarios_raw_smsrio.schedule=smsrio_daily_update_schedule
+#sms_prontuarios_raw_smsrio.schedule=smsrio_daily_update_schedule

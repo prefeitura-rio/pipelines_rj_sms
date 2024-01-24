@@ -22,8 +22,8 @@ from datetime import date, timedelta
 def extract_tabledata_from_db(
     db_url: str,
     tablename: str,
-    min_date: str=None,
-    max_date: str=None,
+    time_window_start: date=None,
+    time_window_duration: int=1,
     columns_list: list[str] | str='*',
     date_lookup_field: str='updated_at'
 ) -> pd.DataFrame:
@@ -33,8 +33,8 @@ def extract_tabledata_from_db(
     Args:
         db_url (str): Database url (as in sqlalchemy)
         tablename (str): Table name
-        min_date (str, optional): Minimum date to extract. Defaults to None.
-        max_date (str, optional): Maximum date to extract. Defaults to None.
+        time_window_start (date, optional): Start date of the time window. Defaults to None.
+        time_window_duration (int, optional): Time window duration in days. Defaults to 1.
         columns_list (list[str], optional): List of columns to extract. Defaults to ['*'].
         date_lookup_field (str, optional): Date field to filter. Defaults to 'updated_at'.
 
@@ -45,13 +45,11 @@ def extract_tabledata_from_db(
 
     query=f"SELECT {', '.join(columns_list)} FROM {tablename}"
 
-    if min_date or max_date:
-        filter_parts=[]
-        if min_date:
-            filter_parts.append( f"{date_lookup_field} >= '{min_date}'" )
-        if max_date:
-            filter_parts.append( f"{date_lookup_field} < '{max_date}'" )
-        query += " WHERE " + " AND ".join(filter_parts)
+    if time_window_start:
+        time_window_end=time_window_start + timedelta(days=time_window_duration)
+
+        query += f" WHERE {date_lookup_field} >= '{time_window_start}'"
+        query += f" AND {date_lookup_field} < '{time_window_end}';"
 
     result=pd.read_sql(query, db_url)
     return result
@@ -97,19 +95,16 @@ def get_api_token(environment: str) -> str:
 
 
 @task
-def get_scheduled_window() -> tuple[date, date]:
+def get_target_day() -> date:
     """
-    Get the scheduled window for a flow.
+    Calculate the day the job is responsible for collecting data.
 
     Returns:
-        tuple[date, date]: Window start and end dates
+        date: Target job day
     """
     scheduled_start_time=prefect.context.get("scheduled_start_time")
-    scheduled_date=scheduled_start_time.date()
-
-    window_start=scheduled_date - timedelta(days=1)
-    window_end=scheduled_date
-    return window_start, window_end
+    scheduled_date=scheduled_start_time.date() - timedelta(days=1)
+    return scheduled_date
 
 
 @task
