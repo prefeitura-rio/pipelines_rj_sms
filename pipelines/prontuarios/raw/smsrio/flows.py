@@ -8,11 +8,8 @@ from prefect import Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefect.executors import LocalDaskExecutor
-
 from prefeitura_rio.pipelines_utils.custom import Flow
-
 from pipelines.constants import constants
-
 from pipelines.utils.tasks import (
     inject_gcp_credentials,
 )
@@ -35,6 +32,9 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.prontuarios.raw.smsrio.schedules import (
     smsrio_daily_update_schedule
 )
+from pipelines.prontuarios.raw.smsrio.constants import (
+    constants as smsrio_constants
+)
 
 
 with Flow(
@@ -44,8 +44,6 @@ with Flow(
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev")
-
-    CNES = Parameter("cnes")
 
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
@@ -67,7 +65,7 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(
             environment=ENVIRONMENT,
-            cnes=CNES,
+            cnes=smsrio_constants.SMSRIO_CNES.value,
             upstream_tasks=[credential_injection]
         )
 
@@ -122,7 +120,7 @@ with Flow(
 
     request_bodies = transform_to_raw_format.map(
         json_data=json_list_batches,
-        cnes=unmapped(CNES),
+        cnes=unmapped(smsrio_constants.SMSRIO_CNES.value),
         upstream_tasks=[unmapped(credential_injection)]
     )
 
