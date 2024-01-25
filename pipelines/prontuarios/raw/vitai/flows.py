@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
+"""
+Flow for Vitai Raw Data Extraction
+"""
 from prefect import Parameter, unmapped
 from prefect import case
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefect.executors import LocalDaskExecutor
-
 from prefeitura_rio.pipelines_utils.custom import Flow
-
 from pipelines.constants import constants
 from pipelines.utils.tasks import (
     inject_gcp_credentials,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
-    get_target_day,
+    get_flow_scheduled_day,
     rename_current_flow_run,
     load_to_api,
     transform_create_input_batches,
@@ -65,7 +66,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get data
     ####################################
-    target_day = get_target_day(
+    target_day = get_flow_scheduled_day(
         upstream_tasks=[credential_injection]
     )
 
@@ -94,7 +95,7 @@ with Flow(
         upstream_tasks=[credential_injection]
     )
     valid_patients = transform_filter_valid_cpf(
-        list_of_patients=patient_data_grouped,
+        objects=patient_data_grouped,
         upstream_tasks=[credential_injection]
     )
 
@@ -104,7 +105,7 @@ with Flow(
         upstream_tasks=[credential_injection]
     )
     valid_cids = transform_filter_valid_cpf(
-        list_of_patients=cid_data_grouped,
+        objects=cid_data_grouped,
         upstream_tasks=[credential_injection]
     )
 

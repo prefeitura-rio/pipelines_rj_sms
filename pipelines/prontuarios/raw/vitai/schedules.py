@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 """
-Schedules for the Raw Data Extraction
+Schedules for Vitai Raw Data Extraction
 """
 
 from datetime import timedelta, datetime
