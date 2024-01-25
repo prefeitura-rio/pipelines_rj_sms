@@ -168,4 +168,4 @@ sms_prontuarios_raw_vitai.run_config = KubernetesRun(
     memory_limit="2Gi"
 )
 
-sms_prontuarios_raw_vitai.schedule=vitai_daily_update_schedule
+sms_prontuarios_raw_vitai.schedule = vitai_daily_update_schedule
