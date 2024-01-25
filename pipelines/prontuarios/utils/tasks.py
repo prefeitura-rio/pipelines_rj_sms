@@ -53,7 +53,7 @@ def get_api_token(environment: str) -> str:
 
 
 @task
-def get_target_day() -> date:
+def get_flow_scheduled_day() -> date:
     """
     Calculate the day the job is responsible for collecting data.
 

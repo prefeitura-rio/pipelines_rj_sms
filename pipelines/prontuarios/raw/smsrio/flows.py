@@ -21,7 +21,7 @@ from pipelines.prontuarios.raw.smsrio.tasks import (
     transform_data_to_json,
 )
 from pipelines.prontuarios.utils.tasks import (
-    get_target_day,
+    get_flow_scheduled_day,
     get_api_token,
     transform_create_input_batches,
     transform_to_raw_format,
@@ -72,7 +72,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get data
     ####################################
-    target_day = get_target_day(
+    target_day = get_flow_scheduled_day(
         upstream_tasks=[credential_injection]
     )
 
