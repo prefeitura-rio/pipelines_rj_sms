@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 """
-Raw Data Extraction and Load
+Flow for SMSRio Raw Data Extraction
 """
 from prefect import case, unmapped
 from prefect import Parameter

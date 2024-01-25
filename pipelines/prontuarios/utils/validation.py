@@ -1,19 +1,19 @@
+"""
+Field validation functions for prontuario system.
+"""
+
 from validate_docbr import CPF
 
 
 def is_valid_cpf(cpf):
     """
-    Validates a CPF number.
+    Check if a CPF number is valid.
 
-    Parameters
-    ----------
-    cpf: str
-        CPF number to be validated.
+    Args:
+        cpf (str): The CPF number to be validated.
 
-    Returns
-    -------
-    bool
-        True if CPF is valid, False otherwise.
+    Returns:
+        bool: True if the CPF is valid, False otherwise.
     """
     if cpf is None:
         return False

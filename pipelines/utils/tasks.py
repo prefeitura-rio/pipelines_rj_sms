@@ -160,6 +160,21 @@ def load_from_api(
     credentials=None,
     auth_method="bearer"
 ) -> dict:
+    """
+    Loads data from an API endpoint.
+
+    Args:
+        url (str): The URL of the API endpoint.
+        params (dict, optional): The query parameters to be included in the request. Defaults to None.
+        credentials (str or tuple, optional): The authentication credentials. Defaults to None.
+        auth_method (str, optional): The authentication method to be used. Defaults to "bearer".
+
+    Returns:
+        dict: The JSON response from the API.
+
+    Raises:
+        Exception: If the API request fails.
+    """
     if auth_method == "bearer":
         headers = {"Authorization": f"Bearer {credentials}"}
         response = requests.get(url, headers=headers, params=params, timeout=90)
