@@ -5,11 +5,11 @@ Tasks for Raw Data
 import json
 from datetime import timedelta, date
 import pandas as pd
-
-import prefect
 from prefect import task
-from prefect.client import Client
-
+from prefeitura_rio.pipelines_utils.logging import log
+from pipelines.prontuarios.utils.validation import (
+    is_valid_cpf
+)
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.utils.tasks import (
     get_secret_key
@@ -23,7 +23,7 @@ def get_database_url(environment):
 
     Args:
         environment (str): Environment
-    
+
     Returns:
         str: Database url
     """
@@ -38,8 +38,8 @@ def get_database_url(environment):
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def extract_patient_data_from_db(
     db_url: str,
-    time_window_start: date=None,
-    time_window_duration: int=1,
+    time_window_start: date = None,
+    time_window_duration: int = 1,
 ) -> pd.DataFrame:
     query = """
         SELECT
@@ -51,18 +51,19 @@ def extract_patient_data_from_db(
             telefone, email, tp_telefone
         FROM tb_pacientes"""
     if time_window_start:
-        time_window_end=time_window_start + timedelta(days=time_window_duration)
+        time_window_end = time_window_start + timedelta(days=time_window_duration)
         query += f" WHERE timestamp >= '{time_window_start}' AND timestamp < '{time_window_end}'"
 
-    patients=pd.read_sql(query, db_url)
+    patients = pd.read_sql(query, db_url)
 
     return patients
+
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def extract_cns_data_from_db(
     db_url: str,
-    time_window_start: date=None,
-    time_window_duration: int=1,
+    time_window_start: date = None,
+    time_window_duration: int = 1,
 ) -> pd.DataFrame:
     query = """
         SELECT
@@ -70,7 +71,7 @@ def extract_cns_data_from_db(
         FROM tb_cns_provisorios"""
 
     if time_window_start:
-        time_window_end=time_window_start + timedelta(days=time_window_duration)
+        time_window_end = time_window_start + timedelta(days=time_window_duration)
         query += f"""
             WHERE cns IN (
                 SELECT cns
@@ -78,7 +79,7 @@ def extract_cns_data_from_db(
                 WHERE timestamp >= '{time_window_start}' AND timestamp < '{time_window_end}'
             )"""
 
-    patient_cns=pd.read_sql(query, db_url)
+    patient_cns = pd.read_sql(query, db_url)
 
     return patient_cns
 
@@ -91,7 +92,7 @@ def transform_data_to_json(dataframe, identifier_column="patient_cpf"):
     Args:
         dataframe (pd.DataFrame): Dataframe to transform
         identifier_column (str): Identifier column
-    
+
     Returns:
         list: List of jsons
     """
@@ -122,7 +123,7 @@ def transform_merge_patient_and_cns_data(patient_data, cns_data):
         pd.DataFrame: Updated data with temporary cns in column 'cns_provisorios'
     """
     def get_all_patient_cns_values(cns):
-        patient_cns_rows = cns_data[ cns_data['cns'] == cns ]
+        patient_cns_rows = cns_data[cns_data['cns'] == cns]
 
         if patient_cns_rows.empty:
             return []
@@ -135,15 +136,18 @@ def transform_merge_patient_and_cns_data(patient_data, cns_data):
 
 
 @task
-def rename_current_flow_run(environment: str, cnes:str) -> None:
+def transform_filter_invalid_cpf(dataframe: pd.DataFrame, cpf_column: str) -> pd.DataFrame:
     """
-    Rename the current flow run.
-    """
-    flow_run_id = prefect.context.get("flow_run_id")
-    flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
+    Filter invalid CPFs
 
-    client = Client()
-    client.set_flow_run_name(
-        flow_run_id,
-        f"(cnes={cnes}, env={environment}): {flow_run_scheduled_time}"
-    )
+    Args:
+        dataframe (pd.DataFrame): Dataframe to filter
+
+    Returns:
+        pd.DataFrame: Filtered dataframe
+    """
+    filtered_dataframe = dataframe[dataframe[cpf_column].apply(is_valid_cpf)]
+
+    log(f"Filtered {dataframe.shape[0] - filtered_dataframe.shape[0]} invalid CPFs")
+
+    return filtered_dataframe

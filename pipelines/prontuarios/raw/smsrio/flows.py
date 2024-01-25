@@ -17,7 +17,6 @@ from pipelines.utils.tasks import (
     inject_gcp_credentials,
 )
 from pipelines.prontuarios.raw.smsrio.tasks import (
-    rename_current_flow_run,
     get_database_url,
     extract_patient_data_from_db,
     extract_cns_data_from_db,
@@ -27,10 +26,11 @@ from pipelines.prontuarios.raw.smsrio.tasks import (
 from pipelines.prontuarios.utils.tasks import (
     get_target_day,
     get_api_token,
-    transform_filter_invalid_cpf,
     transform_create_input_batches,
     transform_to_raw_format,
-    load_to_api
+    transform_filter_valid_cpf,
+    load_to_api,
+    rename_current_flow_run
 )
 from pipelines.prontuarios.raw.smsrio.schedules import (
     smsrio_daily_update_schedule
@@ -38,14 +38,14 @@ from pipelines.prontuarios.raw.smsrio.schedules import (
 
 
 with Flow(
-    name="Prontuários - Extração de Dados SMSRio",
+    name="Prontuários (SMSRio)- Extração de Dados",
 ) as sms_prontuarios_raw_smsrio:
     #####################################
     # Parameters
     #####################################
-    ENVIRONMENT=Parameter("environment", default="dev")
+    ENVIRONMENT = Parameter("environment", default="dev")
 
-    CNES=Parameter("cnes")
+    CNES = Parameter("cnes")
 
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
@@ -54,12 +54,12 @@ with Flow(
     ####################################
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
-    database_url=get_database_url(
+    database_url = get_database_url(
         environment=ENVIRONMENT,
         upstream_tasks=[credential_injection]
     )
 
-    api_token=get_api_token(
+    api_token = get_api_token(
         environment=ENVIRONMENT,
         upstream_tasks=[credential_injection]
     )
@@ -74,18 +74,18 @@ with Flow(
     ####################################
     # Task Section #1 - Get data
     ####################################
-    target_day=get_target_day(
+    target_day = get_target_day(
         upstream_tasks=[credential_injection]
     )
 
-    patient_data=extract_patient_data_from_db(
+    patient_data = extract_patient_data_from_db(
         db_url=database_url,
         time_window_start=target_day,
         time_window_duration=1,
         upstream_tasks=[credential_injection]
     )
 
-    cns_data=extract_cns_data_from_db(
+    cns_data = extract_cns_data_from_db(
         db_url=database_url,
         time_window_start=target_day,
         time_window_duration=1,
@@ -95,15 +95,8 @@ with Flow(
     ####################################
     # Task Section #2 - Transform and merge data
     ####################################
-
-    valid_patient_data=transform_filter_invalid_cpf(
-        dataframe=patient_data,
-        cpf_column='patient_cpf',
-        upstream_tasks=[credential_injection]
-    )
-
-    merged_patient_data=transform_merge_patient_and_cns_data(
-        patient_data=valid_patient_data,
+    merged_patient_data = transform_merge_patient_and_cns_data(
+        patient_data=patient_data,
         cns_data=cns_data,
         upstream_tasks=[credential_injection]
     )
@@ -111,18 +104,23 @@ with Flow(
     ####################################
     # Task Section #3 - Prepare data to load
     ####################################
-    json_list=transform_data_to_json(
+    json_list = transform_data_to_json(
         dataframe=merged_patient_data,
         identifier_column="patient_cpf",
         upstream_tasks=[credential_injection]
     )
 
-    json_list_batches=transform_create_input_batches(
-        json_list,
+    valid_patients = transform_filter_valid_cpf(
+        list_of_patients=json_list,
         upstream_tasks=[credential_injection]
     )
 
-    request_bodies=transform_to_raw_format.map(
+    json_list_batches = transform_create_input_batches(
+        valid_patients,
+        upstream_tasks=[credential_injection]
+    )
+
+    request_bodies = transform_to_raw_format.map(
         json_data=json_list_batches,
         cnes=unmapped(CNES),
         upstream_tasks=[unmapped(credential_injection)]
@@ -140,9 +138,9 @@ with Flow(
     )
 
 
-sms_prontuarios_raw_smsrio.storage=GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_prontuarios_raw_smsrio.executor=LocalDaskExecutor(num_workers=10)
-sms_prontuarios_raw_smsrio.run_config=KubernetesRun(
+sms_prontuarios_raw_smsrio.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=10)
+sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -150,4 +148,4 @@ sms_prontuarios_raw_smsrio.run_config=KubernetesRun(
     memory_limit="2Gi"
 )
 
-sms_prontuarios_raw_smsrio.schedule=smsrio_daily_update_schedule
+sms_prontuarios_raw_smsrio.schedule = smsrio_daily_update_schedule

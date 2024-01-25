@@ -22,8 +22,8 @@ from pipelines.utils.schedules import (
 
 smsrio_flow_parameters = [
     {
-        "cnes"         : '999992',
-        "environment"  : "dev"
+        "cnes": '999992',
+        "environment": "dev"
     }
 ]
 

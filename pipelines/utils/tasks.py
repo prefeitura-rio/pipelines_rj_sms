@@ -154,6 +154,27 @@ def download_from_api(
 
 
 @task
+def load_from_api(
+    url: str,
+    params=None,
+    credentials=None,
+    auth_method="bearer"
+) -> dict:
+    if auth_method == "bearer":
+        headers = {"Authorization": f"Bearer {credentials}"}
+        response = requests.get(url, headers=headers, params=params, timeout=90)
+    elif auth_method == "basic":
+        response = requests.get(url, auth=credentials, params=params, timeout=90)
+    else:
+        response = requests.get(url, params=params, timeout=90)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f"API request failed - {response.status_code} - {response.json()}")
+
+
+@task
 def download_azure_blob(
     container_name: str,
     blob_path: str,

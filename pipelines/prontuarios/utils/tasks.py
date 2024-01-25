@@ -2,19 +2,18 @@
 # flake8: noqa: E203
 from datetime import timedelta, date
 import prefect
-import pandas as pd
 import requests
 
-from validate_docbr import CPF
+from prefect.client import Client
 from prefect import task
-from prefeitura_rio.pipelines_utils.logging import log
+
+
 from pipelines.prontuarios.utils.constants import constants as prontuario_constants
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
+from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.tasks import (
     get_secret_key
 )
-
-
 
 @task
 def get_api_token(environment: str) -> str:
@@ -67,26 +66,6 @@ def get_target_day() -> date:
     scheduled_start_time=prefect.context.get("scheduled_start_time")
     scheduled_date=scheduled_start_time.date() - timedelta(days=1)
     return scheduled_date
-
-
-@task
-def transform_filter_invalid_cpf(dataframe:pd.DataFrame, cpf_column:str) -> pd.DataFrame:
-    """
-    Filter invalid CPFs
-
-    Args:
-        dataframe (pd.DataFrame): Dataframe to filter
-
-    Returns:
-        pd.DataFrame: Filtered dataframe
-    """
-    filtered_dataframe=dataframe[dataframe[cpf_column].apply(
-        lambda cpf: CPF().validate(cpf)
-    ) ]
-
-    log(f"Filtered {dataframe.shape[0] - filtered_dataframe.shape[0]} invalid CPFs")
-
-    return filtered_dataframe
 
 
 @task
@@ -148,3 +127,25 @@ def transform_create_input_batches(input_list: list, batch_size: int=250):
     """
     return [input_list[i:i+batch_size] for i in range(0, len(input_list), batch_size)]
 
+@task
+def rename_current_flow_run(environment: str, cnes:str) -> None:
+    """
+    Rename the current flow run.
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
+
+    client = Client()
+    client.set_flow_run_name(
+        flow_run_id,
+        f"(cnes={cnes}, env={environment}): {flow_run_scheduled_time}"
+    )
+
+
+@task
+def transform_filter_valid_cpf(list_of_patients: list):
+    paties_valid_cpf = filter(
+        lambda patient: is_valid_cpf(patient['patient_cpf']),
+        list_of_patients
+    )
+    return list(paties_valid_cpf)
