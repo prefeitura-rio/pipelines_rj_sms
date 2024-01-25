@@ -109,7 +109,7 @@ with Flow(
     )
 
     valid_patients = transform_filter_valid_cpf(
-        list_of_patients=json_list,
+        objects=json_list,
         upstream_tasks=[credential_injection]
     )
 
