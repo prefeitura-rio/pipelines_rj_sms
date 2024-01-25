@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tasks for Raw Data
+Tasks for SMSRio Raw Data Extraction
 """
 import json
 from datetime import timedelta, date
@@ -19,7 +19,7 @@ from pipelines.utils.tasks import (
 @task
 def get_database_url(environment):
     """
-    Get database url
+    Get SMSRio database url from Infisical Secrets
 
     Args:
         environment (str): Environment
@@ -41,6 +41,17 @@ def extract_patient_data_from_db(
     time_window_start: date = None,
     time_window_duration: int = 1,
 ) -> pd.DataFrame:
+    """
+    Extracts patient data from the SMSRio database table using a (optional) time window.
+
+    Args:
+        db_url (str): The URL of the database.
+        time_window_start (date, optional): The start date of the time window.
+        time_window_duration (int, optional): The duration of the time window (in days).
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the extracted patient data.
+    """
     query = """
         SELECT
             cns, cpf as patient_cpf, nome, nome_mae, nome_pai, dt_nasc, sexo,
@@ -65,6 +76,17 @@ def extract_cns_data_from_db(
     time_window_start: date = None,
     time_window_duration: int = 1,
 ) -> pd.DataFrame:
+    """
+    Extracts CNS data from the SMSRio database table using a (optional) time window.
+
+    Args:
+        db_url (str): The URL of the database.
+        time_window_start (date, optional): The start date of the time window.
+        time_window_duration (int, optional): The duration of the time window in days.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the extracted CNS data.
+    """
     query = """
         SELECT
             cns, cns_provisorio
@@ -85,16 +107,16 @@ def extract_cns_data_from_db(
 
 
 @task
-def transform_data_to_json(dataframe, identifier_column="patient_cpf"):
+def transform_data_to_json(dataframe, identifier_column="patient_cpf") -> list[dict]:
     """
-    Transform dataframe to json
+    Transform dataframe to json, exposing the identifier_column as a field
 
     Args:
         dataframe (pd.DataFrame): Dataframe to transform
         identifier_column (str): Identifier column
 
     Returns:
-        list: List of jsons
+        list (list[dict]): List of jsons
     """
     assert identifier_column in dataframe.columns, "identifier_column column not found"
     data_list = []
@@ -111,9 +133,12 @@ def transform_data_to_json(dataframe, identifier_column="patient_cpf"):
 
 
 @task
-def transform_merge_patient_and_cns_data(patient_data, cns_data):
+def transform_merge_patient_and_cns_data(
+    patient_data: pd.DataFrame,
+    cns_data: pd.DataFrame
+) -> pd.DataFrame:
     """
-    Merge patient and cns data
+    Merge patient and cns data into one instance
 
     Args:
         patient_data (pd.DataFrame): Patient data
@@ -123,6 +148,16 @@ def transform_merge_patient_and_cns_data(patient_data, cns_data):
         pd.DataFrame: Updated data with temporary cns in column 'cns_provisorios'
     """
     def get_all_patient_cns_values(cns):
+        """
+        Retrieves all the values of 'cns_provisorio' for a given CNS number.
+
+        Args:
+            cns (str): The CNS number to search for.
+
+        Returns:
+            list: A list of 'cns_provisorio' values associated with the given CNS number.
+                  Returns an empty list if no matching rows are found.
+        """
         patient_cns_rows = cns_data[cns_data['cns'] == cns]
 
         if patient_cns_rows.empty:
@@ -138,13 +173,13 @@ def transform_merge_patient_and_cns_data(patient_data, cns_data):
 @task
 def transform_filter_invalid_cpf(dataframe: pd.DataFrame, cpf_column: str) -> pd.DataFrame:
     """
-    Filter invalid CPFs
+    Filter rows with valid CPFs
 
     Args:
         dataframe (pd.DataFrame): Dataframe to filter
 
     Returns:
-        pd.DataFrame: Filtered dataframe
+        pd.DataFrame: Filtered dataframe with only valid CPF rows
     """
     filtered_dataframe = dataframe[dataframe[cpf_column].apply(is_valid_cpf)]
 

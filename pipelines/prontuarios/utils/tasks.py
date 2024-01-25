@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E203
+"""
+Utilities Tasks for prontuario system pipelines.
+"""
+
 from datetime import timedelta, date
 import prefect
 import requests
-
 from prefect.client import Client
 from prefect import task
-
-
-from pipelines.prontuarios.utils.constants import constants as prontuario_constants
+from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.tasks import (
@@ -18,13 +19,16 @@ from pipelines.utils.tasks import (
 @task
 def get_api_token(environment: str) -> str:
     """
-    Get API Token
+    Retrieves the authentication token for Prontuario Integrado API.
 
     Args:
-        environment (str): Environment
+        environment (str): The environment for which to retrieve the API token.
 
     Returns:
-        str: API Token
+        str: The API token.
+
+    Raises:
+        Exception: If there is an error getting the API token.
     """
     api_url=prontuario_constants.API_URL.value.get(environment)
     api_username=get_secret_key.run(
@@ -56,29 +60,31 @@ def get_api_token(environment: str) -> str:
 
 
 @task
-def get_target_day() -> date:
+def get_flow_scheduled_day() -> date:
     """
-    Calculate the day the job is responsible for collecting data.
+    Returns the scheduled day for the flow execution.
+
+    The scheduled day is calculated by subtracting one day from the scheduled start time.
 
     Returns:
-        date: Target job day
+        date: The scheduled day for the flow execution.
     """
-    scheduled_start_time=prefect.context.get("scheduled_start_time")
-    scheduled_date=scheduled_start_time.date() - timedelta(days=1)
+    scheduled_start_time = prefect.context.get("scheduled_start_time")
+    scheduled_date = scheduled_start_time.date() - timedelta(days=1)
     return scheduled_date
 
 
 @task
-def transform_to_raw_format(json_data:dict, cnes:str) -> dict:
+def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     """
-    Transform data to raw format
+    Transforms the given JSON data to the accepted raw endpoint format.
 
     Args:
-        json_data (list[dict]): Data to transform
-        cnes (list[str]): CNES list
+        json_data (dict): The JSON data to be transformed.
+        cnes (str): The CNES value.
 
     Returns:
-        dict: Transformed data
+        dict: The transformed data in the accepted raw endpoint format.
     """
     return {
         "data_list": json_data,
@@ -94,13 +100,20 @@ def load_to_api(
     environment: str
 ) -> None:
     """
-    Load data to raw endpoint
+    Sends a POST request to the specified API endpoint with the provided request body.
 
     Args:
-        dataframe (pd.DataFrame): Data to load
-        endpoint_name (str): Endpoint name
-        identifier_column (str, optional): Identifier column. Defaults to "patient_cpf".
-    """    
+        request_body (dict): The JSON payload to be sent in the request.
+        endpoint_name (str): The name of the API endpoint to send the request to.
+        api_token (str): The API token used for authentication.
+        environment (str): The environment to use for the API request.
+
+    Raises:
+        Exception: If the request fails with a status code other than 201.
+
+    Returns:
+        None
+    """
     api_url=prontuario_constants.API_URL.value.get(environment)
     request_response=requests.post(
         url=f"{api_url}{endpoint_name}", 
@@ -130,7 +143,14 @@ def transform_create_input_batches(input_list: list, batch_size: int=250):
 @task
 def rename_current_flow_run(environment: str, cnes:str) -> None:
     """
-    Rename the current flow run.
+    Renames the current flow run using the specified environment and CNES.
+
+    Args:
+        environment (str): The environment of the flow run.
+        cnes (str): The CNES (National Registry of Health Establishments) of the flow run.
+
+    Returns:
+        None
     """
     flow_run_id = prefect.context.get("flow_run_id")
     flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
@@ -143,9 +163,18 @@ def rename_current_flow_run(environment: str, cnes:str) -> None:
 
 
 @task
-def transform_filter_valid_cpf(list_of_patients: list):
-    paties_valid_cpf = filter(
-        lambda patient: is_valid_cpf(patient['patient_cpf']),
-        list_of_patients
+def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
+    """
+    Filters the list of objects based on the validity of their CPF.
+
+    Args:
+        objects (list[dict]): A list of objects with 'patient_cpf' field.
+
+    Returns:
+        list[dict]: A list of objects that have valid CPFs.
+    """
+    obj_valid_cpf = filter(
+        lambda obj: is_valid_cpf(obj['patient_cpf']),
+        objects
     )
-    return list(paties_valid_cpf)
+    return list(obj_valid_cpf)

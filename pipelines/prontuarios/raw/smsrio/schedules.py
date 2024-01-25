@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 """
-Schedules for the Raw Data Extraction
+Schedules for SMSRio Raw Data Extraction
 """
-
 from datetime import timedelta, datetime
-
 from prefect.schedules import Schedule
 import pytz
-
 from pipelines.constants import constants
 from pipelines.utils.schedules import (
     untuple_clocks,
@@ -22,7 +19,6 @@ from pipelines.utils.schedules import (
 
 smsrio_flow_parameters = [
     {
-        "cnes": '999992',
         "environment": "dev"
     }
 ]
