@@ -3,11 +3,8 @@
 from datetime import timedelta, date
 import prefect
 import requests
-
 from prefect.client import Client
 from prefect import task
-
-
 from pipelines.prontuarios.utils.constants import constants as prontuario_constants
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.validation import is_valid_cpf
