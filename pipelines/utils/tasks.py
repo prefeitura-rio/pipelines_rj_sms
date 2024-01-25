@@ -118,39 +118,28 @@ def download_from_api(
         ValueError: If the API call fails.
     """  # noqa: E501
 
-    # Retrieve the API key from Vault
-    params = {} if params is None else params
+    api_data = load_from_api.run(
+        url=url,
+        params=params,
+        credentials=credentials,
+        auth_method=auth_method,
+    )
 
-    log("Downloading data from API")
-    if auth_method == "bearer":
-        headers = {"Authorization": f"Bearer {credentials}"}
-        response = requests.get(url, headers=headers, params=params)
-    elif auth_method == "basic":
-        response = requests.get(url, auth=credentials, params=params)
-    else:
-        response = requests.get(url, params=params)
-
-    if response.status_code == 200:
-        api_data = response.json()
-
-        # Save the API data to a local file
-        if add_load_date_to_filename:
-            if load_date is None:
-                destination_file_path = f"{file_folder}/{file_name}_{str(date.today())}.json"
-            else:
-                destination_file_path = f"{file_folder}/{file_name}_{load_date}.json"
+    # Save the API data to a local file
+    if add_load_date_to_filename:
+        if load_date is None:
+            destination_file_path = f"{file_folder}/{file_name}_{str(date.today())}.json"
         else:
-            destination_file_path = f"{file_folder}/{file_name}.json"
-
-        with open(destination_file_path, "w", encoding="utf-8") as file:
-            file.write(str(api_data))
-
-        log(f"API data downloaded to {destination_file_path}")
-
-        return destination_file_path
-
+            destination_file_path = f"{file_folder}/{file_name}_{load_date}.json"
     else:
-        raise ValueError(f"API call failed, error: {response.status_code} - {response.reason}")
+        destination_file_path = f"{file_folder}/{file_name}.json"
+
+    with open(destination_file_path, "w", encoding="utf-8") as file:
+        file.write(str(api_data))
+
+    log(f"API data downloaded to {destination_file_path}")
+
+    return destination_file_path
 
 
 @task
@@ -186,7 +175,7 @@ def load_from_api(
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(f"API request failed - {response.status_code} - {response.json()}")
+        raise ValueError(f"API call failed, error: {response.status_code} - {response.reason}")
 
 
 @task

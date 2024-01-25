@@ -59,6 +59,9 @@ with Flow(
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
+        infisical_path=smsrio_constants.INFISICAL_PATH.value,
+        infisical_api_username=smsrio_constants.INFISICAL_API_USERNAME.value,
+        infisical_api_password=smsrio_constants.INFISICAL_API_PASSWORD.value,
         upstream_tasks=[credential_injection]
     )
 

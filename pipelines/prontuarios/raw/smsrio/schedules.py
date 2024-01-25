@@ -19,7 +19,7 @@ from pipelines.utils.schedules import (
 
 smsrio_flow_parameters = [
     {
-        "environment": "dev"
+        "environment": "prod"
     }
 ]
 

@@ -31,6 +31,9 @@ from pipelines.prontuarios.raw.vitai.tasks import (
 from pipelines.prontuarios.raw.vitai.schedules import (
     vitai_daily_update_schedule
 )
+from pipelines.prontuarios.raw.vitai.constants import (
+    constants as vitai_constants
+)
 
 with Flow(
     name="Prontuários (Vitai) - Extração de Dados de Paciente",
@@ -56,6 +59,9 @@ with Flow(
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
+        infisical_path=vitai_constants.INFISICAL_PATH.value,
+        infisical_api_username=vitai_constants.INFISICAL_API_USERNAME.value,
+        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value,
         upstream_tasks=[credential_injection]
     )
     with case(RENAME_FLOW, True):
