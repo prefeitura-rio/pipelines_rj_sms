@@ -3,12 +3,14 @@
 """
 Vitacare healthrecord dumping flows
 """
+from datetime import timedelta
+
 
 from prefect import Parameter, case
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefect.executors import LocalDaskExecutor
-from prefect.tasks.prefect import create_flow_run
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -189,15 +191,26 @@ with Flow(
         project_name="staging",
         parameters={
             "environment": "dev",
-            "ap": "10",
+            "ap": AP,
             "endpoint": "movimento",
             "table_id": "estoque_movimento",
             "date": "2024-01-19",
             "cnes": "6023975",
-            "rename_flow": False,
+            "rename_flow": True,
         },
-        run_name=f"Reprocessamento - {TABLE_ID} - {CNES}",
         upstream_tasks=[retrieve_cases_task],
+    )
+
+    wait_dump_to_gcs_flow = wait_for_flow_run(
+        dump_to_gcs_flow,
+        stream_states=True,
+        stream_logs=True,
+        raise_final_state=True,
+        )
+
+    wait_dump_to_gcs_flow.max_retries = 3
+    wait_dump_to_gcs_flow.retry_delay = timedelta(
+        seconds=20
     )
 
 
