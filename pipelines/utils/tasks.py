@@ -26,6 +26,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 from pipelines.utils.infisical import inject_bd_credentials
 
+
 @task
 def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
     """
@@ -42,8 +43,27 @@ def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
     secret = get_secret(secret_name=secret_name, path=secret_path, environment=environment)
     return secret[secret_name]
 
+
 @task
-def inject_gcp_credentials(environment: str = 'dev') -> None:
+def get_infisical_user_password(path: str, environment: str = "dev") -> tuple:
+    """
+    Retrieves the Infisical username and password from the specified secret path.
+
+    Args:
+        environment (str, optional): The Infisical environment to retrieve the credentials from. Defaults to 'dev'.
+        path (str): The path to the secret.
+
+    Returns:
+        tuple: A tuple containing the username and password.
+    """
+    username = get_secret(secret_name="USERNAME", path=path, environment=environment)
+    password = get_secret(secret_name="PASSWORD", path=path, environment=environment)
+
+    return {"username": username["USERNAME"], "password": password["PASSWORD"]}
+
+
+@task
+def inject_gcp_credentials(environment: str = "dev") -> None:
     """
     Injects GCP credentials into the specified environment.
 
@@ -408,43 +428,6 @@ def unzip_file(file_path: str, output_path: str):
 
 
 @task
-def clean_ascii(input_file_path):
-    """
-    Clean ASCII Function
-
-    This function removes any non-basic ASCII characters from the text and saves the cleaned text
-    to a new file with a modified file name.
-    Args:
-        input_file_path (str): The path of the input file.
-
-    Returns:
-        str: The path of the output file containing the cleaned text.
-    """
-
-    try:
-        with open(input_file_path, "r", encoding="utf-8") as input_file:
-            text = input_file.read()
-
-            # Remove non-basic ASCII characters
-            cleaned_text = "".join(c for c in text if ord(c) < 128)
-
-            if ".json" in input_file_path:
-                output_file_path = input_file_path.replace(".json", "_clean.json")
-            elif ".csv" in input_file_path:
-                output_file_path = input_file_path.replace(".csv", "_clean.csv")
-
-            with open(output_file_path, "w", encoding="utf-8") as output_file:
-                output_file.write(cleaned_text)
-
-            log(f"Cleaning complete. Cleaned text saved at {output_file_path}")
-
-            return output_file_path
-
-    except Exception as e: # pylint: disable=W0703
-        log(f"An error occurred: {e}", level="error")
-
-
-@task
 def add_load_date_column(input_path: str, sep=";", load_date=None):
     """
     Adds a new column '_data_carga' to a CSV file located at input_path with the current date
@@ -490,7 +473,6 @@ def from_json_to_csv(input_path, sep=";"):
         with open(input_path, "r", encoding="utf-8") as file:
             json_data = file.read()
             data = eval(json_data)  # Convert JSON string to Python dictionary
-
             output_path = input_path.replace(".json", ".csv")
             # Assuming the JSON structure is a list of dictionaries
             df = pd.DataFrame(data, dtype="str")
