@@ -64,7 +64,7 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow(
-            table_id=TABLE_ID, ap=AP, cnes=CNES, upstream_tasks=[inject_gcp_credentials_task]
+            table_id=TABLE_ID, ap=AP, cnes=CNES
         )
 
     ####################################
@@ -74,10 +74,10 @@ with Flow(
         path=INFISICAL_PATH, environment="prod", upstream_tasks=[inject_gcp_credentials_task]
     )
 
-    create_folders_task = create_folders(upstream_tasks=[inject_gcp_credentials_task])
+    create_folders_task = create_folders(upstream_tasks=[get_infisical_user_password_task])
 
     build_url_task = build_url(
-        ap=AP, endpoint=ENDPOINT, upstream_tasks=[inject_gcp_credentials_task]
+        ap=AP, endpoint=ENDPOINT, upstream_tasks=[create_folders_task]
     )
 
     build_params_task = build_params(date_param=DATE, cnes=CNES, upstream_tasks=[build_url_task])
@@ -91,7 +91,7 @@ with Flow(
         body_params=None,
         query_params=build_params_task,
         env=ENVIRONMENT,
-        upstream_tasks=[get_infisical_user_password_task, build_params_task],
+        upstream_tasks=[file_name_task],
     )
 
     save_data_task = save_data_to_file(
@@ -102,7 +102,7 @@ with Flow(
         cnes=CNES,
         add_load_date_to_filename=True,
         load_date=build_params_task["date"],
-        upstream_tasks=[create_folders_task, download_task],
+        upstream_tasks=[download_task],
     )
 
     #####################################
