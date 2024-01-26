@@ -64,7 +64,7 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow(
-            table_id=TABLE_ID, ap=AP, upstream_tasks=[inject_gcp_credentials_task]
+            table_id=TABLE_ID, ap=AP, cnes=CNES, upstream_tasks=[inject_gcp_credentials_task]
         )
 
     ####################################
@@ -136,7 +136,7 @@ sms_dump_vitacare.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi"
+    memory_limit="2Gi",
 )
 
 sms_dump_vitacare.schedule = vitacare_clocks

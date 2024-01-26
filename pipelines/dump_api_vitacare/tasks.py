@@ -24,13 +24,16 @@ from pipelines.utils.tasks import from_json_to_csv, add_load_date_column, save_t
 
 
 @task
-def rename_current_flow(table_id: str, ap: str):
+def rename_current_flow(table_id: str, ap: str, cnes: str = None):
     """
     Rename the current flow run.
     """
     flow_run_id = prefect.context.get("flow_run_id")
     client = Client()
-    return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}")
+    if cnes:
+        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}")
+    else:
+        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}.cnes_{cnes}")
 
 
 @task
