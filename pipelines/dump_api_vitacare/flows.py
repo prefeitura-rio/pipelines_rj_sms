@@ -181,7 +181,7 @@ with Flow(
     retrieve_cases_task = retrieve_cases_to_reprocessed_from_birgquery(
         upstream_tasks=[inject_gcp_credentials_task]
     )
-    retrieve_cases_task.set_downstream(dump_to_gcs_flow)
+    
 
     ####################################
     # Tasks section #2 - Reprocess cases
@@ -201,6 +201,7 @@ with Flow(
         },
         upstream_tasks=[retrieve_cases_task, inject_gcp_credentials_task],
     )
+    retrieve_cases_task.set_downstream(dump_to_gcs_flow)
 
 
 sms_dump_vitacare_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
