@@ -198,7 +198,7 @@ with Flow(
             "cnes": "6023975",
             "rename_flow": True,
         },
-        upstream_tasks=[retrieve_cases_task],
+        upstream_tasks=[retrieve_cases_task, inject_gcp_credentials_task],
     )
 
     wait_dump_to_gcs_flow = wait_for_flow_run(
@@ -206,6 +206,7 @@ with Flow(
         stream_states=True,
         stream_logs=True,
         raise_final_state=True,
+        upstream_tasks=[dump_to_gcs_flow],
         )
 
     wait_dump_to_gcs_flow.max_retries = 3
