@@ -15,7 +15,7 @@ import prefect
 from prefect import task
 from prefect.client import Client
 from prefeitura_rio.pipelines_utils.logging import log
-
+from google.cloud import bigquery
 
 from pipelines.dump_api_vitacare.constants import (
     constants as vitacare_constants,
@@ -164,6 +164,21 @@ def save_data_to_file(
     add_load_date_to_filename: bool = False,
     load_date: str = None,
 ):
+    """
+    Save data to a file.
+
+    Args:
+        data (str): The data to be saved.
+        file_folder (str): The folder where the file will be saved.
+        table_id (str): The table ID.
+        ap (str): The AP value.
+        cnes (str, optional): The CNES value. Defaults to None.
+        add_load_date_to_filename (bool, optional): Whether to add the load date to the filename. Defaults to False.
+        load_date (str, optional): The load date. Defaults to None.
+
+    Returns:
+        bool: True if the data was successfully saved, False otherwise.
+    """
     if cnes:
         file_name = f"{table_id}__ap{ap}__cnes{cnes}"
     else:
@@ -191,3 +206,28 @@ def save_data_to_file(
         fix_payload_column_order.run(filepath=csv_file_path, table_id=table_id)
 
         return True
+
+@task
+def retrieve_cases_to_reprocessed_from_birgquery():
+    # Define your BigQuery client
+    client = bigquery.Client()
+
+    # Specify your dataset and table
+    dataset_id = 'controle_reprocessamento'
+    table_id = 'brutos_prontuario_vitacare__estoque_movimento'
+    full_table_id = f"{client.project}.{dataset_id}.{table_id}"
+
+    retrieve_query = f"SELECT * FROM `{full_table_id}` LIMIT 2"
+
+    query_job = client.query(retrieve_query)
+    query_job.result()
+
+    data_list = []
+    for i, row in enumerate(query_job):
+        # Here, we're using a simple integer index as the key
+        # You can replace this with a unique identifier from your row, if available
+        data_list.append(dict(row))
+
+    log(f"{len(data_list)} rows retrieved from BigQuery.")
+
+    return data_list

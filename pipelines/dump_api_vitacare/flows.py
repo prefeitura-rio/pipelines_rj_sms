@@ -8,6 +8,7 @@ from prefect import Parameter, case
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefect.executors import LocalDaskExecutor
+from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -28,6 +29,7 @@ from pipelines.dump_api_vitacare.tasks import (
     build_params,
     create_filename,
     save_data_to_file,
+    retrieve_cases_to_reprocessed_from_birgquery,
 )
 
 from pipelines.dump_api_vitacare.schedules import vitacare_clocks
@@ -35,7 +37,7 @@ from pipelines.dump_api_vitacare.schedules import vitacare_clocks
 
 with Flow(
     name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
-) as sms_dump_vitacare:
+) as sms_dump_vitacare:  # noqa: E501
     #####################################
     # Parameters
     #####################################
@@ -63,9 +65,7 @@ with Flow(
     inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
 
     with case(RENAME_FLOW, True):
-        rename_flow_task = rename_current_flow(
-            table_id=TABLE_ID, ap=AP, cnes=CNES
-        )
+        rename_flow_task = rename_current_flow(table_id=TABLE_ID, ap=AP, cnes=CNES)
 
     ####################################
     # Tasks section #1 - Get data
@@ -76,9 +76,7 @@ with Flow(
 
     create_folders_task = create_folders(upstream_tasks=[get_infisical_user_password_task])
 
-    build_url_task = build_url(
-        ap=AP, endpoint=ENDPOINT, upstream_tasks=[create_folders_task]
-    )
+    build_url_task = build_url(ap=AP, endpoint=ENDPOINT, upstream_tasks=[create_folders_task])
 
     build_params_task = build_params(date_param=DATE, cnes=CNES, upstream_tasks=[build_url_task])
 
@@ -140,3 +138,63 @@ sms_dump_vitacare.run_config = KubernetesRun(
 )
 
 sms_dump_vitacare.schedule = vitacare_clocks
+
+
+with Flow(
+    name="Dump Vitacare Reprocessamento - Reprocessar dados do prontuário Vitacare",
+) as sms_dump_vitacare_reprocessamento:  # noqa: E501
+    #####################################
+    # Parameters
+    #####################################
+
+    # Flow
+    RENAME_FLOW = Parameter("rename_flow", default=False)
+
+    # INFISICAL
+    INFISICAL_PATH = vitacare_constants.INFISICAL_PATH.value
+
+    # Vitacare API
+    AP = Parameter("ap", required=True, default="10")
+    # ENDPOINT = Parameter("endpoint", required=True)
+    # DATE = Parameter("date", default="today")
+    CNES = Parameter("cnes", default=None)
+
+    # GCP
+    ENVIRONMENT = Parameter("environment", default="dev")
+    DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
+    TABLE_ID = Parameter("table_id", required=True)
+
+    #####################################
+    # Set environment
+    ####################################
+    inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
+
+    with case(RENAME_FLOW, True):
+        rename_flow_task = rename_current_flow(table_id=TABLE_ID, ap=AP, cnes=CNES)
+
+    ####################################
+    # Tasks section #1 - Access reprocessing cases
+    #####################################
+
+    retrieve_cases_task = retrieve_cases_to_reprocessed_from_birgquery(
+        upstream_tasks=[inject_gcp_credentials_task]
+    )
+
+    ####################################
+    # Tasks section #2 - Reprocess cases
+    #####################################
+
+    dump_to_gcs_flow = create_flow_run(
+        flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
+        project_name="staging",
+        parameters={
+            "ap": "10",
+            "endpoint": "movimento",
+            "table_id": "estoque_movimento",
+            "date": "2024-01-19",
+            "cnes": "6023975",
+            "rename_flow": False,
+        },
+        run_name=f"Reprocessamento - {TABLE_ID} - {CNES}",
+        upstream_tasks=[retrieve_cases_task],
+    )
