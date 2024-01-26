@@ -188,10 +188,10 @@ with Flow(
         flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
         project_name="staging",
         parameters={
+            "environment": "dev",
             "ap": "10",
             "endpoint": "movimento",
             "table_id": "estoque_movimento",
-            "environment": "dev",
             "date": "2024-01-19",
             "cnes": "6023975",
             "rename_flow": False,
@@ -199,3 +199,14 @@ with Flow(
         run_name=f"Reprocessamento - {TABLE_ID} - {CNES}",
         upstream_tasks=[retrieve_cases_task],
     )
+
+
+sms_dump_vitacare_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_vitacare_reprocessamento.executor = LocalDaskExecutor(num_workers=10)
+sms_dump_vitacare_reprocessamento.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="2Gi",
+)
