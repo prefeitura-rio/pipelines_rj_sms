@@ -181,6 +181,7 @@ with Flow(
     retrieve_cases_task = retrieve_cases_to_reprocessed_from_birgquery(
         upstream_tasks=[inject_gcp_credentials_task]
     )
+    retrieve_cases_task.set_downstream(dump_to_gcs_flow)
 
     ####################################
     # Tasks section #2 - Reprocess cases
@@ -191,7 +192,7 @@ with Flow(
         project_name="staging",
         parameters={
             "environment": "dev",
-            "ap": AP,
+            "ap": "10",
             "endpoint": "movimento",
             "table_id": "estoque_movimento",
             "date": "2024-01-19",
