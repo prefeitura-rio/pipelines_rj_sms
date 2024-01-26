@@ -201,19 +201,6 @@ with Flow(
         upstream_tasks=[retrieve_cases_task, inject_gcp_credentials_task],
     )
 
-    wait_dump_to_gcs_flow = wait_for_flow_run(
-        dump_to_gcs_flow,
-        stream_states=True,
-        stream_logs=True,
-        raise_final_state=True,
-        upstream_tasks=[dump_to_gcs_flow],
-        )
-
-    wait_dump_to_gcs_flow.max_retries = 3
-    wait_dump_to_gcs_flow.retry_delay = timedelta(
-        seconds=20
-    )
-
 
 sms_dump_vitacare_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_dump_vitacare_reprocessamento.executor = LocalDaskExecutor(num_workers=10)
