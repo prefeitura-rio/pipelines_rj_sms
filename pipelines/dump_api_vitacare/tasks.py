@@ -79,7 +79,7 @@ def build_params(date_param: str = "today", cnes: str = None) -> dict:
             raise ValueError("date_param must be a date string (YYYY-MM-DD)") from e
 
     if cnes:
-        params.update({'cnes': cnes})
+        params.update({"cnes": cnes})
 
     log(f"Params built: {params}")
     return params
@@ -173,7 +173,7 @@ def save_data_to_file(
         table_id (str): The table ID.
         ap (str): The AP value.
         cnes (str, optional): The CNES value. Defaults to None.
-        add_load_date_to_filename (bool, optional): Whether to add the load date to the filename. Defaults to False.
+        add_load_date_to_filename (bool, optional): Whether to add the load date to the filename. Defaults to False.  # noqa: E501
         load_date (str, optional): The load date. Defaults to None.
 
     Returns:
@@ -207,14 +207,15 @@ def save_data_to_file(
 
         return True
 
+
 @task
 def retrieve_cases_to_reprocessed_from_birgquery():
     # Define your BigQuery client
     client = bigquery.Client()
 
     # Specify your dataset and table
-    dataset_id = 'controle_reprocessamento'
-    table_id = 'brutos_prontuario_vitacare__estoque_movimento'
+    dataset_id = "controle_reprocessamento"
+    table_id = "brutos_prontuario_vitacare__estoque_movimento"
     full_table_id = f"{client.project}.{dataset_id}.{table_id}"
 
     retrieve_query = f"SELECT * FROM `{full_table_id}` LIMIT 2"
