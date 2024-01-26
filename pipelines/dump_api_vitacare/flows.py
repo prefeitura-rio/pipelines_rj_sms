@@ -32,7 +32,7 @@ from pipelines.dump_api_vitacare.tasks import (
     create_filename,
     save_data_to_file,
     retrieve_cases_to_reprocessed_from_birgquery,
-    build_params_reprocessamento
+    build_params_reprocess,
 )
 
 from pipelines.dump_api_vitacare.schedules import vitacare_clocks
@@ -158,8 +158,8 @@ with Flow(
 
     # Vitacare API
     AP = Parameter("ap", required=True, default="10")
-    # ENDPOINT = Parameter("endpoint", required=True)
-    # DATE = Parameter("date", default="today")
+    ENDPOINT = Parameter("endpoint", required=True)
+    DATE = Parameter("date", default="today")
     CNES = Parameter("cnes", default=None)
 
     # GCP
@@ -186,7 +186,15 @@ with Flow(
     ####################################
     # Tasks section #2 - Reprocess cases
     #####################################
-    build_params_reprocessamento_task = build_params_reprocessamento(environment=ENVIRONMENT, ap=AP, upstream_tasks=[retrieve_cases_task])
+    build_params_reprocessamento_task = build_params_reprocess(
+        environment=ENVIRONMENT,
+        ap=AP,
+        endpoint=ENDPOINT,
+        table_id=TABLE_ID,
+        data=DATE,
+        cnes=CNES,
+        upstream_tasks=[retrieve_cases_task],
+    )
 
     dump_to_gcs_flow = create_flow_run(
         flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
@@ -194,6 +202,15 @@ with Flow(
         parameters=build_params_reprocessamento_task,
         upstream_tasks=[retrieve_cases_task, inject_gcp_credentials_task],
     )
+
+    wait_for_reprocessing = wait_for_flow_run(
+        dump_to_gcs_flow,
+        stream_states=True,
+        stream_logs=True,
+        raise_final_state=True,
+    )
+    wait_for_reprocessing.max_retries = 3
+    wait_for_reprocessing.retry_delay = timedelta(20)
 
 
 sms_dump_vitacare_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

@@ -10,6 +10,7 @@ from datetime import (
     timedelta,
 )
 
+
 import pandas as pd
 import prefect
 from prefect import task
@@ -235,7 +236,9 @@ def retrieve_cases_to_reprocessed_from_birgquery():
 
 
 @task
-def build_params_reprocessamento(environment: str, ap: str) -> dict:
+def build_params_reprocess(
+    environment: str, ap: str, endpoint: str, table_id: str, data: str, cnes: str
+) -> dict:
     """
     Build the parameters for the API request.
 
@@ -249,10 +252,10 @@ def build_params_reprocessamento(environment: str, ap: str) -> dict:
     params = {
         "environment": environment,
         "ap": ap,
-        "endpoint": "movimento",
-        "table_id": "estoque_movimento",
-        "date": "2024-01-19",
-        "cnes": "6023975",
+        "endpoint": endpoint,
+        "table_id": table_id,
+        "date": data,
+        "cnes": cnes,
         "rename_flow": True,
     }
 
