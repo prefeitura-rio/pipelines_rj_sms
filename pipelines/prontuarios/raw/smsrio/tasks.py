@@ -28,8 +28,8 @@ def get_database_url(environment):
         str: Database url
     """
     database_url = get_secret_key.run(
-        secret_path=smsrio_constants.PATH.value,
-        secret_name=smsrio_constants.DB_URL.value,
+        secret_path=smsrio_constants.INFISICAL_PATH.value,
+        secret_name=smsrio_constants.INFISICAL_DB_URL.value,
         environment=environment
     )
     return database_url
