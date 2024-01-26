@@ -37,7 +37,7 @@ from pipelines.dump_api_vitacare.schedules import vitacare_clocks
 
 with Flow(
     name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
-) as sms_dump_vitacare:  # noqa: E501
+) as sms_dump_vitacare:
     #####################################
     # Parameters
     #####################################
@@ -142,7 +142,7 @@ sms_dump_vitacare.schedule = vitacare_clocks
 
 with Flow(
     name="Dump Vitacare Reprocessamento - Reprocessar dados do prontuário Vitacare",
-) as sms_dump_vitacare_reprocessamento:  # noqa: E501
+) as sms_dump_vitacare_reprocessamento:
     #####################################
     # Parameters
     #####################################
@@ -191,6 +191,7 @@ with Flow(
             "ap": "10",
             "endpoint": "movimento",
             "table_id": "estoque_movimento",
+            "environment": "dev",
             "date": "2024-01-19",
             "cnes": "6023975",
             "rename_flow": False,
