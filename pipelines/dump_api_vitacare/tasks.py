@@ -232,3 +232,29 @@ def retrieve_cases_to_reprocessed_from_birgquery():
     log(f"{len(data_list)} rows retrieved from BigQuery.")
 
     return data_list
+
+
+@task
+def build_params_reprocessamento(environment: str, ap: str) -> dict:
+    """
+    Build the parameters for the API request.
+
+    Args:
+        date_param (str, optional): The date parameter. Defaults to "today".
+        cnes (str, optional): The CNES ID. Defaults to None.
+
+    Returns:
+        dict: The parameters for the API request.
+    """
+    params = {
+        "environment": environment,
+        "ap": ap,
+        "endpoint": "movimento",
+        "table_id": "estoque_movimento",
+        "date": "2024-01-19",
+        "cnes": "6023975",
+        "rename_flow": True,
+    }
+
+    log(f"Params built: {params}")
+    return params
