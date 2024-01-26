@@ -68,7 +68,9 @@ with Flow(
     inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
 
     with case(RENAME_FLOW, True):
-        rename_flow_task = rename_current_flow(table_id=TABLE_ID, ap=AP, cnes=CNES)
+        rename_flow_task = rename_current_flow(
+            table_id=TABLE_ID, ap=AP, cnes=CNES, upstream_tasks=[inject_gcp_credentials_task]
+        )
 
     ####################################
     # Tasks section #1 - Get data
