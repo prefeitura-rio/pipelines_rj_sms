@@ -28,9 +28,9 @@ from pipelines.prontuarios.raw.vitai.tasks import (
     group_cids_data_by_patient,
     get_vitai_api_token,
 )
-from pipelines.prontuarios.raw.vitai.schedules import (
-    vitai_daily_update_schedule
-)
+# from pipelines.prontuarios.raw.vitai.schedules import (
+#     vitai_daily_update_schedule
+# )
 from pipelines.prontuarios.raw.vitai.constants import (
     constants as vitai_constants
 )
@@ -174,4 +174,4 @@ sms_prontuarios_raw_vitai.run_config = KubernetesRun(
     memory_limit="2Gi"
 )
 
-sms_prontuarios_raw_vitai.schedule = vitai_daily_update_schedule
+#sms_prontuarios_raw_vitai.schedule = vitai_daily_update_schedule
