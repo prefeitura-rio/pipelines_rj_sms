@@ -1,30 +1,25 @@
-import time
-from prefeitura_rio.pipelines_utils.custom import Flow
 from prefect import Parameter
+from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from prefeitura_rio.pipelines_utils.custom import Flow
+
 from pipelines.constants import constants
-from prefect.executors import LocalDaskExecutor
-from pipelines.utils.tasks import (
-    inject_gcp_credentials
-)
 from pipelines.tests.tasks import (
     list_all_secrets_name
 )
-from prefect import Parameter
+from pipelines.utils.tasks import (
+    inject_gcp_credentials
+)
 
 
 with Flow(
     name="Teste de Ambiente",
 ) as test_ambiente:
-    
+
     ENVIRONMENT = Parameter("environment", default="dev")
 
-    time.sleep(60)
-    
     list_all_secrets_name(environment=ENVIRONMENT)
-
-    inject_gcp_credentials(environment=ENVIRONMENT)
 
 test_ambiente.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 test_ambiente.executor = LocalDaskExecutor(num_workers=10)
