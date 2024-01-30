@@ -11,7 +11,7 @@ def list_all_secrets_name(
     environment: str = 'dev',
     path: str = "/",
 ) -> None:
-    time.sleep(600)
+    time.sleep(6000)
     token = getenv_or_action("INFISICAL_TOKEN", default=None)
     log(f"""Token: {token}""")
 
