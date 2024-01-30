@@ -12,6 +12,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.utils.tasks import (
     inject_gcp_credentials,
+    list_all_secrets_name
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -50,7 +51,12 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
+    listing = list_all_secrets_name(environment=ENVIRONMENT)
+
+    credential_injection = inject_gcp_credentials(
+        environment=ENVIRONMENT,
+        upstream_tasks=[listing]
+    )
 
     vitai_api_token = get_vitai_api_token(
         environment='prod',
@@ -174,4 +180,4 @@ sms_prontuarios_raw_vitai.run_config = KubernetesRun(
     memory_limit="2Gi"
 )
 
-sms_prontuarios_raw_vitai.schedule = vitai_daily_update_schedule
+#sms_prontuarios_raw_vitai.schedule = vitai_daily_update_schedule
