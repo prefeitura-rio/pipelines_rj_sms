@@ -29,9 +29,9 @@ from pipelines.prontuarios.raw.vitai.tasks import (
     group_cids_data_by_patient,
     get_vitai_api_token,
 )
-from pipelines.prontuarios.raw.vitai.schedules import (
-    vitai_daily_update_schedule
-)
+# from pipelines.prontuarios.raw.vitai.schedules import (
+#     vitai_daily_update_schedule
+# )
 from pipelines.prontuarios.raw.vitai.constants import (
     constants as vitai_constants
 )
