@@ -9,7 +9,7 @@ python = ">=3.10,<3.11"
 dbt-bigquery = "^1.6.1"
 google-cloud-storage = "^2.10.0"
 prefect = "1.4.1"
-prefeitura-rio = { version = "1.1.3",  , extras = [
+prefeitura-rio = { version = "1.1.3", extras = [
     "pipelines",
     "pipelines-templates",
 ] }
