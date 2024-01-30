@@ -9,15 +9,17 @@ from datetime import (
     datetime,
     timedelta,
 )
-
+from functools import partial
 
 import pandas as pd
 import prefect
 from prefect import task
 from prefect.client import Client
+from prefect.tasks.prefect import wait_for_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
 from google.cloud import bigquery
 
+from pipelines.utils.state_handlers import on_fail, on_success
 from pipelines.dump_api_vitacare.constants import (
     constants as vitacare_constants,
 )
@@ -261,3 +263,77 @@ def build_params_reprocess(
 
     log(f"Params built: {params}")
     return params
+
+
+@task
+def log_error():
+    log("ERROR")
+
+
+@task
+def log_success():
+    log("SUCCESS")
+
+
+@task
+def write_on_bq_on_table(
+    records_to_update: list, dataset_id: str, table_id: str, status_code: str, row_count: int
+):
+    # Define your BigQuery client
+    client = bigquery.Client()
+
+    # Specify your dataset and table
+    full_table_id = f"{client.project}.{dataset_id}.{table_id}"
+
+    if status_code == "200":
+        reprocessing_status = "success"
+    else:
+        reprocessing_status = "failed"
+        row_count = 0
+
+    for n, _ in enumerate(records_to_update):
+        records_to_update[n].update(
+            {
+                "reprocessing_status": reprocessing_status,
+                "request_response_code": status_code,
+                "request_row_count": row_count,
+            }
+        )
+
+        # Write to BigQuery
+        # Data to be upserted
+        merge_query = f"""
+            MERGE `{full_table_id}` T
+            USING (SELECT * FROM UNNEST([{', '.join(['STRUCT<id_cnes STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>' + str((row['id_cnes'], row['data'], row['reprocessing_status'], row['request_response_code'], row['request_row_count'])) for row in records_to_update])}])) S
+            ON T.id_cnes = S.id_cnes AND T.data = S.data
+            WHEN MATCHED THEN
+            UPDATE SET 
+                T.reprocessing_status = S.reprocessing_status,
+                T.request_response_code = S.request_response_code,
+                T.request_row_count = S.request_row_count
+            WHEN NOT MATCHED THEN
+            INSERT (id_cnes, data, reprocessing_status, request_response_code, request_row_count) 
+            VALUES(id_cnes, data, reprocessing_status, request_response_code, request_row_count)
+            """
+
+        # Run the query
+        query_job = client.query(merge_query)
+        query_job.result()  # Wait for the job to complete
+
+        print("Upsert operation completed.")
+
+
+@task(
+    state_handlers=[
+        partial(on_fail, task_to_run_on_fail=log_error),
+        partial(on_success, task_to_run_on_success=log_success),
+    ]
+)
+def wait_flor_flow_task(flow_to_wait):
+    wait_for_flow_run.run(
+        flow_to_wait,
+        stream_states=True,
+        stream_logs=True,
+        raise_final_state=True,
+        max_duration=timedelta(seconds=90),
+    )

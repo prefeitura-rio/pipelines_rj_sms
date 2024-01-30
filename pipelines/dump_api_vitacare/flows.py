@@ -3,7 +3,7 @@
 """
 Vitacare healthrecord dumping flows
 """
-from datetime import timedelta
+    from datetime import timedelta
 
 
 from prefect import Parameter, case
@@ -33,6 +33,7 @@ from pipelines.dump_api_vitacare.tasks import (
     save_data_to_file,
     retrieve_cases_to_reprocessed_from_birgquery,
     build_params_reprocess,
+    wait_flor_flow_task
 )
 
 from pipelines.dump_api_vitacare.schedules import vitacare_clocks
@@ -204,13 +205,14 @@ with Flow(
         parameters=build_params_reprocessamento_task,
         upstream_tasks=[retrieve_cases_task, inject_gcp_credentials_task],
     )
+    wait_task = wait_flor_flow_task(dump_to_gcs_flow, upstream_tasks=[dump_to_gcs_flow])
 
-    wait_for_reprocessing = wait_for_flow_run(
-        dump_to_gcs_flow,
-        stream_states=True,
-        stream_logs=True,
-        raise_final_state=True,
-        max_duration=timedelta(seconds=90),
+    #wait_for_reprocessing = wait_for_flow_run(
+    #    dump_to_gcs_flow,
+    #    stream_states=True,
+    #    stream_logs=True,
+    #    raise_final_state=True,
+    #    max_duration=timedelta(seconds=90),
     )
     #wait_for_reprocessing.max_retries = 3
     #wait_for_reprocessing.retry_delay = timedelta(20)
