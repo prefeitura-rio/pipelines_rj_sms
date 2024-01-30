@@ -51,11 +51,8 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    listing = list_all_secrets_name(environment=ENVIRONMENT)
-
     credential_injection = inject_gcp_credentials(
-        environment=ENVIRONMENT,
-        upstream_tasks=[listing]
+        environment=ENVIRONMENT
     )
 
     vitai_api_token = get_vitai_api_token(
