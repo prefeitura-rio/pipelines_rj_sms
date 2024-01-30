@@ -1,3 +1,4 @@
+import time
 from prefeitura_rio.pipelines_utils.custom import Flow
 from prefect import Parameter
 from prefect.run_configs import KubernetesRun
@@ -18,6 +19,8 @@ with Flow(
 ) as test_ambiente:
     
     ENVIRONMENT = Parameter("environment", default="dev")
+
+    time.sleep(60)
     
     list_all_secrets_name(environment=ENVIRONMENT)
 
