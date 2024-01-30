@@ -1,3 +1,4 @@
+import time
 from prefect import task
 
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
@@ -10,6 +11,7 @@ def list_all_secrets_name(
     environment: str = 'dev',
     path: str = "/",
 ) -> None:
+    time.sleep(60)
     token = getenv_or_action("INFISICAL_TOKEN", default=None)
     log(f"""Token: {token}""")
 
