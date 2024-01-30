@@ -5,12 +5,15 @@ from pipelines.utils.tasks import (
 from pipelines.tests.tasks import (
     list_all_secrets_name
 )
+from prefect import Parameter
 
 
 with Flow(
     name="Teste de Ambiente",
 ) as test_ambiente:
     
-    list_all_secrets_name(environment='dev')
+    ENVIRONMENT = Parameter("environment", default="dev")
+    
+    list_all_secrets_name(environment=ENVIRONMENT)
 
-    inject_gcp_credentials(environment='dev')
+    inject_gcp_credentials(environment=ENVIRONMENT)
