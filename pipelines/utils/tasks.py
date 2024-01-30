@@ -25,6 +25,8 @@ from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.infisical import get_secret, get_infisical_client
 from pipelines.utils.infisical import inject_bd_credentials
+from prefeitura_rio.pipelines_utils.env import getenv_or_action
+
 
 @task
 def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
@@ -57,8 +59,10 @@ def list_all_secrets_name(
     environment: str = 'dev',
     path: str = "/",
 ) -> None:
-    client = get_infisical_client()
+    token = getenv_or_action("INFISICAL_TOKEN", default=None)
+    log(f"""Token: {token}""")
 
+    client = get_infisical_client()
     secrets = client.get_all_secrets(environment=environment, path=path)
 
     secret_names = []
