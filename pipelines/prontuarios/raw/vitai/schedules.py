@@ -22,8 +22,8 @@ from pipelines.utils.schedules import (
 
 vitai_flow_parameters = [
     {
-        "cnes": '999992',
-        "environment": "dev"
+        "cnes": '5717256',
+        "environment": "prod"
     }
 ]
 

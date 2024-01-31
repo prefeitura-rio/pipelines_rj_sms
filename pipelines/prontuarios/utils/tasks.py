@@ -16,8 +16,14 @@ from pipelines.utils.tasks import (
     get_secret_key
 )
 
+
 @task
-def get_api_token(environment: str) -> str:
+def get_api_token(
+    environment: str,
+    infisical_path: str,
+    infisical_api_username: str,
+    infisical_api_password: str
+) -> str:
     """
     Retrieves the authentication token for Prontuario Integrado API.
 
@@ -30,18 +36,18 @@ def get_api_token(environment: str) -> str:
     Raises:
         Exception: If there is an error getting the API token.
     """
-    api_url=prontuario_constants.API_URL.value.get(environment)
-    api_username=get_secret_key.run(
-        secret_path=smsrio_constants.SMSRIO_INFISICAL_PATH.value,
-        secret_name=smsrio_constants.SMSRIO_INFISICAL_API_USERNAME.value,
+    api_url = prontuario_constants.API_URL.value.get(environment)
+    api_username = get_secret_key.run(
+        secret_path=infisical_path,
+        secret_name=infisical_api_username,
         environment=environment
     )
-    api_password=get_secret_key.run(
-        secret_path=smsrio_constants.SMSRIO_INFISICAL_PATH.value,
-        secret_name=smsrio_constants.SMSRIO_INFISICAL_API_PASSWORD.value,
+    api_password = get_secret_key.run(
+        secret_path=infisical_path,
+        secret_name=infisical_api_password,
         environment=environment
     )
-    response=requests.post(
+    response = requests.post(
         url=f"{api_url}auth/token",
         timeout=90,
         headers={
@@ -114,9 +120,9 @@ def load_to_api(
     Returns:
         None
     """
-    api_url=prontuario_constants.API_URL.value.get(environment)
-    request_response=requests.post(
-        url=f"{api_url}{endpoint_name}", 
+    api_url = prontuario_constants.API_URL.value.get(environment)
+    request_response = requests.post(
+        url=f"{api_url}{endpoint_name}",
         headers={'Authorization': f'Bearer {api_token}'},
         timeout=90,
         json=request_body
@@ -124,24 +130,25 @@ def load_to_api(
 
     if request_response.status_code != 201:
         raise Exception(f"Error loading data to {endpoint_name} {request_response.json()}")
-   
+
 
 @task
-def transform_create_input_batches(input_list: list, batch_size: int=250):
+def transform_create_input_batches(input_list: list, batch_size: int = 250):
     """
     Transform input list into batches
 
     Args:
         input_list (list): Input list
         batch_size (int, optional): Batch size. Defaults to 250.
-    
+
     Returns:
         list[list]: List of batches
     """
     return [input_list[i:i+batch_size] for i in range(0, len(input_list), batch_size)]
 
+
 @task
-def rename_current_flow_run(environment: str, cnes:str) -> None:
+def rename_current_flow_run(environment: str, cnes: str) -> None:
     """
     Renames the current flow run using the specified environment and CNES.
 
