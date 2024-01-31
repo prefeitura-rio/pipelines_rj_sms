@@ -23,8 +23,10 @@ import google.auth.transport.requests
 from azure.storage.blob import BlobServiceClient
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
-from prefeitura_rio.pipelines_utils.infisical import get_secret
+from prefeitura_rio.pipelines_utils.infisical import get_secret, get_infisical_client
 from pipelines.utils.infisical import inject_bd_credentials
+from prefeitura_rio.pipelines_utils.env import getenv_or_action
+
 
 @task
 def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
@@ -51,6 +53,23 @@ def inject_gcp_credentials(environment: str = 'dev') -> None:
         environment (str, optional): The environment to inject the credentials into. Defaults to 'dev'.
     """
     inject_bd_credentials(environment=environment)
+
+@task
+def list_all_secrets_name(
+    environment: str = 'dev',
+    path: str = "/",
+) -> None:
+    token = getenv_or_action("INFISICAL_TOKEN", default=None)
+    log(f"""Token: {token}""")
+
+    client = get_infisical_client()
+    secrets = client.get_all_secrets(environment=environment, path=path)
+
+    secret_names = []
+    for secret in secrets:
+        secret_names.append( secret.secret_name )
+    
+    log(f"""Secrets in path: {", ".join(secret_names)}""")
 
 
 @task
