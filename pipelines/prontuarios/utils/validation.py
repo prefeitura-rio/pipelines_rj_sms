@@ -3,6 +3,7 @@ Field validation functions for prontuario system.
 """
 
 from validate_docbr import CPF
+import pandas as pd
 
 
 def is_valid_cpf(cpf):
@@ -15,7 +16,7 @@ def is_valid_cpf(cpf):
     Returns:
         bool: True if the CPF is valid, False otherwise.
     """
-    if cpf is None:
+    if cpf is None or pd.isna(cpf):
         return False
 
     return CPF().validate(cpf)
