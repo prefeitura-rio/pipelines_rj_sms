@@ -64,8 +64,10 @@ def extract_patient_data_from_db(
             INNER JOIN tb_cns_provisorios ON tb_pacientes.cns = tb_cns_provisorios.cns"""
     if time_window_start:
         time_window_end = time_window_start + timedelta(days=time_window_duration)
-        query += f" WHERE tb_pacientes.timestamp >= '{time_window_start}' AND tb_pacientes.timestamp < '{time_window_end}'"
-    
+        query += f""" 
+            WHERE tb_pacientes.timestamp >= '{time_window_start}' 
+                AND tb_pacientes.timestamp < '{time_window_end}'"""
+
     query += " GROUP BY tb_pacientes.id"
 
     patients = pd.read_sql(query, db_url)
