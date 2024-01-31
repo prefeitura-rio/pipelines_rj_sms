@@ -72,6 +72,7 @@ with Flow(
         rename_flow_task = rename_current_flow_run(
             environment=ENVIRONMENT,
             cnes=smsrio_constants.SMSRIO_CNES.value,
+            is_initial_extraction=IS_INITIAL_EXTRACTION,
             upstream_tasks=[credential_injection]
         )
 
