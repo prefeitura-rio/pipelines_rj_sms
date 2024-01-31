@@ -148,7 +148,7 @@ def transform_create_input_batches(input_list: list, batch_size: int = 250):
 
 
 @task
-def rename_current_flow_run(environment: str, cnes: str, is_initial_extraction: bool) -> None:
+def rename_current_flow_run(environment: str, cnes: str, is_initial_extraction: bool=False) -> None:
     """
     Renames the current flow run using the specified environment and CNES.
 
