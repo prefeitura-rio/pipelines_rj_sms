@@ -4,26 +4,20 @@
 Tasks for dump_api_vitacare
 """
 
-from datetime import (
-    date,
-    datetime,
-    timedelta,
-)
+from datetime import date, datetime, timedelta
 from functools import partial
 
 import pandas as pd
 import prefect
+from google.cloud import bigquery
 from prefect import task
 from prefect.client import Client
 from prefect.tasks.prefect import wait_for_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
-from google.cloud import bigquery
 
+from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
 from pipelines.utils.state_handlers import on_fail, on_success
-from pipelines.dump_api_vitacare.constants import (
-    constants as vitacare_constants,
-)
-from pipelines.utils.tasks import from_json_to_csv, add_load_date_column, save_to_file
+from pipelines.utils.tasks import add_load_date_column, from_json_to_csv, save_to_file
 
 
 @task
@@ -307,12 +301,12 @@ def write_on_bq_on_table(
             USING (SELECT * FROM UNNEST([{', '.join(['STRUCT<id_cnes STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>' + str((row['id_cnes'], row['data'], row['reprocessing_status'], row['request_response_code'], row['request_row_count'])) for row in records_to_update])}])) S
             ON T.id_cnes = S.id_cnes AND T.data = S.data
             WHEN MATCHED THEN
-            UPDATE SET 
+            UPDATE SET
                 T.reprocessing_status = S.reprocessing_status,
                 T.request_response_code = S.request_response_code,
                 T.request_row_count = S.request_row_count
             WHEN NOT MATCHED THEN
-            INSERT (id_cnes, data, reprocessing_status, request_response_code, request_row_count) 
+            INSERT (id_cnes, data, reprocessing_status, request_response_code, request_row_count)
             VALUES(id_cnes, data, reprocessing_status, request_response_code, request_row_count)
             """
 

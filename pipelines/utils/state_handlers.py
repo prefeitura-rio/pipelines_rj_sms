@@ -46,4 +46,3 @@ def on_success(task, old_state, new_state, task_to_run_on_success):
         print(f"Task {task} Success...")
         task_to_run_on_success.run()
     return new_state
-

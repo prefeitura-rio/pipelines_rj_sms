@@ -4,17 +4,18 @@
 Schedules for the vitacare dump pipeline
 """
 
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
-from prefect.schedules import Schedule
 import pytz
+from prefect.schedules import Schedule
 
 from pipelines.constants import constants
-from pipelines.dump_api_vitacare.constants import (
-    constants as vitacare_constants,
+from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
+from pipelines.utils.schedules import (
+    generate_dicts,
+    generate_dump_api_schedules,
+    untuple_clocks,
 )
-from pipelines.utils.schedules import generate_dicts, generate_dump_api_schedules, untuple_clocks
-
 
 posicao_parameters = generate_dicts(
     dict_template={

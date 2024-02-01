@@ -3,41 +3,37 @@
 """
 Vitacare healthrecord dumping flows
 """
-#from datetime import timedelta
+# from datetime import timedelta
 
 
 from prefect import Parameter, case
+from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.executors import LocalDaskExecutor
 from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.dump_api_vitacare.constants import (
-    constants as vitacare_constants,
+from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
+from pipelines.dump_api_vitacare.schedules import vitacare_clocks
+from pipelines.dump_api_vitacare.tasks import (
+    build_params,
+    build_params_reprocess,
+    build_url,
+    create_filename,
+    rename_current_flow,
+    retrieve_cases_to_reprocessed_from_birgquery,
+    save_data_to_file,
+    wait_flor_flow_task,
 )
 from pipelines.utils.tasks import (
-    inject_gcp_credentials,
-    get_infisical_user_password,
-    create_folders,
     cloud_function_request,
+    create_folders,
     create_partitions,
+    get_infisical_user_password,
+    inject_gcp_credentials,
     upload_to_datalake,
 )
-from pipelines.dump_api_vitacare.tasks import (
-    rename_current_flow,
-    build_url,
-    build_params,
-    create_filename,
-    save_data_to_file,
-    retrieve_cases_to_reprocessed_from_birgquery,
-    build_params_reprocess,
-    wait_flor_flow_task
-)
-
-from pipelines.dump_api_vitacare.schedules import vitacare_clocks
-
 
 with Flow(
     name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
