@@ -34,8 +34,7 @@ def generate_dump_api_schedules(  # pylint: disable=too-many-arguments,too-many-
         clocks.append(
             IntervalClock(
                 interval=new_interval,
-                start_date=start_date
-                + timedelta(minutes=runs_interval_minutes * count),
+                start_date=start_date + timedelta(minutes=runs_interval_minutes * count),
                 labels=labels,
                 parameter_defaults=parameters,
             )

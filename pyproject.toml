@@ -9,7 +9,7 @@ python = ">=3.10,<3.11"
 dbt-bigquery = "^1.6.1"
 google-cloud-storage = "^2.10.0"
 prefect = "1.4.1"
-prefeitura-rio = { git = "https://github.com/prefeitura-rio/prefeitura-rio", rev = "64c1866acf770796c1750a014ec6c9531666b5ef", extras = [
+prefeitura-rio = { git = "https://github.com/prefeitura-rio/prefeitura-rio.git", rev = "f4c7601b4188c6dd9bbfd26ff8785ed297fb4d69", branch = "feat/reimplement-templates", extras = [
     "pipelines",
     "pipelines-templates",
 ] }
@@ -18,6 +18,9 @@ azure-storage-blob = "^12.19.0"
 pandas = "^2.1.4"
 gitpython = "^3.1.40"
 pendulum = "^3.0.0"
+sqlalchemy = "^2.0.25"
+mysqlclient = "^2.2.1"
+validate-docbr = "^1.10.0"
 
 
 [tool.poetry.group.dev]

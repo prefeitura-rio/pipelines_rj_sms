@@ -4,18 +4,19 @@
 DBT flows
 """
 from prefect import Parameter, case
+from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.executors import LocalDaskExecutor
 from prefeitura_rio.pipelines_utils.custom import Flow
+
 from pipelines.constants import constants
+from pipelines.execute_dbt.schedules import dbt_daily_update_schedule
 from pipelines.execute_dbt.tasks import (
     download_repository,
     execute_dbt,
     rename_current_flow_run_dbt,
 )
 from pipelines.utils.tasks import inject_gcp_credentials
-from pipelines.execute_dbt.schedules import dbt_daily_update_schedule
 
 with Flow(name="DBT - Executar comando no projeto queries-rj-sms") as sms_execute_dbt:
     #####################################
@@ -42,7 +43,6 @@ with Flow(name="DBT - Executar comando no projeto queries-rj-sms") as sms_execut
             command=COMMAND, model=MODEL, target=ENVIRONMENT
         )
         rename_flow_task.set_upstream(inject_gcp_credentials_task)
-
 
     ####################################
     # Tasks section #1 - Download repository and execute commands in DBT

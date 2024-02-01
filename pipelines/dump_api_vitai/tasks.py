@@ -3,14 +3,12 @@
 Tasks for dump_api_prontuario_vitai
 """
 
-from datetime import timedelta, date, datetime
+from datetime import date, datetime, timedelta
 
 from prefect import task
-
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.dump_api_vitai.constants import (
-    constants as vitai_constants,
-)
+
+from pipelines.dump_api_vitai.constants import constants as vitai_constants
 
 
 @task
