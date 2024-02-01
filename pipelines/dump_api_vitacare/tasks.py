@@ -267,12 +267,12 @@ def build_params_reprocess(
 
 @task
 def log_error():
-    log("ERROR")
+    log("State Handler: ERROR")
 
 
 @task
 def log_success():
-    log("SUCCESS")
+    log("State Handler: SUCCESS")
 
 
 @task
