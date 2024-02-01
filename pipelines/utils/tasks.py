@@ -5,27 +5,29 @@
 General utilities for SMS pipelines.
 """
 
+import json
 import os
 import re
 import shutil
 import sys
-import json
-from datetime import datetime, date, timedelta
-from pathlib import Path
-from ftplib import FTP
 import zipfile
-import requests
-import pytz
-import pandas as pd
+from datetime import date, datetime, timedelta
+from ftplib import FTP
+from pathlib import Path
+
 import basedosdados as bd
-import google.oauth2.id_token
 import google.auth.transport.requests
+import google.oauth2.id_token
+import pandas as pd
+import pytz
+import requests
 from azure.storage.blob import BlobServiceClient
 from prefect import task
-from prefeitura_rio.pipelines_utils.logging import log
-from prefeitura_rio.pipelines_utils.infisical import get_secret, get_infisical_client
-from pipelines.utils.infisical import inject_bd_credentials
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
+from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
+from prefeitura_rio.pipelines_utils.logging import log
+
+from pipelines.utils.infisical import inject_bd_credentials
 
 
 @task
@@ -44,8 +46,9 @@ def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
     secret = get_secret(secret_name=secret_name, path=secret_path, environment=environment)
     return secret[secret_name]
 
+
 @task
-def inject_gcp_credentials(environment: str = 'dev') -> None:
+def inject_gcp_credentials(environment: str = "dev") -> None:
     """
     Injects GCP credentials into the specified environment.
 
@@ -54,9 +57,10 @@ def inject_gcp_credentials(environment: str = 'dev') -> None:
     """
     inject_bd_credentials(environment=environment)
 
+
 @task
 def list_all_secrets_name(
-    environment: str = 'dev',
+    environment: str = "dev",
     path: str = "/",
 ) -> None:
     token = getenv_or_action("INFISICAL_TOKEN", default=None)
@@ -67,8 +71,8 @@ def list_all_secrets_name(
 
     secret_names = []
     for secret in secrets:
-        secret_names.append( secret.secret_name )
-    
+        secret_names.append(secret.secret_name)
+
     log(f"""Secrets in path: {", ".join(secret_names)}""")
 
 
@@ -162,12 +166,7 @@ def download_from_api(
 
 
 @task
-def load_from_api(
-    url: str,
-    params=None,
-    credentials=None,
-    auth_method="bearer"
-) -> dict:
+def load_from_api(url: str, params=None, credentials=None, auth_method="bearer") -> dict:
     """
     Loads data from an API endpoint.
 
@@ -484,7 +483,7 @@ def clean_ascii(input_file_path):
 
             return output_file_path
 
-    except Exception as e: # pylint: disable=W0703
+    except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
 
 

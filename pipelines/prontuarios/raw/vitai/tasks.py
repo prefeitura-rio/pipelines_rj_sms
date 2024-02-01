@@ -1,25 +1,21 @@
+# -*- coding: utf-8 -*-
 """
 Tasks for Vitai Raw Data Extraction
 """
 from datetime import date, timedelta
+
 from prefect import task
-from pipelines.prontuarios.raw.vitai.utils import (
-    group_data_by_cpf
-)
-from pipelines.utils.tasks import (
-    load_from_api
-)
+
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
-from pipelines.utils.tasks import (
-    get_secret_key
-)
 from pipelines.prontuarios.raw.vitai.utils import (
-    format_date_to_request
+    format_date_to_request,
+    group_data_by_cpf,
 )
+from pipelines.utils.tasks import get_secret_key, load_from_api
 
 
 @task
-def get_vitai_api_token(environment: str = 'dev') -> str:
+def get_vitai_api_token(environment: str = "dev") -> str:
     """
     Retrieves the API token for the Vitai API.
 
@@ -32,17 +28,13 @@ def get_vitai_api_token(environment: str = 'dev') -> str:
     token = get_secret_key.run(
         secret_path=vitai_constants.INFISICAL_PATH.value,
         secret_name=vitai_constants.INFISICAL_KEY.value,
-        environment=environment
+        environment=environment,
     )
     return token
 
 
 @task
-def extract_data_from_api(
-    target_day: date,
-    entity_name: str,
-    vitai_api_token: str
-) -> dict:
+def extract_data_from_api(target_day: date, entity_name: str, vitai_api_token: str) -> dict:
     """
     Extracts data from the Vitai API for a specific target day and entity name.
 
@@ -55,17 +47,17 @@ def extract_data_from_api(
     Returns:
         dict: The extracted data from the Vitai API.
     """
-    assert entity_name in ['pacientes', 'diagnostico'], f"Invalid entity name: {entity_name}"
+    assert entity_name in ["pacientes", "diagnostico"], f"Invalid entity name: {entity_name}"
 
     request_url = vitai_constants.API_URL.value + f"{entity_name}/listByPeriodo"
 
     requested_data = load_from_api.run(
         url=request_url,
         params={
-            'dataInicial': format_date_to_request(target_day),
-            'dataFinal': format_date_to_request(target_day + timedelta(days=1)),
+            "dataInicial": format_date_to_request(target_day),
+            "dataFinal": format_date_to_request(target_day + timedelta(days=1)),
         },
-        credentials=vitai_api_token
+        credentials=vitai_api_token,
     )
     return requested_data
 
@@ -83,10 +75,7 @@ def group_patients_data_by_patient(patients_data: list) -> dict:
               data dictionaries.
 
     """
-    return group_data_by_cpf(
-        patients_data,
-        lambda data: data['cpf']
-    )
+    return group_data_by_cpf(patients_data, lambda data: data["cpf"])
 
 
 @task
@@ -101,7 +90,4 @@ def group_cids_data_by_patient(cids_data: list) -> dict:
         dict: A dictionary where the keys are CPFs and the values are lists of CID data associated
               with each CPF.
     """
-    return group_data_by_cpf(
-        cids_data,
-        lambda data: data['boletim']['paciente']['cpf']
-    )
+    return group_data_by_cpf(cids_data, lambda data: data["boletim"]["paciente"]["cpf"])

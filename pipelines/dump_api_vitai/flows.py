@@ -5,31 +5,28 @@ Vitai healthrecord dumping flows
 """
 
 from prefect import Parameter, case
+from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.executors import LocalDaskExecutor
 from prefeitura_rio.pipelines_utils.custom import Flow
-from prefeitura_rio.pipelines_utils.prefect import task_rename_current_flow_run_dataset_table
-from pipelines.constants import constants
-from pipelines.dump_api_vitai.constants import (
-    constants as vitai_constants,
+from prefeitura_rio.pipelines_utils.prefect import (
+    task_rename_current_flow_run_dataset_table,
 )
+
+from pipelines.constants import constants
+from pipelines.dump_api_vitai.constants import constants as vitai_constants
+from pipelines.dump_api_vitai.schedules import vitai_daily_update_schedule
+from pipelines.dump_api_vitai.tasks import build_date_param, build_url
 from pipelines.utils.tasks import (
-    inject_gcp_credentials,
-    get_secret_key,
-    create_folders,
-    from_json_to_csv,
-    download_from_api,
     add_load_date_column,
+    create_folders,
     create_partitions,
+    download_from_api,
+    from_json_to_csv,
+    get_secret_key,
+    inject_gcp_credentials,
     upload_to_datalake,
 )
-from pipelines.dump_api_vitai.tasks import build_date_param, build_url
-
-from pipelines.dump_api_vitai.schedules import (
-    vitai_daily_update_schedule,
-)
-
 
 with Flow(
     name="Dump Vitai - Ingerir dados do prontuário Vitai",
@@ -129,7 +126,7 @@ sms_dump_vitai.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi"
+    memory_limit="2Gi",
 )
 
 sms_dump_vitai.schedule = vitai_daily_update_schedule

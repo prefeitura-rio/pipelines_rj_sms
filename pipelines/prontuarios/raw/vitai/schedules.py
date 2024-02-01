@@ -4,29 +4,19 @@
 Schedules for Vitai Raw Data Extraction
 """
 
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
-from prefect.schedules import Schedule
 import pytz
+from prefect.schedules import Schedule
 
 from pipelines.constants import constants
-from pipelines.utils.schedules import (
-    untuple_clocks,
-    generate_dump_api_schedules
-)
-
+from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 #####################################
 # Vitai
 #####################################
 
-vitai_flow_parameters = [
-    {
-        "cnes": '5717256',
-        "environment": "prod",
-        "rename_flow": "true"
-    }
-]
+vitai_flow_parameters = [{"cnes": "5717256", "environment": "prod", "rename_flow": "true"}]
 
 vitai_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
