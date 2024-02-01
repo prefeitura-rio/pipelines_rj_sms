@@ -249,7 +249,7 @@ def download_azure_blob(
     return destination_file_path
 
 
-@task(max_retries=3, retry_delay= timedelta(seconds=5), timeout=timedelta(seconds=240))
+@task(max_retries=3, retry_delay=timedelta(seconds=5), timeout=timedelta(seconds=240))
 def download_ftp(
     host: str,
     user: str,
