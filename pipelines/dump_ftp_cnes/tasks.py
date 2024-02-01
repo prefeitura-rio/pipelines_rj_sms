@@ -4,23 +4,25 @@ Tasks for dump_ftp_cnes
 """
 
 import os
-import shutil
-from datetime import datetime
-import tempfile
 import re
+import shutil
+import tempfile
+from datetime import datetime
+
 import pandas as pd
-import pytz
 import prefect
+import pytz
 from prefect import task
 from prefect.client import Client
-from prefeitura_rio.pipelines_utils.logging import log
 from prefeitura_rio.pipelines_utils.bd import create_table_and_upload_to_gcs
+from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.dump_ftp_cnes.constants import constants
 from pipelines.utils.tasks import (
+    create_partitions,
+    download_ftp,
     list_files_ftp,
     upload_to_datalake,
-    download_ftp,
-    create_partitions,
 )
 
 

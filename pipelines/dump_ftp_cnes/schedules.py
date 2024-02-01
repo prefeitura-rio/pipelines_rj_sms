@@ -4,9 +4,11 @@
 Schedules for the cnes dump pipeline
 """
 from datetime import timedelta
+
 import pendulum
 from prefect.schedules import Schedule
 from prefect.schedules.clocks import IntervalClock
+
 from pipelines.constants import constants
 
 every_sunday_at_six_am = Schedule(

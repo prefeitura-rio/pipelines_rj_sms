@@ -5,32 +5,24 @@ CNES dumping flows
 """
 
 from prefect import Parameter, case
+from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.executors import LocalDaskExecutor
 from prefeitura_rio.pipelines_utils.custom import Flow
+
 from pipelines.constants import constants
-from pipelines.dump_ftp_cnes.constants import (
-    constants as cnes_constants,
-)
-from pipelines.utils.tasks import (
-    inject_gcp_credentials,
-    create_folders,
-    unzip_file,
-)
+from pipelines.dump_ftp_cnes.constants import constants as cnes_constants
+from pipelines.dump_ftp_cnes.schedules import every_sunday_at_six_am
 from pipelines.dump_ftp_cnes.tasks import (
-    rename_current_flow_run_cnes,
-    check_file_to_download,
-    download_ftp_cnes,
-    conform_csv_to_gcp,
     add_multiple_date_column,
+    check_file_to_download,
+    conform_csv_to_gcp,
     convert_csv_to_parquet,
     create_partitions_and_upload_multiple_tables_to_datalake,
+    download_ftp_cnes,
+    rename_current_flow_run_cnes,
 )
-from pipelines.dump_ftp_cnes.schedules import (
-    every_sunday_at_six_am,
-)
-
+from pipelines.utils.tasks import create_folders, inject_gcp_credentials, unzip_file
 
 with Flow(
     name="Dump CNES - Ingerir dados do CNES",
