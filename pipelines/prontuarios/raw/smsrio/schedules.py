@@ -19,7 +19,8 @@ from pipelines.utils.schedules import (
 
 smsrio_flow_parameters = [
     {
-        "environment": "prod"
+        "environment": "prod",
+        "rename_flow": "true"
     }
 ]
 

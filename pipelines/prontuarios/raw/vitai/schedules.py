@@ -23,7 +23,8 @@ from pipelines.utils.schedules import (
 vitai_flow_parameters = [
     {
         "cnes": '5717256',
-        "environment": "prod"
+        "environment": "prod",
+        "rename_flow": "true"
     }
 ]
 
