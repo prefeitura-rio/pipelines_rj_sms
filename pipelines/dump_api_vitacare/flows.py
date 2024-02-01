@@ -3,14 +3,14 @@
 """
 Vitacare healthrecord dumping flows
 """
-    from datetime import timedelta
+#from datetime import timedelta
 
 
 from prefect import Parameter, case
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefect.executors import LocalDaskExecutor
-from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
+from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -207,15 +207,15 @@ with Flow(
     )
     wait_task = wait_flor_flow_task(dump_to_gcs_flow, upstream_tasks=[dump_to_gcs_flow])
 
-    #wait_for_reprocessing = wait_for_flow_run(
-    #    dump_to_gcs_flow,
-    #    stream_states=True,
-    #    stream_logs=True,
-    #    raise_final_state=True,
-    #    max_duration=timedelta(seconds=90),
-    #)
-    #wait_for_reprocessing.max_retries = 3
-    #wait_for_reprocessing.retry_delay = timedelta(20)
+    # wait_for_reprocessing = wait_for_flow_run(
+    #     dump_to_gcs_flow,
+    #     stream_states=True,
+    #     stream_logs=True,
+    #     raise_final_state=True,
+    #     max_duration=timedelta(seconds=90),
+    # )
+    # wait_for_reprocessing.max_retries = 3
+    # wait_for_reprocessing.retry_delay = timedelta(20)
 
 
 sms_dump_vitacare_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
