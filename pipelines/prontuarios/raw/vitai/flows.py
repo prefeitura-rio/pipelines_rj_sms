@@ -36,7 +36,7 @@ from pipelines.prontuarios.raw.vitai.constants import (
 )
 
 with Flow(
-    name="Prontuários (Vitai) - Extração de Dados de Paciente",
+    name="Prontuários (Vitai) - Extração de Dados",
 ) as sms_prontuarios_raw_vitai:
     #####################################
     # Parameters

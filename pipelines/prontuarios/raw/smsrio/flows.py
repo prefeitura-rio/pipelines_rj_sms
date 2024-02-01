@@ -16,8 +16,6 @@ from pipelines.utils.tasks import (
 from pipelines.prontuarios.raw.smsrio.tasks import (
     get_database_url,
     extract_patient_data_from_db,
-    extract_cns_data_from_db,
-    transform_merge_patient_and_cns_data,
     transform_data_to_json,
 )
 from pipelines.prontuarios.utils.tasks import (
@@ -37,13 +35,18 @@ from pipelines.prontuarios.raw.smsrio.constants import (
 )
 
 
+####################################
+# Daily Routine Flow
+####################################
 with Flow(
-    name="Prontuários (SMSRio)- Extração de Dados",
+    name="Prontuários (SMSRio) - Extração de Dados",
 ) as sms_prontuarios_raw_smsrio:
     #####################################
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev")
+
+    IS_INITIAL_EXTRACTION = Parameter("is_initial_extraction", default=False)
 
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
@@ -69,44 +72,36 @@ with Flow(
         rename_flow_task = rename_current_flow_run(
             environment=ENVIRONMENT,
             cnes=smsrio_constants.SMSRIO_CNES.value,
+            is_initial_extraction=IS_INITIAL_EXTRACTION,
             upstream_tasks=[credential_injection]
         )
 
     ####################################
     # Task Section #1 - Get data
     ####################################
-    target_day = get_flow_scheduled_day(
-        upstream_tasks=[credential_injection]
-    )
+    with case(IS_INITIAL_EXTRACTION, True):
+        patient_data = extract_patient_data_from_db(
+            db_url=database_url,
+            upstream_tasks=[credential_injection]
+        )
 
-    patient_data = extract_patient_data_from_db(
-        db_url=database_url,
-        time_window_start=target_day,
-        time_window_duration=1,
-        upstream_tasks=[credential_injection]
-    )
+    with case(IS_INITIAL_EXTRACTION, False):
+        target_day = get_flow_scheduled_day(
+            upstream_tasks=[credential_injection]
+        )
 
-    cns_data = extract_cns_data_from_db(
-        db_url=database_url,
-        time_window_start=target_day,
-        time_window_duration=1,
-        upstream_tasks=[credential_injection]
-    )
-
-    ####################################
-    # Task Section #2 - Transform and merge data
-    ####################################
-    merged_patient_data = transform_merge_patient_and_cns_data(
-        patient_data=patient_data,
-        cns_data=cns_data,
-        upstream_tasks=[credential_injection]
-    )
+        patient_data = extract_patient_data_from_db(
+            db_url=database_url,
+            time_window_start=target_day,
+            time_window_duration=1,
+            upstream_tasks=[credential_injection]
+        )
 
     ####################################
-    # Task Section #3 - Prepare data to load
+    # Task Section #2 - Prepare data to load
     ####################################
     json_list = transform_data_to_json(
-        dataframe=merged_patient_data,
+        dataframe=patient_data,
         identifier_column="patient_cpf",
         upstream_tasks=[credential_injection]
     )
@@ -128,7 +123,7 @@ with Flow(
     )
 
     ####################################
-    # Task Section #4 - Loading data
+    # Task Section #3 - Loading data
     ####################################
     load_to_api_task = load_to_api.map(
         request_body=request_bodies,
@@ -146,7 +141,7 @@ sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi"
+    memory_limit="4Gi"
 )
 
 sms_prontuarios_raw_smsrio.schedule = smsrio_daily_update_schedule

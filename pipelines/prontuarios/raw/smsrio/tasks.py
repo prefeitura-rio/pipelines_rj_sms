@@ -53,57 +53,26 @@ def extract_patient_data_from_db(
         pd.DataFrame: A DataFrame containing the extracted patient data.
     """
     query = """
-        SELECT
-            cns, cpf as patient_cpf, nome, nome_mae, nome_pai, dt_nasc, sexo,
+        SELECT cpf as patient_cpf, nome, nome_mae, nome_pai, dt_nasc, sexo,
             racaCor, nacionalidade, obito, dt_obito,
             end_tp_logrado_cod, end_logrado, end_numero, end_comunidade,
             end_complem, end_bairro, end_cep, cod_mun_res, uf_res,
             cod_mun_nasc, uf_nasc, cod_pais_nasc,
-            telefone, email, tp_telefone
-        FROM tb_pacientes"""
+            telefone, email, tp_telefone,
+            json_arrayagg(tb_cns_provisorios.cns_provisorio) as cns_provisorio
+        FROM tb_pacientes
+            INNER JOIN tb_cns_provisorios ON tb_pacientes.cns = tb_cns_provisorios.cns"""
     if time_window_start:
         time_window_end = time_window_start + timedelta(days=time_window_duration)
-        query += f" WHERE timestamp >= '{time_window_start}' AND timestamp < '{time_window_end}'"
+        query += f"""
+            WHERE tb_pacientes.timestamp >= '{time_window_start}'
+                AND tb_pacientes.timestamp < '{time_window_end}'"""
+
+    query += " GROUP BY tb_pacientes.id"
 
     patients = pd.read_sql(query, db_url)
 
     return patients
-
-
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
-def extract_cns_data_from_db(
-    db_url: str,
-    time_window_start: date = None,
-    time_window_duration: int = 1,
-) -> pd.DataFrame:
-    """
-    Extracts CNS data from the SMSRio database table using a (optional) time window.
-
-    Args:
-        db_url (str): The URL of the database.
-        time_window_start (date, optional): The start date of the time window.
-        time_window_duration (int, optional): The duration of the time window in days.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the extracted CNS data.
-    """
-    query = """
-        SELECT
-            cns, cns_provisorio
-        FROM tb_cns_provisorios"""
-
-    if time_window_start:
-        time_window_end = time_window_start + timedelta(days=time_window_duration)
-        query += f"""
-            WHERE cns IN (
-                SELECT cns
-                FROM tb_pacientes
-                WHERE timestamp >= '{time_window_start}' AND timestamp < '{time_window_end}'
-            )"""
-
-    patient_cns = pd.read_sql(query, db_url)
-
-    return patient_cns
 
 
 @task
@@ -119,55 +88,17 @@ def transform_data_to_json(dataframe, identifier_column="patient_cpf") -> list[d
         list (list[dict]): List of jsons
     """
     assert identifier_column in dataframe.columns, "identifier_column column not found"
-    data_list = []
-    for _, row in dataframe.iterrows():
+
+    def row_to_json(row):
         row_as_json = row.to_json(date_format='iso')
+        return {
+            identifier_column: row[identifier_column],
+            "data": json.loads(row_as_json)
+        }
 
-        data_list.append(
-            {
-                identifier_column: row[identifier_column],
-                "data": json.loads(row_as_json)
-            }
-        )
+    jsons = dataframe.apply(row_to_json, axis=1)
+    data_list = jsons.to_list()
     return data_list
-
-
-@task
-def transform_merge_patient_and_cns_data(
-    patient_data: pd.DataFrame,
-    cns_data: pd.DataFrame
-) -> pd.DataFrame:
-    """
-    Merge patient and cns data into one instance
-
-    Args:
-        patient_data (pd.DataFrame): Patient data
-        cns_data (pd.DataFrame): CNS data
-
-    Returns:
-        pd.DataFrame: Updated data with temporary cns in column 'cns_provisorios'
-    """
-    def get_all_patient_cns_values(cns):
-        """
-        Retrieves all the values of 'cns_provisorio' for a given CNS number.
-
-        Args:
-            cns (str): The CNS number to search for.
-
-        Returns:
-            list: A list of 'cns_provisorio' values associated with the given CNS number.
-                  Returns an empty list if no matching rows are found.
-        """
-        patient_cns_rows = cns_data[cns_data['cns'] == cns]
-
-        if patient_cns_rows.empty:
-            return []
-
-        return patient_cns_rows['cns_provisorio'].tolist()
-
-    patient_data['cns_provisorios'] = patient_data['cns'].apply(get_all_patient_cns_values)
-
-    return patient_data
 
 
 @task

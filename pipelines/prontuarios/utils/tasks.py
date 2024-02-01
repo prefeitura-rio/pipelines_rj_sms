@@ -129,7 +129,7 @@ def load_to_api(
     )
 
     if request_response.status_code != 201:
-        raise Exception(f"Error loading data to {endpoint_name} {request_response.json()}")
+        raise Exception(f"Error loading data to {endpoint_name} {request_response.text}")
 
 
 @task
@@ -148,7 +148,7 @@ def transform_create_input_batches(input_list: list, batch_size: int = 250):
 
 
 @task
-def rename_current_flow_run(environment: str, cnes: str) -> None:
+def rename_current_flow_run(environment: str, cnes: str, is_initial_extraction: bool=False) -> None:
     """
     Renames the current flow run using the specified environment and CNES.
 
@@ -162,10 +162,15 @@ def rename_current_flow_run(environment: str, cnes: str) -> None:
     flow_run_id = prefect.context.get("flow_run_id")
     flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
 
+    if is_initial_extraction:
+        title = "Initialization"
+    else:
+        title = "Routine"
+
     client = Client()
     client.set_flow_run_name(
         flow_run_id,
-        f"(cnes={cnes}, env={environment}): {flow_run_scheduled_time}"
+        f"{title} (cnes={cnes}, env={environment}): {flow_run_scheduled_time}"
     )
 
 
