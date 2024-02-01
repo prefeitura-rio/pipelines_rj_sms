@@ -2783,7 +2783,7 @@ sgrc = ["aiohttp (>=3.8.5,<4.0.0)", "pendulum (>=2.1.2,<3.0.0)", "pytz (>=2023.3
 
 [package.source]
 type = "git"
-url = "https://github.com/prefeitura-rio/prefeitura-rio"
+url = "https://github.com/prefeitura-rio/prefeitura-rio.git"
 reference = "f4c7601b4188c6dd9bbfd26ff8785ed297fb4d69"
 resolved_reference = "f4c7601b4188c6dd9bbfd26ff8785ed297fb4d69"
 
@@ -4463,4 +4463,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "043ed23bc5579f6ca95d2efd8720787e2aafbaf57a99c1015d4df19071c819cd"
+content-hash = "c3f0daf42e1511022e1da4569e50fe7ee5a3c97d8b387f13a851e38b5be610b9"
