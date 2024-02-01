@@ -5,26 +5,30 @@
 General utilities for SMS pipelines.
 """
 
+import json
 import os
 import re
 import shutil
 import sys
-import json
-from datetime import datetime, date, timedelta
-from pathlib import Path
-from ftplib import FTP
 import zipfile
-import requests
-import pytz
-import pandas as pd
+from datetime import date, datetime, timedelta
+from ftplib import FTP
+from pathlib import Path
+
 import basedosdados as bd
-import google.oauth2.id_token
 import google.auth.transport.requests
+import google.oauth2.id_token
+import pandas as pd
+import pytz
+import requests
 from azure.storage.blob import BlobServiceClient
 from prefect import task
+from prefeitura_rio.pipelines_utils.env import getenv_or_action
+from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
-from prefeitura_rio.pipelines_utils.infisical import get_secret
+
 from pipelines.utils.infisical import inject_bd_credentials
+
 
 @task
 def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
@@ -42,8 +46,9 @@ def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
     secret = get_secret(secret_name=secret_name, path=secret_path, environment=environment)
     return secret[secret_name]
 
+
 @task
-def inject_gcp_credentials(environment: str = 'dev') -> None:
+def inject_gcp_credentials(environment: str = "dev") -> None:
     """
     Injects GCP credentials into the specified environment.
 
@@ -51,6 +56,24 @@ def inject_gcp_credentials(environment: str = 'dev') -> None:
         environment (str, optional): The environment to inject the credentials into. Defaults to 'dev'.
     """
     inject_bd_credentials(environment=environment)
+
+
+@task
+def list_all_secrets_name(
+    environment: str = "dev",
+    path: str = "/",
+) -> None:
+    token = getenv_or_action("INFISICAL_TOKEN", default=None)
+    log(f"""Token: {token}""")
+
+    client = get_infisical_client()
+    secrets = client.get_all_secrets(environment=environment, path=path)
+
+    secret_names = []
+    for secret in secrets:
+        secret_names.append(secret.secret_name)
+
+    log(f"""Secrets in path: {", ".join(secret_names)}""")
 
 
 @task
@@ -118,37 +141,57 @@ def download_from_api(
         ValueError: If the API call fails.
     """  # noqa: E501
 
-    # Retrieve the API key from Vault
-    params = {} if params is None else params
+    api_data = load_from_api.run(
+        url=url,
+        params=params,
+        credentials=credentials,
+        auth_method=auth_method,
+    )
 
-    log("Downloading data from API")
+    # Save the API data to a local file
+    if add_load_date_to_filename:
+        if load_date is None:
+            destination_file_path = f"{file_folder}/{file_name}_{str(date.today())}.json"
+        else:
+            destination_file_path = f"{file_folder}/{file_name}_{load_date}.json"
+    else:
+        destination_file_path = f"{file_folder}/{file_name}.json"
+
+    with open(destination_file_path, "w", encoding="utf-8") as file:
+        file.write(str(api_data))
+
+    log(f"API data downloaded to {destination_file_path}")
+
+    return destination_file_path
+
+
+@task
+def load_from_api(url: str, params=None, credentials=None, auth_method="bearer") -> dict:
+    """
+    Loads data from an API endpoint.
+
+    Args:
+        url (str): The URL of the API endpoint.
+        params (dict, optional): The query parameters to be included in the request. Defaults to None.
+        credentials (str or tuple, optional): The authentication credentials. Defaults to None.
+        auth_method (str, optional): The authentication method to be used. Defaults to "bearer".
+
+    Returns:
+        dict: The JSON response from the API.
+
+    Raises:
+        Exception: If the API request fails.
+    """
     if auth_method == "bearer":
         headers = {"Authorization": f"Bearer {credentials}"}
-        response = requests.get(url, headers=headers, params=params)
+        response = requests.get(url, headers=headers, params=params, timeout=90)
     elif auth_method == "basic":
-        response = requests.get(url, auth=credentials, params=params)
+        response = requests.get(url, auth=credentials, params=params, timeout=90)
     else:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=90)
 
     if response.status_code == 200:
-        api_data = response.json()
-
-        # Save the API data to a local file
-        if add_load_date_to_filename:
-            if load_date is None:
-                destination_file_path = f"{file_folder}/{file_name}_{str(date.today())}.json"
-            else:
-                destination_file_path = f"{file_folder}/{file_name}_{load_date}.json"
-        else:
-            destination_file_path = f"{file_folder}/{file_name}.json"
-
-        with open(destination_file_path, "w", encoding="utf-8") as file:
-            file.write(str(api_data))
-
-        log(f"API data downloaded to {destination_file_path}")
-
-        return destination_file_path
-
+        return response.json()
     else:
         raise ValueError(f"API call failed, error: {response.status_code} - {response.reason}")
 
@@ -440,7 +483,7 @@ def clean_ascii(input_file_path):
 
             return output_file_path
 
-    except Exception as e: # pylint: disable=W0703
+    except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
 
 

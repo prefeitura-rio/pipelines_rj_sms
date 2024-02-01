@@ -4,21 +4,14 @@
 Schedules for the vitai dump pipeline
 """
 
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
-from prefect.schedules import Schedule
 import pytz
-
+from prefect.schedules import Schedule
 
 from pipelines.constants import constants
-from pipelines.dump_api_vitai.constants import (
-    constants as vitai_constants,
-)
-from pipelines.utils.schedules import (
-    untuple_clocks,
-    generate_dump_api_schedules
-)
-
+from pipelines.dump_api_vitai.constants import constants as vitai_constants
+from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [
     {
@@ -26,7 +19,7 @@ flow_parameters = [
         "dataset_id": vitai_constants.DATASET_ID.value,
         "endpoint": "posicao",
         "environment": "prod",
-        "rename_flow": True
+        "rename_flow": True,
     },
     {
         "table_id": "estoque_movimento",
@@ -34,7 +27,7 @@ flow_parameters = [
         "endpoint": "movimento",
         "date": "yesterday",
         "environment": "prod",
-        "rename_flow": True
+        "rename_flow": True,
     },
 ]
 

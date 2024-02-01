@@ -5,16 +5,14 @@
 Utilities for infisical.
 """
 
-import os
 import base64
-from prefeitura_rio.pipelines_utils.infisical import (
-    get_infisical_client,
-    inject_env,
-)
+import os
+
+from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, inject_env
 from prefeitura_rio.pipelines_utils.logging import log
 
 
-def inject_bd_credentials(environment: str = 'dev') -> None:
+def inject_bd_credentials(environment: str = "dev") -> None:
     """
     Loads Base dos Dados credentials from Infisical into environment variables.
 
