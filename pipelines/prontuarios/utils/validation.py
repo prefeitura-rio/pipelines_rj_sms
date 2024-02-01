@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 """
 Field validation functions for prontuario system.
 """
 
-from validate_docbr import CPF
 import pandas as pd
+from validate_docbr import CPF
 
 
 def is_valid_cpf(cpf):

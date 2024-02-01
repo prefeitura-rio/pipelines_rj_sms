@@ -4,30 +4,17 @@
 Schedules for the dbt execute pipeline
 """
 
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
-from prefect.schedules import Schedule
 import pytz
-
+from prefect.schedules import Schedule
 
 from pipelines.constants import constants
-from pipelines.utils.schedules import (
-    untuple_clocks,
-    generate_dump_api_schedules
-)
-
+from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [
-    {
-        "command": "run",
-        "environment": "prod",
-        "rename_flow": True
-    },
-    {
-        "command": "test",
-        "environment": "prod",
-        "rename_flow": True
-    },
+    {"command": "run", "environment": "prod", "rename_flow": True},
+    {"command": "test", "environment": "prod", "rename_flow": True},
 ]
 
 

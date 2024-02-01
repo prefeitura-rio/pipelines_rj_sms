@@ -3,25 +3,19 @@
 """
 Schedules for SMSRio Raw Data Extraction
 """
-from datetime import timedelta, datetime
-from prefect.schedules import Schedule
-import pytz
-from pipelines.constants import constants
-from pipelines.utils.schedules import (
-    untuple_clocks,
-    generate_dump_api_schedules
-)
+from datetime import datetime, timedelta
 
+import pytz
+from prefect.schedules import Schedule
+
+from pipelines.constants import constants
+from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 #####################################
 # SMSRio
 #####################################
 
-smsrio_flow_parameters = [
-    {
-        "environment": "prod"
-    }
-]
+smsrio_flow_parameters = [{"environment": "prod", "rename_flow": "true"}]
 
 smsrio_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),

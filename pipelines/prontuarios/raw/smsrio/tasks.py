@@ -3,17 +3,15 @@
 Tasks for SMSRio Raw Data Extraction
 """
 import json
-from datetime import timedelta, date
+from datetime import date, timedelta
+
 import pandas as pd
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.prontuarios.utils.validation import (
-    is_valid_cpf
-)
+
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
-from pipelines.utils.tasks import (
-    get_secret_key
-)
+from pipelines.prontuarios.utils.validation import is_valid_cpf
+from pipelines.utils.tasks import get_secret_key
 
 
 @task
@@ -30,7 +28,7 @@ def get_database_url(environment):
     database_url = get_secret_key.run(
         secret_path=smsrio_constants.INFISICAL_PATH.value,
         secret_name=smsrio_constants.INFISICAL_DB_URL.value,
-        environment=environment
+        environment=environment,
     )
     return database_url
 
@@ -90,11 +88,8 @@ def transform_data_to_json(dataframe, identifier_column="patient_cpf") -> list[d
     assert identifier_column in dataframe.columns, "identifier_column column not found"
 
     def row_to_json(row):
-        row_as_json = row.to_json(date_format='iso')
-        return {
-            identifier_column: row[identifier_column],
-            "data": json.loads(row_as_json)
-        }
+        row_as_json = row.to_json(date_format="iso")
+        return {identifier_column: row[identifier_column], "data": json.loads(row_as_json)}
 
     jsons = dataframe.apply(row_to_json, axis=1)
     data_list = jsons.to_list()

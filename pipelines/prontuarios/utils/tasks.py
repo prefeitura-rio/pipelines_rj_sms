@@ -4,25 +4,22 @@
 Utilities Tasks for prontuario system pipelines.
 """
 
-from datetime import timedelta, date
+from datetime import date, timedelta
+
 import prefect
 import requests
-from prefect.client import Client
 from prefect import task
+from prefect.client import Client
+
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.validation import is_valid_cpf
-from pipelines.utils.tasks import (
-    get_secret_key
-)
+from pipelines.utils.tasks import get_secret_key
 
 
 @task
 def get_api_token(
-    environment: str,
-    infisical_path: str,
-    infisical_api_username: str,
-    infisical_api_password: str
+    environment: str, infisical_path: str, infisical_api_username: str, infisical_api_password: str
 ) -> str:
     """
     Retrieves the authentication token for Prontuario Integrado API.
@@ -38,29 +35,25 @@ def get_api_token(
     """
     api_url = prontuario_constants.API_URL.value.get(environment)
     api_username = get_secret_key.run(
-        secret_path=infisical_path,
-        secret_name=infisical_api_username,
-        environment=environment
+        secret_path=infisical_path, secret_name=infisical_api_username, environment=environment
     )
     api_password = get_secret_key.run(
-        secret_path=infisical_path,
-        secret_name=infisical_api_password,
-        environment=environment
+        secret_path=infisical_path, secret_name=infisical_api_password, environment=environment
     )
     response = requests.post(
         url=f"{api_url}auth/token",
         timeout=90,
         headers={
-            'Content-Type': 'application/x-www-form-urlencoded',
+            "Content-Type": "application/x-www-form-urlencoded",
         },
         data={
-            'username': api_username,
-            'password': api_password,
+            "username": api_username,
+            "password": api_password,
         },
     )
 
     if response.status_code == 200:
-        return response.json()['access_token']
+        return response.json()["access_token"]
     else:
         raise Exception(f"Error getting API token ({response.status_code}) - {response.json()}")
 
@@ -92,19 +85,11 @@ def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     Returns:
         dict: The transformed data in the accepted raw endpoint format.
     """
-    return {
-        "data_list": json_data,
-        "cnes": cnes
-    }
+    return {"data_list": json_data, "cnes": cnes}
 
 
 @task
-def load_to_api(
-    request_body: dict,
-    endpoint_name: str,
-    api_token: str,
-    environment: str
-) -> None:
+def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environment: str) -> None:
     """
     Sends a POST request to the specified API endpoint with the provided request body.
 
@@ -123,9 +108,9 @@ def load_to_api(
     api_url = prontuario_constants.API_URL.value.get(environment)
     request_response = requests.post(
         url=f"{api_url}{endpoint_name}",
-        headers={'Authorization': f'Bearer {api_token}'},
+        headers={"Authorization": f"Bearer {api_token}"},
         timeout=90,
-        json=request_body
+        json=request_body,
     )
 
     if request_response.status_code != 201:
@@ -144,11 +129,13 @@ def transform_create_input_batches(input_list: list, batch_size: int = 250):
     Returns:
         list[list]: List of batches
     """
-    return [input_list[i:i+batch_size] for i in range(0, len(input_list), batch_size)]
+    return [input_list[i : i + batch_size] for i in range(0, len(input_list), batch_size)]
 
 
 @task
-def rename_current_flow_run(environment: str, cnes: str, is_initial_extraction: bool=False) -> None:
+def rename_current_flow_run(
+    environment: str, cnes: str, is_initial_extraction: bool = False
+) -> None:
     """
     Renames the current flow run using the specified environment and CNES.
 
@@ -169,8 +156,7 @@ def rename_current_flow_run(environment: str, cnes: str, is_initial_extraction: 
 
     client = Client()
     client.set_flow_run_name(
-        flow_run_id,
-        f"{title} (cnes={cnes}, env={environment}): {flow_run_scheduled_time}"
+        flow_run_id, f"{title} (cnes={cnes}, env={environment}): {flow_run_scheduled_time}"
     )
 
 
@@ -185,8 +171,5 @@ def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
     Returns:
         list[dict]: A list of objects that have valid CPFs.
     """
-    obj_valid_cpf = filter(
-        lambda obj: is_valid_cpf(obj['patient_cpf']),
-        objects
-    )
+    obj_valid_cpf = filter(lambda obj: is_valid_cpf(obj["patient_cpf"]), objects)
     return list(obj_valid_cpf)

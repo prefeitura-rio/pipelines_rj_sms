@@ -7,13 +7,15 @@ Tasks for execute_dbt
 
 import os
 import shutil
+
 import git
 import prefect
+from dbt.cli.main import dbtRunner, dbtRunnerResult
 from prefect import task
 from prefect.client import Client
 from prefect.engine.signals import FAIL
-from dbt.cli.main import dbtRunner, dbtRunnerResult
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.execute_dbt.constants import constants as execute_dbt_constants
 
 

@@ -13,7 +13,7 @@ class constants(Enum):
 
     INFISICAL_PATH = "/prontuario-vitai"
     INFISICAL_KEY = "TOKEN"
-    INFISICAL_API_USERNAME = 'API_USERNAME'
-    INFISICAL_API_PASSWORD = 'API_PASSWORD'
+    INFISICAL_API_USERNAME = "API_USERNAME"
+    INFISICAL_API_PASSWORD = "API_PASSWORD"
 
     API_URL = "http://api.token.hmrg.vitai.care/api/v1/"
