@@ -6,6 +6,7 @@ Flow for SMSRio Raw Data Extraction
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
+from prefect.tasks.control_flow import merge
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
@@ -73,7 +74,7 @@ with Flow(
     # Task Section #1 - Get data
     ####################################
     with case(IS_INITIAL_EXTRACTION, True):
-        patient_data = load_file_from_gcs_bucket(
+        patient_data_gcs = load_file_from_gcs_bucket(
             bucket_name=smsrio_constants.SMSRIO_BUCKET.value,
             file_name=smsrio_constants.SMSRIO_FILE_NAME.value,
             upstream_tasks=[credential_injection]
@@ -84,28 +85,31 @@ with Flow(
             upstream_tasks=[credential_injection]
         )
 
-        patient_data = extract_patient_data_from_db(
+        patient_data_db = extract_patient_data_from_db(
             db_url=database_url,
             time_window_start=target_day,
             time_window_duration=1,
             upstream_tasks=[credential_injection],
         )
 
+    patient_data = merge(patient_data_gcs, patient_data_db)
+
     ####################################
     # Task Section #2 - Prepare data to load
     ####################################
     json_list = transform_data_to_json(
         dataframe=patient_data,
-        identifier_column="patient_cpf",
         upstream_tasks=[credential_injection],
     )
 
     valid_patients = transform_filter_valid_cpf(
-        objects=json_list, upstream_tasks=[credential_injection]
+        objects=json_list, 
+        upstream_tasks=[credential_injection]
     )
 
     json_list_batches = transform_create_input_batches(
-        valid_patients, upstream_tasks=[credential_injection]
+        valid_patients, 
+        upstream_tasks=[credential_injection]
     )
 
     request_bodies = transform_to_raw_format.map(

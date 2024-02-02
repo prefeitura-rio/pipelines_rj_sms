@@ -722,7 +722,7 @@ def upload_to_datalake(
         log(f"An error occurred: {e}", level="error")
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=90))
 def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
     """
     Load a file from a Google Cloud Storage bucket. The GCS project is infered 
@@ -747,7 +747,7 @@ def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
     data = blob.download_as_string()
 
     if file_type == 'csv':
-        df = pd.read_csv(StringIO(data.decode('utf-8')), dtype=str, index_col=0)
+        df = pd.read_csv(StringIO(data.decode('utf-8')), dtype=str)
     else:
         raise NotImplementedError(f"File type {file_type} not implemented")
 
