@@ -14,10 +14,13 @@ import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
 from pathlib import Path
+from io import StringIO
+
 
 import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token
+from google.cloud import storage
 import pandas as pd
 import pytz
 import requests
@@ -717,3 +720,35 @@ def upload_to_datalake(
 
     except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
+
+
+@task
+def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
+    """
+    Load a file from a Google Cloud Storage bucket. The GCS project is infered 
+        from the environment variables related to Goocle Cloud.
+
+    Args:
+        bucket_name (str): The name of the GCS bucket.
+        file_name (str): The name of the file to be loaded.
+        file_type (str, optional): The type of the file. Defaults to "csv".
+
+    Raises:
+        NotImplementedError: If the file type is not implemented.
+
+    Returns:
+        pd.DataFrame: The loaded file as a DataFrame.
+    """
+    client = storage.Client()
+
+    bucket = client.get_bucket(bucket_name)
+    blob = bucket.blob(file_name)
+
+    data = blob.download_as_string()
+
+    if file_type == 'csv':
+        df = pd.read_csv(StringIO(data.decode('utf-8')), dtype=str, index_col=0)
+    else:
+        raise NotImplementedError(f"File type {file_type} not implemented")
+
+    return df

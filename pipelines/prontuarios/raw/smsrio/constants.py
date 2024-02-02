@@ -14,3 +14,6 @@ class constants(Enum):
     INFISICAL_API_PASSWORD = "API_PASSWORD"
 
     SMSRIO_CNES = "7106513"
+
+    SMSRIO_BUCKET = 'prontuario-integrado'
+    SMSRIO_FILE_NAME = 'smsrio_tb_pacientes_cns.csv'
