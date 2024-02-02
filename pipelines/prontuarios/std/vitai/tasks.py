@@ -105,20 +105,20 @@ def standartize_data(
             "birth_state_cod": state_cod_validation(patient['data']['uf']),  # mudar codigo
             "birth_country_cod": "1",
             "birth_date": str(pd.to_datetime(patient['data']['dataNascimento'], format='%Y-%m-%d %H:%M:%S').date()) if patient['data']['dataNascimento'] != None else "0",
-            "patient_cpf": patient['patient_cpf'] if patient['patient_cpf'] != None else "0",
-            "deceased": False if patient['data']['dataObito'] == None else True,
+            "patient_cpf": patient['patient_cpf'] if patient['patient_cpf'] is not None else "0",
+            "deceased": False if patient['data']['dataObito'] is None else True,
             "deceased_date": str(pd.to_datetime(patient['data']['dataObito'], format='%Y-%m-%d %H:%M:%S').date()) if patient['data']['dataObito'] != None else None,
-            "father_name": patient['data']['nomePai'].title() if patient['data']['nomePai'] != None else None,
+            "father_name": patient['data']['nomePai'].title() if patient['data']['nomePai'] is not None else None,
             "gender": gender_validation(patient['data']['sexo']),
-            "mother_name": patient['data']['nomeMae'].title() if patient['data']['nomeMae'] != None else None,
-            "name": patient['data']['nome'].title() if patient['data']['nome'] != None else "0",
+            "mother_name": patient['data']['nomeMae'].title() if patient['data']['nomeMae'] is not None else None,
+            "name": patient['data']['nome'].title() if patient['data']['nome'] is not None else "0",
             "nationality": nationality_validation(patient['data']['nacionalidade']),
             "protected_person": True,
-            "race": patient['data']['racaCor'].lower() if patient['data']['racaCor'] != None else None,
+            "race": patient['data']['racaCor'].lower() if patient['data']['racaCor'] is not None else None,
             "cns_list": [
                 # adaptar para varios cns
                 {
-                    "value": patient['data']['cns'] if patient['data']['cns'] != None else None,
+                    "value": patient['data']['cns'] if patient['data']['cns'] is not None else None,
                     "is_main": True
                 }
             ],
@@ -138,7 +138,7 @@ def standartize_data(
             "telecom_list": [{
                 "system": None,
                 "use": None,
-                "value": patient['data']['telefone'] if patient['data']['telefone'] != None else "0",
+                "value": patient['data']['telefone'] if patient['data']['telefone'] is not None else "0",
                 "rank": 0,
                 "start": None,
                 "end": None

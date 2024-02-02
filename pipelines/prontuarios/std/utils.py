@@ -13,7 +13,7 @@ def gender_validation(gender: str) -> str:
     Returns:
         gender_std (str): Normalized gender information
     """
-    if gender != None:
+    if gender is not None:
         gender = gender.lower()
     else:
         return None
@@ -36,7 +36,7 @@ def nationality_validation(nationality: str) -> str:
     Returns:
         nationality_std (str): Normalized nationality information
     """
-    if nationality != None:
+    if nationality is not None:
         nationality = nationality.lower()
     else:
         return None
@@ -65,7 +65,7 @@ def state_cod_validation(state: str) -> str:
     df_states = pd.read_csv('pipelines/prontuarios/std/estados.csv')
     df_states['SIGLA'] = df_states['SIGLA'].str.lower()
     df_states['SIGLA'] = df_states['SIGLA'].str.replace(' ', '')
-    if state != None:
+    if state is not None:
         state = state.lower()
         state_std = str(df_states.loc[df_states['SIGLA'] == state, 'COD'].values[0])
     else:
@@ -84,7 +84,7 @@ def city_cod_validation(city: str) -> str:
     """
     df_city = pd.read_csv('pipelines/prontuarios/std/municipios.csv')
     df_city['NOME'] = df_city['NOME'].str.lower()
-    if city != None:
+    if city is not None:
         city = city.lower()
         city_std = str(df_city.loc[df_city['NOME'] == city, 'COD'].values[0])
     else:
