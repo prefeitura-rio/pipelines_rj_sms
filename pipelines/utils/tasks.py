@@ -745,8 +745,8 @@ def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
 
     data = blob.download_as_string()
 
-    if file_type == 'csv':
-        df = pd.read_csv(StringIO(data.decode('utf-8')), dtype=str)
+    if file_type == "csv":
+        df = pd.read_csv(StringIO(data.decode("utf-8")), dtype=str)
     else:
         raise NotImplementedError(f"File type {file_type} not implemented")
 

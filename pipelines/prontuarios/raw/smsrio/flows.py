@@ -6,8 +6,8 @@ Flow for SMSRio Raw Data Extraction
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
-from prefect.tasks.control_flow import merge
 from prefect.storage import GCS
+from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -98,13 +98,11 @@ with Flow(
     )
 
     valid_patients = transform_filter_valid_cpf(
-        objects=json_list, 
-        upstream_tasks=[credential_injection]
+        objects=json_list, upstream_tasks=[credential_injection]
     )
 
     json_list_batches = transform_create_input_batches(
-        valid_patients, 
-        upstream_tasks=[credential_injection]
+        valid_patients, upstream_tasks=[credential_injection]
     )
 
     request_bodies = transform_to_raw_format.map(
