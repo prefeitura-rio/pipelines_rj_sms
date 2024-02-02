@@ -93,20 +93,15 @@ with Flow(
     # Task Section #2 - Prepare data to load
     ####################################
     patient_valid_data = transform_filter_invalid_cpf(
-        dataframe=patient_data,
-        cpf_column='patient_cpf',
-        upstream_tasks=[credential_injection]
+        dataframe=patient_data, cpf_column="patient_cpf", upstream_tasks=[credential_injection]
     )
 
     patient_data_batches = transform_split_dataframe(
-        dataframe=patient_valid_data, 
-        batch_size=500, 
-        upstream_tasks=[credential_injection]
+        dataframe=patient_valid_data, batch_size=500, upstream_tasks=[credential_injection]
     )
 
     json_data_batches = transform_data_to_json.map(
-        dataframe=patient_data_batches, 
-        upstream_tasks=[unmapped(credential_injection)]
+        dataframe=patient_data_batches, upstream_tasks=[unmapped(credential_injection)]
     )
 
     request_bodies = transform_to_raw_format.map(

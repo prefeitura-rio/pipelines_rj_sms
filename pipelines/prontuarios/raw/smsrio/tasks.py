@@ -90,10 +90,7 @@ def transform_data_to_json(dataframe, identifier_column="patient_cpf") -> list[d
     output = []
     for _, row in dataframe.iterrows():
         row_as_json = row.to_json(date_format="iso")
-        output.append({
-            identifier_column: row[identifier_column], 
-            "data": json.loads(row_as_json)
-        })
+        output.append({identifier_column: row[identifier_column], "data": json.loads(row_as_json)})
 
     return output
 
