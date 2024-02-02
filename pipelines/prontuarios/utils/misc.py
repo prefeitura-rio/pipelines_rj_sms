@@ -1,4 +1,4 @@
-def split_dataframe(df, chunk_size = 10000): 
+def split_dataframe(df, chunk_size=10000):
     chunks = list()
     num_chunks = len(df) // chunk_size + 1
     for i in range(num_chunks):
