@@ -87,13 +87,15 @@ def transform_data_to_json(dataframe, identifier_column="patient_cpf") -> list[d
     """
     assert identifier_column in dataframe.columns, "identifier_column column not found"
 
-    def row_to_json(row):
+    output = []
+    for _, row in dataframe.iterrows():
         row_as_json = row.to_json(date_format="iso")
-        return {identifier_column: row[identifier_column], "data": json.loads(row_as_json)}
+        output.append({
+            identifier_column: row[identifier_column], 
+            "data": json.loads(row_as_json)
+        })
 
-    jsons = dataframe.apply(row_to_json, axis=1)
-    data_list = jsons.to_list()
-    return data_list
+    return output
 
 
 @task

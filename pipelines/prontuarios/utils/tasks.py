@@ -5,6 +5,7 @@ Utilities Tasks for prontuario system pipelines.
 """
 
 from datetime import date, timedelta
+import pandas as pd
 
 import prefect
 import requests
@@ -14,6 +15,7 @@ from prefect.client import Client
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.validation import is_valid_cpf
+from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.utils.tasks import get_secret_key
 
 
@@ -118,21 +120,6 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
 
 
 @task
-def transform_create_input_batches(input_list: list, batch_size: int = 250):
-    """
-    Transform input list into batches
-
-    Args:
-        input_list (list): Input list
-        batch_size (int, optional): Batch size. Defaults to 250.
-
-    Returns:
-        list[list]: List of batches
-    """
-    return [input_list[i : i + batch_size] for i in range(0, len(input_list), batch_size)]
-
-
-@task
 def rename_current_flow_run(
     environment: str, cnes: str, is_initial_extraction: bool = False
 ) -> None:
@@ -173,3 +160,9 @@ def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
     """
     obj_valid_cpf = filter(lambda obj: is_valid_cpf(obj["patient_cpf"]), objects)
     return list(obj_valid_cpf)
+
+
+@task
+def transform_split_dataframe(dataframe: pd.DataFrame, batch_size: int = 1000)-> list[pd.DataFrame]:
+
+    return split_dataframe(dataframe, chunk_size=batch_size)

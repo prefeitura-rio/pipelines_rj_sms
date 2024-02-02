@@ -17,14 +17,14 @@ from pipelines.prontuarios.raw.smsrio.tasks import (
     extract_patient_data_from_db,
     get_database_url,
     transform_data_to_json,
+    transform_filter_invalid_cpf,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_flow_scheduled_day,
     load_to_api,
     rename_current_flow_run,
-    transform_create_input_batches,
-    transform_filter_valid_cpf,
+    transform_split_dataframe,
     transform_to_raw_format,
 )
 from pipelines.utils.tasks import inject_gcp_credentials, load_file_from_gcs_bucket
@@ -92,21 +92,25 @@ with Flow(
     ####################################
     # Task Section #2 - Prepare data to load
     ####################################
-    json_list = transform_data_to_json(
+    patient_valid_data = transform_filter_invalid_cpf(
         dataframe=patient_data,
-        upstream_tasks=[credential_injection],
+        cpf_column='patient_cpf',
+        upstream_tasks=[credential_injection]
     )
 
-    valid_patients = transform_filter_valid_cpf(
-        objects=json_list, upstream_tasks=[credential_injection]
+    patient_data_batches = transform_split_dataframe(
+        dataframe=patient_valid_data, 
+        batch_size=500, 
+        upstream_tasks=[credential_injection]
     )
 
-    json_list_batches = transform_create_input_batches(
-        valid_patients, upstream_tasks=[credential_injection]
+    json_data_batches = transform_data_to_json.map(
+        dataframe=patient_data_batches, 
+        upstream_tasks=[unmapped(credential_injection)]
     )
 
     request_bodies = transform_to_raw_format.map(
-        json_data=json_list_batches,
+        json_data=json_data_batches,
         cnes=unmapped(smsrio_constants.SMSRIO_CNES.value),
         upstream_tasks=[unmapped(credential_injection)],
     )
