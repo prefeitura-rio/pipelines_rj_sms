@@ -1,7 +1,9 @@
-'''
+# -*- coding: utf-8 -*-
+"""
 Utils for standartize data
-'''
+"""
 import re
+
 import pandas as pd
 
 
@@ -18,12 +20,12 @@ def gender_validation(gender: str) -> str:
     else:
         return None
 
-    if gender == 'F':
-        gender_std = 'female'
-    elif gender == 'M':
-        gender_std = 'male'
+    if gender == "F":
+        gender_std = "female"
+    elif gender == "M":
+        gender_std = "male"
     else:
-        gender_std = 'unknown'
+        gender_std = "unknown"
 
     return gender_std
 
@@ -42,11 +44,11 @@ def nationality_validation(nationality: str) -> str:
         return None
 
     if bool(re.search("brasileir[a|o]", nationality)):
-        nationality_std = 'B'
+        nationality_std = "B"
     elif bool(re.search("naturalizad[a|o]", nationality)):
-        nationality_std = 'N'
+        nationality_std = "N"
     elif bool(re.search("estrangeir[a|o]", nationality)):
-        nationality_std = 'E'
+        nationality_std = "E"
     else:
         nationality_std = None
 
@@ -62,12 +64,12 @@ def state_cod_validation(state: str) -> str:
         state_std (str): Normalized state information
     """
 
-    df_states = pd.read_csv('pipelines/prontuarios/std/estados.csv')
-    df_states['SIGLA'] = df_states['SIGLA'].str.lower()
-    df_states['SIGLA'] = df_states['SIGLA'].str.replace(' ', '')
+    df_states = pd.read_csv("pipelines/prontuarios/std/estados.csv")
+    df_states["SIGLA"] = df_states["SIGLA"].str.lower()
+    df_states["SIGLA"] = df_states["SIGLA"].str.replace(" ", "")
     if state is not None:
         state = state.lower()
-        state_std = str(df_states.loc[df_states['SIGLA'] == state, 'COD'].values[0])
+        state_std = str(df_states.loc[df_states["SIGLA"] == state, "COD"].values[0])
     else:
         return None
 
@@ -82,11 +84,11 @@ def city_cod_validation(city: str) -> str:
     Returns:
         city_std (str): Normalized city information
     """
-    df_city = pd.read_csv('pipelines/prontuarios/std/municipios.csv')
-    df_city['NOME'] = df_city['NOME'].str.lower()
+    df_city = pd.read_csv("pipelines/prontuarios/std/municipios.csv")
+    df_city["NOME"] = df_city["NOME"].str.lower()
     if city is not None:
         city = city.lower()
-        city_std = str(df_city.loc[df_city['NOME'] == city, 'COD'].values[0])
+        city_std = str(df_city.loc[df_city["NOME"] == city, "COD"].values[0])
     else:
         return None
 
