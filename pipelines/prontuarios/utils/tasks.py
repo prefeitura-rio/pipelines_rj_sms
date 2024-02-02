@@ -5,8 +5,8 @@ Utilities Tasks for prontuario system pipelines.
 """
 
 from datetime import date, timedelta
-import pandas as pd
 
+import pandas as pd
 import prefect
 import requests
 from prefect import task
@@ -14,8 +14,8 @@ from prefect.client import Client
 
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
-from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.prontuarios.utils.misc import split_dataframe
+from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.tasks import get_secret_key
 
 
@@ -163,6 +163,8 @@ def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
 
 
 @task
-def transform_split_dataframe(dataframe: pd.DataFrame, batch_size: int = 1000)-> list[pd.DataFrame]:
+def transform_split_dataframe(
+    dataframe: pd.DataFrame, batch_size: int = 1000
+) -> list[pd.DataFrame]:
 
     return split_dataframe(dataframe, chunk_size=batch_size)
