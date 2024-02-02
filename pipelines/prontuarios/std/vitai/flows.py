@@ -4,15 +4,13 @@
 Flow for SMSRio Raw Data Extraction
 """
 from prefect import Parameter, case
-from prefeitura_rio.pipelines_utils.custom import Flow
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from prefeitura_rio.pipelines_utils.custom import Flow
+
 from pipelines.constants import constants
 from pipelines.prontuarios.std.vitai.constants import constants as vitai_constants
-from pipelines.utils.tasks import (
-    inject_gcp_credentials,
-)
 from pipelines.prontuarios.std.vitai.tasks import (
     get_database_url,
     load_from_api,
@@ -80,8 +78,7 @@ with Flow(
         request_body=std_data,
         endpoint_name="std/patientrecords",
         api_token=api_token,
-        environment=ENVIRONMENT
-
+        environment=ENVIRONMENT,
     )
 
 sms_prontuarios_standartized_vitai.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
