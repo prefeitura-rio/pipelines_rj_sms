@@ -13,18 +13,17 @@ import sys
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
-from pathlib import Path
 from io import StringIO
-
+from pathlib import Path
 
 import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token
-from google.cloud import storage
 import pandas as pd
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
+from google.cloud import storage
 from prefect import task
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
@@ -725,7 +724,7 @@ def upload_to_datalake(
 @task
 def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
     """
-    Load a file from a Google Cloud Storage bucket. The GCS project is infered 
+    Load a file from a Google Cloud Storage bucket. The GCS project is infered
         from the environment variables related to Goocle Cloud.
 
     Args:
@@ -746,8 +745,8 @@ def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
 
     data = blob.download_as_string()
 
-    if file_type == 'csv':
-        df = pd.read_csv(StringIO(data.decode('utf-8')), dtype=str, index_col=0)
+    if file_type == "csv":
+        df = pd.read_csv(StringIO(data.decode("utf-8")), dtype=str, index_col=0)
     else:
         raise NotImplementedError(f"File type {file_type} not implemented")
 

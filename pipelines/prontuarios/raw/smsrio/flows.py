@@ -26,10 +26,7 @@ from pipelines.prontuarios.utils.tasks import (
     transform_filter_valid_cpf,
     transform_to_raw_format,
 )
-from pipelines.utils.tasks import (
-    inject_gcp_credentials, 
-    load_file_from_gcs_bucket
-)
+from pipelines.utils.tasks import inject_gcp_credentials, load_file_from_gcs_bucket
 
 ####################################
 # Daily Routine Flow
@@ -76,13 +73,11 @@ with Flow(
         patient_data = load_file_from_gcs_bucket(
             bucket_name=smsrio_constants.SMSRIO_BUCKET.value,
             file_name=smsrio_constants.SMSRIO_FILE_NAME.value,
-            upstream_tasks=[credential_injection]
+            upstream_tasks=[credential_injection],
         )
 
     with case(IS_INITIAL_EXTRACTION, False):
-        target_day = get_flow_scheduled_day(
-            upstream_tasks=[credential_injection]
-        )
+        target_day = get_flow_scheduled_day(upstream_tasks=[credential_injection])
 
         patient_data = extract_patient_data_from_db(
             db_url=database_url,
