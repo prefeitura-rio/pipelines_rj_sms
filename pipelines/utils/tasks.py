@@ -750,4 +750,4 @@ def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
     else:
         raise NotImplementedError(f"File type {file_type} not implemented")
 
-    return df[:300000]
+    return df
