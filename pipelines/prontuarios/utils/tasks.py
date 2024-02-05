@@ -90,7 +90,7 @@ def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     return {"data_list": json_data, "cnes": cnes}
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
 def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environment: str) -> None:
     """
     Sends a POST request to the specified API endpoint with the provided request body.
