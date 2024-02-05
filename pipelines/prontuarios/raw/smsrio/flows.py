@@ -123,13 +123,13 @@ with Flow(
 
 
 sms_prontuarios_raw_smsrio.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=10)
+sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=5)
 sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="8Gi",
+    memory_limit="10Gi",
 )
 
 sms_prontuarios_raw_smsrio.schedule = smsrio_daily_update_schedule
