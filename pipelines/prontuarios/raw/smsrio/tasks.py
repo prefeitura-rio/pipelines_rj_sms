@@ -115,7 +115,7 @@ def transform_filter_invalid_cpf(dataframe: pd.DataFrame, cpf_column: str) -> pd
     return filtered_dataframe
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=90))
+@task(max_retries=3, retry_delay=timedelta(minutes=2))
 def load_patient_data_to_api(patient_data: pd.DataFrame, environment: str, api_token: str):
     """
     Loads patient data to the API.
