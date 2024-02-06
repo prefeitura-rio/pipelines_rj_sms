@@ -12,7 +12,6 @@ import requests
 from prefect import task
 from prefect.client import Client
 
-
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
