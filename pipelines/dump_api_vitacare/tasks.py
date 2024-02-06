@@ -6,12 +6,17 @@ Tasks for dump_api_vitacare
 
 from datetime import date, datetime, timedelta
 from functools import partial
+import os
+from pathlib import Path
+import shutil
+import re
 
 import pandas as pd
 import prefect
 from google.cloud import bigquery
 from prefect import task
 from prefect.client import Client
+from prefect.tasks.prefect import create_flow_run
 from prefect.tasks.prefect import wait_for_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -206,6 +211,41 @@ def save_data_to_file(
 
 
 @task
+def create_partitions(data_path: str, partition_directory: str):
+    # check if data_path is a directory or a file
+    if os.path.isdir(data_path):
+        data_path = Path(data_path)
+        files = data_path.glob("*.csv")
+    else:
+        files = [data_path]
+
+    # Create partition directories for each file
+    for file_name in files:
+
+        try:
+            date_str = re.search(r"\d{4}-\d{2}-\d{2}", str(file_name)).group()
+            parsed_date = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            log(
+                "Filename must contain a date in the format YYYY-MM-DD to match partition level",  # noqa: E501
+                level="error",
+            )  # noqa: E501")
+
+        ano_particao = parsed_date.strftime("%Y")
+        mes_particao = parsed_date.strftime("%m")
+        data_particao = parsed_date.strftime("%Y-%m-%d")
+
+        output_directory = f"{partition_directory}/ano_particao={int(ano_particao)}/mes_particao={int(mes_particao)}/data_particao={data_particao}"  # noqa: E501
+
+        # Create partition directory
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory, exist_ok=False)
+
+        # Copy file(s) to partition directory
+        shutil.copy(file_name, output_directory)
+
+
+@task
 def retrieve_cases_to_reprocessed_from_birgquery():
     # Define your BigQuery client
     client = bigquery.Client()
@@ -215,7 +255,9 @@ def retrieve_cases_to_reprocessed_from_birgquery():
     table_id = "brutos_prontuario_vitacare__estoque_movimento"
     full_table_id = f"{client.project}.{dataset_id}.{table_id}"
 
-    retrieve_query = f"SELECT * FROM `{full_table_id}` LIMIT 2"
+    retrieve_query = (
+        f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT 2"
+    )
 
     query_job = client.query(retrieve_query)
     query_job.result()
@@ -257,6 +299,28 @@ def build_params_reprocess(
 
     log(f"Params built: {params}")
     return params
+
+
+@task
+def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, endpoint: str):
+
+    for run in run_list:
+        params = build_params_reprocess.run(
+            environment=environment,
+            ap=run["ap"],
+            endpoint=endpoint,
+            table_id=table_id,
+            data=run["data"],
+            cnes=run["id_cnes"],
+        )
+
+        create_flow_run.run(
+            flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
+            project_name="staging",
+            parameters=params,
+        )
+
+
 
 
 @task

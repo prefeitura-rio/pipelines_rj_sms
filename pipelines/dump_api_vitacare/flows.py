@@ -22,14 +22,15 @@ from pipelines.dump_api_vitacare.tasks import (
     build_url,
     create_filename,
     rename_current_flow,
+    create_partitions,
     retrieve_cases_to_reprocessed_from_birgquery,
+    creat_multiples_flows_runs,
     save_data_to_file,
     wait_flor_flow_task,
 )
 from pipelines.utils.tasks import (
     cloud_function_request,
     create_folders,
-    create_partitions,
     get_infisical_user_password,
     inject_gcp_credentials,
     upload_to_datalake,
@@ -95,7 +96,7 @@ with Flow(
     )
 
     save_data_task = save_data_to_file(
-        data=download_task,
+        data=download_task["body"],
         file_folder=create_folders_task["raw"],
         table_id=TABLE_ID,
         ap=AP,
@@ -109,24 +110,23 @@ with Flow(
     # Tasks section #2 - Transform data and Create table
     #####################################
 
-    #with case(save_data_task, True):
-    #    create_partitions_task = create_partitions(
-    #        data_path=create_folders_task["raw"],
-    #        partition_directory=create_folders_task["partition_directory"],
-    #        upstream_tasks=[save_data_task],
-    #    )
-#
-    #    upload_to_datalake_task = upload_to_datalake(
-    #        input_path=create_folders_task["partition_directory"],
-    #        dataset_id=DATASET_ID,
-    #        table_id=TABLE_ID,
-    #        if_exists="replace",
-    #        csv_delimiter=";",
-    #        if_storage_data_exists="replace",
-    #        biglake_table=True,
-    #        dataset_is_public=False,
-    #        upstream_tasks=[create_partitions_task],
-    #    )
+    create_partitions_task = create_partitions(
+        data_path=create_folders_task["raw"],
+        partition_directory=create_folders_task["partition_directory"],
+        upstream_tasks=[save_data_task],
+    )
+
+    upload_to_datalake_task = upload_to_datalake(
+        input_path=create_folders_task["partition_directory"],
+        dataset_id=DATASET_ID,
+        table_id=TABLE_ID,
+        if_exists="replace",
+        csv_delimiter=";",
+        if_storage_data_exists="replace",
+        biglake_table=True,
+        dataset_is_public=False,
+        upstream_tasks=[create_partitions_task],
+    )
 
 
 sms_dump_vitacare.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
@@ -185,33 +185,31 @@ with Flow(
     ####################################
     # Tasks section #2 - Reprocess cases
     #####################################
-    build_params_reprocessamento_task = build_params_reprocess(
+
+    creat_multiples_flows_runs_task = creat_multiples_flows_runs(
+        run_list=retrieve_cases_task,
         environment=ENVIRONMENT,
-        ap=AP,
-        endpoint=ENDPOINT,
         table_id=TABLE_ID,
-        data=DATE,
-        cnes=CNES,
+        endpoint=ENDPOINT,
         upstream_tasks=[retrieve_cases_task],
     )
 
-    dump_to_gcs_flow = create_flow_run(
-        flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
-        project_name="staging",
-        parameters=build_params_reprocessamento_task,
-        upstream_tasks=[retrieve_cases_task, inject_gcp_credentials_task],
-    )
-    wait_task = wait_flor_flow_task(dump_to_gcs_flow, upstream_tasks=[dump_to_gcs_flow])
-
-    # wait_for_reprocessing = wait_for_flow_run(
-    #     dump_to_gcs_flow,
-    #     stream_states=True,
-    #     stream_logs=True,
-    #     raise_final_state=True,
-    #     max_duration=timedelta(seconds=90),
+    # build_params_reprocessamento_task = build_params_reprocess(
+    #    environment=ENVIRONMENT,
+    #    ap=AP,
+    #    endpoint=ENDPOINT,
+    #    table_id=TABLE_ID,
+    #    data=DATE,
+    #    cnes=CNES,
+    #    upstream_tasks=[retrieve_cases_task],
     # )
-    # wait_for_reprocessing.max_retries = 3
-    # wait_for_reprocessing.retry_delay = timedelta(20)
+#
+# dump_to_gcs_flow = create_flow_run(
+#    flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
+#    project_name="staging",
+#    parameters=build_params_reprocessamento_task,
+#    upstream_tasks=[retrieve_cases_task, inject_gcp_credentials_task],
+# )
 
 
 sms_dump_vitacare_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

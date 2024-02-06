@@ -379,26 +379,15 @@ def cloud_function_request(
     if response.status_code == 200:
         log("Request to cloud function successful")
 
-        if response.text.startswith("A solicitação não foi bem-sucedida"):
-            # TODO: melhorar a forma de verificar se a requisição foi bem sucedida
-            raise ValueError(f"Resquest to endpoint failed: {response.text}")
+        payload = response.json()
+        
+        if payload["status_code"] != 200:
+            raise ValueError(f"Resquest to endpoint failed: {payload['status_code']} - {payload['body']}")
         else:
             log("Request to endpoint successful")
-            return {
-                "status_code": response.status_code,
-                "reason": response.reason,
-                "body": (
-                    response.json()
-                    if response.headers["content-type"] == "application/json"
-                    else response.text
-                ),
-                "row_count": (
-                    len(response.json())
-                    if response.headers["content-type"] == "application/json"
-                    else 0
-                ),
-            }
 
+            return payload
+        
     else:
         raise ValueError(
             f"Request to cloud function failed: {response.status_code} - {response.reason}"
