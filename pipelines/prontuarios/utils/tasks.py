@@ -26,7 +26,7 @@ def get_api_token(
     infisical_path: str,
     infisical_api_url: str,
     infisical_api_username: str,
-    infisical_api_password: str
+    infisical_api_password: str,
 ) -> str:
     """
     Retrieves the authentication token for Prontuario Integrado API.
@@ -118,7 +118,9 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
         None
     """
     api_url = get_secret_key.run(
-        secret_path="/", secret_name=prontuario_constants.INFISICAL_API_URL.value, environment=environment
+        secret_path="/",
+        secret_name=prontuario_constants.INFISICAL_API_URL.value,
+        environment=environment,
     )
 
     logger = prefect.context.get("logger")
