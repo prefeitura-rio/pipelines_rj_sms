@@ -67,7 +67,7 @@ with Flow(
             table_id=TABLE_ID,
             ap=AP,
             cnes=CNES,
-            data_param=DATE,
+            date_param=DATE,
             upstream_tasks=[inject_gcp_credentials_task],
         )
 
