@@ -12,6 +12,7 @@ import requests
 from prefect import task
 from prefect.client import Client
 
+
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
@@ -59,6 +60,9 @@ def get_api_token(
             "password": api_password,
         },
     )
+
+    logger = prefect.context.get("logger")
+    logger.info(f"Login in {api_url} with : {api_username}, {api_password[:10]}***, ")
 
     if response.status_code == 200:
         return response.json()["access_token"]
@@ -116,6 +120,9 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     api_url = get_secret_key.run(
         secret_path="/", secret_name=prontuario_constants.INFISICAL_API_URL.value, environment=environment
     )
+
+    logger = prefect.context.get("logger")
+    logger.info(f"Requesting to {api_url}{endpoint_name} with token: {api_token[:10]}***")
 
     request_response = requests.post(
         url=f"{api_url}{endpoint_name}",
