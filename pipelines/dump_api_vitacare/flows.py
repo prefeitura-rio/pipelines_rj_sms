@@ -23,7 +23,7 @@ from pipelines.dump_api_vitacare.tasks import (
     create_partitions,
     rename_current_flow,
     retrieve_cases_to_reprocessed_from_birgquery,
-    save_data_to_file
+    save_data_to_file,
 )
 from pipelines.utils.tasks import (
     cloud_function_request,
