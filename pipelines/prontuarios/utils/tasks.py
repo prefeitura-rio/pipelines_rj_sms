@@ -127,7 +127,7 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     )
 
     if request_response.status_code != 201:
-        raise Exception(f"Error loading data to {endpoint_name} {request_response.text}")
+        raise Exception(f"Error loading data: {request_response.text}")
 
 
 @task
