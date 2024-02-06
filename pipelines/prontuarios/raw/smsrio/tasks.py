@@ -113,12 +113,9 @@ def transform_filter_invalid_cpf(dataframe: pd.DataFrame, cpf_column: str) -> pd
 
     return filtered_dataframe
 
+
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
-def load_patient_data_to_api(
-    patient_data: pd.DataFrame,
-    environment: str,
-    api_token: str
-    ):
+def load_patient_data_to_api(patient_data: pd.DataFrame, environment: str, api_token: str):
     """
     Loads patient data to the API.
 
@@ -131,13 +128,10 @@ def load_patient_data_to_api(
         None
     """
 
-    json_data_batches = transform_data_to_json.run(
-        dataframe=patient_data
-    )
+    json_data_batches = transform_data_to_json.run(dataframe=patient_data)
 
     request_bodies = transform_to_raw_format.run(
-        json_data=json_data_batches,
-        cnes=smsrio_constants.SMSRIO_CNES.value
+        json_data=json_data_batches, cnes=smsrio_constants.SMSRIO_CNES.value
     )
 
     load_to_api.run(
