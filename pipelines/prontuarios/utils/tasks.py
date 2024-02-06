@@ -13,13 +13,12 @@ from prefect import task
 from prefect.client import Client
 
 from pipelines.prontuarios.constants import constants as prontuario_constants
-from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.tasks import get_secret_key
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
 def get_api_token(
     environment: str,
     infisical_path: str,
