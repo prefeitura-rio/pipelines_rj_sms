@@ -262,13 +262,13 @@ def retrieve_cases_to_reprocessed_from_birgquery():
     query_job.result()
 
     data_list = []
-    for i, row in enumerate(query_job):
+    for row in query_job:
         # Here, we're using a simple integer index as the key
         # You can replace this with a unique identifier from your row, if available
         data_list.append(dict(row))
 
     log(f"{len(data_list)} rows retrieved from BigQuery.")
-
+    log(data_list)
     return data_list
 
 
@@ -306,10 +306,10 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
     for run in run_list:
         params = build_params_reprocess.run(
             environment=environment,
-            ap=run["ap"],
+            ap=run["area_programatica"],
             endpoint=endpoint,
             table_id=table_id,
-            data=run["data"],
+            data=run["data"].strftime("%Y-%m-%d"),
             cnes=run["id_cnes"],
         )
 

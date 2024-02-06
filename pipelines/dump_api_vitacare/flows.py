@@ -10,7 +10,6 @@ from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -18,15 +17,13 @@ from pipelines.dump_api_vitacare.constants import constants as vitacare_constant
 from pipelines.dump_api_vitacare.schedules import vitacare_clocks
 from pipelines.dump_api_vitacare.tasks import (
     build_params,
-    build_params_reprocess,
     build_url,
     creat_multiples_flows_runs,
     create_filename,
     create_partitions,
     rename_current_flow,
     retrieve_cases_to_reprocessed_from_birgquery,
-    save_data_to_file,
-    wait_flor_flow_task,
+    save_data_to_file
 )
 from pipelines.utils.tasks import (
     cloud_function_request,
@@ -169,7 +166,7 @@ with Flow(
     inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
 
     with case(RENAME_FLOW, True):
-        rename_flow_task = rename_current_flow(table_id=TABLE_ID, ap=AP, cnes=CNES)
+        rename_flow_task = rename_current_flow(table_id=TABLE_ID, ap="", cnes=CNES)
 
     ####################################
     # Tasks section #1 - Acccess reprocessing cases
