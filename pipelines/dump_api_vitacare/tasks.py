@@ -101,6 +101,7 @@ def build_params(date_param: str = "today", cnes: str = None) -> dict:
 
 @task
 def create_filename(table_id: str, ap: str) -> str:
+    """create filename for the downloaded file"""
     return f"{table_id}_ap{ap}"
 
 
@@ -224,6 +225,19 @@ def save_data_to_file(
 
 @task
 def create_partitions(data_path: str, partition_directory: str):
+    """
+    Create partitions for the given data files and copy them to the specified partition directory.
+
+    Args:
+        data_path (str): The path to the data file(s) or directory containing the data files.
+        partition_directory (str): The directory where the partitions will be created.
+
+    Raises:
+        ValueError: If the filename does not contain a date in the format YYYY-MM-DD.
+
+    Returns:
+        None
+    """
     # check if data_path is a directory or a file
     if os.path.isdir(data_path):
         data_path = Path(data_path)
@@ -259,6 +273,12 @@ def create_partitions(data_path: str, partition_directory: str):
 
 @task
 def retrieve_cases_to_reprocessed_from_birgquery():
+    """
+    Retrieves cases to be reprocessed from BigQuery.
+
+    Returns:
+        list: A list of dictionaries representing the retrieved rows from BigQuery.
+    """
     # Define your BigQuery client
     client = bigquery.Client()
 
@@ -268,7 +288,7 @@ def retrieve_cases_to_reprocessed_from_birgquery():
     full_table_id = f"{client.project}.{dataset_id}.{table_id}"
 
     retrieve_query = (
-        f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT 2"
+        f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT 5"
     )
 
     query_job = client.query(retrieve_query)
@@ -315,6 +335,18 @@ def build_params_reprocess(
 
 @task
 def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, endpoint: str):
+    """
+    Create multiple flow runs based on the given run list.
+
+    Args:
+        run_list (list): A list of runs containing information such as area_programatica, data, id_cnes, etc.
+        environment (str): The environment to run the flows in.
+        table_id (str): The ID of the table to process.
+        endpoint (str): The endpoint to use for processing.
+
+    Returns:
+        None
+    """  # noqa: E501
 
     for run in run_list:
         params = build_params_reprocess.run(
@@ -324,7 +356,6 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
             table_id=table_id,
             data=run["data"].strftime("%Y-%m-%d"),
             cnes=run["id_cnes"],
-            rename_flow=True,
         )
 
         create_flow_run.run(
