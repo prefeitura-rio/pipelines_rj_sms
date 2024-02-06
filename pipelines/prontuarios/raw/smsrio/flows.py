@@ -129,7 +129,7 @@ sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="8Gi",
+    memory_limit="13.93Gi",
 )
 
 sms_prontuarios_raw_smsrio.schedule = smsrio_daily_update_schedule
