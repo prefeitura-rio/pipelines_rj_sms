@@ -25,7 +25,7 @@ from pipelines.utils.tasks import add_load_date_column, from_json_to_csv, save_t
 
 
 @task
-def rename_current_flow(table_id: str, ap: str,  date_param: str, cnes: str = None):
+def rename_current_flow(table_id: str, ap: str, date_param: str, cnes: str = None):
     """
     Rename the current flow run.
     """
