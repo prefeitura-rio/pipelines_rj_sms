@@ -12,7 +12,7 @@ setup.py
 .vscode/*
 *.hdf
 .DS_Store
-
+run.py
 
 
 # Byte-compiled / optimized / DLL files
