@@ -102,7 +102,7 @@ with Flow(
     # Task Section #4 - Load to API
     ####################################
     # Patient
-    load_to_api_task = load_to_api.map(
+    load_to_api.map(
         request_body=patients_request_bodies,
         endpoint_name=unmapped("raw/patientrecords"),
         api_token=unmapped(api_token),
@@ -112,7 +112,7 @@ with Flow(
 
 
 vitai_patients.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitai_patients.executor = LocalDaskExecutor(num_workers=10)
+vitai_patients.executor = LocalDaskExecutor(num_workers=2)
 vitai_patients.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
