@@ -4,20 +4,19 @@
 Tasks for dump_api_vitacare
 """
 
+import os
+import re
+import shutil
 from datetime import date, datetime, timedelta
 from functools import partial
-import os
 from pathlib import Path
-import shutil
-import re
 
 import pandas as pd
 import prefect
 from google.cloud import bigquery
 from prefect import task
 from prefect.client import Client
-from prefect.tasks.prefect import create_flow_run
-from prefect.tasks.prefect import wait_for_flow_run
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
@@ -319,8 +318,6 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
             project_name="staging",
             parameters=params,
         )
-
-
 
 
 @task

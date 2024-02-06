@@ -382,14 +382,16 @@ def cloud_function_request(
         log("Request to cloud function successful")
 
         payload = response.json()
-        
+
         if payload["status_code"] != 200:
-            raise ValueError(f"Resquest to endpoint failed: {payload['status_code']} - {payload['body']}")
+            raise ValueError(
+                f"Resquest to endpoint failed: {payload['status_code']} - {payload['body']}"
+            )
         else:
             log("Request to endpoint successful")
 
             return payload
-        
+
     else:
         raise ValueError(
             f"Request to cloud function failed: {response.status_code} - {response.reason}"
