@@ -2,7 +2,7 @@
 """
 Tasks for SMSRio Dump
 """
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pandas as pd
 from prefect import task

@@ -50,12 +50,16 @@ with Flow(
     ####################################
     inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
 
+    build_gcp_table_task = build_gcp_table(
+        db_table=TABLE_ID, upstream_tasks=[inject_gcp_credentials_task]
+    )
+
     with case(RENAME_FLOW, True):
         rename_flow_task = task_rename_current_flow_run_dataset_table(
             prefix="Dump SMS Rio: ",
             dataset_id=DATASET_ID,
-            table_id=TABLE_ID,
-            upstream_tasks=[inject_gcp_credentials_task],
+            table_id=build_gcp_table_task,
+            upstream_tasks=[inject_gcp_credentials_task, build_gcp_table_task],
         )
 
     ####################################
@@ -82,7 +86,6 @@ with Flow(
     #####################################
     # Tasks section #2 - Transform data and Create table
     #####################################
-    build_gcp_table_task = build_gcp_table(db_table=TABLE_ID, upstream_tasks=[download_task])
 
     upload_to_datalake_task = upload_to_datalake(
         input_path=download_task,
