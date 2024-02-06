@@ -156,10 +156,7 @@ with Flow(
     INFISICAL_PATH = vitacare_constants.INFISICAL_PATH.value
 
     # Vitacare API
-    AP = Parameter("ap", required=True, default="10")
     ENDPOINT = Parameter("endpoint", required=True)
-    DATE = Parameter("date", default="today")
-    CNES = Parameter("cnes", default=None)
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
