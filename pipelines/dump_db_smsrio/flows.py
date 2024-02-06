@@ -16,7 +16,7 @@ from prefeitura_rio.pipelines_utils.prefect import (
 from pipelines.constants import constants
 from pipelines.dump_db_smsrio.constants import constants as smsrio_constants
 from pipelines.dump_db_smsrio.schedules import smsrio_daily_update_schedule
-from pipelines.dump_db_smsrio.tasks import download_from_db, build_gcp_table
+from pipelines.dump_db_smsrio.tasks import build_gcp_table, download_from_db
 from pipelines.utils.tasks import (
     create_folders,
     get_secret_key,

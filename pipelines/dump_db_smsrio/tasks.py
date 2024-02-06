@@ -4,11 +4,12 @@ Tasks for SMSRio Dump
 """
 from datetime import date, timedelta
 
+import pandas as pd
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
-import pandas as pd
 
 from pipelines.dump_db_smsrio.constants import constants as smsrio_constants
+
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def download_from_db(
@@ -49,5 +50,5 @@ def download_from_db(
 
 @task
 def build_gcp_table(db_table: str) -> str:
-    """ Generate the GCP table name from the database table name."""
+    """Generate the GCP table name from the database table name."""
     return smsrio_constants.TABLE_ID.value[db_table]
