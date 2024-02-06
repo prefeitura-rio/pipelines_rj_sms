@@ -15,7 +15,7 @@ from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_const
 from pipelines.prontuarios.raw.smsrio.schedules import smsrio_daily_update_schedule
 from pipelines.prontuarios.raw.smsrio.tasks import (
     extract_patient_data_from_db,
-    get_database_url,
+    get_smsrio_database_url,
     load_patient_data_to_api,
     transform_filter_invalid_cpf,
 )
@@ -47,7 +47,7 @@ with Flow(
     ####################################
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
-    database_url = get_database_url(environment=ENVIRONMENT, upstream_tasks=[credential_injection])
+    database_url = get_smsrio_database_url(environment=ENVIRONMENT, upstream_tasks=[credential_injection])
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -116,7 +116,8 @@ sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="13.93Gi",
+    memory_request="8Gi",
+    memory_limit="13.93Gi"
 )
 
 sms_prontuarios_raw_smsrio.schedule = smsrio_daily_update_schedule

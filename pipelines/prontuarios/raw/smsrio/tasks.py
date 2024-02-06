@@ -16,12 +16,13 @@ from pipelines.utils.tasks import get_secret_key
 
 
 @task
-def get_database_url(environment):
+def get_smsrio_database_url(environment, squema: str = "sms_pacientes"):
     """
     Get SMSRio database url from Infisical Secrets
 
     Args:
         environment (str): Environment
+        squema (str): Database schema
 
     Returns:
         str: Database url
@@ -31,7 +32,7 @@ def get_database_url(environment):
         secret_name=smsrio_constants.INFISICAL_DB_URL.value,
         environment=environment,
     )
-    return database_url
+    return f"{database_url}/{squema}"
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
