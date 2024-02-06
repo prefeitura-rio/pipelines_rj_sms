@@ -16,6 +16,7 @@ from pipelines.prontuarios.raw.smsrio.schedules import smsrio_daily_update_sched
 from pipelines.prontuarios.raw.smsrio.tasks import (
     extract_patient_data_from_db,
     get_database_url,
+    load_patient_data_to_api,
     transform_data_to_json,
     transform_filter_invalid_cpf,
 )
@@ -100,24 +101,13 @@ with Flow(
         dataframe=patient_valid_data, batch_size=500, upstream_tasks=[credential_injection]
     )
 
-    json_data_batches = transform_data_to_json.map(
-        dataframe=patient_data_batches, upstream_tasks=[unmapped(credential_injection)]
-    )
-
-    request_bodies = transform_to_raw_format.map(
-        json_data=json_data_batches,
-        cnes=unmapped(smsrio_constants.SMSRIO_CNES.value),
-        upstream_tasks=[unmapped(credential_injection)],
-    )
-
     ####################################
     # Task Section #3 - Loading data
     ####################################
-    load_to_api_task = load_to_api.map(
-        request_body=request_bodies,
-        endpoint_name=unmapped("raw/patientrecords"),
-        api_token=unmapped(api_token),
+    load_patient_data_to_api.map(
+        patient_data=patient_data_batches,
         environment=unmapped(ENVIRONMENT),
+        api_token=unmapped(api_token),
         upstream_tasks=[unmapped(credential_injection)],
     )
 

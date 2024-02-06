@@ -10,6 +10,7 @@ from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
+from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_format
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.tasks import get_secret_key
 
@@ -73,7 +74,7 @@ def extract_patient_data_from_db(
     return patients
 
 
-@task
+@task()
 def transform_data_to_json(dataframe, identifier_column="patient_cpf") -> list[dict]:
     """
     Transform dataframe to json, exposing the identifier_column as a field
@@ -111,3 +112,37 @@ def transform_filter_invalid_cpf(dataframe: pd.DataFrame, cpf_column: str) -> pd
     log(f"Filtered {dataframe.shape[0] - filtered_dataframe.shape[0]} invalid CPFs")
 
     return filtered_dataframe
+
+@task(max_retries=3, retry_delay=timedelta(seconds=90))
+def load_patient_data_to_api(
+    patient_data: pd.DataFrame,
+    environment: str,
+    api_token: str
+    ):
+    """
+    Loads patient data to the API.
+
+    Args:
+        patient_data (pd.DataFrame): The patient data to be loaded.
+        environment (str): The environment to which the data will be loaded.
+        api_token (str): The API token for authentication.
+
+    Returns:
+        None
+    """
+
+    json_data_batches = transform_data_to_json.run(
+        dataframe=patient_data
+    )
+
+    request_bodies = transform_to_raw_format.run(
+        json_data=json_data_batches,
+        cnes=smsrio_constants.SMSRIO_CNES.value
+    )
+
+    load_to_api.run(
+        request_body=request_bodies,
+        endpoint_name="raw/patientrecords",
+        api_token=api_token,
+        environment=environment,
+    )
