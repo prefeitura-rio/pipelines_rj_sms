@@ -25,16 +25,29 @@ from pipelines.utils.tasks import add_load_date_column, from_json_to_csv, save_t
 
 
 @task
-def rename_current_flow(table_id: str, ap: str, cnes: str = None):
+def rename_current_flow(table_id: str, ap: str, cnes: str = None, date_param: str = "today"):
     """
     Rename the current flow run.
     """
     flow_run_id = prefect.context.get("flow_run_id")
     client = Client()
-    if cnes:
-        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}")
+
+    if date_param == "today":
+        data = str(date.today())
+    elif date_param == "yesterday":
+        data = str(date.today() - timedelta(days=1))
     else:
-        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}.cnes_{cnes}")
+        try:
+            # check if date_param is a date string
+            datetime.strptime(date_param, "%Y-%m-%d")
+            data = date_param
+        except ValueError as e:
+            raise ValueError("date_param must be a date string (YYYY-MM-DD)") from e
+
+    if cnes:
+        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}.{data}")
+    else:
+        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}.cnes{cnes}.{data}")
 
 
 @task
@@ -311,6 +324,7 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
             table_id=table_id,
             data=run["data"].strftime("%Y-%m-%d"),
             cnes=run["id_cnes"],
+            rename_flow=True,
         )
 
         create_flow_run.run(
@@ -369,7 +383,7 @@ def write_on_bq_on_table(
             WHEN NOT MATCHED THEN
             INSERT (id_cnes, data, reprocessing_status, request_response_code, request_row_count)
             VALUES(id_cnes, data, reprocessing_status, request_response_code, request_row_count)
-            """
+            """  # noqa: E501
 
         # Run the query
         query_job = client.query(merge_query)
