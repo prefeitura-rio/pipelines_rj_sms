@@ -21,7 +21,11 @@ from pipelines.utils.tasks import get_secret_key
 
 @task
 def get_api_token(
-    environment: str, infisical_path: str, infisical_api_username: str, infisical_api_password: str
+    environment: str,
+    infisical_path: str,
+    infisical_api_url: str,
+    infisical_api_username: str,
+    infisical_api_password: str
 ) -> str:
     """
     Retrieves the authentication token for Prontuario Integrado API.
@@ -35,7 +39,9 @@ def get_api_token(
     Raises:
         Exception: If there is an error getting the API token.
     """
-    api_url = prontuario_constants.API_URL.value.get(environment)
+    api_url = get_secret_key.run(
+        secret_path="/", secret_name=infisical_api_url, environment=environment
+    )
     api_username = get_secret_key.run(
         secret_path=infisical_path, secret_name=infisical_api_username, environment=environment
     )
@@ -107,7 +113,10 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     Returns:
         None
     """
-    api_url = prontuario_constants.API_URL.value.get(environment)
+    api_url = get_secret_key.run(
+        secret_path="/", secret_name=prontuario_constants.INFISICAL_API_URL.value, environment=environment
+    )
+
     request_response = requests.post(
         url=f"{api_url}{endpoint_name}",
         headers={"Authorization": f"Bearer {api_token}"},
