@@ -15,8 +15,7 @@ from prefeitura_rio.pipelines_utils.prefect import (
 
 from pipelines.constants import constants
 from pipelines.dump_db_smsrio.constants import constants as smsrio_constants
-
-# from pipelines.dump_api_vitai.schedules import vitai_daily_update_schedule
+from pipelines.dump_db_smsrio.schedules import smsrio_daily_update_schedule
 from pipelines.dump_db_smsrio.tasks import download_from_db, build_gcp_table
 from pipelines.utils.tasks import (
     create_folders,
@@ -108,4 +107,4 @@ sms_dump_smsrio.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-# sms_dump_smsrio.schedule = vitai_daily_update_schedule
+sms_dump_smsrio.schedule = smsrio_daily_update_schedule
