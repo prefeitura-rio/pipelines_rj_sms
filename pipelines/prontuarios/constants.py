@@ -8,7 +8,4 @@ from enum import Enum
 
 class constants(Enum):
 
-    API_URL = {
-        "dev": "https://unificacao-prontuarios-dev.dados.rio/",
-        "prod": "https://unificacao-prontuarios.dados.rio/",
-    }
+    INFISICAL_API_URL = "API_URL"
