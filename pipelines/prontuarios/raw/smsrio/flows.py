@@ -17,16 +17,13 @@ from pipelines.prontuarios.raw.smsrio.tasks import (
     extract_patient_data_from_db,
     get_database_url,
     load_patient_data_to_api,
-    transform_data_to_json,
     transform_filter_invalid_cpf,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_flow_scheduled_day,
-    load_to_api,
     rename_current_flow_run,
     transform_split_dataframe,
-    transform_to_raw_format,
 )
 from pipelines.utils.tasks import inject_gcp_credentials, load_file_from_gcs_bucket
 
