@@ -17,7 +17,6 @@ from pipelines.prontuarios.raw.vitai.tasks import (
     extract_data_from_api,
     get_vitai_api_token,
     group_cids_data_by_patient,
-    group_patients_data_by_patient,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -31,8 +30,8 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.utils.tasks import inject_gcp_credentials
 
 with Flow(
-    name="Prontuários (Vitai) - Extração de Dados",
-) as sms_prontuarios_raw_vitai:
+    name="Prontuários (Vitai) - Extração de Dados: Condições",
+) as vitai_conditions:
     #####################################
     # Parameters
     #####################################
@@ -67,15 +66,6 @@ with Flow(
     ####################################
     target_day = get_flow_scheduled_day(upstream_tasks=[credential_injection])
 
-    # Patient
-    patients_data = extract_data_from_api(
-        target_day=target_day,
-        entity_name="pacientes",
-        vitai_api_token=vitai_api_token,
-        upstream_tasks=[credential_injection],
-    )
-
-    # CID
     cids_data = extract_data_from_api(
         target_day=target_day,
         entity_name="diagnostico",
@@ -86,15 +76,6 @@ with Flow(
     ####################################
     # Task Section #2 - Group data by CPF
     ####################################
-    # Patient
-    patient_data_grouped = group_patients_data_by_patient(
-        patients_data=patients_data, upstream_tasks=[credential_injection]
-    )
-    valid_patients = transform_filter_valid_cpf(
-        objects=patient_data_grouped, upstream_tasks=[credential_injection]
-    )
-
-    # CID
     cid_data_grouped = group_cids_data_by_patient(
         cids_data=cids_data, upstream_tasks=[credential_injection]
     )
@@ -105,17 +86,6 @@ with Flow(
     ####################################
     # Task Section #3 - Prepare data to load
     ####################################
-    # Patient
-    valid_patients_batches = transform_create_input_batches(
-        valid_patients, upstream_tasks=[credential_injection]
-    )
-    patients_request_bodies = transform_to_raw_format.map(
-        json_data=valid_patients_batches,
-        cnes=unmapped(CNES),
-        upstream_tasks=[unmapped(credential_injection)],
-    )
-
-    # CID
     valid_cids_batches = transform_create_input_batches(
         valid_cids, upstream_tasks=[credential_injection]
     )
@@ -128,16 +98,6 @@ with Flow(
     ####################################
     # Task Section #4 - Load to API
     ####################################
-    # Patient
-    load_to_api_task = load_to_api.map(
-        request_body=patients_request_bodies,
-        endpoint_name=unmapped("raw/patientrecords"),
-        api_token=unmapped(api_token),
-        environment=unmapped(ENVIRONMENT),
-        upstream_tasks=[unmapped(credential_injection)],
-    )
-
-    # CID
     load_to_api_task = load_to_api.map(
         request_body=cids_request_bodies,
         endpoint_name=unmapped("raw/patientconditions"),
@@ -147,9 +107,9 @@ with Flow(
     )
 
 
-sms_prontuarios_raw_vitai.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_prontuarios_raw_vitai.executor = LocalDaskExecutor(num_workers=10)
-sms_prontuarios_raw_vitai.run_config = KubernetesRun(
+vitai_conditions.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitai_conditions.executor = LocalDaskExecutor(num_workers=10)
+vitai_conditions.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -157,4 +117,4 @@ sms_prontuarios_raw_vitai.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-sms_prontuarios_raw_vitai.schedule = vitai_daily_update_schedule
+vitai_conditions.schedule = vitai_daily_update_schedule
