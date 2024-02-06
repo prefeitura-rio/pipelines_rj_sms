@@ -12,6 +12,7 @@ setup.py
 .vscode/*
 *.hdf
 .DS_Store
+run.py
 
 
 

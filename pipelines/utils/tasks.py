@@ -325,9 +325,9 @@ def download_ftp(
 
 
 @task(
-    max_retries=2,
-    retry_delay=timedelta(seconds=5),
-    timeout=timedelta(seconds=240),
+    # max_retries=2,
+    # retry_delay=timedelta(seconds=5),
+    # timeout=timedelta(seconds=240),
 )
 def cloud_function_request(
     url: str,
@@ -384,7 +384,20 @@ def cloud_function_request(
             raise ValueError(f"Resquest to endpoint failed: {response.text}")
         else:
             log("Request to endpoint successful")
-            return response.json()
+            return {
+                "status_code": response.status_code,
+                "reason": response.reason,
+                "body": (
+                    response.json()
+                    if response.headers["content-type"] == "application/json"
+                    else response.text
+                ),
+                "row_count": (
+                    len(response.json())
+                    if response.headers["content-type"] == "application/json"
+                    else 0
+                ),
+            }
 
     else:
         raise ValueError(
