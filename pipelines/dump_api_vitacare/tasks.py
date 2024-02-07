@@ -23,7 +23,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
 from pipelines.utils.state_handlers import on_fail, on_success
-from pipelines.utils.tasks import add_load_date_column, from_json_to_csv, save_to_file
+from pipelines.utils.tasks import add_load_date_column, save_to_file
 
 
 @task
@@ -47,9 +47,9 @@ def rename_current_flow(table_id: str, ap: str, date_param: str = "today", cnes:
             raise ValueError("date_param must be a date string (YYYY-MM-DD)") from e
 
     if cnes:
-        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}.cnes{cnes}.{data}")
+        return client.set_flow_run_name(flow_run_id, f"{table_id}__ap_{ap}.cnes_{cnes}__{data}")
     else:
-        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}.{data}")
+        return client.set_flow_run_name(flow_run_id, f"{table_id}__ap_{ap}__{data}")
 
 
 @task
@@ -172,6 +172,35 @@ def fix_payload_column_order(filepath: str, table_id: str, sep: str = ";"):
 
 
 @task
+def from_json_to_csv(input_path, sep=";"):
+    """
+    Converts a JSON file to a CSV file.
+
+    Args:
+        input_path (str): The path to the input JSON file.
+        sep (str, optional): The separator to use in the output CSV file. Defaults to ";".
+
+    Returns:
+        str: The path to the output CSV file, or None if an error occurred.
+    """
+    try:
+        with open(input_path, "r", encoding="utf-8") as file:
+            json_data = file.read()
+            data = json.loads(json_data)  # Convert JSON string to Python dictionary
+            output_path = input_path.replace(".json", ".csv")
+            # Assuming the JSON structure is a list of dictionaries
+            df = pd.DataFrame(data, dtype="str")
+            df.to_csv(output_path, index=False, sep=sep, encoding="utf-8")
+
+            log("JSON converted to CSV")
+            return output_path
+
+    except Exception as e:  # pylint: disable=W0703
+        log(f"An error occurred: {e}", level="error")
+        return None
+
+
+@task
 def save_data_to_file(
     data: str,
     file_folder: str,
@@ -209,6 +238,8 @@ def save_data_to_file(
         load_date=load_date,
     )
 
+    log(f"Data saved to file: {file_path}")
+
     with open(file_path, "r", encoding="UTF-8") as f:
         first_line = f.readline().strip()
 
@@ -216,6 +247,9 @@ def save_data_to_file(
         log("The json content is empty.")
         return False
     else:
+
+        log("Json not empty")
+
         csv_file_path = from_json_to_csv.run(input_path=file_path, sep=";")
 
         add_load_date_column.run(input_path=csv_file_path, sep=";")

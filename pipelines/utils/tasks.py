@@ -327,9 +327,8 @@ def download_ftp(
 
 
 @task(
-    # max_retries=2,
-    # retry_delay=timedelta(seconds=5),
-    # timeout=timedelta(seconds=240),
+    max_retries=2,
+    retry_delay=timedelta(seconds=120),
 )
 def cloud_function_request(
     url: str,

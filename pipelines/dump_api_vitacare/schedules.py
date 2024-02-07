@@ -52,12 +52,12 @@ flow_parameters = posicao_parameters + movimento_parameters
 
 vitacare_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 11, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 12, 10, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=flow_parameters,
-    runs_interval_minutes=1,
+    runs_interval_minutes=2,
     parallel_runs=20,
 )
 
