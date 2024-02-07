@@ -63,31 +63,43 @@ def extract_data_from_api(target_day: date, entity_name: str, vitai_api_token: s
 
 
 @task
-def group_patients_data_by_patient(patients_data: list) -> dict:
+def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
     """
-    Groups the patients' data by their CPF.
+    Groups the data list by patient CPF.
 
     Args:
-        patients_data (list): A list of patient data dictionaries.
+        data (list): The list of dict data.
+        entity (str): The entity name. This is used to choose the path to the 
+            patient cpf.
 
     Returns:
-        dict: A dictionary where the keys are the CPFs and the values are lists of patient
-              data dictionaries.
+        dict: A dictionary where the keys are patient identifiers and the values are lists of entity data.
 
+    Raises:
+        ValueError: If the entity name is invalid.
     """
-    return group_data_by_cpf(patients_data, lambda data: data["cpf"])
+    if entity_type == 'diagnostico':
+        return group_data_by_cpf(data, lambda data: data["boletim"]["paciente"]["cpf"])
+    elif entity_type == 'pacientes':
+        return group_data_by_cpf(data, lambda data: data["cpf"])
+    else:
+        raise ValueError(f"Invalid entity type: {entity_type}")
 
 
 @task
-def group_cids_data_by_patient(cids_data: list) -> dict:
+def get_entity_endpoint_name(entity:str) -> str:
     """
-    Groups the given CID data by patient based on their CPF.
+    Returns the endpoint for the entity.
 
     Args:
-        cids_data (list): A list of CID data.
+        entity (str): The entity name.
 
     Returns:
-        dict: A dictionary where the keys are CPFs and the values are lists of CID data associated
-              with each CPF.
+        str: The endpoint for the entity.
     """
-    return group_data_by_cpf(cids_data, lambda data: data["boletim"]["paciente"]["cpf"])
+    if entity == "pacientes":
+        return "raw/patientrecords"
+    elif entity == "diagnostico":
+        return "raw/patientconditions"
+    else:
+        raise ValueError(f"Invalid entity name: {entity}")
