@@ -27,7 +27,7 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.utils.tasks import inject_gcp_credentials
 
 with Flow(
-    name="Prontuários (Vitai) - Extração de Dados: Condições",
+    name="Prontuários (Vitai) - Extração de Dados",
 ) as vitai_routine_extraction:
     #####################################
     # Parameters
