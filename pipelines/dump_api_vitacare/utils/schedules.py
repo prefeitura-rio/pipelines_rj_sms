@@ -44,7 +44,7 @@ def generate_dump_api_schedules(  # pylint: disable=too-many-arguments,too-many-
     """
 
     clocks = []
-    parallel_runs_counter = 1
+    parallel_runs_counter = 0
     count = 0
 
     for parameters in flow_run_parameters:
@@ -61,7 +61,7 @@ def generate_dump_api_schedules(  # pylint: disable=too-many-arguments,too-many-
 
         parallel_runs_counter += 1
 
-        if parallel_runs_counter > parallel_runs:
+        if parallel_runs_counter == parallel_runs:
             parallel_runs_counter = 0
             count += 1
 
