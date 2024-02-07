@@ -12,21 +12,21 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
 from pipelines.utils.schedules import (
-    generate_dicts,
-    generate_dump_api_schedules,
     untuple_clocks,
 )
+from pipelines.dump_api_vitacare.utils import generate_dicts, generate_dump_api_schedules
 
 posicao_parameters = generate_dicts(
     dict_template={
         "dataset_id": vitacare_constants.DATASET_ID.value,
         "table_id": "estoque_posicao",
         "ap": "",
+        "cnes": "",
         "endpoint": "posicao",
         "date": "today",
     },
-    key="ap",
-    values=["10", "21", "22", "31", "32", "33", "40", "51", "52", "53"],
+    ap=["10", "21", "22", "31", "32", "33", "40", "51", "52", "53"],
+    cnes=vitacare_constants.CNES.value,
 )
 
 movimento_parameters = generate_dicts(
@@ -34,11 +34,12 @@ movimento_parameters = generate_dicts(
         "dataset_id": vitacare_constants.DATASET_ID.value,
         "table_id": "estoque_movimento",
         "ap": "",
+        "cnes": "",
         "endpoint": "movimento",
         "date": "yesterday",
     },
-    key="ap",
-    values=["10", "21", "22", "31", "32", "33", "40", "51", "52", "53"],
+    ap=["10", "21", "22", "31", "32", "33", "40", "51", "52", "53"],
+    cnes=vitacare_constants.CNES.value,
 )
 
 flow_parameters = posicao_parameters + movimento_parameters
@@ -46,12 +47,13 @@ flow_parameters = posicao_parameters + movimento_parameters
 
 vitacare_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 5, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 9, 5, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=flow_parameters,
     runs_interval_minutes=1,
+    parallel_runs=20,
 )
 
 vitacare_daily_update_schedule = Schedule(clocks=untuple_clocks(vitacare_clocks))
