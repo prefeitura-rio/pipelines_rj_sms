@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -24,7 +25,6 @@ from pipelines.prontuarios.utils.tasks import (
     transform_to_raw_format,
 )
 from pipelines.utils.tasks import inject_gcp_credentials
-
 
 with Flow(
     name="Prontuários (Vitai) - Extração de Dados: Condições",
