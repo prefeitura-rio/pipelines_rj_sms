@@ -301,7 +301,7 @@ def retrieve_cases_to_reprocessed_from_birgquery():
         data_list.append(dict(row))
 
     log(f"{len(data_list)} rows retrieved from BigQuery.")
-    log(data_list)
+
     return data_list
 
 
@@ -348,7 +348,7 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
         None
     """  # noqa: E501
 
-    for run in run_list:
+    for n, run in enumerate(run_list):
         params = build_params_reprocess.run(
             environment=environment,
             ap=run["area_programatica"],
@@ -358,11 +358,19 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
             cnes=run["id_cnes"],
         )
 
+        idempotency_key = prefect.context.get("task_run_id")
+        log(f"Idempotency key: {idempotency_key}")
+        map_index = prefect.context.get("map_index")
+        log(f"Map index: {map_index}")
+        if idempotency_key and map_index is not None:
+            idempotency_key += f"-{map_index}-{n}"
+
         create_flow_run.run(
             flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
             project_name="staging",
             parameters=params,
             run_name=f"Reprocessamento - {table_id} - {run['id_cnes']} - {run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
+            idempotency_key=idempotency_key,
         )
 
 
