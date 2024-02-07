@@ -18,7 +18,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 vitai_flow_parameters = [
     {"cnes": "5717256", "environment": "prod", "rename_flow": "true", "entity": "pacientes"},
-    {"cnes": "5717256", "environment": "prod", "rename_flow": "true", "entity": "diagnostico"}
+    {"cnes": "5717256", "environment": "prod", "rename_flow": "true", "entity": "diagnostico"},
 ]
 
 vitai_clocks = generate_dump_api_schedules(
