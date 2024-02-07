@@ -25,7 +25,7 @@ posicao_parameters = generate_dicts(
         "cnes": "",
         "endpoint": "posicao",
         "date": "today",
-        "rename_flow": True
+        "rename_flow": True,
     },
     ap=["10", "21", "22", "31", "32", "33", "40", "51", "52", "53"],
     cnes=vitacare_constants.CNES.value,
@@ -39,7 +39,7 @@ movimento_parameters = generate_dicts(
         "cnes": "",
         "endpoint": "movimento",
         "date": "yesterday",
-        "rename_flow": True
+        "rename_flow": True,
     },
     ap=["10", "21", "22", "31", "32", "33", "40", "51", "52", "53"],
     cnes=vitacare_constants.CNES.value,
