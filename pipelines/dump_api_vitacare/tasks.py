@@ -45,9 +45,9 @@ def rename_current_flow(table_id: str, ap: str, date_param: str = "today", cnes:
             raise ValueError("date_param must be a date string (YYYY-MM-DD)") from e
 
     if cnes:
-        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}.{data}")
-    else:
         return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}.cnes{cnes}.{data}")
+    else:
+        return client.set_flow_run_name(flow_run_id, f"{table_id}.ap{ap}.{data}")
 
 
 @task
