@@ -400,7 +400,7 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
             flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
             project_name="staging",
             parameters=params,
-            run_name=f"Reprocessamento - {table_id} - {run['id_cnes']} - {run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
+            run_name=f"Reprocessamento: {table_id}__ap_{run['area_programatica']}.cnes_{run['id_cnes']}__{run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
             idempotency_key=idempotency_key,
         )
 
