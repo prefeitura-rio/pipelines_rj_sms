@@ -11,9 +11,9 @@ from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constan
 from pipelines.prontuarios.raw.vitai.schedules import vitai_daily_update_schedule
 from pipelines.prontuarios.raw.vitai.tasks import (
     extract_data_from_api,
+    get_entity_endpoint_name,
     get_vitai_api_token,
     group_data_by_patient,
-    get_entity_endpoint_name
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -45,10 +45,7 @@ with Flow(
     ####################################
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
-    vitai_api_token = get_vitai_api_token(
-        environment="prod",
-        upstream_tasks=[credential_injection]
-    )
+    vitai_api_token = get_vitai_api_token(environment="prod", upstream_tasks=[credential_injection])
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -63,7 +60,7 @@ with Flow(
             environment=ENVIRONMENT,
             cnes=CNES,
             entity_type=ENTITY,
-            upstream_tasks=[credential_injection]
+            upstream_tasks=[credential_injection],
         )
 
     ####################################
@@ -82,9 +79,7 @@ with Flow(
     # Task Section #2 - Group data by CPF
     ####################################
     grouped_data = group_data_by_patient(
-        data=data,
-        entity_type=ENTITY,
-        upstream_tasks=[credential_injection]
+        data=data, entity_type=ENTITY, upstream_tasks=[credential_injection]
     )
     valid_data = transform_filter_valid_cpf(
         objects=grouped_data, upstream_tasks=[credential_injection]
@@ -105,10 +100,7 @@ with Flow(
     ####################################
     # Task Section #4 - Load to API
     ####################################
-    endpoint_name = get_entity_endpoint_name(
-        entity=ENTITY,
-        upstream_tasks=[credential_injection]
-    )
+    endpoint_name = get_entity_endpoint_name(entity=ENTITY, upstream_tasks=[credential_injection])
 
     load_to_api.map(
         request_body=request_bodies,
