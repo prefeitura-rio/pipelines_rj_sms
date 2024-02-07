@@ -114,7 +114,7 @@ with Flow(
 
 
 sms_prontuarios_raw_smsrio.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=5)
+sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=2)
 sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
