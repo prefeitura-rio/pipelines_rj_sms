@@ -69,7 +69,7 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
 
     Args:
         data (list): The list of dict data.
-        entity (str): The entity name. This is used to choose the path to the 
+        entity (str): The entity name. This is used to choose the path to the
             patient cpf.
 
     Returns:
@@ -79,16 +79,16 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
     Raises:
         ValueError: If the entity name is invalid.
     """
-    if entity_type == 'diagnostico':
+    if entity_type == "diagnostico":
         return group_data_by_cpf(data, lambda data: data["boletim"]["paciente"]["cpf"])
-    elif entity_type == 'pacientes':
+    elif entity_type == "pacientes":
         return group_data_by_cpf(data, lambda data: data["cpf"])
     else:
         raise ValueError(f"Invalid entity type: {entity_type}")
 
 
 @task
-def get_entity_endpoint_name(entity:str) -> str:
+def get_entity_endpoint_name(entity: str) -> str:
     """
     Returns the endpoint for the entity.
 
