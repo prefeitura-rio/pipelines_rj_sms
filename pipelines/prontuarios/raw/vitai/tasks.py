@@ -73,7 +73,7 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
             patient cpf.
 
     Returns:
-        dict: A dictionary where the keys are patient identifiers and the values are 
+        dict: A dictionary where the keys are patient identifiers and the values are
             lists of entity data.
 
     Raises:
