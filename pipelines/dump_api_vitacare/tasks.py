@@ -326,7 +326,7 @@ def build_params_reprocess(
         "table_id": table_id,
         "date": data,
         "cnes": cnes,
-        "rename_flow": True,
+        "rename_flow": False,
     }
 
     log(f"Params built: {params}")
@@ -362,7 +362,7 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
             flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
             project_name="staging",
             parameters=params,
-            idempotency_key=params,
+            run_name=f"Reprocessamento - {table_id} - {run['id_cnes']} - {run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
         )
 
 
