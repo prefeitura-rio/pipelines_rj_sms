@@ -4,14 +4,14 @@
 Tasks for dump_api_vitacare
 """
 
+import hashlib
+import json
 import os
 import re
 import shutil
-import json
 from datetime import date, datetime, timedelta
 from functools import partial
 from pathlib import Path
-import hashlib
 
 import pandas as pd
 import prefect
