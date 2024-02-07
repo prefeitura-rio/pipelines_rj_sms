@@ -131,7 +131,7 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
 
 @task
 def rename_current_flow_run(
-    environment: str, cnes: str, is_initial_extraction: bool = False
+    environment: str, is_initial_extraction: bool = False, **kwargs
 ) -> None:
     """
     Renames the current flow run using the specified environment and CNES.
@@ -146,15 +146,15 @@ def rename_current_flow_run(
     flow_run_id = prefect.context.get("flow_run_id")
     flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
 
-    if is_initial_extraction:
-        title = "Initialization"
-    else:
-        title = "Routine"
+    title = "Initialization" if is_initial_extraction else "Routine"
+
+    params = [f"{key}={value}" for key, value in kwargs.items()]
+    params.append(f"env={environment}")
+
+    flow_run_name = f"{title} ({', '.join(params)}): {flow_run_scheduled_time}"
 
     client = Client()
-    client.set_flow_run_name(
-        flow_run_id, f"{title} (cnes={cnes}, env={environment}): {flow_run_scheduled_time}"
-    )
+    client.set_flow_run_name(flow_run_id, flow_run_name)
 
 
 @task
