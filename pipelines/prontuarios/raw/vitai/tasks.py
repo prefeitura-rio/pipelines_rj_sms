@@ -104,3 +104,17 @@ def get_entity_endpoint_name(entity: str) -> str:
         return "raw/patientconditions"
     else:
         raise ValueError(f"Invalid entity name: {entity}")
+
+
+@task
+def get_dates_in_range(minimum_date: date, maximum_date: date) -> list[date]:
+    """
+    Returns a list of dates from the minimum date to the current date.
+
+    Args:
+        minimum_date (date): The minimum date.
+
+    Returns:
+        list: The list of dates.
+    """
+    return [minimum_date + timedelta(days=i) for i in range((date.today() - minimum_date).days)]
