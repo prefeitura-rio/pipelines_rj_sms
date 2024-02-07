@@ -7,9 +7,11 @@ Tasks for dump_api_vitacare
 import os
 import re
 import shutil
+import json
 from datetime import date, datetime, timedelta
 from functools import partial
 from pathlib import Path
+import hashlib
 
 import pandas as pd
 import prefect
@@ -348,7 +350,7 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
         None
     """  # noqa: E501
 
-    for n, run in enumerate(run_list):
+    for run in run_list:
         params = build_params_reprocess.run(
             environment=environment,
             ap=run["area_programatica"],
@@ -358,12 +360,7 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
             cnes=run["id_cnes"],
         )
 
-        idempotency_key = prefect.context.get("task_run_id")
-        log(f"Idempotency key: {idempotency_key}")
-        map_index = prefect.context.get("map_index")
-        log(f"Map index: {map_index}")
-        if idempotency_key and map_index is not None:
-            idempotency_key += f"-{map_index}-{n}"
+        idempotency_key = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()
 
         create_flow_run.run(
             flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
