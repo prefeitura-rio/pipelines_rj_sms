@@ -19,12 +19,13 @@ from pipelines.utils.schedules import untuple_clocks
 
 posicao_parameters = generate_dicts(
     dict_template={
-        "dataset_id": vitacare_constants.DATASET_ID.value,
-        "table_id": "estoque_posicao",
+        "environment": "dev",
         "ap": "",
         "cnes": "",
         "endpoint": "posicao",
         "date": "today",
+        "dataset_id": vitacare_constants.DATASET_ID.value,
+        "table_id": "estoque_posicao",
         "rename_flow": True,
     },
     ap=["10", "21", "22", "31", "32", "33", "40", "51", "52", "53"],
@@ -33,12 +34,13 @@ posicao_parameters = generate_dicts(
 
 movimento_parameters = generate_dicts(
     dict_template={
-        "dataset_id": vitacare_constants.DATASET_ID.value,
-        "table_id": "estoque_movimento",
+        "environment": "dev",
         "ap": "",
         "cnes": "",
         "endpoint": "movimento",
         "date": "yesterday",
+        "dataset_id": vitacare_constants.DATASET_ID.value,
+        "table_id": "estoque_movimento",
         "rename_flow": True,
     },
     ap=["10", "21", "22", "31", "32", "33", "40", "51", "52", "53"],
@@ -50,7 +52,7 @@ flow_parameters = posicao_parameters + movimento_parameters
 
 vitacare_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 9, 5, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 11, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

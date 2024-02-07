@@ -14,7 +14,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
-from pipelines.dump_api_vitacare.schedules import vitacare_clocks
+from pipelines.dump_api_vitacare.schedules import vitacare_daily_update_schedule
 from pipelines.dump_api_vitacare.tasks import (
     build_params,
     build_url,
@@ -48,9 +48,9 @@ with Flow(
 
     # Vitacare API
     AP = Parameter("ap", required=True, default="10")
-    ENDPOINT = Parameter("endpoint", required=True)
-    DATE = Parameter("date", default="today")
     CNES = Parameter("cnes", default=None)
+    DATE = Parameter("date", default="today")
+    ENDPOINT = Parameter("endpoint", required=True)
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -140,7 +140,7 @@ sms_dump_vitacare.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-sms_dump_vitacare.schedule = vitacare_clocks
+sms_dump_vitacare.schedule = vitacare_daily_update_schedule
 
 
 with Flow(
