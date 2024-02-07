@@ -11,10 +11,11 @@ from prefect.schedules import Schedule
 
 from pipelines.constants import constants
 from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
-from pipelines.utils.schedules import (
-    untuple_clocks,
+from pipelines.dump_api_vitacare.utils import (
+    generate_dicts,
+    generate_dump_api_schedules,
 )
-from pipelines.dump_api_vitacare.utils import generate_dicts, generate_dump_api_schedules
+from pipelines.utils.schedules import untuple_clocks
 
 posicao_parameters = generate_dicts(
     dict_template={

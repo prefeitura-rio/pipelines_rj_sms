@@ -26,7 +26,7 @@ def generate_dicts(dict_template: dict, ap: list, cnes: dict) -> list:
 
     for a in ap:
         for c in cnes[a]:
-            dicts.append({**dict_template, **{'ap': a, 'cnes': c}})
+            dicts.append({**dict_template, **{"ap": a, "cnes": c}})
 
     return dicts
 
