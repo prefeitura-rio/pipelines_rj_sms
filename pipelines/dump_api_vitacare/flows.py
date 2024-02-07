@@ -194,23 +194,6 @@ with Flow(
         upstream_tasks=[retrieve_cases_task],
     )
 
-    # build_params_reprocessamento_task = build_params_reprocess(
-    #    environment=ENVIRONMENT,
-    #    ap=AP,
-    #    endpoint=ENDPOINT,
-    #    table_id=TABLE_ID,
-    #    data=DATE,
-    #    cnes=CNES,
-    #    upstream_tasks=[retrieve_cases_task],
-    # )
-#
-# dump_to_gcs_flow = create_flow_run(
-#    flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
-#    project_name="staging",
-#    parameters=build_params_reprocessamento_task,
-#    upstream_tasks=[retrieve_cases_task, inject_gcp_credentials_task],
-# )
-
 
 sms_dump_vitacare_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_dump_vitacare_reprocessamento.executor = LocalDaskExecutor(num_workers=10)

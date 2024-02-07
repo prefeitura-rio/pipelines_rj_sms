@@ -362,6 +362,7 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
             flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
             project_name="staging",
             parameters=params,
+            idempotency_key=params,
         )
 
 
