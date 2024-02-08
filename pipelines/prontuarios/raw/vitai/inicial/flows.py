@@ -11,15 +11,15 @@ from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constan
 from pipelines.prontuarios.raw.vitai.schedules import vitai_daily_update_schedule
 from pipelines.prontuarios.raw.vitai.tasks import (
     extract_data_from_api,
-    get_vitai_api_token,
     get_dates_in_range,
-    group_data_by_patient
+    get_vitai_api_token,
+    group_data_by_patient,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
-    rename_current_flow_run,
     get_flow_scheduled_day,
-    transform_filter_valid_cpf
+    rename_current_flow_run,
+    transform_filter_valid_cpf,
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
@@ -85,11 +85,10 @@ with Flow(
     grouped_data = group_data_by_patient.map(
         data=daily_data_list,
         entity_type=unmapped(ENTITY),
-        upstream_tasks=[unmapped(credential_injection)]
+        upstream_tasks=[unmapped(credential_injection)],
     )
     valid_data = transform_filter_valid_cpf.map(
-        objects=grouped_data,
-        upstream_tasks=[unmapped(credential_injection)]
+        objects=grouped_data, upstream_tasks=[unmapped(credential_injection)]
     )
 
 
