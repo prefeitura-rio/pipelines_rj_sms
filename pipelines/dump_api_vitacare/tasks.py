@@ -324,7 +324,7 @@ def retrieve_cases_to_reprocessed_from_birgquery():
     full_table_id = f"{client.project}.{dataset_id}.{table_id}"
 
     retrieve_query = (
-        f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT 5"
+        f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT 11"
     )
 
     query_job = client.query(retrieve_query)
@@ -370,7 +370,9 @@ def build_params_reprocess(
 
 
 @task
-def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, endpoint: str):
+def creat_multiples_flows_runs(
+    run_list: list, environment: str, table_id: str, endpoint: str, parallel_runs: int = 10
+):
     """
     Create multiple flow runs based on the given run list.
 
@@ -383,6 +385,10 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
     Returns:
         None
     """  # noqa: E501
+
+    start_time = datetime.now() + timedelta(minutes=1)
+    parallel_runs_counter = 0
+    count = 0
 
     for run in run_list:
         params = build_params_reprocess.run(
@@ -402,7 +408,14 @@ def creat_multiples_flows_runs(run_list: list, environment: str, table_id: str, 
             parameters=params,
             run_name=f"Reprocessamento: {table_id}__ap_{run['area_programatica']}.cnes_{run['id_cnes']}__{run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
             idempotency_key=idempotency_key,
+            scheduled_start_time=start_time + timedelta(minutes=2 * count),
         )
+
+        parallel_runs_counter += 1
+
+        if parallel_runs_counter == parallel_runs:
+            parallel_runs_counter = 0
+            count += 1
 
 
 @task
