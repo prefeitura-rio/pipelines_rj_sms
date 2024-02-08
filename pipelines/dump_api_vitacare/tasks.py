@@ -319,11 +319,11 @@ def retrieve_cases_to_reprocessed_from_birgquery(dataset_id: str, table_id: str)
     client = bigquery.Client()
 
     # Specify your dataset and table
-    dataset_id = "controle_reprocessamento"
+    dataset_controle = "controle_reprocessamento"
     table_id = f"{dataset_id}__{table_id}"
-    full_table_id = f"{client.project}.{dataset_id}.{table_id}"
+    full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
 
-    retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending'"
+    retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' and area_programatica <> '53'"
 
     query_job = client.query(retrieve_query)
     query_job.result()
