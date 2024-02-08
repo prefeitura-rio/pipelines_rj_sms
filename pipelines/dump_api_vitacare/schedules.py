@@ -47,7 +47,7 @@ movimento_parameters = generate_dicts(
     cnes=vitacare_constants.CNES.value,
 )
 
-flow_parameters = posicao_parameters  #+ movimento_parameters
+flow_parameters = posicao_parameters  # + movimento_parameters
 
 
 vitacare_clocks = generate_dump_api_schedules(
