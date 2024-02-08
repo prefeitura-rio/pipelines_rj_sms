@@ -129,7 +129,7 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
         raise Exception(f"Error loading data: {request_response.text}")
 
 
-@task
+@task()
 def rename_current_flow_run(
     environment: str, is_initial_extraction: bool = False, **kwargs
 ) -> None:

@@ -5,6 +5,7 @@ Tasks for Vitai Raw Data Extraction
 from datetime import date, timedelta
 
 from prefect import task
+import prefect
 
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.raw.vitai.utils import (
@@ -34,7 +35,7 @@ def get_vitai_api_token(environment: str = "dev") -> str:
 
 
 @task
-def extract_data_from_api(target_day: date, entity_name: str, vitai_api_token: str) -> dict:
+def extract_data_from_api(url:str, target_day: date, entity_name: str, vitai_api_token: str) -> dict:
     """
     Extracts data from the Vitai API for a specific target day and entity name.
 
@@ -49,7 +50,10 @@ def extract_data_from_api(target_day: date, entity_name: str, vitai_api_token: s
     """
     assert entity_name in ["pacientes", "diagnostico"], f"Invalid entity name: {entity_name}"
 
-    request_url = vitai_constants.API_URL.value + f"{entity_name}/listByPeriodo"
+    request_url = url + f"{entity_name}/listByPeriodo"
+
+    logger = prefect.context.get("logger")
+    logger.info(f"Extracting data for {entity_name} on {target_day}")
 
     requested_data = load_from_api.run(
         url=request_url,
@@ -107,7 +111,7 @@ def get_entity_endpoint_name(entity: str) -> str:
 
 
 @task
-def get_dates_in_range(minimum_date: date, maximum_date: date) -> list[date]:
+def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> list[date]:
     """
     Returns a list of dates from the minimum date to the current date.
 
@@ -117,4 +121,13 @@ def get_dates_in_range(minimum_date: date, maximum_date: date) -> list[date]:
     Returns:
         list: The list of dates.
     """
-    return [minimum_date + timedelta(days=i) for i in range((date.today() - minimum_date).days)]
+    if isinstance(maximum_date, str):
+        maximum_date = date.fromisoformat(maximum_date)
+
+    if minimum_date == "":
+        return [maximum_date]
+
+    if isinstance(minimum_date, str):
+        minimum_date = date.fromisoformat(minimum_date)
+
+    return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
