@@ -164,6 +164,9 @@ with Flow(
     DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
     TABLE_ID = Parameter("table_id", required=True)
 
+    # FLOW
+    PARALLEL_RUNS = Parameter("parallel_runs", default=20)
+
     #####################################
     # Set environment
     ####################################
@@ -191,7 +194,7 @@ with Flow(
         environment=ENVIRONMENT,
         table_id=TABLE_ID,
         endpoint=ENDPOINT,
-        parallel_runs=10,
+        parallel_runs=PARALLEL_RUNS,
         upstream_tasks=[retrieve_cases_task],
     )
 
