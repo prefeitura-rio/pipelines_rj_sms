@@ -384,6 +384,11 @@ def creat_multiples_flows_runs(
         None
     """  # noqa: E501
 
+    if environment == "dev":
+        project_name = "staging"
+    elif environment == "prod":
+        project_name = "production"
+
     start_time = datetime.now() + timedelta(minutes=1)
     parallel_runs_counter = 0
     count = 0
@@ -402,7 +407,7 @@ def creat_multiples_flows_runs(
 
         create_flow_run.run(
             flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
-            project_name="staging",
+            project_name=project_name,
             parameters=params,
             run_name=f"REPROCESS: {table_id}__ap_{run['area_programatica']}.cnes_{run['id_cnes']}__{run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
             idempotency_key=idempotency_key,
