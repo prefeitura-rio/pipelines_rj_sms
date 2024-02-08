@@ -191,7 +191,7 @@ with Flow(
         environment=ENVIRONMENT,
         table_id=TABLE_ID,
         endpoint=ENDPOINT,
-        parallel_runs=20,
+        parallel_runs=10,
         upstream_tasks=[retrieve_cases_task],
     )
 
