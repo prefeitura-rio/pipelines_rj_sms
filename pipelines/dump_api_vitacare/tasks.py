@@ -226,7 +226,7 @@ def save_data_to_file(
         bool: True if the data was successfully saved, False otherwise.
     """
     if cnes:
-        file_name = f"{table_id}__ap{ap}__cnes{cnes}"
+        file_name = f"{table_id}_ap{ap}_cnes{cnes}"
     else:
         file_name = f"{table_id}_ap{ap}"
 
