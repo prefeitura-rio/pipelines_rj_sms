@@ -324,7 +324,7 @@ def retrieve_cases_to_reprocessed_from_birgquery(dataset_id: str, table_id: str)
     full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
 
     retrieve_query = (
-        f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' limit 10"
+        f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' limit 2"
     )
 
     query_job = client.query(retrieve_query)
