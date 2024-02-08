@@ -92,7 +92,7 @@ with Flow(
         request_type="GET",
         body_params=None,
         query_params=build_params_task,
-        env=ENVIRONMENT,
+        env="dev",  # ENVIRONMENT,
         upstream_tasks=[file_name_task],
     )
 
