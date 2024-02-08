@@ -179,7 +179,7 @@ with Flow(
     #####################################
 
     retrieve_cases_task = retrieve_cases_to_reprocessed_from_birgquery(
-        upstream_tasks=[inject_gcp_credentials_task]
+        dataset_id=DATASET_ID, table_id=TABLE_ID, upstream_tasks=[inject_gcp_credentials_task]
     )
 
     ####################################
@@ -191,7 +191,7 @@ with Flow(
         environment=ENVIRONMENT,
         table_id=TABLE_ID,
         endpoint=ENDPOINT,
-        parallel_runs=5,
+        parallel_runs=20,
         upstream_tasks=[retrieve_cases_task],
     )
 

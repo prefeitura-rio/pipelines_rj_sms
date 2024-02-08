@@ -308,7 +308,7 @@ def create_partitions(data_path: str, partition_directory: str):
 
 
 @task
-def retrieve_cases_to_reprocessed_from_birgquery():
+def retrieve_cases_to_reprocessed_from_birgquery(dataset_id: str, table_id: str) -> list:
     """
     Retrieves cases to be reprocessed from BigQuery.
 
@@ -320,11 +320,11 @@ def retrieve_cases_to_reprocessed_from_birgquery():
 
     # Specify your dataset and table
     dataset_id = "controle_reprocessamento"
-    table_id = "brutos_prontuario_vitacare__estoque_movimento"
+    table_id = f"{dataset_id}__{table_id}"
     full_table_id = f"{client.project}.{dataset_id}.{table_id}"
 
     retrieve_query = (
-        f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT 11"
+        f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending'"
     )
 
     query_job = client.query(retrieve_query)
@@ -406,7 +406,7 @@ def creat_multiples_flows_runs(
             flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
             project_name="staging",
             parameters=params,
-            run_name=f"Reprocessamento: {table_id}__ap_{run['area_programatica']}.cnes_{run['id_cnes']}__{run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
+            run_name=f"REPROCESS: {table_id}__ap_{run['area_programatica']}.cnes_{run['id_cnes']}__{run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
             idempotency_key=idempotency_key,
             scheduled_start_time=start_time + timedelta(minutes=2 * count),
         )
