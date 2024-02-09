@@ -12,6 +12,7 @@ import shutil
 from datetime import date, datetime, timedelta
 from functools import partial
 from pathlib import Path
+import time
 
 import pandas as pd
 import prefect
@@ -419,6 +420,8 @@ def creat_multiples_flows_runs(
             idempotency_key=idempotency_key,
             scheduled_start_time=start_time + timedelta(minutes=2 * count),
         )
+
+        time.sleep(0.5)
 
         parallel_runs_counter += 1
 
