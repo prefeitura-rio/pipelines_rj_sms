@@ -308,7 +308,9 @@ def create_partitions(data_path: str, partition_directory: str):
 
 
 @task
-def retrieve_cases_to_reprocessed_from_birgquery(dataset_id: str, table_id: str) -> list:
+def retrieve_cases_to_reprocessed_from_birgquery(
+    dataset_id: str, table_id: str, query_limit: None
+) -> list:
     """
     Retrieves cases to be reprocessed from BigQuery.
 
@@ -323,7 +325,10 @@ def retrieve_cases_to_reprocessed_from_birgquery(dataset_id: str, table_id: str)
     table_id = f"{dataset_id}__{table_id}"
     full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
 
-    retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending'"
+    if query_limit:
+        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT {query_limit}"
+    else:
+        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending'"
 
     query_job = client.query(retrieve_query)
     query_job.result()
@@ -401,6 +406,7 @@ def creat_multiples_flows_runs(
             table_id=table_id,
             data=run["data"].strftime("%Y-%m-%d"),
             cnes=run["id_cnes"],
+            reprocess_mode=True,
         )
 
         idempotency_key = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()
@@ -433,50 +439,60 @@ def log_success():
 
 @task
 def write_on_bq_on_table(
-    records_to_update: list, dataset_id: str, table_id: str, status_code: str, row_count: int
+    response: dict, dataset_id: str, table_id: str, ap: str, cnes: str, data: str
 ):
+    log(f"Writing response to BigQuery for {cnes} - {ap} - {data}")
     # Define your BigQuery client
     client = bigquery.Client()
 
     # Specify your dataset and table
-    full_table_id = f"{client.project}.{dataset_id}.{table_id}"
+    dataset_controle = "controle_reprocessamento"
+    table_id = f"{dataset_id}__{table_id}"
+    full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
 
-    if status_code == "200":
-        reprocessing_status = "success"
-    else:
-        reprocessing_status = "failed"
-        row_count = 0
+    record_to_update = {
+        "id_cnes": cnes,
+        "area_programatica": ap,
+        "data": data,
+        "reprocessing_status": "success" if response["status_code"] == 200 else "failed",
+        "request_response_code": response["status_code"],
+        "request_row_count": len(response["body"]) if response["status_code"] == 200 else 0,
+    }
 
-    for n, _ in enumerate(records_to_update):
-        records_to_update[n].update(
-            {
-                "reprocessing_status": reprocessing_status,
-                "request_response_code": status_code,
-                "request_row_count": row_count,
-            }
+    # Construct the query
+    record_str = (
+        "STRUCT<id_cnes STRING, area_programatica STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>("
+        + ", ".join(
+            [
+                f"'{record_to_update['id_cnes']}'",
+                f"'{record_to_update['area_programatica']}'",
+                f"'{record_to_update['data']}'",
+                f"'{record_to_update['reprocessing_status']}'",
+                f"'{record_to_update['request_response_code']}'",
+                str(record_to_update["request_row_count"]),
+            ]
         )
+        + ")"
+    )
+    merge_query = f"""
+        MERGE `{full_table_id}` T
+        USING (SELECT * FROM UNNEST([{record_str}])) S
+        ON T.id_cnes = S.id_cnes AND T.data = S.data
+        WHEN MATCHED THEN
+        UPDATE SET
+            T.reprocessing_status = S.reprocessing_status,
+            T.request_response_code = S.request_response_code,
+            T.request_row_count = S.request_row_count
+        WHEN NOT MATCHED THEN
+        INSERT (id_cnes, area_programatica, data, reprocessing_status, request_response_code, request_row_count)
+        VALUES(id_cnes, area_programatica, data, reprocessing_status, request_response_code, request_row_count)
+        """  # noqa: E501
 
-        # Write to BigQuery
-        # Data to be upserted
-        merge_query = f"""
-            MERGE `{full_table_id}` T
-            USING (SELECT * FROM UNNEST([{', '.join(['STRUCT<id_cnes STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>' + str((row['id_cnes'], row['data'], row['reprocessing_status'], row['request_response_code'], row['request_row_count'])) for row in records_to_update])}])) S
-            ON T.id_cnes = S.id_cnes AND T.data = S.data
-            WHEN MATCHED THEN
-            UPDATE SET
-                T.reprocessing_status = S.reprocessing_status,
-                T.request_response_code = S.request_response_code,
-                T.request_row_count = S.request_row_count
-            WHEN NOT MATCHED THEN
-            INSERT (id_cnes, data, reprocessing_status, request_response_code, request_row_count)
-            VALUES(id_cnes, data, reprocessing_status, request_response_code, request_row_count)
-            """  # noqa: E501
+    # Run the query
+    query_job = client.query(merge_query)
+    query_job.result()  # Wait for the job to complete
 
-        # Run the query
-        query_job = client.query(merge_query)
-        query_job.result()  # Wait for the job to complete
-
-        print("Upsert operation completed.")
+    print("Upsert operation completed.")
 
 
 @task(
