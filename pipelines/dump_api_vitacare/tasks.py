@@ -326,9 +326,9 @@ def retrieve_cases_to_reprocessed_from_birgquery(
     full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
 
     if query_limit:
-        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT {query_limit}"  # noqa: E501
+        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' ORDER BY data DESC LIMIT {query_limit} "  # noqa: E501
     else:
-        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending'"
+        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' ORDER BY data DESC"  # noqa: E501
 
     query_job = client.query(retrieve_query)
     query_job.result()
