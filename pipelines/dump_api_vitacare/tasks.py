@@ -326,7 +326,7 @@ def retrieve_cases_to_reprocessed_from_birgquery(
     full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
 
     if query_limit:
-        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT {query_limit}"
+        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' LIMIT {query_limit}"  # noqa: E501
     else:
         retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending'"
 
@@ -428,19 +428,23 @@ def creat_multiples_flows_runs(
 
 
 @task
-def log_error():
-    log("State Handler: ERROR")
-
-
-@task
-def log_success():
-    log("State Handler: SUCCESS")
-
-
-@task
 def write_on_bq_on_table(
     response: dict, dataset_id: str, table_id: str, ap: str, cnes: str, data: str
 ):
+    """
+    Writes the response data to a BigQuery table.
+
+    Args:
+        response (dict): The response data from the API.
+        dataset_id (str): The ID of the BigQuery dataset.
+        table_id (str): The ID of the BigQuery table.
+        ap (str): The area programatica.
+        cnes (str): The ID of the CNES.
+        data (str): The date of the data.
+
+    Returns:
+        None
+    """
     log(f"Writing response to BigQuery for {cnes} - {ap} - {data}")
     # Define your BigQuery client
     client = bigquery.Client()
@@ -461,7 +465,7 @@ def write_on_bq_on_table(
 
     # Construct the query
     record_str = (
-        "STRUCT<id_cnes STRING, area_programatica STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>("
+        "STRUCT<id_cnes STRING, area_programatica STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>("  # noqa: E501
         + ", ".join(
             [
                 f"'{record_to_update['id_cnes']}'",
@@ -495,6 +499,22 @@ def write_on_bq_on_table(
     print("Upsert operation completed.")
 
 
+@task
+def log_error():
+    """
+    Logs the state handler error.
+    """
+    log("State Handler: ERROR")
+
+
+@task
+def log_success():
+    """
+    Logs the success state of the state handler.
+    """
+    log("State Handler: SUCCESS")
+
+
 @task(
     state_handlers=[
         partial(on_fail, task_to_run_on_fail=log_error),
@@ -502,6 +522,18 @@ def write_on_bq_on_table(
     ]
 )
 def wait_flor_flow_task(flow_to_wait):
+    """
+    Wait for a specific flow to complete.
+
+    Args:
+        flow_to_wait (str): The name of the flow to wait for.
+
+    Raises:
+        Exception: If the flow does not complete within the specified duration.
+
+    Returns:
+        None
+    """
     wait_for_flow_run.run(
         flow_to_wait,
         stream_states=True,
