@@ -366,6 +366,7 @@ def build_params_reprocess(
         "date": data,
         "cnes": cnes,
         "rename_flow": False,
+        "reprocess_mode": True,
     }
 
     log(f"Params built: {params}")
@@ -405,8 +406,7 @@ def creat_multiples_flows_runs(
             endpoint=endpoint,
             table_id=table_id,
             data=run["data"].strftime("%Y-%m-%d"),
-            cnes=run["id_cnes"],
-            reprocess_mode=True,
+            cnes=run["id_cnes"]
         )
 
         idempotency_key = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()
