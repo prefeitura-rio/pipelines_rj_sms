@@ -427,7 +427,7 @@ def creat_multiples_flows_runs(
             count += 1
 
 
-@task
+@task(max_retries=5, retry_delay=timedelta(seconds=5))
 def write_on_bq_on_table(
     response: dict, dataset_id: str, table_id: str, ap: str, cnes: str, data: str
 ):
