@@ -22,7 +22,7 @@ class StoredVariableReference:
 
         Args:
             value: The value to be stored.
-            directory (str, optional): The directory where the variable should be stored. Defaults to "".
+            directory (str, optional): The directory where the variable should be stored.
         """
         self.uuid = uuid.uuid4()
         self.file_path = os.path.join(directory, f"{self.uuid}.pkl")
