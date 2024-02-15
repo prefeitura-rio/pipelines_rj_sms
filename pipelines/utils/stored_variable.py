@@ -1,7 +1,4 @@
-import uuid
-import pickle
-import os
-
+# -*- coding: utf-8 -*-
 import os
 import pickle
 import uuid
@@ -35,7 +32,7 @@ class StoredVariableReference:
         Args:
             value: The value to be saved.
         """
-        with open(self.file_path, 'wb') as file:
+        with open(self.file_path, "wb") as file:
             pickle.dump(value, file)
 
     def load(self):
@@ -45,7 +42,7 @@ class StoredVariableReference:
         Returns:
             The loaded value.
         """
-        with open(self.file_path, 'rb') as file:
+        with open(self.file_path, "rb") as file:
             return pickle.load(file)
 
     def set(self, value):
