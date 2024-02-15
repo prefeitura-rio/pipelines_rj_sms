@@ -24,6 +24,7 @@ from pipelines.dump_api_vitacare.tasks import (
     rename_current_flow,
     retrieve_cases_to_reprocessed_from_birgquery,
     save_data_to_file,
+    write_on_bq_on_table,
 )
 from pipelines.utils.tasks import (
     cloud_function_request,
@@ -56,6 +57,9 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
     TABLE_ID = Parameter("table_id", required=True)
+
+    # Dump
+    REPROCESS_MODE = Parameter("reprocess_mode", default=False)
 
     #####################################
     # Set environment
@@ -129,6 +133,21 @@ with Flow(
         upstream_tasks=[create_partitions_task],
     )
 
+    #####################################
+    # Tasks section #3 - Save run metadata
+    #####################################
+
+    with case(REPROCESS_MODE, True):
+        write_on_bq_on_table_task = write_on_bq_on_table(
+            response=download_task,
+            dataset_id=DATASET_ID,
+            table_id=TABLE_ID,
+            ap=AP,
+            cnes=CNES,
+            data=DATE,
+            upstream_tasks=[upload_to_datalake_task],
+        )
+
 
 sms_dump_vitacare.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_dump_vitacare.executor = LocalDaskExecutor(num_workers=10)
@@ -164,6 +183,10 @@ with Flow(
     DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
     TABLE_ID = Parameter("table_id", required=True)
 
+    # Reprocess
+    PARALLEL_RUNS = Parameter("parallel_runs", default=20)
+    LIMIT_RUNS = Parameter("limit_runs", default=None)
+
     #####################################
     # Set environment
     ####################################
@@ -179,7 +202,10 @@ with Flow(
     #####################################
 
     retrieve_cases_task = retrieve_cases_to_reprocessed_from_birgquery(
-        dataset_id=DATASET_ID, table_id=TABLE_ID, upstream_tasks=[inject_gcp_credentials_task]
+        dataset_id=DATASET_ID,
+        table_id=TABLE_ID,
+        query_limit=LIMIT_RUNS,
+        upstream_tasks=[inject_gcp_credentials_task],
     )
 
     ####################################
@@ -191,7 +217,7 @@ with Flow(
         environment=ENVIRONMENT,
         table_id=TABLE_ID,
         endpoint=ENDPOINT,
-        parallel_runs=10,
+        parallel_runs=PARALLEL_RUNS,
         upstream_tasks=[retrieve_cases_task],
     )
 

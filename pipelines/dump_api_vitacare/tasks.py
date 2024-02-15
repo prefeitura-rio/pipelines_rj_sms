@@ -12,6 +12,7 @@ import shutil
 from datetime import date, datetime, timedelta
 from functools import partial
 from pathlib import Path
+import time
 
 import pandas as pd
 import prefect
@@ -308,7 +309,9 @@ def create_partitions(data_path: str, partition_directory: str):
 
 
 @task
-def retrieve_cases_to_reprocessed_from_birgquery(dataset_id: str, table_id: str) -> list:
+def retrieve_cases_to_reprocessed_from_birgquery(
+    dataset_id: str, table_id: str, query_limit: None
+) -> list:
     """
     Retrieves cases to be reprocessed from BigQuery.
 
@@ -323,7 +326,10 @@ def retrieve_cases_to_reprocessed_from_birgquery(dataset_id: str, table_id: str)
     table_id = f"{dataset_id}__{table_id}"
     full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
 
-    retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending'"
+    if query_limit:
+        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' ORDER BY data DESC LIMIT {query_limit} "  # noqa: E501
+    else:
+        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' ORDER BY data DESC"  # noqa: E501
 
     query_job = client.query(retrieve_query)
     query_job.result()
@@ -361,6 +367,7 @@ def build_params_reprocess(
         "date": data,
         "cnes": cnes,
         "rename_flow": False,
+        "reprocess_mode": True,
     }
 
     log(f"Params built: {params}")
@@ -384,6 +391,11 @@ def creat_multiples_flows_runs(
         None
     """  # noqa: E501
 
+    if environment == "dev":
+        project_name = "staging"
+    elif environment == "prod":
+        project_name = "production"
+
     start_time = datetime.now() + timedelta(minutes=1)
     parallel_runs_counter = 0
     count = 0
@@ -402,12 +414,14 @@ def creat_multiples_flows_runs(
 
         create_flow_run.run(
             flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
-            project_name="staging",
+            project_name=project_name,
             parameters=params,
             run_name=f"REPROCESS: {table_id}__ap_{run['area_programatica']}.cnes_{run['id_cnes']}__{run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
             idempotency_key=idempotency_key,
             scheduled_start_time=start_time + timedelta(minutes=2 * count),
         )
+
+        time.sleep(0.5)
 
         parallel_runs_counter += 1
 
@@ -416,62 +430,92 @@ def creat_multiples_flows_runs(
             count += 1
 
 
+@task(max_retries=5, retry_delay=timedelta(seconds=5))
+def write_on_bq_on_table(
+    response: dict, dataset_id: str, table_id: str, ap: str, cnes: str, data: str
+):
+    """
+    Writes the response data to a BigQuery table.
+
+    Args:
+        response (dict): The response data from the API.
+        dataset_id (str): The ID of the BigQuery dataset.
+        table_id (str): The ID of the BigQuery table.
+        ap (str): The area programatica.
+        cnes (str): The ID of the CNES.
+        data (str): The date of the data.
+
+    Returns:
+        None
+    """
+    log(f"Writing response to BigQuery for {cnes} - {ap} - {data}")
+    # Define your BigQuery client
+    client = bigquery.Client()
+
+    # Specify your dataset and table
+    dataset_controle = "controle_reprocessamento"
+    table_id = f"{dataset_id}__{table_id}"
+    full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
+
+    record_to_update = {
+        "id_cnes": cnes,
+        "area_programatica": ap,
+        "data": data,
+        "reprocessing_status": "success" if response["status_code"] == 200 else "failed",
+        "request_response_code": response["status_code"],
+        "request_row_count": len(response["body"]) if response["status_code"] == 200 else 0,
+    }
+
+    # Construct the query
+    record_str = (
+        "STRUCT<id_cnes STRING, area_programatica STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>("  # noqa: E501
+        + ", ".join(
+            [
+                f"'{record_to_update['id_cnes']}'",
+                f"'{record_to_update['area_programatica']}'",
+                f"'{record_to_update['data']}'",
+                f"'{record_to_update['reprocessing_status']}'",
+                f"'{record_to_update['request_response_code']}'",
+                str(record_to_update["request_row_count"]),
+            ]
+        )
+        + ")"
+    )
+    merge_query = f"""
+        MERGE `{full_table_id}` T
+        USING (SELECT * FROM UNNEST([{record_str}])) S
+        ON T.id_cnes = S.id_cnes AND T.data = S.data
+        WHEN MATCHED THEN
+        UPDATE SET
+            T.reprocessing_status = S.reprocessing_status,
+            T.request_response_code = S.request_response_code,
+            T.request_row_count = S.request_row_count
+        WHEN NOT MATCHED THEN
+        INSERT (id_cnes, area_programatica, data, reprocessing_status, request_response_code, request_row_count)
+        VALUES(id_cnes, area_programatica, data, reprocessing_status, request_response_code, request_row_count)
+        """  # noqa: E501
+
+    # Run the query
+    query_job = client.query(merge_query)
+    query_job.result()  # Wait for the job to complete
+
+    print("Upsert operation completed.")
+
+
 @task
 def log_error():
+    """
+    Logs the state handler error.
+    """
     log("State Handler: ERROR")
 
 
 @task
 def log_success():
+    """
+    Logs the success state of the state handler.
+    """
     log("State Handler: SUCCESS")
-
-
-@task
-def write_on_bq_on_table(
-    records_to_update: list, dataset_id: str, table_id: str, status_code: str, row_count: int
-):
-    # Define your BigQuery client
-    client = bigquery.Client()
-
-    # Specify your dataset and table
-    full_table_id = f"{client.project}.{dataset_id}.{table_id}"
-
-    if status_code == "200":
-        reprocessing_status = "success"
-    else:
-        reprocessing_status = "failed"
-        row_count = 0
-
-    for n, _ in enumerate(records_to_update):
-        records_to_update[n].update(
-            {
-                "reprocessing_status": reprocessing_status,
-                "request_response_code": status_code,
-                "request_row_count": row_count,
-            }
-        )
-
-        # Write to BigQuery
-        # Data to be upserted
-        merge_query = f"""
-            MERGE `{full_table_id}` T
-            USING (SELECT * FROM UNNEST([{', '.join(['STRUCT<id_cnes STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>' + str((row['id_cnes'], row['data'], row['reprocessing_status'], row['request_response_code'], row['request_row_count'])) for row in records_to_update])}])) S
-            ON T.id_cnes = S.id_cnes AND T.data = S.data
-            WHEN MATCHED THEN
-            UPDATE SET
-                T.reprocessing_status = S.reprocessing_status,
-                T.request_response_code = S.request_response_code,
-                T.request_row_count = S.request_row_count
-            WHEN NOT MATCHED THEN
-            INSERT (id_cnes, data, reprocessing_status, request_response_code, request_row_count)
-            VALUES(id_cnes, data, reprocessing_status, request_response_code, request_row_count)
-            """  # noqa: E501
-
-        # Run the query
-        query_job = client.query(merge_query)
-        query_job.result()  # Wait for the job to complete
-
-        print("Upsert operation completed.")
 
 
 @task(
@@ -481,6 +525,18 @@ def write_on_bq_on_table(
     ]
 )
 def wait_flor_flow_task(flow_to_wait):
+    """
+    Wait for a specific flow to complete.
+
+    Args:
+        flow_to_wait (str): The name of the flow to wait for.
+
+    Raises:
+        Exception: If the flow does not complete within the specified duration.
+
+    Returns:
+        None
+    """
     wait_for_flow_run.run(
         flow_to_wait,
         stream_states=True,
