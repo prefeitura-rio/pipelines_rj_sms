@@ -12,8 +12,8 @@ from pipelines.prontuarios.raw.vitai.utils import (
     format_date_to_request,
     group_data_by_cpf,
 )
-from pipelines.utils.tasks import get_secret_key, load_from_api
 from pipelines.utils.stored_variable import stored_variable_converter
+from pipelines.utils.tasks import get_secret_key, load_from_api
 
 
 @task
@@ -36,7 +36,7 @@ def get_vitai_api_token(environment: str = "dev") -> str:
 
 
 @task
-@stored_variable_converter(output_mode='transform')
+@stored_variable_converter(output_mode="transform")
 def extract_data_from_api(
     url: str, target_day: date, entity_name: str, vitai_api_token: str
 ) -> dict:

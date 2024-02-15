@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import pickle
-from typing import Literal
 import uuid
+from typing import Literal
 
 
 class StoredVariableReference:
@@ -74,10 +74,7 @@ class StoredVariableReference:
             pass
 
 
-
-def stored_variable_converter(
-    output_mode: Literal['transform', 'auto', 'original'] = 'auto'
-):
+def stored_variable_converter(output_mode: Literal["transform", "auto", "original"] = "auto"):
     """
     A decorator that wraps a function and allows the use of stored variables. StoredVariables are
         lightweight references to files. They are useful for storing large objects in the disk and
@@ -88,8 +85,8 @@ def stored_variable_converter(
             be transformed into a stored variable.
         allowed_transformations (list[str], optional): A list of allowed transformations.
         autodetect (bool, optional): If true, the previous parameters are automatically set based
-            on the following criteria: 
-            - Transformation: all parameters of type StoredVariableReference will be transformed. 
+            on the following criteria:
+            - Transformation: all parameters of type StoredVariableReference will be transformed.
             - Output: if at least one parameter is StoredVariableReference, the output will be in
             form of a StoredVariableReference.
 
@@ -99,6 +96,7 @@ def stored_variable_converter(
             # Function implementation
             return result
     """
+
     def decorator(func):
         def wrapper(**kwargs):
             is_using_stored_variable = False
@@ -116,13 +114,14 @@ def stored_variable_converter(
 
             output = func(**kwargs)
 
-            if (output_mode == 'transform') or \
-                (output_mode == 'auto' and is_using_stored_variable):
+            if (output_mode == "transform") or (output_mode == "auto" and is_using_stored_variable):
                 if isinstance(output, list):
                     for i, item in enumerate(output):
                         output[i] = StoredVariableReference(item)
                 else:
                     output = StoredVariableReference(output)
             return output
+
         return wrapper
+
     return decorator
