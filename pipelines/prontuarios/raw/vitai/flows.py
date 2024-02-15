@@ -11,20 +11,19 @@ from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constan
 from pipelines.prontuarios.raw.vitai.schedules import vitai_daily_update_schedule
 from pipelines.prontuarios.raw.vitai.tasks import (
     extract_data_from_api,
-    get_entity_endpoint_name,
-    get_vitai_api_token,
     get_dates_in_range,
+    get_entity_endpoint_name,
     get_vitai_api_token,
     group_data_by_patient,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
+    get_flow_scheduled_day,
     load_to_api,
     rename_current_flow_run,
-    get_flow_scheduled_day,
     transform_create_input_batches,
     transform_filter_valid_cpf,
-    transform_to_raw_format
+    transform_to_raw_format,
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
@@ -46,10 +45,7 @@ with Flow(
     ####################################
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
-    vitai_api_token = get_vitai_api_token(
-        environment="prod", 
-        upstream_tasks=[credential_injection]
-    )
+    vitai_api_token = get_vitai_api_token(environment="prod", upstream_tasks=[credential_injection])
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -57,14 +53,14 @@ with Flow(
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
         infisical_api_username=vitai_constants.INFISICAL_API_USERNAME.value,
         infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value,
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
             cnes=CNES,
             entity_type=ENTITY,
-            upstream_tasks=[credential_injection]
+            upstream_tasks=[credential_injection],
         )
 
     ####################################

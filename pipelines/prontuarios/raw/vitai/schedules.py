@@ -18,19 +18,19 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 vitai_flow_parameters = [
     {
-        'entity': 'diagnostico', 
-        'cnes': '5717256',
-        "api_url": "http://api.token.hmrg.vitai.care/api/v1/", 
-        "rename_flow": "true", 
-        "environment": "prod"
+        "entity": "diagnostico",
+        "cnes": "5717256",
+        "api_url": "http://api.token.hmrg.vitai.care/api/v1/",
+        "rename_flow": "true",
+        "environment": "prod",
     },
     {
-        'entity': 'pacientes', 
-        'cnes': '5717256',
-        "api_url": "http://api.token.hmrg.vitai.care/api/v1/", 
-        "rename_flow": "true", 
-        "environment": "prod"
-    }
+        "entity": "pacientes",
+        "cnes": "5717256",
+        "api_url": "http://api.token.hmrg.vitai.care/api/v1/",
+        "rename_flow": "true",
+        "environment": "prod",
+    },
 ]
 
 vitai_clocks = generate_dump_api_schedules(

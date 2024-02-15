@@ -4,8 +4,8 @@ Tasks for Vitai Raw Data Extraction
 """
 from datetime import date, timedelta
 
-from prefect import task
 import prefect
+from prefect import task
 
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.raw.vitai.utils import (
@@ -35,7 +35,9 @@ def get_vitai_api_token(environment: str = "dev") -> str:
 
 
 @task
-def extract_data_from_api(url:str, target_day: date, entity_name: str, vitai_api_token: str) -> dict:
+def extract_data_from_api(
+    url: str, target_day: date, entity_name: str, vitai_api_token: str
+) -> dict:
     """
     Extracts data from the Vitai API for a specific target day and entity name.
 
