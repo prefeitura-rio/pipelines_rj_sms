@@ -71,17 +71,17 @@ class StoredVariableReference:
         try:
             os.remove(self.file_path)
         except FileNotFoundError:
-            pass  # File has already been removed
+            pass
 
 
 
-def stored_variable_wrapper(
+def stored_variable_converter(
     output_mode: Literal['transform', 'auto', 'original'] = 'auto'
 ):
     """
     A decorator that wraps a function and allows the use of stored variables. StoredVariables are
         lightweight references to files. They are useful for storing large objects in the disk and
-        not in memory.
+        not in memory during Prefect flow executions.
 
     Args:
         transform_output (bool, optional): Indicates whether the output of the function should
@@ -103,21 +103,26 @@ def stored_variable_wrapper(
         def wrapper(**kwargs):
             is_using_stored_variable = False
 
+            # Translate
             for key, value in kwargs.items():
-                if isinstance(value, StoredVariableReference):
+                if isinstance(value, list):
+                    for i, item in enumerate(value):
+                        if isinstance(item, StoredVariableReference):
+                            kwargs[key][i] = item.get()
+                            is_using_stored_variable = True
+                elif isinstance(value, StoredVariableReference):
                     kwargs[key] = value.get()
                     is_using_stored_variable = True
 
             output = func(**kwargs)
 
-            if output_mode == 'original':
-                return output
-            elif output_mode == 'transform':
-                return StoredVariableReference(output)
-            else:
-                if is_using_stored_variable:
+            if (output_mode == 'transform') or \
+                (output_mode == 'auto' and is_using_stored_variable):
+                if isinstance(output, list):
+                    for i, item in enumerate(output):
+                        output[i] = StoredVariableReference(item)
+                else:
                     output = StoredVariableReference(output)
-                return output
-        
+            return output
         return wrapper
     return decorator

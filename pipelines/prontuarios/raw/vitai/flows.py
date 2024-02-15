@@ -24,6 +24,7 @@ from pipelines.prontuarios.utils.tasks import (
     transform_create_input_batches,
     transform_filter_valid_cpf,
     transform_to_raw_format,
+    force_garbage_collector,
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
@@ -95,11 +96,18 @@ with Flow(
         upstream_tasks=[unmapped(credential_injection)]
     )
 
+    all_valid_data = flatten(valid_data)
+
     ####################################
     # Task Section #3 - Prepare to Load
     ####################################
+    valid_data_batches = transform_create_input_batches(
+        input_list=all_valid_data,
+        upstream_tasks=[credential_injection],
+    )
+
     request_bodies = transform_to_raw_format.map(
-        json_data=valid_data,
+        json_data=valid_data_batches,
         cnes=unmapped(CNES),
         upstream_tasks=[unmapped(credential_injection)],
     )
@@ -109,12 +117,16 @@ with Flow(
     ####################################
     # Task Section #4 - Load Data
     ####################################
-    load_to_api.map(
+    load_to_api_task = load_to_api.map(
         request_body=request_bodies,
         endpoint_name=unmapped(endpoint_name),
         api_token=unmapped(api_token),
         environment=unmapped(ENVIRONMENT),
         upstream_tasks=[unmapped(credential_injection)],
+    )
+
+    force_garbage_collector(
+        upstream_tasks=[load_to_api_task]
     )
 
 

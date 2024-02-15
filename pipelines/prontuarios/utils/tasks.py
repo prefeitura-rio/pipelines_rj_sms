@@ -6,6 +6,7 @@ Utilities Tasks for prontuario system pipelines.
 
 from datetime import date, timedelta
 
+import gc
 import pandas as pd
 import prefect
 import requests
@@ -15,7 +16,7 @@ from prefect.client import Client
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
-from pipelines.utils.stored_variable import StoredVariableReference, stored_variable_wrapper
+from pipelines.utils.stored_variable import StoredVariableReference, stored_variable_converter
 from pipelines.utils.tasks import get_secret_key
 
 
@@ -82,8 +83,8 @@ def get_flow_scheduled_day() -> date:
 
 
 @task
-@stored_variable_wrapper()
-def transform_to_raw_format(json_data: dict | StoredVariableReference, cnes: str) -> dict:
+@stored_variable_converter()
+def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     """
     Transforms the given JSON data to the accepted raw endpoint format.
 
@@ -95,12 +96,12 @@ def transform_to_raw_format(json_data: dict | StoredVariableReference, cnes: str
         dict: The transformed data in the accepted raw endpoint format.
     """
     result = {"data_list": json_data, "cnes": cnes}
-    
+
     return result
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-@stored_variable_wrapper()
+@stored_variable_converter()
 def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environment: str) -> None:
     """
     Sends a POST request to the specified API endpoint with the provided request body.
@@ -164,7 +165,7 @@ def rename_current_flow_run(
 
 
 @task
-@stored_variable_wrapper()
+@stored_variable_converter()
 def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
     """
     Filters the list of objects based on the validity of their CPF.
@@ -190,6 +191,7 @@ def transform_split_dataframe(
 
 
 @task
+@stored_variable_converter()
 def transform_create_input_batches(input_list: list, batch_size: int = 250):
     """
     Transform input list into batches
@@ -204,3 +206,15 @@ def transform_create_input_batches(input_list: list, batch_size: int = 250):
     result = [input_list[i : i + batch_size] for i in range(0, len(input_list), batch_size)]
     
     return result
+
+@task
+def force_garbage_collector():
+    """
+    Forces garbage collector to run.
+
+    Returns:
+        None
+    """
+
+    gc.collect()
+    return None
