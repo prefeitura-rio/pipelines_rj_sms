@@ -14,7 +14,8 @@ from pipelines.prontuarios.raw.vitai.tasks import (
     get_entity_endpoint_name,
     get_vitai_api_token,
     get_dates_in_range,
-    group_data_by_patient
+    get_vitai_api_token,
+    group_data_by_patient,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -91,11 +92,10 @@ with Flow(
     grouped_data = group_data_by_patient.map(
         data=daily_data_list,
         entity_type=unmapped(ENTITY),
-        upstream_tasks=[unmapped(credential_injection)]
+        upstream_tasks=[unmapped(credential_injection)],
     )
     valid_data = transform_filter_valid_cpf.map(
-        objects=grouped_data,
-        upstream_tasks=[unmapped(credential_injection)]
+        objects=grouped_data, upstream_tasks=[unmapped(credential_injection)]
     )
     all_valid_data = flatten(valid_data)
 
