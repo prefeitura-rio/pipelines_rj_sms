@@ -67,9 +67,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    maximum_date = get_flow_scheduled_day(
-        upstream_tasks=[credential_injection]
-    )
+    maximum_date = get_flow_scheduled_day(upstream_tasks=[credential_injection])
 
     dates_of_interest = get_dates_in_range(
         minimum_date=MIN_DATE,
