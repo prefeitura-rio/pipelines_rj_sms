@@ -36,7 +36,7 @@ def get_vitai_api_token(environment: str = "dev") -> str:
 
 
 @task
-@stored_variable_converter(output_mode="transform")
+@stored_variable_converter(output_mode="original")
 def extract_data_from_api(
     url: str, target_day: date, entity_name: str, vitai_api_token: str
 ) -> dict:
