@@ -47,17 +47,41 @@ movimento_parameters = generate_dicts(
     cnes=vitacare_constants.CNES.value,
 )
 
-flow_parameters = posicao_parameters + movimento_parameters
+update_parameters = posicao_parameters + movimento_parameters
 
-vitacare_clocks = generate_dump_api_schedules(
+update_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
     start_date=datetime(2023, 1, 1, 4, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    flow_run_parameters=flow_parameters,
+    flow_run_parameters=update_parameters,
     runs_interval_minutes=2,
     parallel_runs=10,
 )
 
-vitacare_daily_update_schedule = Schedule(clocks=untuple_clocks(vitacare_clocks))
+vitacare_daily_update_schedule = Schedule(clocks=untuple_clocks(update_clocks))
+
+
+reprocess_parameters = [
+    {
+        "dataset_id": "brutos_prontuario_vitacare",
+        "endpoint": "movimento",
+        "environment": "prod",
+        "parallel_runs": 20,
+        "rename_flow": True,
+        "table_id": "estoque_movimento",
+    }
+]
+
+reprocess_clock = generate_dump_api_schedules(
+    interval=timedelta(days=1),
+    start_date=datetime(2023, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    flow_run_parameters=reprocess_parameters,
+    runs_interval_minutes=1,
+)
+
+vitacare_daily_reprocess_schedule = Schedule(clocks=untuple_clocks(reprocess_clock))
