@@ -16,9 +16,7 @@ from prefect.client import Client
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
-from pipelines.utils.stored_variable import (
-    stored_variable_converter,
-)
+from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import get_secret_key
 
 
