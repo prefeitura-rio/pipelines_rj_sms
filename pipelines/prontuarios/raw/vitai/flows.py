@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case, flatten, unmapped
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
