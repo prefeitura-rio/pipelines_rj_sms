@@ -22,7 +22,6 @@ from pipelines.prontuarios.utils.tasks import (
     get_flow_scheduled_day,
     load_to_api,
     rename_current_flow_run,
-    transform_create_input_batches,
     transform_filter_valid_cpf,
     transform_to_raw_format,
 )
