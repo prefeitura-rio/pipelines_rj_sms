@@ -97,18 +97,11 @@ with Flow(
         objects=grouped_data, upstream_tasks=[unmapped(credential_injection)]
     )
 
-    all_valid_data = flatten(valid_data)
-
     ####################################
     # Task Section #3 - Prepare to Load
     ####################################
-    valid_data_batches = transform_create_input_batches(
-        input_list=all_valid_data,
-        upstream_tasks=[credential_injection],
-    )
-
     request_bodies = transform_to_raw_format.map(
-        json_data=valid_data_batches,
+        json_data=valid_data,
         cnes=unmapped(CNES),
         upstream_tasks=[unmapped(credential_injection)],
     )

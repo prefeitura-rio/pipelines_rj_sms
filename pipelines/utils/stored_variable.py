@@ -122,23 +122,14 @@ def stored_variable_converter(output_mode: Literal["transform", "auto", "origina
 
             # Translate
             for key, value in kwargs.items():
-                if isinstance(value, list):
-                    for i, item in enumerate(value):
-                        if isinstance(item, StoredVariableReference):
-                            kwargs[key][i] = item.get()
-                            is_using_stored_variable = True
-                elif isinstance(value, StoredVariableReference):
+                if isinstance(value, StoredVariableReference):
                     kwargs[key] = value.get()
                     is_using_stored_variable = True
 
             output = func(**kwargs)
 
             if (output_mode == "transform") or (output_mode == "auto" and is_using_stored_variable):
-                if isinstance(output, list):
-                    for i, item in enumerate(output):
-                        output[i] = StoredVariableReference(item)
-                else:
-                    output = StoredVariableReference(output)
+                output = StoredVariableReference(output)
             return output
 
         wrapper.__name__ = func.__name__
