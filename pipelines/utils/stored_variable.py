@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import pickle
+import prefect
 import uuid
 from typing import Literal
 
@@ -14,7 +15,7 @@ class StoredVariableReference:
         file_path (str): The file path where the variable is stored.
     """
 
-    def __init__(self, value, directory=""):
+    def __init__(self, value):
         """
         Initializes a new instance of the StoredVariableReference class.
 
@@ -23,8 +24,22 @@ class StoredVariableReference:
             directory (str, optional): The directory where the variable should be stored.
         """
         self.uuid = uuid.uuid4()
-        self.file_path = os.path.join(directory, f"{self.uuid}.storedvar")
         self.save(value)
+
+        logger = prefect.context.get("logger")
+        logger.debug(f"Stored variable {self.file_path} created")
+    
+    @property
+    def file_path(self):
+            """
+            Returns the file path for the stored variable.
+            
+            The file path is generated based on the UUID of the stored variable.
+            
+            Returns:
+                str: The file path for the stored variable.
+            """
+            return f"{self.uuid}.storedvar"
 
     def save(self, value):
         """
@@ -45,7 +60,7 @@ class StoredVariableReference:
         """
         with open(self.file_path, "rb") as file:
             return pickle.load(file)
-
+    
     def set(self, value):
         """
         Sets the value and saves it to the file.
@@ -67,11 +82,14 @@ class StoredVariableReference:
     def __del__(self):
         """
         Deletes the stored variable file.
-        """
+        """        
+        logger = prefect.context.get("logger")
+
         try:
             os.remove(self.file_path)
+            logger.debug(f"Stored variable {self.file_path} deleted")
         except FileNotFoundError:
-            pass
+            logger.debug(f"Stored variable {self.file_path} was already deleted")
 
 
 def stored_variable_converter(output_mode: Literal["transform", "auto", "original"] = "auto"):
