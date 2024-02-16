@@ -124,5 +124,7 @@ def stored_variable_converter(
                 else:
                     output = StoredVariableReference(output)
             return output
+
+        wrapper.__name__ = func.__name__
         return wrapper
     return decorator
