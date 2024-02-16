@@ -129,11 +129,11 @@ with Flow(
 
 vitai_extraction.schedule = vitai_daily_update_schedule
 vitai_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitai_extraction.executor = LocalDaskExecutor(num_workers=1)
+vitai_extraction.executor = LocalDaskExecutor(num_workers=10)
 vitai_extraction.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="4Gi",
+    memory_limit="10Gi",
 )
