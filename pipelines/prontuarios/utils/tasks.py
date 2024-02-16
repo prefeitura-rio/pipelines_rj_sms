@@ -4,9 +4,9 @@
 Utilities Tasks for prontuario system pipelines.
 """
 
+import gc
 from datetime import date, timedelta
 
-import gc
 import pandas as pd
 import prefect
 import requests
@@ -16,7 +16,10 @@ from prefect.client import Client
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
-from pipelines.utils.stored_variable import StoredVariableReference, stored_variable_converter
+from pipelines.utils.stored_variable import (
+    StoredVariableReference,
+    stored_variable_converter,
+)
 from pipelines.utils.tasks import get_secret_key
 
 
@@ -176,9 +179,9 @@ def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
     Returns:
         list[dict]: A list of objects that have valid CPFs.
     """
-    
+
     obj_valid_cpf = filter(lambda obj: is_valid_cpf(obj["patient_cpf"]), objects)
-    
+
     return list(obj_valid_cpf)
 
 
@@ -204,8 +207,9 @@ def transform_create_input_batches(input_list: list, batch_size: int = 250):
         list[list]: List of batches
     """
     result = [input_list[i : i + batch_size] for i in range(0, len(input_list), batch_size)]
-    
+
     return result
+
 
 @task
 def force_garbage_collector():

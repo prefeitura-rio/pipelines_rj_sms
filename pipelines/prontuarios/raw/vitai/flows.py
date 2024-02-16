@@ -17,6 +17,7 @@ from pipelines.prontuarios.raw.vitai.tasks import (
     group_data_by_patient,
 )
 from pipelines.prontuarios.utils.tasks import (
+    force_garbage_collector,
     get_api_token,
     get_flow_scheduled_day,
     load_to_api,
@@ -24,7 +25,6 @@ from pipelines.prontuarios.utils.tasks import (
     transform_create_input_batches,
     transform_filter_valid_cpf,
     transform_to_raw_format,
-    force_garbage_collector,
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
@@ -92,8 +92,7 @@ with Flow(
         upstream_tasks=[unmapped(credential_injection)],
     )
     valid_data = transform_filter_valid_cpf.map(
-        objects=grouped_data,
-        upstream_tasks=[unmapped(credential_injection)]
+        objects=grouped_data, upstream_tasks=[unmapped(credential_injection)]
     )
 
     all_valid_data = flatten(valid_data)
@@ -125,9 +124,7 @@ with Flow(
         upstream_tasks=[unmapped(credential_injection)],
     )
 
-    force_garbage_collector(
-        upstream_tasks=[load_to_api_task]
-    )
+    force_garbage_collector(upstream_tasks=[load_to_api_task])
 
 
 vitai_extraction.schedule = vitai_daily_update_schedule
