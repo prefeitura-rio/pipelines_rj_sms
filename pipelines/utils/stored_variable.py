@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
 import pickle
-import prefect
 import uuid
 from typing import Literal
+
+import prefect
 
 
 class StoredVariableReference:
@@ -28,18 +29,18 @@ class StoredVariableReference:
 
         logger = prefect.context.get("logger")
         logger.debug(f"Stored variable {self.file_path} created")
-    
+
     @property
     def file_path(self):
-            """
-            Returns the file path for the stored variable.
-            
-            The file path is generated based on the UUID of the stored variable.
-            
-            Returns:
-                str: The file path for the stored variable.
-            """
-            return f"{self.uuid}.storedvar"
+        """
+        Returns the file path for the stored variable.
+
+        The file path is generated based on the UUID of the stored variable.
+
+        Returns:
+            str: The file path for the stored variable.
+        """
+        return f"{self.uuid}.storedvar"
 
     def save(self, value):
         """
@@ -60,7 +61,7 @@ class StoredVariableReference:
         """
         with open(self.file_path, "rb") as file:
             return pickle.load(file)
-    
+
     def set(self, value):
         """
         Sets the value and saves it to the file.
@@ -82,7 +83,7 @@ class StoredVariableReference:
     def __del__(self):
         """
         Deletes the stored variable file.
-        """        
+        """
         logger = prefect.context.get("logger")
 
         try:
