@@ -15,7 +15,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 # SMSRio
 #####################################
 
-smsrio_flow_parameters = [{"environment": "prod", "rename_flow": "true"}]
+smsrio_flow_parameters = [{"environment": "prod", "rename_flow": True}]
 
 smsrio_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
