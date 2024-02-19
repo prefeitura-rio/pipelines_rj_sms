@@ -150,7 +150,7 @@ with Flow(
             ap=AP,
             cnes=CNES,
             data=DATE,
-            upstream_tasks=[upload_to_datalake_task],
+            upstream_tasks=[save_data_task],
         )
 
 
