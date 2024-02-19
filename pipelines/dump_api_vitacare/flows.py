@@ -15,8 +15,8 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
 from pipelines.dump_api_vitacare.schedules import (
-    vitacare_daily_update_schedule,
     vitacare_daily_reprocess_schedule,
+    vitacare_daily_update_schedule,
 )
 from pipelines.dump_api_vitacare.tasks import (
     build_params,
