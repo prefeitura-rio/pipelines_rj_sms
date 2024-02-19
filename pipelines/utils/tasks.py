@@ -25,6 +25,8 @@ import requests
 from azure.storage.blob import BlobServiceClient
 from google.cloud import storage
 from prefect import task
+from prefect.engine.signals import ENDRUN
+from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
@@ -385,8 +387,10 @@ def cloud_function_request(
         payload = response.json()
 
         if payload["status_code"] != 200:
-            raise ValueError(
-                f"Resquest to endpoint failed: {payload['status_code']} - {payload['body']}"
+            raise ENDRUN(
+                state=Failed(
+                    f"Resquest to endpoint failed: {payload['status_code']} - {payload['body']}"
+                )
             )
         else:
             log("Request to endpoint successful")
