@@ -19,10 +19,14 @@ from pipelines.dump_ftp_cnes.tasks import (
     conform_csv_to_gcp,
     convert_csv_to_parquet,
     create_partitions_and_upload_multiple_tables_to_datalake,
-    download_ftp_cnes,
     rename_current_flow_run_cnes,
 )
-from pipelines.utils.tasks import create_folders, inject_gcp_credentials, unzip_file
+from pipelines.utils.tasks import (
+    create_folders, 
+    inject_gcp_credentials, 
+    unzip_file, 
+    download_ftp
+)
 
 with Flow(
     name="Dump CNES - Ingerir dados do CNES",
@@ -84,7 +88,7 @@ with Flow(
     create_folders_task = create_folders()
     create_folders_task.set_upstream(file_to_download_task)  # pylint: disable=E1101
 
-    download_task = download_ftp_cnes(
+    download_task = download_ftp(
         host=FTP_SERVER,
         user="",
         password="",

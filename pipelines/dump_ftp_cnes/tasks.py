@@ -20,7 +20,6 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.dump_ftp_cnes.constants import constants
 from pipelines.utils.tasks import (
     create_partitions,
-    download_ftp,
     list_files_ftp,
     upload_to_datalake,
 )
@@ -266,32 +265,6 @@ def convert_csv_to_parquet(directory: str, sep=";"):
         os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(".parquet")
     ]
     return parquet_files
-
-
-@task
-def download_ftp_cnes(host, user, password, directory, file_name, output_path):
-    """
-    Downloads a file from an FTP server.
-
-    Args:
-        host (str): The FTP server hostname.
-        user (str): The FTP server username.
-        password (str): The FTP server password.
-        directory (str): The directory where the file is located.
-        file_name (str): The name of the file to download.
-        output_path (str): The local path where the file will be saved.
-
-    Returns:
-        str: The local path where the downloaded file was saved.
-    """
-    return download_ftp.run(
-        host=host,
-        user=user,
-        password=password,
-        directory=directory,
-        file_name=file_name,
-        output_path=output_path,
-    )
 
 
 @task

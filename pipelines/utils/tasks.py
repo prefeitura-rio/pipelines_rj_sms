@@ -317,10 +317,12 @@ def download_ftp(
     downloaded_size = 0
 
     # Download the file
+    log("Downloading File")
     with open(output_path, "wb") as f:
         ftp.retrbinary(f"RETR {file_path}", callback)
 
     # Close the connection
+    log("Closing FTP Connection")
     ftp.quit()
 
     return output_path
