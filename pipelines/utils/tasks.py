@@ -400,8 +400,8 @@ def cloud_function_request(
 
         else:
             raise ENDRUN(
-                    state=Failed(
-                f"Request to cloud function failed: {response.status_code} - {response.reason}"
+                state=Failed(
+                    f"Request to cloud function failed: {response.status_code} - {response.reason}"
                 )
             )
 
