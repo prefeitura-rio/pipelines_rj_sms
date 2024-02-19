@@ -56,6 +56,8 @@ def rename_current_flow(table_id: str, date_param: str = "today", ap: str = None
 
     flow_name += f"__{data}"
 
+    log(f"Renaming flow run to: {flow_name}")
+
     return client.set_flow_run_name(flow_run_id, flow_name)
 
 
