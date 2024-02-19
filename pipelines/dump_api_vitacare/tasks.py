@@ -28,12 +28,19 @@ from pipelines.utils.tasks import add_load_date_column, save_to_file
 
 
 @task
-def rename_current_flow(table_id: str, ap: str, date_param: str = "today", cnes: str = None):
+def rename_current_flow(table_id: str, date_param: str = "today", ap: str = None, cnes: str = None):
     """
     Rename the current flow run.
     """
     flow_run_id = prefect.context.get("flow_run_id")
     client = Client()
+
+    flow_name = f"{table_id}"
+
+    if ap:
+        flow_name += f"__ap_{ap}"
+    if cnes:
+        flow_name += f".cnes_{cnes}"
 
     if date_param == "today":
         data = str(date.today())
@@ -47,10 +54,11 @@ def rename_current_flow(table_id: str, ap: str, date_param: str = "today", cnes:
         except ValueError as e:
             raise ValueError("date_param must be a date string (YYYY-MM-DD)") from e
 
-    if cnes:
-        return client.set_flow_run_name(flow_run_id, f"{table_id}__ap_{ap}.cnes_{cnes}__{data}")
-    else:
-        return client.set_flow_run_name(flow_run_id, f"{table_id}__ap_{ap}__{data}")
+    flow_name += f"__{data}"
+
+    log(f"Renaming flow run to: {flow_name}")
+
+    return client.set_flow_run_name(flow_run_id, flow_name)
 
 
 @task
@@ -463,8 +471,12 @@ def write_on_bq_on_table(
         "data": data,
         "reprocessing_status": "success" if response["status_code"] == 200 else "failed",
         "request_response_code": response["status_code"],
-        "request_row_count": len(response["body"]) if response["status_code"] == 200 else 0,
+        "request_row_count": (
+            len(json.loads(response["body"])) if response["status_code"] == 200 else 0
+        ),
     }
+
+    log(f"Record to update: {record_to_update}")
 
     # Construct the query
     record_str = (
