@@ -476,6 +476,8 @@ def write_on_bq_on_table(
         ),
     }
 
+    log(f"Record to update: {record_to_update}")
+
     # Construct the query
     record_str = (
         "STRUCT<id_cnes STRING, area_programatica STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>("  # noqa: E501
