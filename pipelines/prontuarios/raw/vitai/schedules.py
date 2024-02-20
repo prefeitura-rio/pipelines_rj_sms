@@ -10,28 +10,32 @@ import pytz
 from prefect.schedules import Schedule
 
 from pipelines.constants import constants
+from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 #####################################
-# Vitai
+# Parameters
 #####################################
 
-vitai_flow_parameters = [
-    {
-        "entity": "diagnostico",
-        "cnes": "5717256",
-        "api_url": "http://api.token.hmrg.vitai.care/api/v1/",
-        "rename_flow": "true",
-        "environment": "prod",
-    },
-    {
-        "entity": "pacientes",
-        "cnes": "5717256",
-        "api_url": "http://api.token.hmrg.vitai.care/api/v1/",
-        "rename_flow": "true",
-        "environment": "prod",
-    },
-]
+ENABLED_ENTITY_VALUES = ["pacientes", "diagnostico"]
+ENABLED_CNES_VALUES = vitai_constants.API_CNES_TO_URL.value.keys()
+
+
+vitai_flow_parameters = []
+for entity in ENABLED_ENTITY_VALUES:
+    for cnes in ENABLED_CNES_VALUES:
+        vitai_flow_parameters.append(
+            {
+                "cnes": cnes,
+                "entity": entity,
+                "environment": "prod",
+                "rename_flow": True,
+            }
+        )
+
+#####################################
+# Schedules
+#####################################
 
 vitai_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
