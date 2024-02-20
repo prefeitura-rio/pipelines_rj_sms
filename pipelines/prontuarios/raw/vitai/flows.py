@@ -75,7 +75,7 @@ with Flow(
     )
 
     daily_data_list = extract_data_from_api.map(
-        cnes = unmapped(CNES),
+        cnes=unmapped(CNES),
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
         url=unmapped(API_URL),
