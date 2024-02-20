@@ -10,7 +10,7 @@ import pytz
 from prefect.schedules import Schedule
 
 from pipelines.constants import constants
-from pipelines.prontuarios.raw.vitai.constants import constants
+from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 #####################################
@@ -18,7 +18,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 #####################################
 
 ENABLED_ENTITY_VALUES = ["pacientes", "diagnostico"]
-ENABLED_CNES_VALUES = constants.API_CNES_TO_URL.value.keys()
+ENABLED_CNES_VALUES = vitai_constants.API_CNES_TO_URL.value.keys()
 
 
 vitai_flow_parameters = []
