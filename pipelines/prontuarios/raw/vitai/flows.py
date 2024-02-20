@@ -35,7 +35,6 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     CNES = Parameter("cnes", default="5717256", required=True)
-    API_URL = Parameter("api_url", required=True)
     ENTITY = Parameter("entity", default="diagnostico", required=True)
     MIN_DATE = Parameter("minimum_date", default="", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
@@ -78,7 +77,7 @@ with Flow(
         cnes=unmapped(CNES),
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
-        url=unmapped(API_URL),
+        url=unmapped(vitai_constants.API_CNES_TO_URL.value[CNES]),
         vitai_api_token=unmapped(vitai_api_token),
         upstream_tasks=[unmapped(credential_injection)],
     )
