@@ -22,10 +22,10 @@ from pipelines.dump_ftp_cnes.tasks import (
     rename_current_flow_run_cnes,
 )
 from pipelines.utils.tasks import (
-    create_folders, 
-    inject_gcp_credentials, 
-    unzip_file, 
-    download_ftp
+    create_folders,
+    download_ftp,
+    inject_gcp_credentials,
+    unzip_file,
 )
 
 with Flow(

@@ -18,11 +18,7 @@ from prefeitura_rio.pipelines_utils.bd import create_table_and_upload_to_gcs
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.dump_ftp_cnes.constants import constants
-from pipelines.utils.tasks import (
-    create_partitions,
-    list_files_ftp,
-    upload_to_datalake,
-)
+from pipelines.utils.tasks import create_partitions, list_files_ftp, upload_to_datalake
 
 
 @task

@@ -25,6 +25,8 @@ import requests
 from azure.storage.blob import BlobServiceClient
 from google.cloud import storage
 from prefect import task
+from prefect.engine.signals import ENDRUN
+from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
@@ -83,6 +85,7 @@ def list_all_secrets_name(
     environment: str = "dev",
     path: str = "/",
 ) -> None:
+    "List all secrets in a path"
     token = getenv_or_action("INFISICAL_TOKEN", default=None)
     log(f"""Token: {token}""")
 
@@ -385,26 +388,35 @@ def cloud_function_request(
         }
     )
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {TOKEN}"}
-    response = requests.request("POST", cloud_function_url, headers=headers, data=payload)
 
-    if response.status_code == 200:
-        log("Request to cloud function successful")
+    try:
+        response = requests.request("POST", cloud_function_url, headers=headers, data=payload)
 
-        payload = response.json()
+        if response.status_code == 200:
+            log("Request to cloud function successful")
 
-        if payload["status_code"] != 200:
-            raise ValueError(
-                f"Resquest to endpoint failed: {payload['status_code']} - {payload['body']}"
-            )
+            payload = response.json()
+
+            if payload["status_code"] != 200:
+                raise ENDRUN(
+                    state=Failed(
+                        f"Resquest to endpoint failed: {payload['status_code']} - {payload['body']}"
+                    )
+                )
+            else:
+                log("Request to endpoint successful")
+
+                return payload
+
         else:
-            log("Request to endpoint successful")
+            raise ENDRUN(
+                state=Failed(
+                    f"Request to cloud function failed: {response.status_code} - {response.reason}"
+                )
+            )
 
-            return payload
-
-    else:
-        raise ValueError(
-            f"Request to cloud function failed: {response.status_code} - {response.reason}"
-        )  # noqa: E501
+    except Exception as e:
+        raise ENDRUN(state=Failed(f"Request to cloud function failed: {e}")) from e
 
 
 @task
