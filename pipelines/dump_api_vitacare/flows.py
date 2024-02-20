@@ -118,23 +118,25 @@ with Flow(
     # Tasks section #2 - Transform data and Create table
     #####################################
 
-    create_partitions_task = create_partitions(
-        data_path=create_folders_task["raw"],
-        partition_directory=create_folders_task["partition_directory"],
-        upstream_tasks=[save_data_task],
-    )
+    with case(save_data_task, True):
 
-    upload_to_datalake_task = upload_to_datalake(
-        input_path=create_folders_task["partition_directory"],
-        dataset_id=DATASET_ID,
-        table_id=TABLE_ID,
-        if_exists="replace",
-        csv_delimiter=";",
-        if_storage_data_exists="replace",
-        biglake_table=True,
-        dataset_is_public=False,
-        upstream_tasks=[create_partitions_task],
-    )
+        create_partitions_task = create_partitions(
+            data_path=create_folders_task["raw"],
+            partition_directory=create_folders_task["partition_directory"],
+            upstream_tasks=[save_data_task],
+        )
+
+        upload_to_datalake_task = upload_to_datalake(
+            input_path=create_folders_task["partition_directory"],
+            dataset_id=DATASET_ID,
+            table_id=TABLE_ID,
+            if_exists="replace",
+            csv_delimiter=";",
+            if_storage_data_exists="replace",
+            biglake_table=True,
+            dataset_is_public=False,
+            upstream_tasks=[create_partitions_task],
+        )
 
     #####################################
     # Tasks section #3 - Save run metadata
@@ -148,7 +150,7 @@ with Flow(
             ap=AP,
             cnes=CNES,
             data=DATE,
-            upstream_tasks=[upload_to_datalake_task],
+            upstream_tasks=[save_data_task],
         )
 
 
@@ -197,7 +199,7 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow(
-            table_id=TABLE_ID, ap="", cnes="", upstream_tasks=[inject_gcp_credentials_task]
+            table_id=TABLE_ID, upstream_tasks=[inject_gcp_credentials_task]
         )
 
     ####################################
