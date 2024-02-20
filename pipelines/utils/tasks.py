@@ -326,7 +326,6 @@ def download_ftp(
         if received_blocks_amount % 1000 == 0:
             log(f"Progress: {received_in_mb:.1f}MB/{total_in_mb:.1f}MB")
 
-
     log("Beginning file download")
     ftp.retrbinary(f"RETR {file_path}", update_progress_and_write)
 
