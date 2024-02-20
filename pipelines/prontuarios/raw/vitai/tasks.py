@@ -4,6 +4,7 @@ Tasks for Vitai Raw Data Extraction
 """
 from datetime import date, timedelta
 
+import prefect
 from prefect import task
 
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
@@ -11,6 +12,7 @@ from pipelines.prontuarios.raw.vitai.utils import (
     format_date_to_request,
     group_data_by_cpf,
 )
+from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
 
@@ -34,7 +36,10 @@ def get_vitai_api_token(environment: str = "dev") -> str:
 
 
 @task
-def extract_data_from_api(target_day: date, entity_name: str, vitai_api_token: str) -> dict:
+@stored_variable_converter(output_mode="transform")
+def extract_data_from_api(
+    url: str, target_day: date, entity_name: str, vitai_api_token: str
+) -> dict:
     """
     Extracts data from the Vitai API for a specific target day and entity name.
 
@@ -49,7 +54,10 @@ def extract_data_from_api(target_day: date, entity_name: str, vitai_api_token: s
     """
     assert entity_name in ["pacientes", "diagnostico"], f"Invalid entity name: {entity_name}"
 
-    request_url = vitai_constants.API_URL.value + f"{entity_name}/listByPeriodo"
+    request_url = url + f"{entity_name}/listByPeriodo"
+
+    logger = prefect.context.get("logger")
+    logger.info(f"Extracting data for {entity_name} on {target_day}")
 
     requested_data = load_from_api.run(
         url=request_url,
@@ -59,10 +67,12 @@ def extract_data_from_api(target_day: date, entity_name: str, vitai_api_token: s
         },
         credentials=vitai_api_token,
     )
+
     return requested_data
 
 
 @task
+@stored_variable_converter()
 def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
     """
     Groups the data list by patient CPF.
@@ -104,3 +114,26 @@ def get_entity_endpoint_name(entity: str) -> str:
         return "raw/patientconditions"
     else:
         raise ValueError(f"Invalid entity name: {entity}")
+
+
+@task
+def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> list[date]:
+    """
+    Returns a list of dates from the minimum date to the current date.
+
+    Args:
+        minimum_date (date): The minimum date.
+
+    Returns:
+        list: The list of dates.
+    """
+    if isinstance(maximum_date, str):
+        maximum_date = date.fromisoformat(maximum_date)
+
+    if minimum_date == "":
+        return [maximum_date]
+
+    if isinstance(minimum_date, str):
+        minimum_date = date.fromisoformat(minimum_date)
+
+    return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
