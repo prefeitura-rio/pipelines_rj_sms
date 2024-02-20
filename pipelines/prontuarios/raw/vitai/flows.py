@@ -36,7 +36,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     CNES = Parameter("cnes", default="5717256", required=True)
     ENTITY = Parameter("entity", default="diagnostico", required=True)
-    MIN_DATE = Parameter("minimum_date", default="", required=True)
+    MIN_DATE = Parameter("minimum_date", default="", required=False)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     ####################################
