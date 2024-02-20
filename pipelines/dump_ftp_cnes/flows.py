@@ -131,7 +131,7 @@ with Flow(
 
 
 sms_dump_cnes.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_cnes.executor = LocalDaskExecutor(num_workers=10)
+sms_dump_cnes.executor = LocalDaskExecutor(num_workers=1)
 sms_dump_cnes.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[

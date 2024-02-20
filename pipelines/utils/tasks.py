@@ -269,7 +269,7 @@ def download_azure_blob(
     return destination_file_path
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=5), timeout=timedelta(seconds=240))
+@task(max_retries=3, retry_delay=timedelta(seconds=5))
 def download_ftp(
     host: str,
     user: str,
@@ -296,32 +296,40 @@ def download_ftp(
     file_path = f"{directory}/{file_name}"
     output_path = output_path + "/" + file_name
     log(output_path)
-    # Connect to the FTP server
+
     ftp = FTP(host)
     ftp.login(user, password)
-
-    # Get the size of the file
     ftp.voidcmd("TYPE I")
+    ftp.voidcmd("PASV")
+
     total_size = ftp.size(file_path)
+    received_blocks_amount = 0
+    received_bytes_amount = 0
+    output_file = open(output_path, "wb")
 
-    # Create a callback function to be called when each block is read
-    def callback(block):
-        nonlocal downloaded_size
-        downloaded_size += len(block)
-        percent_complete = (downloaded_size / total_size) * 100
-        if percent_complete // 5 > (downloaded_size - len(block)) // (total_size / 20):
-            log(f"Download is {percent_complete:.0f}% complete")
-        f.write(block)
+    def update_progress_and_write(block):
+        nonlocal output_file
+        nonlocal received_bytes_amount
+        nonlocal received_blocks_amount
 
-    # Initialize the downloaded size
-    downloaded_size = 0
+        output_file.write(block)
 
-    # Download the file
-    log("Downloading File")
-    with open(output_path, "wb") as f:
-        ftp.retrbinary(f"RETR {file_path}", callback)
+        received_blocks_amount += 1
+        received_bytes_amount += len(block)
 
-    # Close the connection
+        received_in_mb = received_bytes_amount / 1000000.0
+        total_in_mb = total_size / 1000000.0
+
+        if received_blocks_amount % 1000 == 0:
+            log(f"Progress: {received_in_mb:.1f}MB/{total_in_mb:.1f}MB")
+
+
+    log("Beginning file download")
+    ftp.retrbinary(f"RETR {file_path}", update_progress_and_write)
+
+    log("Closing File Stream")
+    output_file.close()
+
     log("Closing FTP Connection")
     ftp.quit()
 
