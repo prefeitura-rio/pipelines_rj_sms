@@ -77,7 +77,6 @@ with Flow(
         cnes=unmapped(CNES),
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
-        url=unmapped(vitai_constants.API_CNES_TO_URL.value[CNES]),
         vitai_api_token=unmapped(vitai_api_token),
         upstream_tasks=[unmapped(credential_injection)],
     )
