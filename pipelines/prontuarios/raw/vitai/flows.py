@@ -69,6 +69,7 @@ with Flow(
     target_day = get_flow_scheduled_day(upstream_tasks=[credential_injection])
 
     data = extract_data_from_api(
+        cnes = CNES,
         target_day=target_day,
         entity_name=ENTITY,
         vitai_api_token=vitai_api_token,

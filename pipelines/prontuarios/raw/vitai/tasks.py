@@ -34,7 +34,7 @@ def get_vitai_api_token(environment: str = "dev") -> str:
 
 
 @task
-def extract_data_from_api(target_day: date, entity_name: str, vitai_api_token: str) -> dict:
+def extract_data_from_api(cnes:str, target_day: date, entity_name: str, vitai_api_token: str) -> dict:
     """
     Extracts data from the Vitai API for a specific target day and entity name.
 
@@ -49,7 +49,7 @@ def extract_data_from_api(target_day: date, entity_name: str, vitai_api_token: s
     """
     assert entity_name in ["pacientes", "diagnostico"], f"Invalid entity name: {entity_name}"
 
-    request_url = vitai_constants.API_URL.value + f"{entity_name}/listByPeriodo"
+    request_url = vitai_constants.API_CNES_TO_URL.value[cnes] + f"{entity_name}/listByPeriodo"
 
     requested_data = load_from_api.run(
         url=request_url,
