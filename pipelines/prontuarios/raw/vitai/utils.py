@@ -2,9 +2,10 @@
 """
 Utilities functions for Vitai Raw Data Extraction
 """
-import prefect
 from datetime import date
 from typing import Callable
+
+import prefect
 
 
 def format_date_to_request(date_to_format: date) -> str:
@@ -43,10 +44,7 @@ def group_data_by_cpf(data_list: list, cpf_get_function: Callable[[str], str]) -
             logger.warning(f"Skipping data item: {data}. Reason: {e}")
             continue
 
-        group = {
-            "patient_cpf": patient_cpf, 
-            "data": data
-        }
+        group = {"patient_cpf": patient_cpf, "data": data}
         groups.append(group)
 
     return groups
