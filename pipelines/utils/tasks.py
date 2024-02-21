@@ -300,7 +300,8 @@ def download_ftp(
     output_path = output_path + "/" + file_name
     log(output_path)
 
-    ftp = FTP(host)
+    ftp = FTP(host, timeout=240)
+    ftp.set_debuglevel(1)
     ftp.login(user, password)
     ftp.voidcmd("TYPE I")
     ftp.voidcmd("PASV")
@@ -323,7 +324,7 @@ def download_ftp(
         received_in_mb = received_bytes_amount / 1000000.0
         total_in_mb = total_size / 1000000.0
 
-        if received_blocks_amount % 1000 == 0:
+        if received_blocks_amount % 1000 == 0 or received_bytes_amount == total_size:
             log(f"Progress: {received_in_mb:.1f}MB/{total_in_mb:.1f}MB")
 
     log("Beginning file download")
