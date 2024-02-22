@@ -10,8 +10,8 @@ from prefect import task
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.utils.misc import group_data_by_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
-from pipelines.utils.tasks import get_secret_key, load_from_api
-
+from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery, load_from_api
+from pipelines.constants import constants
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
 @stored_variable_converter(output_mode="original")
@@ -69,3 +69,45 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
         raise NotImplementedError("Entity pacientes not implemented yet.")
     else:
         raise ValueError(f"Invalid entity type: {entity_type}")
+    
+@task
+def create_parameter_list(environment: str = "dev"):
+    # Access the health units information from BigQuery table
+    dados_mestres = load_file_from_bigquery.run(
+        project_name="rj-sms",
+        dataset_name="saude_dados_mestres",
+        table_name="estabelecimento",
+    )
+    # Filter the units using Vitacare
+    unidades_vitacare = dados_mestres[dados_mestres["prontuario_versao"] == "vitacare"]
+
+    # Get their CNES list
+    cnes_vitacare = unidades_vitacare["id_cnes"].tolist()
+
+    # Construct the parameters for the flow
+    vitacare_flow_parameters = []
+    for entity in ["diagnostico"]:
+        for cnes in cnes_vitacare:
+            vitacare_flow_parameters.append(
+                {
+                    "cnes": cnes,
+                    "entity": entity,
+                    "environment": environment,
+                    "rename_flow": True,
+                }
+            )
+
+    return vitacare_flow_parameters
+
+@task
+def get_project_name(environment: str):
+    """
+    Returns the project name based on the given environment.
+
+    Args:
+        environment (str): The environment for which to retrieve the project name.
+
+    Returns:
+        str: The project name corresponding to the given environment.
+    """
+    return constants.PROJECT_NAME.value[environment]

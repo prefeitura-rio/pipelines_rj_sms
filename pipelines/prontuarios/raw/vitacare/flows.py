@@ -4,13 +4,16 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_schedule
 from pipelines.prontuarios.raw.vitacare.tasks import (
+    create_parameter_list,
     extract_data_from_api,
+    get_project_name,
     group_data_by_patient,
 )
 from pipelines.prontuarios.raw.vitai.tasks import get_entity_endpoint_name
@@ -118,10 +121,65 @@ with Flow(
 
     force_garbage_collector(upstream_tasks=[load_to_api_task])
 
-vitacare_extraction.schedule = vitacare_daily_update_schedule
 vitacare_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitacare_extraction.executor = LocalDaskExecutor(num_workers=1)
 vitacare_extraction.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="10Gi",
+)
+
+# ==============================
+# SCHEDULER FLOW
+# ==============================
+
+with Flow(
+    name="Prontuários (Vitacare) - Scheduler Flow",
+) as vitacare_scheduler_flow:
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    RENAME_FLOW = Parameter("rename_flow", default=False)
+
+    credential_injection = inject_gcp_credentials(
+        environment=ENVIRONMENT
+    )
+
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(
+            environment=ENVIRONMENT,
+            upstream_tasks=[credential_injection],
+        )
+
+    parameter_list = create_parameter_list(
+        environment=ENVIRONMENT,
+        upstream_tasks=[credential_injection],
+    )
+
+    project_name = get_project_name(
+        environment=ENVIRONMENT,
+        upstream_tasks=[credential_injection],
+    )
+
+    created_flow_runs = create_flow_run.map(
+        flow_name=unmapped("Prontuários (Vitacare) - Extração de Dados"),
+        project_name=unmapped(project_name),
+        parameters=parameter_list,
+        labels=[constants.RJ_SMS_AGENT_LABEL.value],
+        upstream_tasks=[unmapped(credential_injection)],
+    )
+
+    wait_runs_task = wait_for_flow_run.map(
+        created_flow_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
+    )
+
+vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
+vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=1)
+vitacare_scheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
