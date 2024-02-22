@@ -23,6 +23,7 @@ import pandas as pd
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
+from google.cloud import bigquery
 from google.cloud import storage
 from prefect import task
 from prefect.engine.signals import ENDRUN
@@ -744,5 +745,28 @@ def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
         df = pd.read_csv(StringIO(data.decode("utf-8")), dtype=str)
     else:
         raise NotImplementedError(f"File type {file_type} not implemented")
+
+    return df
+
+@task
+def load_file_from_bigquery(project_name:str, dataset_name:str, table_name:str):    
+    """
+    Load data from BigQuery table into a pandas DataFrame.
+
+    Args:
+        project_name (str): The name of the BigQuery project.
+        dataset_name (str): The name of the BigQuery dataset.
+        table_name (str): The name of the BigQuery table.
+
+    Returns:
+        pandas.DataFrame: The loaded data from the BigQuery table.
+    """
+    client = bigquery.Client()
+
+    dataset_ref = bigquery.DatasetReference(project_name, dataset_name)
+    table_ref = dataset_ref.table(table_name)
+    table = client.get_table(table_ref)
+
+    df = client.list_rows(table).to_dataframe()
 
     return df

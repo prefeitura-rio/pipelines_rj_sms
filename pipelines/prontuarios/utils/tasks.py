@@ -17,7 +17,7 @@ from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
-from pipelines.utils.tasks import get_secret_key
+from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
@@ -241,3 +241,21 @@ def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> li
         minimum_date = date.fromisoformat(minimum_date)
 
     return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
+
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
+def get_ap_from_cnes(cnes: str) -> str:
+
+    dados_mestres = load_file_from_bigquery.run(
+        project_name="rj-sms",
+        dataset_name="saude_dados_mestres",
+        table_name="estabelecimento"
+    )
+
+    unidade = dados_mestres[dados_mestres["id_cnes"] == cnes]
+
+    if unidade.empty:
+        raise KeyError(f"CNES {cnes} not found in the database")
+
+    ap = unidade.iloc[0]['area_programatica']
+
+    return f'AP{ap}'

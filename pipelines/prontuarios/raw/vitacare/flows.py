@@ -22,6 +22,7 @@ from pipelines.prontuarios.utils.tasks import (
     get_dates_in_range,
     transform_filter_valid_cpf,
     transform_to_raw_format,
+    get_ap_from_cnes
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
@@ -41,6 +42,11 @@ with Flow(
     # Set environment
     ####################################
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
+    
+    ap = get_ap_from_cnes(
+        cnes=CNES,
+        upstream_tasks=[credential_injection]
+    )
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -50,6 +56,8 @@ with Flow(
         infisical_api_password=vitacare_constants.INFISICAL_API_PASSWORD.value,
         upstream_tasks=[credential_injection],
     )
+
+
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
@@ -71,6 +79,7 @@ with Flow(
 
     daily_data_list = extract_data_from_api.map(
         cnes=unmapped(CNES),
+        ap=unmapped(ap),
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
         upstream_tasks=[unmapped(credential_injection)],
