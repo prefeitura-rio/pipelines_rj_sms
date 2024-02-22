@@ -8,6 +8,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
+from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_schedule
 from pipelines.prontuarios.raw.vitacare.tasks import (
     extract_data_from_api,
     group_data_by_patient,
@@ -117,7 +118,7 @@ with Flow(
 
     force_garbage_collector(upstream_tasks=[load_to_api_task])
 
-# vitacare_extraction.schedule = vitacare_daily_update_schedule
+vitacare_extraction.schedule = vitacare_daily_update_schedule
 vitacare_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitacare_extraction.executor = LocalDaskExecutor(num_workers=1)
 vitacare_extraction.run_config = KubernetesRun(
