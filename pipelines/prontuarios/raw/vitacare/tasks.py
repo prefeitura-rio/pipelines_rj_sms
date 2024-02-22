@@ -72,6 +72,15 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
     
 @task
 def create_parameter_list(environment: str = "dev"):
+    """
+    Create a list of parameters for running the Vitacare flow.
+
+    Args:
+        environment (str, optional): The environment to run the flow in. Defaults to "dev".
+
+    Returns:
+        list: A list of dictionaries containing the flow run parameters.
+    """
     # Access the health units information from BigQuery table
     dados_mestres = load_file_from_bigquery.run(
         project_name="rj-sms",
@@ -96,6 +105,9 @@ def create_parameter_list(environment: str = "dev"):
                     "rename_flow": True,
                 }
             )
+
+    logger = prefect.context.get("logger")
+    logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters.")
 
     return vitacare_flow_parameters
 
