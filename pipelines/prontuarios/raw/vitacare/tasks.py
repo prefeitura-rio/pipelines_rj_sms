@@ -7,11 +7,12 @@ from datetime import date, timedelta
 import prefect
 from prefect import task
 
+from pipelines.constants import constants
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.utils.misc import group_data_by_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery, load_from_api
-from pipelines.constants import constants
+
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
 @stored_variable_converter(output_mode="original")
@@ -69,7 +70,8 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
         raise NotImplementedError("Entity pacientes not implemented yet.")
     else:
         raise ValueError(f"Invalid entity type: {entity_type}")
-    
+
+
 @task
 def create_parameter_list(environment: str = "dev"):
     """
@@ -110,6 +112,7 @@ def create_parameter_list(environment: str = "dev"):
     logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters.")
 
     return vitacare_flow_parameters
+
 
 @task
 def get_project_name(environment: str):
