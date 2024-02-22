@@ -3,8 +3,8 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
+from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
@@ -141,9 +141,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
-    credential_injection = inject_gcp_credentials(
-        environment=ENVIRONMENT
-    )
+    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
