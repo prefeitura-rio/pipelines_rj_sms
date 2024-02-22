@@ -10,10 +10,9 @@ import pytz
 from prefect.schedules import Schedule
 
 from pipelines.constants import constants
+from pipelines.utils.infisical import inject_bd_credentials
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 from pipelines.utils.tasks import load_file_from_bigquery
-from pipelines.utils.infisical import inject_bd_credentials
-
 
 #####################################
 # Parameters
@@ -24,12 +23,10 @@ inject_bd_credentials(environment="prod")
 
 # Access the health units information from BigQuery table
 dados_mestres = load_file_from_bigquery.run(
-    project_name="rj-sms",
-    dataset_name="saude_dados_mestres",
-    table_name="estabelecimento"
+    project_name="rj-sms", dataset_name="saude_dados_mestres", table_name="estabelecimento"
 )
 # Filter the units using Vitacare
-unidades_vitacare = dados_mestres[dados_mestres["prontuario_versao"] == 'vitacare']
+unidades_vitacare = dados_mestres[dados_mestres["prontuario_versao"] == "vitacare"]
 
 # Get their CNES list
 cnes_vitacare = unidades_vitacare["id_cnes"].tolist()
