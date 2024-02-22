@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.prontuarios.raw.smsrio.flows import sms_prontuarios_raw_smsrio
-from pipelines.prontuarios.raw.vitai.flows import vitai_extraction
 from pipelines.dump_ftp_cnes.flows import sms_dump_cnes
+from pipelines.prontuarios.raw.smsrio.flows import sms_prontuarios_raw_smsrio
 from pipelines.prontuarios.raw.vitacare.flows import vitacare_extraction
+from pipelines.prontuarios.raw.vitai.flows import vitai_extraction
 
 # ==================================================
 # CONFIGURATION
@@ -18,7 +18,7 @@ flows_run_cases = [
             "cnes": "5621801",
             "entity": "diagnostico",
             "minimum_date": "2024-02-15",
-        }
+        },
     ),
     (
         vitai_extraction,
@@ -28,16 +28,8 @@ flows_run_cases = [
             "minimum_date": "2023-02-21",
         },
     ),
-    (
-        sms_dump_cnes,
-        {}
-    ),
-    (
-        sms_prontuarios_raw_smsrio,
-        {
-            "is_initial_extraction": False
-        }
-    ),
+    (sms_dump_cnes, {}),
+    (sms_prontuarios_raw_smsrio, {"is_initial_extraction": False}),
 ]
 
 

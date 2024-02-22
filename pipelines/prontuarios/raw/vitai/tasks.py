@@ -8,9 +8,7 @@ import prefect
 from prefect import task
 
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
-from pipelines.prontuarios.raw.vitai.utils import (
-    format_date_to_request,
-)
+from pipelines.prontuarios.raw.vitai.utils import format_date_to_request
 from pipelines.prontuarios.utils.misc import group_data_by_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import get_secret_key, load_from_api

@@ -16,7 +16,7 @@ from pipelines.utils.tasks import get_secret_key, load_from_api
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
 @stored_variable_converter(output_mode="original")
 def extract_data_from_api(
-    cnes: str, ap:str, target_day: date, entity_name: str, environment: str = "dev"
+    cnes: str, ap: str, target_day: date, entity_name: str, environment: str = "dev"
 ) -> dict:
     api_url = vitacare_constants.AP_TO_API_URL.value[ap]
     endpoint = vitacare_constants.ENTITY_TO_ENDPOINT.value[entity_name]
@@ -37,12 +37,9 @@ def extract_data_from_api(
 
     requested_data = load_from_api.run(
         url=f"{api_url}{endpoint}",
-        params={
-            "date": target_day,
-            "cnes": cnes
-        },
+        params={"date": target_day, "cnes": cnes},
         auth_method="basic",
-        credentials=(username, password)
+        credentials=(username, password),
     )
 
     return requested_data

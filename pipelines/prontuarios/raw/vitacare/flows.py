@@ -15,14 +15,14 @@ from pipelines.prontuarios.raw.vitacare.tasks import (
 from pipelines.prontuarios.raw.vitai.tasks import get_entity_endpoint_name
 from pipelines.prontuarios.utils.tasks import (
     force_garbage_collector,
+    get_ap_from_cnes,
     get_api_token,
+    get_dates_in_range,
     get_flow_scheduled_day,
     load_to_api,
     rename_current_flow_run,
-    get_dates_in_range,
     transform_filter_valid_cpf,
     transform_to_raw_format,
-    get_ap_from_cnes
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
@@ -42,11 +42,8 @@ with Flow(
     # Set environment
     ####################################
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
-    
-    ap = get_ap_from_cnes(
-        cnes=CNES,
-        upstream_tasks=[credential_injection]
-    )
+
+    ap = get_ap_from_cnes(cnes=CNES, upstream_tasks=[credential_injection])
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -56,7 +53,6 @@ with Flow(
         infisical_api_password=vitacare_constants.INFISICAL_API_PASSWORD.value,
         upstream_tasks=[credential_injection],
     )
-
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
@@ -121,7 +117,7 @@ with Flow(
 
     force_garbage_collector(upstream_tasks=[load_to_api_task])
 
-#vitacare_extraction.schedule = vitacare_daily_update_schedule
+# vitacare_extraction.schedule = vitacare_daily_update_schedule
 vitacare_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitacare_extraction.executor = LocalDaskExecutor(num_workers=1)
 vitacare_extraction.run_config = KubernetesRun(
