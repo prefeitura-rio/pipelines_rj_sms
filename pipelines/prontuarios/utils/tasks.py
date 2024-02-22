@@ -84,7 +84,7 @@ def get_flow_scheduled_day() -> date:
 
 @task
 @stored_variable_converter()
-def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
+def  transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     """
     Transforms the given JSON data to the accepted raw endpoint format.
 
@@ -219,3 +219,25 @@ def force_garbage_collector():
 
     gc.collect()
     return None
+
+@task
+def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> list[date]:
+    """
+    Returns a list of dates from the minimum date to the current date.
+
+    Args:
+        minimum_date (date): The minimum date.
+
+    Returns:
+        list: The list of dates.
+    """
+    if isinstance(maximum_date, str):
+        maximum_date = date.fromisoformat(maximum_date)
+
+    if minimum_date == "":
+        return [maximum_date]
+
+    if isinstance(minimum_date, str):
+        minimum_date = date.fromisoformat(minimum_date)
+
+    return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
