@@ -4,6 +4,8 @@ Utilities functions for Vitai Raw Data Extraction
 """
 from datetime import date
 
+import prefect
+
 
 def format_date_to_request(date_to_format: date) -> str:
     """
