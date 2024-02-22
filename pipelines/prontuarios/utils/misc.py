@@ -37,5 +37,5 @@ def group_data_by_cpf(data_list: list, cpf_get_function: Callable[[str], str]) -
 
         group = {"patient_cpf": patient_cpf, "data": data}
         groups.append(group)
-        
+
     return groups
