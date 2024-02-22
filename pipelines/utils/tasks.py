@@ -23,8 +23,7 @@ import pandas as pd
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
-from google.cloud import bigquery
-from google.cloud import storage
+from google.cloud import bigquery, storage
 from prefect import task
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
@@ -748,8 +747,9 @@ def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
 
     return df
 
+
 @task
-def load_file_from_bigquery(project_name:str, dataset_name:str, table_name:str):    
+def load_file_from_bigquery(project_name: str, dataset_name: str, table_name: str):
     """
     Load data from BigQuery table into a pandas DataFrame.
 

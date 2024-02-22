@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 from typing import Callable
 
+
 def split_dataframe(df, chunk_size=10000):
     chunks = list()
     num_chunks = len(df) // chunk_size + 1
     for i in range(num_chunks):
         chunks.append(df[i * chunk_size : (i + 1) * chunk_size])  # noqa: E203
     return chunks
+
 
 def group_data_by_cpf(data_list: list, cpf_get_function: Callable[[str], str]) -> dict:
     """

@@ -84,7 +84,7 @@ def get_flow_scheduled_day() -> date:
 
 @task
 @stored_variable_converter()
-def  transform_to_raw_format(json_data: dict, cnes: str) -> dict:
+def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     """
     Transforms the given JSON data to the accepted raw endpoint format.
 
@@ -220,6 +220,7 @@ def force_garbage_collector():
     gc.collect()
     return None
 
+
 @task
 def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> list[date]:
     """
@@ -242,13 +243,12 @@ def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> li
 
     return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
 
+
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
 def get_ap_from_cnes(cnes: str) -> str:
 
     dados_mestres = load_file_from_bigquery.run(
-        project_name="rj-sms",
-        dataset_name="saude_dados_mestres",
-        table_name="estabelecimento"
+        project_name="rj-sms", dataset_name="saude_dados_mestres", table_name="estabelecimento"
     )
 
     unidade = dados_mestres[dados_mestres["id_cnes"] == cnes]
@@ -256,6 +256,6 @@ def get_ap_from_cnes(cnes: str) -> str:
     if unidade.empty:
         raise KeyError(f"CNES {cnes} not found in the database")
 
-    ap = unidade.iloc[0]['area_programatica']
+    ap = unidade.iloc[0]["area_programatica"]
 
-    return f'AP{ap}'
+    return f"AP{ap}"
