@@ -128,6 +128,9 @@ def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     Returns:
         dict: The transformed data in the accepted raw endpoint format.
     """
+    logger = prefect.context.get("logger")
+    logger.info(f"Formatting {len(json_data)} registers")
+
     result = {"data_list": json_data, "cnes": cnes}
 
     return result
@@ -151,7 +154,6 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     Returns:
         None
     """
-
     api_url = get_secret_key.run(
         secret_path="/",
         secret_name=prontuario_constants.INFISICAL_API_URL.value,
