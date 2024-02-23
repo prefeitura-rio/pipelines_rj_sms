@@ -8,10 +8,8 @@ import prefect
 from prefect import task
 
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
-from pipelines.prontuarios.raw.vitai.utils import (
-    format_date_to_request,
-    group_data_by_cpf,
-)
+from pipelines.prontuarios.raw.vitai.utils import format_date_to_request
+from pipelines.prontuarios.utils.misc import group_data_by_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -35,7 +33,7 @@ def get_vitai_api_token(environment: str = "dev") -> str:
     return token
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
 @stored_variable_converter(output_mode="transform")
 def extract_data_from_api(
     cnes: str, target_day: date, entity_name: str, vitai_api_token: str
