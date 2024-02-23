@@ -9,11 +9,8 @@ from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.std.smsrio.tasks import standardize_race
-
 from pipelines.prontuarios.utils.tasks import get_api_token
-from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials
-from pipelines.utils.tasks import load_from_api
-
+from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
 
 with Flow(
     name="Prontuários (SMSRio) - Padronização de Pacientes",
@@ -52,12 +49,9 @@ with Flow(
     ####################################
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords",
-        params={
-            "start_datetime": START_DATETIME, 
-            "end_datetime": END_DATETIME
-        },
+        params={"start_datetime": START_DATETIME, "end_datetime": END_DATETIME},
         credentials=api_token,
-        auth_method="bearer"
+        auth_method="bearer",
     )
 
     ####################################

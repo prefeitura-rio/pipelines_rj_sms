@@ -1,5 +1,7 @@
-import prefect
+# -*- coding: utf-8 -*-
 import re
+
+import prefect
 from prefect import task
 
 
@@ -15,14 +17,14 @@ def standardize_race(patient_list):
         dict: The updated data dictionary with the race information standardized.
     """
     for patient in patient_list:
-        data = patient.get('data')
+        data = patient.get("data")
 
-        if (data.get('racaCor') is None):
+        if data.get("racaCor") is None:
             continue
-        elif (bool(re.search('SEM INFO', data.get('racaCor')))):
+        elif bool(re.search("SEM INFO", data.get("racaCor"))):
             continue
         else:
-            data['race'] = data.get('racaCor').lower()
+            data["race"] = data.get("racaCor").lower()
             continue
-    
+
     return patient_list

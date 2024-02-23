@@ -12,12 +12,8 @@ from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 # ==================================================
 flows_run_cases = [
     (
-
         smsrio_standardization,
-        {
-            "start_datetime": "2024-02-06 12:00:00",
-            "end_datetime": "2024-02-06 12:00:30"
-        }
+        {"start_datetime": "2024-02-06 12:00:00", "end_datetime": "2024-02-06 12:00:30"},
     ),
     (sms_prontuarios_raw_smsrio, {"is_initial_extraction": False}),
 ]
