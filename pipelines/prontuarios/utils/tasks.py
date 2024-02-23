@@ -5,6 +5,8 @@ Utilities Tasks for prontuario system pipelines.
 """
 
 import gc
+import hashlib
+import json
 from datetime import date, timedelta
 
 import pandas as pd
@@ -17,7 +19,38 @@ from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
-from pipelines.utils.tasks import get_secret_key
+from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery
+
+
+@task
+def create_idempotency_keys(params: list[dict]):
+    """
+    Create a list of idempotency keys based on the given parameters.
+
+    Args:
+        params (list[dict]): A list of dictionaries with the parameters to be used to create the idempotency keys.
+
+    Returns:
+        list[str]: A list of idempotency keys.
+    """
+    keys = []
+    for param in params:
+        dump = json.dumps(param, sort_keys=True).encode()
+        keys.append(hashlib.sha256(dump).hexdigest())
+
+    return keys
+
+
+@task
+def get_current_flow_labels() -> list[str]:
+    """
+    Get the labels of the current flow.
+    """
+    from prefect.backend import FlowRunView
+
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_view = FlowRunView.from_flow_run_id(flow_run_id)
+    return flow_run_view.labels
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
@@ -95,6 +128,9 @@ def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     Returns:
         dict: The transformed data in the accepted raw endpoint format.
     """
+    logger = prefect.context.get("logger")
+    logger.info(f"Formatting {len(json_data)} registers")
+
     result = {"data_list": json_data, "cnes": cnes}
 
     return result
@@ -118,7 +154,6 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     Returns:
         None
     """
-
     api_url = get_secret_key.run(
         secret_path="/",
         secret_name=prontuario_constants.INFISICAL_API_URL.value,
@@ -219,3 +254,43 @@ def force_garbage_collector():
 
     gc.collect()
     return None
+
+
+@task
+def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> list[date]:
+    """
+    Returns a list of dates from the minimum date to the current date.
+
+    Args:
+        minimum_date (date): The minimum date.
+
+    Returns:
+        list: The list of dates.
+    """
+    if isinstance(maximum_date, str):
+        maximum_date = date.fromisoformat(maximum_date)
+
+    if minimum_date == "":
+        return [maximum_date]
+
+    if isinstance(minimum_date, str):
+        minimum_date = date.fromisoformat(minimum_date)
+
+    return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
+def get_ap_from_cnes(cnes: str) -> str:
+
+    dados_mestres = load_file_from_bigquery.run(
+        project_name="rj-sms", dataset_name="saude_dados_mestres", table_name="estabelecimento"
+    )
+
+    unidade = dados_mestres[dados_mestres["id_cnes"] == cnes]
+
+    if unidade.empty:
+        raise KeyError(f"CNES {cnes} not found in the database")
+
+    ap = unidade.iloc[0]["area_programatica"]
+
+    return f"AP{ap}"
