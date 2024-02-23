@@ -23,11 +23,11 @@ from pipelines.prontuarios.utils.tasks import (
     get_current_flow_labels,
     get_dates_in_range,
     get_flow_scheduled_day,
+    get_project_name,
     load_to_api,
     rename_current_flow_run,
     transform_filter_valid_cpf,
     transform_to_raw_format,
-    get_project_name
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
