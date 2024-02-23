@@ -13,7 +13,6 @@ from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_s
 from pipelines.prontuarios.raw.vitacare.tasks import (
     create_parameter_list,
     extract_data_from_api,
-    get_project_name,
     group_data_by_patient,
 )
 from pipelines.prontuarios.raw.vitai.tasks import get_entity_endpoint_name
@@ -28,6 +27,7 @@ from pipelines.prontuarios.utils.tasks import (
     rename_current_flow_run,
     transform_filter_valid_cpf,
     transform_to_raw_format,
+    get_project_name
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 

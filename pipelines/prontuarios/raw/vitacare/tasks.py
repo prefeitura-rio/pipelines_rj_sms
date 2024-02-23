@@ -124,17 +124,3 @@ def create_parameter_list(environment: str = "dev"):
     logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
 
     return vitacare_flow_parameters
-
-
-@task
-def get_project_name(environment: str):
-    """
-    Returns the project name based on the given environment.
-
-    Args:
-        environment (str): The environment for which to retrieve the project name.
-
-    Returns:
-        str: The project name corresponding to the given environment.
-    """
-    return constants.PROJECT_NAME.value[environment]

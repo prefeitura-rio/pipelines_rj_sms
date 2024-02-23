@@ -15,7 +15,7 @@ import requests
 from prefect import task
 from prefect.client import Client
 
-from pipelines.prontuarios.constants import constants as prontuario_constants
+from pipelines.constants import constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
@@ -294,3 +294,17 @@ def get_ap_from_cnes(cnes: str) -> str:
     ap = unidade.iloc[0]["area_programatica"]
 
     return f"AP{ap}"
+
+
+@task
+def get_project_name(environment: str):
+    """
+    Returns the project name based on the given environment.
+
+    Args:
+        environment (str): The environment for which to retrieve the project name.
+
+    Returns:
+        str: The project name corresponding to the given environment.
+    """
+    return constants.PROJECT_NAME.value[environment]
