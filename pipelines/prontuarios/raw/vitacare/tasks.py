@@ -8,7 +8,6 @@ from datetime import date, timedelta
 import prefect
 from prefect import task
 
-from pipelines.constants import constants
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.utils.misc import group_data_by_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
