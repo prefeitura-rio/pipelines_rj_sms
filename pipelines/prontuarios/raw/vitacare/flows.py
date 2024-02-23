@@ -18,6 +18,7 @@ from pipelines.prontuarios.raw.vitacare.tasks import (
 )
 from pipelines.prontuarios.raw.vitai.tasks import get_entity_endpoint_name
 from pipelines.prontuarios.utils.tasks import (
+    create_idempotency_keys,
     force_garbage_collector,
     get_ap_from_cnes,
     get_api_token,
@@ -28,7 +29,6 @@ from pipelines.prontuarios.utils.tasks import (
     rename_current_flow_run,
     transform_filter_valid_cpf,
     transform_to_raw_format,
-    create_idempotency_keys
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
@@ -162,13 +162,10 @@ with Flow(
     )
 
     idempotency_keys = create_idempotency_keys(
-        params=parameter_list,
-        upstream_tasks=[credential_injection]
+        params=parameter_list, upstream_tasks=[credential_injection]
     )
 
-    current_flow_run_labels = get_current_flow_labels(
-        upstream_tasks=[credential_injection]
-        )
+    current_flow_run_labels = get_current_flow_labels(upstream_tasks=[credential_injection])
 
     created_flow_runs = create_flow_run.map(
         flow_name=unmapped("Prontuários (Vitacare) - Extração de Dados"),
