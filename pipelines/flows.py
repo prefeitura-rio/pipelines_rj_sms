@@ -12,5 +12,6 @@ from pipelines.dump_api_vitai.flows import *
 from pipelines.dump_db_smsrio.flows import *
 from pipelines.dump_ftp_cnes.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
+from pipelines.prontuarios.raw.vitacare.flows import *
 from pipelines.prontuarios.raw.vitai.flows import *
 from pipelines.prontuarios.std.smsrio.flows import *

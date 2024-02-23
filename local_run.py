@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import argparse
 
+from pipelines.dump_ftp_cnes.flows import sms_dump_cnes
 from pipelines.prontuarios.raw.smsrio.flows import sms_prontuarios_raw_smsrio
 from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 
@@ -11,13 +12,14 @@ from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 # ==================================================
 flows_run_cases = [
     (
+
         smsrio_standardization,
         {
             "start_datetime": "2024-02-06 12:00:00",
             "end_datetime": "2024-02-06 12:00:30"
         }
     ),
-    (sms_prontuarios_raw_smsrio, {"is_inicial_extraction": False}),
+    (sms_prontuarios_raw_smsrio, {"is_initial_extraction": False}),
 ]
 
 
@@ -40,7 +42,6 @@ if __name__ == "__main__":
 
     params["environment"] = args.environment
     params["run_on_schedule"] = False
-    #params["rename_flow"] = False
 
     print(f"[!] Running flow {flow.name} using as params: {params}.")
 

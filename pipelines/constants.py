@@ -22,3 +22,8 @@ class constants(Enum):
     # Other constants
     ######################################
     # EXAMPLE_CONSTANT = "example_constant"
+
+    PROJECT_NAME = {
+        "dev": "staging",
+        "prod": "production",
+    }
