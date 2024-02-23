@@ -53,6 +53,8 @@ def extract_data_from_api(
 
     requested_data = json.loads(response["body"])
 
+    logger.info(f"Retrieved {len(requested_data)} registers")
+
     return requested_data
 
 
