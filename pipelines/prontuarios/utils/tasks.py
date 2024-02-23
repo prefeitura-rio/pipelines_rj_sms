@@ -16,6 +16,7 @@ from prefect import task
 from prefect.client import Client
 
 from pipelines.constants import constants
+from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
@@ -168,7 +169,7 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     )
 
     if request_response.status_code != 201:
-        raise Exception(f"Error loading data: {request_response.text}")
+        raise requests.exceptions.HTTPError(f"Error loading data: {request_response.text}")
 
 
 @task
