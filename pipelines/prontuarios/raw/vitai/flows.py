@@ -3,7 +3,7 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.tasks.prefect import create_flow_run
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -169,6 +169,13 @@ with Flow(
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
         upstream_tasks=[unmapped(credential_injection)],
+    )
+
+    wait_runs_task = wait_for_flow_run.map(
+        created_flow_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
     )
 
 vitai_scheduler_flow.schedule = vitai_daily_update_schedule
