@@ -188,11 +188,11 @@ with Flow(
 
 vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
 vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=1)
+vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
 vitacare_scheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="10Gi",
+    memory_limit="4Gi",
 )
