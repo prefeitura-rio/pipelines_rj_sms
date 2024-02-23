@@ -161,17 +161,12 @@ with Flow(
         upstream_tasks=[credential_injection],
     )
 
-    idempotency_keys = create_idempotency_keys(
-        params=parameter_list, upstream_tasks=[credential_injection]
-    )
-
     current_flow_run_labels = get_current_flow_labels(upstream_tasks=[credential_injection])
 
     created_flow_runs = create_flow_run.map(
         flow_name=unmapped("Prontuários (Vitacare) - Extração de Dados"),
         project_name=unmapped(project_name),
         parameters=parameter_list,
-        idempotency_key=idempotency_keys,
         labels=unmapped(current_flow_run_labels),
         upstream_tasks=[unmapped(credential_injection)],
     )
