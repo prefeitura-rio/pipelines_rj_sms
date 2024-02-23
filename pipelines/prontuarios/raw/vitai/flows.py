@@ -8,7 +8,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
-from pipelines.prontuarios.raw.vitacare.tasks import get_project_name
+from pipelines.prontuarios.utils.tasks import get_project_name
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.raw.vitai.schedules import vitai_daily_update_schedule
 from pipelines.prontuarios.raw.vitai.tasks import (
