@@ -50,9 +50,9 @@ with Flow(
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords",
         params={
-            "start_datetime": START_DATETIME, 
+            "start_datetime": START_DATETIME,
             "end_datetime": END_DATETIME,
-            "datasource_system": "smsrio"
+            "datasource_system": "smsrio",
         },
         credentials=api_token,
         auth_method="bearer",

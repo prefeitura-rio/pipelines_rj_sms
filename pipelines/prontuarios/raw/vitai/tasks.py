@@ -138,7 +138,7 @@ def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> li
 
 
 @task
-def create_parameter_list(minimum_date:str = '', environment:str = 'dev'):
+def create_parameter_list(minimum_date: str = "", environment: str = "dev"):
     """
     Create a list of parameters for the Vitai flow.
 
@@ -160,7 +160,7 @@ def create_parameter_list(minimum_date:str = '', environment:str = 'dev'):
             }
             if minimum_date != "":
                 params["minimum_date"] = minimum_date
-            
+
             vitai_flow_parameters.append(params)
 
     return vitai_flow_parameters
