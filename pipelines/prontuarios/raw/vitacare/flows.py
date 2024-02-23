@@ -185,5 +185,5 @@ vitacare_scheduler_flow.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="4Gi",
+    memory_limit="3Gi",
 )
