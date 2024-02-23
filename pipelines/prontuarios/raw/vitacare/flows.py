@@ -18,7 +18,6 @@ from pipelines.prontuarios.raw.vitacare.tasks import (
 )
 from pipelines.prontuarios.raw.vitai.tasks import get_entity_endpoint_name
 from pipelines.prontuarios.utils.tasks import (
-    create_idempotency_keys,
     force_garbage_collector,
     get_ap_from_cnes,
     get_api_token,
