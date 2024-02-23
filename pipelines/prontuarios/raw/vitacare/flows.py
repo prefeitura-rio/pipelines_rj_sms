@@ -170,13 +170,6 @@ with Flow(
         upstream_tasks=[unmapped(credential_injection)],
     )
 
-    wait_runs_task = wait_for_flow_run.map(
-        created_flow_runs,
-        stream_states=unmapped(True),
-        stream_logs=unmapped(True),
-        raise_final_state=unmapped(True),
-    )
-
 vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
 vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
