@@ -109,7 +109,7 @@ def create_parameter_list(environment: str = "dev"):
             )
 
     logger = prefect.context.get("logger")
-    logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters.")
+    logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
 
     return vitacare_flow_parameters
 
