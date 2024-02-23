@@ -4,6 +4,7 @@ Tasks for Vitacare Raw Data Extraction
 """
 from datetime import date, timedelta
 
+import json
 import prefect
 from prefect import task
 
@@ -11,7 +12,11 @@ from pipelines.constants import constants
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.utils.misc import group_data_by_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
-from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery, load_from_api
+from pipelines.utils.tasks import (
+    get_secret_key,
+    load_file_from_bigquery,
+    cloud_function_request
+)
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
@@ -36,12 +41,20 @@ def extract_data_from_api(
         environment=environment,
     )
 
-    requested_data = load_from_api.run(
+    response = cloud_function_request.run(
         url=f"{api_url}{endpoint}",
-        params={"date": target_day, "cnes": cnes},
-        auth_method="basic",
-        credentials=(username, password),
+        request_type="GET",
+        query_params={"date": str(target_day), "cnes": cnes},
+        credential={
+            'username':username,
+            'password':password
+        }
     )
+
+    if response['status_code'] != 200:
+        raise ValueError(f"Failed to extract data from API: {response['status_code']}")
+    
+    requested_data = json.loads(response['body'])
 
     return requested_data
 
