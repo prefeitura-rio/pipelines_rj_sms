@@ -2,7 +2,7 @@
 import argparse
 
 from pipelines.prontuarios.raw.smsrio.flows import sms_prontuarios_raw_smsrio
-from pipelines.prontuarios.raw.vitai.flows import vitai_extraction
+from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 
 # ==================================================
 # CONFIGURATION
@@ -11,22 +11,11 @@ from pipelines.prontuarios.raw.vitai.flows import vitai_extraction
 # ==================================================
 flows_run_cases = [
     (
-        vitai_extraction,
+        smsrio_standardization,
         {
-            "cnes": "5717256",
-            "entity": "diagnostico",
-            "minimum_date": "2024-02-01",
-            "api_url": "http://api.token.hmrg.vitai.care/api/v1/",
-        },
-    ),
-    (
-        vitai_extraction,
-        {
-            "cnes": "5717256",
-            "entity": "pacientes",
-            "minimum_date": "",
-            "api_url": "http://api.token.hmrg.vitai.care/api/v1/",
-        },
+            "start_datetime": "2024-02-06 12:00:00",
+            "end_datetime": "2024-02-06 12:00:30"
+        }
     ),
     (sms_prontuarios_raw_smsrio, {"is_inicial_extraction": False}),
 ]
@@ -51,7 +40,7 @@ if __name__ == "__main__":
 
     params["environment"] = args.environment
     params["run_on_schedule"] = False
-    params["rename_flow"] = False
+    #params["rename_flow"] = False
 
     print(f"[!] Running flow {flow.name} using as params: {params}.")
 

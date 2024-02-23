@@ -188,7 +188,7 @@ def download_from_api(
     return destination_file_path
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def load_from_api(url: str, params=None, credentials=None, auth_method="bearer") -> dict:
     """
     Loads data from an API endpoint.
