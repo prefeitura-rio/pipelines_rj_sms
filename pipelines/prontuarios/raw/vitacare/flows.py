@@ -21,12 +21,14 @@ from pipelines.prontuarios.utils.tasks import (
     force_garbage_collector,
     get_ap_from_cnes,
     get_api_token,
+    get_current_flow_labels,
     get_dates_in_range,
     get_flow_scheduled_day,
     load_to_api,
     rename_current_flow_run,
     transform_filter_valid_cpf,
     transform_to_raw_format,
+    create_idempotency_keys
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
@@ -159,11 +161,21 @@ with Flow(
         upstream_tasks=[credential_injection],
     )
 
+    idempotency_keys = create_idempotency_keys(
+        params=parameter_list,
+        upstream_tasks=[credential_injection]
+    )
+
+    current_flow_run_labels = get_current_flow_labels(
+        upstream_tasks=[credential_injection]
+        )
+
     created_flow_runs = create_flow_run.map(
         flow_name=unmapped("Prontuários (Vitacare) - Extração de Dados"),
         project_name=unmapped(project_name),
         parameters=parameter_list,
-        labels=[constants.RJ_SMS_AGENT_LABEL.value],
+        idempotency_key=idempotency_keys,
+        labels=unmapped(current_flow_run_labels),
         upstream_tasks=[unmapped(credential_injection)],
     )
 
