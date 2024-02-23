@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.dump_ftp_cnes.flows import sms_dump_cnes
 from pipelines.prontuarios.raw.smsrio.flows import sms_prontuarios_raw_smsrio
 from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 

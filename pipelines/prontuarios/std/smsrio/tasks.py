@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
 
-import prefect
 from prefect import task
 
 
