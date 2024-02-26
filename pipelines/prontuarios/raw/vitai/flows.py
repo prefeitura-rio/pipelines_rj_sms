@@ -3,6 +3,7 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -10,6 +11,7 @@ from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.raw.vitai.schedules import vitai_daily_update_schedule
 from pipelines.prontuarios.raw.vitai.tasks import (
+    create_parameter_list,
     extract_data_from_api,
     get_dates_in_range,
     get_entity_endpoint_name,
@@ -19,7 +21,9 @@ from pipelines.prontuarios.raw.vitai.tasks import (
 from pipelines.prontuarios.utils.tasks import (
     force_garbage_collector,
     get_api_token,
+    get_current_flow_labels,
     get_flow_scheduled_day,
+    get_project_name,
     load_to_api,
     rename_current_flow_run,
     transform_filter_valid_cpf,
@@ -117,8 +121,6 @@ with Flow(
 
     force_garbage_collector(upstream_tasks=[load_to_api_task])
 
-
-vitai_extraction.schedule = vitai_daily_update_schedule
 vitai_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitai_extraction.executor = LocalDaskExecutor(num_workers=10)
 vitai_extraction.run_config = KubernetesRun(
@@ -127,4 +129,62 @@ vitai_extraction.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="10Gi",
+)
+
+# ==============================
+# SCHEDULER FLOW
+# ==============================
+
+with Flow(
+    name="Prontuários (Vitai) - Scheduler Flow",
+) as vitai_scheduler_flow:
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    RENAME_FLOW = Parameter("rename_flow", default=False)
+    MIN_DATE = Parameter("minimum_date", default="", required=False)
+
+    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
+
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(
+            environment=ENVIRONMENT,
+            upstream_tasks=[credential_injection],
+        )
+
+    parameter_list = create_parameter_list(
+        environment=ENVIRONMENT,
+        minimum_date=MIN_DATE,
+        upstream_tasks=[credential_injection],
+    )
+
+    project_name = get_project_name(
+        environment=ENVIRONMENT,
+        upstream_tasks=[credential_injection],
+    )
+
+    current_flow_run_labels = get_current_flow_labels(upstream_tasks=[credential_injection])
+
+    created_flow_runs = create_flow_run.map(
+        flow_name=unmapped("Prontuários (Vitai) - Extração de Dados"),
+        project_name=unmapped(project_name),
+        parameters=parameter_list,
+        labels=unmapped(current_flow_run_labels),
+        upstream_tasks=[unmapped(credential_injection)],
+    )
+
+    wait_runs_task = wait_for_flow_run.map(
+        created_flow_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
+    )
+
+vitai_scheduler_flow.schedule = vitai_daily_update_schedule
+vitai_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitai_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
+vitai_scheduler_flow.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="3Gi",
 )
