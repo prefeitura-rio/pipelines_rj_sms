@@ -3,7 +3,7 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.tasks.prefect import create_flow_run
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -13,7 +13,6 @@ from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_s
 from pipelines.prontuarios.raw.vitacare.tasks import (
     create_parameter_list,
     extract_data_from_api,
-    get_project_name,
     group_data_by_patient,
 )
 from pipelines.prontuarios.raw.vitai.tasks import get_entity_endpoint_name
@@ -24,6 +23,7 @@ from pipelines.prontuarios.utils.tasks import (
     get_current_flow_labels,
     get_dates_in_range,
     get_flow_scheduled_day,
+    get_project_name,
     load_to_api,
     rename_current_flow_run,
     transform_filter_valid_cpf,
@@ -83,6 +83,7 @@ with Flow(
         ap=unmapped(ap),
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
+        environment=unmapped(ENVIRONMENT),
         upstream_tasks=[unmapped(credential_injection)],
     )
 
@@ -170,6 +171,13 @@ with Flow(
         upstream_tasks=[unmapped(credential_injection)],
     )
 
+    wait_runs_task = wait_for_flow_run.map(
+        created_flow_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
+    )
+
 vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
 vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
@@ -178,5 +186,5 @@ vitacare_scheduler_flow.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="4Gi",
+    memory_limit="3Gi",
 )
