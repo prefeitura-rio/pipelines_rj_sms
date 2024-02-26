@@ -1,3 +1,4 @@
+import datetime
 from prefect import task
 import requests
 import prefect
@@ -23,22 +24,23 @@ def check_api_health(api_info:dict):
     else:
         duration = response.elapsed.total_seconds()
         status_code = str(response.status_code)
-        is_healthy = status_code == api_info['expected_status_code']
+        is_healthy = status_code == str(api_info['expected_status_code'])
 
     logger.info(f"API Health {is_healthy}; Duration {duration}s; Status {status_code}")
 
     return {
-        'url': api_info['url'],
+        'api_url': api_info['url'],
         'is_healthy': is_healthy,
         'duration': duration,
-        'status_code': status_code
+        'status_code': status_code,
+        'moment': datetime.datetime.now().isoformat()
     }
 
 @task
 def insert_results(rows_to_insert:list[dict]):
     logger = prefect.context.get("logger")
 
-    bq_client = bigquery.Client()
+    bq_client = bigquery.Client.from_service_account_json('/tmp/credentials.json')
     table = bq_client.get_table("rj-sms.gerenciamento.api_health_check")
 
     errors = bq_client.insert_rows_json(table, rows_to_insert)
