@@ -7,7 +7,6 @@ General utilities for SMS pipelines.
 
 import json
 import os
-import prefect
 import re
 import shutil
 import sys
@@ -21,6 +20,7 @@ import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token
 import pandas as pd
+import prefect
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
@@ -394,9 +394,7 @@ def cloud_function_request(
             if payload["status_code"] != 200:
                 message = f"[Target Endpoint] Request failed: {payload['status_code']} - {payload['body']}"
                 logger.info(message)
-                raise ENDRUN(
-                    state=Failed(message)
-                )
+                raise ENDRUN(state=Failed(message))
             else:
                 logger.info("[Target Endpoint] Request was successful")
 
@@ -405,9 +403,7 @@ def cloud_function_request(
         else:
             message = f"[Cloud Function] Request failed: {response.status_code} - {response.reason}"
             logger.info(message)
-            raise ENDRUN(
-                state=Failed(message)
-            )
+            raise ENDRUN(state=Failed(message))
 
     except Exception as e:
         raise ENDRUN(
