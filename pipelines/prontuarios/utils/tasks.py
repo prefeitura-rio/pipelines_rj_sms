@@ -4,22 +4,63 @@
 Utilities Tasks for prontuario system pipelines.
 """
 
+import gc
+import hashlib
+import json
 from datetime import date, timedelta
 
+import pandas as pd
 import prefect
 import requests
 from prefect import task
 from prefect.client import Client
 
+from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuario_constants
-from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
+from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
-from pipelines.utils.tasks import get_secret_key
+from pipelines.utils.stored_variable import stored_variable_converter
+from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery
 
 
 @task
+def create_idempotency_keys(params: list[dict]):
+    """
+    Create a list of idempotency keys based on the given parameters.
+
+    Args:
+        params (list[dict]): A list of dictionaries with the parameters to be used to create the idempotency keys.
+
+    Returns:
+        list[str]: A list of idempotency keys.
+    """
+    keys = []
+    for param in params:
+        dump = json.dumps(param, sort_keys=True).encode()
+        keys.append(hashlib.sha256(dump).hexdigest())
+
+    return keys
+
+
+@task
+def get_current_flow_labels() -> list[str]:
+    """
+    Get the labels of the current flow.
+    """
+    from prefect.backend import FlowRunView
+
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_view = FlowRunView.from_flow_run_id(flow_run_id)
+    return flow_run_view.labels
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
 def get_api_token(
-    environment: str, infisical_path: str, infisical_api_username: str, infisical_api_password: str
+    environment: str,
+    infisical_path: str,
+    infisical_api_url: str,
+    infisical_api_username: str,
+    infisical_api_password: str,
 ) -> str:
     """
     Retrieves the authentication token for Prontuario Integrado API.
@@ -33,7 +74,9 @@ def get_api_token(
     Raises:
         Exception: If there is an error getting the API token.
     """
-    api_url = prontuario_constants.API_URL.value.get(environment)
+    api_url = get_secret_key.run(
+        secret_path="/", secret_name=infisical_api_url, environment=environment
+    )
     api_username = get_secret_key.run(
         secret_path=infisical_path, secret_name=infisical_api_username, environment=environment
     )
@@ -74,6 +117,7 @@ def get_flow_scheduled_day() -> date:
 
 
 @task
+@stored_variable_converter()
 def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     """
     Transforms the given JSON data to the accepted raw endpoint format.
@@ -85,10 +129,16 @@ def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     Returns:
         dict: The transformed data in the accepted raw endpoint format.
     """
-    return {"data_list": json_data, "cnes": cnes}
+    logger = prefect.context.get("logger")
+    logger.info(f"Formatting {len(json_data)} registers")
+
+    result = {"data_list": json_data, "cnes": cnes}
+
+    return result
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
+@stored_variable_converter()
 def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environment: str) -> None:
     """
     Sends a POST request to the specified API endpoint with the provided request body.
@@ -105,7 +155,12 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     Returns:
         None
     """
-    api_url = prontuario_constants.API_URL.value.get(environment)
+    api_url = get_secret_key.run(
+        secret_path="/",
+        secret_name=prontuario_constants.INFISICAL_API_URL.value,
+        environment=environment,
+    )
+
     request_response = requests.post(
         url=f"{api_url}{endpoint_name}",
         headers={"Authorization": f"Bearer {api_token}"},
@@ -114,27 +169,12 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     )
 
     if request_response.status_code != 201:
-        raise Exception(f"Error loading data to {endpoint_name} {request_response.text}")
-
-
-@task
-def transform_create_input_batches(input_list: list, batch_size: int = 250):
-    """
-    Transform input list into batches
-
-    Args:
-        input_list (list): Input list
-        batch_size (int, optional): Batch size. Defaults to 250.
-
-    Returns:
-        list[list]: List of batches
-    """
-    return [input_list[i : i + batch_size] for i in range(0, len(input_list), batch_size)]
+        raise requests.exceptions.HTTPError(f"Error loading data: {request_response.text}")
 
 
 @task
 def rename_current_flow_run(
-    environment: str, cnes: str, is_initial_extraction: bool = False
+    environment: str, is_initial_extraction: bool = False, **kwargs
 ) -> None:
     """
     Renames the current flow run using the specified environment and CNES.
@@ -149,18 +189,19 @@ def rename_current_flow_run(
     flow_run_id = prefect.context.get("flow_run_id")
     flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
 
-    if is_initial_extraction:
-        title = "Initialization"
-    else:
-        title = "Routine"
+    title = "Initialization" if is_initial_extraction else "Routine"
+
+    params = [f"{key}={value}" for key, value in kwargs.items()]
+    params.append(f"env={environment}")
+
+    flow_run_name = f"{title} ({', '.join(params)}): {flow_run_scheduled_time}"
 
     client = Client()
-    client.set_flow_run_name(
-        flow_run_id, f"{title} (cnes={cnes}, env={environment}): {flow_run_scheduled_time}"
-    )
+    client.set_flow_run_name(flow_run_id, flow_run_name)
 
 
 @task
+@stored_variable_converter()
 def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
     """
     Filters the list of objects based on the validity of their CPF.
@@ -171,5 +212,100 @@ def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
     Returns:
         list[dict]: A list of objects that have valid CPFs.
     """
+
     obj_valid_cpf = filter(lambda obj: is_valid_cpf(obj["patient_cpf"]), objects)
+
     return list(obj_valid_cpf)
+
+
+@task
+def transform_split_dataframe(
+    dataframe: pd.DataFrame, batch_size: int = 1000
+) -> list[pd.DataFrame]:
+
+    return split_dataframe(dataframe, chunk_size=batch_size)
+
+
+@task
+@stored_variable_converter()
+def transform_create_input_batches(input_list: list, batch_size: int = 250):
+    """
+    Transform input list into batches
+
+    Args:
+        input_list (list): Input list
+        batch_size (int, optional): Batch size. Defaults to 250.
+
+    Returns:
+        list[list]: List of batches
+    """
+    result = [input_list[i : i + batch_size] for i in range(0, len(input_list), batch_size)]
+
+    return result
+
+
+@task
+def force_garbage_collector():
+    """
+    Forces garbage collector to run.
+
+    Returns:
+        None
+    """
+
+    gc.collect()
+    return None
+
+
+@task
+def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> list[date]:
+    """
+    Returns a list of dates from the minimum date to the current date.
+
+    Args:
+        minimum_date (date): The minimum date.
+
+    Returns:
+        list: The list of dates.
+    """
+    if isinstance(maximum_date, str):
+        maximum_date = date.fromisoformat(maximum_date)
+
+    if minimum_date == "":
+        return [maximum_date]
+
+    if isinstance(minimum_date, str):
+        minimum_date = date.fromisoformat(minimum_date)
+
+    return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
+def get_ap_from_cnes(cnes: str) -> str:
+
+    dados_mestres = load_file_from_bigquery.run(
+        project_name="rj-sms", dataset_name="saude_dados_mestres", table_name="estabelecimento"
+    )
+
+    unidade = dados_mestres[dados_mestres["id_cnes"] == cnes]
+
+    if unidade.empty:
+        raise KeyError(f"CNES {cnes} not found in the database")
+
+    ap = unidade.iloc[0]["area_programatica"]
+
+    return f"AP{ap}"
+
+
+@task
+def get_project_name(environment: str):
+    """
+    Returns the project name based on the given environment.
+
+    Args:
+        environment (str): The environment for which to retrieve the project name.
+
+    Returns:
+        str: The project name corresponding to the given environment.
+    """
+    return constants.PROJECT_NAME.value[environment]

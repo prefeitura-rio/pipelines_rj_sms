@@ -13,16 +13,21 @@ import sys
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
+from io import StringIO
 from pathlib import Path
 
 import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token
 import pandas as pd
+import prefect
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
+from google.cloud import bigquery, storage
 from prefect import task
+from prefect.engine.signals import ENDRUN
+from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
@@ -48,6 +53,24 @@ def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
 
 
 @task
+def get_infisical_user_password(path: str, environment: str = "dev") -> tuple:
+    """
+    Retrieves the Infisical username and password from the specified secret path.
+
+    Args:
+        environment (str, optional): The Infisical environment to retrieve the credentials from. Defaults to 'dev'.
+        path (str): The path to the secret.
+
+    Returns:
+        tuple: A tuple containing the username and password.
+    """
+    username = get_secret(secret_name="USERNAME", path=path, environment=environment)
+    password = get_secret(secret_name="PASSWORD", path=path, environment=environment)
+
+    return {"username": username["USERNAME"], "password": password["PASSWORD"]}
+
+
+@task
 def inject_gcp_credentials(environment: str = "dev") -> None:
     """
     Injects GCP credentials into the specified environment.
@@ -63,6 +86,7 @@ def list_all_secrets_name(
     environment: str = "dev",
     path: str = "/",
 ) -> None:
+    "List all secrets in a path"
     token = getenv_or_action("INFISICAL_TOKEN", default=None)
     log(f"""Token: {token}""")
 
@@ -165,7 +189,7 @@ def download_from_api(
     return destination_file_path
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def load_from_api(url: str, params=None, credentials=None, auth_method="bearer") -> dict:
     """
     Loads data from an API endpoint.
@@ -308,8 +332,7 @@ def download_ftp(
 
 @task(
     max_retries=2,
-    retry_delay=timedelta(seconds=5),
-    timeout=timedelta(seconds=240),
+    retry_delay=timedelta(seconds=120),
 )
 def cloud_function_request(
     url: str,
@@ -335,6 +358,9 @@ def cloud_function_request(
         requests.Response: The response from the cloud function.
     """  # noqa: E501
 
+    # Get Prefect Logger
+    logger = prefect.context.get("logger")
+
     if env == "prod":
         cloud_function_url = "https://us-central1-rj-sms.cloudfunctions.net/vitacare"
     elif env == "dev":
@@ -356,22 +382,33 @@ def cloud_function_request(
         }
     )
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {TOKEN}"}
-    response = requests.request("POST", cloud_function_url, headers=headers, data=payload)
 
-    if response.status_code == 200:
-        log("Request to cloud function successful")
+    try:
+        response = requests.request("POST", cloud_function_url, headers=headers, data=payload)
 
-        if response.text.startswith("A solicitação não foi bem-sucedida"):
-            # TODO: melhorar a forma de verificar se a requisição foi bem sucedida
-            raise ValueError(f"Resquest to endpoint failed: {response.text}")
+        if response.status_code == 200:
+            logger.info("[Cloud Function] Request was Successful")
+
+            payload = response.json()
+
+            if payload["status_code"] != 200:
+                message = f"[Target Endpoint] Request failed: {payload['status_code']} - {payload['body']}"
+                logger.info(message)
+                raise ENDRUN(state=Failed(message))
+            else:
+                logger.info("[Target Endpoint] Request was successful")
+
+                return payload
+
         else:
-            log("Request to endpoint successful")
-            return response.json()
+            message = f"[Cloud Function] Request failed: {response.status_code} - {response.reason}"
+            logger.info(message)
+            raise ENDRUN(state=Failed(message))
 
-    else:
-        raise ValueError(
-            f"Request to cloud function failed: {response.status_code} - {response.reason}"
-        )  # noqa: E501
+    except Exception as e:
+        raise ENDRUN(
+            state=Failed(f"[Cloud Function] Request failed with unknown error: {e}")
+        ) from e
 
 
 @task
@@ -451,43 +488,6 @@ def unzip_file(file_path: str, output_path: str):
 
 
 @task
-def clean_ascii(input_file_path):
-    """
-    Clean ASCII Function
-
-    This function removes any non-basic ASCII characters from the text and saves the cleaned text
-    to a new file with a modified file name.
-    Args:
-        input_file_path (str): The path of the input file.
-
-    Returns:
-        str: The path of the output file containing the cleaned text.
-    """
-
-    try:
-        with open(input_file_path, "r", encoding="utf-8") as input_file:
-            text = input_file.read()
-
-            # Remove non-basic ASCII characters
-            cleaned_text = "".join(c for c in text if ord(c) < 128)
-
-            if ".json" in input_file_path:
-                output_file_path = input_file_path.replace(".json", "_clean.json")
-            elif ".csv" in input_file_path:
-                output_file_path = input_file_path.replace(".csv", "_clean.csv")
-
-            with open(output_file_path, "w", encoding="utf-8") as output_file:
-                output_file.write(cleaned_text)
-
-            log(f"Cleaning complete. Cleaned text saved at {output_file_path}")
-
-            return output_file_path
-
-    except Exception as e:  # pylint: disable=W0703
-        log(f"An error occurred: {e}", level="error")
-
-
-@task
 def add_load_date_column(input_path: str, sep=";", load_date=None):
     """
     Adds a new column '_data_carga' to a CSV file located at input_path with the current date
@@ -533,7 +533,6 @@ def from_json_to_csv(input_path, sep=";"):
         with open(input_path, "r", encoding="utf-8") as file:
             json_data = file.read()
             data = eval(json_data)  # Convert JSON string to Python dictionary
-
             output_path = input_path.replace(".json", ".csv")
             # Assuming the JSON structure is a list of dictionaries
             df = pd.DataFrame(data, dtype="str")
@@ -717,3 +716,59 @@ def upload_to_datalake(
 
     except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
+
+
+@task(max_retries=3, retry_delay=timedelta(seconds=90))
+def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv"):
+    """
+    Load a file from a Google Cloud Storage bucket. The GCS project is infered
+        from the environment variables related to Goocle Cloud.
+
+    Args:
+        bucket_name (str): The name of the GCS bucket.
+        file_name (str): The name of the file to be loaded.
+        file_type (str, optional): The type of the file. Defaults to "csv".
+
+    Raises:
+        NotImplementedError: If the file type is not implemented.
+
+    Returns:
+        pd.DataFrame: The loaded file as a DataFrame.
+    """
+    client = storage.Client()
+
+    bucket = client.get_bucket(bucket_name)
+    blob = bucket.blob(file_name)
+
+    data = blob.download_as_string()
+
+    if file_type == "csv":
+        df = pd.read_csv(StringIO(data.decode("utf-8")), dtype=str)
+    else:
+        raise NotImplementedError(f"File type {file_type} not implemented")
+
+    return df
+
+
+@task
+def load_file_from_bigquery(project_name: str, dataset_name: str, table_name: str):
+    """
+    Load data from BigQuery table into a pandas DataFrame.
+
+    Args:
+        project_name (str): The name of the BigQuery project.
+        dataset_name (str): The name of the BigQuery dataset.
+        table_name (str): The name of the BigQuery table.
+
+    Returns:
+        pandas.DataFrame: The loaded data from the BigQuery table.
+    """
+    client = bigquery.Client()
+
+    dataset_ref = bigquery.DatasetReference(project_name, dataset_name)
+    table_ref = dataset_ref.table(table_name)
+    table = client.get_table(table_ref)
+
+    df = client.list_rows(table).to_dataframe()
+
+    return df

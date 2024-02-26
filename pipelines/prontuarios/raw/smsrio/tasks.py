@@ -10,17 +10,19 @@ from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
+from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_format
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.tasks import get_secret_key
 
 
 @task
-def get_database_url(environment):
+def get_smsrio_database_url(environment, squema: str = "sms_pacientes"):
     """
     Get SMSRio database url from Infisical Secrets
 
     Args:
         environment (str): Environment
+        squema (str): Database schema
 
     Returns:
         str: Database url
@@ -30,7 +32,7 @@ def get_database_url(environment):
         secret_name=smsrio_constants.INFISICAL_DB_URL.value,
         environment=environment,
     )
-    return database_url
+    return f"{database_url}/{squema}"
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
@@ -73,7 +75,7 @@ def extract_patient_data_from_db(
     return patients
 
 
-@task
+@task()
 def transform_data_to_json(dataframe, identifier_column="patient_cpf") -> list[dict]:
     """
     Transform dataframe to json, exposing the identifier_column as a field
@@ -87,13 +89,12 @@ def transform_data_to_json(dataframe, identifier_column="patient_cpf") -> list[d
     """
     assert identifier_column in dataframe.columns, "identifier_column column not found"
 
-    def row_to_json(row):
+    output = []
+    for _, row in dataframe.iterrows():
         row_as_json = row.to_json(date_format="iso")
-        return {identifier_column: row[identifier_column], "data": json.loads(row_as_json)}
+        output.append({identifier_column: row[identifier_column], "data": json.loads(row_as_json)})
 
-    jsons = dataframe.apply(row_to_json, axis=1)
-    data_list = jsons.to_list()
-    return data_list
+    return output
 
 
 @task
@@ -112,3 +113,31 @@ def transform_filter_invalid_cpf(dataframe: pd.DataFrame, cpf_column: str) -> pd
     log(f"Filtered {dataframe.shape[0] - filtered_dataframe.shape[0]} invalid CPFs")
 
     return filtered_dataframe
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=2))
+def load_patient_data_to_api(patient_data: pd.DataFrame, environment: str, api_token: str):
+    """
+    Loads patient data to the API.
+
+    Args:
+        patient_data (pd.DataFrame): The patient data to be loaded.
+        environment (str): The environment to which the data will be loaded.
+        api_token (str): The API token for authentication.
+
+    Returns:
+        None
+    """
+
+    json_data_batches = transform_data_to_json.run(dataframe=patient_data)
+
+    request_bodies = transform_to_raw_format.run(
+        json_data=json_data_batches, cnes=smsrio_constants.SMSRIO_CNES.value
+    )
+
+    load_to_api.run(
+        request_body=request_bodies,
+        endpoint_name="raw/patientrecords",
+        api_token=api_token,
+        environment=environment,
+    )

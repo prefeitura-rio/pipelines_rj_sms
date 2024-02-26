@@ -8,20 +8,20 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
-from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
-from pipelines.prontuarios.raw.vitai.schedules import vitai_daily_update_schedule
-from pipelines.prontuarios.raw.vitai.tasks import (
+from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
+from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_schedule
+from pipelines.prontuarios.raw.vitacare.tasks import (
     create_parameter_list,
     extract_data_from_api,
-    get_dates_in_range,
-    get_entity_endpoint_name,
-    get_vitai_api_token,
     group_data_by_patient,
 )
+from pipelines.prontuarios.raw.vitai.tasks import get_entity_endpoint_name
 from pipelines.prontuarios.utils.tasks import (
     force_garbage_collector,
+    get_ap_from_cnes,
     get_api_token,
     get_current_flow_labels,
+    get_dates_in_range,
     get_flow_scheduled_day,
     get_project_name,
     load_to_api,
@@ -32,13 +32,13 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.utils.tasks import inject_gcp_credentials
 
 with Flow(
-    name="Prontuários (Vitai) - Extração de Dados",
-) as vitai_extraction:
+    name="Prontuários (Vitacare) - Extração de Dados",
+) as vitacare_extraction:
     #####################################
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    CNES = Parameter("cnes", default="5717256", required=True)
+    CNES = Parameter("cnes", default="5621801", required=True)
     ENTITY = Parameter("entity", default="diagnostico", required=True)
     MIN_DATE = Parameter("minimum_date", default="", required=False)
     RENAME_FLOW = Parameter("rename_flow", default=False)
@@ -48,16 +48,17 @@ with Flow(
     ####################################
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
-    vitai_api_token = get_vitai_api_token(environment="prod", upstream_tasks=[credential_injection])
+    ap = get_ap_from_cnes(cnes=CNES, upstream_tasks=[credential_injection])
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
-        infisical_path=vitai_constants.INFISICAL_PATH.value,
+        infisical_path=vitacare_constants.INFISICAL_PATH.value,
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
-        infisical_api_username=vitai_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value,
+        infisical_api_username=vitacare_constants.INFISICAL_API_USERNAME.value,
+        infisical_api_password=vitacare_constants.INFISICAL_API_PASSWORD.value,
         upstream_tasks=[credential_injection],
     )
+
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
@@ -79,9 +80,10 @@ with Flow(
 
     daily_data_list = extract_data_from_api.map(
         cnes=unmapped(CNES),
+        ap=unmapped(ap),
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
-        vitai_api_token=unmapped(vitai_api_token),
+        environment=unmapped(ENVIRONMENT),
         upstream_tasks=[unmapped(credential_injection)],
     )
 
@@ -121,9 +123,9 @@ with Flow(
 
     force_garbage_collector(upstream_tasks=[load_to_api_task])
 
-vitai_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitai_extraction.executor = LocalDaskExecutor(num_workers=10)
-vitai_extraction.run_config = KubernetesRun(
+vitacare_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitacare_extraction.executor = LocalDaskExecutor(num_workers=1)
+vitacare_extraction.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -136,11 +138,10 @@ vitai_extraction.run_config = KubernetesRun(
 # ==============================
 
 with Flow(
-    name="Prontuários (Vitai) - Scheduler Flow",
-) as vitai_scheduler_flow:
+    name="Prontuários (Vitacare) - Scheduler Flow",
+) as vitacare_scheduler_flow:
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    MIN_DATE = Parameter("minimum_date", default="", required=False)
 
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
@@ -152,7 +153,6 @@ with Flow(
 
     parameter_list = create_parameter_list(
         environment=ENVIRONMENT,
-        minimum_date=MIN_DATE,
         upstream_tasks=[credential_injection],
     )
 
@@ -164,7 +164,7 @@ with Flow(
     current_flow_run_labels = get_current_flow_labels(upstream_tasks=[credential_injection])
 
     created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("Prontuários (Vitai) - Extração de Dados"),
+        flow_name=unmapped("Prontuários (Vitacare) - Extração de Dados"),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
@@ -178,10 +178,10 @@ with Flow(
         raise_final_state=unmapped(True),
     )
 
-vitai_scheduler_flow.schedule = vitai_daily_update_schedule
-vitai_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitai_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
-vitai_scheduler_flow.run_config = KubernetesRun(
+vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
+vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
+vitacare_scheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
