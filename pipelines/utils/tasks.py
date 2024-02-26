@@ -20,6 +20,7 @@ import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token
 import pandas as pd
+import prefect
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
@@ -188,7 +189,7 @@ def download_from_api(
     return destination_file_path
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def load_from_api(url: str, params=None, credentials=None, auth_method="bearer") -> dict:
     """
     Loads data from an API endpoint.
@@ -357,6 +358,9 @@ def cloud_function_request(
         requests.Response: The response from the cloud function.
     """  # noqa: E501
 
+    # Get Prefect Logger
+    logger = prefect.context.get("logger")
+
     if env == "prod":
         cloud_function_url = "https://us-central1-rj-sms.cloudfunctions.net/vitacare"
     elif env == "dev":
@@ -383,30 +387,28 @@ def cloud_function_request(
         response = requests.request("POST", cloud_function_url, headers=headers, data=payload)
 
         if response.status_code == 200:
-            log("Request to cloud function successful")
+            logger.info("[Cloud Function] Request was Successful")
 
             payload = response.json()
 
             if payload["status_code"] != 200:
-                raise ENDRUN(
-                    state=Failed(
-                        f"Resquest to endpoint failed: {payload['status_code']} - {payload['body']}"
-                    )
-                )
+                message = f"[Target Endpoint] Request failed: {payload['status_code']} - {payload['body']}"
+                logger.info(message)
+                raise ENDRUN(state=Failed(message))
             else:
-                log("Request to endpoint successful")
+                logger.info("[Target Endpoint] Request was successful")
 
                 return payload
 
         else:
-            raise ENDRUN(
-                state=Failed(
-                    f"Request to cloud function failed: {response.status_code} - {response.reason}"
-                )
-            )
+            message = f"[Cloud Function] Request failed: {response.status_code} - {response.reason}"
+            logger.info(message)
+            raise ENDRUN(state=Failed(message))
 
     except Exception as e:
-        raise ENDRUN(state=Failed(f"Request to cloud function failed: {e}")) from e
+        raise ENDRUN(
+            state=Failed(f"[Cloud Function] Request failed with unknown error: {e}")
+        ) from e
 
 
 @task

@@ -18,31 +18,25 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Projeto",
+            "name": "Debug: Flows",
             "type": "debugpy",
             "request": "launch",
-            "program": "run.py",
+            "program": "local_run.py",
+            "args": [
+                "--case", "0"
+            ],
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
-                "INFISICAL_ADDRESS": <LOCALIZACAO>,
-                "INFISICAL_TOKEN": <TOKEN>,
+                "INFISICAL_ADDRESS": <INFISICAL_ADDRESS>,
+                "INFISICAL_TOKEN": <INFISICAL_TOKEN>,
                 "PREFECT__LOGGING__LEVEL": "DEBUG"
             }
         }
     ]
 }
 ```
-
-- Na raiz do projeto, crie um arquivo `run.py` que chame os flows que quer debugar.
-- Exemplo:
-
-```python
-from pipelines.prontuarios.raw.smsrio.flows import sms_prontuarios_raw_smsrio
-
-if __name__ == '__main__':
-    sms_prontuarios_raw_smsrio.run(rename_flow=False)
-```
+- Agora este projeto fica disponível na aba de Debugging.
 
 ## Rodando (local)
 - Para rodar basta usar o Debugger do VSCode, que vai detectar automaticamente a configuração feita.
