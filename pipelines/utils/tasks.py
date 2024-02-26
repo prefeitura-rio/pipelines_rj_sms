@@ -383,30 +383,30 @@ def cloud_function_request(
         response = requests.request("POST", cloud_function_url, headers=headers, data=payload)
 
         if response.status_code == 200:
-            log("Request to cloud function successful")
+            log("[Cloud Function] Request was Successful")
 
             payload = response.json()
 
             if payload["status_code"] != 200:
                 raise ENDRUN(
                     state=Failed(
-                        f"Resquest to endpoint failed: {payload['status_code']} - {payload['body']}"
+                        f"[Target Endpoint] Request failed: {payload['status_code']} - {payload['body']}"
                     )
                 )
             else:
-                log("Request to endpoint successful")
+                log("[Target Endpoint] Request was successful")
 
                 return payload
 
         else:
             raise ENDRUN(
                 state=Failed(
-                    f"Request to cloud function failed: {response.status_code} - {response.reason}"
+                    f"[Cloud Function] Request failed: {response.status_code} - {response.reason}"
                 )
             )
 
     except Exception as e:
-        raise ENDRUN(state=Failed(f"Request to cloud function failed: {e}")) from e
+        raise ENDRUN(state=Failed(f"[Cloud Function] Request failed with unknown error: {e}")) from e
 
 
 @task
