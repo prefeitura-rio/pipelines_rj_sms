@@ -24,7 +24,7 @@ jobs:
 
       - name: Set up Poetry and upgrade pip
         run: |
-          pip install -U pip poetry
+          pip install -U pip poetry==1.7.1
 
       - name: Install dependencies
         run: |
