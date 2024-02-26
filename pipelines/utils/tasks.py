@@ -7,6 +7,7 @@ General utilities for SMS pipelines.
 
 import json
 import os
+import prefect
 import re
 import shutil
 import sys
@@ -357,6 +358,9 @@ def cloud_function_request(
         requests.Response: The response from the cloud function.
     """  # noqa: E501
 
+    # Get Prefect Logger
+    logger = prefect.context.get("logger")
+
     if env == "prod":
         cloud_function_url = "https://us-central1-rj-sms.cloudfunctions.net/vitacare"
     elif env == "dev":
@@ -383,26 +387,26 @@ def cloud_function_request(
         response = requests.request("POST", cloud_function_url, headers=headers, data=payload)
 
         if response.status_code == 200:
-            log("[Cloud Function] Request was Successful")
+            logger.info("[Cloud Function] Request was Successful")
 
             payload = response.json()
 
             if payload["status_code"] != 200:
+                message = f"[Target Endpoint] Request failed: {payload['status_code']} - {payload['body']}"
+                logger.info(message)
                 raise ENDRUN(
-                    state=Failed(
-                        f"[Target Endpoint] Request failed: {payload['status_code']} - {payload['body']}"
-                    )
+                    state=Failed(message)
                 )
             else:
-                log("[Target Endpoint] Request was successful")
+                logger.info("[Target Endpoint] Request was successful")
 
                 return payload
 
         else:
+            message = f"[Cloud Function] Request failed: {response.status_code} - {response.reason}"
+            logger.info(message)
             raise ENDRUN(
-                state=Failed(
-                    f"[Cloud Function] Request failed: {response.status_code} - {response.reason}"
-                )
+                state=Failed(message)
             )
 
     except Exception as e:
