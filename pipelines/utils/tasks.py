@@ -406,7 +406,9 @@ def cloud_function_request(
             )
 
     except Exception as e:
-        raise ENDRUN(state=Failed(f"[Cloud Function] Request failed with unknown error: {e}")) from e
+        raise ENDRUN(
+            state=Failed(f"[Cloud Function] Request failed with unknown error: {e}")
+        ) from e
 
 
 @task
