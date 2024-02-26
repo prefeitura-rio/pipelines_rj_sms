@@ -15,3 +15,4 @@ from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.prontuarios.raw.vitacare.flows import *
 from pipelines.prontuarios.raw.vitai.flows import *
 from pipelines.prontuarios.std.smsrio.flows import *
+from pipelines.tools.api_healthcheck.flows import *
