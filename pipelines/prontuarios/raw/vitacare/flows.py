@@ -83,6 +83,7 @@ with Flow(
         ap=unmapped(ap),
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
+        environment=unmapped(ENVIRONMENT),
         upstream_tasks=[unmapped(credential_injection)],
     )
 
