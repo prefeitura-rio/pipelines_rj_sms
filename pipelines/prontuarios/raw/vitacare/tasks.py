@@ -8,7 +8,6 @@ from datetime import date, timedelta
 import prefect
 from prefect import task
 
-from pipelines.constants import constants
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.utils.misc import group_data_by_cpf
 from pipelines.utils.stored_variable import stored_variable_converter
@@ -46,6 +45,7 @@ def extract_data_from_api(
         request_type="GET",
         query_params={"date": str(target_day), "cnes": cnes},
         credential={"username": username, "password": password},
+        env=environment,
     )
 
     if response["status_code"] != 200:
@@ -124,17 +124,3 @@ def create_parameter_list(environment: str = "dev"):
     logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
 
     return vitacare_flow_parameters
-
-
-@task
-def get_project_name(environment: str):
-    """
-    Returns the project name based on the given environment.
-
-    Args:
-        environment (str): The environment for which to retrieve the project name.
-
-    Returns:
-        str: The project name corresponding to the given environment.
-    """
-    return constants.PROJECT_NAME.value[environment]
