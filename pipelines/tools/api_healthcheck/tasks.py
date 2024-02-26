@@ -37,7 +37,7 @@ def check_api_health(api_info:dict):
 @task
 def insert_results(rows_to_insert:list[dict]):
     logger = prefect.context.get("logger")
-    #bq-61561262310@bigquery-encryption.iam.gserviceaccount.com
+    
     bq_client = bigquery.Client()
     table = bq_client.get_table("rj-sms.gerenciamento.api_health_check")
 
