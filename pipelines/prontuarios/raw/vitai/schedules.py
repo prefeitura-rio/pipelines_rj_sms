@@ -17,21 +17,13 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 # Parameters
 #####################################
 
-ENABLED_ENTITY_VALUES = ["pacientes", "diagnostico"]
-ENABLED_CNES_VALUES = vitai_constants.API_CNES_TO_URL.value.keys()
-
-
-vitai_flow_parameters = []
-for entity in ENABLED_ENTITY_VALUES:
-    for cnes in ENABLED_CNES_VALUES:
-        vitai_flow_parameters.append(
-            {
-                "cnes": cnes,
-                "entity": entity,
-                "environment": "prod",
-                "rename_flow": True,
-            }
-        )
+vitai_flow_parameters = [
+    {
+        "environment": "prod",
+        "rename_flow": True,
+        "minimum_date": ""
+    }
+]
 
 #####################################
 # Schedules
