@@ -17,13 +17,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 # Parameters
 #####################################
 
-vitai_flow_parameters = [
-    {
-        "environment": "prod",
-        "rename_flow": True,
-        "minimum_date": ""
-    }
-]
+vitai_flow_parameters = [{"environment": "prod", "rename_flow": True, "minimum_date": ""}]
 
 #####################################
 # Schedules
