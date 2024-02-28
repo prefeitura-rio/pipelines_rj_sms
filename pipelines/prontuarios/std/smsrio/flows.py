@@ -9,15 +9,12 @@ from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.std.smsrio.tasks import (
-    get_params,
     define_constants,
     format_json,
-    standartize_data
-    )
-from pipelines.prontuarios.utils.tasks import load_to_api
-
-
-from pipelines.prontuarios.utils.tasks import get_api_token
+    get_params,
+    standartize_data,
+)
+from pipelines.prontuarios.utils.tasks import get_api_token, load_to_api
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
 
 with Flow(
@@ -70,16 +67,19 @@ with Flow(
 
     lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants()
 
-    format_patient_list = format_json(raw_patient_data,
-                                      upstream_tasks=[unmapped(credential_injection)])
+    format_patient_list = format_json(
+        raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
+    )
 
-    std_patient_list = standartize_data(raw_data=format_patient_list,
-                                        logradouros_dict=logradouros_dict,
-                                        city_dict=city_dict,
-                                        state_dict=state_dict,
-                                        country_dict=country_dict,
-                                        lista_campos_api=lista_campos_api,
-                                        upstream_tasks=[unmapped(credential_injection)])
+    std_patient_list = standartize_data(
+        raw_data=format_patient_list,
+        logradouros_dict=logradouros_dict,
+        city_dict=city_dict,
+        state_dict=state_dict,
+        country_dict=country_dict,
+        lista_campos_api=lista_campos_api,
+        upstream_tasks=[unmapped(credential_injection)],
+    )
 
     load_to_api_task = load_to_api(
         upstream_tasks=[credential_injection],
