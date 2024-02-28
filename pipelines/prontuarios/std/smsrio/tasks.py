@@ -12,7 +12,8 @@ from pipelines.prontuarios.std.smsrio.utils import (
     clean_email_records,
     clean_phone_records,
     clean_postal_code_info,
-    format_address
+    format_address,
+    transform_to_ibge_code
     )
 
 
@@ -105,7 +106,7 @@ def drop_invalid_records(data: dict) -> dict:
         dic (dict) : Individual data record
     Returns:
         dic (dict) : Individual data record standardized or None
-    '''
+    """
     # Adiciona raw source id
     data['raw_source_id'] = data['id']
 
@@ -297,7 +298,7 @@ def standardize_decease_info(data: dict) -> dict:
 
     Returns:
         data (dict) : Individual data record standardized
-    '''
+    """
     if data['dt_obito'] is not None:
         data["deceased_date"] = re.sub(r"T.*", "", data['dt_obito'])
         data['deceased_date'] = pd.to_datetime(data['dt_obito'], format='%Y-%m-%d', errors='coerce')

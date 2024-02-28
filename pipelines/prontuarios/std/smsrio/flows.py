@@ -11,6 +11,7 @@ from pipelines.prontuarios.std.smsrio.constants import constants as smsrio_const
 from pipelines.prontuarios.std.smsrio.tasks import (
     get_params,
     define_constants,
+    clean_none_records,
     drop_invalid_records,
     merge_keys,
     standardize_address_data,
