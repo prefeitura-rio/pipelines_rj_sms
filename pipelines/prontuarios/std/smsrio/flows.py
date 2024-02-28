@@ -11,17 +11,8 @@ from pipelines.prontuarios.std.smsrio.constants import constants as smsrio_const
 from pipelines.prontuarios.std.smsrio.tasks import (
     get_params,
     define_constants,
-    clean_none_records,
-    drop_invalid_records,
-    merge_keys,
-    standardize_address_data,
-    standardize_cns_list,
-    standardize_decease_info,
-    standardize_nationality,
-    standardize_parents_names,
-    standardize_race,
-    standardize_telecom_data,
-    clean_records_fields
+    format_json,
+    standartize_data
     )
 from pipelines.prontuarios.utils.tasks import load_to_api
 
@@ -83,57 +74,20 @@ with Flow(
 
     lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants()
 
-    patients_json_std = merge_keys.map(
-        dic=raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_valid_records = drop_invalid_records.map(
-                        data=patients_json_std,
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_notna_records = clean_none_records(
-                        json_list=patients_json_valid_records,
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_std_race = standardize_race.map(
-                        data=patients_json_notna_records,
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_std_nationality = standardize_nationality.map(
-                        data=patients_json_std_race,
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_std_parents = standardize_parents_names.map(
-                        data=patients_json_std_nationality,
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_std_cns = standardize_cns_list.map(
-                        data=patients_json_std_parents,
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_std_decease = standardize_decease_info.map(
-                        data=patients_json_std_cns,
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_std_address = standardize_address_data.map(
-                        data=patients_json_std_decease,
-                        logradouros_dict=unmapped(logradouros_dict),
-                        city_dict=unmapped(city_dict),
-                        state_dict=unmapped(state_dict),
-                        country_dict=unmapped(country_dict),
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_std_telecom = standardize_telecom_data.map(
-                        data=patients_json_std_address,
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
-    patients_json_std_clean = clean_records_fields.map(
-                        data=patients_json_std_telecom,
-                        lista_campos_api=unmapped(lista_campos_api),
-                        upstream_tasks=[unmapped(credential_injection)]
-    )
+    format_patient_list = format_json(raw_patient_data,
+                                      upstream_tasks=[unmapped(credential_injection)])
+
+    std_patient_list = standartize_data(raw_data=format_patient_list,
+                                        logradouros_dict=logradouros_dict,
+                                        city_dict=city_dict,
+                                        state_dict=state_dict,
+                                        country_dict=country_dict,
+                                        lista_campos_api=lista_campos_api,
+                                        upstream_tasks=[unmapped(credential_injection)])
+
     load_to_api_task = load_to_api(
         upstream_tasks=[credential_injection],
-        request_body=patients_json_std_clean,
+        request_body=std_patient_list,
         endpoint_name="std/patientrecords",
         api_token=api_token,
         environment=ENVIRONMENT,
