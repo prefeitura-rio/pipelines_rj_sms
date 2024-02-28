@@ -55,11 +55,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(
-        START_DATETIME,
-        END_DATETIME,
-        upstream_tasks=[credential_injection]
-        )
+    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords",

@@ -31,6 +31,10 @@ from pipelines.prontuarios.utils.tasks import (
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
+# ==============================
+# FLOW DE EXTRAÇÃO DE DADOS
+# ==============================
+
 with Flow(
     name="Prontuários (Vitai) - Extração de Dados",
 ) as vitai_extraction:
@@ -132,7 +136,7 @@ vitai_extraction.run_config = KubernetesRun(
 )
 
 # ==============================
-# SCHEDULER FLOW
+# FLOW ORQUESTRADOR
 # ==============================
 
 with Flow(
