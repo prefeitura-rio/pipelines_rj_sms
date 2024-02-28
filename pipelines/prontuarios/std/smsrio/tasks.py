@@ -13,16 +13,16 @@ from pipelines.prontuarios.std.smsrio.utils import (
     clean_phone_records,
     clean_postal_code_info,
     format_address,
-    transform_to_ibge_code
-    )
+    transform_to_ibge_code,
+)
 
 
 @task
 def get_params(start_datetime, end_datetime):
     return {
-        'start_datetime': start_datetime,
-        'end_datetime': end_datetime,
-        'datasource_system': 'smsrio'
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
+        "datasource_system": "smsrio",
     }
 
 
@@ -108,13 +108,13 @@ def drop_invalid_records(data: dict) -> dict:
         dic (dict) : Individual data record standardized or None
     """
     # Adiciona raw source id
-    data['raw_source_id'] = data['id']
+    data["raw_source_id"] = data["id"]
 
     # Remove registros com data nula ou invalida
-    data["birth_date"] = re.sub(r"T.*", "", data['dt_nasc'])
-    data["birth_date"] = pd.to_datetime(data['birth_date'], format='%Y-%m-%d', errors='coerce')
-    if pd.notna(data['birth_date']):
-        data['birth_date'] = str(data['birth_date'].date())
+    data["birth_date"] = re.sub(r"T.*", "", data["dt_nasc"])
+    data["birth_date"] = pd.to_datetime(data["birth_date"], format="%Y-%m-%d", errors="coerce")
+    if pd.notna(data["birth_date"]):
+        data["birth_date"] = str(data["birth_date"].date())
 
     # Remove registros com cpf invalido ou nulo
     # falta melhorar essa validação com cadsus
@@ -299,22 +299,22 @@ def standardize_decease_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data['dt_obito'] is not None:
-        data["deceased_date"] = re.sub(r"T.*", "", data['dt_obito'])
-        data['deceased_date'] = pd.to_datetime(data['dt_obito'], format='%Y-%m-%d', errors='coerce')
-        if pd.notna(data['deceased_date']):
-            data['deceased_date'] = str(data['deceased_date'].date())
+    if data["dt_obito"] is not None:
+        data["deceased_date"] = re.sub(r"T.*", "", data["dt_obito"])
+        data["deceased_date"] = pd.to_datetime(data["dt_obito"], format="%Y-%m-%d", errors="coerce")
+        if pd.notna(data["deceased_date"]):
+            data["deceased_date"] = str(data["deceased_date"].date())
         else:
-            data['deceased_date'] = None
+            data["deceased_date"] = None
     else:
         data["deceased_date"] = None
 
-    if (data['obito'] == '1'):
-        data['deceased'] = True
-    elif (data['obito'] == '0'):
-        data['deceased'] = False
-    elif (pd.notna(data['deceased_date'])):
-        data['deceased'] = True
+    if data["obito"] == "1":
+        data["deceased"] = True
+    elif data["obito"] == "0":
+        data["deceased"] = False
+    elif pd.notna(data["deceased_date"]):
+        data["deceased"] = True
     else:
         pass
 

@@ -9,10 +9,11 @@ from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.std.smsrio.tasks import (
-    get_params,
-    define_constants,
     clean_none_records,
+    clean_records_fields,
+    define_constants,
     drop_invalid_records,
+    get_params,
     merge_keys,
     standardize_address_data,
     standardize_cns_list,
@@ -21,12 +22,8 @@ from pipelines.prontuarios.std.smsrio.tasks import (
     standardize_parents_names,
     standardize_race,
     standardize_telecom_data,
-    clean_records_fields
-    )
-from pipelines.prontuarios.utils.tasks import load_to_api
-
-
-from pipelines.prontuarios.utils.tasks import get_api_token
+)
+from pipelines.prontuarios.utils.tasks import get_api_token, load_to_api
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
 
 with Flow(
@@ -64,11 +61,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(
-        START_DATETIME,
-        END_DATETIME,
-        upstream_tasks=[credential_injection]
-        )
+    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords",
@@ -87,49 +80,41 @@ with Flow(
         dic=raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_valid_records = drop_invalid_records.map(
-                        data=patients_json_std,
-                        upstream_tasks=[unmapped(credential_injection)]
+        data=patients_json_std, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_notna_records = clean_none_records(
-                        json_list=patients_json_valid_records,
-                        upstream_tasks=[unmapped(credential_injection)]
+        json_list=patients_json_valid_records, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_std_race = standardize_race.map(
-                        data=patients_json_notna_records,
-                        upstream_tasks=[unmapped(credential_injection)]
+        data=patients_json_notna_records, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_std_nationality = standardize_nationality.map(
-                        data=patients_json_std_race,
-                        upstream_tasks=[unmapped(credential_injection)]
+        data=patients_json_std_race, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_std_parents = standardize_parents_names.map(
-                        data=patients_json_std_nationality,
-                        upstream_tasks=[unmapped(credential_injection)]
+        data=patients_json_std_nationality, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_std_cns = standardize_cns_list.map(
-                        data=patients_json_std_parents,
-                        upstream_tasks=[unmapped(credential_injection)]
+        data=patients_json_std_parents, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_std_decease = standardize_decease_info.map(
-                        data=patients_json_std_cns,
-                        upstream_tasks=[unmapped(credential_injection)]
+        data=patients_json_std_cns, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_std_address = standardize_address_data.map(
-                        data=patients_json_std_decease,
-                        logradouros_dict=unmapped(logradouros_dict),
-                        city_dict=unmapped(city_dict),
-                        state_dict=unmapped(state_dict),
-                        country_dict=unmapped(country_dict),
-                        upstream_tasks=[unmapped(credential_injection)]
+        data=patients_json_std_decease,
+        logradouros_dict=unmapped(logradouros_dict),
+        city_dict=unmapped(city_dict),
+        state_dict=unmapped(state_dict),
+        country_dict=unmapped(country_dict),
+        upstream_tasks=[unmapped(credential_injection)],
     )
     patients_json_std_telecom = standardize_telecom_data.map(
-                        data=patients_json_std_address,
-                        upstream_tasks=[unmapped(credential_injection)]
+        data=patients_json_std_address, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_std_clean = clean_records_fields.map(
-                        data=patients_json_std_telecom,
-                        lista_campos_api=unmapped(lista_campos_api),
-                        upstream_tasks=[unmapped(credential_injection)]
+        data=patients_json_std_telecom,
+        lista_campos_api=unmapped(lista_campos_api),
+        upstream_tasks=[unmapped(credential_injection)],
     )
     load_to_api_task = load_to_api(
         upstream_tasks=[credential_injection],
