@@ -17,6 +17,15 @@ from pipelines.prontuarios.std.smsrio.utils import (
 
 
 @task
+def get_params(start_datetime, end_datetime):
+    return {
+        'start_datetime': start_datetime,
+        'end_datetime': end_datetime,
+        'datasource_system': 'smsrio'
+    }
+
+
+@task
 def merge_keys(dic: dict) -> dict:
     '''
     Formating payload flatting json
@@ -77,10 +86,14 @@ def drop_invalid_records(data: dict) -> dict:
     Returns:
         dic (dict) : Individual data record standardized or None
     '''
+    # Adiciona raw source id
+    data['raw_source_id'] = data['id']
 
     # Remove registros com data nula ou invalida
     data["birth_date"] = re.sub(r"T.*", "", data['dt_nasc'])
     data["birth_date"] = pd.to_datetime(data['birth_date'], format='%Y-%m-%d', errors='coerce')
+    if pd.notna(data['birth_date']):
+        data['birth_date'] = str(data['birth_date'].date())
 
     # Remove registros com cpf invalido ou nulo
     # falta melhorar essa validação com cadsus
@@ -266,13 +279,19 @@ def standardize_decease_info(data: dict) -> dict:
     if data['dt_obito'] is not None:
         data["deceased_date"] = re.sub(r"T.*", "", data['dt_obito'])
         data['deceased_date'] = pd.to_datetime(data['dt_obito'], format='%Y-%m-%d', errors='coerce')
+        if pd.notna(data['deceased_date']):
+            data['deceased_date'] = str(data['deceased_date'].date())
+        else:
+            data['deceased_date'] = None
     else:
         data['deceased_date'] = None
 
-    if (data['obito'] == '1') | (data['obito'] == '0'):
-        data['deceased'] = data['obito']
+    if (data['obito'] == '1'):
+        data['deceased'] = True
+    elif (data['obito'] == '0'):
+        data['deceased'] = False
     elif (pd.notna(data['deceased_date'])):
-        data['deceased'] = '1'
+        data['deceased'] = True
     else:
         pass
 
