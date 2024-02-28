@@ -70,7 +70,7 @@ def get_infisical_user_password(path: str, environment: str = "dev") -> tuple:
     return {"username": username["USERNAME"], "password": password["PASSWORD"]}
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=60))
 def inject_gcp_credentials(environment: str = "dev") -> None:
     """
     Injects GCP credentials into the specified environment.
