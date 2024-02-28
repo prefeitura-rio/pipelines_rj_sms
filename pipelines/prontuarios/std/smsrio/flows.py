@@ -11,15 +11,14 @@ from pipelines.prontuarios.std.smsrio.constants import constants as smsrio_const
 from pipelines.prontuarios.std.smsrio.tasks import (
     get_params,
     define_constants,
-    merge_keys,
     drop_invalid_records,
-    clean_none_records,
-    standardize_nationality,
-    standardize_race,
-    standardize_decease_info,
+    merge_keys,
     standardize_address_data,
-    standardize_parents_names,
     standardize_cns_list,
+    standardize_decease_info,
+    standardize_nationality,
+    standardize_parents_names,
+    standardize_race,
     standardize_telecom_data,
     clean_records_fields
     )
@@ -88,8 +87,7 @@ with Flow(
     lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants()
 
     patients_json_std = merge_keys.map(
-                        dic=raw_patient_data,
-                        upstream_tasks=[unmapped(credential_injection)]
+        dic=raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
     )
     patients_json_valid_records = drop_invalid_records.map(
                         data=patients_json_std,
