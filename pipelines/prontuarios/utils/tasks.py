@@ -85,7 +85,7 @@ def get_api_token(
     )
     response = requests.post(
         url=f"{api_url}auth/token",
-        timeout=90,
+        timeout=180,
         headers={
             "Content-Type": "application/x-www-form-urlencoded",
         },
@@ -164,7 +164,7 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     request_response = requests.post(
         url=f"{api_url}{endpoint_name}",
         headers={"Authorization": f"Bearer {api_token}"},
-        timeout=90,
+        timeout=180,
         json=request_body,
     )
 
