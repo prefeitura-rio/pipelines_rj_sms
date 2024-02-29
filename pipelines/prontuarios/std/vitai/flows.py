@@ -71,12 +71,14 @@ with Flow(
         raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
     )
 
-    std_patient_list = standartize_data(raw_data=format_patient_list,
-                                        city_name_dict=city_name_dict,
-                                        state_dict=state_dict,
-                                        country_dict=country_dict,
-                                        lista_campos_api=lista_campos_api,
-                                        upstream_tasks=[unmapped(credential_injection)])
+    std_patient_list = standartize_data(
+        raw_data=format_patient_list,
+        city_name_dict=city_name_dict,
+        state_dict=state_dict,
+        country_dict=country_dict,
+        lista_campos_api=lista_campos_api,
+        upstream_tasks=[unmapped(credential_injection)],
+    )
 
     load_to_api_task = load_to_api(
         upstream_tasks=[credential_injection],
