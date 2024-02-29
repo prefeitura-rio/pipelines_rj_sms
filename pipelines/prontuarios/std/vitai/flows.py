@@ -65,7 +65,9 @@ with Flow(
     # Task Section #2 - Transform Data
     ####################################
 
-    lista_campos_api, city_name_dict, state_dict, country_dict = define_constants(upstream_tasks=[credential_injection])
+    lista_campos_api, city_name_dict, state_dict, country_dict = define_constants(
+        upstream_tasks=[credential_injection]
+    )
 
     format_patient_list = format_json(
         raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
