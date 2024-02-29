@@ -208,11 +208,11 @@ def load_from_api(url: str, params=None, credentials=None, auth_method="bearer")
     """
     if auth_method == "bearer":
         headers = {"Authorization": f"Bearer {credentials}"}
-        response = requests.get(url, headers=headers, params=params, timeout=90)
+        response = requests.get(url, headers=headers, params=params, timeout=180)
     elif auth_method == "basic":
-        response = requests.get(url, auth=credentials, params=params, timeout=90)
+        response = requests.get(url, auth=credentials, params=params, timeout=180)
     else:
-        response = requests.get(url, params=params, timeout=90)
+        response = requests.get(url, params=params, timeout=180)
 
     if response.status_code == 200:
         return response.json()
@@ -273,7 +273,7 @@ def download_azure_blob(
     return destination_file_path
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=5), timeout=timedelta(seconds=240))
+@task(max_retries=3, retry_delay=timedelta(seconds=60), timeout=timedelta(minutes=5))
 def download_ftp(
     host: str,
     user: str,
