@@ -2,11 +2,13 @@
 from typing import Tuple
 
 # from unidecode import unidecode
+# from unidecode import unidecode
 import pandas as pd
 from prefect import task
 
 from pipelines.prontuarios.std.vitai.utils import (
     clean_none_records,
+    clean_records_fields,
     drop_invalid_records,
     merge_keys,
     standardize_address_data,
@@ -16,8 +18,7 @@ from pipelines.prontuarios.std.vitai.utils import (
     standardize_parents_names,
     standardize_race,
     standardize_telecom_data,
-    clean_records_fields
-    )
+)
 
 
 @task
@@ -32,9 +33,9 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
         dict : params dictionary
     """
     return {
-        'start_datetime': start_datetime,
-        'end_datetime': end_datetime,
-        'datasource_system': 'vitai'
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
+        "datasource_system": "vitai",
     }
 
 
@@ -101,11 +102,13 @@ def format_json(json_list: list) -> list:
 
 
 @task
-def standartize_data(raw_data: list,
-                     city_name_dict: dict,
-                     state_dict: dict,
-                     country_dict: dict,
-                     lista_campos_api: list) -> list:
+def standartize_data(
+    raw_data: list,
+    city_name_dict: dict,
+    state_dict: dict,
+    country_dict: dict,
+    lista_campos_api: list,
+) -> list:
 
     patients_json_std_race = list(map(standardize_race, raw_data))
 

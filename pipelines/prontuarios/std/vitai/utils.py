@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 import re
 from operator import itemgetter
+
 import pandas as pd
 from validate_docbr import CNS, CPF
 
@@ -13,7 +15,7 @@ def merge_keys(dic: dict) -> dict:
         dic (dict) : Individual data record flatted
     """
     subdic = dic.pop("data")
-    subdic.pop('id')
+    subdic.pop("id")
     dic.update(subdic)
 
     return dic
@@ -42,7 +44,7 @@ def drop_invalid_records(data: dict) -> dict:
     # Remove registros com cpf invalido ou nulo
     # falta validação retirando filhos com cpf dos pais  e cpfs nao correspondentes as pessoas
     cpf = CPF()
-    if data['patient_cpf'] is None:
+    if data["patient_cpf"] is None:
         pass
     elif data['patient_cpf'] == '01234567890':
         data['patient_cpf'] = None
@@ -52,10 +54,10 @@ def drop_invalid_records(data: dict) -> dict:
         pass
 
     # Remove registros com sexo nulo ou invalido
-    if (data['sexo'] == '1') | (data['sexo'] == 'M'):
-        data['gender'] = 'male'
-    elif (data['sexo'] == '2') | (data['sexo'] == 'F'):
-        data['gender'] = 'female'
+    if (data["sexo"] == "1") | (data["sexo"] == "M"):
+        data["gender"] = "male"
+    elif (data["sexo"] == "2") | (data["sexo"] == "F"):
+        data["gender"] = "female"
     else:
         data['gender'] = None
 
@@ -77,6 +79,7 @@ def drop_invalid_records(data: dict) -> dict:
     # Drop
     for value in list(itemgetter('patient_cpf', 'name', 'gender', 'birth_date')(data)):
         if (value is None) | (pd.isna(value)):
+            return
             return
         else:
             pass
@@ -121,7 +124,7 @@ def standardize_race(data):
     Returns:
         data (dict) : Individual data record standardized
     """
-    if (data['racaCor'] is None):
+    if data["racaCor"] is None:
         return data
     elif (bool(re.search('SEM INFO', data['racaCor']))) | \
          (bool(re.search('RECEM NASCIDO N/A', data['racaCor']))):
@@ -130,7 +133,7 @@ def standardize_race(data):
     elif data['racaCor'] == 'NEGRO':
         data['race'] = 'preta'
     else:
-        data['race'] = data['racaCor'].lower()
+        data["race"] = data["racaCor"].lower()
     return data
 
 
@@ -144,12 +147,12 @@ def standardize_nationality(data):
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data['nacionalidade'] is None:
+    if data["nacionalidade"] is None:
         return data
-    elif data['nacionalidade'] == 'BRASILEIRA':
-        data['nationality'] = 'B'
-    elif data['nacionalidade'] == 'NATURALIZADA':
-        data['nationality'] = 'N'
+    elif data["nacionalidade"] == "BRASILEIRA":
+        data["nationality"] = "B"
+    elif data["nacionalidade"] == "NATURALIZADA":
+        data["nationality"] = "N"
     else:
         data['nacionality'] = 'E'
     return data
@@ -166,7 +169,7 @@ def standardize_parents_names(data):
         data (dict) : Individual data record standardized
     """
     # Nome do pai
-    if (data['nomePai'] is None):
+    if data["nomePai"] is None:
         pass
     else:
         data['nomePai'] = re.sub(r'[!"#$%&\'()*+,-\/:;<=>?@[\\\]^_`{|}~]', "", data['nomePai'])
@@ -180,11 +183,11 @@ def standardize_parents_names(data):
             data['father_name'] = data['nomePai']
 
     # Nome da mãe
-    if (data['nomeMae'] is None):
+    if data["nomeMae"] is None:
         pass
     else:
         data['nomeMae'] = re.sub(r'[!"#$%&\'()*+,-\/:;<=>?@[\\\]^_`{|}~]', "", data['nomeMae'])
-        data['nomeMae'] = data['nomeMae'].replace('\t' '')
+        data['nomeMae'] = data['nomeMae'].replace('\t', '')
         data['nomeMae'] = data['nomeMae'].strip()
         # data['nomeMae'] = unidecode(data['nomeMae'])
         if (len(data['nomeMae'].split()) < 2) | \
@@ -213,14 +216,13 @@ def standardize_cns_list(data):
         cns_list = [dic_cns_value(lista[0], True)]\
                     + list(map(lambda p: dic_cns_value(p, False), lista[1:]))
         cns_list_clean = [cns for cns in cns_list if cns is not None]
-        data['cns_list'] = cns_list_clean
+        data["cns_list"] = cns_list_clean
         return data
 
 
 def standardize_decease_info(data: dict) -> dict:
     """
     Standardize decease field to acceptable API values
-
     Args:
         data (dict) : Individual data record
 
@@ -236,8 +238,8 @@ def standardize_decease_info(data: dict) -> dict:
             data['deceased_date'] = str(data['deceased_date'].date())
             data['deceased'] = True
         else:
-            data['deceased_date'] = None
-            data['deceased'] = False
+            data["deceased_date"] = None
+            data["deceased"] = False
     else:
         data['deceased_date'] = None
         data['deceased'] = False
@@ -281,7 +283,7 @@ def standardize_address_data(
             return data
         else:
             pass
-    data['address_list'] = [dict(filter(lambda item: item[1] is not None, address_dic.items()))]
+    data["address_list"] = [dict(filter(lambda item: item[1] is not None, address_dic.items()))]
     return data
 
 
@@ -304,6 +306,7 @@ def standardize_telecom_data(data: dict) -> dict:
         else:
             telecom_dic = {
                 "system": type_telecom,
+                "use": None,  # nao sei onde tem essa info ainda
                 "use": None,  # nao sei onde tem essa info ainda
                 "value": record,
                 "rank": None,  # nao sei onde tem essa info ainda
@@ -386,10 +389,10 @@ def format_address(row) -> str:
     Returns:
         str: Full adress line
     """
-    logrado_type = row['tipoLogradouro'] if row['tipoLogradouro'] is not None else ""
-    logrado = row['nomeLogradouro'] if row['nomeLogradouro'] is not None else ""
-    number = f", {row['numero']}" if row['numero'] is not None else ""
-    compl = row['complemento'] if row['complemento'] is not None else ""
+    logrado_type = row["tipoLogradouro"] if row["tipoLogradouro"] is not None else ""
+    logrado = row["nomeLogradouro"] if row["nomeLogradouro"] is not None else ""
+    number = f", {row['numero']}" if row["numero"] is not None else ""
+    compl = row["complemento"] if row["complemento"] is not None else ""
 
     return f"{logrado_type} {logrado}{number} {compl}"
 
