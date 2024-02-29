@@ -6,6 +6,7 @@ from prefect import task
 
 from pipelines.prontuarios.std.smsrio.utils import (
     clean_none_records,
+    clean_records_fields,
     drop_invalid_records,
     merge_keys,
     standardize_address_data,
@@ -15,8 +16,7 @@ from pipelines.prontuarios.std.smsrio.utils import (
     standardize_parents_names,
     standardize_race,
     standardize_telecom_data,
-    clean_records_fields
-    )
+)
 
 
 @task
@@ -31,9 +31,9 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
         dict : params dictionary
     """
     return {
-        'start_datetime': start_datetime,
-        'end_datetime': end_datetime,
-        'datasource_system': 'smsrio'
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
+        "datasource_system": "smsrio",
     }
 
 
@@ -104,12 +104,14 @@ def format_json(json_list: list) -> list:
 
 
 @task
-def standartize_data(raw_data: list,
-                     logradouros_dict: dict,
-                     city_dict: dict,
-                     state_dict: dict,
-                     country_dict: dict,
-                     lista_campos_api: list) -> list:
+def standartize_data(
+    raw_data: list,
+    logradouros_dict: dict,
+    city_dict: dict,
+    state_dict: dict,
+    country_dict: dict,
+    lista_campos_api: list,
+) -> list:
 
     patients_json_std_race = list(map(standardize_race, raw_data))
 
@@ -121,16 +123,23 @@ def standartize_data(raw_data: list,
 
     patients_json_std_decease = list(map(standardize_decease_info, patients_json_std_cns))
 
-    patients_json_std_address = list(map(lambda p: standardize_address_data(data=p,
-                                                                            logradouros_dict=logradouros_dict,
-                                                                            city_dict=city_dict,
-                                                                            state_dict=state_dict,
-                                                                            country_dict=country_dict),
-                                         patients_json_std_decease))
+    patients_json_std_address = list(
+        map(
+            lambda p: standardize_address_data(
+                data=p,
+                logradouros_dict=logradouros_dict,
+                city_dict=city_dict,
+                state_dict=state_dict,
+                country_dict=country_dict,
+            ),
+            patients_json_std_decease,
+        )
+    )
 
     patients_json_std_telecom = list(map(standardize_telecom_data, patients_json_std_address))
 
-    patients_json_std_clean = list(map(lambda x: clean_records_fields(x, lista_campos_api),
-                                       patients_json_std_telecom))
+    patients_json_std_clean = list(
+        map(lambda x: clean_records_fields(x, lista_campos_api), patients_json_std_telecom)
+    )
 
     return patients_json_std_clean

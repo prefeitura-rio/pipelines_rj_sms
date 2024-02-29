@@ -121,19 +121,21 @@ def standartize_data(
     patients_json_std_decease = list(map(standardize_decease_info, patients_json_std_cns))
 
     patients_json_std_address = list(
-                                        map(
-                                            lambda p:
-                                            standardize_address_data(data=p,
-                                                                     city_name_dict=city_name_dict,
-                                                                     state_dict=state_dict,
-                                                                     country_dict=country_dict),
-                                            patients_json_std_decease
-                                        )
-                                )
+        map(
+            lambda p: standardize_address_data(
+                data=p,
+                city_name_dict=city_name_dict,
+                state_dict=state_dict,
+                country_dict=country_dict,
+            ),
+            patients_json_std_decease,
+        )
+    )
 
     patients_json_std_telecom = list(map(standardize_telecom_data, patients_json_std_address))
 
-    patients_json_std_clean = list(map(lambda x: clean_records_fields(x, lista_campos_api),
-                                       patients_json_std_telecom))
+    patients_json_std_clean = list(
+        map(lambda x: clean_records_fields(x, lista_campos_api), patients_json_std_telecom)
+    )
 
     return patients_json_std_clean
