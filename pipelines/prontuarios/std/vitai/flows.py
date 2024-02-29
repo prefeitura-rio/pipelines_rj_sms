@@ -9,15 +9,12 @@ from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.std.vitai.tasks import (
-    get_params,
     define_constants,
     format_json,
-    standartize_data
-    )
-from pipelines.prontuarios.utils.tasks import load_to_api
-
-
-from pipelines.prontuarios.utils.tasks import get_api_token
+    get_params,
+    standartize_data,
+)
+from pipelines.prontuarios.utils.tasks import get_api_token, load_to_api
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
 
 with Flow(
@@ -55,11 +52,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(
-        START_DATETIME,
-        END_DATETIME,
-        upstream_tasks=[credential_injection]
-        )
+    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords",
@@ -74,16 +67,18 @@ with Flow(
 
     lista_campos_api, city_name_dict, state_dict, country_dict = define_constants()
 
-    format_patient_list = format_json(raw_patient_data,
-                                      upstream_tasks=[unmapped(credential_injection)])
+    format_patient_list = format_json(
+        raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
+    )
 
-    std_patient_list = standartize_data(raw_data=format_patient_list,
-                                        city_name_dict=city_name_dict,
-                                        state_dict=state_dict,
-                                        country_dict=country_dict,
-                                        lista_campos_api=lista_campos_api,
-                                        upstream_tasks=[unmapped(credential_injection)])
-
+    std_patient_list = standartize_data(
+        raw_data=format_patient_list,
+        city_name_dict=city_name_dict,
+        state_dict=state_dict,
+        country_dict=country_dict,
+        lista_campos_api=lista_campos_api,
+        upstream_tasks=[unmapped(credential_injection)],
+    )
 
     load_to_api_task = load_to_api(
         upstream_tasks=[credential_injection],

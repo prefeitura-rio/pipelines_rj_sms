@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
+import json
 from typing import Tuple
 
-#from unidecode import unidecode
+# from unidecode import unidecode
 import pandas as pd
 from prefect import task
-import json
 
 from pipelines.prontuarios.std.vitai.utils import (
     clean_none_records,
+    clean_records_fields,
     drop_invalid_records,
     merge_keys,
     standardize_address_data,
@@ -17,8 +18,8 @@ from pipelines.prontuarios.std.vitai.utils import (
     standardize_parents_names,
     standardize_race,
     standardize_telecom_data,
-    clean_records_fields
-    )
+)
+
 
 @task
 def get_params(start_datetime: str, end_datetime: str) -> dict:
@@ -32,10 +33,11 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
         dict : params dictionary
     """
     return {
-        'start_datetime': start_datetime,
-        'end_datetime': end_datetime,
-        'datasource_system': 'vitai'
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
+        "datasource_system": "vitai",
     }
+
 
 @task
 def define_constants() -> Tuple[list, dict, dict, dict]:
@@ -100,11 +102,13 @@ def format_json(json_list: list) -> list:
 
 
 @task
-def standartize_data(raw_data: list,
-                     city_name_dict: dict,
-                     state_dict: dict,
-                     country_dict: dict,
-                     lista_campos_api: list) -> list:
+def standartize_data(
+    raw_data: list,
+    city_name_dict: dict,
+    state_dict: dict,
+    country_dict: dict,
+    lista_campos_api: list,
+) -> list:
 
     patients_json_std_race = list(map(standardize_race, raw_data))
 
@@ -116,19 +120,25 @@ def standartize_data(raw_data: list,
 
     patients_json_std_decease = list(map(standardize_decease_info, patients_json_std_cns))
 
-    patients_json_std_address = list(map(lambda p: standardize_address_data(data=p,
-                                                                            city_name_dict=city_name_dict,
-                                                                            state_dict=state_dict,
-                                                                            country_dict=country_dict),
-                                         patients_json_std_decease))
+    patients_json_std_address = list(
+        map(
+            lambda p: standardize_address_data(
+                data=p,
+                city_name_dict=city_name_dict,
+                state_dict=state_dict,
+                country_dict=country_dict,
+            ),
+            patients_json_std_decease,
+        )
+    )
 
     patients_json_std_telecom = list(map(standardize_telecom_data, patients_json_std_address))
 
-    patients_json_std_clean = list(map(lambda x: clean_records_fields(x, lista_campos_api),
-                                       patients_json_std_telecom))
-    
+    patients_json_std_clean = list(
+        map(lambda x: clean_records_fields(x, lista_campos_api), patients_json_std_telecom)
+    )
 
-    with open('data.json', 'w') as f:
+    with open("data.json", "w") as f:
         json.dump(patients_json_std_clean, f)
 
     return patients_json_std_clean
