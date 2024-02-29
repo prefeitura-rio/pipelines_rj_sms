@@ -18,8 +18,8 @@ def check_api_health(api_info: dict):
     logger.info(f"Checking API health for {api_info['url']}")
 
     try:
-        response = requests.get(api_info["url"], timeout=60)
-    except TimeoutError:
+        response = requests.get(api_info["url"], timeout=90)
+    except requests.Timeout:
         logger.error(f"API {api_info['url']} -> Timeout")
         duration = None
         status_code = "408"
