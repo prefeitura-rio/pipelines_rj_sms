@@ -84,7 +84,6 @@ with Flow(
                                         lista_campos_api=lista_campos_api,
                                         upstream_tasks=[unmapped(credential_injection)])
 
-
     load_to_api_task = load_to_api(
         upstream_tasks=[credential_injection],
         request_body=std_patient_list,

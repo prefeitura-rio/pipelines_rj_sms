@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Tuple
 
-#from unidecode import unidecode
+# from unidecode import unidecode
 import pandas as pd
 from prefect import task
-import json
 
 from pipelines.prontuarios.std.vitai.utils import (
     clean_none_records,
@@ -19,6 +18,7 @@ from pipelines.prontuarios.std.vitai.utils import (
     standardize_telecom_data,
     clean_records_fields
     )
+
 
 @task
 def get_params(start_datetime: str, end_datetime: str) -> dict:
@@ -36,6 +36,7 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
         'end_datetime': end_datetime,
         'datasource_system': 'vitai'
     }
+
 
 @task
 def define_constants() -> Tuple[list, dict, dict, dict]:
@@ -116,19 +117,20 @@ def standartize_data(raw_data: list,
 
     patients_json_std_decease = list(map(standardize_decease_info, patients_json_std_cns))
 
-    patients_json_std_address = list(map(lambda p: standardize_address_data(data=p,
-                                                                            city_name_dict=city_name_dict,
-                                                                            state_dict=state_dict,
-                                                                            country_dict=country_dict),
-                                         patients_json_std_decease))
+    patients_json_std_address = list(
+                                        map(
+                                            lambda p:
+                                            standardize_address_data(data=p,
+                                                                     city_name_dict=city_name_dict,
+                                                                     state_dict=state_dict,
+                                                                     country_dict=country_dict),
+                                            patients_json_std_decease
+                                        )
+                                )
 
     patients_json_std_telecom = list(map(standardize_telecom_data, patients_json_std_address))
 
     patients_json_std_clean = list(map(lambda x: clean_records_fields(x, lista_campos_api),
                                        patients_json_std_telecom))
-    
-
-    with open('data.json', 'w') as f:
-        json.dump(patients_json_std_clean, f)
 
     return patients_json_std_clean
