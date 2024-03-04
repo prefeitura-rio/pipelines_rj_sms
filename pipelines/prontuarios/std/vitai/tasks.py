@@ -9,12 +9,11 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_none_records,
-    prepare_to_load,
     drop_invalid_records,
-    merge_keys
+    merge_keys,
+    prepare_to_load,
 )
 from pipelines.prontuarios.std.formatters.vitai.patient import (
-
     standardize_address_data,
     standardize_cns_list,
     standardize_decease_info,
@@ -90,18 +89,17 @@ def format_json(json_list: list) -> list:
     json_list_valid = list(map(drop_invalid_records, json_list_merged))
     json_list_notna = clean_none_records(json_list_valid)
 
-    log(f"{len(json_list) - len(json_list_notna)} registers dropped,\
-         standardizing remaining {len(json_list_notna)} registers")
+    log(
+        f"{len(json_list) - len(json_list_notna)} registers dropped,\
+         standardizing remaining {len(json_list_notna)} registers"
+    )
 
     return json_list_notna
 
 
 @task
 def standartize_data(
-    raw_data: list,
-    city_name_dict: dict,
-    state_dict: dict,
-    country_dict: dict
+    raw_data: list, city_name_dict: dict, state_dict: dict, country_dict: dict
 ) -> list:
     """
     Standardize fields and prepare to post
@@ -146,8 +144,6 @@ def standartize_data(
     patients_json_std_telecom = list(map(standardize_telecom_data, patients_json_std_address))
 
     log("Preparing data to load")
-    patients_json_std_clean = list(
-        map(lambda x: prepare_to_load(x), patients_json_std_telecom)
-    )
+    patients_json_std_clean = list(map(lambda x: prepare_to_load(x), patients_json_std_telecom))
 
     return patients_json_std_clean

@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 import re
-import pandas as pd
 from operator import itemgetter
 
-from validate_docbr import CNS, CPF
+import pandas as pd
 from unidecode import unidecode
+from validate_docbr import CNS, CPF
 
 
 def merge_keys(dic: dict) -> dict:
@@ -15,8 +16,8 @@ def merge_keys(dic: dict) -> dict:
         dic (dict) : Individual data record flatted
     """
     subdic = dic.pop("data")
-    if 'id' in subdic.keys():
-        subdic.pop('id')
+    if "id" in subdic.keys():
+        subdic.pop("id")
     dic.update(subdic)
 
     return dic
@@ -31,34 +32,34 @@ def drop_invalid_records(data: dict) -> dict:
     Returns:
         dic (dict) : Individual data record standardized or None
     """
-    data['raw_source_id'] = data['id']
-    birth_date_field = [field for field in data.keys() if field in ['dataNascimento', 'dt_nasc']][0]
-    data['birth_date'] = clean_datetime_field(data[birth_date_field])
+    data["raw_source_id"] = data["id"]
+    birth_date_field = [field for field in data.keys() if field in ["dataNascimento", "dt_nasc"]][0]
+    data["birth_date"] = clean_datetime_field(data[birth_date_field])
 
     # Remove registros com cpf invalido ou nulo
     cpf = CPF()
-    if data['patient_cpf'] is None:
+    if data["patient_cpf"] is None:
         pass
-    elif data['patient_cpf'] == '01234567890':
-        data['patient_cpf'] = None
-    elif cpf.validate(data['patient_cpf']) is False:
-        data['patient_cpf'] = None
+    elif data["patient_cpf"] == "01234567890":
+        data["patient_cpf"] = None
+    elif cpf.validate(data["patient_cpf"]) is False:
+        data["patient_cpf"] = None
     else:
         pass
 
     # Remove registros com sexo nulo ou invalido
-    if (data['sexo'] == '1') | (data['sexo'] == 'M'):
-        data['gender'] = 'male'
-    elif (data['sexo'] == '2') | (data['sexo'] == 'F'):
-        data['gender'] = 'female'
+    if (data["sexo"] == "1") | (data["sexo"] == "M"):
+        data["gender"] = "male"
+    elif (data["sexo"] == "2") | (data["sexo"] == "F"):
+        data["gender"] = "female"
     else:
-        data['gender'] = None
+        data["gender"] = None
 
     # Remove registros com nome nulo ou inválido
-    data['name'] = clean_name_fields(data['nome'])
+    data["name"] = clean_name_fields(data["nome"])
 
     # Drop
-    for value in list(itemgetter('patient_cpf', 'gender', 'birth_date')(data)):
+    for value in list(itemgetter("patient_cpf", "gender", "birth_date")(data)):
         if (value is None) | (pd.isna(value)):
             return
         else:
@@ -128,20 +129,20 @@ def clean_datetime_field(datetime: str) -> str:
     else:
         clean_datetime = re.sub(r" .*", "", datetime)
         clean_datetime = re.sub(r"T.*", "", clean_datetime)
-        clean_datetime = pd.to_datetime(clean_datetime, format='%Y-%m-%d', errors='coerce')
+        clean_datetime = pd.to_datetime(clean_datetime, format="%Y-%m-%d", errors="coerce")
         clean_datetime = str(clean_datetime.date()) if clean_datetime is not None else None
         return clean_datetime
 
 
 def clean_name_fields(name: str) -> str:
-    '''
+    """
     clean name
 
     Args:
         name (str): Name field to be standardized
     Returns:
         str: Standardized name string
-    '''
+    """
     if name is None:
         return
     else:
@@ -150,13 +151,13 @@ def clean_name_fields(name: str) -> str:
         name = re.sub(r"[´`'.]", "", name)
         name = re.sub(r"Ã§", "C", name)
         name = re.sub(r'[!"#$%&\'()*+,-\/:;<=>?@[\\\]^_`{|}~]', "", name)
-        name = name.replace('\t', '')
+        name = name.replace("\t", "")
         name = name.strip()
         name = re.sub("(SEM INFO)|(DECLAR)|(PAC CHEGOU COM OS BOMBEIROS)", "", name)
         name = unidecode(name)
 
-        if bool(re.search(r'[^\w ]', name)) | len(name.split()) < 2:
-            return ''  # mudar quando Pedro mudar api para nome nao ser obg
+        if bool(re.search(r"[^\w ]", name)) | len(name.split()) < 2:
+            return ""  # mudar quando Pedro mudar api para nome nao ser obg
         else:
             return name
 
@@ -171,7 +172,7 @@ def dic_cns_value(valor: str, is_main: bool) -> dict:
         dict: CNS info dictionary
     """
     cns = CNS()
-    valor = re.sub('[^0-9]', '', valor)
+    valor = re.sub("[^0-9]", "", valor)
     if valor is None:
         return
     elif cns.validate(valor):
@@ -210,16 +211,16 @@ def clean_postal_code_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data['end_cep'] is None:
-        data['postal_code'] = None
+    if data["end_cep"] is None:
+        data["postal_code"] = None
         return data
     else:
-        data['end_cep'] = re.sub(r"[^0-9]", "", data['end_cep'])
-        if len(data['end_cep']) != 8:
-            data['postal_code'] = None
+        data["end_cep"] = re.sub(r"[^0-9]", "", data["end_cep"])
+        if len(data["end_cep"]) != 8:
+            data["postal_code"] = None
             return data
         else:
-            data['postal_code'] = data['end_cep']  # [0:5] + '-' data['end_cep'][5:9]
+            data["postal_code"] = data["end_cep"]  # [0:5] + '-' data['end_cep'][5:9]
     return data
 
 
@@ -233,20 +234,20 @@ def clean_phone_records(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data['telefone'] is not None:
-        data['telefone'] = re.sub(r"[()-]", "", data['telefone'])
-        if (len(data['telefone']) < 8) | (len(data['telefone']) > 12):
+    if data["telefone"] is not None:
+        data["telefone"] = re.sub(r"[()-]", "", data["telefone"])
+        if (len(data["telefone"]) < 8) | (len(data["telefone"]) > 12):
             # tel fixos tem 8 digitos e contando com DDD sao 12 digitos,
             # mas nao validamos DDD nem vimos se telefone celular tem 9 dig
-            data['telefone'] = None
-        elif bool(re.search(
-            '0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}',
-            data['telefone']
-        )
+            data["telefone"] = None
+        elif bool(
+            re.search(
+                "0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}", data["telefone"]
+            )
         ):
-            data['telefone'] = None
-        elif bool(re.search('[^0-9]', data['telefone'])):
-            data['telefone'] = None
+            data["telefone"] = None
+        elif bool(re.search("[^0-9]", data["telefone"])):
+            data["telefone"] = None
     return data
 
 
@@ -260,10 +261,10 @@ def clean_email_records(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data['email'] is not None:
-        data['email'] = re.sub(r" ", "", data['email'])
-        if not bool(re.search(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$', data['email'])):
-            data['email'] = None
+    if data["email"] is not None:
+        data["email"] = re.sub(r" ", "", data["email"])
+        if not bool(re.search(r"^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$", data["email"])):
+            data["email"] = None
         else:
             pass
     else:

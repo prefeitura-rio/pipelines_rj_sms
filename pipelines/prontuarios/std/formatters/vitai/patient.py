@@ -5,11 +5,11 @@ from operator import itemgetter
 import pandas as pd
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
+    clean_datetime_field,
+    clean_name_fields,
+    clean_phone_records,
     dic_cns_value,
     format_address,
-    clean_phone_records,
-    clean_name_fields,
-    clean_datetime_field,
 )
 
 
@@ -23,8 +23,8 @@ def standardize_parents_names(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data['father_name'] = clean_name_fields(data['nomePai'])
-    data['mother_name'] = clean_name_fields(data['nomeMae'])
+    data["father_name"] = clean_name_fields(data["nomePai"])
+    data["mother_name"] = clean_name_fields(data["nomeMae"])
     return data
 
 
@@ -113,16 +113,16 @@ def standardize_decease_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    deceased_date_field = [field for field in data.keys() if field in ['dt_obito', 'dataObito']][0]
+    deceased_date_field = [field for field in data.keys() if field in ["dt_obito", "dataObito"]][0]
 
-    data['deceased_date'] = clean_datetime_field(data[deceased_date_field])
-    if not pd.isna(data['deceased_date']):
-        data['deceased'] = True
-    elif 'obito' in data.keys():
-        if data['obito'] == 1:
-            data['deceased'] = True
+    data["deceased_date"] = clean_datetime_field(data[deceased_date_field])
+    if not pd.isna(data["deceased_date"]):
+        data["deceased"] = True
+    elif "obito" in data.keys():
+        if data["obito"] == 1:
+            data["deceased"] = True
     else:
-        data['deceased'] = False
+        data["deceased"] = False
 
     return data
 
@@ -149,11 +149,9 @@ def standardize_address_data(
     address_dic = {
         "use": None,  # nao sei onde tem essa info ainda
         "type": None,  # nao sei onde tem essa info ainda
-        "line": format_address(data['tipoLogradouro'],
-                               data['nomeLogradouro'],
-                               data['numero'],
-                               data['complemento']
-                               ),
+        "line": format_address(
+            data["tipoLogradouro"], data["nomeLogradouro"], data["numero"], data["complemento"]
+        ),
         "city": data["city"],
         "country": data["country"],
         "state": data["state"],
