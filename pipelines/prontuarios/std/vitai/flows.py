@@ -52,7 +52,9 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
+    request_params = get_params(START_DATETIME,
+                                END_DATETIME,
+                                upstream_tasks=[credential_injection])
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords",
@@ -65,7 +67,8 @@ with Flow(
     # Task Section #2 - Transform Data
     ####################################
 
-    lista_campos_api, city_name_dict, state_dict, country_dict = define_constants(upstream_tasks=[credential_injection])
+    city_name_dict, state_dict, country_dict = define_constants(
+        upstream_tasks=[credential_injection])
 
     format_patient_list = format_json(
         raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
@@ -76,7 +79,6 @@ with Flow(
         city_name_dict=city_name_dict,
         state_dict=state_dict,
         country_dict=country_dict,
-        lista_campos_api=lista_campos_api,
         upstream_tasks=[unmapped(credential_injection)],
     )
 
