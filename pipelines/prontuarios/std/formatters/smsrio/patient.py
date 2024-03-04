@@ -4,104 +4,16 @@ import re
 from operator import itemgetter
 
 import pandas as pd
-from validate_docbr import CNS, CPF
 
-
-def merge_keys(dic: dict) -> dict:
-    """
-    Formating payload flatting json
-    Args:
-        dic (dict) : Individual data record
-    Returns:
-        dic (dict) : Individual data record flatted
-    """
-    subdic = dic.pop("data")
-    dic.update(subdic)
-
-    return dic
-
-
-def drop_invalid_records(data: dict) -> dict:
-    """
-    Replace patient records to None if the record does not contain all the API required fiels
-
-    Args:
-        dic (dict) : Individual data record
-    Returns:
-        dic (dict) : Individual data record standardized or None
-    """
-    # Adiciona raw source id
-    data["raw_source_id"] = data["id"]
-
-    # Remove registros com data nula ou invalida
-    data["birth_date"] = re.sub(r"T.*", "", data["dt_nasc"])
-    data["birth_date"] = pd.to_datetime(data["birth_date"], format="%Y-%m-%d", errors="coerce")
-    if pd.notna(data["birth_date"]):
-        data["birth_date"] = str(data["birth_date"].date())
-
-    # Remove registros com cpf invalido ou nulo
-    # falta melhorar essa validação com cadsus
-    cpf = CPF()
-    if data["patient_cpf"] is None:
-        pass
-    elif data["patient_cpf"] == "01234567890":
-        data["patient_cpf"] = None
-    elif cpf.validate(data["patient_cpf"]) is False:
-        data["patient_cpf"] = None
-    else:
-        pass
-
-    # Remove registros com sexo nulo ou invalido
-    if data["sexo"] == "1":
-        data["gender"] = "male"
-    elif data["sexo"] == "2":
-        data["gender"] = "female"
-    else:
-        data["gender"] = None
-
-    # Remove registros com nome nulo ou inválido
-    if bool(re.search(r"[^\w ]", data["nome"])):
-        data["name"] = None
-    elif len(data["nome"].split()) < 2:
-        data["name"] = None
-    else:
-        data["name"] = data["nome"]
-
-    # Drop
-    for value in list(itemgetter("patient_cpf", "name", "gender", "birth_date")(data)):
-        if (value is None) | (pd.isna(value)):
-            return
-        else:
-            pass
-    return data
-
-
-def clean_records_fields(data: dict, lista_campos_api: list) -> dict:
-    """
-    Drop fields not contained in API from individual patient record
-
-    Args:
-        data (dict) : Individual data record
-        lista_campos_api (list) : Fields acceptable in API
-
-    Returns:
-        data (dict) : Individual data record standardized
-    """
-    data = dict(
-        filter(lambda item: (item[1] is not None) & (item[0] in lista_campos_api), data.items())
-    )
-    return data
-
-
-def clean_none_records(json_list: list) -> list:
-    """
-    Deleting None records (invalidated records) from payload
-    Args:
-        json_list (list): Payload standartized
-    Returns:
-        list: Payload standartized without None elements
-    """
-    return [record for record in json_list if record is not None]
+from pipelines.prontuarios.std.formatters.generic.patient import (
+    dic_cns_value,
+    format_address,
+    clean_phone_records,
+    clean_name_fields,
+    clean_datetime_field,
+    clean_postal_code_info,
+    clean_email_records
+)
 
 
 def standardize_race(data: dict) -> dict:
@@ -152,22 +64,8 @@ def standardize_parents_names(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    # Nome do pai
-    if data["nome_pai"] is None:
-        pass
-    elif (len(data["nome_pai"].split()) < 2) | (bool(re.search("SEM INFO", data["nome_pai"]))):
-        pass
-    else:
-        data["father_name"] = data["nome_pai"]
-
-    # Nome da mãe
-    if data["nome_mae"] is None:
-        pass
-    elif (len(data["nome_mae"].split()) < 2) | (bool(re.search("SEM INFO", data["nome_mae"]))):
-        pass
-    else:
-        data["mother_name"] = data["nome_mae"]
-
+    data['father_name'] = clean_name_fields(data['nome_pai'])
+    data['mother_name'] = clean_name_fields(data['nome_mae'])
     return data
 
 
@@ -183,15 +81,6 @@ def standardize_cns_list(data: dict) -> dict:
     """
     lista = data["cns_provisorio"]
     lista = json.loads(lista)
-
-    def dic_cns_value(valor, is_main):
-        cns = CNS()
-        if valor is None:
-            return
-        elif cns.validate(valor):
-            return {"value": valor, "is_main": is_main}  # o primeiro da lista é o main
-        else:
-            return
 
     if (len(lista) == 1) & (lista[0] is None):
         return data
@@ -215,15 +104,7 @@ def standardize_decease_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data["dt_obito"] is not None:
-        data["deceased_date"] = re.sub(r"T.*", "", data["dt_obito"])
-        data["deceased_date"] = pd.to_datetime(data["dt_obito"], format="%Y-%m-%d", errors="coerce")
-        if pd.notna(data["deceased_date"]):
-            data["deceased_date"] = str(data["deceased_date"].date())
-        else:
-            data["deceased_date"] = None
-    else:
-        data["deceased_date"] = None
+    data['deceased_date'] = clean_datetime_field(data["dt_obito"])
 
     if data["obito"] == "1":
         data["deceased"] = True
@@ -259,7 +140,7 @@ def standardize_address_data(
     address_dic = {
         "use": None,  # nao sei onde tem essa info ainda
         "type": None,  # nao sei onde tem essa info ainda
-        "line": format_address(data),
+        "line": format_address('end_tp_logrado_nome', 'end_logrado', 'end_numero', 'end_complem'),
         "city": data["city"],
         "country": data["country"],
         "state": data["state"],
@@ -320,103 +201,9 @@ def standardize_telecom_data(data: dict) -> dict:
     return data
 
 
-def clean_email_records(data: dict) -> dict:
-
-    """
-    Standardize email data field to acceptable API format
-
-    Args:
-        data (dict) : Individual data record
-
-    Returns:
-        data (dict) : Individual data record standardized
-    """
-    if data["email"] is not None:
-        data["email"] = re.sub(r" ", "", data["email"])
-        if not bool(re.search(r"^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$", data["email"])):
-            data["email"] = None
-        else:
-            pass
-    else:
-        pass
-    return data
-
-
-def clean_phone_records(data: dict) -> dict:
-
-    """
-    Standardize phone data field to acceptable API format
-
-    Args:
-        data (dict) : Individual data record
-
-    Returns:
-        data (dict) : Individual data record standardized
-    """
-    if data["telefone"] is not None:
-        data["telefone"] = re.sub(r"[()-]", "", data["telefone"])
-        if (len(data["telefone"]) < 8) | (len(data["telefone"]) > 12):
-            # tel fixos tem 8 digitos e contando com DDD sao 12 digitos
-            # mas nao validamos DDD nem vimos se telefone celular tem 9 dig
-            data["telefone"] = None
-        elif bool(
-            re.search(
-                "0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}", data["telefone"]
-            )
-        ):
-            data["telefone"] = None
-        elif bool(re.search("[^0-9]", data["telefone"])):
-            data["telefone"] = None
-    return data
-
-
-def clean_postal_code_info(data: dict) -> dict:
-
-    """
-    Standardize postal code data field to acceptable API format
-
-    Args:
-        data (dict) : Individual data record
-
-    Returns:
-        data (dict) : Individual data record standardized
-    """
-    if data["end_cep"] is None:
-        data["postal_code"] = None
-        return data
-    else:
-        data["end_cep"] = re.sub(r"[^0-9]", "", data["end_cep"])
-        if len(data["end_cep"]) != 8:
-            data["postal_code"] = None
-            return data
-        else:
-            data["postal_code"] = data["end_cep"]  # [0:5] + '-' data['end_cep'][5:9]
-    return data
-
-
-def format_address(row: dict) -> str:
-
-    """
-    Returns full address combining columns
-
-    Args:
-    row (pandas.Series): Row from raw patient data
-
-    Returns:
-        str: Full adress line
-    """
-    logrado_type = row["end_tp_logrado_nome"] if row["end_tp_logrado_nome"] is not None else ""
-    logrado = row["end_logrado"] if row["end_logrado"] is not None else ""
-    number = f", {row['end_numero']}" if row["end_numero"] is not None else ""
-    compl = row["end_complem"] if row["end_complem"] is not None else ""
-
-    return f"{logrado_type} {logrado}{number} {compl}"
-
-
 def transform_to_ibge_code(
     data: dict, logradouros_dict: dict, city_dict: dict, state_dict: dict, country_dict: dict
 ) -> dict:
-
     """
     Coding fields to IBGE codes
 
