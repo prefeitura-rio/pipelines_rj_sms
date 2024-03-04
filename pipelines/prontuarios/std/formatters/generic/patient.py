@@ -129,7 +129,7 @@ def clean_datetime_field(datetime: str) -> str:
         clean_datetime = re.sub(r" .*", "", datetime)
         clean_datetime = re.sub(r"T.*", "", clean_datetime)
         clean_datetime = pd.to_datetime(clean_datetime, format='%Y-%m-%d', errors='coerce')
-        clean_datetime = str(clean_datetime.date()) if clean_datetime is not None else None
+        clean_datetime = str(clean_datetime.date()) if pd.isna(clean_datetime) is False else None
         return clean_datetime
 
 
