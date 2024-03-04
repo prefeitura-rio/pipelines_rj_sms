@@ -21,6 +21,7 @@ pendulum = "^3.0.0"
 sqlalchemy = "^2.0.25"
 mysqlclient = "^2.2.1"
 validate-docbr = "^1.10.0"
+cryptography = "42.0.4"
 
 
 [tool.poetry.group.dev]
