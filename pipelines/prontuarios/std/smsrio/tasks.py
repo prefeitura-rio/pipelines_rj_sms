@@ -9,9 +9,8 @@ from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_none_records,
     drop_invalid_records,
     merge_keys,
-    prepare_to_load
+    prepare_to_load,
 )
-
 from pipelines.prontuarios.std.formatters.smsrio.patient import (
     standardize_address_data,
     standardize_cns_list,
@@ -174,8 +173,6 @@ def standartize_data(
     patients_json_std_telecom = list(map(standardize_telecom_data, patients_json_std_address))
 
     log("Preparing data to load")
-    patients_json_std_clean = list(
-        map(lambda x: prepare_to_load(x), patients_json_std_telecom)
-    )
+    patients_json_std_clean = list(map(lambda x: prepare_to_load(x), patients_json_std_telecom))
 
     return patients_json_std_clean

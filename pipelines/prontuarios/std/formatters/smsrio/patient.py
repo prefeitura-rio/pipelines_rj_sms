@@ -6,13 +6,13 @@ from operator import itemgetter
 import pandas as pd
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
+    clean_datetime_field,
+    clean_email_records,
+    clean_name_fields,
+    clean_phone_records,
+    clean_postal_code_info,
     dic_cns_value,
     format_address,
-    clean_phone_records,
-    clean_name_fields,
-    clean_datetime_field,
-    clean_postal_code_info,
-    clean_email_records
 )
 
 
@@ -64,8 +64,8 @@ def standardize_parents_names(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data['father_name'] = clean_name_fields(data['nome_pai'])
-    data['mother_name'] = clean_name_fields(data['nome_mae'])
+    data["father_name"] = clean_name_fields(data["nome_pai"])
+    data["mother_name"] = clean_name_fields(data["nome_mae"])
     return data
 
 
@@ -104,7 +104,7 @@ def standardize_decease_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data['deceased_date'] = clean_datetime_field(data["dt_obito"])
+    data["deceased_date"] = clean_datetime_field(data["dt_obito"])
 
     if data["obito"] == "1":
         data["deceased"] = True
@@ -140,7 +140,7 @@ def standardize_address_data(
     address_dic = {
         "use": None,  # nao sei onde tem essa info ainda
         "type": None,  # nao sei onde tem essa info ainda
-        "line": format_address('end_tp_logrado_nome', 'end_logrado', 'end_numero', 'end_complem'),
+        "line": format_address("end_tp_logrado_nome", "end_logrado", "end_numero", "end_complem"),
         "city": data["city"],
         "country": data["country"],
         "state": data["state"],
