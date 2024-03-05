@@ -160,7 +160,6 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
         secret_name=prontuario_constants.INFISICAL_API_URL.value,
         environment=environment,
     )
-
     request_response = requests.post(
         url=f"{api_url}{endpoint_name}",
         headers={"Authorization": f"Bearer {api_token}"},
@@ -214,8 +213,12 @@ def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
     """
 
     obj_valid_cpf = filter(lambda obj: is_valid_cpf(obj["patient_cpf"]), objects)
+    obj_valid_cpf = list(obj_valid_cpf)
 
-    return list(obj_valid_cpf)
+    logger = prefect.context.get("logger")
+    logger.info(f"Filtered {len(objects)} registers to {len(obj_valid_cpf)} valid CPFs")
+
+    return obj_valid_cpf
 
 
 @task

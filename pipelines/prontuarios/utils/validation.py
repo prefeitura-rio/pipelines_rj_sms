@@ -17,7 +17,7 @@ def is_valid_cpf(cpf):
     Returns:
         bool: True if the CPF is valid, False otherwise.
     """
-    if cpf is None or pd.isna(cpf):
+    if cpf is None or pd.isna(cpf) or cpf == "01234567890":
         return False
 
     return CPF().validate(cpf)

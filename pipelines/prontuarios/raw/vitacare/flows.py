@@ -13,6 +13,7 @@ from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_s
 from pipelines.prontuarios.raw.vitacare.tasks import (
     create_parameter_list,
     extract_data_from_api,
+    extract_data_from_dump,
     group_data_by_patient,
 )
 from pipelines.prontuarios.raw.vitai.tasks import get_entity_endpoint_name
@@ -32,7 +33,7 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.utils.tasks import inject_gcp_credentials
 
 with Flow(
-    name="Prontuários (Vitacare) - Extração de Dados",
+    name="Prontuários (Vitacare) - Extração Rotineira de Dados",
 ) as vitacare_extraction:
     #####################################
     # Parameters
@@ -124,8 +125,104 @@ with Flow(
     force_garbage_collector(upstream_tasks=[load_to_api_task])
 
 vitacare_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitacare_extraction.executor = LocalDaskExecutor(num_workers=1)
+vitacare_extraction.executor = LocalDaskExecutor(num_workers=5)
 vitacare_extraction.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="10Gi",
+)
+
+# ==============================
+# INITIAL EXTRACTION
+# ==============================
+
+with Flow(
+    name="Prontuários (Vitacare) - Extração Inicial de Dados",
+) as vitacare_initial_extraction:
+    #####################################
+    # Parameters
+    #####################################
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    CNES = Parameter("cnes", default="5621801", required=True)
+    ENTITY = Parameter("entity", default="diagnostico", required=True)
+    RENAME_FLOW = Parameter("rename_flow", default=False)
+
+    ####################################
+    # Set environment
+    ####################################
+    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
+
+    ap = get_ap_from_cnes(cnes=CNES, upstream_tasks=[credential_injection])
+
+    api_token = get_api_token(
+        environment=ENVIRONMENT,
+        infisical_path=vitacare_constants.INFISICAL_PATH.value,
+        infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
+        infisical_api_username=vitacare_constants.INFISICAL_API_USERNAME.value,
+        infisical_api_password=vitacare_constants.INFISICAL_API_PASSWORD.value,
+        upstream_tasks=[credential_injection],
+    )
+
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(
+            environment=ENVIRONMENT,
+            cnes=CNES,
+            entity_type=ENTITY,
+            upstream_tasks=[credential_injection],
+        )
+
+    ####################################
+    # Task Section #1 - Get Data
+    ####################################
+    data_chunk_list = extract_data_from_dump(
+        cnes=unmapped(CNES),
+        ap=unmapped(ap),
+        entity_name=unmapped(ENTITY),
+        environment=unmapped(ENVIRONMENT),
+        upstream_tasks=[unmapped(credential_injection)],
+    )
+
+    ####################################
+    # Task Section #2 - Transform Data
+    ####################################
+    grouped_data = group_data_by_patient.map(
+        data=data_chunk_list,
+        entity_type=unmapped(ENTITY),
+        upstream_tasks=[unmapped(credential_injection)],
+    )
+    valid_data = transform_filter_valid_cpf.map(
+        objects=grouped_data, upstream_tasks=[unmapped(credential_injection)]
+    )
+
+    ####################################
+    # Task Section #3 - Prepare to Load
+    ####################################
+    request_bodies = transform_to_raw_format.map(
+        json_data=valid_data,
+        cnes=unmapped(CNES),
+        upstream_tasks=[unmapped(credential_injection)],
+    )
+
+    endpoint_name = get_entity_endpoint_name(entity=ENTITY, upstream_tasks=[credential_injection])
+
+    ####################################
+    # Task Section #4 - Load Data
+    ####################################
+    load_to_api_task = load_to_api.map(
+        request_body=request_bodies,
+        endpoint_name=unmapped(endpoint_name),
+        api_token=unmapped(api_token),
+        environment=unmapped(ENVIRONMENT),
+        upstream_tasks=[unmapped(credential_injection)],
+    )
+
+    force_garbage_collector(upstream_tasks=[load_to_api_task])
+
+vitacare_initial_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitacare_initial_extraction.executor = LocalDaskExecutor(num_workers=5)
+vitacare_initial_extraction.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -164,7 +261,7 @@ with Flow(
     current_flow_run_labels = get_current_flow_labels(upstream_tasks=[credential_injection])
 
     created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("Prontuários (Vitacare) - Extração de Dados"),
+        flow_name=unmapped("Prontuários (Vitacare) - Extração Rotineira de Dados"),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
@@ -180,7 +277,7 @@ with Flow(
 
 vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
 vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
+vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=1)
 vitacare_scheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
