@@ -7,6 +7,8 @@ from datetime import date, timedelta
 
 import prefect
 from prefect import task
+from prefect.engine.signals import ENDRUN
+from prefect.engine.state import Failed
 
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.utils.misc import group_data_by_cpf
@@ -53,7 +55,11 @@ def extract_data_from_api(
 
     requested_data = json.loads(response["body"])
 
-    logger.info(f"Retrieved {len(requested_data)} registers")
+    if len(requested_data) > 0:
+        logger.info(f"Successful Request: retrieved {len(requested_data)} registers")
+    else:
+        logger.error("Failed Request: no data was retrieved")
+        raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {entity_name})"))
 
     return requested_data
 
