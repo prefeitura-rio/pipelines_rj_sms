@@ -4,6 +4,7 @@ Tasks for Vitacare Raw Data Extraction
 """
 import json
 from datetime import date, timedelta
+import numpy as np
 
 import prefect
 from prefect import task
@@ -17,7 +18,9 @@ from pipelines.utils.tasks import (
     cloud_function_request,
     get_secret_key,
     load_file_from_bigquery,
+    load_file_from_gcs_bucket
 )
+from pipelines.prontuarios.utils.misc import split_dataframe
 
 
 @task(max_retries=4, retry_delay=timedelta(minutes=15))
@@ -63,6 +66,57 @@ def extract_data_from_api(
 
     return requested_data
 
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
+@stored_variable_converter(output_mode="original")
+def extract_data_from_dump(
+    cnes: str, ap: str, entity_name: str, environment: str = "dev"
+) -> dict:
+    """
+    Extracts data from a dump file in a GCS bucket.
+
+    Args:
+        cnes (str): The CNES value.
+        ap (str): The AP value.
+        entity_name (str): The name of the entity.
+        environment (str, optional): The environment to use. Defaults to "dev".
+
+    Returns:
+        dict: A dictionary containing the extracted data.
+
+    """
+    assert entity_name in vitacare_constants.ENTITY_TO_ENDPOINT.value, \
+        f"Invalid entity name: {entity_name}"
+    
+    dataframe = load_file_from_gcs_bucket.run(
+        bucket_name=vitacare_constants.BUCKET_NAME.value,
+        file_name=vitacare_constants.DUMP_PATH_TEMPLATE.value.format(
+            ENTITY=entity_name, AP=ap[2:]
+        ),
+        file_type="csv",
+        csv_sep=';' if entity_name == 'pacientes' else ','
+    )
+    # Filtro por CNES
+    cnes_column = 'NUMERO_CNES_UNIDADE' if entity_name == 'pacientes' else 'NUMERO_CNES_DA_UNIDADE'
+    dataframe = dataframe[dataframe[cnes_column] == cnes]
+
+    # Standardize column names
+    dataframe.rename(columns={
+        'N_CPF': 'cpfPaciente',
+        'CPF_PACIENTE': 'cpfPaciente', 
+        'DATA_DE_NASCIMENTO': 'dataNascimento',
+        'DATA_NASC_PACIENTE': 'dataNascimento',
+    }, inplace=True)
+
+    # Replace NaN with None
+    dataframe.replace(np.nan, None, inplace=True)
+
+    # Slice DF into multiple chunks
+    dataframes = split_dataframe(dataframe, chunk_size=1000)
+
+    # Transform Chunks to Json
+    records = [df.to_dict(orient="records") for df in dataframes]
+
+    return records
 
 @task
 @stored_variable_converter()
@@ -88,7 +142,6 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
         raise NotImplementedError("Entity pacientes not implemented yet.")
     else:
         raise ValueError(f"Invalid entity type: {entity_type}")
-
 
 @task
 def create_parameter_list(environment: str = "dev"):

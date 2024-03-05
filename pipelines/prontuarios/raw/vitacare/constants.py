@@ -19,6 +19,9 @@ class constants(Enum):
     INFISICAL_API_USERNAME = "API_USERNAME"
     INFISICAL_API_PASSWORD = "API_PASSWORD"
 
+    BUCKET_NAME = "prontuario-integrado"
+    DUMP_PATH_TEMPLATE = "vitacare_dump_2024-02/{ENTITY}_ap-{AP}.csv"
+
     AP_TO_API_URL = {
         "AP10": "http://consolidado-ap10.pepvitacare.com:8088/",
         "AP21": "http://consolidado-ap21.pepvitacare.com:8090/",
