@@ -144,7 +144,7 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
         raise ValueError(f"Invalid entity type: {entity_type}")
 
 @task
-def create_parameter_list(environment: str = "dev"):
+def create_parameter_list(environment: str = "dev", initial_extraction: bool = False):
     """
     Create a list of parameters for running the Vitacare flow.
 
@@ -166,6 +166,9 @@ def create_parameter_list(environment: str = "dev"):
     # Get their CNES list
     cnes_vitacare = unidades_vitacare["id_cnes"].tolist()
 
+    # Get the date of yesterday
+    yesterday = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+
     # Construct the parameters for the flow
     vitacare_flow_parameters = []
     for entity in ["diagnostico"]:
@@ -174,6 +177,8 @@ def create_parameter_list(environment: str = "dev"):
                 {
                     "cnes": cnes,
                     "entity": entity,
+                    "target_date": yesterday,
+                    "initial_extraction": initial_extraction,
                     "environment": environment,
                     "rename_flow": True,
                 }
