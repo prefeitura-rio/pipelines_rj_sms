@@ -9,7 +9,7 @@ def split_dataframe(df, chunk_size=10000):
     chunks = list()
     num_chunks = len(df) // chunk_size + 1
     for i in range(num_chunks):
-        chunks.append(df[i * chunk_size : (i + 1) * chunk_size])  # noqa: E203
+        chunks.append(df[i * chunk_size: (i + 1) * chunk_size])  # noqa: E203
     return chunks
 
 
@@ -32,11 +32,12 @@ def group_data_by_cpf(data_list: list, cpf_get_function: Callable[[str], str]) -
     for data in data_list:
         try:
             patient_cpf = cpf_get_function(data)
+            if patient_cpf == None:
+                patient_cpf = ""
         except TypeError as e:
             logger.warning(f"Skipping data item: {data}. Reason: {e}")
             continue
-
-        # Remove non-digits from CPF
+        
         clean_patient_cpf = re.sub(r'\D', '', patient_cpf)
 
         group = {"patient_cpf": clean_patient_cpf, "data": data}
