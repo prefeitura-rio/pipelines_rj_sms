@@ -143,6 +143,7 @@ vitacare_extraction.run_config = KubernetesRun(
     memory_limit="13.93Gi",
     memory_request="10Gi")
 
+
 # ==============================
 # SCHEDULER FLOW
 # ==============================
