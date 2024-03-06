@@ -32,7 +32,7 @@ def group_data_by_cpf(data_list: list, cpf_get_function: Callable[[str], str]) -
     for data in data_list:
         try:
             patient_cpf = cpf_get_function(data)
-            if patient_cpf == None:
+            if patient_cpf is None:
                 patient_cpf = ""
         except TypeError as e:
             logger.warning(f"Skipping data item: {data}. Reason: {e}")
