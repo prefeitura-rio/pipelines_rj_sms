@@ -4,23 +4,22 @@ Tasks for Vitacare Raw Data Extraction
 """
 import json
 from datetime import date, timedelta
-import numpy as np
 
+import numpy as np
 import prefect
 from prefect import task
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
-from pipelines.prontuarios.utils.misc import group_data_by_cpf
+from pipelines.prontuarios.utils.misc import group_data_by_cpf, split_dataframe
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import (
     cloud_function_request,
     get_secret_key,
     load_file_from_bigquery,
-    load_file_from_gcs_bucket
+    load_file_from_gcs_bucket,
 )
-from pipelines.prontuarios.utils.misc import split_dataframe
 
 
 @task(max_retries=4, retry_delay=timedelta(minutes=15))
@@ -66,11 +65,10 @@ def extract_data_from_api(
 
     return requested_data
 
+
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
 @stored_variable_converter(output_mode="original")
-def extract_data_from_dump(
-    cnes: str, ap: str, entity_name: str, environment: str = "dev"
-) -> dict:
+def extract_data_from_dump(cnes: str, ap: str, entity_name: str, environment: str = "dev") -> dict:
     """
     Extracts data from a dump file in a GCS bucket.
 
@@ -84,28 +82,30 @@ def extract_data_from_dump(
         dict: A dictionary containing the extracted data.
 
     """
-    assert entity_name in vitacare_constants.ENTITY_TO_ENDPOINT.value, \
-        f"Invalid entity name: {entity_name}"
-    
+    assert (
+        entity_name in vitacare_constants.ENTITY_TO_ENDPOINT.value
+    ), f"Invalid entity name: {entity_name}"
+
     dataframe = load_file_from_gcs_bucket.run(
         bucket_name=vitacare_constants.BUCKET_NAME.value,
-        file_name=vitacare_constants.DUMP_PATH_TEMPLATE.value.format(
-            ENTITY=entity_name, AP=ap[2:]
-        ),
+        file_name=vitacare_constants.DUMP_PATH_TEMPLATE.value.format(ENTITY=entity_name, AP=ap[2:]),
         file_type="csv",
-        csv_sep=';' if entity_name == 'pacientes' else ','
+        csv_sep=";" if entity_name == "pacientes" else ",",
     )
     # Filtro por CNES
-    cnes_column = 'NUMERO_CNES_UNIDADE' if entity_name == 'pacientes' else 'NUMERO_CNES_DA_UNIDADE'
+    cnes_column = "NUMERO_CNES_UNIDADE" if entity_name == "pacientes" else "NUMERO_CNES_DA_UNIDADE"
     dataframe = dataframe[dataframe[cnes_column] == cnes]
 
     # Standardize column names
-    dataframe.rename(columns={
-        'N_CPF': 'cpfPaciente',
-        'CPF_PACIENTE': 'cpfPaciente', 
-        'DATA_DE_NASCIMENTO': 'dataNascimento',
-        'DATA_NASC_PACIENTE': 'dataNascimento',
-    }, inplace=True)
+    dataframe.rename(
+        columns={
+            "N_CPF": "cpfPaciente",
+            "CPF_PACIENTE": "cpfPaciente",
+            "DATA_DE_NASCIMENTO": "dataNascimento",
+            "DATA_NASC_PACIENTE": "dataNascimento",
+        },
+        inplace=True,
+    )
 
     # Replace NaN with None
     dataframe.replace(np.nan, None, inplace=True)
@@ -117,6 +117,7 @@ def extract_data_from_dump(
     records = [df.to_dict(orient="records") for df in dataframes]
 
     return records
+
 
 @task
 @stored_variable_converter()
@@ -142,6 +143,7 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
         raise NotImplementedError("Entity pacientes not implemented yet.")
     else:
         raise ValueError(f"Invalid entity type: {entity_type}")
+
 
 @task
 def create_parameter_list(environment: str = "dev", initial_extraction: bool = False):
