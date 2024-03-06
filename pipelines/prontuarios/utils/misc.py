@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import Callable
 import re
+from typing import Callable
 
 import prefect
 
@@ -37,7 +37,7 @@ def group_data_by_cpf(data_list: list, cpf_get_function: Callable[[str], str]) -
             continue
 
         # Remove non-digits from CPF
-        clean_patient_cpf = re.sub(r'\D', '', patient_cpf)
+        clean_patient_cpf = re.sub(r"\D", "", patient_cpf)
 
         group = {"patient_cpf": clean_patient_cpf, "data": data}
         groups.append(group)
