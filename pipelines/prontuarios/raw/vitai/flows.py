@@ -132,8 +132,8 @@ vitai_extraction.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="10Gi",
-    memory_limit="10Gi",
+    memory_request="6Gi",
+    memory_limit="6Gi",
 )
 
 # ==============================
@@ -190,7 +190,5 @@ vitai_scheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
-    ],
-    memory_request="1Gi",
-    memory_limit="1Gi",
+    ]
 )
