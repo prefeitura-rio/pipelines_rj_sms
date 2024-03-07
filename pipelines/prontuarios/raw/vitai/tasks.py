@@ -33,7 +33,7 @@ def get_vitai_api_token(environment: str = "dev") -> str:
     return token
 
 
-@task(max_retries=4, retry_delay=timedelta(minutes=15))
+@task(max_retries=3, retry_delay=timedelta(minutes=3))
 @stored_variable_converter(output_mode="transform")
 def extract_data_from_api(
     cnes: str, target_day: date, entity_name: str, vitai_api_token: str

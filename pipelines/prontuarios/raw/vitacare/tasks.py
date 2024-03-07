@@ -22,7 +22,7 @@ from pipelines.utils.tasks import (
 )
 
 
-@task(max_retries=4, retry_delay=timedelta(minutes=15))
+@task(max_retries=4, retry_delay=timedelta(minutes=3))
 @stored_variable_converter(output_mode="original")
 def extract_data_from_api(
     cnes: str, ap: str, target_day: date, entity_name: str, environment: str = "dev"
@@ -66,7 +66,7 @@ def extract_data_from_api(
     return requested_data
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=1))
+@task(max_retries=3, retry_delay=timedelta(minutes=3))
 @stored_variable_converter(output_mode="original")
 def extract_data_from_dump(cnes: str, ap: str, entity_name: str, environment: str = "dev") -> dict:
     """
