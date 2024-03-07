@@ -140,7 +140,6 @@ vitacare_extraction.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="13.93Gi",
     memory_request="10Gi",
 )
 
@@ -200,5 +199,5 @@ vitacare_scheduler_flow.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="1Gi",
+    memory_request="1Gi",
 )

@@ -126,13 +126,13 @@ with Flow(
     force_garbage_collector(upstream_tasks=[load_to_api_task])
 
 vitai_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitai_extraction.executor = LocalDaskExecutor(num_workers=10)
+vitai_extraction.executor = LocalDaskExecutor(num_workers=5)
 vitai_extraction.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="10Gi",
+    memory_request="10Gi",
 )
 
 # ==============================
@@ -184,11 +184,11 @@ with Flow(
 
 vitai_scheduler_flow.schedule = vitai_daily_update_schedule
 vitai_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitai_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
+vitai_scheduler_flow.executor = LocalDaskExecutor(num_workers=1)
 vitai_scheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="3Gi",
+    memory_request="1Gi",
 )
