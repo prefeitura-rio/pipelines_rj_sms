@@ -190,5 +190,5 @@ vitai_scheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
-    ]
+    ],
 )
