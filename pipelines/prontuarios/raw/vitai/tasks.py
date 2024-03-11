@@ -9,7 +9,7 @@ from prefect import task
 
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.raw.vitai.utils import format_date_to_request
-from pipelines.prontuarios.utils.misc import group_data_by_cpf
+from pipelines.prontuarios.utils.misc import build_additional_fields
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -33,7 +33,7 @@ def get_vitai_api_token(environment: str = "dev") -> str:
     return token
 
 
-@task(max_retries=4, retry_delay=timedelta(minutes=15))
+@task(max_retries=3, retry_delay=timedelta(minutes=3))
 @stored_variable_converter(output_mode="transform")
 def extract_data_from_api(
     cnes: str, target_day: date, entity_name: str, vitai_api_token: str
@@ -88,9 +88,19 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
         ValueError: If the entity name is invalid.
     """
     if entity_type == "diagnostico":
-        return group_data_by_cpf(data, lambda data: data["boletim"]["paciente"]["cpf"])
+        return build_additional_fields(
+            data_list=data,
+            cpf_get_function=lambda data: data["boletim"]["paciente"]["cpf"],
+            birth_data_get_function=lambda data: data["boletim"]["paciente"]["dataNascimento"],
+            source_updated_at_get_function=lambda data: data["dataHora"],
+        )
     elif entity_type == "pacientes":
-        return group_data_by_cpf(data, lambda data: data["cpf"])
+        return build_additional_fields(
+            data_list=data,
+            cpf_get_function=lambda data: data["cpf"],
+            birth_data_get_function=lambda data: data["dataNascimento"],
+            source_updated_at_get_function=lambda data: data["dataHora"],
+        )
     else:
         raise ValueError(f"Invalid entity type: {entity_type}")
 
