@@ -64,6 +64,8 @@ def drop_invalid_records(data: dict) -> dict:
             return
         else:
             pass
+
+    data['patient_code'] = data['patient_cpf']+"."+data['birth_date'].replace('-','')
     return data
 
 
@@ -109,6 +111,7 @@ def prepare_to_load(data: dict) -> dict:
         "address_list",
         "telecom_list",
         "raw_source_id",
+        "patient_code"
     ]
     data = dict(
         filter(lambda item: (item[1] is not None) & (item[0] in lista_campos_api), data.items())

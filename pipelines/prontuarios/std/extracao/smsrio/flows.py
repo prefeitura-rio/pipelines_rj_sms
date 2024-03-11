@@ -6,20 +6,16 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.extracao.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.std.extracao.smsrio.tasks import (
     define_constants,
     format_json,
     get_params,
     standartize_data,
-)
-from pipelines.prontuarios.std.extracao.utils import (
     get_data_from_db,
     insert_data_to_db
 )
-from pipelines.prontuarios.utils.tasks import get_api_token, load_to_api
-from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
+from pipelines.utils.tasks import get_secret_key
 
 with Flow(
     name="Prontuários (SMSRio) - Padronização de Pacientes (carga histórica)",
@@ -27,32 +23,16 @@ with Flow(
     #####################################
     # Parameters
     #####################################
-    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    DATABASE = Parameter("database", required=True)
+    USER = Parameter("user", required=True)
+    PASSWORD = Parameter("password", required=True)
+    IP = Parameter("ip", required=True)
+
     START_DATETIME = Parameter("start_datetime", default="2024-02-06 12:00:00", required=False)
     END_DATETIME = Parameter("end_datetime", default="2024-02-06 12:04:00", required=False)
+    
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
-    ####################################
-    # Set environment
-    ####################################
-
-    DATABASE = get_secret_key(
-        secret_path="/",
-        secret_name=smsrio_constants.INFISICAL_DATABASE.value,
-        environment=ENVIRONMENT
-    )
-
-    USER = get_secret_key(
-        secret_path="/",
-        secret_name=smsrio_constants.INFISICAL_DB_USER.value,
-        environment=ENVIRONMENT
-    )
-
-    PASSWORD = get_secret_key(
-        secret_path="/",
-        secret_name=smsrio_constants.INFISICAL_DB_PASSWORD.value,
-        environment=ENVIRONMENT
-    )
 
     ####################################
     # Task Section #1 - Get Data
@@ -60,10 +40,10 @@ with Flow(
     request_params = get_params(START_DATETIME, END_DATETIME)
 
     raw_patient_data = get_data_from_db(USER=USER,
-                        PASSWORD=PASSWORD,
-                        IP='34.172.43.0',
-                        DATABASE=DATABASE,
-                        request_params=request_params)
+                          PASSWORD=PASSWORD,
+                          DATABASE=DATABASE,
+                          IP=IP,
+                          date_range=request_params)
 
     ####################################
     # Task Section #2 - Transform Data
@@ -84,9 +64,10 @@ with Flow(
 
     insert_data_to_db(USER=USER,
                         PASSWORD=PASSWORD,
-                        IP='34.172.43.0',
+                        IP=IP,
                         DATABASE=DATABASE,
-                        data=std_patient_list)
+                        data=std_patient_list
+    )
 
 
 smsrio_standardization_historical.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
@@ -96,5 +77,5 @@ smsrio_standardization_historical.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="5Gi",
+    memory_limit="8Gi",
 )

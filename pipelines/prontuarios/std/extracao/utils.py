@@ -1,89 +1,85 @@
 from sqlalchemy import create_engine,text
 import pandas as pd
 from prefect import task
-import uuid
-import sqlalchemy
+from itertools import cycle
+import itertools
+from pipelines.prontuarios.std.extracao.smsrio.flows import smsrio_standardization_historical
 
 from prefeitura_rio.pipelines_utils.logging import log
 
+
 @task
-def get_data_from_db(USER: str,
-                     PASSWORD: str,
-                     IP: str,
-                     DATABASE: str,
-                     request_params: dict) -> pd.DataFrame:
+def run_flow_smsrio(datetime_range_list,
+                    DATABASE,
+                    USER,
+                    PASSWORD,
+                    IP):
+    
+    for start_datetime,end_datetime,_ in datetime_range_list:
+
+        params = {"start_datetime": start_datetime,
+                  "end_datetime": end_datetime,
+                  "database":DATABASE,
+                  "user":USER,
+                  "password":PASSWORD,
+                  "ip":IP,
+                  "run_on_schedule":False}
+    
+        smsrio_standardization_historical.run(**params)
+
+@task
+def get_datetime_in_range(USER: str,
+                         PASSWORD: str,
+                         IP: str,
+                         DATABASE: str,
+                         request_params: dict) -> list:
     """
+    Get list of datetime ranges to iterate with standardization flow. Considering range data as [start_datetime,end_datetime)
     Args:
         USER (str):
         PASSWORD (str):
         IP (str):
         DATABASE (str):
         request_params (dict):
-
     Returns:
-        pd.Dataframe:
+        list: 
     """
+    
     engine = create_engine(f"postgresql+psycopg2://{USER}:{PASSWORD}@{IP}:5432/{DATABASE}")
 
     data_source = request_params['datasource_system']
     start_datetime = request_params['start_datetime']
     end_datetime = request_params['end_datetime']
-    
-    log(f'Getting data between {start_datetime} and {end_datetime} from {data_source}')
 
-    with engine.begin() as conn:
+    log(f'Getting data between [ {start_datetime} , {end_datetime} ) from {data_source}')
+
+    with engine.begin() as conn: # precisa lidar melhor com o range 23h-0h
         query = text(f"""
-            SELECT p.*
-            FROM public.raw__patientrecord as p
+            SELECT DISTINCT
+            CONCAT(
+                CAST(p.source_updated_at  AS DATE)
+                ,' '
+                ,LPAD(EXTRACT(HOUR FROM p.source_updated_at )::text,2::int,'0'::text)
+                ,'\:00') as data_inicio,
+            CONCAT(
+                CAST(p.source_updated_at  AS DATE)
+                ,' '
+                ,CASE
+                WHEN LPAD( (EXTRACT(HOUR FROM p.source_updated_at )+1)::text, 2::int, 0::text ) = '24'::text THEN '00'
+                ELSE LPAD( (EXTRACT(HOUR FROM p.source_updated_at )+1)::text, 2::int, 0::text )
+                END
+                ,'\:00') as data_fim
+            FROM raw__patientrecord as p
             INNER JOIN (
-                    SELECT DISTINCT cnes
-                    FROM public.datasource
-                    WHERE system = '{data_source}'
+                        SELECT DISTINCT cnes
+                        FROM public.datasource
+                        WHERE system = '{data_source}' 
             ) as cnes_vitai
             ON cnes_vitai.cnes = p.data_source_id
-            WHERE created_at > '{start_datetime}'
-            AND created_at < '{end_datetime}'
+            WHERE source_updated_at  >= '{start_datetime}'
+            AND source_updated_at  <= '{end_datetime}'
         """)
-        df_patients = pd.read_sql_query(query, conn)
-
-    df_patients['id'] = df_patients['id'].astype(str)
-    patients_json = df_patients.to_dict(orient='records')
-    
-    return patients_json
-
-@task
-def insert_data_to_db(USER: str,
-                     PASSWORD: str,
-                     IP: str,
-                     DATABASE: str,
-                     data: list):
-    """
-    Args:
-        USER (str):
-        PASSWORD (str):
-        IP (str):
-        DATABASE (str):
-        data_source (str):
-        start_datetime (str):
-        end_datetime (str):
-
-    Returns:
-        pd.Dataframe:
-    """
-    engine = create_engine(f"postgresql+psycopg2://{USER}:{PASSWORD}@{IP}:5432/{DATABASE}")
-
-    df = pd.DataFrame(data)
-    df['id'] = [str(uuid.uuid4()) for i in range(len(df))]
-    df.rename({'birth_city_cod':'birth_city_id',
-           'birth_state_cod':'birth_state_id',
-           'birth_country_cod':'birth_country_id'},axis=1,inplace=True)
-    
-    with engine.begin() as conn:
-        df.to_sql('std__patientrecord', 
-                con=conn, 
-                index=False, 
-                if_exists='append',
-                dtype={"cns_list": sqlalchemy.types.JSON,
-                        "address_list": sqlalchemy.types.JSON,
-                        "telecom_list":sqlalchemy.types.JSON}, 
-                method='multi')
+        df_range_data = pd.read_sql_query(query, conn)
+        list_range_data = list(zip(df_range_data['data_inicio'],df_range_data['data_fim'],cycle([data_source])))
+        
+        return list_range_data
