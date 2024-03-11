@@ -22,9 +22,12 @@ def build_additional_fields(
 
     Args:
         data_list (list): A list of data items.
-        cpf_get_function (Callable[[str], str]): A function that takes a data item and returns the patient's CPF.
-        birth_data_get_function (Callable[[str], str]): A function that takes a data item and returns the patient's birth date.
-        source_updated_at_get_function (Callable[[str], str]): A function that takes a data item and returns the source updated date.
+        cpf_get_function (Callable[[str], str]): A function that takes a data item and 
+            returns the patient's CPF.
+        birth_data_get_function (Callable[[str], str]): A function that takes a data 
+            item and returns the patient's birth date.
+        source_updated_at_get_function (Callable[[str], str]): A function that takes a 
+            data item and returns the source updated date.
 
     Returns:
         dict: A dictionary containing additional fields for each data item.
