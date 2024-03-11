@@ -12,13 +12,13 @@ from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 # Please, register here pairs: (flow, param)
 # ==================================================
 flows_run_cases = [
+    (sms_prontuarios_raw_smsrio, {"is_initial_extraction": False}),
     (vitacare_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     (
         smsrio_standardization,
         {"start_datetime": "2024-02-06 12:00:00", "end_datetime": "2024-02-06 12:00:30"},
     ),
-    (sms_prontuarios_raw_smsrio, {"is_initial_extraction": False}),
 ]
 
 

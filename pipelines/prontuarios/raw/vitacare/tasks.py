@@ -12,7 +12,7 @@ from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
-from pipelines.prontuarios.utils.misc import group_data_by_cpf, split_dataframe
+from pipelines.prontuarios.utils.misc import build_additional_fields, split_dataframe
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import (
     cloud_function_request,
@@ -138,7 +138,12 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
         ValueError: If the entity name is invalid.
     """
     if entity_type == "diagnostico":
-        return group_data_by_cpf(data, lambda data: data["cpfPaciente"])
+        return build_additional_fields(
+            data_list=data,
+            cpf_get_function=lambda data: data["cpfPaciente"],
+            birth_data_get_function=lambda data: data["dataNascPaciente"],
+            source_updated_at_get_function=lambda data: data["dataConsulta"]
+        )
     elif entity_type == "pacientes":
         raise NotImplementedError("Entity pacientes not implemented yet.")
     else:
