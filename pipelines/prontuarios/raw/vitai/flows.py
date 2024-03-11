@@ -141,7 +141,7 @@ vitai_extraction.run_config = KubernetesRun(
 # ==============================
 
 with Flow(
-    name="Prontuários (Vitai) - Scheduler Flow",
+    name="Prontuários (Vitai) - Agendador de Flows",
 ) as vitai_scheduler_flow:
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
