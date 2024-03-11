@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 from typing import Callable
+
 import dateutil.parser
 
 
@@ -11,11 +12,12 @@ def split_dataframe(df, chunk_size=10000):
         chunks.append(df[i * chunk_size : (i + 1) * chunk_size])  # noqa: E203
     return chunks
 
+
 def build_additional_fields(
     data_list: list,
     cpf_get_function: Callable[[str], str],
     birth_data_get_function: Callable[[str], str],
-    source_updated_at_get_function: Callable[[str], str]
+    source_updated_at_get_function: Callable[[str], str],
 ) -> dict:
     """
     Builds additional fields for each data item in the given data list.
@@ -62,10 +64,10 @@ def build_additional_fields(
         # ------------------
 
         group = {
-            "patient_cpf": clean_patient_cpf, 
+            "patient_cpf": clean_patient_cpf,
             "patient_code": patient_code,
             "source_updated_at": source_updated_at,
-            "data": data
+            "data": data,
         }
         items.append(group)
 

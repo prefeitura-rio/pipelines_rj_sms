@@ -142,7 +142,7 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
             data_list=data,
             cpf_get_function=lambda data: data["cpfPaciente"],
             birth_data_get_function=lambda data: data["dataNascPaciente"],
-            source_updated_at_get_function=lambda data: data["dataConsulta"]
+            source_updated_at_get_function=lambda data: data["dataConsulta"],
         )
     elif entity_type == "pacientes":
         raise NotImplementedError("Entity pacientes not implemented yet.")

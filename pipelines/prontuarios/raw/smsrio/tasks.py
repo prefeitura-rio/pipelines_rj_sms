@@ -129,13 +129,13 @@ def load_patient_data_to_api(patient_data: pd.DataFrame, environment: str, api_t
     Returns:
         None
     """
-    json_data = json.loads(patient_data.to_json(orient='records', date_format="iso"))
+    json_data = json.loads(patient_data.to_json(orient="records", date_format="iso"))
 
     json_data_batches = build_additional_fields(
         data_list=json_data,
         cpf_get_function=lambda data: data["patient_cpf"],
         birth_data_get_function=lambda data: data["dt_nasc"],
-        source_updated_at_get_function=lambda data: data["timestamp"]
+        source_updated_at_get_function=lambda data: data["timestamp"],
     )
 
     request_bodies = transform_to_raw_format.run(
