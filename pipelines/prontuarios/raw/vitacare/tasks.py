@@ -12,7 +12,7 @@ from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
-from pipelines.prontuarios.utils.misc import group_data_by_cpf, split_dataframe
+from pipelines.prontuarios.utils.misc import build_additional_fields, split_dataframe
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import (
     cloud_function_request,
@@ -22,7 +22,7 @@ from pipelines.utils.tasks import (
 )
 
 
-@task(max_retries=4, retry_delay=timedelta(minutes=15))
+@task(max_retries=4, retry_delay=timedelta(minutes=3))
 @stored_variable_converter(output_mode="original")
 def extract_data_from_api(
     cnes: str, ap: str, target_day: date, entity_name: str, environment: str = "dev"
@@ -66,7 +66,7 @@ def extract_data_from_api(
     return requested_data
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=1))
+@task(max_retries=3, retry_delay=timedelta(minutes=3))
 @stored_variable_converter(output_mode="original")
 def extract_data_from_dump(cnes: str, ap: str, entity_name: str, environment: str = "dev") -> dict:
     """
@@ -138,7 +138,12 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
         ValueError: If the entity name is invalid.
     """
     if entity_type == "diagnostico":
-        return group_data_by_cpf(data, lambda data: data["cpfPaciente"])
+        return build_additional_fields(
+            data_list=data,
+            cpf_get_function=lambda data: data["cpfPaciente"],
+            birth_data_get_function=lambda data: data["dataNascPaciente"],
+            source_updated_at_get_function=lambda data: data["dataConsulta"],
+        )
     elif entity_type == "pacientes":
         raise NotImplementedError("Entity pacientes not implemented yet.")
     else:
@@ -146,7 +151,7 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
 
 
 @task
-def create_parameter_list(environment: str = "dev"):
+def create_parameter_list(environment: str = "dev", initial_extraction: bool = False):
     """
     Create a list of parameters for running the Vitacare flow.
 
@@ -168,6 +173,9 @@ def create_parameter_list(environment: str = "dev"):
     # Get their CNES list
     cnes_vitacare = unidades_vitacare["id_cnes"].tolist()
 
+    # Get the date of yesterday
+    yesterday = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+
     # Construct the parameters for the flow
     vitacare_flow_parameters = []
     for entity in ["diagnostico"]:
@@ -176,6 +184,8 @@ def create_parameter_list(environment: str = "dev"):
                 {
                     "cnes": cnes,
                     "entity": entity,
+                    "target_date": yesterday,
+                    "initial_extraction": initial_extraction,
                     "environment": environment,
                     "rename_flow": True,
                 }
