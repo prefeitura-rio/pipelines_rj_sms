@@ -126,13 +126,14 @@ with Flow(
     force_garbage_collector(upstream_tasks=[load_to_api_task])
 
 vitai_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitai_extraction.executor = LocalDaskExecutor(num_workers=10)
+vitai_extraction.executor = LocalDaskExecutor(num_workers=5)
 vitai_extraction.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="10Gi",
+    memory_request="2Gi",
+    memory_limit="2Gi",
 )
 
 # ==============================
@@ -140,7 +141,7 @@ vitai_extraction.run_config = KubernetesRun(
 # ==============================
 
 with Flow(
-    name="Prontuários (Vitai) - Scheduler Flow",
+    name="Prontuários (Vitai) - Agendador de Flows",
 ) as vitai_scheduler_flow:
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
@@ -184,11 +185,10 @@ with Flow(
 
 vitai_scheduler_flow.schedule = vitai_daily_update_schedule
 vitai_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitai_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
+vitai_scheduler_flow.executor = LocalDaskExecutor(num_workers=1)
 vitai_scheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="3Gi",
 )
