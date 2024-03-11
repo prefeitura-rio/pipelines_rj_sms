@@ -137,7 +137,7 @@ def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     return result
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=5))
+@task(max_retries=3, retry_delay=timedelta(minutes=3))
 @stored_variable_converter()
 def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environment: str) -> None:
     """
