@@ -3,6 +3,7 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from prefect.tasks.control_flow import merge
 from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
@@ -13,6 +14,7 @@ from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_s
 from pipelines.prontuarios.raw.vitacare.tasks import (
     create_parameter_list,
     extract_data_from_api,
+    extract_data_from_dump,
     group_data_by_patient,
 )
 from pipelines.prontuarios.raw.vitai.tasks import get_entity_endpoint_name
@@ -21,11 +23,10 @@ from pipelines.prontuarios.utils.tasks import (
     get_ap_from_cnes,
     get_api_token,
     get_current_flow_labels,
-    get_dates_in_range,
-    get_flow_scheduled_day,
     get_project_name,
     load_to_api,
     rename_current_flow_run,
+    transform_create_input_batches,
     transform_filter_valid_cpf,
     transform_to_raw_format,
 )
@@ -40,7 +41,8 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     CNES = Parameter("cnes", default="5621801", required=True)
     ENTITY = Parameter("entity", default="diagnostico", required=True)
-    MIN_DATE = Parameter("minimum_date", default="", required=False)
+    TARGET_DATE = Parameter("target_date", default="", required=False)
+    INITIAL_EXTRACTION = Parameter("initial_extraction", default=False)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     ####################################
@@ -70,28 +72,36 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    maximum_date = get_flow_scheduled_day(upstream_tasks=[credential_injection])
+    with case(INITIAL_EXTRACTION, True):
+        chunked_dump_data = extract_data_from_dump(
+            cnes=CNES,
+            ap=ap,
+            entity_name=ENTITY,
+            environment=ENVIRONMENT,
+            upstream_tasks=[credential_injection],
+        )
 
-    dates_of_interest = get_dates_in_range(
-        minimum_date=MIN_DATE,
-        maximum_date=maximum_date,
-        upstream_tasks=[credential_injection],
-    )
+    with case(INITIAL_EXTRACTION, False):
+        api_data = extract_data_from_api(
+            cnes=CNES,
+            ap=ap,
+            target_day=TARGET_DATE,
+            entity_name=ENTITY,
+            environment=ENVIRONMENT,
+            upstream_tasks=[credential_injection],
+        )
 
-    daily_data_list = extract_data_from_api.map(
-        cnes=unmapped(CNES),
-        ap=unmapped(ap),
-        target_day=dates_of_interest,
-        entity_name=unmapped(ENTITY),
-        environment=unmapped(ENVIRONMENT),
-        upstream_tasks=[unmapped(credential_injection)],
-    )
+        chunked_api_data = transform_create_input_batches(
+            input_list=api_data, batch_size=1000, upstream_tasks=[credential_injection]
+        )
+
+    chunked_data = merge(chunked_dump_data, chunked_api_data)
 
     ####################################
     # Task Section #2 - Transform Data
     ####################################
     grouped_data = group_data_by_patient.map(
-        data=daily_data_list,
+        data=chunked_data,
         entity_type=unmapped(ENTITY),
         upstream_tasks=[unmapped(credential_injection)],
     )
@@ -124,23 +134,26 @@ with Flow(
     force_garbage_collector(upstream_tasks=[load_to_api_task])
 
 vitacare_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitacare_extraction.executor = LocalDaskExecutor(num_workers=1)
+vitacare_extraction.executor = LocalDaskExecutor(num_workers=5)
 vitacare_extraction.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="10Gi",
+    memory_request="2Gi",
+    memory_limit="2Gi",
 )
+
 
 # ==============================
 # SCHEDULER FLOW
 # ==============================
 
 with Flow(
-    name="Prontuários (Vitacare) - Scheduler Flow",
+    name="Prontuários (Vitacare) - Agendador de Flows",
 ) as vitacare_scheduler_flow:
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    INITIAL_EXTRACTION = Parameter("initial_extraction", default=False)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
@@ -153,6 +166,7 @@ with Flow(
 
     parameter_list = create_parameter_list(
         environment=ENVIRONMENT,
+        initial_extraction=INITIAL_EXTRACTION,
         upstream_tasks=[credential_injection],
     )
 
@@ -180,11 +194,10 @@ with Flow(
 
 vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
 vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=5)
+vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=1)
 vitacare_scheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="3Gi",
 )

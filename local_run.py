@@ -18,7 +18,6 @@ flows_run_cases = [
         smsrio_standardization,
         {"start_datetime": "2024-03-10 12:00:00", "end_datetime": "2024-03-11 12:00:30"},
     ),
-    (sms_prontuarios_raw_smsrio, {"is_initial_extraction": False}),
 ]
 
 

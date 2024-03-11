@@ -5,22 +5,24 @@ Tasks for Vitacare Raw Data Extraction
 import json
 from datetime import date, timedelta
 
+import numpy as np
 import prefect
 from prefect import task
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
-from pipelines.prontuarios.utils.misc import group_data_by_cpf
+from pipelines.prontuarios.utils.misc import build_additional_fields, split_dataframe
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import (
     cloud_function_request,
     get_secret_key,
     load_file_from_bigquery,
+    load_file_from_gcs_bucket,
 )
 
 
-@task(max_retries=4, retry_delay=timedelta(minutes=15))
+@task(max_retries=4, retry_delay=timedelta(minutes=3))
 @stored_variable_converter(output_mode="original")
 def extract_data_from_api(
     cnes: str, ap: str, target_day: date, entity_name: str, environment: str = "dev"
@@ -64,6 +66,59 @@ def extract_data_from_api(
     return requested_data
 
 
+@task(max_retries=3, retry_delay=timedelta(minutes=3))
+@stored_variable_converter(output_mode="original")
+def extract_data_from_dump(cnes: str, ap: str, entity_name: str, environment: str = "dev") -> dict:
+    """
+    Extracts data from a dump file in a GCS bucket.
+
+    Args:
+        cnes (str): The CNES value.
+        ap (str): The AP value.
+        entity_name (str): The name of the entity.
+        environment (str, optional): The environment to use. Defaults to "dev".
+
+    Returns:
+        dict: A dictionary containing the extracted data.
+
+    """
+    assert (
+        entity_name in vitacare_constants.ENTITY_TO_ENDPOINT.value
+    ), f"Invalid entity name: {entity_name}"
+
+    dataframe = load_file_from_gcs_bucket.run(
+        bucket_name=vitacare_constants.BUCKET_NAME.value,
+        file_name=vitacare_constants.DUMP_PATH_TEMPLATE.value.format(ENTITY=entity_name, AP=ap[2:]),
+        file_type="csv",
+        csv_sep=";" if entity_name == "pacientes" else ",",
+    )
+    # Filtro por CNES
+    cnes_column = "NUMERO_CNES_UNIDADE" if entity_name == "pacientes" else "NUMERO_CNES_DA_UNIDADE"
+    dataframe = dataframe[dataframe[cnes_column] == cnes]
+
+    # Standardize column names
+    dataframe.rename(
+        columns={
+            "N_CPF": "cpfPaciente",
+            "CPF_PACIENTE": "cpfPaciente",
+            "DATA_DE_NASCIMENTO": "dataNascimento",
+            "DATA_NASC_PACIENTE": "dataNascimento",
+        },
+        inplace=True,
+    )
+
+    # Replace NaN with None
+    dataframe.replace(np.nan, None, inplace=True)
+
+    # Slice DF into multiple chunks
+    dataframes = split_dataframe(dataframe, chunk_size=1000)
+
+    # Transform Chunks to Json
+    records = [df.to_dict(orient="records") for df in dataframes]
+
+    return records
+
+
 @task
 @stored_variable_converter()
 def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
@@ -83,7 +138,12 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
         ValueError: If the entity name is invalid.
     """
     if entity_type == "diagnostico":
-        return group_data_by_cpf(data, lambda data: data["cpfPaciente"])
+        return build_additional_fields(
+            data_list=data,
+            cpf_get_function=lambda data: data["cpfPaciente"],
+            birth_data_get_function=lambda data: data["dataNascPaciente"],
+            source_updated_at_get_function=lambda data: data["dataConsulta"],
+        )
     elif entity_type == "pacientes":
         raise NotImplementedError("Entity pacientes not implemented yet.")
     else:
@@ -91,7 +151,7 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
 
 
 @task
-def create_parameter_list(environment: str = "dev"):
+def create_parameter_list(environment: str = "dev", initial_extraction: bool = False):
     """
     Create a list of parameters for running the Vitacare flow.
 
@@ -113,6 +173,9 @@ def create_parameter_list(environment: str = "dev"):
     # Get their CNES list
     cnes_vitacare = unidades_vitacare["id_cnes"].tolist()
 
+    # Get the date of yesterday
+    yesterday = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+
     # Construct the parameters for the flow
     vitacare_flow_parameters = []
     for entity in ["diagnostico"]:
@@ -121,6 +184,8 @@ def create_parameter_list(environment: str = "dev"):
                 {
                     "cnes": cnes,
                     "entity": entity,
+                    "target_date": yesterday,
+                    "initial_extraction": initial_extraction,
                     "environment": environment,
                     "rename_flow": True,
                 }
