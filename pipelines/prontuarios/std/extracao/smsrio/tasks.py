@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 from typing import Tuple
-from sqlalchemy import create_engine,text
+from sqlalchemy import create_engine, text
 
 import pandas as pd
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
-import uuid
 import sqlalchemy
-from itertools import cycle
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_none_records,
@@ -26,6 +24,7 @@ from pipelines.prontuarios.std.formatters.smsrio.patient import (
     standardize_telecom_data,
 )
 
+
 @task
 def get_data_from_db(USER: str,
                      PASSWORD: str,
@@ -33,22 +32,23 @@ def get_data_from_db(USER: str,
                      DATABASE: str,
                      date_range: list) -> pd.DataFrame:
     """
+    Get patient data from database connector between date range specified
+
     Args:
-        USER (str):
-        PASSWORD (str):
-        IP (str):
-        DATABASE (str):
-        request_params (dict):
+        USER (str): Database USER credential
+        PASSWORD (str): Database PASSWORD credential
+        IP (str): Database IP credential
+        DATABASE (str): Database DATABASE credential
+        request_params (dict): Date range ans source filter
 
     Returns:
-        pd.Dataframe:
+        pd.Dataframe: Raw data to be standardazided
     """
     engine = create_engine(f"postgresql+psycopg2://{USER}:{PASSWORD}@{IP}:5432/{DATABASE}")
-    
+
     start_datetime = date_range["start_datetime"]
     end_datetime = date_range["end_datetime"]
     data_source = date_range["datasource_system"]
-
 
     log(f'Getting data between [ {start_datetime} , {end_datetime} ) from {data_source}')
 
@@ -69,19 +69,21 @@ def get_data_from_db(USER: str,
 
     df_patients['id'] = df_patients['id'].astype(str)
     patients_json = df_patients.to_dict(orient='records')
-    
+
     return patients_json
+
 
 @task
 def get_params(start_datetime: str, end_datetime: str) -> dict:
     """
-    Creating params
+    Creating params dict
+
     Args:
-        start_datetime (str) : initial date extraction
-        end_datetime (str) : final date extraction
+        start_datetime (str) : Initial date extraction
+        end_datetime (str) : Final date extraction
 
     Returns:
-        dict : params dictionary
+        dict : Params dictionary
     """
     return {
         "start_datetime": start_datetime,
@@ -95,7 +97,7 @@ def define_constants() -> Tuple[list, dict, dict, dict, dict]:
     Creating constants as global variables
 
     Returns:
-        lista_campos_api (list) : list of API acceptable parameters
+        lista_campos_api (list) : List of API acceptable parameters
         logradouros_dict (dict) : From/to dictionary to normalize logradouros
         city_dict (dict) : From/to dictionary to normalize city
         state_dict (dict) : From/to dictionary to normalize state
@@ -227,12 +229,13 @@ def standartize_data(
 
     return patients_json_std_clean
 
+
 @task
 def insert_data_to_db(USER: str,
-                     PASSWORD: str,
-                     IP: str,
-                     DATABASE: str,
-                     data: list):
+                      PASSWORD: str,
+                      IP: str,
+                      DATABASE: str,
+                      data: list):
     """
     Args:
         USER (str):
@@ -249,17 +252,17 @@ def insert_data_to_db(USER: str,
     engine = create_engine(f"postgresql+psycopg2://{USER}:{PASSWORD}@{IP}:5432/{DATABASE}")
 
     df = pd.DataFrame(data)
-    #df['id'] = [str(uuid.uuid4()) for i in range(len(df))]
-    df.rename({'birth_city_cod':'birth_city_id',
-           'birth_state_cod':'birth_state_id',
-           'birth_country_cod':'birth_country_id'},axis=1,inplace=True)
-    
+    # df['id'] = [str(uuid.uuid4()) for i in range(len(df))]
+    df.rename({'birth_city_cod': 'birth_city_id',
+               'birth_state_cod': 'birth_state_id',
+               'birth_country_cod': 'birth_country_id'}, axis=1, inplace=True)
+
     with engine.begin() as conn:
-        df.to_sql('std__patientrecord', 
-                con=conn, 
-                index=False, 
-                if_exists='append',
-                dtype={"cns_list": sqlalchemy.types.JSON,
-                        "address_list": sqlalchemy.types.JSON,
-                        "telecom_list":sqlalchemy.types.JSON}, 
-                method='multi')
+        df.to_sql('std__patientrecord',
+                  con=conn,
+                  index=False,
+                  if_exists='append',
+                  dtype={"cns_list": sqlalchemy.types.JSON,
+                         "address_list": sqlalchemy.types.JSON,
+                         "telecom_list": sqlalchemy.types.JSON},
+                  method='multi')

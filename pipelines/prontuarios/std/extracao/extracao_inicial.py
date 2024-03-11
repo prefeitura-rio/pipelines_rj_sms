@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-import argparse
-
-from pipelines.prontuarios.std.extracao.utils import  get_datetime_in_range
-
-
-# -*- coding: utf-8 -*-
-from prefect import Parameter, unmapped
+from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -26,12 +20,13 @@ from pipelines.utils.tasks import get_secret_key
 with Flow(
     name="Prontuários (SMSRio) - Padronização de Pacientes (carga histórica) (all flows)",
 ) as smsrio_standardization_historical_all:
-    
+
     #####################################
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    START_DATETIME = Parameter("source_start_datetime", default="2024-02-06 12:00:00", required=False)
+    START_DATETIME = Parameter("source_start_datetime",
+                               default="2024-02-06 12:00:00", required=False)
     END_DATETIME = Parameter("source_end_datetime", default="2024-02-06 12:04:00", required=False)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
@@ -66,20 +61,18 @@ with Flow(
     request_params = get_params(START_DATETIME, END_DATETIME)
 
     datetime_range_list = get_datetime_in_range(USER=USER,
-                          PASSWORD=PASSWORD,
-                          DATABASE=DATABASE,
-                          IP=IP,
-                          request_params=request_params)
-    
+                                                PASSWORD=PASSWORD,
+                                                DATABASE=DATABASE,
+                                                IP=IP,
+                                                request_params=request_params)
+
     run_flow_smsrio(datetime_range_list=datetime_range_list,
                     DATABASE=DATABASE,
                     USER=USER,
                     PASSWORD=PASSWORD,
                     IP=IP)
-    
 
-    
-    
+
 smsrio_standardization_historical_all.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 smsrio_standardization_historical_all.executor = LocalDaskExecutor(num_workers=4)
 smsrio_standardization_historical_all.run_config = KubernetesRun(
@@ -89,9 +82,3 @@ smsrio_standardization_historical_all.run_config = KubernetesRun(
     ],
     memory_limit="8Gi",
 )
-
-
-
-
-
-
