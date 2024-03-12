@@ -64,7 +64,7 @@ def drop_invalid_records(data: dict) -> dict:
             return
         else:
             pass
-    data['patient_code'] = data['patient_cpf'] + "." + data['birth_date'].replace("-","")
+    data['patient_code'] = data['patient_cpf'] + "." + data['birth_date'].replace("-", "")
     return data
 
 
@@ -236,21 +236,27 @@ def clean_phone_records(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data["telefone"] is not None:
-        data["telefone"] = re.sub(r"[()-]", "", data["telefone"])
-        if (len(data["telefone"]) < 8) | (len(data["telefone"]) > 12):
-            # tel fixos tem 8 digitos e contando com DDD sao 12 digitos,
-            # mas nao validamos DDD nem vimos se telefone celular tem 9 dig
-            data["telefone"] = None
-        elif bool(
-            re.search(
-                "0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}", data["telefone"]
-            )
-        ):
-            data["telefone"] = None
-        elif bool(re.search("[^0-9]", data["telefone"])):
-            data["telefone"] = None
-    return data
+    phone_fields = [
+        column
+        for column in data.keys()
+        if column in ["telefone", "celular", "telefoneExtraUm", "telefoneExtraDois"]
+    ]
+    for phone_field in phone_fields:
+        if data[phone_field] is not None:
+            data[phone_field] = re.sub(r"[()-]", "", data[phone_field])
+            if (len(data[phone_field]) < 8) | (len(data[phone_field]) > 12):
+                # tel fixos tem 8 digitos e contando com DDD sao 12 digitos,
+                # mas nao validamos DDD nem vimos se telefone celular tem 9 dig
+                data[phone_field] = None
+            elif bool(
+                re.search(
+                    "0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}", data[phone_field]
+                )
+            ):
+                data[phone_field] = None
+            elif bool(re.search("[^0-9]", data[phone_field])):
+                data[phone_field] = None
+    return data, phone_fields
 
 
 def clean_email_records(data: dict) -> dict:
