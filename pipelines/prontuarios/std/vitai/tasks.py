@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 from typing import Tuple
 
+# from unidecode import unidecode
+# from unidecode import unidecode
 import pandas as pd
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_none_records,
-    clean_records_fields,
     drop_invalid_records,
     merge_keys,
     prepare_to_load,
 )
-from pipelines.prontuarios.std.formatters.smsrio.patient import (
+from pipelines.prontuarios.std.formatters.vitai.patient import (
     standardize_address_data,
     standardize_cns_list,
     standardize_decease_info,
@@ -20,7 +21,6 @@ from pipelines.prontuarios.std.formatters.smsrio.patient import (
     standardize_parents_names,
     standardize_race,
     standardize_telecom_data,
-)
 )
 
 
@@ -38,11 +38,12 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
     return {
         "source_start_datetime": start_datetime,
         "source_end_datetime": end_datetime,
-        "datasource_system": "smsrio",
+        "datasource_system": "vitai",
     }
 
 
-def define_constants() -> Tuple[list, dict, dict, dict, dict]:
+@task
+def define_constants() -> Tuple[dict, dict, dict]:
     """
     Creating constants as global variables
 
@@ -53,37 +54,11 @@ def define_constants() -> Tuple[list, dict, dict, dict, dict]:
         state_dict (dict) : From/to dictionary to normalize state
         country_dict (dict) : From/to dictionary to normalize country
     """
-    lista_campos_api = [
-        "active",
-        "birth_city_cod",
-        "birth_state_cod",
-        "birth_country_cod",
-        "birth_date",
-        "patient_cpf",
-        "deceased",
-        "deceased_date",
-        "father_name",
-        "gender",
-        "mother_name",
-        "name",
-        "nationality",
-        "protected_person",
-        "race",
-        "cns_list",
-        "address_list",
-        "telecom_list",
-        "raw_source_id",
-    ]
-
-    logradouros = pd.read_csv(
-        "pipelines/prontuarios/std/logradouros.csv", dtype={"Número_DNE": str, "Nome": str}
-    )
-    logradouros_dict = dict(zip(logradouros["Número_DNE"], logradouros["Nome"]))
 
     city = pd.read_csv(
         "pipelines/prontuarios/std/municipios.csv", dtype={"COD UF": str, "COD": str, "NOME": str}
     )
-    city_dict = dict(zip(city["COD"].str.slice(start=0, stop=-1), city["COD"]))
+    city_name_dict = dict(zip(city["NOME"], city["COD"]))
 
     state = pd.read_csv(
         "pipelines/prontuarios/std/estados.csv", dtype={"COD": str, "NOME": str, "SIGLA": str}
@@ -95,19 +70,19 @@ def define_constants() -> Tuple[list, dict, dict, dict, dict]:
     )
     country_dict = dict(zip(countries["code"], countries["code"]))
 
-    return lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict
+    return city_name_dict, state_dict, country_dict
 
 
 @task
 def format_json(json_list: list) -> list:
     """
     Drop invalid patient records, i.e. records without valid inputs on required fields
-
     Args:
         json_list (list): Payload from raw API
     Returns:
         json_list_notna (list): Valid patient inputs ready to standardize
     """
+
     log(f"Starting flow with {len(json_list)} registers")
 
     json_list_merged = list(map(merge_keys, json_list))
@@ -116,7 +91,7 @@ def format_json(json_list: list) -> list:
 
     log(
         f"{len(json_list) - len(json_list_notna)} registers dropped,\
-        standardizing remaining {len(json_list_notna)} registers"
+         standardizing remaining {len(json_list_notna)} registers"
     )
 
     return json_list_notna
@@ -124,16 +99,10 @@ def format_json(json_list: list) -> list:
 
 @task
 def standartize_data(
-    raw_data: list,
-    logradouros_dict: dict,
-    city_dict: dict,
-    state_dict: dict,
-    country_dict: dict,
-    lista_campos_api: list,
+    raw_data: list, city_name_dict: dict, state_dict: dict, country_dict: dict
 ) -> list:
     """
     Standardize fields and prepare to post
-
     Args:
         raw_data (list): Raw data to be standardized
         city_name_dict (dict): From/to dictionary to code city names
@@ -142,10 +111,11 @@ def standartize_data(
     Returns:
         list: Data ready to load to API
     """
+
     log("Starting standardization of race field")
     patients_json_std_race = list(map(standardize_race, raw_data))
 
-    log("Starting standardization of nationality field")
+    log("Starting standardization of nationalizty field")
     patients_json_std_nationality = list(map(standardize_nationality, patients_json_std_race))
 
     log("Starting standardization of parents name field")
@@ -162,8 +132,7 @@ def standartize_data(
         map(
             lambda p: standardize_address_data(
                 data=p,
-                logradouros_dict=logradouros_dict,
-                city_dict=city_dict,
+                city_name_dict=city_name_dict,
                 state_dict=state_dict,
                 country_dict=country_dict,
             ),
