@@ -37,7 +37,7 @@ from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.infisical import inject_bd_credentials
+from pipelines.utils.infisical import inject_bd_credentials, get_credentials_from_env
 from pipelines.utils.data_cleaning import remove_columns_accents
 
 
@@ -336,13 +336,15 @@ def download_ftp(
     return output_path
 
 @task()
-def download_url(  # pylint: disable=too-many-arguments
+def download_from_url(  # pylint: disable=too-many-arguments
     url: str,
-    fname: str,
-    url_type: str = "direct",
+    file_path,
+    file_name,
+    url_type: str = "google_sheet",
     gsheets_sheet_order: int = 0,
     gsheets_sheet_name: str = None,
     gsheets_sheet_range: str = None,
+    csv_delimiter: str = ";",
 ) -> None:
     """
     Downloads a file from a URL and saves it to a local file.
@@ -351,10 +353,8 @@ def download_url(  # pylint: disable=too-many-arguments
 
     Args:
         url: URL to download from.
-        fname: Name of the file to save to.
+        file_name: Name of the file to save to.
         url_type: Type or URL that is being passed.
-            `direct`-> common URL to download directly;
-            `google_drive`-> Google Drive URL;
             `google_sheet`-> Google Sheet URL.
         gsheets_sheet_order: Worksheet index, in the case you want to select it by index. \
             Worksheet indexes start from zero.
@@ -365,84 +365,53 @@ def download_url(  # pylint: disable=too-many-arguments
     Returns:
         None.
     """
-    filepath = Path(fname)
-    filepath.parent.mkdir(parents=True, exist_ok=True)
+    if not ".csv" in file_name:
+        file_name = file_name + ".csv"
+    filepath = os.path.join(file_path,file_name)
 
-    if url_type == "google_sheet" or url_type == "google_drive":
+    if url_type == "google_sheet":
         if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
             raise ValueError(
                 "GOOGLE_APPLICATION_CREDENTIALS environment variable must be set to use this task."
             )
 
-        credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-        credentials = service_account.Credentials.from_service_account_file(credentials_path)
+        credentials = get_credentials_from_env(
+            scopes=[
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive",
+            ]
+        )
 
-        if url_type == "google_sheet":
-            url_prefix = "https://docs.google.com/spreadsheets/d/"
+        url_prefix = "https://docs.google.com/spreadsheets/d/"
 
-            if not url.startswith(url_prefix):
-                raise ValueError(
-                    "URL must start with https://docs.google.com/spreadsheets/d/"
-                    f"Invalid URL: {url}"
-                )
+        if not url.startswith(url_prefix):
+            raise ValueError(
+                "URL must start with https://docs.google.com/spreadsheets/d/"
+                f"Invalid URL: {url}"
+            )
 
-            log(">>>>> URL is a Google Sheets URL, downloading directly")
+        log(">>>>> URL is a Google Sheets URL, downloading directly")
 
-            gspread_client = gspread.authorize(credentials)
+        gspread_client = gspread.authorize(credentials)
 
-            sheet = gspread_client.open_by_url(url)
-            if gsheets_sheet_name:
-                worksheet = sheet.worksheet(gsheets_sheet_name)
-            else:
-                worksheet = sheet.get_worksheet(gsheets_sheet_order)
-            if gsheets_sheet_range:  # if range is informed, get range from worksheet
-                dataframe = pd.DataFrame(worksheet.batch_get((gsheets_sheet_range,))[0])
-            else:
-                dataframe = pd.DataFrame(worksheet.get_values())
-            new_header = dataframe.iloc[0]  # grab the first row for the header
-            dataframe = dataframe[1:]  # take the data less the header row
-            dataframe.columns = new_header  # set the header row as the df header
-            log(f">>>>> Dataframe shape: {dataframe.shape}")
-            log(f">>>>> Dataframe columns: {dataframe.columns}")
-            dataframe.columns = remove_columns_accents(dataframe)
-            log(f">>>>> Dataframe columns after treatment: {dataframe.columns}")
-            dataframe.to_csv(filepath, index=False)
+        sheet = gspread_client.open_by_url(url)
+        if gsheets_sheet_name:
+            worksheet = sheet.worksheet(gsheets_sheet_name)
+        else:
+            worksheet = sheet.get_worksheet(gsheets_sheet_order)
+        if gsheets_sheet_range:  # if range is informed, get range from worksheet
+            dataframe = pd.DataFrame(worksheet.batch_get((gsheets_sheet_range,))[0])
+        else:
+            dataframe = pd.DataFrame(worksheet.get_values())
+        new_header = dataframe.iloc[0]  # grab the first row for the header
+        dataframe = dataframe[1:]  # take the data less the header row
+        dataframe.columns = new_header  # set the header row as the df header
+        log(f">>>>> Dataframe shape: {dataframe.shape}")
+        log(f">>>>> Dataframe columns: {dataframe.columns}")
+        dataframe.columns = remove_columns_accents(dataframe)
+        log(f">>>>> Dataframe columns after treatment: {dataframe.columns}")
 
-        elif url_type == "google_drive":
-            log(">>>>> URL is a Google Drive URL, downloading from Google Drive")
-            # URL is in format
-            # https://drive.google.com/file/d/<FILE_ID>/...
-            # We want to extract the FILE_ID
-            log(">>>>> Extracting FILE_ID from URL")
-            url_prefix = "https://drive.google.com/file/d/"
-            if not url.startswith(url_prefix):
-                raise ValueError(
-                    "URL must start with https://drive.google.com/file/d/."
-                    f"Invalid URL: {url}"
-                )
-            file_id = url.removeprefix(url_prefix).split("/")[0]
-            log(f">>>>> FILE_ID: {file_id}")
-            try:
-                service = build("drive", "v3", credentials=credentials)
-                request = service.files().get_media(fileId=file_id)  # pylint: disable=E1101
-                fh = FileIO(fname, mode="wb")  # pylint: disable=C0103
-                downloader = MediaIoBaseDownload(fh, request)
-                done = False
-                while done is False:
-                    status, done = downloader.next_chunk()
-                    log(f"Downloading file... {int(status.progress() * 100)}%.")
-            except HttpError as error:
-                log(f"HTTPError: {error}", "error")
-                raise error
-
-    elif url_type == "direct":
-        log(">>>>> URL is not a Google Drive URL, downloading directly")
-        req = requests.get(url, stream=True)
-        with open(fname, "wb") as file:
-            for chunk in req.iter_content(chunk_size=1024):
-                if chunk:
-                    file.write(chunk)
-                    file.flush()
+        dataframe.to_csv(filepath, index=False, sep=csv_delimiter, encoding="utf-8")
     else:
         raise ValueError("Invalid URL type. Please set values to `url_type` parameter")
 
