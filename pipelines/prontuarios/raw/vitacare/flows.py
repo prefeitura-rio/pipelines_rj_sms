@@ -192,7 +192,6 @@ with Flow(
         raise_final_state=unmapped(True),
     )
 
-vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
 vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=1)
 vitacare_scheduler_flow.run_config = KubernetesRun(
