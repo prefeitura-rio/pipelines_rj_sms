@@ -235,6 +235,7 @@ def clean_phone_records(data: dict) -> dict:
 
     Returns:
         data (dict) : Individual data record standardized
+        phone_fields (list) : List of phone fields
     """
     phone_fields = [
         column
@@ -261,7 +262,7 @@ def clean_phone_records(data: dict) -> dict:
 
 def clean_email_records(data: dict) -> dict:
     """
-    VAlidade email info
+    Validate email info
 
     Args:
         data (dict) : Individual data record

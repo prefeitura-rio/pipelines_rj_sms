@@ -13,12 +13,13 @@ from pipelines.prontuarios.std.extracao.smsrio.tasks import (
 
 from pipelines.prontuarios.std.extracao.utils import (
     get_datetime_in_range,
-    run_flow_smsrio
+    run_flow_smsrio,
+    run_flow_vitai
 )
 from pipelines.utils.tasks import get_secret_key
 
 with Flow(
-    name="Prontuários (SMSRio) - Padronização de Pacientes (carga histórica) (all flows)",
+    name="Prontuários (SMSRio e Vitai) - Padronização de Pacientes (carga histórica)",
 ) as smsrio_standardization_historical_all:
 
     #####################################
@@ -26,9 +27,9 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     START_DATETIME = Parameter("source_start_datetime",
-                                default="2024-02-06 12:00:00", required=False)
+                                default="2020-01-01 12:00:00", required=False)
     END_DATETIME = Parameter("source_end_datetime",
-                              default="2024-02-06 12:04:00", required=False)
+                              default="2024-12-06 12:04:00", required=False)
     #RENAME_FLOW = Parameter("rename_flow", default=False)
 
     ####################################
@@ -61,27 +62,27 @@ with Flow(
 
     request_params = get_params(START_DATETIME, END_DATETIME)
 
-    datetime_range_list = get_datetime_in_range(USER=USER,
+    datetime_range_list_smsrio = get_datetime_in_range(USER=USER,
                                                 PASSWORD=PASSWORD,
                                                 DATABASE=DATABASE,
                                                 IP=IP,
                                                 request_params=request_params,
                                                 system = 'smsrio')
 
-    run_flow_smsrio(datetime_range_list=datetime_range_list,
+    run_flow_smsrio(datetime_range_list=datetime_range_list_smsrio,
                     DATABASE=DATABASE,
                     USER=USER,
                     PASSWORD=PASSWORD,
                     IP=IP)
     
-    datetime_range_list = get_datetime_in_range(USER=USER,
+    datetime_range_list_vitai = get_datetime_in_range(USER=USER,
                                                 PASSWORD=PASSWORD,
                                                 DATABASE=DATABASE,
                                                 IP=IP,
                                                 request_params=request_params,
                                                 system = 'vitai')
 
-    run_flow_smsrio(datetime_range_list=datetime_range_list,
+    run_flow_vitai(datetime_range_list=datetime_range_list_vitai,
                     DATABASE=DATABASE,
                     USER=USER,
                     PASSWORD=PASSWORD,

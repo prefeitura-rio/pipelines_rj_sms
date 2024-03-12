@@ -6,11 +6,13 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.std.extracao.vitai.tasks import (
+from pipelines.prontuarios.std.vitai.tasks import (
     define_constants,
     format_json,
     get_params,
-    standartize_data,
+    standartize_data
+)
+from pipelines.prontuarios.std.extracao.vitai.tasks import (
     get_data_from_db,
     insert_data_to_db
 )
@@ -26,8 +28,8 @@ with Flow(
     PASSWORD = Parameter("password", required=True)
     IP = Parameter("ip", required=True)
 
-    START_DATETIME = Parameter("start_datetime", default="2024-02-06 12:00:00", required=False)
-    END_DATETIME = Parameter("end_datetime", default="2024-02-06 12:04:00", required=False)
+    START_DATETIME = Parameter("source_start_datetime", default="2024-02-06 12:00:00", required=False)
+    END_DATETIME = Parameter("source_end_datetime", default="2024-02-06 12:04:00", required=False)
 
     #RENAME_FLOW = Parameter("rename_flow", default=False)
 
@@ -46,17 +48,15 @@ with Flow(
     # Task Section #2 - Transform Data
     ####################################
 
-    lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants()
+    city_name_dict, state_dict, country_dict = define_constants()
 
     format_patient_list = format_json(raw_patient_data)
 
     std_patient_list = standartize_data(
         raw_data=format_patient_list,
-        logradouros_dict=logradouros_dict,
-        city_dict=city_dict,
+        city_name_dict=city_name_dict,
         state_dict=state_dict,
-        country_dict=country_dict,
-        lista_campos_api=lista_campos_api
+        country_dict=country_dict
     )
 
     insert_data_to_db(USER=USER,

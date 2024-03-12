@@ -24,8 +24,8 @@ def run_flow_smsrio(datetime_range_list: list,
     """
 
     for start_datetime, end_datetime, _ in datetime_range_list:
-        params = {"start_datetime": start_datetime,
-                  "end_datetime": end_datetime,
+        params = {"source_start_datetime": start_datetime,
+                  "source_end_datetime": end_datetime,
                   "database": DATABASE,
                   "user": USER,
                   "password": PASSWORD,
@@ -50,8 +50,8 @@ def run_flow_vitai(datetime_range_list: list,
     """
 
     for start_datetime, end_datetime, _ in datetime_range_list:
-        params = {"start_datetime": start_datetime,
-                  "end_datetime": end_datetime,
+        params = {"source_start_datetime": start_datetime,
+                  "source_end_datetime": end_datetime,
                   "database": DATABASE,
                   "user": USER,
                   "password": PASSWORD,
@@ -83,20 +83,20 @@ def get_datetime_in_range(USER: str,
 
     engine = create_engine(f"postgresql+psycopg2://{USER}:{PASSWORD}@{IP}:5432/{DATABASE}")
 
-    if ('start_datetime' in request_params.keys()) & ('end_datetime' in request_params.keys()):
+    if ('source_start_datetime' in request_params.keys()) & ('source_end_datetime' in request_params.keys()):
         range_clause = f"""
-        WHERE p.source_updated_at >= '{request_params['start_datetime']}'
-        AND p.source_updated_at <= '{request_params['end_datetime']}'
+        WHERE p.source_updated_at >= '{request_params['source_start_datetime']}'
+        AND p.source_updated_at <= '{request_params['source_end_datetime']}'
         """
-        log(f"Getting data between { request_params['start_datetime'] } and { request_params['end_datetime'] } from {system}")
+        log(f"Getting data between { request_params['source_start_datetime'] } and { request_params['source_end_datetime'] } from {system}")
 
     elif 'start_datetime' in request_params.keys():
-        range_clause = f"WHERE p.source_updated_at >= '{request_params['start_datetime']}' "
-        log(f"Getting data starting in {request_params['start_datetime']} from {system}")
+        range_clause = f"WHERE p.source_updated_at >= '{request_params['source_start_datetime']}' "
+        log(f"Getting data starting in {request_params['source_start_datetime']} from {system}")
 
     elif 'end_datetime' in request_params.keys():
-        range_clause = f"WHERE p.source_updated_at <= '{request_params['end_datetime']}' "
-        log(f"Getting data until {request_params['end_datetime']} from {system}")
+        range_clause = f"WHERE p.source_updated_at <= '{request_params['source_end_datetime']}' "
+        log(f"Getting data until {request_params['source_end_datetime']} from {system}")
 
     else:
         range_clause = ''

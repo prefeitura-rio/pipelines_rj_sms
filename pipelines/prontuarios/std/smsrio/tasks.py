@@ -7,7 +7,6 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_none_records,
-    clean_records_fields,
     drop_invalid_records,
     merge_keys,
     prepare_to_load,
@@ -20,7 +19,6 @@ from pipelines.prontuarios.std.formatters.smsrio.patient import (
     standardize_parents_names,
     standardize_race,
     standardize_telecom_data,
-)
 )
 
 

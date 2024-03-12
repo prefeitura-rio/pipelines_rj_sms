@@ -6,11 +6,13 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.std.extracao.smsrio.tasks import (
+from pipelines.prontuarios.std.smsrio.tasks import (
     define_constants,
     format_json,
     get_params,
-    standartize_data,
+    standartize_data
+)
+from pipelines.prontuarios.std.extracao.smsrio.tasks import (
     get_data_from_db,
     insert_data_to_db
 )
@@ -26,8 +28,8 @@ with Flow(
     PASSWORD = Parameter("password", required=True)
     IP = Parameter("ip", required=True)
 
-    START_DATETIME = Parameter("start_datetime", default="2024-02-06 12:00:00", required=False)
-    END_DATETIME = Parameter("end_datetime", default="2024-02-06 12:04:00", required=False)
+    START_DATETIME = Parameter("source_start_datetime", default="2024-02-06 12:00:00", required=False)
+    END_DATETIME = Parameter("source_end_datetime", default="2024-02-06 12:04:00", required=False)
 
     #RENAME_FLOW = Parameter("rename_flow", default=False)
 
