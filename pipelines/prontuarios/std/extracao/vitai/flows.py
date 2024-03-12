@@ -6,7 +6,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.std.extracao.smsrio.tasks import (
+from pipelines.prontuarios.std.extracao.vitai.tasks import (
     define_constants,
     format_json,
     get_params,
@@ -16,8 +16,8 @@ from pipelines.prontuarios.std.extracao.smsrio.tasks import (
 )
 
 with Flow(
-    name="Prontuários (SMSRio) - Padronização de Pacientes (carga histórica)",
-) as smsrio_standardization_historical:
+    name="Prontuários (Vitai) - Padronização de Pacientes (carga histórica)",
+) as vitai_standardization_historical:
     #####################################
     # Parameters
     #####################################
@@ -67,9 +67,9 @@ with Flow(
                       )
 
 
-smsrio_standardization_historical.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-smsrio_standardization_historical.executor = LocalDaskExecutor(num_workers=4)
-smsrio_standardization_historical.run_config = KubernetesRun(
+vitai_standardization_historical.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitai_standardization_historical.executor = LocalDaskExecutor(num_workers=4)
+vitai_standardization_historical.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,

@@ -19,7 +19,7 @@ flows_run_cases = [
     # ),
     (
         smsrio_standardization_historical_all,
-        {"source_start_datetime": "2024-03-10", "source_end_datetime": "2024-03-11"},
+        {"source_start_datetime": "2021-04-14", "source_end_datetime": "2021-04-20"},
     )
 ]
 

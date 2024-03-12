@@ -6,7 +6,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.std.extracao.smsrio.constants import constants as smsrio_constants
+from pipelines.prontuarios.std.extracao.constants import constants as smsrio_constants
 from pipelines.prontuarios.std.extracao.smsrio.tasks import (
     get_params
 )
@@ -26,9 +26,10 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     START_DATETIME = Parameter("source_start_datetime",
-                               default="2024-02-06 12:00:00", required=False)
-    END_DATETIME = Parameter("source_end_datetime", default="2024-02-06 12:04:00", required=False)
-    RENAME_FLOW = Parameter("rename_flow", default=False)
+                                default="2024-02-06 12:00:00", required=False)
+    END_DATETIME = Parameter("source_end_datetime",
+                              default="2024-02-06 12:04:00", required=False)
+    #RENAME_FLOW = Parameter("rename_flow", default=False)
 
     ####################################
     # Set environment
@@ -64,7 +65,21 @@ with Flow(
                                                 PASSWORD=PASSWORD,
                                                 DATABASE=DATABASE,
                                                 IP=IP,
-                                                request_params=request_params)
+                                                request_params=request_params,
+                                                system = 'smsrio')
+
+    run_flow_smsrio(datetime_range_list=datetime_range_list,
+                    DATABASE=DATABASE,
+                    USER=USER,
+                    PASSWORD=PASSWORD,
+                    IP=IP)
+    
+    datetime_range_list = get_datetime_in_range(USER=USER,
+                                                PASSWORD=PASSWORD,
+                                                DATABASE=DATABASE,
+                                                IP=IP,
+                                                request_params=request_params,
+                                                system = 'vitai')
 
     run_flow_smsrio(datetime_range_list=datetime_range_list,
                     DATABASE=DATABASE,
