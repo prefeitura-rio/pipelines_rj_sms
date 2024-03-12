@@ -19,7 +19,6 @@ flows_run_cases = [
         vitai_standardization,
         {"start_datetime": "2024-03-10 00:00", "end_datetime": "2024-03-11 00:00"},
     ),
-    (sms_prontuarios_raw_smsrio, {"is_initial_extraction": False}),
 ]
 
 

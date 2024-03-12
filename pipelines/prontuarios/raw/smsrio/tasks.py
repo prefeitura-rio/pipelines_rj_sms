@@ -10,6 +10,7 @@ from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
+from pipelines.prontuarios.utils.misc import build_additional_fields
 from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_format
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.tasks import get_secret_key
@@ -58,7 +59,7 @@ def extract_patient_data_from_db(
             end_tp_logrado_cod, end_logrado, end_numero, end_comunidade,
             end_complem, end_bairro, end_cep, cod_mun_res, uf_res,
             cod_mun_nasc, uf_nasc, cod_pais_nasc,
-            telefone, email, tp_telefone,
+            telefone, email, tp_telefone, tb_pacientes.timestamp,
             json_arrayagg(tb_cns_provisorios.cns_provisorio) as cns_provisorio
         FROM tb_pacientes
             INNER JOIN tb_cns_provisorios ON tb_pacientes.cns = tb_cns_provisorios.cns"""
@@ -115,7 +116,7 @@ def transform_filter_invalid_cpf(dataframe: pd.DataFrame, cpf_column: str) -> pd
     return filtered_dataframe
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=2))
+@task(max_retries=3, retry_delay=timedelta(minutes=3))
 def load_patient_data_to_api(patient_data: pd.DataFrame, environment: str, api_token: str):
     """
     Loads patient data to the API.
@@ -128,8 +129,14 @@ def load_patient_data_to_api(patient_data: pd.DataFrame, environment: str, api_t
     Returns:
         None
     """
+    json_data = json.loads(patient_data.to_json(orient="records", date_format="iso"))
 
-    json_data_batches = transform_data_to_json.run(dataframe=patient_data)
+    json_data_batches = build_additional_fields(
+        data_list=json_data,
+        cpf_get_function=lambda data: data["patient_cpf"],
+        birth_data_get_function=lambda data: data["dt_nasc"],
+        source_updated_at_get_function=lambda data: data["timestamp"],
+    )
 
     request_bodies = transform_to_raw_format.run(
         json_data=json_data_batches, cnes=smsrio_constants.SMSRIO_CNES.value
