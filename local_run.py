@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.prontuarios.std.extracao.extracao_inicial import smsrio_standardization_historical_all
+from pipelines.prontuarios.std.extracao.extracao_inicial import (
+    smsrio_standardization_historical_all,
+)
 
 # ==================================================
 # CONFIGURATION
@@ -12,8 +14,9 @@ flows_run_cases = [
     # (vitacare_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     # (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     (
-        smsrio_standardization_historical_all,{}
-        #{"source_start_datetime": "2024-03-10", "source_end_datetime": "2024-03-17"},
+        smsrio_standardization_historical_all,
+        {}
+        # {"source_start_datetime": "2024-03-10", "source_end_datetime": "2024-03-17"},
     ),
 ]
 

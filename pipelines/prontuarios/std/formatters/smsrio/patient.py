@@ -169,7 +169,7 @@ def standardize_telecom_data(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data,_ = clean_phone_records(data)
+    data, _ = clean_phone_records(data)
     data = clean_email_records(data)
 
     def format_telecom(record, type_telecom):

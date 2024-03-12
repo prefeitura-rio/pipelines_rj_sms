@@ -6,15 +6,15 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.prontuarios.std.extracao.smsrio.tasks import (
+    get_data_from_db,
+    insert_data_to_db,
+)
 from pipelines.prontuarios.std.smsrio.tasks import (
     define_constants,
     format_json,
     get_params,
-    standartize_data
-)
-from pipelines.prontuarios.std.extracao.smsrio.tasks import (
-    get_data_from_db,
-    insert_data_to_db
+    standartize_data,
 )
 
 with Flow(
@@ -28,21 +28,21 @@ with Flow(
     PASSWORD = Parameter("password", required=True)
     IP = Parameter("ip", required=True)
 
-    START_DATETIME = Parameter("source_start_datetime", default="2024-02-06 12:00:00", required=False)
+    START_DATETIME = Parameter(
+        "source_start_datetime", default="2024-02-06 12:00:00", required=False
+    )
     END_DATETIME = Parameter("source_end_datetime", default="2024-02-06 12:04:00", required=False)
 
-    #RENAME_FLOW = Parameter("rename_flow", default=False)
+    # RENAME_FLOW = Parameter("rename_flow", default=False)
 
     ####################################
     # Task Section #1 - Get Data
     ####################################
     request_params = get_params(START_DATETIME, END_DATETIME)
 
-    raw_patient_data = get_data_from_db(USER=USER,
-                                        PASSWORD=PASSWORD,
-                                        DATABASE=DATABASE,
-                                        IP=IP,
-                                        date_range=request_params)
+    raw_patient_data = get_data_from_db(
+        USER=USER, PASSWORD=PASSWORD, DATABASE=DATABASE, IP=IP, date_range=request_params
+    )
 
     ####################################
     # Task Section #2 - Transform Data
@@ -58,15 +58,10 @@ with Flow(
         city_dict=city_dict,
         state_dict=state_dict,
         country_dict=country_dict,
-        lista_campos_api=lista_campos_api
+        lista_campos_api=lista_campos_api,
     )
 
-    insert_data_to_db(USER=USER,
-                      PASSWORD=PASSWORD,
-                      IP=IP,
-                      DATABASE=DATABASE,
-                      data=std_patient_list
-                      )
+    insert_data_to_db(USER=USER, PASSWORD=PASSWORD, IP=IP, DATABASE=DATABASE, data=std_patient_list)
 
 
 smsrio_standardization_historical.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
