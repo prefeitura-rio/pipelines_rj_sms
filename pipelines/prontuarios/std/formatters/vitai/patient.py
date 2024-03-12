@@ -8,6 +8,7 @@ from pipelines.prontuarios.std.formatters.generic.patient import (
     dic_cns_value,
     format_address,
     clean_phone_records,
+    clean_email_records,
     clean_name_fields,
     clean_datetime_field,
 )
@@ -182,34 +183,42 @@ def standardize_telecom_data(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data = clean_phone_records(data)
-    # data = clean_email_records(data)
+    data, phone_field_list = clean_phone_records(data)
+    data = clean_email_records(data)
 
     def format_telecom(record, type_telecom):
-        if (record is None) | (pd.isna(record)):
+        if (record is None) | (pd.isna(record)) | (record == ''):
             return
         else:
             telecom_dic = {
                 "system": type_telecom,
                 "use": None,  # nao sei onde tem essa info ainda
-                "use": None,  # nao sei onde tem essa info ainda
                 "value": record,
                 "rank": None,  # nao sei onde tem essa info ainda
                 "start": None,  # nao sei onde tem essa info ainda
-                "end": None,  # nao sei onde tem essa info ainda
+                "end": None  # nao sei onde tem essa info ainda
             }
+
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
             return telecom_dic
 
-    telefone = format_telecom(data["telefone"], "phone")  # nao aceita lista por eqt
-    # email = format_telecom(data['email'],'email') # nao aceita lista por eqt # NAO TEM NA VITAI
+    phone_list = []
+    for phone in phone_field_list:
+        telefone = format_telecom(data[phone], 'phone')
+        if telefone is not None:
+            phone_list.append(telefone)
 
-    telecom_list = [contact for contact in [telefone] if contact is not None]
+    email = format_telecom(data['email'], 'email')
+    if email is not None:
+        phone_list.append(email)
+
+    telecom_list = phone_list
 
     if len(telecom_list) > 0:
-        data["telecom_list"] = telecom_list
+        data['telecom_list'] = telecom_list
     else:
         pass
+
     return data
 
 
