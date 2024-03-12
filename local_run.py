@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.prontuarios.raw.smsrio.flows import sms_prontuarios_raw_smsrio
-from pipelines.prontuarios.raw.vitacare.flows import vitacare_extraction
-from pipelines.prontuarios.raw.vitai.flows import vitai_extraction
 from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 
 # ==================================================
