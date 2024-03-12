@@ -13,8 +13,8 @@ from pipelines.prontuarios.std.vitai.flows import vitai_standardization
 # Please, register here pairs: (flow, param)
 # ==================================================
 flows_run_cases = [
-#     (vitacare_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
-#     (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
+    #     (vitacare_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
+    #     (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     (
         vitai_standardization,
         {"start_datetime": "2024-03-10 00:00", "end_datetime": "2024-03-11 00:00"},

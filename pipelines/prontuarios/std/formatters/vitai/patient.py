@@ -6,14 +6,11 @@ import pandas as pd
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_datetime_field,
+    clean_email_records,
     clean_name_fields,
     clean_phone_records,
     dic_cns_value,
     format_address,
-    clean_phone_records,
-    clean_email_records,
-    clean_name_fields,
-    clean_datetime_field,
 )
 
 
@@ -188,7 +185,7 @@ def standardize_telecom_data(data: dict) -> dict:
     data = clean_email_records(data)
 
     def format_telecom(record, type_telecom):
-        if (record is None) | (pd.isna(record)) | (record == ''):
+        if (record is None) | (pd.isna(record)) | (record == ""):
             return
         else:
             telecom_dic = {
@@ -197,7 +194,7 @@ def standardize_telecom_data(data: dict) -> dict:
                 "value": record,
                 "rank": None,  # nao sei onde tem essa info ainda
                 "start": None,  # nao sei onde tem essa info ainda
-                "end": None  # nao sei onde tem essa info ainda
+                "end": None,  # nao sei onde tem essa info ainda
             }
 
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
@@ -205,18 +202,18 @@ def standardize_telecom_data(data: dict) -> dict:
 
     phone_list = []
     for phone in phone_field_list:
-        telefone = format_telecom(data[phone], 'phone')
+        telefone = format_telecom(data[phone], "phone")
         if telefone is not None:
             phone_list.append(telefone)
 
-    email = format_telecom(data['email'], 'email')
+    email = format_telecom(data["email"], "email")
     if email is not None:
         phone_list.append(email)
 
     telecom_list = phone_list
 
     if len(telecom_list) > 0:
-        data['telecom_list'] = telecom_list
+        data["telecom_list"] = telecom_list
     else:
         pass
 

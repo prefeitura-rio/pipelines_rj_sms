@@ -64,7 +64,7 @@ def drop_invalid_records(data: dict) -> dict:
             return
         else:
             pass
-    data['patient_code'] = data['patient_cpf'] + "." + data['birth_date'].replace("-", "")
+    data["patient_code"] = data["patient_cpf"] + "." + data["birth_date"].replace("-", "")
     return data
 
 
@@ -110,7 +110,7 @@ def prepare_to_load(data: dict) -> dict:
         "address_list",
         "telecom_list",
         "raw_source_id",
-        "patient_code"
+        "patient_code",
     ]
     data = dict(
         filter(lambda item: (item[1] is not None) & (item[0] in lista_campos_api), data.items())
@@ -131,7 +131,7 @@ def clean_datetime_field(datetime: str) -> str:
     else:
         clean_datetime = re.sub(r" .*", "", datetime)
         clean_datetime = re.sub(r"T.*", "", clean_datetime)
-        clean_datetime = pd.to_datetime(clean_datetime, format='%Y-%m-%d', errors='coerce')
+        clean_datetime = pd.to_datetime(clean_datetime, format="%Y-%m-%d", errors="coerce")
         clean_datetime = str(clean_datetime.date()) if pd.isna(clean_datetime) is False else None
         return clean_datetime
 
@@ -236,10 +236,11 @@ def clean_phone_records(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    phone_fields = [column for column in data.keys() if column in ['telefone',
-                                                                   'celular',
-                                                                   'telefoneExtraUm',
-                                                                   'telefoneExtraDois']]
+    phone_fields = [
+        column
+        for column in data.keys()
+        if column in ["telefone", "celular", "telefoneExtraUm", "telefoneExtraDois"]
+    ]
     for phone_field in phone_fields:
         if data[phone_field] is not None:
             data[phone_field] = re.sub(r"[()-]", "", data[phone_field])
@@ -247,12 +248,13 @@ def clean_phone_records(data: dict) -> dict:
                 # tel fixos tem 8 digitos e contando com DDD sao 12 digitos,
                 # mas nao validamos DDD nem vimos se telefone celular tem 9 dig
                 data[phone_field] = None
-            elif bool(re.search('0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}',
-                                data[phone_field]
-                                )
-                      ):
+            elif bool(
+                re.search(
+                    "0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}", data[phone_field]
+                )
+            ):
                 data[phone_field] = None
-            elif bool(re.search('[^0-9]', data[phone_field])):
+            elif bool(re.search("[^0-9]", data[phone_field])):
                 data[phone_field] = None
     return data, phone_fields
 
