@@ -10,7 +10,6 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
-from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_schedule
 from pipelines.prontuarios.raw.vitacare.tasks import (
     create_parameter_list,
     extract_data_from_api,
@@ -192,7 +191,6 @@ with Flow(
         raise_final_state=unmapped(True),
     )
 
-vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
 vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=1)
 vitacare_scheduler_flow.run_config = KubernetesRun(
