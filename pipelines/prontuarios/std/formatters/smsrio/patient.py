@@ -26,7 +26,7 @@ def standardize_race(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data["racaCor"] is None:
+    if (data["racaCor"] is None) | (data["nacionalidade"] == ""):
         return data
     elif bool(re.search("SEM INFO", data["racaCor"])):
         return data
@@ -45,7 +45,7 @@ def standardize_nationality(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data["nacionalidade"] is None:
+    if (data["nacionalidade"] is None) | (data["nacionalidade"] == ""):
         return data
     elif data["nacionalidade"] == "A":
         return data

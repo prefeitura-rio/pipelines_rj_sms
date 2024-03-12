@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-#from pipelines.prontuarios.raw.smsrio.flows import sms_prontuarios_raw_smsrio
-#from pipelines.prontuarios.std.vitai.flows import vitai_standardization
-#from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
-#from pipelines.prontuarios.std.extracao.smsrio.flows import smsrio_standardization_historical
-from pipelines.prontuarios.std.extracao.extracao_inicial import smsrio_standardization_historical_all
+from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 
 # ==================================================
 # CONFIGURATION
@@ -13,14 +9,12 @@ from pipelines.prontuarios.std.extracao.extracao_inicial import smsrio_standardi
 # Please, register here pairs: (flow, param)
 # ==================================================
 flows_run_cases = [
-    # (
-    #     vitai_standardization,
-    #     {"start_datetime": "2024-02-26 05:44:01", "end_datetime": "2024-02-26 05:44:10"},
-    # ),
+    # (vitacare_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
+    # (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     (
-        smsrio_standardization_historical_all,
-        {"source_start_datetime": "2021-04-14", "source_end_datetime": "2021-04-20"},
-    )
+        smsrio_standardization,
+        {"start_datetime": "2024-03-10 12:00:00", "end_datetime": "2024-03-11 12:00:30"},
+    ),
 ]
 
 

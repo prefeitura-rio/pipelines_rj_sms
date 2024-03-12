@@ -34,8 +34,8 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
         dict : params dictionary
     """
     return {
-        "start_datetime": start_datetime,
-        "end_datetime": end_datetime,
+        "source_start_datetime": start_datetime,
+        "source_end_datetime": end_datetime,
         "datasource_system": "smsrio",
     }
 
