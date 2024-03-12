@@ -46,4 +46,4 @@ clocks = generate_dump_api_schedules(
     runs_interval_minutes=0,
 )
 
-smsrio_daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))
+daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))

@@ -14,7 +14,7 @@ from prefeitura_rio.pipelines_utils.prefect import (
 )
 
 from pipelines.constants import constants
-#from pipelines.dump_db_smsrio.schedules import smsrio_daily_update_schedule
+from pipelines.dump_url.schedules import daily_update_schedule
 from pipelines.utils.tasks import (
     create_folders,
     inject_gcp_credentials,
@@ -98,4 +98,4 @@ sms_dump_url.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-sms_dump_url.schedule = smsrio_daily_update_schedule
+sms_dump_url.schedule = daily_update_schedule
