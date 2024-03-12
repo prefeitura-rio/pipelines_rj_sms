@@ -36,6 +36,7 @@ with Flow(
     URL_TYPE = Parameter("url_type", required=True, default="google_sheet")
     URL = Parameter("url", required=True)
     GSHEET_SHEET_NAME = Parameter("gsheet_sheet_name", default="Sheet1")
+    CSV_DELIMITER = Parameter("csv_delimiter", default=";")
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -66,7 +67,7 @@ with Flow(
         file_name=TABLE_ID,
         url_type=URL_TYPE,
         gsheets_sheet_name=GSHEET_SHEET_NAME,
-        csv_delimiter="|",
+        csv_delimiter=CSV_DELIMITER,
         upstream_tasks=[create_folders_task],
     )
 
@@ -74,27 +75,27 @@ with Flow(
     # Tasks section #2 - Transform data and Create table
     #####################################
 
-    #upload_to_datalake_task = upload_to_datalake(
-    #    input_path=download_task,
-    #    dataset_id=DATASET_ID,
-    #    table_id=TABLE_ID,
-    #    if_exists="replace",
-    #    csv_delimiter=";",
-    #    if_storage_data_exists="replace",
-    #    biglake_table=True,
-    #    dataset_is_public=False,
-    #    upstream_tasks=[download_from_url],
-    #)
+    upload_to_datalake_task = upload_to_datalake(
+        input_path=download_task,
+        dataset_id=DATASET_ID,
+        table_id=TABLE_ID,
+        if_exists=CSV_DELIMITER,
+        csv_delimiter="|",
+        if_storage_data_exists="replace",
+        biglake_table=True,
+        dataset_is_public=False,
+        upstream_tasks=[download_task],
+    )
 
 
-#sms_dump_smsrio.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-#sms_dump_smsrio.executor = LocalDaskExecutor(num_workers=10)
-#sms_dump_smsrio.run_config = KubernetesRun(
-#    image=constants.DOCKER_IMAGE.value,
-#    labels=[
-#        constants.RJ_SMS_AGENT_LABEL.value,
-#    ],
-#    memory_limit="2Gi",
-#)
-#
-#sms_dump_smsrio.schedule = smsrio_daily_update_schedule
+sms_dump_url.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_url.executor = LocalDaskExecutor(num_workers=10)
+sms_dump_url.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="2Gi",
+)
+
+sms_dump_url.schedule = smsrio_daily_update_schedule
