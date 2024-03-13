@@ -408,7 +408,7 @@ def download_from_url(  # pylint: disable=too-many-arguments
         dataframe.columns = new_header  # set the header row as the df header
         log(f">>>>> Dataframe shape: {dataframe.shape}")
         log(f">>>>> Dataframe columns: {dataframe.columns}")
-        dataframe.columns = remove_columns_accents(dataframe)
+        # dataframe.columns = remove_columns_accents(dataframe)
         log(f">>>>> Dataframe columns after treatment: {dataframe.columns}")
 
         dataframe.to_csv(filepath, index=False, sep=csv_delimiter, encoding="utf-8")
