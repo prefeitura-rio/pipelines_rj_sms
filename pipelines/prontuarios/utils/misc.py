@@ -56,6 +56,9 @@ def build_additional_fields(
         # Source Updated At
         # ------------------
         source_updated_at = source_updated_at_get_function(data)
+        if source_updated_at is None:
+            source_updated_at = birth_data_get_function(data)
+
         source_updated_at = dateutil.parser.parse(source_updated_at)
         source_updated_at = source_updated_at.strftime("%Y-%m-%d %H:%M:%S")
 
