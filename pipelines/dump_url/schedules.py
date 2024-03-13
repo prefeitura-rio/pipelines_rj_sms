@@ -28,7 +28,7 @@ flow_parameters = [
         "url_type": "google_sheet",
         "gsheets_sheet_name": "CONSOLIDADO",
         "dataset_id": "brutos_sheets",
-        "table_id": "material_resume",
+        "table_id": "material_remume",
         "csv_delimiter": "|",
         "environment": "dev",
         "rename_flow": True,
@@ -38,7 +38,7 @@ flow_parameters = [
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 11, 30, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 12, 20, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
