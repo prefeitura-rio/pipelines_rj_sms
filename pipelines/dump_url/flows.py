@@ -68,6 +68,7 @@ with Flow(
         url_type=URL_TYPE,
         gsheets_sheet_name=GSHEETS_SHEET_NAME,
         csv_delimiter=CSV_DELIMITER,
+        dump_mode="overwrite",
         upstream_tasks=[create_folders_task],
     )
 
