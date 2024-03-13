@@ -20,7 +20,7 @@ flow_parameters = [
         "table_id": "estabelecimento_auxiliar",
         "dataset_id": "brutos_sheets",
         "csv_delimiter": "|",
-        "environment": "dev",
+        "environment": "prod",
         "rename_flow": True,
     },
     {
@@ -30,7 +30,7 @@ flow_parameters = [
         "dataset_id": "brutos_sheets",
         "table_id": "material_remume",
         "csv_delimiter": "|",
-        "environment": "dev",
+        "environment": "prod",
         "rename_flow": True,
     },
 ]
@@ -38,7 +38,7 @@ flow_parameters = [
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 15, 18, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
