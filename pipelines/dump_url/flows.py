@@ -68,7 +68,6 @@ with Flow(
         url_type=URL_TYPE,
         gsheets_sheet_name=GSHEETS_SHEET_NAME,
         csv_delimiter=CSV_DELIMITER,
-        dump_mode="overwrite",
         upstream_tasks=[create_folders_task],
     )
 
@@ -82,6 +81,7 @@ with Flow(
         table_id=TABLE_ID,
         if_exists=CSV_DELIMITER,
         csv_delimiter="|",
+        dump_mode="overwrite",
         if_storage_data_exists="replace",
         biglake_table=True,
         dataset_is_public=False,
