@@ -25,11 +25,11 @@ def inject_bd_credentials(environment: str = "dev", force_injection=False) -> No
     # Verify if all environment variables are already set
     all_variables_set = True
     for variable in [
-        "BASEDOSDADOS_CONFIG", 
-        "BASEDOSDADOS_CREDENTIALS_PROD", 
+        "BASEDOSDADOS_CONFIG",
+        "BASEDOSDADOS_CREDENTIALS_PROD",
         "BASEDOSDADOS_CREDENTIALS_STAGING",
-        "GOOGLE_APPLICATION_CREDENTIALS"
-        ]:
+        "GOOGLE_APPLICATION_CREDENTIALS",
+    ]:
         if not os.environ.get(variable):
             all_variables_set = False
             break
@@ -64,4 +64,3 @@ def inject_bd_credentials(environment: str = "dev", force_injection=False) -> No
     with open("/tmp/credentials.json", "wb") as credentials_file:
         credentials_file.write(service_account)
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/tmp/credentials.json"
-
