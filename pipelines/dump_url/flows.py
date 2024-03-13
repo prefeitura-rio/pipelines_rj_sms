@@ -76,7 +76,7 @@ with Flow(
     #####################################
 
     upload_to_datalake_task = upload_to_datalake(
-        input_path=download_task,
+        input_path=create_folders_task['raw'],
         dataset_id=DATASET_ID,
         table_id=TABLE_ID,
         if_exists=CSV_DELIMITER,
