@@ -17,8 +17,8 @@ from pipelines.constants import constants
 from pipelines.dump_url.schedules import daily_update_schedule
 from pipelines.utils.tasks import (
     create_folders,
-    inject_gcp_credentials,
     download_from_url,
+    inject_gcp_credentials,
     upload_to_datalake,
 )
 
@@ -63,7 +63,7 @@ with Flow(
 
     download_task = download_from_url(
         url=URL,
-        file_path=create_folders_task['raw'],
+        file_path=create_folders_task["raw"],
         file_name=TABLE_ID,
         url_type=URL_TYPE,
         gsheets_sheet_name=GSHEET_SHEET_NAME,
@@ -76,7 +76,7 @@ with Flow(
     #####################################
 
     upload_to_datalake_task = upload_to_datalake(
-        input_path=create_folders_task['raw'],
+        input_path=create_folders_task["raw"],
         dataset_id=DATASET_ID,
         table_id=TABLE_ID,
         if_exists=CSV_DELIMITER,

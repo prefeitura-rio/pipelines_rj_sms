@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 """
 Utilities for data cleaning.
 """
 
 import re
+
 import pandas as pd
 
 

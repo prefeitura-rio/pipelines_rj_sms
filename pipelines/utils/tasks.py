@@ -13,23 +13,23 @@ import sys
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
-from io import StringIO, FileIO
+from io import FileIO, StringIO
 from pathlib import Path
 
 import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token
-from google.oauth2 import service_account
-from google.cloud import bigquery, storage
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload
+import gspread
 import pandas as pd
 import prefect
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
-import gspread
+from google.cloud import bigquery, storage
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseDownload
 from prefect import task
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
@@ -37,8 +37,8 @@ from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.infisical import inject_bd_credentials, get_credentials_from_env
 from pipelines.utils.data_cleaning import remove_columns_accents
+from pipelines.utils.infisical import get_credentials_from_env, inject_bd_credentials
 
 
 @task
@@ -335,6 +335,7 @@ def download_ftp(
 
     return output_path
 
+
 @task()
 def download_from_url(  # pylint: disable=too-many-arguments
     url: str,
@@ -367,7 +368,7 @@ def download_from_url(  # pylint: disable=too-many-arguments
     """
     if not ".csv" in file_name:
         file_name = file_name + ".csv"
-    filepath = os.path.join(file_path,file_name)
+    filepath = os.path.join(file_path, file_name)
 
     if url_type == "google_sheet":
         if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
@@ -386,8 +387,7 @@ def download_from_url(  # pylint: disable=too-many-arguments
 
         if not url.startswith(url_prefix):
             raise ValueError(
-                "URL must start with https://docs.google.com/spreadsheets/d/"
-                f"Invalid URL: {url}"
+                "URL must start with https://docs.google.com/spreadsheets/d/" f"Invalid URL: {url}"
             )
 
         log(">>>>> URL is a Google Sheets URL, downloading directly")
@@ -414,6 +414,7 @@ def download_from_url(  # pylint: disable=too-many-arguments
         dataframe.to_csv(filepath, index=False, sep=csv_delimiter, encoding="utf-8")
     else:
         raise ValueError("Invalid URL type. Please set values to `url_type` parameter")
+
 
 @task(
     max_retries=2,
