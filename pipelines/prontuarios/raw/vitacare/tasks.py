@@ -102,13 +102,13 @@ def extract_data_from_dump(cnes: str, ap: str, entity_name: str, environment: st
     dataframe.rename(
         columns={
             # Transformação do Dump de Diagnostico
-            "N_CPF": "cpfPaciente", 
+            "N_CPF": "cpfPaciente",
             "DATA_NASC_PACIENTE": "dataNascPaciente",
-            "DATA_CONSULTA":"dataConsulta",
+            "DATA_CONSULTA": "dataConsulta",
             # Transformação do Dump de Paciente
             "CPF_PACIENTE": "cpfPaciente",
             "DATA_DE_NASCIMENTO": "dataNascPaciente",
-            "DATA_ULTIMA_ATUALIZACAO_DO_CADASTRO": "dataConsulta"
+            "DATA_ULTIMA_ATUALIZACAO_DO_CADASTRO": "dataConsulta",
         },
         inplace=True,
     )
