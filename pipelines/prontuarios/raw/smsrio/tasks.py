@@ -3,10 +3,13 @@
 Tasks for SMSRio Raw Data Extraction
 """
 import json
+import pandas as pd
 from datetime import date, timedelta
 
-import pandas as pd
-from prefect import task
+
+#from prefect import task
+from pipelines.utils.credential_injector import gcp_task as task
+
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants

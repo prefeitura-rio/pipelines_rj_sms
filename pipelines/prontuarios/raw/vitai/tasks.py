@@ -5,7 +5,8 @@ Tasks for Vitai Raw Data Extraction
 from datetime import date, timedelta
 
 import prefect
-from prefect import task
+#from prefect import task
+from pipelines.utils.credential_injector import gcp_task as task
 
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.raw.vitai.utils import format_date_to_request

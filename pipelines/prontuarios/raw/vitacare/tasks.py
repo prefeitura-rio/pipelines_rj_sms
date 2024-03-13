@@ -7,7 +7,10 @@ from datetime import date, timedelta
 
 import numpy as np
 import prefect
-from prefect import task
+
+#from prefect import task
+from pipelines.utils.credential_injector import gcp_task as task
+
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 
