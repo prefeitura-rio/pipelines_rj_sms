@@ -84,9 +84,7 @@ with Flow(
             environment=ENVIRONMENT,
         )
 
-        chunked_api_data = transform_create_input_batches(
-            input_list=api_data, batch_size=1000
-        )
+        chunked_api_data = transform_create_input_batches(input_list=api_data, batch_size=1000)
 
     chunked_data = merge(chunked_dump_data, chunked_api_data)
 
@@ -97,17 +95,12 @@ with Flow(
         data=chunked_data,
         entity_type=unmapped(ENTITY),
     )
-    valid_data = transform_filter_valid_cpf.map(
-        objects=grouped_data
-    )
+    valid_data = transform_filter_valid_cpf.map(objects=grouped_data)
 
     ####################################
     # Task Section #3 - Prepare to Load
     ####################################
-    request_bodies = transform_to_raw_format.map(
-        json_data=valid_data,
-        cnes=unmapped(CNES)
-    )
+    request_bodies = transform_to_raw_format.map(json_data=valid_data, cnes=unmapped(CNES))
 
     endpoint_name = get_entity_endpoint_name(entity=ENTITY)
 
