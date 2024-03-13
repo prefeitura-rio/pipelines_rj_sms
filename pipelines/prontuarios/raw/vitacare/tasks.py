@@ -104,8 +104,8 @@ def extract_data_from_dump(cnes: str, ap: str, entity_name: str, environment: st
         columns={
             "N_CPF": "cpfPaciente",
             "CPF_PACIENTE": "cpfPaciente",
-            "DATA_DE_NASCIMENTO": "dataNascimento",
-            "DATA_NASC_PACIENTE": "dataNascimento",
+            "DATA_DE_NASCIMENTO": "dataNascPaciente",
+            "DATA_NASC_PACIENTE": "dataNascPaciente",
         },
         inplace=True,
     )
