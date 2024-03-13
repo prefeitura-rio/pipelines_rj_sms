@@ -801,7 +801,8 @@ def upload_to_datalake(
         log("Data uploaded to BigQuery")
 
     except Exception as e:  # pylint: disable=W0703
-        raise RuntimeError(f"An error occurred: {e}", level="error") from e
+        log(f"An error occurred: {e}", level="error")
+        raise RuntimeError() from e
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
