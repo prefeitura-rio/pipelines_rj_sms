@@ -4,10 +4,12 @@
 """
 Utilities for infisical.
 """
-
 import base64
+import json
 import os
+from typing import List
 
+from google.oauth2 import service_account
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, inject_env
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -38,11 +40,26 @@ def inject_bd_credentials(environment: str = "dev") -> None:
 
     # Create service account file for Google Cloud
     service_account_name = "BASEDOSDADOS_CREDENTIALS_PROD"
-    service_account = base64.b64decode(os.environ[service_account_name])
+    credentials = base64.b64decode(os.environ[service_account_name])
 
     if not os.path.exists("/tmp"):
         os.makedirs("/tmp")
 
     with open("/tmp/credentials.json", "wb") as credentials_file:
-        credentials_file.write(service_account)
+        credentials_file.write(credentials)
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/tmp/credentials.json"
+
+
+def get_credentials_from_env(scopes: List[str] = None) -> service_account.Credentials:
+    """
+    Gets credentials from env vars
+    """
+
+    env: str = os.getenv("BASEDOSDADOS_CREDENTIALS_PROD", "")
+    if env == "":
+        raise ValueError("BASEDOSDADOS_CREDENTIALS_PROD env var not set!")
+    info: dict = json.loads(base64.b64decode(env))
+    cred: service_account.Credentials = service_account.Credentials.from_service_account_info(info)
+    if scopes:
+        cred = cred.with_scopes(scopes)
+    return cred
