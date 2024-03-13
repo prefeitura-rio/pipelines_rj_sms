@@ -35,7 +35,7 @@ with Flow(
     # URL
     URL_TYPE = Parameter("url_type", required=True, default="google_sheet")
     URL = Parameter("url", required=True)
-    GSHEET_SHEET_NAME = Parameter("gsheet_sheet_name", default="Sheet1")
+    GSHEETS_SHEET_NAME = Parameter("gsheets_sheet_name")
     CSV_DELIMITER = Parameter("csv_delimiter", default=";")
 
     # GCP
@@ -66,7 +66,7 @@ with Flow(
         file_path=create_folders_task["raw"],
         file_name=TABLE_ID,
         url_type=URL_TYPE,
-        gsheets_sheet_name=GSHEET_SHEET_NAME,
+        gsheets_sheet_name=GSHEETS_SHEET_NAME,
         csv_delimiter=CSV_DELIMITER,
         upstream_tasks=[create_folders_task],
     )
