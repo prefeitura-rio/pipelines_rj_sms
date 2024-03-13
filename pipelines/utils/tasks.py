@@ -25,16 +25,14 @@ import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
 from google.cloud import bigquery, storage
-
-#from prefect import task
-from pipelines.utils.credential_injector import gcp_task as task
-
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
 
+# from prefect import task
+from pipelines.utils.credential_injector import gcp_task as task
 from pipelines.utils.infisical import inject_bd_credentials
 
 

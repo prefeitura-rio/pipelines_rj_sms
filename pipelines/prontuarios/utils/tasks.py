@@ -12,14 +12,15 @@ from datetime import date, timedelta
 import pandas as pd
 import prefect
 import requests
-#from prefect import task
+
+# from prefect import task
 from prefect.client import Client
 
 from pipelines.constants import constants
-from pipelines.utils.credential_injector import gcp_task as task
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
+from pipelines.utils.credential_injector import gcp_task as task
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery
 
