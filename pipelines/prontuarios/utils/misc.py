@@ -12,6 +12,7 @@ def split_dataframe(df, chunk_size=10000):
         chunks.append(df[i * chunk_size : (i + 1) * chunk_size])  # noqa: E203
     return chunks
 
+
 def date_parser(date: str) -> str:
     if "/" in date:
         # Caso tipico Vitacare. Ex.: 01/12/2020
