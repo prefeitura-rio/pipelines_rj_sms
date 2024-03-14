@@ -30,7 +30,6 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
-
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
