@@ -22,6 +22,7 @@ from pipelines.prontuarios.utils.tasks import (
     get_ap_from_cnes,
     get_api_token,
     get_current_flow_labels,
+    get_healthcenter_name_from_cnes,
     get_project_name,
     load_to_api,
     rename_current_flow_run,
@@ -58,9 +59,11 @@ with Flow(
     )
 
     with case(RENAME_FLOW, True):
+        healthcenter_name = get_healthcenter_name_from_cnes(cnes=CNES)
+
         rename_current_flow_run(
             environment=ENVIRONMENT,
-            cnes=CNES,
+            unidade=healthcenter_name,
             entity_type=ENTITY,
         )
 
