@@ -30,13 +30,13 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
-from prefect import task
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.utils.credential_injector import gcp_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.infisical import get_credentials_from_env, inject_bd_credentials
 

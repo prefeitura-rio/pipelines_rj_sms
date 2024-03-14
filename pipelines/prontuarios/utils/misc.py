@@ -47,7 +47,7 @@ def build_additional_fields(
         clean_patient_cpf = re.sub(r"\D", "", patient_cpf)
 
         birth_date = birth_data_get_function(data)
-        birth_date = dateutil.parser.parse(birth_date)
+        birth_date = dateutil.parser.parse(birth_date, dayfirst=True)
         birth_date = birth_date.strftime("%Y%m%d")
 
         patient_code = f"{clean_patient_cpf}.{birth_date}"
@@ -56,6 +56,9 @@ def build_additional_fields(
         # Source Updated At
         # ------------------
         source_updated_at = source_updated_at_get_function(data)
+        if source_updated_at is None:
+            source_updated_at = birth_data_get_function(data)
+
         source_updated_at = dateutil.parser.parse(source_updated_at)
         source_updated_at = source_updated_at.strftime("%Y-%m-%d %H:%M:%S")
 

@@ -6,13 +6,15 @@ import json
 from datetime import date, timedelta
 
 import pandas as pd
-from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.misc import build_additional_fields
 from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_format
 from pipelines.prontuarios.utils.validation import is_valid_cpf
+
+# from prefect import task
+from pipelines.utils.credential_injector import gcp_task as task
 from pipelines.utils.tasks import get_secret_key
 
 
