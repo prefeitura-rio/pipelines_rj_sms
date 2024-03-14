@@ -47,9 +47,7 @@ with Flow(
     ####################################
     # Set environment
     ####################################
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
-
-    ap = get_ap_from_cnes(cnes=CNES, upstream_tasks=[credential_injection])
+    ap = get_ap_from_cnes(cnes=CNES)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -57,7 +55,6 @@ with Flow(
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
         infisical_api_username=vitacare_constants.INFISICAL_API_USERNAME.value,
         infisical_api_password=vitacare_constants.INFISICAL_API_PASSWORD.value,
-        upstream_tasks=[credential_injection],
     )
 
     with case(RENAME_FLOW, True):
@@ -65,7 +62,6 @@ with Flow(
             environment=ENVIRONMENT,
             cnes=CNES,
             entity_type=ENTITY,
-            upstream_tasks=[credential_injection],
         )
 
     ####################################
@@ -77,7 +73,6 @@ with Flow(
             ap=ap,
             entity_name=ENTITY,
             environment=ENVIRONMENT,
-            upstream_tasks=[credential_injection],
         )
 
     with case(INITIAL_EXTRACTION, False):
@@ -87,12 +82,9 @@ with Flow(
             target_day=TARGET_DATE,
             entity_name=ENTITY,
             environment=ENVIRONMENT,
-            upstream_tasks=[credential_injection],
         )
 
-        chunked_api_data = transform_create_input_batches(
-            input_list=api_data, batch_size=1000, upstream_tasks=[credential_injection]
-        )
+        chunked_api_data = transform_create_input_batches(input_list=api_data, batch_size=1000)
 
     chunked_data = merge(chunked_dump_data, chunked_api_data)
 
@@ -102,22 +94,15 @@ with Flow(
     grouped_data = group_data_by_patient.map(
         data=chunked_data,
         entity_type=unmapped(ENTITY),
-        upstream_tasks=[unmapped(credential_injection)],
     )
-    valid_data = transform_filter_valid_cpf.map(
-        objects=grouped_data, upstream_tasks=[unmapped(credential_injection)]
-    )
+    valid_data = transform_filter_valid_cpf.map(objects=grouped_data)
 
     ####################################
     # Task Section #3 - Prepare to Load
     ####################################
-    request_bodies = transform_to_raw_format.map(
-        json_data=valid_data,
-        cnes=unmapped(CNES),
-        upstream_tasks=[unmapped(credential_injection)],
-    )
+    request_bodies = transform_to_raw_format.map(json_data=valid_data, cnes=unmapped(CNES))
 
-    endpoint_name = get_entity_endpoint_name(entity=ENTITY, upstream_tasks=[credential_injection])
+    endpoint_name = get_entity_endpoint_name(entity=ENTITY)
 
     ####################################
     # Task Section #4 - Load Data
@@ -127,7 +112,6 @@ with Flow(
         endpoint_name=unmapped(endpoint_name),
         api_token=unmapped(api_token),
         environment=unmapped(ENVIRONMENT),
-        upstream_tasks=[unmapped(credential_injection)],
     )
 
     force_garbage_collector(upstream_tasks=[load_to_api_task])
@@ -139,8 +123,8 @@ vitacare_extraction.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="2Gi",
-    memory_limit="2Gi",
+    memory_request="8Gi",
+    memory_limit="8Gi",
 )
 
 
