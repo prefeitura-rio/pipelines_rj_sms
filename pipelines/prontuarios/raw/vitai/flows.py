@@ -58,16 +58,13 @@ with Flow(
         infisical_path=vitai_constants.INFISICAL_PATH.value,
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
         infisical_api_username=vitai_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value
+        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value,
     )
     with case(RENAME_FLOW, True):
         healthcenter_name = get_healthcenter_name_from_cnes(cnes=CNES)
 
         rename_current_flow_run(
-            environment=ENVIRONMENT,
-            cnes=CNES,
-            entity_type=ENTITY,
-            unidade=healthcenter_name
+            environment=ENVIRONMENT, cnes=CNES, entity_type=ENTITY, unidade=healthcenter_name
         )
 
     ####################################
@@ -93,9 +90,7 @@ with Flow(
     grouped_data = group_data_by_patient.map(
         data=daily_data_list,
     )
-    valid_data = transform_filter_valid_cpf.map(
-        objects=grouped_data
-    )
+    valid_data = transform_filter_valid_cpf.map(objects=grouped_data)
 
     ####################################
     # Task Section #3 - Prepare to Load

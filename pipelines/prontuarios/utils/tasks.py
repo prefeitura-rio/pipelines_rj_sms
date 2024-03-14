@@ -172,6 +172,7 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     if request_response.status_code != 201:
         raise requests.exceptions.HTTPError(f"Error loading data: {request_response.text}")
 
+
 @task
 def rename_current_flow_run(
     environment: str, is_initial_extraction: bool = False, **kwargs
@@ -316,6 +317,7 @@ def get_healthcenter_name_from_cnes(cnes: str) -> str:
     nome_limpo = unidade.iloc[0]["nome_limpo"]
 
     return nome_limpo
+
 
 @task
 def get_project_name(environment: str):
