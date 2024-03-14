@@ -10,7 +10,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.execute_dbt.schedules import dbt_daily_update_schedule
+from pipelines.execute_dbt.schedules import dbt_schedules
 from pipelines.execute_dbt.tasks import (
     download_repository,
     execute_dbt,
@@ -66,4 +66,4 @@ sms_execute_dbt.run_config = KubernetesRun(
     ],
 )
 
-sms_execute_dbt.schedule = dbt_daily_update_schedule
+sms_execute_dbt.schedule = dbt_schedules
