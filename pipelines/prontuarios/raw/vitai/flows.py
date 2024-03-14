@@ -23,6 +23,7 @@ from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_current_flow_labels,
     get_flow_scheduled_day,
+    get_healthcenter_name_from_cnes,
     get_project_name,
     load_to_api,
     rename_current_flow_run,
@@ -50,35 +51,33 @@ with Flow(
     ####################################
     # Set environment
     ####################################
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
-
-    vitai_api_token = get_vitai_api_token(environment="prod", upstream_tasks=[credential_injection])
+    vitai_api_token = get_vitai_api_token(environment="prod")
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
         infisical_path=vitai_constants.INFISICAL_PATH.value,
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
         infisical_api_username=vitai_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value,
-        upstream_tasks=[credential_injection],
+        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value
     )
     with case(RENAME_FLOW, True):
+        healthcenter_name = get_healthcenter_name_from_cnes(cnes=CNES)
+
         rename_current_flow_run(
             environment=ENVIRONMENT,
             cnes=CNES,
             entity_type=ENTITY,
-            upstream_tasks=[credential_injection],
+            unidade=healthcenter_name
         )
 
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    maximum_date = get_flow_scheduled_day(upstream_tasks=[credential_injection])
+    maximum_date = get_flow_scheduled_day()
 
     dates_of_interest = get_dates_in_range(
         minimum_date=MIN_DATE,
         maximum_date=maximum_date,
-        upstream_tasks=[credential_injection],
     )
 
     daily_data_list = extract_data_from_api.map(
@@ -86,7 +85,6 @@ with Flow(
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
         vitai_api_token=unmapped(vitai_api_token),
-        upstream_tasks=[unmapped(credential_injection)],
     )
 
     ####################################
@@ -94,11 +92,9 @@ with Flow(
     ####################################
     grouped_data = group_data_by_patient.map(
         data=daily_data_list,
-        entity_type=unmapped(ENTITY),
-        upstream_tasks=[unmapped(credential_injection)],
     )
     valid_data = transform_filter_valid_cpf.map(
-        objects=grouped_data, upstream_tasks=[unmapped(credential_injection)]
+        objects=grouped_data
     )
 
     ####################################
@@ -107,10 +103,9 @@ with Flow(
     request_bodies = transform_to_raw_format.map(
         json_data=valid_data,
         cnes=unmapped(CNES),
-        upstream_tasks=[unmapped(credential_injection)],
     )
 
-    endpoint_name = get_entity_endpoint_name(entity=ENTITY, upstream_tasks=[credential_injection])
+    endpoint_name = get_entity_endpoint_name(entity=ENTITY)
 
     ####################################
     # Task Section #4 - Load Data
@@ -120,7 +115,6 @@ with Flow(
         endpoint_name=unmapped(endpoint_name),
         api_token=unmapped(api_token),
         environment=unmapped(ENVIRONMENT),
-        upstream_tasks=[unmapped(credential_injection)],
     )
 
     force_garbage_collector(upstream_tasks=[load_to_api_task])

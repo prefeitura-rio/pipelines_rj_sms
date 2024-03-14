@@ -172,7 +172,6 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     if request_response.status_code != 201:
         raise requests.exceptions.HTTPError(f"Error loading data: {request_response.text}")
 
-
 @task
 def rename_current_flow_run(
     environment: str, is_initial_extraction: bool = False, **kwargs
@@ -301,6 +300,22 @@ def get_ap_from_cnes(cnes: str) -> str:
 
     return f"AP{ap}"
 
+
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
+def get_healthcenter_name_from_cnes(cnes: str) -> str:
+
+    dados_mestres = load_file_from_bigquery.run(
+        project_name="rj-sms", dataset_name="saude_dados_mestres", table_name="estabelecimento"
+    )
+
+    unidade = dados_mestres[dados_mestres["id_cnes"] == cnes]
+
+    if unidade.empty:
+        raise KeyError(f"CNES {cnes} not found in the database")
+
+    nome_limpo = unidade.iloc[0]["nome_limpo"]
+
+    return nome_limpo
 
 @task
 def get_project_name(environment: str):
