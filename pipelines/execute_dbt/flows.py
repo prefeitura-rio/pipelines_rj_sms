@@ -18,7 +18,7 @@ from pipelines.execute_dbt.tasks import (
 )
 from pipelines.utils.tasks import inject_gcp_credentials
 
-with Flow(name="DBT - Executar comando no projeto queries-rj-sms") as sms_execute_dbt:
+with Flow(name="DBT - Executar comando a partir do queries-rj-sms") as sms_execute_dbt:
     #####################################
     # Parameters
     #####################################
