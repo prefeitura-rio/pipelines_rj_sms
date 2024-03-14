@@ -65,5 +65,4 @@ sms_execute_dbt.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
 )
-
 sms_execute_dbt.schedule = dbt_daily_update_schedule
