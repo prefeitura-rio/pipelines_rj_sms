@@ -15,6 +15,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {"command": "run", "environment": "prod", "rename_flow": True},
     {"command": "test", "environment": "prod", "rename_flow": True},
+    {"command": "run", "environment": "test", "rename_flow": True},
 ]
 
 
