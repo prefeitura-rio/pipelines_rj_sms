@@ -13,7 +13,10 @@ flows_run_cases = [
     # (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     (
         vitai_standardization,
-        {"source_start_datetime": "2024-03-10 12:00:00", "source_end_datetime": "2024-03-11 12:00:30"},
+        {
+            "source_start_datetime": "2024-03-10 12:00:00",
+            "source_end_datetime": "2024-03-11 12:00:30",
+        },
     ),
 ]
 
