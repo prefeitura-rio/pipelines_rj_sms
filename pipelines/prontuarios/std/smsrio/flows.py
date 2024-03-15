@@ -15,7 +15,7 @@ from pipelines.prontuarios.std.smsrio.tasks import (
     get_params,
     standartize_data,
 )
-from pipelines.prontuarios.utils.tasks import get_api_token, load_to_api
+from pipelines.prontuarios.utils.tasks import get_api_token, load_to_api, get_flow_scheduled_day
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
 
 with Flow(
@@ -25,10 +25,6 @@ with Flow(
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    START_DATETIME = Parameter(
-        "source_start_datetime", default="2024-02-06 12:00:00", required=False
-    )
-    END_DATETIME = Parameter("source_end_datetime", default="2024-02-07 12:04:00", required=False)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     ####################################
@@ -55,7 +51,8 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
+    START_DATETIME = get_flow_scheduled_day(upstream_tasks=[credential_injection])
+    request_params = get_params(START_DATETIME, upstream_tasks=[credential_injection])
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords",
