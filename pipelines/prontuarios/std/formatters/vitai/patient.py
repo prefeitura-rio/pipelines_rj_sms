@@ -249,5 +249,6 @@ def transform_to_ibge_code(
     else:
         data["city"] = None
         data["state"] = None
+        data["country"] = None
 
     return data

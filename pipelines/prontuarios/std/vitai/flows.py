@@ -8,6 +8,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.vitai.constants import constants as vitai_constants
+from pipelines.prontuarios.std.vitai.schedules import vitai_std_daily_update_schedule
 from pipelines.prontuarios.std.vitai.tasks import (
     define_constants,
     format_json,
@@ -101,3 +102,6 @@ vitai_standardization.run_config = KubernetesRun(
     ],
     memory_limit="5Gi",
 )
+
+
+vitai_standardization.schedule = vitai_std_daily_update_schedule
