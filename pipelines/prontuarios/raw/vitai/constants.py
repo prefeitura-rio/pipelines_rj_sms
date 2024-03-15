@@ -20,7 +20,7 @@ class constants(Enum):
         "5717256": "http://api.token.hmrg.vitai.care/api/v1/",
         "2298120": "https://api.token.hmas.vitai.care/api/v1/",
         "2295407": "https://api.token.hmrf.vitai.care/api/v1/",
-        #"6716938": "https://api.token.cerbarra.vitai.care/api/v1/",
+        # "6716938": "https://api.token.cerbarra.vitai.care/api/v1/",
         "6716849": "https://apitokencerleblon.vitai.care/api/v1/",
         "6512925": "https://api.token.upaalemao.vitai.care/api/v1/",
         "6507409": "https://api.token.uparocinha.vitai.care/api/v1/",
@@ -34,7 +34,7 @@ class constants(Enum):
         "7101856": "https://api.token.upamb.vitai.care/api/v1/",
         "6938124": "https://api.token.upapaciencia.vitai.care/api/v1/",
         "6742831": "https://api.token.upasc.vitai.care/api/v1/",
-        #"6926177": "https://api.token.upasepetiba.vitai.care/api/v1/",
+        # "6926177": "https://api.token.upasepetiba.vitai.care/api/v1/",
         "6487815": "https://api.token.upavk.vitai.care/api/v1/",
     }
 
