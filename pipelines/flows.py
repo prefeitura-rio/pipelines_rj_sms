@@ -10,6 +10,7 @@ from pipelines.dump_api_vitacare.flows import *
 from pipelines.dump_api_vitai.flows import *
 from pipelines.dump_db_smsrio.flows import *
 from pipelines.dump_ftp_cnes.flows import *
+from pipelines.dump_url.flows import *
 from pipelines.execute_dbt.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.prontuarios.raw.vitacare.flows import *

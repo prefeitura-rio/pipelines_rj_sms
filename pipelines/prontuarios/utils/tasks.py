@@ -12,13 +12,15 @@ from datetime import date, timedelta
 import pandas as pd
 import prefect
 import requests
-from prefect import task
+
+# from prefect import task
 from prefect.client import Client
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
+from pipelines.utils.credential_injector import gcp_task as task
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery
 
@@ -192,6 +194,7 @@ def rename_current_flow_run(
 
     params = [f"{key}={value}" for key, value in kwargs.items()]
     params.append(f"env={environment}")
+    params = sorted(params)
 
     flow_run_name = f"{title} ({', '.join(params)}): {flow_run_scheduled_time}"
 
@@ -298,6 +301,24 @@ def get_ap_from_cnes(cnes: str) -> str:
     ap = unidade.iloc[0]["area_programatica"]
 
     return f"AP{ap}"
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
+def get_healthcenter_name_from_cnes(cnes: str) -> str:
+
+    dados_mestres = load_file_from_bigquery.run(
+        project_name="rj-sms", dataset_name="saude_dados_mestres", table_name="estabelecimento"
+    )
+
+    unidade = dados_mestres[dados_mestres["id_cnes"] == cnes]
+
+    if unidade.empty:
+        raise KeyError(f"CNES {cnes} not found in the database")
+
+    nome_limpo = unidade.iloc[0]["nome_limpo"]
+    ap = unidade.iloc[0]["area_programatica"]
+
+    return f"(AP{ap}) {nome_limpo}"
 
 
 @task
