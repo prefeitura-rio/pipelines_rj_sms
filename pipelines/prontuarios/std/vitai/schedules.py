@@ -9,10 +9,9 @@ import pytz
 from prefect.schedules import Schedule
 
 from pipelines.constants import constants
+from pipelines.prontuarios.utils.tasks import get_flow_scheduled_day
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
-from pipelines.prontuarios.utils.tasks import (
-    get_flow_scheduled_day
-)
+
 #####################################
 # Vitai
 #####################################
@@ -20,10 +19,14 @@ start_date = get_flow_scheduled_day()
 end_date = start_date + timedelta(days=1)
 
 
-vitai_flow_parameters = [{"environment": "prod",
-                           "source_start_datetime":start_date,
-                           "source_end_datetime":end_date,
-                           "rename_flow": True}]
+vitai_flow_parameters = [
+    {
+        "environment": "prod",
+        "source_start_datetime": start_date,
+        "source_end_datetime": end_date,
+        "rename_flow": True,
+    }
+]
 
 vitai_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
