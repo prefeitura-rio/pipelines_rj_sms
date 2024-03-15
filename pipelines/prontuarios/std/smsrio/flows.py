@@ -8,6 +8,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.smsrio.constants import constants as smsrio_constants
+from pipelines.prontuarios.std.smsrio.schedules import smsrio_std_daily_update_schedule
 from pipelines.prontuarios.std.smsrio.tasks import (
     define_constants,
     format_json,
@@ -24,8 +25,9 @@ with Flow(
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    START_DATETIME = Parameter("source_start_datetime",
-                               default="2024-02-06 12:00:00", required=False)
+    START_DATETIME = Parameter(
+        "source_start_datetime", default="2024-02-06 12:00:00", required=False
+    )
     END_DATETIME = Parameter("source_end_datetime", default="2024-02-07 12:04:00", required=False)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
@@ -100,3 +102,5 @@ smsrio_standardization.run_config = KubernetesRun(
     ],
     memory_limit="5Gi",
 )
+
+smsrio_standardization.schedule = smsrio_std_daily_update_schedule

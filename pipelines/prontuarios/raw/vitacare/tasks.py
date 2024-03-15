@@ -7,12 +7,14 @@ from datetime import date, timedelta
 
 import numpy as np
 import prefect
-from prefect import task
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.utils.misc import build_additional_fields, split_dataframe
+
+# from prefect import task
+from pipelines.utils.credential_injector import gcp_task as task
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import (
     cloud_function_request,
@@ -99,10 +101,14 @@ def extract_data_from_dump(cnes: str, ap: str, entity_name: str, environment: st
     # Standardize column names
     dataframe.rename(
         columns={
+            # Transformação do Dump de Diagnostico
             "N_CPF": "cpfPaciente",
+            "DATA_NASC_PACIENTE": "dataNascPaciente",
+            "DATA_CONSULTA": "dataConsulta",
+            # Transformação do Dump de Paciente
             "CPF_PACIENTE": "cpfPaciente",
-            "DATA_DE_NASCIMENTO": "dataNascimento",
-            "DATA_NASC_PACIENTE": "dataNascimento",
+            "DATA_DE_NASCIMENTO": "dataNascPaciente",
+            "DATA_ULTIMA_ATUALIZACAO_DO_CADASTRO": "dataConsulta",
         },
         inplace=True,
     )
@@ -145,7 +151,12 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
             source_updated_at_get_function=lambda data: data["dataConsulta"],
         )
     elif entity_type == "pacientes":
-        raise NotImplementedError("Entity pacientes not implemented yet.")
+        return build_additional_fields(
+            data_list=data,
+            cpf_get_function=lambda data: data["cpfPaciente"],
+            birth_data_get_function=lambda data: data["dataNascPaciente"],
+            source_updated_at_get_function=lambda data: data["dataConsulta"],
+        )
     else:
         raise ValueError(f"Invalid entity type: {entity_type}")
 
