@@ -30,7 +30,8 @@ from pipelines.prontuarios.utils.tasks import (
     transform_filter_valid_cpf,
     transform_to_raw_format,
 )
-from pipelines.utils.tasks import inject_gcp_credentials
+from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_schedule
+
 
 with Flow(
     name="Prontuários (Vitacare) - Extração de Dados",
@@ -142,33 +143,27 @@ with Flow(
     INITIAL_EXTRACTION = Parameter("initial_extraction", default=False)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
-
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
-            upstream_tasks=[credential_injection],
         )
 
     parameter_list = create_parameter_list(
         environment=ENVIRONMENT,
         initial_extraction=INITIAL_EXTRACTION,
-        upstream_tasks=[credential_injection],
     )
 
     project_name = get_project_name(
         environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection],
     )
 
-    current_flow_run_labels = get_current_flow_labels(upstream_tasks=[credential_injection])
+    current_flow_run_labels = get_current_flow_labels()
 
     created_flow_runs = create_flow_run.map(
         flow_name=unmapped("Prontuários (Vitacare) - Extração de Dados"),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
-        upstream_tasks=[unmapped(credential_injection)],
     )
 
     wait_runs_task = wait_for_flow_run.map(
@@ -178,6 +173,7 @@ with Flow(
         raise_final_state=unmapped(True),
     )
 
+vitacare_scheduler_flow.schedule = vitacare_daily_update_schedule
 vitacare_scheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitacare_scheduler_flow.executor = LocalDaskExecutor(num_workers=1)
 vitacare_scheduler_flow.run_config = KubernetesRun(
