@@ -89,6 +89,7 @@ with Flow(
     ####################################
     grouped_data = group_data_by_patient.map(
         data=daily_data_list,
+        entity_type=unmapped(ENTITY),
     )
     valid_data = transform_filter_valid_cpf.map(objects=grouped_data)
 
