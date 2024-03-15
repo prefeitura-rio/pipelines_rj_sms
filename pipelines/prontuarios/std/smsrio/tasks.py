@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
 from typing import Tuple
 
 import pandas as pd
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 
-from datetime import timedelta
 from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_none_records,
     drop_invalid_records,

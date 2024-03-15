@@ -15,7 +15,11 @@ from pipelines.prontuarios.std.vitai.tasks import (
     get_params,
     standartize_data,
 )
-from pipelines.prontuarios.utils.tasks import get_api_token, load_to_api, get_flow_scheduled_day
+from pipelines.prontuarios.utils.tasks import (
+    get_api_token,
+    get_flow_scheduled_day,
+    load_to_api,
+)
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
 
 with Flow(
