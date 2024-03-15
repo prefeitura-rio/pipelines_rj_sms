@@ -227,11 +227,11 @@ def transform_to_ibge_code(
     if (data["cod_mun_res"] in city_dict.keys()) & (data["uf_res"] in state_dict.keys()):
         data["city"] = city_dict[data["cod_mun_res"]]
         data["state"] = state_dict[data["uf_res"]]
-        data["country"] = "1"
+        data["country"] = "010"
     elif data["cod_mun_res"] in city_dict.keys():
         data["city"] = city_dict[data["cod_mun_res"]]
         data["state"] = data["city"][0:2]
-        data["country"] = "1"
+        data["country"] = "010"
     else:
         data["city"] = None
         data["state"] = None
@@ -243,10 +243,10 @@ def transform_to_ibge_code(
         data["birth_city_cod"] = city_dict[data["cod_mun_nasc"]]
         data["birth_state_cod"] = state_dict[data["uf_nasc"]]
         data["birth_country_cod"] = country_dict[data['cod_pais_nasc']]
-    elif data["cod_mun_nasc"] in city_dict.keys():
+    elif (data["cod_mun_nasc"] in city_dict.keys()) & (data["cod_pais_nasc"] in country_dict.keys()):
         data["birth_city_cod"] = city_dict[data["cod_mun_nasc"]]
         data["birth_state_cod"] = data["birth_city_code"][0:2]
-        data["birth_country_cod"] = "010"
+        data["birth_country_cod"] = country_dict[data['cod_pais_nasc']]
     else:
         pass
 

@@ -8,6 +8,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.smsrio.constants import constants as smsrio_constants
+from pipelines.prontuarios.std.smsrio.schedules import smsrio_std_daily_update_schedule
 from pipelines.prontuarios.std.smsrio.tasks import (
     define_constants,
     format_json,
@@ -100,3 +101,5 @@ smsrio_standardization.run_config = KubernetesRun(
     ],
     memory_limit="5Gi",
 )
+
+smsrio_standardization.schedule = smsrio_std_daily_update_schedule

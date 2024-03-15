@@ -241,18 +241,13 @@ def transform_to_ibge_code(
     if (data["municipio"] in city_name_dict.keys()) & (data["uf"] in state_dict.keys()):
         data["city"] = city_name_dict[data["municipio"]]
         data["state"] = state_dict[data["uf"]]
+        data["country"] = "010" 
     elif data["municipio"] in city_name_dict.keys():
         data["city"] = city_name_dict[data["municipio"]]
         data["state"] = data["city"][0:2]
+        data["country"] = "010" 
     else:
         data["city"] = None
         data["state"] = None
-
-    # Normalizando pais para código IBGE
-    data["country"] = "1"  # n achei info
-    # if data['cod_pais_nasc'] in country_dict.keys():
-    #     data['birth_country_cod'] = country_dict[data['cod_pais_nasc']]
-    # else:
-    #     data['birth_country_cod'] = None
 
     return data
