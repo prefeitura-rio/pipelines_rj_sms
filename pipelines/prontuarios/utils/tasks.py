@@ -194,6 +194,7 @@ def rename_current_flow_run(
 
     params = [f"{key}={value}" for key, value in kwargs.items()]
     params.append(f"env={environment}")
+    params = sorted(params)
 
     flow_run_name = f"{title} ({', '.join(params)}): {flow_run_scheduled_time}"
 
@@ -315,8 +316,9 @@ def get_healthcenter_name_from_cnes(cnes: str) -> str:
         raise KeyError(f"CNES {cnes} not found in the database")
 
     nome_limpo = unidade.iloc[0]["nome_limpo"]
+    ap = unidade.iloc[0]["area_programatica"]
 
-    return nome_limpo
+    return f"(AP{ap}) {nome_limpo}"
 
 
 @task
