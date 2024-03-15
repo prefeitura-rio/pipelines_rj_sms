@@ -7,6 +7,7 @@ import pandas as pd
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 
+from datetime import timedelta
 from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_none_records,
     drop_invalid_records,
@@ -25,7 +26,7 @@ from pipelines.prontuarios.std.formatters.vitai.patient import (
 
 
 @task
-def get_params(start_datetime: str, end_datetime: str) -> dict:
+def get_params(start_datetime: str) -> dict:
     """
     Creating params
     Args:
@@ -35,6 +36,8 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
     Returns:
         dict : params dictionary
     """
+    
+    end_datetime = start_datetime + timedelta(days=1)
     return {
         "source_start_datetime": start_datetime,
         "source_end_datetime": end_datetime,
