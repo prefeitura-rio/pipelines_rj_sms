@@ -7,9 +7,9 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
-from pipelines.prontuarios.std.smsrio.constants import constants as smsrio_constants
-from pipelines.prontuarios.std.smsrio.schedules import smsrio_std_daily_update_schedule
-from pipelines.prontuarios.std.smsrio.tasks import (
+from pipelines.prontuarios.std.vitai.constants import constants as vitai_constants
+from pipelines.prontuarios.std.vitai.schedules import vitai_std_daily_update_schedule
+from pipelines.prontuarios.std.vitai.tasks import (
     define_constants,
     format_json,
     get_params,
@@ -23,8 +23,8 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
 
 with Flow(
-    name="Prontuários (SMSRio) - Padronização de Pacientes",
-) as smsrio_standardization:
+    name="Prontuários (Vitai) - Padronização de Pacientes",
+) as vitai_standardization:
     #####################################
     # Parameters
     #####################################
@@ -38,10 +38,10 @@ with Flow(
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
-        infisical_path=smsrio_constants.INFISICAL_PATH.value,
+        infisical_path=vitai_constants.INFISICAL_PATH.value,
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
-        infisical_api_username=smsrio_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=smsrio_constants.INFISICAL_API_PASSWORD.value,
+        infisical_api_username=vitai_constants.INFISICAL_API_USERNAME.value,
+        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value,
         upstream_tasks=[credential_injection],
     )
 
@@ -69,7 +69,9 @@ with Flow(
     # Task Section #2 - Transform Data
     ####################################
 
-    lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants()
+    city_name_dict, state_dict, country_dict = define_constants(
+        upstream_tasks=[credential_injection]
+    )
 
     format_patient_list = format_json(
         raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
@@ -77,11 +79,9 @@ with Flow(
 
     std_patient_list = standartize_data(
         raw_data=format_patient_list,
-        logradouros_dict=logradouros_dict,
-        city_dict=city_dict,
+        city_name_dict=city_name_dict,
         state_dict=state_dict,
         country_dict=country_dict,
-        lista_campos_api=lista_campos_api,
         upstream_tasks=[unmapped(credential_injection)],
     )
 
@@ -94,9 +94,9 @@ with Flow(
     )
 
 
-smsrio_standardization.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-smsrio_standardization.executor = LocalDaskExecutor(num_workers=4)
-smsrio_standardization.run_config = KubernetesRun(
+vitai_standardization.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitai_standardization.executor = LocalDaskExecutor(num_workers=4)
+vitai_standardization.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -104,4 +104,5 @@ smsrio_standardization.run_config = KubernetesRun(
     memory_limit="5Gi",
 )
 
-smsrio_standardization.schedule = smsrio_std_daily_update_schedule
+
+vitai_standardization.schedule = vitai_std_daily_update_schedule
