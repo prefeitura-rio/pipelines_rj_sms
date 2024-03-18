@@ -48,12 +48,18 @@ def build_additional_fields(
 
     items = []
     for data in data_list:
+        try:
+            patient_cpf = cpf_get_function(data)
+            birth_date = birth_data_get_function(data)
+            source_updated_at = source_updated_at_get_function(data)
+        except TypeError:
+            continue
+
         # ------------------
         # Patient CPF and Patient Code
         # ------------------
-        patient_cpf = cpf_get_function(data)
         if patient_cpf is None:
-            patient_cpf = ""
+            continue
         clean_patient_cpf = re.sub(r"\D", "", patient_cpf)
 
         birth_date = birth_data_get_function(data)
@@ -64,7 +70,6 @@ def build_additional_fields(
         # ------------------
         # Source Updated At
         # ------------------
-        source_updated_at = source_updated_at_get_function(data)
         if source_updated_at is None:
             source_updated_at = birth_date
         else:
@@ -75,7 +80,6 @@ def build_additional_fields(
         # ------------------
         # Joining
         # ------------------
-
         group = {
             "patient_cpf": clean_patient_cpf,
             "patient_code": patient_code,
