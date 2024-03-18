@@ -6,9 +6,7 @@ import prefect
 from pipelines.utils.infisical import inject_bd_credentials
 
 
-def gcp_task(
-    fn: Callable = None, **task_init_kwargs: Any
-) -> Union[
+def gcp_task(fn: Callable = None, **task_init_kwargs: Any) -> Union[
     prefect.tasks.core.function.FunctionTask,
     Callable[[Callable], prefect.tasks.core.function.FunctionTask],
 ]:
