@@ -4,6 +4,7 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
+
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
@@ -29,7 +30,9 @@ from pipelines.prontuarios.utils.tasks import (
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
-    authenticated_wait_for_flow_run as wait_for_flow_run
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
 )
 
 # ==============================
@@ -136,18 +139,11 @@ with Flow(
     MIN_DATE = Parameter("minimum_date", default="", required=False)
 
     with case(RENAME_FLOW, True):
-        rename_current_flow_run(
-            environment=ENVIRONMENT
-        )
+        rename_current_flow_run(environment=ENVIRONMENT)
 
-    parameter_list = create_parameter_list(
-        environment=ENVIRONMENT,
-        minimum_date=MIN_DATE
-    )
+    parameter_list = create_parameter_list(environment=ENVIRONMENT, minimum_date=MIN_DATE)
 
-    project_name = get_project_name(
-        environment=ENVIRONMENT
-    )
+    project_name = get_project_name(environment=ENVIRONMENT)
 
     current_flow_run_labels = get_current_flow_labels()
 
