@@ -4,12 +4,13 @@ import datetime
 import prefect
 import requests
 from google.cloud import bigquery
-from prefect import task
+
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_api_url(api_url_list):
-    return api_url_list.to_dict("records")
+def get_api_url(api_url_table):
+    return api_url_table.to_dict("records")
 
 
 @task

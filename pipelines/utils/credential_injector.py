@@ -2,11 +2,12 @@
 from typing import Any, Callable, Union
 
 import prefect
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 
 from pipelines.utils.infisical import inject_bd_credentials
 
 
-def gcp_task(
+def authenticated_task(
     fn: Callable = None, **task_init_kwargs: Any
 ) -> Union[
     prefect.tasks.core.function.FunctionTask,
@@ -56,3 +57,33 @@ def gcp_task(
             fn=inject_credential_setting_in_function(any_function),
             **task_init_kwargs,
         )
+
+
+@authenticated_task()
+def authenticated_create_flow_run(**kwargs):
+    """
+    Creates a flow run using the provided keyword arguments.
+
+    Args:
+        **kwargs: Keyword arguments to be passed to the `create_flow_run.run` function.
+
+    Returns:
+        Any: The result of the `create_flow_run.run` function.
+
+    """
+    return create_flow_run.run(**kwargs)
+
+
+@authenticated_task()
+def authenticated_wait_for_flow_run(**kwargs):
+    """
+    Waits for a flow run using the provided keyword arguments.
+
+    Args:
+        **kwargs: Keyword arguments to be passed to the `wait_for_flow_run.run` function.
+
+    Returns:
+        Any: The result of the `wait_for_flow_run.run` function.
+
+    """
+    return wait_for_flow_run.run(**kwargs)

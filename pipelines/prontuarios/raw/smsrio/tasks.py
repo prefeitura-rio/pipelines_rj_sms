@@ -14,7 +14,7 @@ from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_form
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 
 # from prefect import task
-from pipelines.utils.credential_injector import gcp_task as task
+from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import get_secret_key
 
 
