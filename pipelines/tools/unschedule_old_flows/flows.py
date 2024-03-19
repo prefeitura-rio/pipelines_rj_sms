@@ -12,7 +12,7 @@ from pipelines.tools.unschedule_old_flows.tasks import (
     query_not_active_flows,
 )
 
-with Flow("Tool: Desagendador de Flows Antigos") as janitor_flow:
+with Flow("Tool: Desagendador de Flows Antigos") as unscheduler_flow:
     client = get_prefect_client()
 
     flows = query_active_flow_names(prefect_client=client)
@@ -21,8 +21,8 @@ with Flow("Tool: Desagendador de Flows Antigos") as janitor_flow:
 
     cancel_flows.map(flows=archived_flow_runs, prefect_client=unmapped(client))
 
-janitor_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-janitor_flow.run_config = KubernetesRun(
+unscheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+unscheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
