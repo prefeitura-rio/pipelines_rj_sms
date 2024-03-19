@@ -2,8 +2,8 @@
 from typing import Any, Callable, Union
 
 import prefect
-
 from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
+
 from pipelines.utils.infisical import inject_bd_credentials
 
 
@@ -58,6 +58,7 @@ def authenticated_task(
             **task_init_kwargs,
         )
 
+
 @authenticated_task()
 def authenticated_create_flow_run(**kwargs):
     """
@@ -71,6 +72,7 @@ def authenticated_create_flow_run(**kwargs):
 
     """
     return create_flow_run.run(**kwargs)
+
 
 @authenticated_task()
 def authenticated_wait_for_flow_run(**kwargs):
