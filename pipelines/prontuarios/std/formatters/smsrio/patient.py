@@ -26,7 +26,7 @@ def standardize_race(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if (data["racaCor"] is None) | (data["nacionalidade"] == ""):
+    if (data["racaCor"] is None) | (data["racaCor"] == ""):
         return data
     elif bool(re.search("SEM INFO", data["racaCor"])):
         return data
@@ -138,18 +138,17 @@ def standardize_address_data(
     data = clean_postal_code_info(data)
 
     address_dic = {
-        "use": None,  # nao sei onde tem essa info ainda
-        "type": None,  # nao sei onde tem essa info ainda
+        "use": None,
+        "type": None,
         "line": format_address("end_tp_logrado_nome", "end_logrado", "end_numero", "end_complem"),
         "city": data["city"],
         "country": data["country"],
         "state": data["state"],
         "postal_code": data["postal_code"],
-        "start": None,  # nao sei onde tem essa info ainda
-        "end": None,  # nao sei onde tem essa info ainda
+        "start": None,
+        "end": None,
     }
 
-    # Testa valores obrigatorios, se algum faltar nao retornamos endereço
     for value in list(itemgetter("line", "city", "country", "state")(address_dic)):
         if (value is None) | (pd.isna(value)):
             return data
@@ -178,18 +177,18 @@ def standardize_telecom_data(data: dict) -> dict:
         else:
             telecom_dic = {
                 "system": type_telecom,
-                "use": None,  # nao sei onde tem essa info ainda
+                "use": None,
                 "value": record,
-                "rank": None,  # nao sei onde tem essa info ainda
-                "start": None,  # nao sei onde tem essa info ainda
-                "end": None,  # nao sei onde tem essa info ainda
+                "rank": None,
+                "start": None,
+                "end": None,
             }
 
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
             return telecom_dic
 
-    telefone = format_telecom(data["telefone"], "phone")  # nao aceita lista por eqt
-    email = format_telecom(data["email"], "email")  # nao aceita lista por eqt
+    telefone = format_telecom(data["telefone"], "phone")
+    email = format_telecom(data["email"], "email")
 
     telecom_list = [contact for contact in [telefone, email] if contact is not None]
 
