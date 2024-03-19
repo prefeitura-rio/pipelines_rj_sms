@@ -9,11 +9,11 @@ from pipelines.constants import constants
 from pipelines.prontuarios.std.extracao.vitai.tasks import (
     get_data_from_db,
     insert_data_to_db,
+    get_params
 )
 from pipelines.prontuarios.std.vitai.tasks import (
     define_constants,
     format_json,
-    get_params,
     standartize_data,
 )
 

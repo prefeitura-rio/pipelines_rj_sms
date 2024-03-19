@@ -13,7 +13,7 @@ from pipelines.prontuarios.std.extracao.utils import (
     run_flow_smsrio,
     run_flow_vitai,
 )
-from pipelines.utils.tasks import get_secret_key
+from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials
 
 with Flow(
     name="Prontuários (SMSRio e Vitai) - Padronização de Pacientes (carga histórica)",
@@ -32,30 +32,38 @@ with Flow(
     ####################################
     # Set environment
     ####################################
+    
+    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
     DATABASE = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DATABASE.value,
         environment=ENVIRONMENT,
+        upstream_tasks=[credential_injection],
     )
 
     USER = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DB_USER.value,
         environment=ENVIRONMENT,
+        upstream_tasks=[credential_injection],
     )
 
     PASSWORD = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DB_PASSWORD.value,
         environment=ENVIRONMENT,
+        upstream_tasks=[credential_injection],
     )
 
     IP = get_secret_key(
-        secret_path="/", secret_name=smsrio_constants.INFISICAL_IP.value, environment=ENVIRONMENT
+        secret_path="/", 
+        secret_name=smsrio_constants.INFISICAL_IP.value, 
+        environment=ENVIRONMENT,
+        upstream_tasks=[credential_injection]
     )
 
-    request_params = get_params(START_DATETIME, END_DATETIME)
+    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
 
     datetime_range_list_smsrio = get_datetime_in_range(
         USER=USER,
@@ -64,6 +72,7 @@ with Flow(
         IP=IP,
         request_params=request_params,
         system="smsrio",
+        upstream_tasks=[credential_injection],
     )
 
     run = run_flow_smsrio(
@@ -72,6 +81,7 @@ with Flow(
         USER=USER,
         PASSWORD=PASSWORD,
         IP=IP,
+        upstream_tasks=[credential_injection],
     )
 
     datetime_range_list_vitai = get_datetime_in_range(
@@ -81,6 +91,7 @@ with Flow(
         IP=IP,
         request_params=request_params,
         system="vitai",
+        upstream_tasks=[credential_injection],
     )
 
     run_flow_vitai(
@@ -90,6 +101,7 @@ with Flow(
         PASSWORD=PASSWORD,
         IP=IP,
         run=run,
+        upstream_tasks=[credential_injection],
     )
 
 
