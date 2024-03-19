@@ -12,6 +12,7 @@ from pipelines.prontuarios.raw.vitai.schedules import vitai_daily_update_schedul
 from pipelines.prontuarios.raw.vitai.tasks import (
     create_parameter_list,
     extract_data_from_api,
+    assert_api_availability,
     get_dates_in_range,
     get_entity_endpoint_name,
     get_vitai_api_token,
@@ -80,11 +81,17 @@ with Flow(
         maximum_date=maximum_date,
     )
 
+    assertion_task = assert_api_availability(
+        cnes=CNES, 
+        method="request"
+    )
+
     daily_data_list = extract_data_from_api.map(
         cnes=unmapped(CNES),
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
         vitai_api_token=unmapped(vitai_api_token),
+        upstream_tasks=[unmapped(assertion_task)],
     )
 
     ####################################

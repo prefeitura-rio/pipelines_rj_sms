@@ -5,6 +5,10 @@ Tasks for Vitai Raw Data Extraction
 from datetime import date, timedelta
 
 import prefect
+from ping3 import ping
+import requests
+
+from prefect.engine.signals import FAIL
 
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.raw.vitai.utils import format_date_to_request
@@ -34,6 +38,48 @@ def get_vitai_api_token(environment: str = "dev") -> str:
     )
     return token
 
+
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
+def assert_api_availability(
+    cnes: str,
+    method: str = "ping"
+):
+    """
+    Checks if the API for the given CNES is available by pinging the host.
+
+    Args:
+        cnes (str): The CNES (National Registry of Health Establishments) code.
+
+    Raises:
+        ValueError: If the API for the given CNES is unavailable.
+
+    Returns:
+        None
+    """
+    logger = prefect.context.get("logger")
+
+    url = vitai_constants.API_CNES_TO_URL.value[cnes]
+
+    if method == "ping":
+        host = url.split("://")[1].split("/")[0]
+        result = ping(host)
+        
+        if (result is None) or (result is False):
+            raise FAIL(f"[Ping Test] {host} Unavailable (result={result})")
+        else:
+            logger.info(f"[Ping Test] {host} Available ({result} seg)")
+            return
+    elif method == "request":
+        try:
+            requests.get(
+                url,
+                timeout=10
+            )
+        except requests.exceptions.Timeout:
+            raise FAIL(f"[Request Test] {url} Unavailable (timeout)")
+        else:
+            logger.info(f"[Request Test] {url} Available")
+            return
 
 @task(max_retries=3, retry_delay=timedelta(minutes=3))
 @stored_variable_converter(output_mode="transform")
