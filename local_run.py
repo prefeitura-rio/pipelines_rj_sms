@@ -11,9 +11,7 @@ from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 flows_run_cases = [
     # (vitacare_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     # (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
-    (
-        smsrio_standardization,{}
-    ),
+    (smsrio_standardization, {}),
 ]
 
 

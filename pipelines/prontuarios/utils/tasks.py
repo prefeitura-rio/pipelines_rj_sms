@@ -7,7 +7,7 @@ Utilities Tasks for prontuario system pipelines.
 import gc
 import hashlib
 import json
-from datetime import datetime,date, timedelta
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 import prefect
@@ -117,6 +117,7 @@ def get_flow_scheduled_day() -> date:
     scheduled_date = scheduled_start_time.date() - timedelta(days=1)
     return scheduled_date
 
+
 @task
 def get_std_flow_scheduled_day() -> date:
     """
@@ -130,6 +131,7 @@ def get_std_flow_scheduled_day() -> date:
     scheduled_start_time = prefect.context.get("scheduled_start_time")
     scheduled_date = scheduled_start_time - timedelta(days=1)
     return scheduled_date
+
 
 @task
 @stored_variable_converter()
