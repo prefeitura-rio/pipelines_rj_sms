@@ -57,7 +57,7 @@ def query_active_flow_names(environment="dev", prefect_client=None):
 
 
 @task
-def query_not_active_flows(flows, environment='dev', prefect_client=None):
+def query_not_active_flows(flows, environment="dev", prefect_client=None):
     """
     Queries the graphql API for scheduled flow_runs of
     archived versions of <flow_name>
@@ -104,7 +104,7 @@ def query_not_active_flows(flows, environment='dev', prefect_client=None):
         "last_version": last_version,
         "now": now,
         "offset": 0,
-        "project_name": project_name
+        "project_name": project_name,
     }
     archived_flows = []
     response = prefect_client.graphql(query=query, variables=variables)["data"]
@@ -165,5 +165,5 @@ def cancel_flows(flows, prefect_client: Client = None) -> None:
         except Exception:
             log(traceback.format_exc())
             log(f"Flow {flow['id']} could not be cancelled")
-    
+
     log(f"# of Cancelled flows: {len(cancelled_flows)}")
