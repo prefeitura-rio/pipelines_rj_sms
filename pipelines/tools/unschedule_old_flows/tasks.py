@@ -70,7 +70,7 @@ def query_not_active_flows(flows, environment="dev", prefect_client=None):
     flow_name, last_version = flows
     now = datetime.now().isoformat()
     query = """
-        query($flow_name: String, $last_version: Int, $now: timestamptz!, $offset: Int){
+        query($flow_name: String, $last_version: Int, $now: timestamptz!, $offset: Int, $project_name: String){
             flow(
                 where:{
                     name: {_eq:$flow_name},
