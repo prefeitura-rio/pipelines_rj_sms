@@ -26,7 +26,7 @@ from pipelines.prontuarios.utils.tasks import (
     rename_current_flow_run,
     transform_split_dataframe,
 )
-from pipelines.utils.tasks import inject_gcp_credentials, load_file_from_gcs_bucket
+from pipelines.utils.tasks import load_file_from_gcs_bucket
 
 ####################################
 # Daily Routine Flow
@@ -46,10 +46,9 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
     database_url = get_smsrio_database_url(
-        environment=ENVIRONMENT, upstream_tasks=[credential_injection]
+        environment=ENVIRONMENT
     )
 
     api_token = get_api_token(
@@ -57,16 +56,14 @@ with Flow(
         infisical_path=smsrio_constants.INFISICAL_PATH.value,
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
         infisical_api_username=smsrio_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=smsrio_constants.INFISICAL_API_PASSWORD.value,
-        upstream_tasks=[credential_injection],
+        infisical_api_password=smsrio_constants.INFISICAL_API_PASSWORD.value
     )
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(
             environment=ENVIRONMENT,
             unidade="SMSRIO",
-            is_initial_extraction=IS_INITIAL_EXTRACTION,
-            upstream_tasks=[credential_injection],
+            is_initial_extraction=IS_INITIAL_EXTRACTION
         )
 
     ####################################
@@ -75,18 +72,16 @@ with Flow(
     with case(IS_INITIAL_EXTRACTION, True):
         patient_data_gcs = load_file_from_gcs_bucket(
             bucket_name=smsrio_constants.SMSRIO_BUCKET.value,
-            file_name=smsrio_constants.SMSRIO_FILE_NAME.value,
-            upstream_tasks=[credential_injection],
+            file_name=smsrio_constants.SMSRIO_FILE_NAME.value
         )
 
     with case(IS_INITIAL_EXTRACTION, False):
-        target_day = get_flow_scheduled_day(upstream_tasks=[credential_injection])
+        target_day = get_flow_scheduled_day()
 
         patient_data_db = extract_patient_data_from_db(
             db_url=database_url,
             time_window_start=target_day,
             time_window_duration=1,
-            upstream_tasks=[credential_injection],
         )
 
     patient_data = merge(patient_data_gcs, patient_data_db)
@@ -95,11 +90,11 @@ with Flow(
     # Task Section #2 - Prepare data to load
     ####################################
     patient_valid_data = transform_filter_invalid_cpf(
-        dataframe=patient_data, cpf_column="patient_cpf", upstream_tasks=[credential_injection]
+        dataframe=patient_data, cpf_column="patient_cpf"
     )
 
     patient_data_batches = transform_split_dataframe(
-        dataframe=patient_valid_data, batch_size=500, upstream_tasks=[credential_injection]
+        dataframe=patient_valid_data, batch_size=500
     )
 
     ####################################
@@ -109,18 +104,17 @@ with Flow(
         patient_data=patient_data_batches,
         environment=unmapped(ENVIRONMENT),
         api_token=unmapped(api_token),
-        upstream_tasks=[unmapped(credential_injection)],
     )
 
 
 sms_prontuarios_raw_smsrio.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=2)
+sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=5)
 sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="8Gi",
+    memory_request="13.93Gi",
     memory_limit="13.93Gi",
 )
 
