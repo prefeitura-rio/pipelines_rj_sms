@@ -47,23 +47,19 @@ with Flow(
     # Set environment
     ####################################
 
-    database_url = get_smsrio_database_url(
-        environment=ENVIRONMENT
-    )
+    database_url = get_smsrio_database_url(environment=ENVIRONMENT)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
         infisical_path=smsrio_constants.INFISICAL_PATH.value,
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
         infisical_api_username=smsrio_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=smsrio_constants.INFISICAL_API_PASSWORD.value
+        infisical_api_password=smsrio_constants.INFISICAL_API_PASSWORD.value,
     )
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(
-            environment=ENVIRONMENT,
-            unidade="SMSRIO",
-            is_initial_extraction=IS_INITIAL_EXTRACTION
+            environment=ENVIRONMENT, unidade="SMSRIO", is_initial_extraction=IS_INITIAL_EXTRACTION
         )
 
     ####################################
@@ -72,7 +68,7 @@ with Flow(
     with case(IS_INITIAL_EXTRACTION, True):
         patient_data_gcs = load_file_from_gcs_bucket(
             bucket_name=smsrio_constants.SMSRIO_BUCKET.value,
-            file_name=smsrio_constants.SMSRIO_FILE_NAME.value
+            file_name=smsrio_constants.SMSRIO_FILE_NAME.value,
         )
 
     with case(IS_INITIAL_EXTRACTION, False):
@@ -93,9 +89,7 @@ with Flow(
         dataframe=patient_data, cpf_column="patient_cpf"
     )
 
-    patient_data_batches = transform_split_dataframe(
-        dataframe=patient_valid_data, batch_size=500
-    )
+    patient_data_batches = transform_split_dataframe(dataframe=patient_valid_data, batch_size=500)
 
     ####################################
     # Task Section #3 - Loading data
