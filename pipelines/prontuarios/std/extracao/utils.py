@@ -37,10 +37,11 @@ def run_flow_smsrio(datetime_range_list: list, DATABASE: str, USER: str, PASSWOR
         }
 
         smsrio_standardization_historical.run(**params)
+    return 1
 
 
 @task
-def run_flow_vitai(datetime_range_list: list, DATABASE: str, USER: str, PASSWORD: str, IP: str):
+def run_flow_vitai(datetime_range_list: list, DATABASE: str, USER: str, PASSWORD: str, IP: str,run: int):
     """
     Args:
         datetime_range_list (list): List of date ranges to iterate with std flow
@@ -49,19 +50,19 @@ def run_flow_vitai(datetime_range_list: list, DATABASE: str, USER: str, PASSWORD
         PASSWORD (str): Database PASSWORD credential
         IP (str): Database IP credential
     """
+    if run == 1:
+        for start_datetime, end_datetime, _ in datetime_range_list:
+            params = {
+                "source_start_datetime": start_datetime,
+                "source_end_datetime": end_datetime,
+                "database": DATABASE,
+                "user": USER,
+                "password": PASSWORD,
+                "ip": IP,
+                "run_on_schedule": False,
+            }
 
-    for start_datetime, end_datetime, _ in datetime_range_list:
-        params = {
-            "source_start_datetime": start_datetime,
-            "source_end_datetime": end_datetime,
-            "database": DATABASE,
-            "user": USER,
-            "password": PASSWORD,
-            "ip": IP,
-            "run_on_schedule": False,
-        }
-
-        vitai_standardization_historical.run(**params)
+            vitai_standardization_historical.run(**params)
 
 
 @task

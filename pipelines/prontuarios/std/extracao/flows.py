@@ -66,7 +66,7 @@ with Flow(
         system="smsrio",
     )
 
-    run_flow_smsrio(
+    run = run_flow_smsrio(
         datetime_range_list=datetime_range_list_smsrio,
         DATABASE=DATABASE,
         USER=USER,
@@ -89,6 +89,7 @@ with Flow(
         USER=USER,
         PASSWORD=PASSWORD,
         IP=IP,
+        run=run
     )
 
 
