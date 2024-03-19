@@ -10,13 +10,15 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def query_active_flow_names(prefix="%SMTR%", prefect_client=None):
+def query_active_flow_names(environment="dev", prefect_client=None):
+    project_name = "staging" if environment == "dev" else "production"
+
     query = """
-        query ($offset: Int){
+        query ($offset: Int, $project_name: String){
             flow(
                 where: {
                     archived: {_eq: false},
-                    project: {name:{_eq:"main"}}
+                    project: {name:{_eq:$project_name}}
                 }
                 offset: $offset
             ){
@@ -27,7 +29,7 @@ def query_active_flow_names(prefix="%SMTR%", prefect_client=None):
     """
     if not prefect_client:
         prefect_client = Client()
-    variables = {"offset": 0}
+    variables = {"offset": 0, "project_name": project_name}
 
     response = prefect_client.graphql(query=query, variables=variables)["data"]
     active_flows = []
