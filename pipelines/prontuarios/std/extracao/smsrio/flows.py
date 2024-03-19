@@ -8,8 +8,8 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.prontuarios.std.extracao.smsrio.tasks import (
     get_data_from_db,
+    get_params,
     insert_data_to_db,
-    get_params
 )
 from pipelines.prontuarios.std.smsrio.tasks import (
     define_constants,
