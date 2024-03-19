@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103
+# pylint: disable=C0103, E1123
 """
 SMSRio dumping flows
 """
@@ -70,7 +70,7 @@ with Flow(
         secret_name=INFISICAL_DBURL,
         environment="prod",
         upstream_tasks=[inject_gcp_credentials_task],
-    )
+    ) 
 
     create_folders_task = create_folders(upstream_tasks=[get_secret_task])
 

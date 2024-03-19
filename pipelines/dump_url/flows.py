@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103
+# pylint: disable=C0103, E1123
 """
 SMSRio dumping flows
 """
