@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
 from typing import Tuple
 
 # from unidecode import unidecode
@@ -25,19 +26,20 @@ from pipelines.prontuarios.std.formatters.vitai.patient import (
 
 
 @task
-def get_params(start_datetime: str, end_datetime: str) -> dict:
+def get_params(start_datetime: str) -> dict:
     """
     Creating params
     Args:
         start_datetime (str) : initial date extraction
-        end_datetime (str) : final date extraction
 
     Returns:
         dict : params dictionary
     """
+
+    end_datetime = start_datetime + timedelta(days=1)
     return {
-        "source_start_datetime": start_datetime,
-        "source_end_datetime": end_datetime,
+        "source_start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
+        "source_end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
         "datasource_system": "vitai",
     }
 

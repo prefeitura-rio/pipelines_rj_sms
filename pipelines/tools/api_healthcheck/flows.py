@@ -12,27 +12,24 @@ from pipelines.tools.api_healthcheck.tasks import (
     get_api_url,
     insert_results,
 )
-from pipelines.utils.tasks import inject_gcp_credentials, load_file_from_bigquery
+from pipelines.utils.tasks import load_file_from_bigquery
 
 with Flow(
-    name="Monitoramento de API",
+    name="Tool: Monitoramento de API",
 ) as monitoramento_api:
     ENVIRONMENT = Parameter("environment", default="dev")
-
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
     api_url_table = load_file_from_bigquery(
         project_name="rj-sms",
         dataset_name="gerenciamento",
         table_name="api_url_list",
-        upstream_tasks=[credential_injection],
     )
 
-    api_url_list = get_api_url(api_url_table)
+    api_url_list = get_api_url(api_url_table=api_url_table)
 
-    results = check_api_health.map(api_url_list)
+    results = check_api_health.map(api_info=api_url_list)
 
-    insert_results(results)
+    insert_results(rows_to_insert=results)
 
 monitoramento_api.schedule = update_schedule
 monitoramento_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

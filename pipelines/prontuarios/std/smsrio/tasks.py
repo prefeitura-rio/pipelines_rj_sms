@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
 from typing import Tuple
 
 import pandas as pd
@@ -23,19 +24,19 @@ from pipelines.prontuarios.std.formatters.smsrio.patient import (
 
 
 @task
-def get_params(start_datetime: str, end_datetime: str) -> dict:
+def get_params(start_datetime: str) -> dict:
     """
     Creating params
     Args:
         start_datetime (str) : initial date extraction
-        end_datetime (str) : final date extraction
 
     Returns:
         dict : params dictionary
     """
+    end_datetime = start_datetime + timedelta(days=1)
     return {
-        "source_start_datetime": start_datetime,
-        "source_end_datetime": end_datetime,
+        "source_start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
+        "source_end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
         "datasource_system": "smsrio",
     }
 
@@ -141,22 +142,22 @@ def standartize_data(
         list: Data ready to load to API
     """
     log("Starting standardization of race field")
-    patients_json_std_race = list(map(standardize_race, raw_data))
+    patients_json_std = list(map(standardize_race, raw_data))
 
     log("Starting standardization of nationality field")
-    patients_json_std_nationality = list(map(standardize_nationality, patients_json_std_race))
+    patients_json_std = list(map(standardize_nationality, patients_json_std))
 
     log("Starting standardization of parents name field")
-    patients_json_std_parents = list(map(standardize_parents_names, patients_json_std_nationality))
+    patients_json_std = list(map(standardize_parents_names, patients_json_std))
 
     log("Starting standardization of cns field")
-    patients_json_std_cns = list(map(standardize_cns_list, patients_json_std_parents))
+    patients_json_std = list(map(standardize_cns_list, patients_json_std))
 
     log("Starting standardization of decease field")
-    patients_json_std_decease = list(map(standardize_decease_info, patients_json_std_cns))
+    patients_json_std = list(map(standardize_decease_info, patients_json_std))
 
     log("Starting standardization of address field")
-    patients_json_std_address = list(
+    patients_json_std = list(
         map(
             lambda p: standardize_address_data(
                 data=p,
@@ -165,14 +166,14 @@ def standartize_data(
                 state_dict=state_dict,
                 country_dict=country_dict,
             ),
-            patients_json_std_decease,
+            patients_json_std,
         )
     )
 
     log("Starting standardization of telecom field")
-    patients_json_std_telecom = list(map(standardize_telecom_data, patients_json_std_address))
+    patients_json_std = list(map(standardize_telecom_data, patients_json_std))
 
     log("Preparing data to load")
-    patients_json_std_clean = list(map(lambda x: prepare_to_load(x), patients_json_std_telecom))
+    patients_json_std = list(map(lambda x: prepare_to_load(x), patients_json_std))
 
-    return patients_json_std_clean
+    return patients_json_std

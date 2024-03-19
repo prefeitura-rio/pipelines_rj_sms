@@ -159,7 +159,7 @@ def clean_name_fields(name: str) -> str:
         name = unidecode(name)
 
         if bool(re.search(r"[^\w ]", name)) | len(name.split()) < 2:
-            return ""  # mudar quando Pedro mudar api para nome nao ser obg
+            return ""
         else:
             return name
 
@@ -222,7 +222,7 @@ def clean_postal_code_info(data: dict) -> dict:
             data["postal_code"] = None
             return data
         else:
-            data["postal_code"] = data["end_cep"]  # [0:5] + '-' data['end_cep'][5:9]
+            data["postal_code"] = data["end_cep"]
     return data
 
 
@@ -246,8 +246,6 @@ def clean_phone_records(data: dict) -> dict:
         if data[phone_field] is not None:
             data[phone_field] = re.sub(r"[()-]", "", data[phone_field])
             if (len(data[phone_field]) < 8) | (len(data[phone_field]) > 12):
-                # tel fixos tem 8 digitos e contando com DDD sao 12 digitos,
-                # mas nao validamos DDD nem vimos se telefone celular tem 9 dig
                 data[phone_field] = None
             elif bool(
                 re.search(

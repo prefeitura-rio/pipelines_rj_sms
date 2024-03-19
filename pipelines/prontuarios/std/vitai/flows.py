@@ -8,13 +8,18 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.vitai.constants import constants as vitai_constants
+from pipelines.prontuarios.std.vitai.schedules import vitai_std_daily_update_schedule
 from pipelines.prontuarios.std.vitai.tasks import (
     define_constants,
     format_json,
     get_params,
     standartize_data,
 )
-from pipelines.prontuarios.utils.tasks import get_api_token, load_to_api
+from pipelines.prontuarios.utils.tasks import (
+    get_api_token,
+    get_std_flow_scheduled_day,
+    load_to_api,
+)
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
 
 with Flow(
@@ -24,8 +29,6 @@ with Flow(
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    START_DATETIME = Parameter("start_datetime", default="2024-02-06 18:24:00", required=False)
-    END_DATETIME = Parameter("end_datetime", default="2024-02-06 19:00:00", required=False)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     ####################################
@@ -52,7 +55,8 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
+    START_DATETIME = get_std_flow_scheduled_day(upstream_tasks=[credential_injection])
+    request_params = get_params(START_DATETIME, upstream_tasks=[credential_injection])
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords",
@@ -99,3 +103,6 @@ vitai_standardization.run_config = KubernetesRun(
     ],
     memory_limit="5Gi",
 )
+
+
+vitai_standardization.schedule = vitai_std_daily_update_schedule

@@ -3,7 +3,6 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -11,6 +10,7 @@ from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.raw.vitai.schedules import vitai_daily_update_schedule
 from pipelines.prontuarios.raw.vitai.tasks import (
+    assert_api_availability,
     create_parameter_list,
     extract_data_from_api,
     get_dates_in_range,
@@ -19,17 +19,22 @@ from pipelines.prontuarios.raw.vitai.tasks import (
     group_data_by_patient,
 )
 from pipelines.prontuarios.utils.tasks import (
-    force_garbage_collector,
     get_api_token,
     get_current_flow_labels,
     get_flow_scheduled_day,
+    get_healthcenter_name_from_cnes,
     get_project_name,
     load_to_api,
     rename_current_flow_run,
     transform_filter_valid_cpf,
     transform_to_raw_format,
 )
-from pipelines.utils.tasks import inject_gcp_credentials
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
 
 # ==============================
 # FLOW DE EXTRAÇÃO DE DADOS
@@ -50,9 +55,7 @@ with Flow(
     ####################################
     # Set environment
     ####################################
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
-
-    vitai_api_token = get_vitai_api_token(environment="prod", upstream_tasks=[credential_injection])
+    vitai_api_token = get_vitai_api_token(environment="prod")
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -60,33 +63,32 @@ with Flow(
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
         infisical_api_username=vitai_constants.INFISICAL_API_USERNAME.value,
         infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value,
-        upstream_tasks=[credential_injection],
     )
     with case(RENAME_FLOW, True):
+        healthcenter_name = get_healthcenter_name_from_cnes(cnes=CNES)
+
         rename_current_flow_run(
-            environment=ENVIRONMENT,
-            cnes=CNES,
-            entity_type=ENTITY,
-            upstream_tasks=[credential_injection],
+            environment=ENVIRONMENT, cnes=CNES, entity_type=ENTITY, unidade=healthcenter_name
         )
 
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    maximum_date = get_flow_scheduled_day(upstream_tasks=[credential_injection])
+    maximum_date = get_flow_scheduled_day()
 
     dates_of_interest = get_dates_in_range(
         minimum_date=MIN_DATE,
         maximum_date=maximum_date,
-        upstream_tasks=[credential_injection],
     )
+
+    assertion_task = assert_api_availability(cnes=CNES, method="request")
 
     daily_data_list = extract_data_from_api.map(
         cnes=unmapped(CNES),
         target_day=dates_of_interest,
         entity_name=unmapped(ENTITY),
         vitai_api_token=unmapped(vitai_api_token),
-        upstream_tasks=[unmapped(credential_injection)],
+        upstream_tasks=[unmapped(assertion_task)],
     )
 
     ####################################
@@ -95,11 +97,8 @@ with Flow(
     grouped_data = group_data_by_patient.map(
         data=daily_data_list,
         entity_type=unmapped(ENTITY),
-        upstream_tasks=[unmapped(credential_injection)],
     )
-    valid_data = transform_filter_valid_cpf.map(
-        objects=grouped_data, upstream_tasks=[unmapped(credential_injection)]
-    )
+    valid_data = transform_filter_valid_cpf.map(objects=grouped_data)
 
     ####################################
     # Task Section #3 - Prepare to Load
@@ -107,10 +106,9 @@ with Flow(
     request_bodies = transform_to_raw_format.map(
         json_data=valid_data,
         cnes=unmapped(CNES),
-        upstream_tasks=[unmapped(credential_injection)],
     )
 
-    endpoint_name = get_entity_endpoint_name(entity=ENTITY, upstream_tasks=[credential_injection])
+    endpoint_name = get_entity_endpoint_name(entity=ENTITY)
 
     ####################################
     # Task Section #4 - Load Data
@@ -120,10 +118,7 @@ with Flow(
         endpoint_name=unmapped(endpoint_name),
         api_token=unmapped(api_token),
         environment=unmapped(ENVIRONMENT),
-        upstream_tasks=[unmapped(credential_injection)],
     )
-
-    force_garbage_collector(upstream_tasks=[load_to_api_task])
 
 vitai_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 vitai_extraction.executor = LocalDaskExecutor(num_workers=5)
@@ -132,8 +127,8 @@ vitai_extraction.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="2Gi",
-    memory_limit="2Gi",
+    memory_request="3Gi",
+    memory_limit="3Gi",
 )
 
 # ==============================
@@ -147,37 +142,24 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", default=False)
     MIN_DATE = Parameter("minimum_date", default="", required=False)
 
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
-
     with case(RENAME_FLOW, True):
-        rename_current_flow_run(
-            environment=ENVIRONMENT,
-            upstream_tasks=[credential_injection],
-        )
+        rename_current_flow_run(environment=ENVIRONMENT)
 
-    parameter_list = create_parameter_list(
-        environment=ENVIRONMENT,
-        minimum_date=MIN_DATE,
-        upstream_tasks=[credential_injection],
-    )
+    parameter_list = create_parameter_list(environment=ENVIRONMENT, minimum_date=MIN_DATE)
 
-    project_name = get_project_name(
-        environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection],
-    )
+    project_name = get_project_name(environment=ENVIRONMENT)
 
-    current_flow_run_labels = get_current_flow_labels(upstream_tasks=[credential_injection])
+    current_flow_run_labels = get_current_flow_labels()
 
     created_flow_runs = create_flow_run.map(
         flow_name=unmapped("Prontuários (Vitai) - Extração de Dados"),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
-        upstream_tasks=[unmapped(credential_injection)],
     )
 
     wait_runs_task = wait_for_flow_run.map(
-        created_flow_runs,
+        flow_run_id=created_flow_runs,
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),

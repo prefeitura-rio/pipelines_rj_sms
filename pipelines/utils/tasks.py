@@ -13,26 +13,32 @@ import sys
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
-from io import StringIO
+from io import FileIO, StringIO
 from pathlib import Path
 
 import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token
+import gspread
 import pandas as pd
 import prefect
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
 from google.cloud import bigquery, storage
-from prefect import task
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseDownload
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.infisical import inject_bd_credentials
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.data_cleaning import remove_columns_accents
+from pipelines.utils.infisical import get_credentials_from_env, inject_bd_credentials
 
 
 @task
@@ -328,6 +334,86 @@ def download_ftp(
     ftp.quit()
 
     return output_path
+
+
+@task()
+def download_from_url(  # pylint: disable=too-many-arguments
+    url: str,
+    file_path,
+    file_name,
+    url_type: str = "google_sheet",
+    gsheets_sheet_order: int = 0,
+    gsheets_sheet_name: str = None,
+    gsheets_sheet_range: str = None,
+    csv_delimiter: str = ";",
+) -> None:
+    """
+    Downloads a file from a URL and saves it to a local file.
+    Try to do it without using lots of RAM.
+    It is not optimized for Google Sheets downloads.
+
+    Args:
+        url: URL to download from.
+        file_name: Name of the file to save to.
+        url_type: Type or URL that is being passed.
+            `google_sheet`-> Google Sheet URL.
+        gsheets_sheet_order: Worksheet index, in the case you want to select it by index. \
+            Worksheet indexes start from zero.
+        gsheets_sheet_name: Worksheet name, in the case you want to select it by name.
+        gsheets_sheet_range: Range in selected worksheet to get data from. Defaults to entire \
+            worksheet.
+
+    Returns:
+        None.
+    """
+    if not ".csv" in file_name:
+        file_name = file_name + ".csv"
+    filepath = os.path.join(file_path, file_name)
+
+    if url_type == "google_sheet":
+        if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+            raise ValueError(
+                "GOOGLE_APPLICATION_CREDENTIALS environment variable must be set to use this task."
+            )
+
+        credentials = get_credentials_from_env(
+            scopes=[
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive",
+            ]
+        )
+
+        url_prefix = "https://docs.google.com/spreadsheets/d/"
+
+        if not url.startswith(url_prefix):
+            raise ValueError(
+                "URL must start with https://docs.google.com/spreadsheets/d/" f"Invalid URL: {url}"
+            )
+
+        log(">>>>> URL is a Google Sheets URL, downloading directly")
+
+        gspread_client = gspread.authorize(credentials)
+
+        sheet = gspread_client.open_by_url(url)
+        if gsheets_sheet_name:
+            worksheet = sheet.worksheet(gsheets_sheet_name)
+        else:
+            worksheet = sheet.get_worksheet(gsheets_sheet_order)
+        if gsheets_sheet_range:  # if range is informed, get range from worksheet
+            dataframe = pd.DataFrame(worksheet.batch_get((gsheets_sheet_range,))[0])
+        else:
+            dataframe = pd.DataFrame(worksheet.get_values())
+        new_header = dataframe.iloc[0]  # grab the first row for the header
+        dataframe = dataframe[1:]  # take the data less the header row
+        dataframe.columns = new_header  # set the header row as the df header
+        log(f">>>>> Dataframe shape: {dataframe.shape}")
+        log(f">>>>> Dataframe columns: {dataframe.columns}")
+        dataframe.columns = remove_columns_accents(dataframe)
+        log(f">>>>> Dataframe columns after treatment: {dataframe.columns}")
+
+        dataframe.to_csv(filepath, index=False, sep=csv_delimiter, encoding="utf-8")
+    else:
+        raise ValueError("Invalid URL type. Please set values to `url_type` parameter")
 
 
 @task(
@@ -716,6 +802,7 @@ def upload_to_datalake(
 
     except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
+        raise RuntimeError() from e
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))

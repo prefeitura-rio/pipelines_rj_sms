@@ -26,7 +26,7 @@ def standardize_race(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if (data["racaCor"] is None) | (data["nacionalidade"] == ""):
+    if (data["racaCor"] is None) | (data["racaCor"] == ""):
         return data
     elif bool(re.search("SEM INFO", data["racaCor"])):
         return data
@@ -138,18 +138,17 @@ def standardize_address_data(
     data = clean_postal_code_info(data)
 
     address_dic = {
-        "use": None,  # nao sei onde tem essa info ainda
-        "type": None,  # nao sei onde tem essa info ainda
+        "use": None,
+        "type": None,
         "line": format_address("end_tp_logrado_nome", "end_logrado", "end_numero", "end_complem"),
         "city": data["city"],
         "country": data["country"],
         "state": data["state"],
         "postal_code": data["postal_code"],
-        "start": None,  # nao sei onde tem essa info ainda
-        "end": None,  # nao sei onde tem essa info ainda
+        "start": None,
+        "end": None,
     }
 
-    # Testa valores obrigatorios, se algum faltar nao retornamos endereço
     for value in list(itemgetter("line", "city", "country", "state")(address_dic)):
         if (value is None) | (pd.isna(value)):
             return data
@@ -178,18 +177,18 @@ def standardize_telecom_data(data: dict) -> dict:
         else:
             telecom_dic = {
                 "system": type_telecom,
-                "use": None,  # nao sei onde tem essa info ainda
+                "use": None,
                 "value": record,
-                "rank": None,  # nao sei onde tem essa info ainda
-                "start": None,  # nao sei onde tem essa info ainda
-                "end": None,  # nao sei onde tem essa info ainda
+                "rank": None,
+                "start": None,
+                "end": None,
             }
 
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
             return telecom_dic
 
-    telefone = format_telecom(data["telefone"], "phone")  # nao aceita lista por eqt
-    email = format_telecom(data["email"], "email")  # nao aceita lista por eqt
+    telefone = format_telecom(data["telefone"], "phone")
+    email = format_telecom(data["email"], "email")
 
     telecom_list = [contact for contact in [telefone, email] if contact is not None]
 
@@ -227,30 +226,33 @@ def transform_to_ibge_code(
     if (data["cod_mun_res"] in city_dict.keys()) & (data["uf_res"] in state_dict.keys()):
         data["city"] = city_dict[data["cod_mun_res"]]
         data["state"] = state_dict[data["uf_res"]]
+        data["country"] = "010"
     elif data["cod_mun_res"] in city_dict.keys():
         data["city"] = city_dict[data["cod_mun_res"]]
         data["state"] = data["city"][0:2]
+        data["country"] = "010"
     else:
         data["city"] = None
         data["state"] = None
+        data["country"] = None
 
-    # Dados local de nascimento
-    if (data["cod_mun_nasc"] in city_dict.keys()) & (data["uf_nasc"] in state_dict.keys()):
+    if (
+        (data["cod_mun_nasc"] in city_dict.keys())
+        & (data["uf_nasc"] in state_dict.keys())
+        & (data["cod_pais_nasc"] in country_dict.keys())
+    ):
+
         data["birth_city_cod"] = city_dict[data["cod_mun_nasc"]]
         data["birth_state_cod"] = state_dict[data["uf_nasc"]]
-        data["birth_country_cod"] = "1"
-    elif data["cod_mun_nasc"] in city_dict.keys():
+        data["birth_country_cod"] = country_dict[data["cod_pais_nasc"]]
+    elif (data["cod_mun_nasc"] in city_dict.keys()) & (
+        data["cod_pais_nasc"] in country_dict.keys()
+    ):
+
         data["birth_city_cod"] = city_dict[data["cod_mun_nasc"]]
         data["birth_state_cod"] = data["birth_city_code"][0:2]
-        data["birth_country_cod"] = "1"
+        data["birth_country_cod"] = country_dict[data["cod_pais_nasc"]]
     else:
         pass
-
-    # Normalizando pais para código IBGE
-    data["country"] = "1"  # n achei info
-    # if data['cod_pais_nasc'] in country_dict.keys():
-    #     data['birth_country_cod'] = country_dict[data['cod_pais_nasc']]
-    # else:
-    #     data['birth_country_cod'] = None
 
     return data
