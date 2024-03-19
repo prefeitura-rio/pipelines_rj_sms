@@ -2,7 +2,6 @@
 import traceback
 from datetime import datetime
 
-import requests
 from prefect.client import Client
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -15,8 +14,8 @@ def query_active_flow_names(environment="dev", prefect_client=None):
     Queries the active flow names and versions from the Prefect server.
 
     Args:
-        environment (str, optional): The environment to query the active flows for. Defaults to "dev".
-        prefect_client (prefect.Client, optional): The Prefect client to use for the query. Defaults to None.
+        environment (str, optional): The environment to query the active flows for.
+        prefect_client (prefect.Client, optional): The Prefect client to use for the query.
 
     Returns:
         list: A list of tuples containing the active flow names and versions.
@@ -70,7 +69,7 @@ def query_not_active_flows(flows, environment="dev", prefect_client=None):
     flow_name, last_version = flows
     now = datetime.now().isoformat()
     query = """
-        query($flow_name: String, $last_version: Int, $now: timestamptz!, $offset: Int, $project_name: String){
+        query($flow_name: String, $last_version: Int, $now: timestamptz!, $offset: Int, $project_name: String){ # noqa
             flow(
                 where:{
                     name: {_eq:$flow_name},
