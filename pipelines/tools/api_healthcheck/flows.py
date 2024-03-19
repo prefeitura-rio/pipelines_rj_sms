@@ -27,9 +27,9 @@ with Flow(
 
     api_url_list = get_api_url(api_url_table=api_url_table)
 
-    results = check_api_health.map(api_url_list)
+    results = check_api_health.map(api_info=api_url_list)
 
-    insert_results(results)
+    insert_results(rows_to_insert=results)
 
 monitoramento_api.schedule = update_schedule
 monitoramento_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
