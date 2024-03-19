@@ -5,9 +5,8 @@ Tasks for Vitai Raw Data Extraction
 from datetime import date, timedelta
 
 import prefect
-from ping3 import ping
 import requests
-
+from ping3 import ping
 from prefect.engine.signals import FAIL
 
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
@@ -40,10 +39,7 @@ def get_vitai_api_token(environment: str = "dev") -> str:
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
-def assert_api_availability(
-    cnes: str,
-    method: str = "ping"
-):
+def assert_api_availability(cnes: str, method: str = "ping"):
     """
     Checks if the API for the given CNES is available by pinging the host.
 
@@ -63,7 +59,7 @@ def assert_api_availability(
     if method == "ping":
         host = url.split("://")[1].split("/")[0]
         result = ping(host)
-        
+
         if (result is None) or (result is False):
             raise FAIL(f"[Ping Test] {host} Unavailable (result={result})")
         else:
@@ -71,15 +67,13 @@ def assert_api_availability(
             return
     elif method == "request":
         try:
-            requests.get(
-                url,
-                timeout=10
-            )
+            requests.get(url, timeout=10)
         except requests.exceptions.Timeout:
             raise FAIL(f"[Request Test] {url} Unavailable (timeout)")
         else:
             logger.info(f"[Request Test] {url} Available")
             return
+
 
 @task(max_retries=3, retry_delay=timedelta(minutes=3))
 @stored_variable_converter(output_mode="transform")

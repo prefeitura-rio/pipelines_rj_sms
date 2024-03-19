@@ -10,9 +10,9 @@ from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.raw.vitai.constants import constants as vitai_constants
 from pipelines.prontuarios.raw.vitai.schedules import vitai_daily_update_schedule
 from pipelines.prontuarios.raw.vitai.tasks import (
+    assert_api_availability,
     create_parameter_list,
     extract_data_from_api,
-    assert_api_availability,
     get_dates_in_range,
     get_entity_endpoint_name,
     get_vitai_api_token,
@@ -81,10 +81,7 @@ with Flow(
         maximum_date=maximum_date,
     )
 
-    assertion_task = assert_api_availability(
-        cnes=CNES, 
-        method="request"
-    )
+    assertion_task = assert_api_availability(cnes=CNES, method="request")
 
     daily_data_list = extract_data_from_api.map(
         cnes=unmapped(CNES),
