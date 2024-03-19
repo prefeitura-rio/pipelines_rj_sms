@@ -4,6 +4,7 @@ import datetime
 import prefect
 import requests
 from google.cloud import bigquery
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
