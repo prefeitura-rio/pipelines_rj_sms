@@ -192,7 +192,6 @@ def cancel_flows(flows, prefect_client: Client = None) -> None:
     Cancels a flow run from the API.
     """
     if not flows:
-        # log(f"O flow {flow_runs['flow_name']} não possui runs para cancelar")
         return
     log(">>>>>>>>>> Cancelling flows")
 
