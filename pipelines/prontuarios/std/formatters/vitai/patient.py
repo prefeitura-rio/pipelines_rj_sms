@@ -145,23 +145,21 @@ def standardize_address_data(
         data (dict) : Individual data record standardized
     """
     data = transform_to_ibge_code(data, city_name_dict, state_dict, country_dict)
-    # data = clean_postal_code_info(data)
 
     address_dic = {
-        "use": None,  # nao sei onde tem essa info ainda
-        "type": None,  # nao sei onde tem essa info ainda
+        "use": None,
+        "type": None,
         "line": format_address(
             data["tipoLogradouro"], data["nomeLogradouro"], data["numero"], data["complemento"]
         ),
         "city": data["city"],
         "country": data["country"],
         "state": data["state"],
-        "postal_code": None,  # data['postal_code'], # nao temos na VITAI
-        "start": None,  # nao sei onde tem essa info ainda
-        "end": None,  # nao sei onde tem essa info ainda
+        "postal_code": None,
+        "start": None,
+        "end": None,
     }
 
-    # Testa valores obrigatorios, se algum faltar nao retornamos endereço
     for value in list(itemgetter("line", "city", "country", "state")(address_dic)):
         if (value is None) | (pd.isna(value)):
             return data
@@ -190,11 +188,11 @@ def standardize_telecom_data(data: dict) -> dict:
         else:
             telecom_dic = {
                 "system": type_telecom,
-                "use": None,  # nao sei onde tem essa info ainda
+                "use": None,
                 "value": record,
-                "rank": None,  # nao sei onde tem essa info ainda
-                "start": None,  # nao sei onde tem essa info ainda
-                "end": None,  # nao sei onde tem essa info ainda
+                "rank": None,
+                "start": None,
+                "end": None,
             }
 
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
@@ -237,7 +235,7 @@ def transform_to_ibge_code(
         data (dict) : Individual data record standardized
     """
 
-    # Dados local de residencia (VITAI so tem uma info, consideramos smp residencia?):
+    # VITAI so tem uma info, consideramos smp residencia
     if (data["municipio"] in city_name_dict.keys()) & (data["uf"] in state_dict.keys()):
         data["city"] = city_name_dict[data["municipio"]]
         data["state"] = state_dict[data["uf"]]

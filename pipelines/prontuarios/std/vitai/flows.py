@@ -17,7 +17,7 @@ from pipelines.prontuarios.std.vitai.tasks import (
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
-    get_flow_scheduled_day,
+    get_std_flow_scheduled_day,
     load_to_api,
 )
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
@@ -55,7 +55,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    START_DATETIME = get_flow_scheduled_day(upstream_tasks=[credential_injection])
+    START_DATETIME = get_std_flow_scheduled_day(upstream_tasks=[credential_injection])
     request_params = get_params(START_DATETIME, upstream_tasks=[credential_injection])
 
     raw_patient_data = load_from_api(
