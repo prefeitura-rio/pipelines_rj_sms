@@ -32,7 +32,7 @@ with Flow(
     ####################################
     # Set environment
     ####################################
-    
+
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
     DATABASE = get_secret_key(
@@ -57,10 +57,10 @@ with Flow(
     )
 
     IP = get_secret_key(
-        secret_path="/", 
-        secret_name=smsrio_constants.INFISICAL_IP.value, 
+        secret_path="/",
+        secret_name=smsrio_constants.INFISICAL_IP.value,
         environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
 
     request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
