@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from prefect import Parameter
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefect.utilities.edges import unmapped
@@ -13,6 +14,8 @@ from pipelines.tools.unschedule_old_flows.tasks import (
 )
 
 with Flow("Tool: Desagendador de Flows Antigos") as unscheduler_flow:
+    ENVIRONMENT = Parameter("environment", default="dev")
+
     client = get_prefect_client()
 
     flows = query_active_flow_names(prefect_client=client)
