@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from typing import Tuple
 
 import pandas as pd
 import sqlalchemy

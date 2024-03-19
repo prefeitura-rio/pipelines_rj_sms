@@ -41,7 +41,12 @@ def run_flow_smsrio(datetime_range_list: list, DATABASE: str, USER: str, PASSWOR
 
 
 @task
-def run_flow_vitai(datetime_range_list: list, DATABASE: str, USER: str, PASSWORD: str, IP: str,run: int):
+def run_flow_vitai(datetime_range_list: list,
+                   DATABASE: str,
+                   USER: str,
+                   PASSWORD: str,
+                   IP: str,
+                   run: int):
     """
     Args:
         datetime_range_list (list): List of date ranges to iterate with std flow
@@ -92,7 +97,10 @@ def get_datetime_in_range(
         AND p.source_updated_at <= '{request_params['source_end_datetime']}'
         """
         log(
-            f"Getting data between { request_params['source_start_datetime'] } and { request_params['source_end_datetime'] } from {system}"
+            f"""
+            Getting data between { request_params['source_start_datetime'] }
+            and { request_params['source_end_datetime'] } from {system}
+            """
         )
 
     elif "start_datetime" in request_params.keys():

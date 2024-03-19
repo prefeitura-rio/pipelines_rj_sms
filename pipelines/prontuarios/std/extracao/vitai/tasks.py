@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from typing import Tuple
-
 import pandas as pd
 import sqlalchemy
 from prefect import task

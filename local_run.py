@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.prontuarios.std.extracao.extracao_inicial import (
+from pipelines.prontuarios.std.extracao.flows import (
     smsrio_standardization_historical_all,
 )
 
