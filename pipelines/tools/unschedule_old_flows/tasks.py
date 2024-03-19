@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import traceback
-import requests
-
 from datetime import datetime
+
+import requests
 from prefect.client import Client
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from prefeitura_rio.pipelines_utils.logging import log
 
 
 @task
@@ -33,7 +33,7 @@ def query_active_flow_names(prefix="%SMTR%", prefect_client=None):
     active_flows = []
     for flow in response["flow"]:
         active_flows.append((flow["name"], flow["version"]))
-        
+
     active_flows = list(set(active_flows))
 
     return active_flows
@@ -116,11 +116,7 @@ def send_cancelled_run_on_discord(flows, webhook_url):
             f"Versão {flow['version']}: https://prefect.dados.rio/default/flow-run/{flow['id']}"
         )
 
-    r = requests.post(
-        webhook_url,
-        data={"content": message},
-        timeout=90
-    )
+    r = requests.post(webhook_url, data={"content": message}, timeout=90)
 
     log(r.status_code)
     log(r.text)
@@ -183,9 +179,7 @@ def query_archived_scheduled_runs(flow_name, prefect_client=None):
         for flow_run in flow["flow_runs"]:
             if flow["flow_runs"]:
                 archived_flow_runs.append(flow_run)
-            log(
-                f"Got flow_run {flow_run['id']}, scheduled: {flow_run['scheduled_start_time']}"
-            )
+            log(f"Got flow_run {flow_run['id']}, scheduled: {flow_run['scheduled_start_time']}")
 
     if archived_flow_runs:
         log(f"O Flow {flow_name} possui runs a serem canceladas")
@@ -220,9 +214,7 @@ def cancel_flows(flows, prefect_client: Client = None) -> None:
 
     for flow in flows:
         try:
-            response = prefect_client.graphql(
-                query=query, variables=dict(flow_id=flow["id"])
-            )
+            response = prefect_client.graphql(query=query, variables=dict(flow_id=flow["id"]))
             # state: str = response["data"]["cancel_flow_run"]["state"]
             log(response)
             log(f">>>>>>>>>> Flow run {flow['id']} arquivada")
