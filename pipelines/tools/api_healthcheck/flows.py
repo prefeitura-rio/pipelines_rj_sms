@@ -25,7 +25,7 @@ with Flow(
         table_name="api_url_list",
     )
 
-    api_url_list = get_api_url(api_url_table)
+    api_url_list = get_api_url(api_url_table=api_url_table)
 
     results = check_api_health.map(api_url_list)
 
