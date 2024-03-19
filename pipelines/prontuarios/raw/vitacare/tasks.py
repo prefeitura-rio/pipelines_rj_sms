@@ -14,7 +14,7 @@ from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_c
 from pipelines.prontuarios.utils.misc import build_additional_fields, split_dataframe
 
 # from prefect import task
-from pipelines.utils.credential_injector import gcp_task as task
+from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.stored_variable import stored_variable_converter
 from pipelines.utils.tasks import (
     cloud_function_request,
