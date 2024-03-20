@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from prefect import Parameter
+from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefect.utilities.edges import unmapped
@@ -13,14 +15,19 @@ from pipelines.tools.unschedule_old_flows.tasks import (
 )
 
 with Flow("Tool: Desagendador de Flows Antigos") as unscheduler_flow:
+    ENVIRONMENT = Parameter("environment", default="dev")
+
     client = get_prefect_client()
 
-    flows = query_active_flow_names(prefect_client=client)
+    flows = query_active_flow_names(environment=ENVIRONMENT, prefect_client=client)
 
-    archived_flow_runs = query_not_active_flows.map(flows=flows, prefect_client=unmapped(client))
+    archived_flow_runs = query_not_active_flows.map(
+        flows=flows, environment=ENVIRONMENT, prefect_client=unmapped(client)
+    )
 
     cancel_flows.map(flows=archived_flow_runs, prefect_client=unmapped(client))
 
+unscheduler_flow.executor = LocalDaskExecutor(num_workers=10)
 unscheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 unscheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
