@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 from operator import itemgetter
+from unidecode import unidecode
 
 import pandas as pd
 
@@ -9,6 +10,7 @@ from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_email_records,
     clean_name_fields,
     clean_phone_records,
+    clean_postal_code_info,
     dic_cns_value,
     format_address,
 )
@@ -48,9 +50,13 @@ def standardize_race(data: dict) -> dict:
 
     elif data["racaCor"] == "NEGRO":
         data["race"] = "preta"
+        return data
     else:
-        data["race"] = data["racaCor"].lower()
-    return data
+        data["racaCor"] = data["racaCor"].lower()
+        data["racaCor"] = unidecode(data["racaCor"])
+        if data['racaCor'] in ['branca','preta','parda','amarela','indigena']:
+            data['race'] = data['racaCor']
+        return data
 
 
 def standardize_nationality(data: dict) -> dict:
@@ -145,6 +151,11 @@ def standardize_address_data(
         data (dict) : Individual data record standardized
     """
     data = transform_to_ibge_code(data, city_name_dict, state_dict, country_dict)
+    if 'cep' in data.keys():
+        data = clean_postal_code_info(data)
+        hasCep = 1
+    else:
+        hasCep = 0
 
     address_dic = {
         "use": None,
@@ -155,7 +166,7 @@ def standardize_address_data(
         "city": data["city"],
         "country": data["country"],
         "state": data["state"],
-        "postal_code": None,
+        "postal_code": data['postal_code'] if hasCep==1 else None,
         "start": None,
         "end": None,
     }
@@ -179,9 +190,6 @@ def standardize_telecom_data(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data, phone_field_list = clean_phone_records(data)
-    data = clean_email_records(data)
-
     def format_telecom(record, type_telecom):
         if (record is None) | (pd.isna(record)) | (record == ""):
             return
@@ -197,16 +205,19 @@ def standardize_telecom_data(data: dict) -> dict:
 
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
             return telecom_dic
-
+        
+    data, phone_field_list = clean_phone_records(data)
     phone_list = []
     for phone in phone_field_list:
         telefone = format_telecom(data[phone], "phone")
         if telefone is not None:
             phone_list.append(telefone)
 
-    email = format_telecom(data["email"], "email")
-    if email is not None:
-        phone_list.append(email)
+    if 'email' in data.keys():
+            data = clean_email_records(data)
+            email = format_telecom(data["email"], "email")
+            if email is not None:
+                phone_list.append(email)
 
     telecom_list = phone_list
 

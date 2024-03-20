@@ -4,6 +4,9 @@ import argparse
 from pipelines.prontuarios.std.extracao.flows import (
     smsrio_standardization_historical_all,
 )
+from pipelines.prontuarios.std.vitai.flows import (
+    vitai_standardization,
+)
 
 # ==================================================
 # CONFIGURATION
@@ -14,7 +17,7 @@ flows_run_cases = [
     # (vitacare_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     # (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     (
-        smsrio_standardization_historical_all,
+        vitai_standardization,#smsrio_standardization_historical_all,
         {}
         # {"source_start_datetime": "2024-03-10", "source_end_datetime": "2024-03-17"},
     ),
@@ -30,7 +33,7 @@ parser = argparse.ArgumentParser(description="Run a specific flow")
 parser.add_argument("--case", type=int, help="The index of the pair (flow, param) to run")
 
 parser.add_argument(
-    "--environment", type=str, help="The environment to run the flow on", default="dev"
+    "--environment", type=str, help="The environment to run the flow on", default="prod"
 )
 
 if __name__ == "__main__":

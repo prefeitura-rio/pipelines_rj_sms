@@ -4,6 +4,7 @@ import re
 from operator import itemgetter
 
 import pandas as pd
+from unidecode import unidecode
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_datetime_field,
@@ -31,7 +32,10 @@ def standardize_race(data: dict) -> dict:
     elif bool(re.search("SEM INFO", data["racaCor"])):
         return data
     else:
-        data["race"] = data["racaCor"].lower()
+        data["racaCor"] = data["racaCor"].lower()
+        data["racaCor"] = unidecode(data["racaCor"])
+        if data['racaCor'] in ['branca','preta','parda','amarela','indigena']:
+            data['race'] = data['racaCor']
         return data
 
 
