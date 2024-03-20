@@ -36,28 +36,28 @@ with Flow(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DATABASE.value,
         environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
 
     USER = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DB_USER.value,
         environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
 
     PASSWORD = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DB_PASSWORD.value,
         environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
 
     IP = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_IP.value,
         environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
 
     request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
@@ -69,7 +69,7 @@ with Flow(
         IP=IP,
         request_params=request_params,
         system="smsrio",
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
 
     datetime_range_list_vitai = get_datetime_in_range(
@@ -79,7 +79,7 @@ with Flow(
         IP=IP,
         request_params=request_params,
         system="vitai",
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
 
     flow_smsrio = create_flow_run.map(
@@ -87,7 +87,7 @@ with Flow(
         # mudar se decidirmos levar o codigo para main
         project_name=unmapped("staging"),
         parameters=datetime_range_list_smsrio,
-        upstream_tasks=[unmapped(credential_injection)]
+        upstream_tasks=[unmapped(credential_injection)],
     )
 
     wait_for_flow_smsrio = wait_for_flow_run.map(
@@ -95,14 +95,14 @@ with Flow(
         raise_final_state=unmapped(True),
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
-        upstream_tasks=[unmapped(credential_injection)]
+        upstream_tasks=[unmapped(credential_injection)],
     )
 
     flow_vitai = create_flow_run.map(
         flow_name=unmapped("Prontuários (Vitai) - Padronização de carga histórica de pacientes"),
         project_name=unmapped("staging"),
         parameters=datetime_range_list_vitai,
-        upstream_tasks=[unmapped(credential_injection)]
+        upstream_tasks=[unmapped(credential_injection)],
     )
 
     wait_for_flow_vitai = wait_for_flow_run.map(
@@ -110,7 +110,7 @@ with Flow(
         raise_final_state=unmapped(True),
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
-        upstream_tasks=[unmapped(credential_injection)]
+        upstream_tasks=[unmapped(credential_injection)],
     )
 
     flow_vitai.set_upstream(wait_for_flow_smsrio)
