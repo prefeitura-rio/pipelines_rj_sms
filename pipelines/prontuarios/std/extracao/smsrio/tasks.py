@@ -6,6 +6,8 @@ from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 from sqlalchemy import create_engine, text
 
+from pipelines.utils.credential_injector import authenticated_task as task
+
 
 @task
 def get_data_from_db(
