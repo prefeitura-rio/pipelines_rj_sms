@@ -40,7 +40,7 @@ def get_params(start_datetime: str) -> dict:
         "datasource_system": "smsrio",
     }
 
-
+@task
 def define_constants() -> Tuple[list, dict, dict, dict, dict]:
     """
     Creating constants as global variables
