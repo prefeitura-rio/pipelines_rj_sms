@@ -67,7 +67,9 @@ def assert_api_availability(cnes: str, method: str = "ping"):
             return
     elif method == "request":
         try:
-            requests.get(url, timeout=10)
+            status_code = requests.get(url, timeout=10).status_code
+            if status_code >= 500:
+                raise FAIL(f"[Request Test] {url} Unavailable (status code: {status_code})")
         except requests.exceptions.Timeout:
             raise FAIL(f"[Request Test] {url} Unavailable (timeout)")
         else:
