@@ -4,9 +4,7 @@ import argparse
 # from pipelines.prontuarios.std.extracao.flows import (
 #     smsrio_standardization_historical_all,
 # )
-from pipelines.prontuarios.std.vitai.flows import (
-    vitai_standardization,
-)
+from pipelines.prontuarios.std.vitai.flows import vitai_standardization
 
 # ==================================================
 # CONFIGURATION
