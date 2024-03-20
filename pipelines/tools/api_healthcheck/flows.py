@@ -23,6 +23,7 @@ with Flow(
         project_name="rj-sms",
         dataset_name="gerenciamento",
         table_name="api_url_list",
+        environment=ENVIRONMENT
     )
 
     api_url_list = get_api_url(api_url_table=api_url_table)
