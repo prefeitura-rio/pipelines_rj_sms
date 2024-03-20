@@ -87,7 +87,8 @@ with Flow(
         # mudar se decidirmos levar o codigo para main
         project_name=unmapped("staging"),
         parameters=datetime_range_list_smsrio,
-        upstream_tasks=unmapped([credential_injection]))
+        upstream_tasks=unmapped([credential_injection]),
+    )
 
     wait_for_flow_smsrio = wait_for_flow_run(
         flow_smsrio,
