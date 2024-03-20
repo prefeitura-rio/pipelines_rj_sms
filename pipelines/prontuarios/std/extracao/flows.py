@@ -30,37 +30,32 @@ with Flow(
     # Set environment
     ####################################
 
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
     DATABASE = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DATABASE.value,
-        environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection],
+        environment=ENVIRONMENT
     )
 
     USER = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DB_USER.value,
-        environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection],
+        environment=ENVIRONMENT
     )
 
     PASSWORD = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DB_PASSWORD.value,
-        environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection],
+        environment=ENVIRONMENT
     )
 
     IP = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_IP.value,
-        environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection],
+        environment=ENVIRONMENT
     )
 
-    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
+    request_params = get_params(START_DATETIME, END_DATETIME)
 
     datetime_range_list_smsrio = get_datetime_in_range(
         USER=USER,
@@ -68,8 +63,7 @@ with Flow(
         DATABASE=DATABASE,
         IP=IP,
         request_params=request_params,
-        system="smsrio",
-        upstream_tasks=[credential_injection],
+        system="smsrio"
     )
 
     datetime_range_list_vitai = get_datetime_in_range(
@@ -78,38 +72,33 @@ with Flow(
         DATABASE=DATABASE,
         IP=IP,
         request_params=request_params,
-        system="vitai",
-        upstream_tasks=[credential_injection],
+        system="vitai"
     )
 
     flow_smsrio = create_flow_run.map(
         flow_name=unmapped("Prontuários (SMSRio) - Padronização de carga histórica de pacientes"),
         # mudar se decidirmos levar o codigo para main
         project_name=unmapped("staging"),
-        parameters=datetime_range_list_smsrio,
-        upstream_tasks=unmapped([credential_injection]))
+        parameters=datetime_range_list_smsrio)
 
     wait_for_flow_smsrio = wait_for_flow_run(
         flow_smsrio,
         raise_final_state=unmapped(True),
         stream_states=unmapped(True),
-        stream_logs=unmapped(True),
-        upstream_tasks=unmapped([credential_injection]),
+        stream_logs=unmapped(True)
     )
 
     flow_vitai = create_flow_run(
         flow_name=unmapped("Prontuários (Vitai) - Padronização de carga histórica de pacientes"),
         project_name=unmapped("staging"),
-        parameters=datetime_range_list_vitai,
-        upstream_tasks=unmapped([credential_injection]),
+        parameters=datetime_range_list_vitai
     )
 
     wait_for_flow_vitai = wait_for_flow_run.map(
         flow_vitai,
         raise_final_state=unmapped(True),
         stream_states=unmapped(True),
-        stream_logs=unmapped(True),
-        upstream_tasks=unmapped([credential_injection]),
+        stream_logs=unmapped(True)
     )
 
 smsrio_standardization_historical_all.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

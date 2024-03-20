@@ -39,9 +39,8 @@ with Flow(
     # Task Section #1 - Get Data
     ####################################
 
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
-    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
+    request_params = get_params(START_DATETIME, END_DATETIME)
 
     raw_patient_data = get_data_from_db(
         USER=USER,
@@ -49,20 +48,16 @@ with Flow(
         DATABASE=DATABASE,
         IP=IP,
         date_range=request_params,
-        upstream_tasks=[credential_injection],
     )
 
     ####################################
     # Task Section #2 - Transform Data
     ####################################
 
-    city_name_dict, state_dict, country_dict = define_constants(
-        upstream_tasks=[credential_injection]
-    )
+    city_name_dict, state_dict, country_dict = define_constants()
 
     format_patient_list = format_json(
         raw_patient_data,
-        upstream_tasks=[credential_injection],
     )
 
     std_patient_list = standartize_data(
@@ -70,7 +65,6 @@ with Flow(
         city_name_dict=city_name_dict,
         state_dict=state_dict,
         country_dict=country_dict,
-        upstream_tasks=[credential_injection],
     )
 
     insert_data_to_db(
@@ -79,7 +73,6 @@ with Flow(
         IP=IP,
         DATABASE=DATABASE,
         data=std_patient_list,
-        upstream_tasks=[credential_injection],
     )
 
 
