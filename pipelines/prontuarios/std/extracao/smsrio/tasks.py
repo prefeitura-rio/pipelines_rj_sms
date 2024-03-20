@@ -2,7 +2,7 @@
 
 import pandas as pd
 import sqlalchemy
-from pipelines.utils.credential_injector import authenticated_task as task
+from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 from sqlalchemy import create_engine, text
 
