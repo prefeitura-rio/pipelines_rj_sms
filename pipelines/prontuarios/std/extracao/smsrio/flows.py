@@ -39,7 +39,6 @@ with Flow(
     # Task Section #1 - Get Data
     ####################################
 
-
     request_params = get_params(START_DATETIME, END_DATETIME)
 
     raw_patient_data = get_data_from_db(

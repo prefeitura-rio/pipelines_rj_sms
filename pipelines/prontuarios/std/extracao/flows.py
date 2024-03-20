@@ -30,29 +30,26 @@ with Flow(
     # Set environment
     ####################################
 
-
     DATABASE = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DATABASE.value,
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
 
     USER = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DB_USER.value,
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
 
     PASSWORD = get_secret_key(
         secret_path="/",
         secret_name=smsrio_constants.INFISICAL_DB_PASSWORD.value,
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
 
     IP = get_secret_key(
-        secret_path="/",
-        secret_name=smsrio_constants.INFISICAL_IP.value,
-        environment=ENVIRONMENT
+        secret_path="/", secret_name=smsrio_constants.INFISICAL_IP.value, environment=ENVIRONMENT
     )
 
     request_params = get_params(START_DATETIME, END_DATETIME)
@@ -63,7 +60,7 @@ with Flow(
         DATABASE=DATABASE,
         IP=IP,
         request_params=request_params,
-        system="smsrio"
+        system="smsrio",
     )
 
     datetime_range_list_vitai = get_datetime_in_range(
@@ -72,33 +69,34 @@ with Flow(
         DATABASE=DATABASE,
         IP=IP,
         request_params=request_params,
-        system="vitai"
+        system="vitai",
     )
 
     flow_smsrio = create_flow_run.map(
         flow_name=unmapped("Prontuários (SMSRio) - Padronização de carga histórica de pacientes"),
         # mudar se decidirmos levar o codigo para main
         project_name=unmapped("staging"),
-        parameters=datetime_range_list_smsrio)
+        parameters=datetime_range_list_smsrio,
+    )
 
     wait_for_flow_smsrio = wait_for_flow_run(
         flow_smsrio,
         raise_final_state=unmapped(True),
         stream_states=unmapped(True),
-        stream_logs=unmapped(True)
+        stream_logs=unmapped(True),
     )
 
     flow_vitai = create_flow_run(
         flow_name=unmapped("Prontuários (Vitai) - Padronização de carga histórica de pacientes"),
         project_name=unmapped("staging"),
-        parameters=datetime_range_list_vitai
+        parameters=datetime_range_list_vitai,
     )
 
     wait_for_flow_vitai = wait_for_flow_run.map(
         flow_vitai,
         raise_final_state=unmapped(True),
         stream_states=unmapped(True),
-        stream_logs=unmapped(True)
+        stream_logs=unmapped(True),
     )
 
 smsrio_standardization_historical_all.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
