@@ -89,11 +89,13 @@ with Flow(
         parameters=datetime_range_list_smsrio,
         upstream_tasks=unmapped([credential_injection]))
 
-    wait_for_flow_smsrio = wait_for_flow_run(flow_smsrio,
-                                             raise_final_state=unmapped(True),
-                                             stream_states=unmapped(True),
-                                             stream_logs=unmapped(True),
-                                             upstream_tasks=unmapped([credential_injection]))
+    wait_for_flow_smsrio = wait_for_flow_run(
+        flow_smsrio,
+        raise_final_state=unmapped(True),
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        upstream_tasks=unmapped([credential_injection]),
+    )
 
     flow_vitai = create_flow_run(
         flow_name=unmapped("Prontuários (Vitai) - Padronização de carga histórica de pacientes"),
@@ -102,11 +104,13 @@ with Flow(
         upstream_tasks=unmapped([credential_injection]),
     )
 
-    wait_for_flow_vitai = wait_for_flow_run.map(flow_vitai,
-                                                raise_final_state=unmapped(True),
-                                                stream_states=unmapped(True),
-                                                stream_logs=unmapped(True),
-                                                upstream_tasks=unmapped([credential_injection]))
+    wait_for_flow_vitai = wait_for_flow_run.map(
+        flow_vitai,
+        raise_final_state=unmapped(True),
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        upstream_tasks=unmapped([credential_injection]),
+    )
 
 smsrio_standardization_historical_all.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 smsrio_standardization_historical_all.executor = LocalDaskExecutor(num_workers=4)
