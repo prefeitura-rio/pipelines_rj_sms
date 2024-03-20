@@ -3,15 +3,13 @@ from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
+from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.std.extracao.constants import constants as smsrio_constants
 from pipelines.prontuarios.std.extracao.smsrio.tasks import get_params
-from pipelines.prontuarios.std.extracao.utils import (
-    get_datetime_in_range
-)
+from pipelines.prontuarios.std.extracao.utils import get_datetime_in_range
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials
 
 with Flow(
@@ -96,10 +94,12 @@ with Flow(
                                              stream_logs=unmapped(True),
                                              upstream_tasks=unmapped([credential_injection]))
 
-    flow_vitai = create_flow_run(flow_name=unmapped("Prontuários (Vitai) - Padronização de carga histórica de pacientes"),
-                                 project_name=unmapped("staging"),
-                                 params=datetime_range_list_vitai,
-                                 upstream_tasks=unmapped([credential_injection]))
+    flow_vitai = create_flow_run(
+        flow_name=unmapped("Prontuários (Vitai) - Padronização de carga histórica de pacientes"),
+        project_name=unmapped("staging"),
+        params=datetime_range_list_vitai,
+                                 upstream_tasks=unmapped([credential_injection]),
+    )
 
     wait_for_flow_vitai = wait_for_flow_run.map(flow_vitai,
                                                 raise_final_state=unmapped(True),
