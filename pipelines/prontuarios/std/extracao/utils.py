@@ -72,8 +72,8 @@ def get_datetime_in_range(
         params_list = []
         for dt_inicio, dt_fim in list(zip(df_range_data["data_inicio"], df_range_data["data_fim"])):
             params = {
-                "source_start_datetime": dt_inicio,
-                "source_end_datetime": dt_fim,
+                "source_start_datetime": str(dt_inicio),
+                "source_end_datetime": str(dt_fim),
                 "database": DATABASE,
                 "user": USER,
                 "password": PASSWORD,
