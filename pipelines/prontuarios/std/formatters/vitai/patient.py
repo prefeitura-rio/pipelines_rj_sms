@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import re
 from operator import itemgetter
-from unidecode import unidecode
 
 import pandas as pd
+from unidecode import unidecode
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
     clean_datetime_field,
@@ -151,7 +151,7 @@ def standardize_address_data(
         data (dict) : Individual data record standardized
     """
     data = transform_to_ibge_code(data, city_name_dict, state_dict, country_dict)
-    if 'cep' in data.keys():
+    if "cep" in data.keys():
         data = clean_postal_code_info(data)
         hasCep = 1
     else:
@@ -190,6 +190,7 @@ def standardize_telecom_data(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
+
     def format_telecom(record, type_telecom):
         if (record is None) | (pd.isna(record)) | (record == ""):
             return
@@ -205,6 +206,7 @@ def standardize_telecom_data(data: dict) -> dict:
 
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
             return telecom_dic
+
 
     data, phone_field_list = clean_phone_records(data)
     phone_list = []

@@ -17,7 +17,7 @@ flows_run_cases = [
     # (vitacare_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     # (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     (
-        vitai_standardization,#smsrio_standardization_historical_all,
+        vitai_standardization,  # smsrio_standardization_historical_all,
         {}
         # {"source_start_datetime": "2024-03-10", "source_end_datetime": "2024-03-17"},
     ),
