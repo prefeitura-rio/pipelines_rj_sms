@@ -61,7 +61,8 @@ with Flow(
     lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants(
         upstream_tasks=[credential_injection])
 
-    format_patient_list = format_json(raw_patient_data)
+    format_patient_list = format_json(raw_patient_data,
+                                      upstream_tasks=[credential_injection])
 
     std_patient_list = standartize_data(
         raw_data=format_patient_list,
