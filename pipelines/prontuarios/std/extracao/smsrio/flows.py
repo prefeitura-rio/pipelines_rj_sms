@@ -41,9 +41,7 @@ with Flow(
 
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
-    request_params = get_params(START_DATETIME,
-                                END_DATETIME,
-                                upstream_tasks=[credential_injection])
+    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
 
     raw_patient_data = get_data_from_db(
         USER=USER,
@@ -51,7 +49,7 @@ with Flow(
         DATABASE=DATABASE,
         IP=IP,
         date_range=request_params,
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
 
     ####################################
@@ -59,7 +57,8 @@ with Flow(
     ####################################
 
     lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants(
-        upstream_tasks=[credential_injection])
+        upstream_tasks=[credential_injection]
+    )
 
     format_patient_list = format_json(raw_patient_data)
 
@@ -70,15 +69,17 @@ with Flow(
         state_dict=state_dict,
         country_dict=country_dict,
         lista_campos_api=lista_campos_api,
-        upstream_tasks=[credential_injection]
+        upstream_tasks=[credential_injection],
     )
 
-    insert_data_to_db(USER=USER,
-                      PASSWORD=PASSWORD,
-                      IP=IP,
-                      DATABASE=DATABASE,
-                      data=std_patient_list,
-                      upstream_tasks=[credential_injection])
+    insert_data_to_db(
+        USER=USER,
+        PASSWORD=PASSWORD,
+        IP=IP,
+        DATABASE=DATABASE,
+        data=std_patient_list,
+        upstream_tasks=[credential_injection],
+    )
 
 
 smsrio_standardization_historical.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
