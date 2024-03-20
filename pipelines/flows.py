@@ -15,6 +15,8 @@ from pipelines.execute_dbt.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.prontuarios.raw.vitacare.flows import *
 from pipelines.prontuarios.raw.vitai.flows import *
+from pipelines.prontuarios.std.extracao.vitai.flows import *
+from pipelines.prontuarios.std.extracao.smsrio.flows import *
 from pipelines.prontuarios.std.extracao.flows import *
 from pipelines.prontuarios.std.smsrio.flows import *
 from pipelines.prontuarios.std.vitai.flows import *

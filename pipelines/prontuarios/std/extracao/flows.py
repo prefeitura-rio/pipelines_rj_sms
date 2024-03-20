@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 
 from pipelines.constants import constants
 from pipelines.prontuarios.std.extracao.constants import constants as smsrio_constants
 from pipelines.prontuarios.std.extracao.smsrio.tasks import get_params
 from pipelines.prontuarios.std.extracao.utils import (
-    get_datetime_in_range,
-    run_flow_smsrio,
-    run_flow_vitai,
+    get_datetime_in_range
 )
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials
 
@@ -75,15 +74,6 @@ with Flow(
         upstream_tasks=[credential_injection],
     )
 
-    run = run_flow_smsrio(
-        datetime_range_list=datetime_range_list_smsrio,
-        DATABASE=DATABASE,
-        USER=USER,
-        PASSWORD=PASSWORD,
-        IP=IP,
-        upstream_tasks=[credential_injection],
-    )
-
     datetime_range_list_vitai = get_datetime_in_range(
         USER=USER,
         PASSWORD=PASSWORD,
@@ -94,16 +84,24 @@ with Flow(
         upstream_tasks=[credential_injection],
     )
 
-    run_flow_vitai(
-        datetime_range_list=datetime_range_list_vitai,
-        DATABASE=DATABASE,
-        USER=USER,
-        PASSWORD=PASSWORD,
-        IP=IP,
-        run=run,
-        upstream_tasks=[credential_injection],
-    )
+    flow_smsrio = create_flow_run.map(flow_name=unmapped("Prontuários (SMSRio) - Padronização de carga histórica de pacientes"),
+                                      # mudar se decidirmos levar o codigo para main
+                                      project_name=unmapped("staging"),
+                                      params=datetime_range_list_smsrio)
 
+    wait_for_flow_smsrio = wait_for_flow_run(flow_smsrio,
+                                             raise_final_state=unmapped(True),
+                                             stream_states=unmapped(True),
+                                             stream_logs=unmapped(True))
+
+    flow_vitai = create_flow_run(flow_name=unmapped("Prontuários (Vitai) - Padronização de carga histórica de pacientes"),
+                                 project_name=unmapped("staging"),
+                                 params=datetime_range_list_vitai)
+
+    wait_for_flow_vitai = wait_for_flow_run.map(flow_vitai,
+                                                raise_final_state=unmapped(True),
+                                                stream_states=unmapped(True),
+                                                stream_logs=unmapped(True))
 
 smsrio_standardization_historical_all.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 smsrio_standardization_historical_all.executor = LocalDaskExecutor(num_workers=4)

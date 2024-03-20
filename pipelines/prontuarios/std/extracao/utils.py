@@ -1,70 +1,9 @@
 # -*- coding: utf-8 -*-
-from itertools import cycle
 
 import pandas as pd
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 from sqlalchemy import create_engine, text
-
-from pipelines.prontuarios.std.extracao.smsrio.flows import (
-    smsrio_standardization_historical,
-)
-from pipelines.prontuarios.std.extracao.vitai.flows import (
-    vitai_standardization_historical,
-)
-
-
-@task
-def run_flow_smsrio(datetime_range_list: list, DATABASE: str, USER: str, PASSWORD: str, IP: str):
-    """
-    Args:
-        datetime_range_list (list): List of date ranges to iterate with std flow
-        DATABASE (str): Database DATABASE credential
-        USER (str): Database USER credential
-        PASSWORD (str): Database PASSWORD credential
-        IP (str): Database IP credential
-    """
-
-    for start_datetime, end_datetime, _ in datetime_range_list:
-        params = {
-            "source_start_datetime": start_datetime,
-            "source_end_datetime": end_datetime,
-            "database": DATABASE,
-            "user": USER,
-            "password": PASSWORD,
-            "ip": IP,
-            "run_on_schedule": False,
-        }
-
-        smsrio_standardization_historical.run(**params)
-    return 1
-
-
-@task
-def run_flow_vitai(
-    datetime_range_list: list, DATABASE: str, USER: str, PASSWORD: str, IP: str, run: int
-):
-    """
-    Args:
-        datetime_range_list (list): List of date ranges to iterate with std flow
-        DATABASE (str): Database DATABASE credential
-        USER (str): Database USER credential
-        PASSWORD (str): Database PASSWORD credential
-        IP (str): Database IP credential
-    """
-    if run == 1:
-        for start_datetime, end_datetime, _ in datetime_range_list:
-            params = {
-                "source_start_datetime": start_datetime,
-                "source_end_datetime": end_datetime,
-                "database": DATABASE,
-                "user": USER,
-                "password": PASSWORD,
-                "ip": IP,
-                "run_on_schedule": False,
-            }
-
-            vitai_standardization_historical.run(**params)
 
 
 @task
@@ -129,8 +68,17 @@ def get_datetime_in_range(
         """
         )
         df_range_data = pd.read_sql_query(query, conn)
-        list_range_data = list(
-            zip(df_range_data["data_inicio"], df_range_data["data_fim"], cycle([system]))
-        )
+        params_list = []
+        for dt_inicio, dt_fim in list(zip(df_range_data["data_inicio"], df_range_data["data_fim"])):
+            params = {
+                "source_start_datetime": dt_inicio,
+                "source_end_datetime": dt_fim,
+                "database": DATABASE,
+                "user": USER,
+                "password": PASSWORD,
+                "ip": IP,
+                "run_on_schedule": False,
+            }
+            params_list.append(params)
 
-        return list_range_data
+        return params_list

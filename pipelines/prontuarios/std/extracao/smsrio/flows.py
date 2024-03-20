@@ -16,9 +16,10 @@ from pipelines.prontuarios.std.smsrio.tasks import (
     format_json,
     standartize_data,
 )
+from pipelines.utils.tasks import inject_gcp_credentials
 
 with Flow(
-    name="Prontuários (SMSRio) - Padronização de Pacientes (carga histórica)",
+    name="Prontuários (SMSRio) - Padronização de carga histórica de pacientes",
 ) as smsrio_standardization_historical:
     #####################################
     # Parameters
@@ -27,28 +28,38 @@ with Flow(
     USER = Parameter("user", required=True)
     PASSWORD = Parameter("password", required=True)
     IP = Parameter("ip", required=True)
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
 
     START_DATETIME = Parameter(
         "source_start_datetime", default="2024-02-06 12:00:00", required=False
     )
     END_DATETIME = Parameter("source_end_datetime", default="2024-02-06 12:04:00", required=False)
 
-    # RENAME_FLOW = Parameter("rename_flow", default=False)
-
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(START_DATETIME, END_DATETIME)
+
+    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
+
+    request_params = get_params(START_DATETIME,
+                                END_DATETIME,
+                                upstream_tasks=[credential_injection])
 
     raw_patient_data = get_data_from_db(
-        USER=USER, PASSWORD=PASSWORD, DATABASE=DATABASE, IP=IP, date_range=request_params
+        USER=USER,
+        PASSWORD=PASSWORD,
+        DATABASE=DATABASE,
+        IP=IP,
+        date_range=request_params,
+        upstream_tasks=[credential_injection]
     )
 
     ####################################
     # Task Section #2 - Transform Data
     ####################################
 
-    lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants()
+    lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants(
+        upstream_tasks=[credential_injection])
 
     format_patient_list = format_json(raw_patient_data)
 
@@ -59,9 +70,15 @@ with Flow(
         state_dict=state_dict,
         country_dict=country_dict,
         lista_campos_api=lista_campos_api,
+        upstream_tasks=[credential_injection]
     )
 
-    insert_data_to_db(USER=USER, PASSWORD=PASSWORD, IP=IP, DATABASE=DATABASE, data=std_patient_list)
+    insert_data_to_db(USER=USER,
+                      PASSWORD=PASSWORD,
+                      IP=IP,
+                      DATABASE=DATABASE,
+                      data=std_patient_list,
+                      upstream_tasks=[credential_injection])
 
 
 smsrio_standardization_historical.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

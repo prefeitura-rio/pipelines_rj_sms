@@ -16,9 +16,10 @@ from pipelines.prontuarios.std.vitai.tasks import (
     format_json,
     standartize_data,
 )
+from pipelines.utils.tasks import inject_gcp_credentials
 
 with Flow(
-    name="Prontuários (Vitai) - Padronização de Pacientes (carga histórica)",
+    name="Prontuários (Vitai) - Padronização de carga histórica de pacientes",
 ) as vitai_standardization_historical:
     #####################################
     # Parameters
@@ -27,39 +28,56 @@ with Flow(
     USER = Parameter("user", required=True)
     PASSWORD = Parameter("password", required=True)
     IP = Parameter("ip", required=True)
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
 
     START_DATETIME = Parameter(
         "source_start_datetime", default="2024-02-06 12:00:00", required=False
     )
     END_DATETIME = Parameter("source_end_datetime", default="2024-02-06 12:04:00", required=False)
 
-    # RENAME_FLOW = Parameter("rename_flow", default=False)
-
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(START_DATETIME, END_DATETIME)
+
+    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
+
+    request_params = get_params(START_DATETIME,
+                                END_DATETIME,
+                                upstream_tasks=[credential_injection])
 
     raw_patient_data = get_data_from_db(
-        USER=USER, PASSWORD=PASSWORD, DATABASE=DATABASE, IP=IP, date_range=request_params
+        USER=USER,
+        PASSWORD=PASSWORD,
+        DATABASE=DATABASE,
+        IP=IP,
+        date_range=request_params,
+        upstream_tasks=[credential_injection]
     )
 
     ####################################
     # Task Section #2 - Transform Data
     ####################################
 
-    city_name_dict, state_dict, country_dict = define_constants()
+    city_name_dict, state_dict, country_dict = define_constants(
+        upstream_tasks=[credential_injection])
 
-    format_patient_list = format_json(raw_patient_data)
+    format_patient_list = format_json(raw_patient_data,
+                                      upstream_tasks=[credential_injection],)
 
     std_patient_list = standartize_data(
         raw_data=format_patient_list,
         city_name_dict=city_name_dict,
         state_dict=state_dict,
         country_dict=country_dict,
+        upstream_tasks=[credential_injection]
     )
 
-    insert_data_to_db(USER=USER, PASSWORD=PASSWORD, IP=IP, DATABASE=DATABASE, data=std_patient_list)
+    insert_data_to_db(USER=USER,
+                      PASSWORD=PASSWORD,
+                      IP=IP,
+                      DATABASE=DATABASE,
+                      data=std_patient_list,
+                      upstream_tasks=[credential_injection])
 
 
 vitai_standardization_historical.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
