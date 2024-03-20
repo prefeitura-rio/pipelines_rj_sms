@@ -54,7 +54,7 @@ def standardize_race(data: dict) -> dict:
     else:
         data["racaCor"] = data["racaCor"].lower()
         data["racaCor"] = unidecode(data["racaCor"])
-        if data['racaCor'] in ['branca','preta','parda','amarela','indigena']:
+        if data['racaCor'] in ['branca', 'preta', 'parda', 'amarela', 'indigena']:
             data['race'] = data['racaCor']
         return data
 
@@ -166,7 +166,7 @@ def standardize_address_data(
         "city": data["city"],
         "country": data["country"],
         "state": data["state"],
-        "postal_code": data['postal_code'] if hasCep==1 else None,
+        "postal_code": data['postal_code'] if hasCep == 1 else None,
         "start": None,
         "end": None,
     }
@@ -205,7 +205,7 @@ def standardize_telecom_data(data: dict) -> dict:
 
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
             return telecom_dic
-        
+
     data, phone_field_list = clean_phone_records(data)
     phone_list = []
     for phone in phone_field_list:
@@ -214,10 +214,10 @@ def standardize_telecom_data(data: dict) -> dict:
             phone_list.append(telefone)
 
     if 'email' in data.keys():
-            data = clean_email_records(data)
-            email = format_telecom(data["email"], "email")
-            if email is not None:
-                phone_list.append(email)
+        data = clean_email_records(data)
+        email = format_telecom(data["email"], "email")
+        if email is not None:
+            phone_list.append(email)
 
     telecom_list = phone_list
 

@@ -34,7 +34,7 @@ def standardize_race(data: dict) -> dict:
     else:
         data["racaCor"] = data["racaCor"].lower()
         data["racaCor"] = unidecode(data["racaCor"])
-        if data['racaCor'] in ['branca','preta','parda','amarela','indigena']:
+        if data['racaCor'] in ['branca', 'preta', 'parda', 'amarela', 'indigena']:
             data['race'] = data['racaCor']
         return data
 

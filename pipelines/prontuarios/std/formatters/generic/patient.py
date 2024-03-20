@@ -213,7 +213,7 @@ def clean_postal_code_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    cep_field = [ field for field in data.keys() if field in ['end_cep','cep'] ][0]
+    cep_field = [field for field in data.keys() if field in ['end_cep', 'cep']][0]
     if data[cep_field] is None:
         data["postal_code"] = None
         return data
