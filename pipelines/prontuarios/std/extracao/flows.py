@@ -82,30 +82,36 @@ with Flow(
         upstream_tasks=[credential_injection],
     )
 
-    flow_smsrio = create_flow_run.map(flow_name=unmapped("Prontuários (SMSRio) - Padronização de carga histórica de pacientes"),
-                                      # mudar se decidirmos levar o codigo para main
-                                      project_name=unmapped("staging"),
-                                      params=datetime_range_list_smsrio,
-                                      upstream_tasks=unmapped([credential_injection]))
+    flow_smsrio = create_flow_run.map(
+        flow_name=unmapped("Prontuários (SMSRio) - Padronização de carga histórica de pacientes"),
+        # mudar se decidirmos levar o codigo para main
+        project_name=unmapped("staging"),
+        params=datetime_range_list_smsrio,
+        upstream_tasks=unmapped([credential_injection]),
+    )
 
-    wait_for_flow_smsrio = wait_for_flow_run(flow_smsrio,
-                                             raise_final_state=unmapped(True),
-                                             stream_states=unmapped(True),
-                                             stream_logs=unmapped(True),
-                                             upstream_tasks=unmapped([credential_injection]))
+    wait_for_flow_smsrio = wait_for_flow_run(
+        flow_smsrio,
+        raise_final_state=unmapped(True),
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        upstream_tasks=unmapped([credential_injection]),
+    )
 
     flow_vitai = create_flow_run(
         flow_name=unmapped("Prontuários (Vitai) - Padronização de carga histórica de pacientes"),
         project_name=unmapped("staging"),
         params=datetime_range_list_vitai,
-                                 upstream_tasks=unmapped([credential_injection]),
+        upstream_tasks=unmapped([credential_injection]),
     )
 
-    wait_for_flow_vitai = wait_for_flow_run.map(flow_vitai,
-                                                raise_final_state=unmapped(True),
-                                                stream_states=unmapped(True),
-                                                stream_logs=unmapped(True),
-                                                upstream_tasks=unmapped([credential_injection]))
+    wait_for_flow_vitai = wait_for_flow_run.map(
+        flow_vitai,
+        raise_final_state=unmapped(True),
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        upstream_tasks=unmapped([credential_injection]),
+    )
 
 smsrio_standardization_historical_all.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 smsrio_standardization_historical_all.executor = LocalDaskExecutor(num_workers=4)

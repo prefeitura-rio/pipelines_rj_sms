@@ -60,8 +60,7 @@ with Flow(
         upstream_tasks=[credential_injection]
     )
 
-    format_patient_list = format_json(raw_patient_data,
-                                      upstream_tasks=[credential_injection])
+    format_patient_list = format_json(raw_patient_data, upstream_tasks=[credential_injection])
 
     std_patient_list = standartize_data(
         raw_data=format_patient_list,
