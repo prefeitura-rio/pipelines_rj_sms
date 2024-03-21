@@ -3,15 +3,20 @@ from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-#from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
-from pipelines.utils.credential_injector import authenticated_create_flow_run as create_flow_run
-from pipelines.utils.credential_injector import authenticated_wait_for_flow_run as wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.std.extracao.constants import constants as smsrio_constants
 from pipelines.prontuarios.std.extracao.smsrio.tasks import get_params
 from pipelines.prontuarios.std.extracao.utils import get_datetime_in_range
+
+# from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials
 
 with Flow(
@@ -62,9 +67,11 @@ with Flow(
         upstream_tasks=[credential_injection],
     )
 
-    request_params = get_params(start_datetime=START_DATETIME, 
-                                end_datetime=END_DATETIME, 
-                                upstream_tasks=[credential_injection])
+    request_params = get_params(
+        start_datetime=START_DATETIME,
+        end_datetime=END_DATETIME,
+        upstream_tasks=[credential_injection],
+    )
 
     datetime_range_list_smsrio = get_datetime_in_range(
         USER=USER,

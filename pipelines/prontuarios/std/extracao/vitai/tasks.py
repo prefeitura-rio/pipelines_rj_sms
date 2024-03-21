@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 import sqlalchemy
-from pipelines.utils.credential_injector import authenticated_task as task
 from prefeitura_rio.pipelines_utils.logging import log
 from sqlalchemy import create_engine, text
+
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
