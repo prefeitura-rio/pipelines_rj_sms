@@ -3,9 +3,9 @@ from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
-#from pipelines.utils.credential_injector import authenticated_create_flow_run as create_flow_run
-#from pipelines.utils.credential_injector import authenticated_wait_for_flow_run as wait_for_flow_run
+#from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
+from pipelines.utils.credential_injector import authenticated_create_flow_run as create_flow_run
+from pipelines.utils.credential_injector import authenticated_wait_for_flow_run as wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -62,7 +62,9 @@ with Flow(
         upstream_tasks=[credential_injection],
     )
 
-    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
+    request_params = get_params(start_datetime=START_DATETIME, 
+                                end_datetime=END_DATETIME, 
+                                upstream_tasks=[credential_injection])
 
     datetime_range_list_smsrio = get_datetime_in_range(
         USER=USER,
@@ -91,30 +93,30 @@ with Flow(
         # mudar se decidirmos levar o codigo para main
         project_name=unmapped("staging"),
         parameters=datetime_range_list_smsrio,
-        upstream_tasks=[unmapped(credential_injection)],
+        # upstream_tasks=[unmapped(credential_injection)],
     )
 
     wait_for_flow_smsrio = wait_for_flow_run.map(
-        flow_smsrio,
+        flow_run_id=flow_smsrio,
         raise_final_state=unmapped(True),
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
-        upstream_tasks=[unmapped(credential_injection)],
+        # upstream_tasks=[unmapped(credential_injection)],
     )
 
     flow_vitai = create_flow_run.map(
         flow_name=unmapped("Prontuários (Vitai) - Padronização de carga histórica de pacientes"),
         project_name=unmapped("staging"),
         parameters=datetime_range_list_vitai,
-        upstream_tasks=[unmapped(credential_injection)],
+        # upstream_tasks=[unmapped(credential_injection)],
     )
 
     wait_for_flow_vitai = wait_for_flow_run.map(
-        flow_vitai,
+        flow_run_id=flow_vitai,
         raise_final_state=unmapped(True),
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
-        upstream_tasks=[unmapped(credential_injection)],
+        # upstream_tasks=[unmapped(credential_injection)],
     )
 
     flow_vitai.set_upstream(wait_for_flow_smsrio)

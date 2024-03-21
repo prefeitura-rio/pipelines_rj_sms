@@ -41,7 +41,9 @@ with Flow(
 
     credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
 
-    request_params = get_params(START_DATETIME, END_DATETIME, upstream_tasks=[credential_injection])
+    request_params = get_params(start_datetime=START_DATETIME, 
+                                end_datetime=END_DATETIME, 
+                                upstream_tasks=[credential_injection])
 
     raw_patient_data = get_data_from_db(
         USER=USER,
@@ -61,7 +63,7 @@ with Flow(
     )
 
     format_patient_list = format_json(
-        raw_patient_data,
+        json_list=raw_patient_data,
         upstream_tasks=[credential_injection],
     )
 
