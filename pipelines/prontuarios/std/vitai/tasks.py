@@ -117,7 +117,7 @@ def standartize_data(
     log("Starting standardization of race field")
     patients_json_std_race = list(map(standardize_race, raw_data))
 
-    log("Starting standardization of nationalizty field")
+    log("Starting standardization of nationality field")
     patients_json_std_nationality = list(map(standardize_nationality, patients_json_std_race))
 
     log("Starting standardization of parents name field")

@@ -213,16 +213,17 @@ def clean_postal_code_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data["end_cep"] is None:
+    cep_field = [field for field in data.keys() if field in ["end_cep", "cep"]][0]
+    if data[cep_field] is None:
         data["postal_code"] = None
         return data
     else:
-        data["end_cep"] = re.sub(r"[^0-9]", "", data["end_cep"])
-        if len(data["end_cep"]) != 8:
+        data[cep_field] = re.sub(r"[^0-9]", "", data[cep_field])
+        if len(data[cep_field]) != 8:
             data["postal_code"] = None
             return data
         else:
-            data["postal_code"] = data["end_cep"]
+            data["postal_code"] = data[cep_field]
     return data
 
 
@@ -235,6 +236,7 @@ def clean_phone_records(data: dict) -> dict:
 
     Returns:
         data (dict) : Individual data record standardized
+        phone_fields (list) : List of phone fields
     """
     phone_fields = [
         column
@@ -259,7 +261,7 @@ def clean_phone_records(data: dict) -> dict:
 
 def clean_email_records(data: dict) -> dict:
     """
-    VAlidade email info
+    Validate email info
 
     Args:
         data (dict) : Individual data record
