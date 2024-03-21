@@ -69,7 +69,7 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
     return {
         "source_start_datetime": start_datetime,
         "source_end_datetime": end_datetime,
-        "datasource_system": "smsrio",
+        "datasource_system": "vitai",
     }
 
 

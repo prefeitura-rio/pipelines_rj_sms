@@ -9,7 +9,13 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 @task
 def get_datetime_in_range(
-    USER: str, PASSWORD: str, IP: str, DATABASE: str, request_params: dict, system: str
+    USER: str, 
+    PASSWORD: str, 
+    IP: str, 
+    DATABASE: str, 
+    ENVIROMENT: str,
+    request_params: dict, 
+    system: str
 ) -> list:
     """
     Get list of date ranges to iterate with standardization flow.
@@ -79,6 +85,7 @@ def get_datetime_in_range(
                 "password": PASSWORD,
                 "ip": IP,
                 "run_on_schedule": False,
+                "enviroment": ENVIROMENT
             }
             params_list.append(params)
 
