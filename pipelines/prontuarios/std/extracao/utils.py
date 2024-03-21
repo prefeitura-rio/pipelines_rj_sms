@@ -62,8 +62,8 @@ def get_datetime_in_range(
         query = text(
             f"""
             SELECT DISTINCT
-            CAST(p.source_updated_at  AS DATE) as data_inicio,
-            CAST(p.source_updated_at + INTERVAL '1 day' AS DATE) as data_fim
+            CAST(DATE_TRUNC('month', p.source_updated_at) as DATE) as data_inicio,
+            CAST(DATE_TRUNC('month', p.source_updated_at) + INTERVAL '1 month' AS DATE) as data_fim
             FROM raw__patientrecord as p
             INNER JOIN (
                         SELECT DISTINCT cnes
