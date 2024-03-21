@@ -6,7 +6,6 @@ from prefect.client import Client
 from prefeitura_rio.pipelines_utils.logging import log
 
 import pipelines.utils.monitor as monitor
-
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
