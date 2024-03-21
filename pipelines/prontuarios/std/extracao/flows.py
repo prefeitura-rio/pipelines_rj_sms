@@ -4,8 +4,9 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
-#from pipelines.utils.credential_injector import authenticated_create_flow_run as create_flow_run
-#from pipelines.utils.credential_injector import authenticated_wait_for_flow_run as wait_for_flow_run
+
+# from pipelines.utils.credential_injector import authenticated_create_flow_run as create_flow_run
+# from pipelines.utils.credential_injector import authenticated_wait_for_flow_run as wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
