@@ -5,6 +5,7 @@ from datetime import datetime
 from prefect.client import Client
 from prefeitura_rio.pipelines_utils.logging import log
 
+import pipelines.utils.monitor as monitor
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
@@ -166,3 +167,5 @@ def cancel_flows(flows, prefect_client: Client = None) -> None:
             log(f"Flow {flow['id']} could not be cancelled")
 
     log(f"# of Cancelled flows: {len(cancelled_flows)}")
+
+    monitor.send_message(f"# of Cancelled flows: {len(cancelled_flows)}")
