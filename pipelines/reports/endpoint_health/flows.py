@@ -12,7 +12,7 @@ from pipelines.utils.tasks import load_file_from_bigquery
 with Flow(
     name="Report: Disponibilidade de API",
 ) as disponibilidade_api:
-    ENVIRONMENT = Parameter("environment", default="dev")
+    ENVIRONMENT = Parameter("environment", default="staging")
 
     endpoints_table = load_file_from_bigquery(
         project_name="rj-sms",
@@ -29,7 +29,9 @@ with Flow(
     text_report = create_description(
         endpoints_table=endpoints_table, results_table=health_check_results_table
     )
-    send_report(plot=None, description=text_report)
+    send_report(
+        description=text_report
+    )
 
 disponibilidade_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 disponibilidade_api.executor = LocalDaskExecutor(num_workers=1)

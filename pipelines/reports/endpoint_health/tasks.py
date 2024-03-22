@@ -2,23 +2,25 @@
 import datetime
 import pytz
 import math
-import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
 
 import pipelines.utils.monitor as monitor
 from pipelines.utils.credential_injector import authenticated_task as task
 
+
 @task
 def create_description(endpoints_table, results_table):
     """
-    Creates a description of endpoint health metrics based on the provided endpoints_table and results_table.
+    Creates a description of endpoint health metrics.
 
     Args:
-        endpoints_table (pandas.DataFrame): A DataFrame containing information about the endpoints.
-        results_table (pandas.DataFrame): A DataFrame containing the results of endpoint health checks.
+        endpoints_table (pandas.DataFrame): DataFrame containing information about the endpoints.
+        results_table (pandas.DataFrame): DataFrame containing the results of health checks.
 
     Returns:
-        str: A formatted report describing the availability and last healthy record of each endpoint.
+        str: A formatted report.
 
     """
     metrics = []
@@ -43,7 +45,7 @@ def create_description(endpoints_table, results_table):
         hours_since_last_healthy = hours_since_last_healthy % 24
 
         if days_since_last_healthy >= 1:
-            last_healthy_record_text = f"{days_since_last_healthy} dias e {hours_since_last_healthy} horas atrás"
+            last_healthy_record_text = f"{days_since_last_healthy} dias e {hours_since_last_healthy} horas atrás"  # noqa
         else:
             last_healthy_record_text = f"{hours_since_last_healthy} horas atrás"
 
@@ -55,7 +57,7 @@ def create_description(endpoints_table, results_table):
     for name, availability, last_healthy_record_text in metrics:
         if availability == 1.0:
             line = f"- ✅ **{name.upper()}**: {availability:.0%} de disponibilidade."
-        elif availability >= 0.9:
+        elif availability >= 0.8:
             line = f"- ⚠️ **{name.upper()}**: {availability:.0%} de disponibilidade (última disponibilidade: {last_healthy_record_text})"  # noqa
         else:
             line = f"- ❌ **{name.upper()}**: {availability:.0%} de disponibilidade (última disponibilidade: {last_healthy_record_text})"  # noqa
@@ -66,12 +68,7 @@ def create_description(endpoints_table, results_table):
 
 
 @task
-def create_plot(endpoints_table, results_table):
-    return None
-
-
-@task
-def send_report(plot, description):
+def send_report(description):
     """
     Sends a report with the given plot and description.
 
@@ -83,7 +80,7 @@ def send_report(plot, description):
         None
     """
     monitor.send_message(
-        title="Disponibilidade de API nas últimas 24h", 
+        title="Disponibilidade de API nas últimas 24h",
         message=description
     )
     return
