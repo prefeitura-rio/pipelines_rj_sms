@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import asyncio
+
 import aiohttp
 import prefect
-
 from discord import Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
@@ -15,10 +15,9 @@ async def send_discord_webhook(text_content, username=None):
         message (str): The message to send.
         username (str, optional): The username to use when sending the message. Defaults to None.
     """
-    webhook_url = get_secret(
-        secret_name="DISCORD_WEBHOOK_URL",
-        environment="prod"
-    ).get("DISCORD_WEBHOOK_URL")
+    webhook_url = get_secret(secret_name="DISCORD_WEBHOOK_URL", environment="prod").get(
+        "DISCORD_WEBHOOK_URL"
+    )
 
     async with aiohttp.ClientSession() as session:
         webhook = Webhook.from_url(webhook_url, session=session)
@@ -26,6 +25,7 @@ async def send_discord_webhook(text_content, username=None):
             await webhook.send(text_content, username=username)
         else:
             await webhook.send(text_content)
+
 
 def send_message(title, message, username=None):
     """
