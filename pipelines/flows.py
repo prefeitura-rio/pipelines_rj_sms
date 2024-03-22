@@ -18,5 +18,6 @@ from pipelines.prontuarios.raw.vitai.flows import *
 from pipelines.prontuarios.std.extracao.flows import *
 from pipelines.prontuarios.std.smsrio.flows import *
 from pipelines.prontuarios.std.vitai.flows import *
+from pipelines.reports.endpoint_health.flows import *
 from pipelines.tools.api_healthcheck.flows import *
 from pipelines.tools.unschedule_old_flows.flows import *
