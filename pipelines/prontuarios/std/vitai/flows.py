@@ -19,7 +19,7 @@ from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_std_flow_scheduled_day,
     load_to_api,
-    rename_current_std_flow_run
+    rename_current_std_flow_run,
 )
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -37,22 +37,20 @@ with Flow(
     ####################################
 
     with case(RENAME_FLOW, True):
-        rename_flow_task = rename_current_std_flow_run(
-            environment=ENVIRONMENT, unidade="Vitai"
-        )
+        rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="Vitai")
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
         infisical_path=vitai_constants.INFISICAL_PATH.value,
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
         infisical_api_username=vitai_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value
+        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value,
     )
 
     api_url = get_secret_key(
         secret_path="/",
         secret_name=prontuarios_constants.INFISICAL_API_URL.value,
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
 
     ####################################
@@ -74,9 +72,7 @@ with Flow(
 
     city_name_dict, state_dict, country_dict = define_constants()
 
-    format_patient_list = format_json(
-        json_list=raw_patient_data
-    )
+    format_patient_list = format_json(json_list=raw_patient_data)
 
     std_patient_list = standartize_data(
         raw_data=format_patient_list,
