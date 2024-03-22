@@ -15,7 +15,7 @@ def create_description(endpoints_table, results_table):
         records = results_table[results_table["api_url"] == endpoint["url"]]
         records.sort_values(by="moment", inplace=True)
 
-        last_healthy_record = records[records["is_healthy"] == True].tail(1)['moment'].values[0] #noqa
+        last_healthy_record = records[records["is_healthy"]].tail(1)['moment'].values[0] #noqa
         last_healthy_record = last_healthy_record.item().strftime("%d/%m/%Y %H:%M:%S")
 
         yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -31,15 +31,14 @@ def create_description(endpoints_table, results_table):
 
     reports = []
     for name, availability, last_healthy in metrics:
-        status_emoji = "❌"
         if availability == 1.0:
-            status_emoji = "✅"
+            line = f"- ✅**{name.upper()}**: {availability:.0%} de disponibilidade."
         elif availability >= 0.9:
-            status_emoji = "⚠️"
+            line = f"- ⚠️**{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}"
+        else:
+            line = f"- ❌**{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}"
+        reports.append(line)
 
-        reports.append(
-            f"- {status_emoji} **{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}"  # noqa
-        )
     report = "\n".join(reports)
     return report
 
