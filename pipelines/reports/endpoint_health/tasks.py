@@ -15,7 +15,9 @@ def create_description(endpoints_table, results_table):
         records = results_table[results_table["api_url"] == endpoint["url"]]
         records.sort_values(by="moment", inplace=True)
 
-        last_healthy_record = records[records["is_healthy"] == True].tail(1)['moment'].values[0] #noqa
+        last_healthy_record = (
+            records[records["is_healthy"] == True].tail(1)["moment"].values[0]
+        )  # noqa
         last_healthy_record = last_healthy_record.item().strftime("%d/%m/%Y %H:%M:%S")
 
         yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
