@@ -118,11 +118,7 @@ def query_not_active_flows(flows, environment="staging", prefect_client=None):
             continue
 
         flow_versions_to_cancel.append(
-            {
-                "id": flow["id"],
-                "name": flow["name"],
-                "version": flow["version"]
-            }
+            {"id": flow["id"], "name": flow["name"], "version": flow["version"]}
         )
         log(f"({flow['name']}, {flow['version']}) - Last Version = {last_version}")
 
@@ -161,17 +157,14 @@ def cancel_flows(flow_versions_to_cancel: list, prefect_client: Client = None) -
     """
     reports = []
     for flow_version in flow_versions_to_cancel:
-        response = prefect_client.graphql(
-            query=query,
-            variables=dict(flow_id=flow_version["id"])
-        )
-        report = f"- Flow {flow_version['name']} de versão {flow_version['id']} arquivado com status: {response}" #noqa
+        response = prefect_client.graphql(query=query, variables=dict(flow_id=flow_version["id"]))
+        report = f"- Flow {flow_version['name']} de versão {flow_version['id']} arquivado com status: {response}"  # noqa
         log(report)
 
         reports.append(report)
 
     monitor.send_message(
         title="Resultado da varredura",
-        message= "\n".join(reports),
-        username="Desagendador de Flows Antigos"
+        message="\n".join(reports),
+        username="Desagendador de Flows Antigos",
     )
