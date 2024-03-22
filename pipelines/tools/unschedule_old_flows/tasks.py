@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import traceback
 from datetime import datetime
 
 from prefect.client import Client
@@ -10,7 +9,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def query_active_flow_names(environment="dev", prefect_client=None):
+def query_active_flow_names(environment="staging", prefect_client=None):
     """
     Queries the active flow names and versions from the Prefect server.
 
@@ -25,7 +24,7 @@ def query_active_flow_names(environment="dev", prefect_client=None):
         prefect.utilities.exceptions.ClientError: If an error occurs during the query.
 
     """
-    project_name = "staging" if environment == "dev" else "production"
+    project_name = "production" if environment == "prod" else environment
 
     query = """
         query ($offset: Int, $project_name: String){
@@ -52,12 +51,13 @@ def query_active_flow_names(environment="dev", prefect_client=None):
         active_flows.append((flow["name"], flow["version"]))
 
     active_flows = list(set(active_flows))
+    log(f"Total Active Flow: {len(active_flows)}")
 
     return active_flows
 
 
 @task
-def query_not_active_flows(flows, environment="dev", prefect_client=None):
+def query_not_active_flows(flow_data, environment="staging", prefect_client=None):
     """
     Queries the graphql API for scheduled flow_runs of
     archived versions of <flow_name>
@@ -65,9 +65,10 @@ def query_not_active_flows(flows, environment="dev", prefect_client=None):
     Args:
         flow_name (str): flow name
     """
-    project_name = "staging" if environment == "dev" else "production"
+    project_name = "production" if environment == "prod" else environment
+    flow_name, last_version = flow_data
 
-    flow_name, last_version = flows
+    log(f"Querying for archived flow runs of {flow_name} in {project_name}.")
     now = datetime.now().isoformat()
     query = """
         query($flow_name: String, $last_version: Int, $now: timestamptz!, $offset: Int, $project_name: String){ # noqa
@@ -106,40 +107,41 @@ def query_not_active_flows(flows, environment="dev", prefect_client=None):
         "offset": 0,
         "project_name": project_name,
     }
-    archived_flows = []
     response = prefect_client.graphql(query=query, variables=variables)["data"]
+    log(f"Response Length: {len(response['flow'])}")
 
+    flow_versions_to_cancel = []
+    log("WARNING: The following (Flow, Version) have scheduled runs that must be cancelled.")
     for flow in response["flow"]:
-        if flow["flow_runs"]:
-            try:
-                archived_flows.append(
-                    {
-                        "id": flow["id"],
-                        "name": flow["name"],
-                        "version": flow["version"],
-                        "count": len(flow["flow_runs"]),
-                    }
-                )
-                log(f"Detected Archived Flow: {flow['name']} - {flow['version']}")
-            except Exception:
-                log(flow)
+        flow_runs = flow["flow_runs"]
 
-    return archived_flows
+        # Se não houver flow_runs futuras, não é necessário cancelar
+        if len(flow_runs) == 0:
+            continue
+
+        flow_versions_to_cancel.append(
+            {"id": flow["id"], "name": flow["name"], "version": flow["version"]}
+        )
+        log(f"({flow['name']}, {flow['version']}) - Last Version = {last_version}")
+
+    return flow_versions_to_cancel
 
 
 @task
 def get_prefect_client():
+    """
+    Returns a Prefect client object.
+
+    :return: Prefect client object.
+    """
     return Client()
 
 
 @task
-def cancel_flows(flows, prefect_client: Client = None) -> None:
+def cancel_flows(flow_versions_to_cancel: list, prefect_client: Client = None) -> None:
     """
     Cancels a flow run from the API.
     """
-    if not flows:
-        return
-    log(">>>>>>>>>> Cancelling flows")
 
     if not prefect_client:
         prefect_client = Client()
@@ -155,17 +157,16 @@ def cancel_flows(flows, prefect_client: Client = None) -> None:
             }
         }
     """
-    cancelled_flows = []
-    for flow in flows:
-        try:
-            response = prefect_client.graphql(query=query, variables=dict(flow_id=flow["id"]))
-            log(response)
-            log(f">>>>>>>>>> Flow run {flow['id']} arquivada")
-            cancelled_flows.append(flow)
-        except Exception:
-            log(traceback.format_exc())
-            log(f"Flow {flow['id']} could not be cancelled")
+    reports = []
+    for flow_version in flow_versions_to_cancel:
+        response = prefect_client.graphql(query=query, variables=dict(flow_id=flow_version["id"]))
+        report = f"- Flow {flow_version['name']} de versão {flow_version['id']} arquivado com status: {response}"  # noqa
+        log(report)
 
-    log(f"# of Cancelled flows: {len(cancelled_flows)}")
+        reports.append(report)
 
-    monitor.send_message(f"# of Cancelled flows: {len(cancelled_flows)}")
+    monitor.send_message(
+        title="Resultado da varredura",
+        message="\n".join(reports),
+        username="Desagendador de Flows Antigos",
+    )
