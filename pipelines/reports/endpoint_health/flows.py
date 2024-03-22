@@ -6,10 +6,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.reports.endpoint_health.tasks import (
-    create_description,
-    send_report
-)
+from pipelines.reports.endpoint_health.tasks import create_description, send_report
 from pipelines.utils.tasks import load_file_from_bigquery
 
 with Flow(
@@ -30,8 +27,7 @@ with Flow(
         environment=ENVIRONMENT,
     )
     text_report = create_description(
-        endpoints_table=endpoints_table,
-        results_table=health_check_results_table
+        endpoints_table=endpoints_table, results_table=health_check_results_table
     )
     send_report(plot=None, description=text_report)
 
