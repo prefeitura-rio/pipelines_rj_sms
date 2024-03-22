@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 import datetime
-import pytz
 import math
+
 import numpy as np
 import pandas as pd
+import pytz
 
 import pipelines.utils.monitor as monitor
 from pipelines.utils.credential_injector import authenticated_task as task
+
 
 @task
 def create_description(endpoints_table, results_table):
@@ -22,14 +24,14 @@ def create_description(endpoints_table, results_table):
 
     """
     metrics = []
-    results_table["moment"] = pd.to_datetime(results_table["moment"]).dt.tz_convert('Brazil/East')
+    results_table["moment"] = pd.to_datetime(results_table["moment"]).dt.tz_convert("Brazil/East")
 
     # Iterate over each endpoint
     for _, endpoint in endpoints_table.iterrows():
         records = results_table[results_table["api_url"] == endpoint["url"]]
         records.sort_values(by="moment", inplace=True)
 
-        today = datetime.datetime.now(tz=pytz.timezone('Brazil/East'))
+        today = datetime.datetime.now(tz=pytz.timezone("Brazil/East"))
         yesterday = today - datetime.timedelta(days=1)
 
         # Availability
@@ -43,7 +45,9 @@ def create_description(endpoints_table, results_table):
         hours_since_last_healthy = hours_since_last_healthy % 24
 
         if days_since_last_healthy >= 1:
-            last_healthy_record_text = f"{days_since_last_healthy} dias e {hours_since_last_healthy} horas atrás"
+            last_healthy_record_text = (
+                f"{days_since_last_healthy} dias e {hours_since_last_healthy} horas atrás"
+            )
         else:
             last_healthy_record_text = f"{hours_since_last_healthy} horas atrás"
 
@@ -82,8 +86,5 @@ def send_report(plot, description):
     Returns:
         None
     """
-    monitor.send_message(
-        title="Disponibilidade de API nas últimas 24h", 
-        message=description
-    )
+    monitor.send_message(title="Disponibilidade de API nas últimas 24h", message=description)
     return
