@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import traceback
 from datetime import datetime
 
 from prefect.client import Client
