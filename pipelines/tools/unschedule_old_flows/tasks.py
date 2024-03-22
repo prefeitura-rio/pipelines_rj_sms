@@ -119,7 +119,7 @@ def query_not_active_flows(flows, environment="staging", prefect_client=None):
                         "count": len(flow["flow_runs"]),
                     }
                 )
-                log(f"({flow['name']}, {flow['version']}) - Last Version = {last_version}") #noqa
+                log(f"({flow['name']}, {flow['version']}) - Last Version = {last_version}")  # noqa
             except Exception:
                 log(f"ERROR: {flow}")
 
