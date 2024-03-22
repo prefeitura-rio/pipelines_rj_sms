@@ -29,9 +29,7 @@ with Flow(
     text_report = create_description(
         endpoints_table=endpoints_table, results_table=health_check_results_table
     )
-    send_report(
-        description=text_report
-    )
+    send_report(description=text_report)
 
 disponibilidade_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 disponibilidade_api.executor = LocalDaskExecutor(num_workers=1)

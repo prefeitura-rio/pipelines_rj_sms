@@ -3,7 +3,7 @@ import asyncio
 
 import aiohttp
 import prefect
-from discord import Webhook, File, Embed
+from discord import Embed, File, Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
 
@@ -20,16 +20,16 @@ async def send_discord_webhook(text_content, fig_path=None, username=None):
     )
 
     async with aiohttp.ClientSession() as session:
-        kwargs = {'content':text_content}
+        kwargs = {"content": text_content}
         if username:
-            kwargs['username'] = username
+            kwargs["username"] = username
         if fig_path:
             file = File(fig_path, filename="image.png")
             embed = Embed()
             embed.set_image(url="attachment://image.png")
-            kwargs['file'] = file
-            kwargs['embed'] = embed
-        
+            kwargs["file"] = file
+            kwargs["embed"] = embed
+
         webhook = Webhook.from_url(webhook_url, session=session)
         await webhook.send(**kwargs)
 

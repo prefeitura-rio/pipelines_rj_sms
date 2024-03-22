@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import datetime
 import math
+
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
 import pytz
+import seaborn as sns
 
 import pipelines.utils.monitor as monitor
 from pipelines.utils.credential_injector import authenticated_task as task
-
 
 
 @task
@@ -46,7 +46,9 @@ def create_description(endpoints_table, results_table):
         hours_since_last_healthy = hours_since_last_healthy % 24
 
         if days_since_last_healthy >= 1:
-            last_healthy_record_text = f"{days_since_last_healthy} dias e {hours_since_last_healthy} horas atrás"  # noqa
+            last_healthy_record_text = (
+                f"{days_since_last_healthy} dias e {hours_since_last_healthy} horas atrás"  # noqa
+            )
         else:
             last_healthy_record_text = f"{hours_since_last_healthy} horas atrás"
 
@@ -80,8 +82,5 @@ def send_report(description):
     Returns:
         None
     """
-    monitor.send_message(
-        title="Disponibilidade de API nas últimas 24h",
-        message=description
-    )
+    monitor.send_message(title="Disponibilidade de API nas últimas 24h", message=description)
     return
