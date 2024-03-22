@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import datetime
-import pytz
 import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import pytz
 
 import pipelines.utils.monitor as monitor
 from pipelines.utils.credential_injector import authenticated_task as task
+
 
 
 @task
@@ -24,14 +25,14 @@ def create_description(endpoints_table, results_table):
 
     """
     metrics = []
-    results_table["moment"] = pd.to_datetime(results_table["moment"]).dt.tz_convert('Brazil/East')
+    results_table["moment"] = pd.to_datetime(results_table["moment"]).dt.tz_convert("Brazil/East")
 
     # Iterate over each endpoint
     for _, endpoint in endpoints_table.iterrows():
         records = results_table[results_table["api_url"] == endpoint["url"]]
         records.sort_values(by="moment", inplace=True)
 
-        today = datetime.datetime.now(tz=pytz.timezone('Brazil/East'))
+        today = datetime.datetime.now(tz=pytz.timezone("Brazil/East"))
         yesterday = today - datetime.timedelta(days=1)
 
         # Availability
