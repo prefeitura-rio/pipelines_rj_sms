@@ -24,7 +24,7 @@ with Flow("Tool: Desagendador de Flows Antigos") as unscheduler_flow:
         flows=flows, environment=ENVIRONMENT, prefect_client=unmapped(client)
     )
 
-    # cancel_flows.map(flows=archived_flow_runs, prefect_client=unmapped(client))
+    #cancel_flows(flow_versions_to_cancel=archived_flow_runs, prefect_client=client)
 
 unscheduler_flow.executor = LocalDaskExecutor(num_workers=10)
 unscheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

@@ -51,12 +51,13 @@ def query_active_flow_names(environment="staging", prefect_client=None):
         active_flows.append((flow["name"], flow["version"]))
 
     active_flows = list(set(active_flows))
+    log(f"Total Active Flow: {len(active_flows)}")
 
     return active_flows
 
 
 @task
-def query_not_active_flows(flows, environment="staging", prefect_client=None):
+def query_not_active_flows(flow_data, environment="staging", prefect_client=None):
     """
     Queries the graphql API for scheduled flow_runs of
     archived versions of <flow_name>
@@ -65,7 +66,9 @@ def query_not_active_flows(flows, environment="staging", prefect_client=None):
         flow_name (str): flow name
     """
     project_name = "production" if environment == "prod" else environment
-    flow_name, last_version = flows
+    flow_name, last_version = flow_data
+
+    log(f"Querying for archived flow runs of {flow_name} in {project_name}.")
     now = datetime.now().isoformat()
     query = """
         query($flow_name: String, $last_version: Int, $now: timestamptz!, $offset: Int, $project_name: String){ # noqa
