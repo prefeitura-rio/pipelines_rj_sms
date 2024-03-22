@@ -36,15 +36,16 @@ def send_message(title, message, username=None):
         message (str): The content of the message.
         username (str, optional): The username to be used for the webhook. Defaults to None.
     """
+    flow_name = prefect.context.get("flow_name")
     flow_run_id = prefect.context.get("flow_run_id")
+    task_name = prefect.context.get("task_full_name")
     task_run_id = prefect.context.get("task_run_id")
 
     content = f"""
 ## {title}
-- Flow Run ID: [{flow_run_id}](https://pipelines.dados.rio/flow-run/{flow_run_id})
-- Task Run ID: [{task_run_id}](https://pipelines.dados.rio/task-run/{task_run_id})
-------
+> Flow Run: [{flow_name}](https://pipelines.dados.rio/flow-run/{flow_run_id})
+> Task Run: [{task_name}](https://pipelines.dados.rio/task-run/{task_run_id})
+
 {message}
     """
-
     asyncio.run(send_discord_webhook(text_content=content, username=username))
