@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 import datetime
+
 import numpy as np
 import pandas as pd
 
@@ -17,14 +19,13 @@ def create_description(endpoints_table, results_table):
         last_healthy_record = last_healthy_record.item().strftime("%d/%m/%Y %H:%M:%S")
 
         yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-        records_today = records[pd.to_datetime(
-            records.moment).dt.tz_localize(None) > np.datetime64(yesterday)]
+        records_today = records[
+            pd.to_datetime(records.moment).dt.tz_localize(None) > np.datetime64(yesterday)
+        ]
 
         availability = records_today["is_healthy"].mean()
 
-        metrics.append(
-            (endpoint['title'], availability, last_healthy_record)
-        )
+        metrics.append((endpoint["title"], availability, last_healthy_record))
 
     metrics.sort(key=lambda x: x[1], reverse=False)
 
@@ -37,7 +38,7 @@ def create_description(endpoints_table, results_table):
             status_emoji = "⚠️"
 
         reports.append(
-            f"- {status_emoji} **{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}" #noqa
+            f"- {status_emoji} **{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}"  # noqa
         )
     report = "\n".join(reports)
     return report
@@ -51,8 +52,5 @@ def create_plot(endpoints_table, results_table):
 @task
 def send_report(plot, description):
 
-    monitor.send_message(
-        title="Disponibilidade de API nas últimas 24h",
-        message=description
-    )
+    monitor.send_message(title="Disponibilidade de API nas últimas 24h", message=description)
     return
