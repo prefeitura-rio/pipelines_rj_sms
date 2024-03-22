@@ -219,9 +219,7 @@ def rename_current_flow_run(
 
 
 @task
-def rename_current_std_flow_run(
-    environment: str, **kwargs
-) -> None:
+def rename_current_std_flow_run(environment: str, **kwargs) -> None:
     """
     Renames the current standardize flow run using the specified day
 
@@ -289,7 +287,7 @@ def transform_create_input_batches(input_list: list, batch_size: int = 250):
     Returns:
         list[list]: List of batches
     """
-    result = [input_list[i: i + batch_size] for i in range(0, len(input_list), batch_size)]
+    result = [input_list[i : i + batch_size] for i in range(0, len(input_list), batch_size)]
 
     return result
 
