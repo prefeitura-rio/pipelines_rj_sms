@@ -10,7 +10,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def query_active_flow_names(environment="dev", prefect_client=None):
+def query_active_flow_names(environment="staging", prefect_client=None):
     """
     Queries the active flow names and versions from the Prefect server.
 
@@ -25,7 +25,6 @@ def query_active_flow_names(environment="dev", prefect_client=None):
         prefect.utilities.exceptions.ClientError: If an error occurs during the query.
 
     """
-    project_name = "staging" if environment == "dev" else "production"
 
     query = """
         query ($offset: Int, $project_name: String){
@@ -43,7 +42,7 @@ def query_active_flow_names(environment="dev", prefect_client=None):
     """
     if not prefect_client:
         prefect_client = Client()
-    variables = {"offset": 0, "project_name": project_name}
+    variables = {"offset": 0, "project_name": environment}
 
     response = prefect_client.graphql(query=query, variables=variables)["data"]
     active_flows = []
@@ -57,7 +56,7 @@ def query_active_flow_names(environment="dev", prefect_client=None):
 
 
 @task
-def query_not_active_flows(flows, environment="dev", prefect_client=None):
+def query_not_active_flows(flows, environment="staging", prefect_client=None):
     """
     Queries the graphql API for scheduled flow_runs of
     archived versions of <flow_name>
@@ -65,7 +64,6 @@ def query_not_active_flows(flows, environment="dev", prefect_client=None):
     Args:
         flow_name (str): flow name
     """
-    project_name = "staging" if environment == "dev" else "production"
 
     flow_name, last_version = flows
     now = datetime.now().isoformat()
@@ -104,11 +102,12 @@ def query_not_active_flows(flows, environment="dev", prefect_client=None):
         "last_version": last_version,
         "now": now,
         "offset": 0,
-        "project_name": project_name,
+        "project_name": environment,
     }
     archived_flows = []
     response = prefect_client.graphql(query=query, variables=variables)["data"]
 
+    log("WARNING: The following (Flow, Version) have scheduled runs that must be cancelled.")
     for flow in response["flow"]:
         if flow["flow_runs"]:
             try:
@@ -120,9 +119,9 @@ def query_not_active_flows(flows, environment="dev", prefect_client=None):
                         "count": len(flow["flow_runs"]),
                     }
                 )
-                log(f"Detected Archived Flow: {flow['name']} - {flow['version']}")
+                log(f"({flow['name']}, {flow['version']}) - Last Version = {last_version}") #noqa
             except Exception:
-                log(flow)
+                log(f"ERROR: {flow}")
 
     return archived_flows
 
@@ -139,7 +138,6 @@ def cancel_flows(flows, prefect_client: Client = None) -> None:
     """
     if not flows:
         return
-    log(">>>>>>>>>> Cancelling flows")
 
     if not prefect_client:
         prefect_client = Client()
@@ -168,4 +166,4 @@ def cancel_flows(flows, prefect_client: Client = None) -> None:
 
     log(f"# of Cancelled flows: {len(cancelled_flows)}")
 
-    monitor.send_message(f"# of Cancelled flows: {len(cancelled_flows)}")
+    monitor.send_message(f"Number of Cancelled flows: {len(cancelled_flows)}")
