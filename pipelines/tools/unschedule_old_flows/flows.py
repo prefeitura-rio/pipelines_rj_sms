@@ -8,7 +8,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.tools.unschedule_old_flows.tasks import (
-    cancel_flows,
+#    cancel_flows,
     get_prefect_client,
     query_active_flow_names,
     query_not_active_flows,
