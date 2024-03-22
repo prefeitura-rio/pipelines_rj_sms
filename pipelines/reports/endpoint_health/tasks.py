@@ -34,9 +34,9 @@ def create_description(endpoints_table, results_table):
         if availability == 1.0:
             line = f"- ✅**{name.upper()}**: {availability:.0%} de disponibilidade."
         elif availability >= 0.9:
-            line = f"- ⚠️**{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}"
+            line = f"- ⚠️**{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}" #noqa
         else:
-            line = f"- ❌**{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}"
+            line = f"- ❌**{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}" #noqa
         reports.append(line)
 
     report = "\n".join(reports)
