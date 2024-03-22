@@ -1,42 +1,64 @@
 # -*- coding: utf-8 -*-
 import datetime
-
+import pytz
+import math
 import numpy as np
 import pandas as pd
 
 import pipelines.utils.monitor as monitor
 from pipelines.utils.credential_injector import authenticated_task as task
 
-
 @task
 def create_description(endpoints_table, results_table):
+    """
+    Creates a description of endpoint health metrics based on the provided endpoints_table and results_table.
+
+    Args:
+        endpoints_table (pandas.DataFrame): A DataFrame containing information about the endpoints.
+        results_table (pandas.DataFrame): A DataFrame containing the results of endpoint health checks.
+
+    Returns:
+        str: A formatted report describing the availability and last healthy record of each endpoint.
+
+    """
     metrics = []
+    results_table["moment"] = pd.to_datetime(results_table["moment"]).dt.tz_convert('Brazil/East')
+
+    # Iterate over each endpoint
     for _, endpoint in endpoints_table.iterrows():
         records = results_table[results_table["api_url"] == endpoint["url"]]
         records.sort_values(by="moment", inplace=True)
 
-        last_healthy_record = records[records["is_healthy"]].tail(1)["moment"].values[0]  # noqa
-        last_healthy_record = last_healthy_record.item().strftime("%d/%m/%Y %H:%M:%S")
+        today = datetime.datetime.now(tz=pytz.timezone('Brazil/East'))
+        yesterday = today - datetime.timedelta(days=1)
 
-        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-        records_today = records[
-            pd.to_datetime(records.moment).dt.tz_localize(None) > np.datetime64(yesterday)
-        ]
-
+        # Availability
+        records_today = records[records.moment > yesterday]
         availability = records_today["is_healthy"].mean()
 
-        metrics.append((endpoint["title"], availability, last_healthy_record))
+        # Last healthy record
+        last_healthy_record = records[records["is_healthy"]]["moment"].iloc[-1]
+        hours_since_last_healthy = math.floor((today - last_healthy_record).total_seconds() / 3600)
+        days_since_last_healthy = math.floor(hours_since_last_healthy / 24.0)
+        hours_since_last_healthy = hours_since_last_healthy % 24
+
+        if days_since_last_healthy >= 1:
+            last_healthy_record_text = f"{days_since_last_healthy} dias e {hours_since_last_healthy} horas atrás"
+        else:
+            last_healthy_record_text = f"{hours_since_last_healthy} horas atrás"
+
+        metrics.append((endpoint["title"], availability, last_healthy_record_text))
 
     metrics.sort(key=lambda x: x[1], reverse=False)
 
     reports = []
-    for name, availability, last_healthy in metrics:
+    for name, availability, last_healthy_record_text in metrics:
         if availability == 1.0:
-            line = f"- ✅**{name.upper()}**: {availability:.0%} de disponibilidade."
+            line = f"- ✅ **{name.upper()}**: {availability:.0%} de disponibilidade."
         elif availability >= 0.9:
-            line = f"- ⚠️**{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}"  # noqa
+            line = f"- ⚠️ **{name.upper()}**: {availability:.0%} de disponibilidade (última disponibilidade: {last_healthy_record_text})"  # noqa
         else:
-            line = f"- ❌**{name.upper()}**: {availability:.0%} de disponibilidade.\n   - Última vez disponível em: {last_healthy}"  # noqa
+            line = f"- ❌ **{name.upper()}**: {availability:.0%} de disponibilidade (última disponibilidade: {last_healthy_record_text})"  # noqa
         reports.append(line)
 
     report = "\n".join(reports)
@@ -50,6 +72,18 @@ def create_plot(endpoints_table, results_table):
 
 @task
 def send_report(plot, description):
+    """
+    Sends a report with the given plot and description.
 
-    monitor.send_message(title="Disponibilidade de API nas últimas 24h", message=description)
+    Args:
+        plot: The plot to include in the report.
+        description: The description of the report.
+
+    Returns:
+        None
+    """
+    monitor.send_message(
+        title="Disponibilidade de API nas últimas 24h", 
+        message=description
+    )
     return
