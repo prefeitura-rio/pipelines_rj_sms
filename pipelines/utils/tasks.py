@@ -633,6 +633,36 @@ def from_json_to_csv(input_path, sep=";"):
 
 
 @task
+def fix_columns_names(
+    file_path: str,
+    csv_delimiter: str = ";",
+    encoding: str = "utf-8",
+) -> None:
+    """
+    Fixes the column names of a CSV file.
+
+    Parameters:
+    - file_path (str): The path to the CSV file.
+    - csv_delimiter (str, optional): The delimiter used in the CSV file. Defaults to ";".
+    - encoding (str, optional): The encoding of the CSV file. Defaults to "utf-8".
+
+    Returns:
+    - None
+    """
+
+    dataframe = pd.read_csv(file_path, sep=csv_delimiter, header=None, encoding=encoding, dtype=str)
+    new_header = dataframe.iloc[0]  # grab the first row for the header
+    dataframe = dataframe[1:]  # take the data less the header row
+    dataframe.columns = new_header  # set the header row as the df header
+    log(f">>>>> Dataframe shape: {dataframe.shape}")
+    log(f">>>>> Dataframe columns: {dataframe.columns}")
+    dataframe.columns = remove_columns_accents(dataframe)
+    log(f">>>>> Dataframe columns after treatment: {dataframe.columns}")
+
+    dataframe.to_csv(file_path, index=False, sep=csv_delimiter, encoding="utf-8")
+
+
+@task
 def create_partitions(data_path: str, partition_directory: str, level="day", partition_date=None):
     """
     Creates partitions for each file in the given data path and saves them in the
