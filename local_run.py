@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.tools.api_healthcheck.flows import monitoramento_api
 from pipelines.reports.endpoint_health.flows import disponibilidade_api
+from pipelines.tools.api_healthcheck.flows import monitoramento_api
 
 # ==================================================
 # CONFIGURATION
