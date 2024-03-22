@@ -11,7 +11,7 @@ from pipelines.tools.api_healthcheck.tasks import (
     check_api_health,
     create_discord_alert,
     get_api_url,
-    insert_results
+    insert_results,
 )
 from pipelines.utils.tasks import load_file_from_bigquery
 
