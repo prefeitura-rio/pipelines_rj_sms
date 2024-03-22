@@ -15,6 +15,7 @@ import requests
 
 # from prefect import task
 from prefect.client import Client
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuario_constants
@@ -128,7 +129,7 @@ def get_std_flow_scheduled_day() -> date:
     Returns:
         date: The scheduled day for the flow execution.
     """
-    scheduled_start_time = prefect.context.get("scheduled_start_time")
+    scheduled_start_time = datetime.now()  # prefect.context.get("scheduled_start_time")
     scheduled_date = scheduled_start_time - timedelta(days=1)
     return scheduled_date
 
@@ -218,6 +219,34 @@ def rename_current_flow_run(
 
 
 @task
+def rename_current_std_flow_run(
+    environment: str, **kwargs
+) -> None:
+    """
+    Renames the current standardize flow run using the specified day
+
+    Args:
+        environment (str): The environment of the flow run
+
+    Returns:
+        None
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
+
+    title = "Standardization routine"
+
+    params = [f"{key}={value}" for key, value in kwargs.items()]
+    params.append(f"env={environment}")
+    params = sorted(params)
+
+    flow_run_name = f"{title} ({', '.join(params)}): {flow_run_scheduled_time}"
+
+    client = Client()
+    client.set_flow_run_name(flow_run_id, flow_run_name)
+
+
+@task
 @stored_variable_converter()
 def transform_filter_valid_cpf(objects: list[dict]) -> list[dict]:
     """
@@ -260,7 +289,7 @@ def transform_create_input_batches(input_list: list, batch_size: int = 250):
     Returns:
         list[list]: List of batches
     """
-    result = [input_list[i : i + batch_size] for i in range(0, len(input_list), batch_size)]
+    result = [input_list[i: i + batch_size] for i in range(0, len(input_list), batch_size)]
 
     return result
 

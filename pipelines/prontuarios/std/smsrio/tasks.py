@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Tuple
 
 import pandas as pd
-from prefect import task
+from pipelines.utils.credential_injector import authenticated_task as task
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.std.formatters.generic.patient import (
@@ -34,6 +34,9 @@ def get_params(start_datetime: str) -> dict:
         dict : params dictionary
     """
     end_datetime = start_datetime + timedelta(days=1)
+    log(f"""
+        Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
+        to {end_datetime.strftime("%Y-%m-%d 00:00:00")}""")
     return {
         "source_start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
         "source_end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
@@ -41,7 +44,7 @@ def get_params(start_datetime: str) -> dict:
     }
 
 
-@task
+@task(nout=5)
 def define_constants() -> Tuple[list, dict, dict, dict, dict]:
     """
     Creating constants as global variables
