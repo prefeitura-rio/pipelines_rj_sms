@@ -10,8 +10,7 @@ from pipelines.tools.api_healthcheck.schedules import update_schedule
 from pipelines.tools.api_healthcheck.tasks import (
     check_api_health,
     get_api_url,
-    insert_results,
-    create_discord_alert
+    insert_results
 )
 from pipelines.utils.tasks import load_file_from_bigquery
 
@@ -32,8 +31,6 @@ with Flow(
     results = check_api_health.map(api_info=api_url_list)
 
     insert_results(rows_to_insert=results)
-
-    create_discord_alert(rows_to_insert=results)
 
 monitoramento_api.schedule = update_schedule
 monitoramento_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
