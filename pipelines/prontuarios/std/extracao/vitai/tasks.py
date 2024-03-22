@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 import sqlalchemy
-from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 from sqlalchemy import create_engine, text
+
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
@@ -69,7 +70,7 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
     return {
         "source_start_datetime": start_datetime,
         "source_end_datetime": end_datetime,
-        "datasource_system": "smsrio",
+        "datasource_system": "vitai",
     }
 
 
