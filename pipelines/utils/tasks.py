@@ -2,7 +2,7 @@
 # pylint: disable=C0103, R0913, C0301, W3101
 # flake8: noqa: E501
 """
-General utilities for SMS pipelines.
+General utilities for SMS pipelines
 """
 
 import json

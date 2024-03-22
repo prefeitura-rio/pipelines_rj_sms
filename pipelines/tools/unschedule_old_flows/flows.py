@@ -7,7 +7,6 @@ from prefect.utilities.edges import unmapped
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.tools.unschedule_old_flows.schedules import schedule
 from pipelines.tools.unschedule_old_flows.tasks import (
     cancel_flows,
     get_prefect_client,
@@ -28,7 +27,6 @@ with Flow("Tool: Desagendador de Flows Antigos") as unscheduler_flow:
 
     cancel_flows.map(flows=archived_flow_runs, prefect_client=unmapped(client))
 
-unscheduler_flow.schedule = schedule
 unscheduler_flow.executor = LocalDaskExecutor(num_workers=10)
 unscheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 unscheduler_flow.run_config = KubernetesRun(
