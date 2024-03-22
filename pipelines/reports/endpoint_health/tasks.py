@@ -2,10 +2,8 @@
 import datetime
 import math
 
-import matplotlib.pyplot as plt
 import pandas as pd
 import pytz
-import seaborn as sns
 
 import pipelines.utils.monitor as monitor
 from pipelines.utils.credential_injector import authenticated_task as task
