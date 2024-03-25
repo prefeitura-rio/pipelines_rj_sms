@@ -5,17 +5,17 @@
 Tasks for execute_dbt
 """
 
+import logging
 import os
 import shutil
 
 import git
 import prefect
 from dbt.cli.main import dbtRunner, dbtRunnerResult
-import logging
 from prefect import task
 from prefect.client import Client
-from prefect.utilities.logging import get_logger
 from prefect.engine.signals import FAIL
+from prefect.utilities.logging import get_logger
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.execute_dbt.constants import constants as execute_dbt_constants
@@ -69,7 +69,7 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
     """
     prefect_logger = get_logger()
 
-    dbt_logger = logging.getLogger('dbt')
+    dbt_logger = logging.getLogger("dbt")
     for handler in prefect_logger.handlers:
         dbt_logger.addHandler(handler)
     dbt_logger.setLevel(logging.DEBUG)
