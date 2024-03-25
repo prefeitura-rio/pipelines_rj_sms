@@ -11,8 +11,10 @@ import shutil
 import git
 import prefect
 from dbt.cli.main import dbtRunner, dbtRunnerResult
+import logging
 from prefect import task
 from prefect.client import Client
+from prefect.utilities.logging import get_logger
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -65,7 +67,12 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
         model (str): Name of model. Can be empty.
         target (str): Name of the target that will be used by dbt
     """
-    # Repository download
+    prefect_logger = get_logger()
+
+    dbt_logger = logging.getLogger('dbt')
+    for handler in prefect_logger.handlers:
+        dbt_logger.addHandler(handler)
+    dbt_logger.setLevel(logging.DEBUG)
 
     try:
         # Execute DBT
@@ -93,12 +100,13 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
                 model,
             ]
         res: dbtRunnerResult = dbt.invoke(cli_args)
-        try:
-            failures = [r.node.name for r in res.result if r.status == "fail"]
-            if failures:
-                raise FAIL(f"{len(failures)} tasks failed: {failures}")
-        except Exception as e:
-            log(f"An error occurred: {e}")
+        failures = []
+        for command_result in res.result:
+            log(f"Command: {command_result.node.name} - Status: {command_result.status}")
+            if command_result.status == "fail":
+                failures.append(command_result.node.name)
+        if len(failures) > 0:
+            raise FAIL(f"{len(failures)} tasks failed: {failures}")
     except git.GitCommandError as e:
         log(f"Error when cloning repository: {e}")
 
