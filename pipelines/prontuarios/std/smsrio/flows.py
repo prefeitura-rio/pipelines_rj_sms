@@ -60,7 +60,7 @@ with Flow(
     request_params = get_params(start_datetime=START_DATETIME)
 
     raw_patient_data = load_from_api(
-        url=api_url + "raw/patientrecords",
+        url=api_url + "raw/patientrecords/fromInsertionDatetime",
         params=request_params,
         credentials=api_token,
         auth_method="bearer",

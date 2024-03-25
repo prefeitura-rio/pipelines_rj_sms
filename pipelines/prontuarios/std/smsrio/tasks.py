@@ -40,8 +40,8 @@ def get_params(start_datetime: str) -> dict:
         to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
     )
     return {
-        "source_start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
-        "source_end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
+        "start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
+        "end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
         "datasource_system": "smsrio",
     }
 
