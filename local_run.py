@@ -3,13 +3,18 @@ import argparse
 
 from pipelines.reports.endpoint_health.flows import disponibilidade_api
 from pipelines.tools.api_healthcheck.flows import monitoramento_api
-
+from pipelines.execute_dbt.flows import sms_execute_dbt
 # ==================================================
 # CONFIGURATION
 # --------------------------------------------------
 # Please, register here pairs: (flow, param)
 # ==================================================
 flows_run_cases = [
+    (sms_execute_dbt,  {
+        "command": "test",
+        "environment": "dev",
+        "model": None,
+    }),
     (disponibilidade_api, {}),
     (monitoramento_api, {}),
 ]
