@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 import asyncio
-
 import aiohttp
 import prefect
+from typing import Literal
 from discord import Embed, File, Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
 
-async def send_discord_webhook(text_content, fig_path=None, username=None):
+async def send_discord_webhook(
+    text_content: str,
+    file_path: str = None,
+    username: str = None,
+    monitor_slug: str = Literal["endpoint-health","dbt-runs","data-ingestion"]
+):
     """
     Sends a message to a Discord webhook.
 
@@ -15,26 +20,31 @@ async def send_discord_webhook(text_content, fig_path=None, username=None):
         message (str): The message to send.
         username (str, optional): The username to use when sending the message. Defaults to None.
     """
-    webhook_url = get_secret(secret_name="DISCORD_WEBHOOK_URL", environment="prod").get(
-        "DISCORD_WEBHOOK_URL"
-    )
+    secret_name = f"DISCORD_WEBHOOK_URL_{monitor_slug.upper()}"
+    webhook_url = get_secret(
+        secret_name=secret_name,
+        environment="prod"
+    ).get(secret_name)
 
     async with aiohttp.ClientSession() as session:
         kwargs = {"content": text_content}
         if username:
             kwargs["username"] = username
-        if fig_path:
-            file = File(fig_path, filename="image.png")
-            embed = Embed()
-            embed.set_image(url="attachment://image.png")
+        if file_path:
+            file = File(file_path, filename=file_path)
+
+            if '.png' in file_path:
+                embed = Embed()
+                embed.set_image(url=f"attachment://{file_path}")
+                kwargs["embed"] = embed
+
             kwargs["file"] = file
-            kwargs["embed"] = embed
 
         webhook = Webhook.from_url(webhook_url, session=session)
         await webhook.send(**kwargs)
 
 
-def send_message(title, message, fig_path=None, username=None):
+def send_message(title, message, monitor_slug, file_path=None, username=None):
     """
     Sends a message with the given title and content to a webhook.
 
@@ -55,4 +65,9 @@ def send_message(title, message, fig_path=None, username=None):
 
 {message}
     """
-    asyncio.run(send_discord_webhook(text_content=content, fig_path=fig_path, username=username))
+    asyncio.run(send_discord_webhook(
+        text_content=content,
+        file_path=file_path,
+        username=username,
+        monitor_slug=monitor_slug
+    ))
