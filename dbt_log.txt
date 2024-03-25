@@ -2,14 +2,14 @@
 [0m19:31:32.779405 [info ] [ThreadPool]: Registered adapter: bigquery=1.7.3
 [0m19:31:32.948404 [info ] [ThreadPool]: Unable to do partial parsing because saved manifest not found. Starting full parse.
 [0m19:31:53.048607 [info ] [ThreadPool]: Found 83 models, 30 tests, 2 operations, 26 sources, 0 exposures, 0 metrics, 1574 macros, 0 groups, 0 semantic models
-[0m19:31:53.070608 [info ] [ThreadPool]: 
-[0m19:31:56.458584 [info ] [ThreadPool]: 
+[0m19:31:53.070608 [info ] [ThreadPool]:
+[0m19:31:56.458584 [info ] [ThreadPool]:
 [0m19:31:56.460584 [info ] [ThreadPool]: Running 1 on-run-start hook
 [0m19:31:57.564165 [info ] [ThreadPool]: 1 of 1 START hook: elementary.on-run-start.0 ................................... [RUN]
 [0m19:31:57.566165 [info ] [ThreadPool]: 1 of 1 OK hook: elementary.on-run-start.0 ...................................... [[32mOK[0m in 0.00s]
-[0m19:31:57.568164 [info ] [ThreadPool]: 
+[0m19:31:57.568164 [info ] [ThreadPool]:
 [0m19:31:57.571164 [info ] [ThreadPool]: Concurrency: 6 threads (target='dev')
-[0m19:31:57.573164 [info ] [ThreadPool]: 
+[0m19:31:57.573164 [info ] [ThreadPool]:
 [0m19:31:57.600164 [info ] [Thread-12 ]: 1 of 30 START test core__dim_estabelecimento__id_cnes__unique .................. [RUN]
 [0m19:31:57.605165 [info ] [Thread-13 ]: 2 of 30 START test core__dim_material__id_material__unique ..................... [RUN]
 [0m19:31:57.607166 [info ] [Thread-14 ]: 3 of 30 START test core__estoque__movimento_vs_posicao ......................... [RUN]
@@ -67,29 +67,29 @@
 [0m19:32:29.075545 [info ] [Thread-15 ]: 28 of 30 PASS raw_sheets__estabelecimento_auxiliar__id_cnes__unique ............ [[32mPASS[0m in 5.00s]
 [0m19:32:29.727385 [info ] [Thread-16 ]: 29 of 30 PASS raw_sheets__material_remume__id_material__relationship ........... [[32mPASS[0m in 5.21s]
 [0m19:32:30.191957 [info ] [Thread-14 ]: 30 of 30 PASS raw_sheets__material_remume__id_material__unique ................. [[32mPASS[0m in 5.13s]
-[0m19:32:30.199957 [info ] [ThreadPool]: 
+[0m19:32:30.199957 [info ] [ThreadPool]:
 [0m19:32:30.201957 [info ] [ThreadPool]: Running 1 on-run-end hook
 [0m19:32:52.167946 [info ] [ThreadPool]: 1 of 1 START hook: elementary.on-run-end.0 ..................................... [RUN]
 [0m19:32:52.170945 [info ] [ThreadPool]: 1 of 1 OK hook: elementary.on-run-end.0 ........................................ [[32mOK[0m in 0.00s]
-[0m19:32:52.171944 [info ] [ThreadPool]: 
-[0m19:32:52.198945 [info ] [ThreadPool]: 
+[0m19:32:52.171944 [info ] [ThreadPool]:
+[0m19:32:52.198945 [info ] [ThreadPool]:
 [0m19:32:52.200946 [info ] [ThreadPool]: Finished running 30 tests, 2 hooks in 0 hours 0 minutes and 59.13 seconds (59.13s).
-[0m19:32:52.286945 [info ] [ThreadPool]: 
+[0m19:32:52.286945 [info ] [ThreadPool]:
 [0m19:32:52.288945 [info ] [ThreadPool]: [31mCompleted with 1 error and 2 warnings:[0m
-[0m19:32:52.290944 [info ] [ThreadPool]: 
-[0m19:32:52.296945 [info ] [ThreadPool]: 
+[0m19:32:52.290944 [info ] [ThreadPool]:
+[0m19:32:52.296945 [info ] [ThreadPool]:
 [0m19:32:52.298945 [info ] [ThreadPool]:   compiled Code at target\compiled\rj_sms\models\raw\prontuario_vitai\_prontuario_vitai__schema.yml\raw_prontuario_vitai__estoque_movimento__chegando_todas_unidades.sql
-[0m19:32:52.300945 [info ] [ThreadPool]: 
+[0m19:32:52.300945 [info ] [ThreadPool]:
 [0m19:32:52.301945 [info ] [ThreadPool]:   See test failures:
-[0m19:32:52.304945 [info ] [ThreadPool]: 
-[0m19:32:52.309945 [info ] [ThreadPool]: 
+[0m19:32:52.304945 [info ] [ThreadPool]:
+[0m19:32:52.309945 [info ] [ThreadPool]:
 [0m19:32:52.312945 [info ] [ThreadPool]:   compiled Code at target\compiled\rj_sms\models\raw\prontuario_vitacare\_prontuario_vitacare_schema.yml\raw_prontuario_vitacare__estoque_posicao__id_material__not_null.sql
-[0m19:32:52.314946 [info ] [ThreadPool]: 
+[0m19:32:52.314946 [info ] [ThreadPool]:
 [0m19:32:52.316944 [info ] [ThreadPool]:   See test failures:
-[0m19:32:52.318944 [info ] [ThreadPool]: 
-[0m19:32:52.323945 [info ] [ThreadPool]: 
+[0m19:32:52.318944 [info ] [ThreadPool]:
+[0m19:32:52.323945 [info ] [ThreadPool]:
 [0m19:32:52.325944 [info ] [ThreadPool]:   compiled Code at target\compiled\rj_sms\models\raw\prontuario_vitai\_prontuario_vitai__schema.yml\raw_prontuario_vitai__estoque_movimento__unique_combination_of_columns.sql
-[0m19:32:52.327945 [info ] [ThreadPool]: 
+[0m19:32:52.327945 [info ] [ThreadPool]:
 [0m19:32:52.330945 [info ] [ThreadPool]:   See test failures:
-[0m19:32:52.332944 [info ] [ThreadPool]: 
+[0m19:32:52.332944 [info ] [ThreadPool]:
 [0m19:32:52.334946 [info ] [ThreadPool]: Done. PASS=27 WARN=2 ERROR=1 SKIP=0 TOTAL=30

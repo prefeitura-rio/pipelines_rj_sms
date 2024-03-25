@@ -9,11 +9,10 @@ import os
 import shutil
 
 import git
+import pandas as pd
 import prefect
 from dbt.cli.main import dbtRunner, dbtRunnerResult
-import pandas as pd
 from prefect.client import Client
-
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -70,9 +69,12 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
     """
     cli_args = [
         command,
-        "--profiles-dir", repository_path,
-        "--project-dir", repository_path,
-        "--target", target
+        "--profiles-dir",
+        repository_path,
+        "--project-dir",
+        repository_path,
+        "--target",
+        target,
     ]
 
     if model:
@@ -83,12 +85,12 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
     res: dbtRunnerResult = dbt.invoke(cli_args)
 
     # DBT Log Extraction
-    with open("dbt_repository/logs/dbt.log", "r", encoding='utf-8', errors='ignore') as log_file:
+    with open("dbt_repository/logs/dbt.log", "r", encoding="utf-8", errors="ignore") as log_file:
         logs = log_file.read()
-        logs = pd.DataFrame({'text':logs.splitlines()})
-        logs = logs[ logs['text'].str.contains('\\[info') ]
+        logs = pd.DataFrame({"text": logs.splitlines()})
+        logs = logs[logs["text"].str.contains("\\[info")]
 
-    report = "\n".join( logs['text'].to_list() )
+    report = "\n".join(logs["text"].to_list())
     log(f"Logs do DBT:{report}")
 
     with open("dbt_log.txt", "w+", encoding="utf-8") as log_file:
@@ -114,7 +116,7 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
             title=f"❌ Execução `dbt {command}` finalizada com Erros",
             message=f"{param_report}\n{failure_report}",
             file_path="dbt_log.txt",
-            monitor_slug="dbt-runs"
+            monitor_slug="dbt-runs",
         )
         raise FAIL(failure_report)
     else:
@@ -122,7 +124,7 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
             title=f"✅ Execução `dbt {command}` finalizada sem erros",
             message=f"{param_report}\nVerifique o log para mais detalhes.",
             file_path="dbt_log.txt",
-            monitor_slug="dbt-runs"
+            monitor_slug="dbt-runs",
         )
 
 

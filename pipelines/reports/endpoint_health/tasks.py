@@ -83,6 +83,6 @@ def send_report(description):
     monitor.send_message(
         title="Disponibilidade de API nas últimas 24h",
         message=description,
-        monitor_slug="endpoint-health"
+        monitor_slug="endpoint-health",
     )
     return

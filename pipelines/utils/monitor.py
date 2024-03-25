@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import asyncio
+from typing import Literal
+
 import aiohttp
 import prefect
-from typing import Literal
 from discord import Embed, File, Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
@@ -11,7 +12,7 @@ async def send_discord_webhook(
     text_content: str,
     file_path: str = None,
     username: str = None,
-    monitor_slug: str = Literal["endpoint-health","dbt-runs","data-ingestion"]
+    monitor_slug: str = Literal["endpoint-health", "dbt-runs", "data-ingestion"],
 ):
     """
     Sends a message to a Discord webhook.
@@ -21,10 +22,7 @@ async def send_discord_webhook(
         username (str, optional): The username to use when sending the message. Defaults to None.
     """
     secret_name = f"DISCORD_WEBHOOK_URL_{monitor_slug.upper()}"
-    webhook_url = get_secret(
-        secret_name=secret_name,
-        environment="prod"
-    ).get(secret_name)
+    webhook_url = get_secret(secret_name=secret_name, environment="prod").get(secret_name)
 
     async with aiohttp.ClientSession() as session:
         kwargs = {"content": text_content}
@@ -33,7 +31,7 @@ async def send_discord_webhook(
         if file_path:
             file = File(file_path, filename=file_path)
 
-            if '.png' in file_path:
+            if ".png" in file_path:
                 embed = Embed()
                 embed.set_image(url=f"attachment://{file_path}")
                 kwargs["embed"] = embed
@@ -65,9 +63,8 @@ def send_message(title, message, monitor_slug, file_path=None, username=None):
 
 {message}
     """
-    asyncio.run(send_discord_webhook(
-        text_content=content,
-        file_path=file_path,
-        username=username,
-        monitor_slug=monitor_slug
-    ))
+    asyncio.run(
+        send_discord_webhook(
+            text_content=content, file_path=file_path, username=username, monitor_slug=monitor_slug
+        )
+    )
