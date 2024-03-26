@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
 from datetime import date, timedelta
 
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import get_secret_key
-from pipelines.reports.data_ingestion.constants import constants
-from pipelines.utils.monitor import send_message
 import pandas as pd
+
+from pipelines.reports.data_ingestion.constants import constants
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.monitor import send_message
+from pipelines.utils.tasks import get_secret_key
 
 
 @task
@@ -41,17 +43,14 @@ def get_target_date(custom_target_date: str) -> date:
         ValueError: If the custom_target_date is not in the correct format.
 
     """
-    if custom_target_date == '':
+    if custom_target_date == "":
         return date.today() - timedelta(days=1)
     else:
         return date.fromisoformat(custom_target_date)
 
 
 @task
-def get_inserted_registers(
-    target_date: date,
-    db_url: str
-) -> pd.DataFrame:
+def get_inserted_registers(target_date: date, db_url: str) -> pd.DataFrame:
     """
     Retrieves the inserted raw registers from the database within a specified time window.
 
@@ -77,7 +76,7 @@ def get_inserted_registers(
         where date(raw.created_at) = '{target_date}'
         order by raw.source_updated_at desc
         """,
-        db_url
+        db_url,
     )
     patient = pd.read_sql(
         f"""
@@ -93,7 +92,7 @@ def get_inserted_registers(
         where date(raw.created_at) = '{target_date}'
         order by raw.source_updated_at desc
         """,
-        db_url
+        db_url,
     )
     return pd.concat([conditions, patient], ignore_index=True)
 
@@ -109,22 +108,27 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
     Returns:
         None
     """
-    formatted_date = target_date.strftime('%d/%m/%Y')
+    formatted_date = target_date.strftime("%d/%m/%Y")
 
-    metrics = data.groupby(by=['system', 'entity']).count().\
-        reset_index()[['system', 'entity', 'raw_acquisition_moment', 'standardization_moment']].\
-        rename(columns={
-            'raw_acquisition_moment': 'Registros Brutos',
-            'standardization_moment': 'Registros Padronizados',
-            'system': 'Fonte de Dados',
-            'entity': 'Entidade'
-        })
+    metrics = (
+        data.groupby(by=["system", "entity"])
+        .count()
+        .reset_index()[["system", "entity", "raw_acquisition_moment", "standardization_moment"]]
+        .rename(
+            columns={
+                "raw_acquisition_moment": "Registros Brutos",
+                "standardization_moment": "Registros Padronizados",
+                "system": "Fonte de Dados",
+                "entity": "Entidade",
+            }
+        )
+    )
 
     send_message(
         title=f"Ingestão Diária de Dados Brutos: {formatted_date}",
         message=f"""Quantidade de Dados Inseridos na base:
         ```{metrics.to_markdown(index=False)}```
         """,
-        monitor_slug="data-ingestion"
+        monitor_slug="data-ingestion",
     )
     return None
