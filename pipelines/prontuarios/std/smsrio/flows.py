@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, unmapped
+from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -19,8 +19,9 @@ from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_std_flow_scheduled_day,
     load_to_api,
+    rename_current_std_flow_run,
 )
-from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, load_from_api
+from pipelines.utils.tasks import get_secret_key, load_from_api
 
 with Flow(
     name="Prontuários (SMSRio) - Padronização de Pacientes",
@@ -34,7 +35,9 @@ with Flow(
     ####################################
     # Set environment
     ####################################
-    credential_injection = inject_gcp_credentials(environment=ENVIRONMENT)
+
+    with case(RENAME_FLOW, True):
+        rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="SMSRIO")
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -42,24 +45,22 @@ with Flow(
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
         infisical_api_username=smsrio_constants.INFISICAL_API_USERNAME.value,
         infisical_api_password=smsrio_constants.INFISICAL_API_PASSWORD.value,
-        upstream_tasks=[credential_injection],
     )
 
     api_url = get_secret_key(
         secret_path="/",
         secret_name=prontuarios_constants.INFISICAL_API_URL.value,
         environment=ENVIRONMENT,
-        upstream_tasks=[credential_injection],
     )
 
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    START_DATETIME = get_std_flow_scheduled_day(upstream_tasks=[credential_injection])
-    request_params = get_params(START_DATETIME, upstream_tasks=[credential_injection])
+    START_DATETIME = get_std_flow_scheduled_day()
+    request_params = get_params(start_datetime=START_DATETIME)
 
     raw_patient_data = load_from_api(
-        url=api_url + "raw/patientrecords",
+        url=api_url + "raw/patientrecords/fromInsertionDatetime",
         params=request_params,
         credentials=api_token,
         auth_method="bearer",
@@ -71,9 +72,7 @@ with Flow(
 
     lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants()
 
-    format_patient_list = format_json(
-        raw_patient_data, upstream_tasks=[unmapped(credential_injection)]
-    )
+    format_patient_list = format_json(json_list=raw_patient_data)
 
     std_patient_list = standartize_data(
         raw_data=format_patient_list,
@@ -82,11 +81,9 @@ with Flow(
         state_dict=state_dict,
         country_dict=country_dict,
         lista_campos_api=lista_campos_api,
-        upstream_tasks=[unmapped(credential_injection)],
     )
 
     load_to_api_task = load_to_api(
-        upstream_tasks=[credential_injection],
         request_body=std_patient_list,
         endpoint_name="std/patientrecords",
         api_token=api_token,
