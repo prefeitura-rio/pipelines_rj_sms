@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 import re
-import pandas as pd
 
+import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
 
@@ -18,19 +19,20 @@ def process_dbt_logs(log_path: str = "dbt_repository/logs/dbt.log") -> pd.DataFr
     with open(log_path, "r", encoding="utf-8", errors="ignore") as log_file:
         log_content = log_file.read()
 
-    result = re.split(r'(\x1b\[0m\d{2}:\d{2}:\d{2}\.\d{6})', log_content)
+    result = re.split(r"(\x1b\[0m\d{2}:\d{2}:\d{2}\.\d{6})", log_content)
     parts = [part.strip() for part in result][1:]
 
     splitted_log = []
     for i in range(0, len(parts), 2):
         time = parts[i].replace(r"\x1b[0m", "")
-        level = parts[i+1][1:6].replace(" ","")
-        text = parts[i+1][7:]
-        splitted_log.append( (time, level, text) )
+        level = parts[i + 1][1:6].replace(" ", "")
+        text = parts[i + 1][7:]
+        splitted_log.append((time, level, text))
 
-    full_logs = pd.DataFrame(splitted_log, columns=['time','level','text'])
+    full_logs = pd.DataFrame(splitted_log, columns=["time", "level", "text"])
 
     return full_logs
+
 
 def log_to_file(logs: pd.DataFrame, levels=None) -> str:
     """
@@ -44,7 +46,7 @@ def log_to_file(logs: pd.DataFrame, levels=None) -> str:
         str: The file path of the generated log file.
     """
     if levels is None:
-        levels = ['info', 'error', 'warn']
+        levels = ["info", "error", "warn"]
     logs = logs[logs.level.isin(levels)]
 
     report = []
