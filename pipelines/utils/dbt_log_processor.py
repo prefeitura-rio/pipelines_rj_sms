@@ -12,7 +12,7 @@ def process_dbt_logs(log_path: str = "dbt_repository/logs/dbt.log") -> pd.DataFr
         log_path (str): The path to the dbt log file. Defaults to "dbt_repository/logs/dbt.log".
 
     Returns:
-        pd.DataFrame: A DataFrame containing the parsed log entries with columns 'time', 'level', and 'text'.
+        pd.DataFrame: A DataFrame containing the parsed log entries.
     """
 
     with open(log_path, "r", encoding="utf-8", errors="ignore") as log_file:
