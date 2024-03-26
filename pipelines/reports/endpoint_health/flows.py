@@ -6,6 +6,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.reports.endpoint_health.schedules import update_schedule
 from pipelines.reports.endpoint_health.tasks import create_description, send_report
 from pipelines.utils.tasks import load_file_from_bigquery
 
@@ -31,6 +32,7 @@ with Flow(
     )
     send_report(description=text_report)
 
+disponibilidade_api.schedule = update_schedule
 disponibilidade_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 disponibilidade_api.executor = LocalDaskExecutor(num_workers=1)
 disponibilidade_api.run_config = KubernetesRun(
