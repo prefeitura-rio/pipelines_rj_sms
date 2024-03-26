@@ -15,6 +15,7 @@ import requests
 
 # from prefect import task
 from prefect.client import Client
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuario_constants
@@ -206,6 +207,32 @@ def rename_current_flow_run(
     flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
 
     title = "Initialization" if is_initial_extraction else "Routine"
+
+    params = [f"{key}={value}" for key, value in kwargs.items()]
+    params.append(f"env={environment}")
+    params = sorted(params)
+
+    flow_run_name = f"{title} ({', '.join(params)}): {flow_run_scheduled_time}"
+
+    client = Client()
+    client.set_flow_run_name(flow_run_id, flow_run_name)
+
+
+@task
+def rename_current_std_flow_run(environment: str, **kwargs) -> None:
+    """
+    Renames the current standardize flow run using the specified day
+
+    Args:
+        environment (str): The environment of the flow run
+
+    Returns:
+        None
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
+
+    title = "Standardization routine"
 
     params = [f"{key}={value}" for key, value in kwargs.items()]
     params.append(f"env={environment}")
