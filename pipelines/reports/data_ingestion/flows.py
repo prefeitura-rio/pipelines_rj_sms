@@ -7,32 +7,25 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.reports.data_ingestion.tasks import (
+    create_report,
     get_inserted_registers,
     get_prontuarios_database_url,
-    create_report,
-    get_target_date
+    get_target_date,
 )
 
 with Flow(
     name="Report: Ingestão de Dados",
 ) as flow:
     ENVIRONMENT = Parameter("environment", default="staging")
-    CUSTOM_TARGET_DATE = Parameter("custom_target_date", default='')
+    CUSTOM_TARGET_DATE = Parameter("custom_target_date", default="")
 
-    db_url = get_prontuarios_database_url(
-        environment=ENVIRONMENT
-    )
-    target_date = get_target_date(
-        custom_target_date=CUSTOM_TARGET_DATE
-    )
+    db_url = get_prontuarios_database_url(environment=ENVIRONMENT)
+    target_date = get_target_date(custom_target_date=CUSTOM_TARGET_DATE)
     data = get_inserted_registers(
         target_date=target_date,
         db_url=db_url,
     )
-    create_report(
-        target_date=target_date,
-        data=data
-    )
+    create_report(target_date=target_date, data=data)
 
 
 flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
