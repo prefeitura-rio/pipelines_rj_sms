@@ -123,12 +123,9 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
             }
         )
     )
- 
-    metrics['Status'] = metrics.apply(
-        func=lambda x: '✅'
-            if x['Registros Brutos'] == x['Registros Padronizados']
-            else '❌',
-        axis=1
+
+    metrics["Status"] = metrics.apply(
+        func=lambda x: "✅" if x["Registros Brutos"] == x["Registros Padronizados"] else "❌", axis=1
     )
 
     send_message(
