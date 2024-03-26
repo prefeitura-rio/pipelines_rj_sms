@@ -140,7 +140,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     command = prefect.context.get("parameters").get("command")
     emoji = "❌" if should_fail_execution else "✅"
     complement = "com Erros" if should_fail_execution else "sem Erros"
-    message = f"{param_report}\n{general_report}"
+    message = f"{param_report}\n{general_report}" if should_fail_execution else param_report
 
     send_message(
         title=f"{emoji} Execução `dbt {command}` finalizada {complement}",
