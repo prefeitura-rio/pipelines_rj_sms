@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-# from pipelines.prontuarios.std.extracao.flows import (
-#     smsrio_standardization_historical_all,
-# )
-from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
+from pipelines.execute_dbt.flows import sms_execute_dbt
+from pipelines.reports.endpoint_health.flows import disponibilidade_api
+from pipelines.tools.api_healthcheck.flows import monitoramento_api
 
 # ==================================================
 # CONFIGURATION
@@ -12,13 +11,16 @@ from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 # Please, register here pairs: (flow, param)
 # ==================================================
 flows_run_cases = [
-    # (vitacare_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
-    # (vitai_extraction, {"cnes": "5717256", "entity": "diagnostico", "minimum_date": ""}),
     (
-        smsrio_standardization,  # smsrio_standardization_historical_all,
-        {}
-        # {"source_start_datetime": "2024-03-10", "source_end_datetime": "2024-03-17"},
+        sms_execute_dbt,
+        {
+            "command": "test",
+            "environment": "dev",
+            "model": None,
+        },
     ),
+    (disponibilidade_api, {}),
+    (monitoramento_api, {}),
 ]
 
 

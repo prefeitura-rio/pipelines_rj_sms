@@ -9,14 +9,16 @@ import os
 import shutil
 
 import git
+import pandas as pd
 import prefect
 from dbt.cli.main import dbtRunner, dbtRunnerResult
-from prefect import task
 from prefect.client import Client
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.execute_dbt.constants import constants as execute_dbt_constants
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.monitor import send_message
 
 
 @task
@@ -65,42 +67,65 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
         model (str): Name of model. Can be empty.
         target (str): Name of the target that will be used by dbt
     """
-    # Repository download
+    cli_args = [
+        command,
+        "--profiles-dir",
+        repository_path,
+        "--project-dir",
+        repository_path,
+        "--target",
+        target,
+    ]
 
-    try:
-        # Execute DBT
-        dbt = dbtRunner()
-        if not model:
-            cli_args = [
-                command,
-                "--profiles-dir",
-                repository_path,
-                "--project-dir",
-                repository_path,
-                "--target",
-                target,
-            ]
-        else:
-            cli_args = [
-                command,
-                "--profiles-dir",
-                repository_path,
-                "--project-dir",
-                repository_path,
-                "--target",
-                target,
-                "--models",
-                model,
-            ]
-        res: dbtRunnerResult = dbt.invoke(cli_args)
-        try:
-            failures = [r.node.name for r in res.result if r.status == "fail"]
-            if failures:
-                raise FAIL(f"{len(failures)} tasks failed: {failures}")
-        except Exception as e:
-            log(f"An error occurred: {e}")
-    except git.GitCommandError as e:
-        log(f"Error when cloning repository: {e}")
+    if model:
+        cli_args.extend(["--models", model])
+
+    # DBT Execution
+    dbt = dbtRunner()
+    res: dbtRunnerResult = dbt.invoke(cli_args)
+
+    # DBT Log Extraction
+    with open("dbt_repository/logs/dbt.log", "r", encoding="utf-8", errors="ignore") as log_file:
+        logs = log_file.read()
+        logs = pd.DataFrame({"text": logs.splitlines()})
+        logs = logs[logs["text"].str.contains("\\[info")]
+
+    report = "\n".join(logs["text"].to_list())
+    log(f"Logs do DBT:{report}")
+
+    with open("dbt_log.txt", "w+", encoding="utf-8") as log_file:
+        log_file.write(report)
+
+    has_failures = False
+    failure_report = ["**Falhas**:"]
+    for command_result in res.result:
+        if command_result.status == "fail":
+            has_failures = True
+            failure_report.append(f"- `{command_result.node.name}`")
+    failure_report = "\n".join(failure_report)
+
+    # Get Parameters
+    param_report = ["**Parametros**:"]
+    for key, value in prefect.context.get("parameters").items():
+        param_report.append(f"- {key}: {value}")
+    param_report = "\n".join(param_report)
+
+    # DBT - Sending Logs to Discord
+    if has_failures or not res.success:
+        send_message(
+            title=f"❌ Execução `dbt {command}` finalizada com Erros",
+            message=f"{param_report}\n{failure_report}",
+            file_path="dbt_log.txt",
+            monitor_slug="dbt-runs",
+        )
+        raise FAIL(failure_report)
+    else:
+        send_message(
+            title=f"✅ Execução `dbt {command}` finalizada sem erros",
+            message=f"{param_report}\nVerifique o log para mais detalhes.",
+            file_path="dbt_log.txt",
+            monitor_slug="dbt-runs",
+        )
 
 
 @task
