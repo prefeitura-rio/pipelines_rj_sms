@@ -5,8 +5,8 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
-from pipelines.reports.endpoint_health.schedules import update_schedule
 from pipelines.constants import constants
+from pipelines.reports.endpoint_health.schedules import update_schedule
 from pipelines.reports.endpoint_health.tasks import create_description, send_report
 from pipelines.utils.tasks import load_file_from_bigquery
 
