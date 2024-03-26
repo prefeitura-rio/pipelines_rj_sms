@@ -5,8 +5,8 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
-from pipelines.reports.data_ingestion.schedules import update_schedule
 from pipelines.constants import constants
+from pipelines.reports.data_ingestion.schedules import update_schedule
 from pipelines.reports.data_ingestion.tasks import (
     create_report,
     get_inserted_registers,
