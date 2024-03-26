@@ -7,17 +7,17 @@ Tasks for execute_dbt
 
 import os
 import shutil
+
 import git
 import prefect
-
 from dbt.cli.main import dbtRunner, dbtRunnerResult
 from prefect.client import Client
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.dbt_log_processor import process_dbt_logs, log_to_file
 from pipelines.execute_dbt.constants import constants as execute_dbt_constants
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.dbt_log_processor import log_to_file, process_dbt_logs
 from pipelines.utils.monitor import send_message
 
 
@@ -85,6 +85,7 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
 
     return running_result
 
+
 @task
 def create_dbt_report(running_results: dbtRunnerResult) -> None:
     """
@@ -106,14 +107,20 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     general_report = []
     for command_result in running_results.result:
         status = command_result.status
-        if status == 'fail':
+        if status == "fail":
             is_incomplete = True
-            general_report.append(f"- 🛑 FAIL: `{command_result.node.name}`\n  - {command_result.message}") #noqa
-        elif status == 'error':
+            general_report.append(
+                f"- 🛑 FAIL: `{command_result.node.name}`\n  - {command_result.message}"
+            )  # noqa
+        elif status == "error":
             is_incomplete = True
-            general_report.append(f"- ❌ ERROR: `{command_result.node.name}`\n  - {command_result.message}") #noqa
-        elif status == 'warn':
-            general_report.append(f"- ⚠️ WARN: `{command_result.node.name}`\n  - {command_result.message}") #noqa
+            general_report.append(
+                f"- ❌ ERROR: `{command_result.node.name}`\n  - {command_result.message}"
+            )  # noqa
+        elif status == "warn":
+            general_report.append(
+                f"- ⚠️ WARN: `{command_result.node.name}`\n  - {command_result.message}"
+            )  # noqa
 
     general_report = sorted(general_report)
     general_report = "**Resumo**:\n" + "\n".join(general_report)
@@ -144,6 +151,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
 
     if should_fail_execution:
         raise FAIL(general_report)
+
 
 @task
 def rename_current_flow_run_dbt(command: str, model: str, target: str) -> None:
