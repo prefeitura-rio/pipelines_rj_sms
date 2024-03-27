@@ -56,34 +56,34 @@ def extract_patient_data_from_db(
         pd.DataFrame: A DataFrame containing the extracted patient data.
     """
     query = """
-        SELECT
-            cpf as patient_cpf, nome, nome_mae, nome_pai, dt_nasc, sexo,
-            racaCor, nacionalidade, obito, dt_obito,
-            end_tp_logrado_cod, end_logrado, end_numero, end_comunidade,
-            end_complem, end_bairro, end_cep, cod_mun_res, uf_res,
-            cod_mun_nasc, uf_nasc, cod_pais_nasc,
-            email, timestamp,
-            json_array_append(extra_cns.extra_cns, '$', tb_pacientes.cns) as cns_provisorio,
-            json_array_append(extra_telefone.extra_telefone, '$', tb_pacientes.telefone) as telefones
-        FROM tb_pacientes
-            -- LISTA DE CNS
-            LEFT JOIN (
-                select
-                    tb_cns_provisorios.cns,
-                    json_arrayagg(tb_cns_provisorios.cns_provisorio) as extra_cns
-                from tb_cns_provisorios
-                GROUP BY tb_cns_provisorios.cns
-            ) as extra_cns ON tb_pacientes.cns = extra_cns.cns
-            -- LISTA DE TELEFONES
-            LEFT JOIN (
-                select
-                    tb_pacientes_telefones.cns,
-                    json_arrayagg(tb_pacientes_telefones.telefone) as extra_telefone
-                from tb_pacientes_telefones
-                GROUP BY tb_pacientes_telefones.cns
-            ) as extra_telefone ON tb_pacientes.cns = extra_telefone.cns
-        {WHERE_CLAUSE}
-        GROUP BY tb_pacientes.id;"""
+    SELECT
+        cpf as patient_cpf, nome, nome_mae, nome_pai, dt_nasc, sexo,
+        racaCor, nacionalidade, obito, dt_obito,
+        end_tp_logrado_cod, end_logrado, end_numero, end_comunidade,
+        end_complem, end_bairro, end_cep, cod_mun_res, uf_res,
+        cod_mun_nasc, uf_nasc, cod_pais_nasc,
+        email, timestamp,
+        json_array_append(extra_cns.extra_cns, '$', tb_pacientes.cns) as cns_provisorio,
+        json_array_append(extra_telefone.extra_telefone, '$', tb_pacientes.telefone) as telefones
+    FROM tb_pacientes
+        -- LISTA DE CNS
+        LEFT JOIN (
+            select
+                tb_cns_provisorios.cns,
+                json_arrayagg(tb_cns_provisorios.cns_provisorio) as extra_cns
+            from tb_cns_provisorios
+            GROUP BY tb_cns_provisorios.cns
+        ) as extra_cns ON tb_pacientes.cns = extra_cns.cns
+        -- LISTA DE TELEFONES
+        LEFT JOIN (
+            select
+                tb_pacientes_telefones.cns,
+                json_arrayagg(tb_pacientes_telefones.telefone) as extra_telefone
+            from tb_pacientes_telefones
+            GROUP BY tb_pacientes_telefones.cns
+        ) as extra_telefone ON tb_pacientes.cns = extra_telefone.cns
+    {WHERE_CLAUSE}
+    GROUP BY tb_pacientes.id;"""
     if time_window_start:
         time_window_end = time_window_start + timedelta(days=time_window_duration)
         query = query.replace('{WHERE_CLAUSE}', f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}'") #noqa
