@@ -86,9 +86,12 @@ def extract_patient_data_from_db(
     GROUP BY tb_pacientes.id;"""
     if time_window_start:
         time_window_end = time_window_start + timedelta(days=time_window_duration)
-        query = query.replace('{WHERE_CLAUSE}', f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}'") #noqa
+        query = query.replace(
+            "{WHERE_CLAUSE}",
+            f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}'",
+        )  # noqa
     else:
-        query = query.replace('{WHERE_CLAUSE}', "")
+        query = query.replace("{WHERE_CLAUSE}", "")
 
     patients = pd.read_sql(query, db_url)
 
