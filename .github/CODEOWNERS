@@ -1,0 +1,8 @@
+# Add code owners for the repository
+# Each line specifies a file pattern followed by one or more owners
+
+# Example:
+# /path/to/file @owner1 @owner2
+
+# Add your code owners below:
+* @ThiagoTrabach @TanookiVerde
