@@ -38,8 +38,8 @@ from pipelines.utils.tasks import (
 )
 
 with Flow(
-    name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
-) as sms_dump_vitacare:
+    name="Dump Vitacare - Ingerir dados de Farmácia Vitacare",
+) as sms_dump_vitacare_estoque:
     #####################################
     # Parameters
     #####################################
@@ -154,9 +154,9 @@ with Flow(
         )
 
 
-sms_dump_vitacare.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitacare.executor = LocalDaskExecutor(num_workers=10)
-sms_dump_vitacare.run_config = KubernetesRun(
+sms_dump_vitacare_estoque.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_vitacare_estoque.executor = LocalDaskExecutor(num_workers=10)
+sms_dump_vitacare_estoque.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -164,12 +164,12 @@ sms_dump_vitacare.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-sms_dump_vitacare.schedule = vitacare_daily_update_schedule
+sms_dump_vitacare_estoque.schedule = vitacare_daily_update_schedule
 
 
 with Flow(
-    name="Dump Vitacare Reprocessamento - Reprocessar dados do prontuário Vitacare",
-) as sms_dump_vitacare_reprocessamento:
+    name="Dump Vitacare Reprocessamento - Reprocessar dados de Farmácia Vitacare",
+) as sms_dump_vitacare_estoque_reprocessamento:
     #####################################
     # Parameters
     #####################################
@@ -227,9 +227,9 @@ with Flow(
     )
 
 
-sms_dump_vitacare_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitacare_reprocessamento.executor = LocalDaskExecutor(num_workers=10)
-sms_dump_vitacare_reprocessamento.run_config = KubernetesRun(
+sms_dump_vitacare_estoque_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_vitacare_estoque_reprocessamento.executor = LocalDaskExecutor(num_workers=10)
+sms_dump_vitacare_estoque_reprocessamento.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -237,4 +237,4 @@ sms_dump_vitacare_reprocessamento.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-sms_dump_vitacare_reprocessamento.schedule = vitacare_daily_reprocess_schedule
+sms_dump_vitacare_estoque_reprocessamento.schedule = vitacare_daily_reprocess_schedule
