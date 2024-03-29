@@ -548,7 +548,7 @@ def save_to_file(data, file_folder, file_name, add_load_date_to_filename, load_d
     with open(destination_file_path, "w", encoding="utf-8") as file:
         file.write(str(data))
 
-    log(f"API data downloaded to {destination_file_path}")
+    log(f"Data saved to file: {destination_file_path}")
 
     return destination_file_path
 
