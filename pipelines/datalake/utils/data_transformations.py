@@ -4,7 +4,7 @@
 Data transformations functions
 """
 
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 
 def convert_str_to_date(target_date: str) -> str:

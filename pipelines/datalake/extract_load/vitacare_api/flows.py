@@ -18,14 +18,13 @@ from pipelines.datalake.extract_load.vitacare_api.constants import (
     constants as vitacare_constants,
 )
 from pipelines.datalake.extract_load.vitacare_api.tasks import (
-    creat_multiples_flows_runs,
     create_parameter_list,
     create_partitions,
     extract_data_from_api,
-    retrieve_cases_to_reprocessed_from_birgquery,
+#    retrieve_cases_to_reprocessed_from_birgquery,
     save_data_to_file,
     transform_data,
-    write_on_bq_on_table,
+#    write_on_bq_on_table,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.prontuarios.utils.tasks import (

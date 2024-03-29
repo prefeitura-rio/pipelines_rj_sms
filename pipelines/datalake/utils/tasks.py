@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E203
 # pylint: disable= C0301
-from datetime import date, timedelta
-
 import prefect
 from prefect.client import Client
 
