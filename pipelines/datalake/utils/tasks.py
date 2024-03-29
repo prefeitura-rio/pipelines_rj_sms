@@ -37,6 +37,8 @@ def rename_current_flow_run(environment: str, is_routine: bool = True, **kwargs)
     if "target_date" in kwargs:
         target_date = kwargs.get("target_date")
         target_date = convert_str_to_date(target_date)
+    else:
+        target_date =  prefect.context.get("scheduled_start_time").date()
 
     flow_run_name = f"{title} ({', '.join(params)}): {target_date}"
 

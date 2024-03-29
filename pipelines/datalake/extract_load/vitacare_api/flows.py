@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103, E1123
+# flake8: noqa E501
 """
 Vitacare healthrecord dumping flows
 """
