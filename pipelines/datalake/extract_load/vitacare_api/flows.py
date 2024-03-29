@@ -210,7 +210,7 @@ with Flow(
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
-        max_duration= unmapped(timedelta(minutes=15)),
+        max_duration=unmapped(timedelta(minutes=15)),
     )
 
 sms_dump_vitacare_estoque_scheduler.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
