@@ -199,7 +199,7 @@ with Flow(
     current_flow_run_labels = get_current_flow_labels()
 
     created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("DataLake - Extração e Carga de Dados - VitaCares"),
+        flow_name=unmapped("DataLake - Extração e Carga de Dados - VitaCare"),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
