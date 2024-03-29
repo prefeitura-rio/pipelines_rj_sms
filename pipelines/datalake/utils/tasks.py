@@ -36,11 +36,11 @@ def rename_current_flow_run(environment: str, is_routine: bool = True, **kwargs)
     params.append(f"env={environment}")
     params = sorted(params)
 
-    if target_date in kwargs:
+    if "target_date" in kwargs:
         target_date = kwargs.get("target_date")
-        tdate = convert_str_to_date(target_date)
+        target_date = convert_str_to_date(target_date)
 
-    flow_run_name = f"{title} ({', '.join(params)}): {tdate}"
+    flow_run_name = f"{title} ({', '.join(params)}): {target_date}"
 
     client = Client()
     client.set_flow_run_name(flow_run_id, flow_run_name)
