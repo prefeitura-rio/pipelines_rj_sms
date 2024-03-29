@@ -6,10 +6,11 @@ Vitacare healthrecord dumping flows
 # from datetime import timedelta
 
 
-from prefect import Parameter, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -21,24 +22,27 @@ from pipelines.datalake.extract_load.vitacare_api.constants import constants as 
 # )
 
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-
 from pipelines.datalake.extract_load.vitacare_api.tasks import (
     extract_data_from_api,
     transform_data,
-    creat_multiples_flows_runs,
     create_partitions,
+    create_parameter_list,
+    creat_multiples_flows_runs,
     retrieve_cases_to_reprocessed_from_birgquery,
     save_data_to_file,
     write_on_bq_on_table,
 )
-
-from pipelines.prontuarios.utils.tasks import get_ap_from_cnes, get_healthcenter_name_from_cnes
-
+from pipelines.prontuarios.utils.tasks import (
+    get_ap_from_cnes, 
+    get_healthcenter_name_from_cnes, 
+    get_project_name,
+    get_current_flow_labels,
+)
 from pipelines.utils.tasks import (
     create_folders,
-    inject_gcp_credentials,
     upload_to_datalake,
 )
+
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",
@@ -47,9 +51,8 @@ with Flow(
     # Parameters
     #####################################
 
-    ENVIRONMENT = Parameter("environment", default="dev")
-
     # Flow
+    ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
     REPROCESS_MODE = Parameter("reprocess_mode", default=False)
 
@@ -157,7 +160,73 @@ sms_dump_vitacare_estoque.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-# sms_dump_vitacare_estoque.schedule = vitacare_daily_update_schedule
+
+# ==============================
+# SCHEDULER FLOW
+# ==============================
+
+with Flow(
+    name="DataLake - Agendador de Flows - VitaCare",
+) as sms_dump_vitacare_estoque_scheduler:
+    #####################################
+    # Parameters
+    #####################################
+
+    # Flow
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    RENAME_FLOW = Parameter("rename_flow", default=False)
+
+    # Vitacare API
+    ENDPOINT = Parameter("endpoint", required=True)
+    TARGET_DATE = Parameter("target_date", default="today")
+
+    # GCP
+    DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
+    TABLE_ID = Parameter("table_id", required=True)
+
+
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(
+            environment=ENVIRONMENT,
+        )
+
+    parameter_list = create_parameter_list(
+        environment=ENVIRONMENT,
+        endpoint=ENDPOINT,
+        target_date=TARGET_DATE,
+        dataset_id=DATASET_ID,
+        table_id=TABLE_ID,
+    )
+
+    project_name = get_project_name(
+        environment=ENVIRONMENT,
+    )
+
+    current_flow_run_labels = get_current_flow_labels()
+
+    created_flow_runs = create_flow_run.map(
+        flow_name=unmapped("DataLake - Extração e Carga de Dados - VitaCares"),
+        project_name=unmapped(project_name),
+        parameters=parameter_list,
+        labels=unmapped(current_flow_run_labels),
+    )
+
+    wait_runs_task = wait_for_flow_run.map(
+        created_flow_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
+    )
+
+sms_dump_vitacare_estoque_scheduler.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_vitacare_estoque_scheduler.executor = LocalDaskExecutor(num_workers=1)
+sms_dump_vitacare_estoque_scheduler.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+)
+#sms_dump_vitacare_estoque_scheduler.schedule = vitacare_daily_update_schedule
 
 
 # with Flow(

@@ -22,11 +22,14 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.stored_variable import stored_variable_converter
-from pipelines.utils.tasks import cloud_function_request, get_secret_key
-
-from pipelines.utils.tasks import add_load_date_column, save_to_file
-
+from pipelines.utils.tasks import (
+    cloud_function_request,
+    get_secret_key,
+    load_file_from_bigquery,
+    add_load_date_column,
+    save_to_file,
+)
+from pipelines.datalake.utils.data_transformations import convert_str_to_date
 from pipelines.datalake.extract_load.vitacare_api.constants import constants as vitacare_constants
 from pipelines.datalake.extract_load.vitacare_api.utils.data_transformation import (
     fix_payload_column_order,
@@ -35,7 +38,6 @@ from pipelines.datalake.extract_load.vitacare_api.utils.data_transformation impo
 
 
 @task(max_retries=4, retry_delay=timedelta(minutes=3))
-@stored_variable_converter(output_mode="original")
 def extract_data_from_api(
     cnes: str, ap: str, target_day: date, endpoint: str, environment: str = "dev"
 ) -> dict:
@@ -193,6 +195,64 @@ def create_partitions(data_path: str, partition_directory: str):
 
         # Copy file(s) to partition directory
         shutil.copy(file_name, output_directory)
+
+
+# ==============================
+# SCHEDULER TASKS
+# ==============================
+@task
+def create_parameter_list(
+    endpoint: str, target_date: str, dataset_id: str, table_id: str, environment: str = "dev"
+):
+    """
+    Create a list of parameters for running the Vitacare flow.
+
+    Args:
+        environment (str, optional): The environment to run the flow in. Defaults to "dev".
+
+    Returns:
+        list: A list of dictionaries containing the flow run parameters.
+    """
+    # Access the health units information from BigQuery table
+    dados_mestres = load_file_from_bigquery.run(
+        project_name="rj-sms",
+        dataset_name="saude_dados_mestres",
+        table_name="estabelecimento",
+    )
+    # Filter the units using Vitacare
+    unidades_vitacare = dados_mestres[dados_mestres["prontuario_versao"] == "vitacare"]
+
+    # Get their CNES list
+    cnes_vitacare = unidades_vitacare["id_cnes"].tolist()
+
+    # Get the date of yesterday
+    target_date = convert_str_to_date(target_date)
+
+    # Construct the parameters for the flow
+    vitacare_flow_parameters = []
+    for cnes in cnes_vitacare:
+        vitacare_flow_parameters.append(
+            {
+                "cnes": cnes,
+                "endpoint": endpoint,
+                "target_date": target_date,
+                "dataset_id": dataset_id,
+                "table_id": table_id,
+                "environment": environment,
+                "rename_flow": True,
+                "reprocess_mode": False,
+            }
+        )
+
+    logger = prefect.context.get("logger")
+    logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
+
+    return vitacare_flow_parameters
+
+
+# ==============================
+# REPROCESS TASKS
+# ==============================
 
 
 @task

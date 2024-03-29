@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E203
 # pylint: disable= C0301
-from datetime import date
+from datetime import date, timedelta
 
 import prefect
 from prefect.client import Client
 
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.datalake.utils.data_transformations import convert_str_to_date
 
 
 @task
 def rename_current_flow_run(
-    environment: str, target_date: date, is_routine: bool = False, **kwargs
+    environment: str, is_routine: bool = True, **kwargs
 ) -> None:
     """
     Renames the current flow run with a new name based on the provided parameters.
@@ -33,9 +34,13 @@ def rename_current_flow_run(
 
     title = "Routine" if is_routine else "Reprocess"
 
-    params = [f"{key}={value}" for key, value in kwargs.items()]
+    params = [f"{key}={value}" for key, value in kwargs.items() if key != "target_date"]
     params.append(f"env={environment}")
     params = sorted(params)
+
+    if target_date in kwargs:
+        target_date = kwargs.get("target_date")
+        target_date = convert_str_to_date(target_date)
 
     flow_run_name = f"{title} ({', '.join(params)}): {target_date}"
 
