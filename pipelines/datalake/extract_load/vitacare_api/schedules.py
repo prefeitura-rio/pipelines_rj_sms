@@ -33,7 +33,7 @@ vitacare_flow_parameters = [
 
 vitacare_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2024, 1, 1, 17, 55, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 1, 1, 19, 20, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
