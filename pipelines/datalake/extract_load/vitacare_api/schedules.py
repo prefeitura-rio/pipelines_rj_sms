@@ -16,7 +16,7 @@ vitacare_flow_parameters = [
     {
         "dataset_id": "brutos_prontuario_vitacare",
         "endpoint": "posicao",
-        "environment": "dev",
+        "environment": "prod",
         "rename_flow": True,
         "table_id": "estoque_posicao",
         "target_date": "today",
@@ -24,7 +24,7 @@ vitacare_flow_parameters = [
     {
         "dataset_id": "brutos_prontuario_vitacare",
         "endpoint": "movimento",
-        "environment": "dev",
+        "environment": "prod",
         "rename_flow": True,
         "table_id": "estoque_movimento",
         "target_date": "yesterday",
@@ -33,7 +33,7 @@ vitacare_flow_parameters = [
 
 vitacare_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2024, 1, 1, 19, 20, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 1, 1, 4, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

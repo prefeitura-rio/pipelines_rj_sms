@@ -3,6 +3,8 @@
 # pylint: disable= C0301
 import prefect
 from prefect.client import Client
+from prefeitura_rio.pipelines_utils.logging import log
+
 
 from pipelines.datalake.utils.data_transformations import convert_str_to_date
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -44,3 +46,5 @@ def rename_current_flow_run(environment: str, is_routine: bool = True, **kwargs)
 
     client = Client()
     client.set_flow_run_name(flow_run_id, flow_run_name)
+
+    log(f"Flow run {flow_run_id} renamed to {flow_run_name}")

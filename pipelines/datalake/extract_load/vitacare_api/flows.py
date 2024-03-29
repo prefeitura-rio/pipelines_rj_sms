@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103, E1123
+# pylint: disable=C0103, E1123, C0301
 # flake8: noqa E501
 """
 Vitacare healthrecord dumping flows
@@ -18,10 +18,10 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitacare_api.constants import (
     constants as vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_api.schedules import (  # vitacare_daily_reprocess_schedule,
+from pipelines.datalake.extract_load.vitacare_api.schedules import (
     vitacare_daily_update_schedule,
 )
-from pipelines.datalake.extract_load.vitacare_api.tasks import (  # retrieve_cases_to_reprocessed_from_birgquery,; write_on_bq_on_table,
+from pipelines.datalake.extract_load.vitacare_api.tasks import (
     create_parameter_list,
     create_partitions,
     extract_data_from_api,
