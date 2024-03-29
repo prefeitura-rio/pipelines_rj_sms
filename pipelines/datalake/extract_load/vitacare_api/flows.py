@@ -18,6 +18,9 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitacare_api.constants import (
     constants as vitacare_constants,
 )
+from pipelines.datalake.extract_load.vitacare_api.schedules import (  # vitacare_daily_reprocess_schedule,
+    vitacare_daily_update_schedule,
+)
 from pipelines.datalake.extract_load.vitacare_api.tasks import (  # retrieve_cases_to_reprocessed_from_birgquery,; write_on_bq_on_table,
     create_parameter_list,
     create_partitions,
@@ -33,12 +36,6 @@ from pipelines.prontuarios.utils.tasks import (
     get_project_name,
 )
 from pipelines.utils.tasks import create_folders, upload_to_datalake
-
-from pipelines.datalake.extract_load.vitacare_api.schedules import (
-    #    vitacare_daily_reprocess_schedule,
-    vitacare_daily_update_schedule,
-)
-
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",

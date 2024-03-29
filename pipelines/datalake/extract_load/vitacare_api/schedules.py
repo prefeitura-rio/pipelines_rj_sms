@@ -28,7 +28,7 @@ vitacare_flow_parameters = [
         "rename_flow": True,
         "table_id": "estoque_movimento",
         "target_date": "yesterday",
-    }
+    },
 ]
 
 vitacare_clocks = generate_dump_api_schedules(
