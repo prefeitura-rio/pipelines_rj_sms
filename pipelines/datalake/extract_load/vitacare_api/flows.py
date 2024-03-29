@@ -183,6 +183,8 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
+            endpoint=ENDPOINT,
+            target_date=TARGET_DATE,
         )
 
     parameter_list = create_parameter_list(
@@ -214,7 +216,7 @@ with Flow(
     )
 
 sms_dump_vitacare_estoque_scheduler.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitacare_estoque_scheduler.executor = LocalDaskExecutor(num_workers=1)
+sms_dump_vitacare_estoque_scheduler.executor = LocalDaskExecutor(num_workers=5)
 sms_dump_vitacare_estoque_scheduler.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
