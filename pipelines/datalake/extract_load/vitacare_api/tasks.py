@@ -112,7 +112,7 @@ def save_data_to_file(
     file_name = f"{table_id}_{ap.lower()}_cnes{cnes}"
 
     target_date = convert_str_to_date(load_date)
-    
+
     file_path = save_to_file.run(
         data=data,
         file_folder=file_folder,
