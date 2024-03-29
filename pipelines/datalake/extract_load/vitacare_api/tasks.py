@@ -224,8 +224,8 @@ def create_parameter_list(
     )
     # Filter the units using Vitacare
     unidades_vitacare = dados_mestres[
-        (dados_mestres["prontuario_versao"] == "vitacare") and
-        (dados_mestres["prontuario_estoque_tem_dado"] == "sim")
+        (dados_mestres["prontuario_versao"] == "vitacare")
+        and (dados_mestres["prontuario_estoque_tem_dado"] == "sim")
     ]
 
     # Get their CNES list
