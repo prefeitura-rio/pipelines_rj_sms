@@ -5,7 +5,6 @@ import prefect
 from prefect.client import Client
 from prefeitura_rio.pipelines_utils.logging import log
 
-
 from pipelines.datalake.utils.data_transformations import convert_str_to_date
 from pipelines.utils.credential_injector import authenticated_task as task
 
