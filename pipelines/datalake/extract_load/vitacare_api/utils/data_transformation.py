@@ -4,6 +4,7 @@ Data transformation functions to vitalcare API data
 """
 
 import ast
+
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -88,7 +89,7 @@ def from_json_to_csv(input_path, sep=";"):
             content = file.read()
 
             # Remove trailing comma from the string
-            content = content.strip(',')
+            content = content.strip(",")
 
             # Parse string to list of dictionaries
             data = ast.literal_eval(content)
@@ -103,4 +104,3 @@ def from_json_to_csv(input_path, sep=";"):
     except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
         return None
-

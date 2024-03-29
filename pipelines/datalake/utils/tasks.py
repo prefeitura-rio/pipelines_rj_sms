@@ -6,14 +6,12 @@ from datetime import date, timedelta
 import prefect
 from prefect.client import Client
 
-from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.datalake.utils.data_transformations import convert_str_to_date
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def rename_current_flow_run(
-    environment: str, is_routine: bool = True, **kwargs
-) -> None:
+def rename_current_flow_run(environment: str, is_routine: bool = True, **kwargs) -> None:
     """
     Renames the current flow run with a new name based on the provided parameters.
 

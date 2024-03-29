@@ -13,27 +13,28 @@ import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from google.cloud import bigquery
 import prefect
+from google.cloud import bigquery
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
 
-
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import (
-    cloud_function_request,
-    get_secret_key,
-    load_file_from_bigquery,
-    add_load_date_column,
-    save_to_file,
+from pipelines.datalake.extract_load.vitacare_api.constants import (
+    constants as vitacare_constants,
 )
-from pipelines.datalake.utils.data_transformations import convert_str_to_date
-from pipelines.datalake.extract_load.vitacare_api.constants import constants as vitacare_constants
 from pipelines.datalake.extract_load.vitacare_api.utils.data_transformation import (
     fix_payload_column_order,
     from_json_to_csv,
+)
+from pipelines.datalake.utils.data_transformations import convert_str_to_date
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.tasks import (
+    add_load_date_column,
+    cloud_function_request,
+    get_secret_key,
+    load_file_from_bigquery,
+    save_to_file,
 )
 
 

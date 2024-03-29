@@ -14,7 +14,7 @@ class constants(Enum):
     INFISICAL_PATH = "/prontuario-vitacare"
     INFISICAL_VITACARE_USERNAME = "USERNAME"
     INFISICAL_VITACARE_PASSWORD = "PASSWORD"
-    
+
     BASE_URL = {
         "AP10": "http://consolidado-ap10.pepvitacare.com:8088",
         "AP21": "http://consolidado-ap21.pepvitacare.com:8090",

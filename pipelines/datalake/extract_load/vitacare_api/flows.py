@@ -14,34 +14,33 @@ from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.vitacare_api.constants import constants as vitacare_constants
+from pipelines.datalake.extract_load.vitacare_api.constants import (
+    constants as vitacare_constants,
+)
+from pipelines.datalake.extract_load.vitacare_api.tasks import (
+    creat_multiples_flows_runs,
+    create_parameter_list,
+    create_partitions,
+    extract_data_from_api,
+    retrieve_cases_to_reprocessed_from_birgquery,
+    save_data_to_file,
+    transform_data,
+    write_on_bq_on_table,
+)
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.prontuarios.utils.tasks import (
+    get_ap_from_cnes,
+    get_current_flow_labels,
+    get_healthcenter_name_from_cnes,
+    get_project_name,
+)
+from pipelines.utils.tasks import create_folders, upload_to_datalake
 
 # from pipelines.datalake.extract_load.vitacare_api.schedules import (
 #    vitacare_daily_reprocess_schedule,
 #    vitacare_daily_update_schedule,
 # )
 
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.datalake.extract_load.vitacare_api.tasks import (
-    extract_data_from_api,
-    transform_data,
-    create_partitions,
-    create_parameter_list,
-    creat_multiples_flows_runs,
-    retrieve_cases_to_reprocessed_from_birgquery,
-    save_data_to_file,
-    write_on_bq_on_table,
-)
-from pipelines.prontuarios.utils.tasks import (
-    get_ap_from_cnes, 
-    get_healthcenter_name_from_cnes, 
-    get_project_name,
-    get_current_flow_labels,
-)
-from pipelines.utils.tasks import (
-    create_folders,
-    upload_to_datalake,
-)
 
 
 with Flow(
@@ -184,7 +183,6 @@ with Flow(
     DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
     TABLE_ID = Parameter("table_id", required=True)
 
-
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
@@ -226,7 +224,7 @@ sms_dump_vitacare_estoque_scheduler.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
 )
-#sms_dump_vitacare_estoque_scheduler.schedule = vitacare_daily_update_schedule
+# sms_dump_vitacare_estoque_scheduler.schedule = vitacare_daily_update_schedule
 
 
 # with Flow(
