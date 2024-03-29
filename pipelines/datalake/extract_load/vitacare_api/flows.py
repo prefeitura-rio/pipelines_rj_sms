@@ -42,7 +42,6 @@ from pipelines.utils.tasks import create_folders, upload_to_datalake
 # )
 
 
-
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",
 ) as sms_dump_vitacare_estoque:
