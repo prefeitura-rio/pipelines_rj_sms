@@ -11,202 +11,76 @@ import re
 import shutil
 import time
 from datetime import date, datetime, timedelta
-from functools import partial
 from pathlib import Path
 
-import pandas as pd
 import prefect
 from google.cloud import bigquery
-from prefect import task
-from prefect.client import Client
-from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
+from prefect.engine.signals import ENDRUN
+from prefect.engine.state import Failed
+from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.dump_api_vitacare.constants import constants as vitacare_constants
-from pipelines.utils.state_handlers import on_fail, on_success
-from pipelines.utils.tasks import add_load_date_column, save_to_file
+from pipelines.datalake.extract_load.vitacare_api.constants import (
+    constants as vitacare_constants,
+)
+from pipelines.datalake.extract_load.vitacare_api.utils.data_transformation import (
+    fix_payload_column_order,
+    from_json_to_csv,
+)
+from pipelines.datalake.utils.data_transformations import convert_str_to_date
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.tasks import (
+    add_load_date_column,
+    cloud_function_request,
+    get_secret_key,
+    load_file_from_bigquery,
+    save_to_file,
+)
 
 
-@task
-def rename_current_flow(table_id: str, date_param: str = "today", ap: str = None, cnes: str = None):
-    """
-    Rename the current flow run.
-    """
-    flow_run_id = prefect.context.get("flow_run_id")
-    client = Client()
+@task(max_retries=4, retry_delay=timedelta(minutes=3))
+def extract_data_from_api(
+    cnes: str, ap: str, target_day: date, endpoint: str, environment: str = "dev"
+) -> dict:
+    api_url = vitacare_constants.BASE_URL.value[ap]
+    endpoint = vitacare_constants.ENDPOINT.value[endpoint]
 
-    flow_name = f"{table_id}"
+    # EXTRACT DATA
 
-    if ap:
-        flow_name += f"__ap_{ap}"
-    if cnes:
-        flow_name += f".cnes_{cnes}"
+    logger = prefect.context.get("logger")
+    logger.info(f"Extracting data for {endpoint} on {target_day}")
 
-    if date_param == "today":
-        data = str(date.today())
-    elif date_param == "yesterday":
-        data = str(date.today() - timedelta(days=1))
+    username = get_secret_key.run(
+        secret_path=vitacare_constants.INFISICAL_PATH.value,
+        secret_name=vitacare_constants.INFISICAL_VITACARE_USERNAME.value,
+        environment=environment,
+    )
+    password = get_secret_key.run(
+        secret_path=vitacare_constants.INFISICAL_PATH.value,
+        secret_name=vitacare_constants.INFISICAL_VITACARE_PASSWORD.value,
+        environment=environment,
+    )
+
+    response = cloud_function_request.run(
+        url=f"{api_url}{endpoint}",
+        request_type="GET",
+        query_params={"date": str(target_day), "cnes": cnes},
+        credential={"username": username, "password": password},
+        env=environment,
+    )
+
+    if response["status_code"] != 200:
+        raise ValueError(f"Failed to extract data from API: {response['status_code']}")
+
+    requested_data = json.loads(response["body"])
+
+    if len(requested_data) > 0:
+        logger.info(f"Successful Request: retrieved {len(requested_data)} registers")
     else:
-        try:
-            # check if date_param is a date string
-            datetime.strptime(date_param, "%Y-%m-%d")
-            data = date_param
-        except ValueError as e:
-            raise ValueError("date_param must be a date string (YYYY-MM-DD)") from e
+        logger.error("Failed Request: no data was retrieved")
+        raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {endpoint})"))
 
-    flow_name += f"__{data}"
-
-    log(f"Renaming flow run to: {flow_name}")
-
-    return client.set_flow_run_name(flow_run_id, flow_name)
-
-
-@task
-def build_url(ap: str, endpoint: str) -> str:
-    """
-    Build the URL for the given AP and endpoint.
-
-    Args:
-        ap (str): The AP name.
-        endpoint (str): The endpoint name.
-
-    Returns:
-        str: The built URL.
-
-    """
-    url = f"{vitacare_constants.BASE_URL.value[ap]}{vitacare_constants.ENDPOINT.value[endpoint]}"  # noqa: E501
-    log(f"URL built: {url}")
-    return url
-
-
-@task
-def build_params(date_param: str = "today", cnes: str = None) -> dict:
-    """
-    Build the parameters for the API request.
-
-    Args:
-        date_param (str, optional): The date parameter. Defaults to "today".
-        cnes (str, optional): The CNES ID. Defaults to None.
-
-    Returns:
-        dict: The parameters for the API request.
-    """
-    if date_param == "today":
-        params = {"date": str(date.today())}
-    elif date_param == "yesterday":
-        params = {"date": str(date.today() - timedelta(days=1))}
-    else:
-        try:
-            # check if date_param is a date string
-            datetime.strptime(date_param, "%Y-%m-%d")
-            params = {"date": date_param}
-        except ValueError as e:
-            raise ValueError("date_param must be a date string (YYYY-MM-DD)") from e
-
-    if cnes:
-        params.update({"cnes": cnes})
-
-    log(f"Params built: {params}")
-    return params
-
-
-@task
-def create_filename(table_id: str, ap: str) -> str:
-    """create filename for the downloaded file"""
-    return f"{table_id}_ap{ap}"
-
-
-@task
-def fix_payload_column_order(filepath: str, table_id: str, sep: str = ";"):
-    """
-    Load a CSV file into a pandas DataFrame, keeping all column types as string,
-    and reorder the columns in a specified order.
-
-    Parameters:
-    - filepath: str
-        The file path of the CSV file to load.
-
-    Returns:
-    - DataFrame
-        The loaded DataFrame with columns reordered.
-    """
-    columns_order = {
-        "estoque_posicao": [
-            "ap",
-            "cnesUnidade",
-            "nomeUnidade",
-            "desigMedicamento",
-            "atc",
-            "code",
-            "lote",
-            "dtaCriLote",
-            "dtaValidadeLote",
-            "estoqueLote",
-            "id",
-            "_data_carga",
-        ],
-        "estoque_movimento": [
-            "ap",
-            "cnesUnidade",
-            "nomeUnidade",
-            "desigMedicamento",
-            "atc",
-            "code",
-            "lote",
-            "dtaMovimento",
-            "tipoMovimento",
-            "motivoCorrecao",
-            "justificativa",
-            "cnsProfPrescritor",
-            "cpfPatient",
-            "cnsPatient",
-            "qtd",
-            "id",
-            "_data_carga",
-        ],
-    }
-
-    # Specifying dtype as str to ensure all columns are read as strings
-    df = pd.read_csv(filepath, sep=sep, dtype=str, encoding="utf-8")
-
-    # Specifying the desired column order
-    column_order = columns_order[table_id]
-
-    # Reordering the columns
-    df = df[column_order]
-
-    df.to_csv(filepath, sep=sep, index=False, encoding="utf-8")
-
-    log(f"Columns reordered for {filepath}")
-
-
-@task
-def from_json_to_csv(input_path, sep=";"):
-    """
-    Converts a JSON file to a CSV file.
-
-    Args:
-        input_path (str): The path to the input JSON file.
-        sep (str, optional): The separator to use in the output CSV file. Defaults to ";".
-
-    Returns:
-        str: The path to the output CSV file, or None if an error occurred.
-    """
-    try:
-        with open(input_path, "r", encoding="utf-8") as file:
-            json_data = file.read()
-            data = json.loads(json_data)  # Convert JSON string to Python dictionary
-            output_path = input_path.replace(".json", ".csv")
-            # Assuming the JSON structure is a list of dictionaries
-            df = pd.DataFrame(data, dtype="str")
-            df.to_csv(output_path, index=False, sep=sep, encoding="utf-8")
-
-            log("JSON converted to CSV")
-            return output_path
-
-    except Exception as e:  # pylint: disable=W0703
-        log(f"An error occurred: {e}", level="error")
-        return None
+    return requested_data
 
 
 @task
@@ -215,7 +89,7 @@ def save_data_to_file(
     file_folder: str,
     table_id: str,
     ap: str,
-    cnes: str = None,
+    cnes: str,
     add_load_date_to_filename: bool = False,
     load_date: str = None,
 ):
@@ -234,38 +108,48 @@ def save_data_to_file(
     Returns:
         bool: True if the data was successfully saved, False otherwise.
     """
-    if cnes:
-        file_name = f"{table_id}_ap{ap}_cnes{cnes}"
-    else:
-        file_name = f"{table_id}_ap{ap}"
+
+    file_name = f"{table_id}_{ap.lower()}_cnes{cnes}"
+
+    target_date = convert_str_to_date(load_date)
 
     file_path = save_to_file.run(
         data=data,
         file_folder=file_folder,
         file_name=file_name,
         add_load_date_to_filename=add_load_date_to_filename,
-        load_date=load_date,
+        load_date=target_date,
     )
 
-    log(f"Data saved to file: {file_path}")
+    return file_path
 
-    with open(file_path, "r", encoding="UTF-8") as f:
-        first_line = f.readline().strip()
 
-    if first_line == "[]":
-        log("The json content is empty.")
-        return False
-    else:
+@task
+def transform_data(file_path: str, table_id: str) -> str:
+    """
+    Transforms data from a JSON file to a CSV file and performs additional transformations.
 
-        log("Json not empty")
+    Args:
+        file_path (str): The path to the input JSON file.
+        table_id (str): The identifier of the table for which the data is being transformed.
 
-        csv_file_path = from_json_to_csv.run(input_path=file_path, sep=";")
+    Returns:
+        str: The path to the output CSV file.
 
-        add_load_date_column.run(input_path=csv_file_path, sep=";")
+    Raises:
+        None
 
-        fix_payload_column_order.run(filepath=csv_file_path, table_id=table_id)
+    Example:
+        transform_data(file_path="data.json", table_id="estoque_posicao")
+    """
 
-        return True
+    csv_file_path = from_json_to_csv(input_path=file_path, sep=";")
+
+    add_load_date_column.run(input_path=csv_file_path, sep=";")
+
+    fix_payload_column_order(filepath=csv_file_path, table_id=table_id)
+
+    return csv_file_path
 
 
 @task
@@ -314,6 +198,67 @@ def create_partitions(data_path: str, partition_directory: str):
 
         # Copy file(s) to partition directory
         shutil.copy(file_name, output_directory)
+
+
+# ==============================
+# SCHEDULER TASKS
+# ==============================
+@task
+def create_parameter_list(
+    endpoint: str, target_date: str, dataset_id: str, table_id: str, environment: str = "dev"
+):
+    """
+    Create a list of parameters for running the Vitacare flow.
+
+    Args:
+        environment (str, optional): The environment to run the flow in. Defaults to "dev".
+
+    Returns:
+        list: A list of dictionaries containing the flow run parameters.
+    """
+    # Access the health units information from BigQuery table
+    dados_mestres = load_file_from_bigquery.run(
+        project_name="rj-sms",
+        dataset_name="saude_dados_mestres",
+        table_name="estabelecimento",
+    )
+    # Filter the units using Vitacare
+    unidades_vitacare = dados_mestres[
+        (dados_mestres["prontuario_versao"] == "vitacare")
+        & (dados_mestres["prontuario_estoque_tem_dado"] == "sim")
+    ]
+
+    # Get their CNES list
+    cnes_vitacare = unidades_vitacare["id_cnes"].tolist()
+
+    # Get the date of yesterday
+    target_date = convert_str_to_date(target_date)
+
+    # Construct the parameters for the flow
+    vitacare_flow_parameters = []
+    for cnes in cnes_vitacare:
+        vitacare_flow_parameters.append(
+            {
+                "cnes": cnes,
+                "endpoint": endpoint,
+                "target_date": target_date,
+                "dataset_id": dataset_id,
+                "table_id": table_id,
+                "environment": environment,
+                "rename_flow": True,
+                "reprocess_mode": False,
+            }
+        )
+
+    logger = prefect.context.get("logger")
+    logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
+
+    return vitacare_flow_parameters
+
+
+# ==============================
+# REPROCESS TASKS
+# ==============================
 
 
 @task
@@ -512,47 +457,3 @@ def write_on_bq_on_table(
     query_job.result()  # Wait for the job to complete
 
     print("Upsert operation completed.")
-
-
-@task
-def log_error():
-    """
-    Logs the state handler error.
-    """
-    log("State Handler: ERROR")
-
-
-@task
-def log_success():
-    """
-    Logs the success state of the state handler.
-    """
-    log("State Handler: SUCCESS")
-
-
-@task(
-    state_handlers=[
-        partial(on_fail, task_to_run_on_fail=log_error),
-        partial(on_success, task_to_run_on_success=log_success),
-    ]
-)
-def wait_flor_flow_task(flow_to_wait):
-    """
-    Wait for a specific flow to complete.
-
-    Args:
-        flow_to_wait (str): The name of the flow to wait for.
-
-    Raises:
-        Exception: If the flow does not complete within the specified duration.
-
-    Returns:
-        None
-    """
-    wait_for_flow_run.run(
-        flow_to_wait,
-        stream_states=True,
-        stream_logs=True,
-        raise_final_state=True,
-        max_duration=timedelta(seconds=90),
-    )

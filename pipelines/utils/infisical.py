@@ -38,7 +38,7 @@ def inject_bd_credentials(environment: str = "dev", force_injection=False) -> No
 
     # If all variables are set, skip injection
     if all_variables_set and not force_injection:
-        log("All environment variables are already set. Skipping injection.")
+        # log("All environment variables are already set. Skipping injection.")
         return
 
     # Else inject the variables
