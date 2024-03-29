@@ -34,10 +34,10 @@ from pipelines.prontuarios.utils.tasks import (
 )
 from pipelines.utils.tasks import create_folders, upload_to_datalake
 
-# from pipelines.datalake.extract_load.vitacare_api.schedules import (
-#    vitacare_daily_reprocess_schedule,
-#    vitacare_daily_update_schedule,
-# )
+from pipelines.datalake.extract_load.vitacare_api.schedules import (
+    #    vitacare_daily_reprocess_schedule,
+    vitacare_daily_update_schedule,
+)
 
 
 with Flow(
@@ -223,7 +223,7 @@ sms_dump_vitacare_estoque_scheduler.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
 )
-# sms_dump_vitacare_estoque_scheduler.schedule = vitacare_daily_update_schedule
+sms_dump_vitacare_estoque_scheduler.schedule = vitacare_daily_update_schedule
 
 
 # with Flow(
