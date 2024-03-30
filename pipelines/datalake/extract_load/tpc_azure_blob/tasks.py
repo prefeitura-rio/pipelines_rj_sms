@@ -5,20 +5,17 @@
 Tasks for TPC Dump
 """
 from datetime import timedelta
-import pandas as pd
 
+import pandas as pd
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import (
-    get_secret_key,
-    download_azure_blob,
-)
 from pipelines.datalake.extract_load.tpc_azure_blob.constants import (
     constants as tpc_constants,
 )
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.tasks import download_azure_blob, get_secret_key
 
 
 @task(max_retries=4, retry_delay=timedelta(minutes=3))

@@ -17,13 +17,12 @@ from pipelines.datalake.extract_load.tpc_azure_blob.constants import (
 from pipelines.datalake.extract_load.tpc_azure_blob.schedules import (
     tpc_daily_update_schedule,
 )
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 from pipelines.datalake.extract_load.tpc_azure_blob.tasks import (
     extract_data_from_blob,
     transform_data,
 )
-
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - TPC",
