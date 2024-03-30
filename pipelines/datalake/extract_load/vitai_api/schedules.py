@@ -10,7 +10,7 @@ import pytz
 from prefect.schedules import Schedule
 
 from pipelines.constants import constants
-from pipelines.dump_api_vitai.constants import constants as vitai_constants
+from pipelines.datalake.extract_load.vitai_api.constants import constants as vitai_constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [

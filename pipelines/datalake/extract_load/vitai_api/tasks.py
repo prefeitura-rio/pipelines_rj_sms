@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.dump_api_vitai.constants import constants as vitai_constants
+from pipelines.datalake.extract_load.vitai_api.constants import constants as vitai_constants
 
 
 @task

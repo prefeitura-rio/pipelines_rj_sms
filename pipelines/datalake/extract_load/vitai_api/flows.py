@@ -14,9 +14,9 @@ from prefeitura_rio.pipelines_utils.prefect import (
 )
 
 from pipelines.constants import constants
-from pipelines.dump_api_vitai.constants import constants as vitai_constants
-from pipelines.dump_api_vitai.schedules import vitai_daily_update_schedule
-from pipelines.dump_api_vitai.tasks import build_date_param, build_url
+from pipelines.datalake.extract_load.vitai_api.constants import constants as vitai_constants
+from pipelines.datalake.extract_load.vitai_api.schedules import vitai_daily_update_schedule
+from pipelines.datalake.extract_load.vitai_api.tasks import build_date_param, build_url
 from pipelines.utils.tasks import (
     add_load_date_column,
     create_folders,
@@ -29,7 +29,7 @@ from pipelines.utils.tasks import (
 )
 
 with Flow(
-    name="Dump Vitai - Ingerir dados do prontuário Vitai",
+    name="DataLake - Extração e Carga de Dados - Vitai",
 ) as sms_dump_vitai:
     #####################################
     # Parameters
