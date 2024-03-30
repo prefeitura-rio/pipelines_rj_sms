@@ -14,7 +14,9 @@ from prefeitura_rio.pipelines_utils.prefect import (
 )
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.google_sheets.schedules import daily_update_schedule
+from pipelines.datalake.extract_load.google_sheets.schedules import (
+    daily_update_schedule,
+)
 from pipelines.utils.tasks import (
     create_folders,
     download_from_url,

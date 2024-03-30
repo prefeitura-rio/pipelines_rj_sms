@@ -10,7 +10,9 @@ import pytz
 from prefect.schedules import Schedule
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.smsrio_mysql.constants import constants as smsrio_constants
+from pipelines.datalake.extract_load.smsrio_mysql.constants import (
+    constants as smsrio_constants,
+)
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [

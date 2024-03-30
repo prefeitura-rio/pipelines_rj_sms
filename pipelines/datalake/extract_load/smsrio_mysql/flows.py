@@ -14,11 +14,15 @@ from prefeitura_rio.pipelines_utils.prefect import (
 )
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.smsrio_mysql.constants import constants as smsrio_constants
-from pipelines.datalake.extract_load.smsrio_mysql.schedules import smsrio_daily_update_schedule
+from pipelines.datalake.extract_load.smsrio_mysql.constants import (
+    constants as smsrio_constants,
+)
+from pipelines.datalake.extract_load.smsrio_mysql.schedules import (
+    smsrio_daily_update_schedule,
+)
 from pipelines.datalake.extract_load.smsrio_mysql.tasks import (
     build_gcp_table,
-    download_from_db
+    download_from_db,
 )
 from pipelines.utils.tasks import (
     create_folders,

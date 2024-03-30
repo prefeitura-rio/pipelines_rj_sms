@@ -11,7 +11,9 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.cnes_ftp.constants import constants as cnes_constants
+from pipelines.datalake.extract_load.cnes_ftp.constants import (
+    constants as cnes_constants,
+)
 from pipelines.datalake.extract_load.cnes_ftp.schedules import every_sunday_at_six_am
 from pipelines.datalake.extract_load.cnes_ftp.tasks import (
     add_multiple_date_column,
