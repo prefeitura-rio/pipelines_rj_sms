@@ -24,6 +24,7 @@ from pipelines.datalake.extract_load.tpc_azure_blob.tasks import (
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
+
 with Flow(
     name="DataLake - Extração e Carga de Dados - TPC",
 ) as sms_dump_tpc:
