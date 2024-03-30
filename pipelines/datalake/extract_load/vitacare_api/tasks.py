@@ -42,6 +42,24 @@ from pipelines.utils.tasks import (
 def extract_data_from_api(
     cnes: str, ap: str, target_day: date, endpoint: str, environment: str = "dev"
 ) -> dict:
+    """
+    Extracts data from an API based on the provided parameters.
+
+    Args:
+        cnes (str): The CNES (National Register of Health Establishments) code.
+        ap (str): The AP (Administrative Point) code.
+        target_day (date): The target day for data extraction.
+        endpoint (str): The API endpoint to extract data from.
+        environment (str, optional): The environment to run the extraction in. Defaults to "dev".
+
+    Returns:
+        dict: The extracted data from the API.
+
+    Raises:
+        ValueError: If the API response status code is not 200.
+        ENDRUN: If the API response is empty.
+
+    """
     api_url = vitacare_constants.BASE_URL.value[ap]
     endpoint = vitacare_constants.ENDPOINT.value[endpoint]
 
