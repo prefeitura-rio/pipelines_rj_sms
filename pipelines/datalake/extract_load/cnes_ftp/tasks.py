@@ -17,7 +17,7 @@ from prefect.client import Client
 from prefeitura_rio.pipelines_utils.bd import create_table_and_upload_to_gcs
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.dump_ftp_cnes.constants import constants
+from pipelines.datalake.extract_load.cnes_ftp.constants import constants
 from pipelines.utils.tasks import (
     create_partitions,
     download_ftp,

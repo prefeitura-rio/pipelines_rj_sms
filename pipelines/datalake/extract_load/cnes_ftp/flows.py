@@ -11,9 +11,11 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.dump_ftp_cnes.constants import constants as cnes_constants
-from pipelines.dump_ftp_cnes.schedules import every_sunday_at_six_am
-from pipelines.dump_ftp_cnes.tasks import (
+from pipelines.datalake.extract_load.cnes_ftp.constants import (
+    constants as cnes_constants,
+)
+from pipelines.datalake.extract_load.cnes_ftp.schedules import every_sunday_at_six_am
+from pipelines.datalake.extract_load.cnes_ftp.tasks import (
     add_multiple_date_column,
     check_file_to_download,
     conform_csv_to_gcp,
@@ -25,7 +27,7 @@ from pipelines.dump_ftp_cnes.tasks import (
 from pipelines.utils.tasks import create_folders, inject_gcp_credentials, unzip_file
 
 with Flow(
-    name="Dump CNES - Ingerir dados do CNES",
+    name="DataLake - Extração e Carga de Dados - CNES FTP",
 ) as sms_dump_cnes:
     #####################################
     # Parameters
