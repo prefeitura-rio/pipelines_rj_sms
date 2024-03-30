@@ -38,7 +38,7 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.utils.tasks import create_folders, upload_to_datalake
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados: VitaCare",
+    name="DataLake - Extração e Carga de Dados - VitaCare",
 ) as sms_dump_vitacare_estoque:
     #####################################
     # Parameters
@@ -159,7 +159,7 @@ sms_dump_vitacare_estoque.run_config = KubernetesRun(
 # ==============================
 
 with Flow(
-    name="DataLake - Agendador de Flows: VitaCare",
+    name="DataLake - Agendador de Flows - VitaCare",
 ) as sms_dump_vitacare_estoque_scheduler:
     #####################################
     # Parameters
@@ -199,7 +199,7 @@ with Flow(
     current_flow_run_labels = get_current_flow_labels()
 
     created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("DataLake - Extração e Carga de Dados: VitaCare"),
+        flow_name=unmapped("DataLake - Extração e Carga de Dados - VitaCare"),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),

@@ -33,7 +33,7 @@ from pipelines.utils.tasks import (
 )
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados: Vitai",
+    name="DataLake - Extração e Carga de Dados - Vitai",
 ) as sms_dump_vitai:
     #####################################
     # Parameters
