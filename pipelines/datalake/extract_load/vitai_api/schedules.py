@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 """
-Schedules for the smsrio dump pipeline
+Schedules for the vitai dump pipeline
 """
 
 from datetime import datetime, timedelta
@@ -10,26 +10,31 @@ import pytz
 from prefect.schedules import Schedule
 
 from pipelines.constants import constants
-from pipelines.dump_db_smsrio.constants import constants as smsrio_constants
+from pipelines.datalake.extract_load.vitai_api.constants import (
+    constants as vitai_constants,
+)
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [
     {
-        "table_id": "estoque",
-        "dataset_id": smsrio_constants.DATASET_ID.value,
+        "table_id": "estoque_posicao",
+        "dataset_id": vitai_constants.DATASET_ID.value,
+        "endpoint": "posicao",
         "environment": "prod",
         "rename_flow": True,
     },
     {
-        "table_id": "itens_estoque",
-        "dataset_id": smsrio_constants.DATASET_ID.value,
+        "table_id": "estoque_movimento",
+        "dataset_id": vitai_constants.DATASET_ID.value,
+        "endpoint": "movimento",
+        "date": "yesterday",
         "environment": "prod",
         "rename_flow": True,
     },
 ]
 
 
-clocks = generate_dump_api_schedules(
+vitai_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
     start_date=datetime(2023, 1, 1, 5, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
@@ -39,4 +44,4 @@ clocks = generate_dump_api_schedules(
     runs_interval_minutes=0,
 )
 
-smsrio_daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))
+vitai_daily_update_schedule = Schedule(clocks=untuple_clocks(vitai_clocks))

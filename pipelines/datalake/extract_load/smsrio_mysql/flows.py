@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103
+# pylint: disable=C0103, E1123
 """
 SMSRio dumping flows
 """
@@ -14,9 +14,16 @@ from prefeitura_rio.pipelines_utils.prefect import (
 )
 
 from pipelines.constants import constants
-from pipelines.dump_db_smsrio.constants import constants as smsrio_constants
-from pipelines.dump_db_smsrio.schedules import smsrio_daily_update_schedule
-from pipelines.dump_db_smsrio.tasks import build_gcp_table, download_from_db
+from pipelines.datalake.extract_load.smsrio_mysql.constants import (
+    constants as smsrio_constants,
+)
+from pipelines.datalake.extract_load.smsrio_mysql.schedules import (
+    smsrio_daily_update_schedule,
+)
+from pipelines.datalake.extract_load.smsrio_mysql.tasks import (
+    build_gcp_table,
+    download_from_db,
+)
 from pipelines.utils.tasks import (
     create_folders,
     get_secret_key,
@@ -25,7 +32,7 @@ from pipelines.utils.tasks import (
 )
 
 with Flow(
-    name="Dump SMS Rio - Ingerir dados da plataforma SMSRio",
+    name="DataLake - Extração e Carga de Dados - SMS Rio Plataforma",
 ) as sms_dump_smsrio:
     #####################################
     # Parameters

@@ -6,12 +6,12 @@
 Imports all flows for every project so we can register all of them.
 """
 
+from pipelines.datalake.extract_load.cnes_ftp.flows import *
+from pipelines.datalake.extract_load.google_sheets.flows import *
+from pipelines.datalake.extract_load.smsrio_mysql.flows import *
 from pipelines.datalake.extract_load.vitacare_api.flows import *
-from pipelines.dump_api_vitai.flows import *
-from pipelines.dump_db_smsrio.flows import *
-from pipelines.dump_ftp_cnes.flows import *
-from pipelines.dump_url.flows import *
-from pipelines.execute_dbt.flows import *
+from pipelines.datalake.extract_load.vitai_api.flows import *
+from pipelines.datalake.transform.dbt.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.prontuarios.raw.vitacare.flows import *
 from pipelines.prontuarios.raw.vitai.flows import *

@@ -10,15 +10,15 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.execute_dbt.schedules import dbt_schedules
-from pipelines.execute_dbt.tasks import (
+from pipelines.datalake.transform.dbt.schedules import dbt_schedules
+from pipelines.datalake.transform.dbt.tasks import (
     create_dbt_report,
     download_repository,
     execute_dbt,
     rename_current_flow_run_dbt,
 )
 
-with Flow(name="DBT - Executar comando no projeto queries-rj-sms") as sms_execute_dbt:
+with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     #####################################
     # Parameters
     #####################################
