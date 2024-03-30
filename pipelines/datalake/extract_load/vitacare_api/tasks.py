@@ -87,8 +87,10 @@ def extract_data_from_api(
         env=environment,
     )
 
-    if response["status_code"] != 200:
-        raise ValueError(f"Failed to extract data from API: {response['status_code']}")
+    if response["status_code"] != 200 or "Request failed" in response["body"]:
+        raise ValueError(
+            f"Failed to extract data from API: {response['status_code']} - {response['body']}"
+        )
 
     requested_data = json.loads(response["body"])
 
