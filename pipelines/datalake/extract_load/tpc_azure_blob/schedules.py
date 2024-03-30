@@ -19,6 +19,8 @@ flow_parameters = [
         "blob_file": "posicao",
         "table_id": "estoque_posicao",
         "dataset_id": tpc_constants.DATASET_ID.value,
+        "environment": "prod",
+        "rename_flow": True,
     },
     # {
     #    "blob_file": "pedidos",
