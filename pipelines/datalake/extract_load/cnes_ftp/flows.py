@@ -27,7 +27,7 @@ from pipelines.datalake.extract_load.cnes_ftp.tasks import (
 from pipelines.utils.tasks import create_folders, inject_gcp_credentials, unzip_file
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - CNES FTP",
+    name="DataLake - Extração e Carga de Dados: CNES FTP",
 ) as sms_dump_cnes:
     #####################################
     # Parameters

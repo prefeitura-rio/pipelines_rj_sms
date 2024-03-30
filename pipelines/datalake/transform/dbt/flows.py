@@ -18,7 +18,7 @@ from pipelines.datalake.transform.dbt.tasks import (
     rename_current_flow_run_dbt,
 )
 
-with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
+with Flow(name="DataLake - Transformação: DBT") as sms_execute_dbt:
     #####################################
     # Parameters
     #####################################

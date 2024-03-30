@@ -32,7 +32,7 @@ from pipelines.utils.tasks import (
 )
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - SMS Rio Plataforma",
+    name="DataLake - Extração e Carga de Dados: SMS Rio Plataforma",
 ) as sms_dump_smsrio:
     #####################################
     # Parameters

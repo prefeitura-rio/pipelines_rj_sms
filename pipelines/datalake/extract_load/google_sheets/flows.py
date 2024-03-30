@@ -25,7 +25,7 @@ from pipelines.utils.tasks import (
 )
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - Google Sheets",
+    name="DataLake - Extração e Carga de Dados: Google Sheets",
 ) as sms_dump_url:
     #####################################
     # Parameters
