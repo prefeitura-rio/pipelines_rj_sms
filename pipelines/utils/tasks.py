@@ -478,7 +478,9 @@ def cloud_function_request(
             payload = response.json()
 
             if payload["status_code"] != 200:
-                logger.error(f"[Target Endpoint] Request failed: {payload['status_code']} - {payload['body']}")
+                logger.error(
+                    f"[Target Endpoint] Request failed: {payload['status_code']} - {payload['body']}"
+                )
             else:
                 logger.info("[Target Endpoint] Request was successful")
 
