@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E203
 # pylint: disable= C0301
+"""
+General task functions for the data lake pipelines
+"""
+
 import prefect
 from prefect.client import Client
 from prefeitura_rio.pipelines_utils.logging import log
