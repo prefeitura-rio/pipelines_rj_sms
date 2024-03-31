@@ -4,9 +4,10 @@
 """
 Tasks for TPC Dump
 """
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pandas as pd
+import pytz
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.logging import log
@@ -133,6 +134,10 @@ def transform_data(file_path: str, blob_file: str):
         df["vl_merc"] = df.vl_merc.apply(lambda x: float(x.replace(",", ".")) if x != "" else x)
         df["vl_total"] = df.vl_total.apply(lambda x: float(x.replace(",", ".")) if x != "" else x)
         df["qt_rec"] = df.qt_rec.apply(lambda x: float(x.replace(",", ".")) if x != "" else x)
+
+    # add load date column
+    tz = pytz.timezone("Brazil/East")
+    df["_data_carga"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
     df.to_csv(file_path, index=False, sep=";", encoding="utf-8", quoting=0, decimal=".")
 
