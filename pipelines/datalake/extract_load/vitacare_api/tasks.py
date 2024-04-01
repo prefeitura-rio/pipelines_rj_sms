@@ -36,7 +36,7 @@ from pipelines.utils.tasks import (
 )
 
 
-@task(max_retries=2, retry_delay=timedelta(minutes=3))
+@task(max_retries=4, retry_delay=timedelta(minutes=3))
 def extract_data_from_api(
     cnes: str, ap: str, target_day: str, endpoint: str, environment: str = "dev"
 ) -> dict:
