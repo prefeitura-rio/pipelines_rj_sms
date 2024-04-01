@@ -10,13 +10,11 @@ import os
 import re
 import shutil
 import time
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import prefect
 from google.cloud import bigquery
-from prefect.engine.signals import ENDRUN
-from prefect.engine.state import Failed
 from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -40,7 +38,7 @@ from pipelines.utils.tasks import (
 
 @task(max_retries=4, retry_delay=timedelta(minutes=3))
 def extract_data_from_api(
-    cnes: str, ap: str, target_day: date, endpoint: str, environment: str = "dev"
+    cnes: str, ap: str, target_day: str, endpoint: str, environment: str = "dev"
 ) -> dict:
     """
     Extracts data from an API based on the provided parameters.
@@ -48,7 +46,7 @@ def extract_data_from_api(
     Args:
         cnes (str): The CNES (National Register of Health Establishments) code.
         ap (str): The AP (Administrative Point) code.
-        target_day (date): The target day for data extraction.
+        target_day (str): The target day for data extraction. Format YYYY-MM-DD.
         endpoint (str): The API endpoint to extract data from.
         environment (str, optional): The environment to run the extraction in. Defaults to "dev".
 
@@ -61,7 +59,7 @@ def extract_data_from_api(
 
     """
     api_url = vitacare_constants.BASE_URL.value[ap]
-    endpoint = vitacare_constants.ENDPOINT.value[endpoint]
+    endpoint_url = vitacare_constants.ENDPOINT.value[endpoint]
 
     # EXTRACT DATA
 
@@ -80,7 +78,7 @@ def extract_data_from_api(
     )
 
     response = cloud_function_request.run(
-        url=f"{api_url}{endpoint}",
+        url=f"{api_url}{endpoint_url}",
         request_type="GET",
         query_params={"date": str(target_day), "cnes": cnes},
         credential={"username": username, "password": password},
@@ -95,12 +93,19 @@ def extract_data_from_api(
     requested_data = json.loads(response["body"])
 
     if len(requested_data) > 0:
-        logger.info(f"Successful Request: retrieved {len(requested_data)} registers")
-    else:
-        logger.error("Failed Request: no data was retrieved")
-        raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {endpoint})"))
+        logger.info(f"Successful Request: retrieved {len(requested_data)} records")
+        return {"data": requested_data, "has_data": True}
 
-    return requested_data
+    else:
+        target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
+        if (
+            target_day.weekday() == 6 and endpoint == "movimento"
+        ):  # There is no stock movement on Sundays because the healthcenter is closed
+            logger.info("No data was retrieved. This is normal on Sundays as no data is expected.")
+            return {"has_data": False}
+
+        logger.error("Failed Request: no data was retrieved")
+        raise ValueError(f"Empty response for ({cnes}, {target_day}, {endpoint})")
 
 
 @task
