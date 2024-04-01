@@ -34,11 +34,13 @@ from pipelines.prontuarios.utils.tasks import (
     get_healthcenter_name_from_cnes,
     get_project_name,
 )
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
 from pipelines.utils.tasks import create_folders, upload_to_datalake
-from pipelines.utils.credential_injector import authenticated_create_flow_run as create_flow_run
-from pipelines.utils.credential_injector import authenticated_wait_for_flow_run as wait_for_flow_run
-
-
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",
