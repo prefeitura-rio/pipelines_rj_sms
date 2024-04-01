@@ -82,7 +82,7 @@ with Flow(
 
     ####################################
     # Tasks section #1 - Extract data
-    #####################################
+    ####################################
     api_data = extract_data_from_api(
         cnes=CNES,
         ap=ap,
