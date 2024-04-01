@@ -99,7 +99,7 @@ def extract_data_from_api(
         return requested_data
     else:
         logger.error("Failed Request: no data was retrieved")
-        
+
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
         if target_day.weekday() == 6 and endpoint == "movimento":  # Clinicas não abrem aos domingos
             raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {endpoint})"))
