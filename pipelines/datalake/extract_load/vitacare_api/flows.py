@@ -91,9 +91,9 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    with case(api_data['has_data'], True):
+    with case(api_data["has_data"], True):
         raw_file = save_data_to_file(
-            data=api_data['data'],
+            data=api_data["data"],
             file_folder=local_folders["raw"],
             table_id=TABLE_ID,
             ap=ap,
