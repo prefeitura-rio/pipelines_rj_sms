@@ -11,7 +11,6 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -36,6 +35,11 @@ from pipelines.prontuarios.utils.tasks import (
     get_project_name,
 )
 from pipelines.utils.tasks import create_folders, upload_to_datalake
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run,
+    authenticated_wait_for_flow_run,
+)
+
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",
@@ -198,14 +202,14 @@ with Flow(
 
     current_flow_run_labels = get_current_flow_labels()
 
-    created_flow_runs = create_flow_run.map(
+    created_flow_runs = authenticated_create_flow_run.map(
         flow_name=unmapped("DataLake - Extração e Carga de Dados - VitaCare"),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
     )
 
-    wait_runs_task = wait_for_flow_run.map(
+    wait_runs_task = authenticated_wait_for_flow_run.map(
         created_flow_runs,
         stream_states=unmapped(True),
         stream_logs=unmapped(True),

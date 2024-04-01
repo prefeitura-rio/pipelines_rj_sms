@@ -38,7 +38,7 @@ from pipelines.utils.tasks import (
 )
 
 
-@task(max_retries=4, retry_delay=timedelta(minutes=3))
+@task(max_retries=2, retry_delay=timedelta(minutes=3))
 def extract_data_from_api(
     cnes: str, ap: str, target_day: date, endpoint: str, environment: str = "dev"
 ) -> dict:
@@ -96,11 +96,14 @@ def extract_data_from_api(
 
     if len(requested_data) > 0:
         logger.info(f"Successful Request: retrieved {len(requested_data)} registers")
+        return requested_data
     else:
         logger.error("Failed Request: no data was retrieved")
-        raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {endpoint})"))
 
-    return requested_data
+        if target_day.weekday() == 6 and endpoint == "movimento":  # Clinicas não abrem aos domingos
+            raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {endpoint})"))
+
+        raise ValueError(f"Empty response for ({cnes}, {target_day}, {endpoint})")
 
 
 @task
