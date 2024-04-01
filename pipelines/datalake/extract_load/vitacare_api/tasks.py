@@ -40,7 +40,7 @@ from pipelines.utils.tasks import (
 
 @task(max_retries=2, retry_delay=timedelta(minutes=3))
 def extract_data_from_api(
-    cnes: str, ap: str, target_day: date, endpoint: str, environment: str = "dev"
+    cnes: str, ap: str, target_day: str, endpoint: str, environment: str = "dev"
 ) -> dict:
     """
     Extracts data from an API based on the provided parameters.
@@ -48,7 +48,7 @@ def extract_data_from_api(
     Args:
         cnes (str): The CNES (National Register of Health Establishments) code.
         ap (str): The AP (Administrative Point) code.
-        target_day (date): The target day for data extraction.
+        target_day (str): The target day for data extraction. Format YYYY-MM-DD.
         endpoint (str): The API endpoint to extract data from.
         environment (str, optional): The environment to run the extraction in. Defaults to "dev".
 
@@ -99,7 +99,8 @@ def extract_data_from_api(
         return requested_data
     else:
         logger.error("Failed Request: no data was retrieved")
-
+        
+        target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
         if target_day.weekday() == 6 and endpoint == "movimento":  # Clinicas não abrem aos domingos
             raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {endpoint})"))
 
