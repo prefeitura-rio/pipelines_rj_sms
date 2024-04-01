@@ -15,8 +15,6 @@ from pathlib import Path
 
 import prefect
 from google.cloud import bigquery
-from prefect.engine.signals import ENDRUN
-from prefect.engine.state import Failed
 from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -61,7 +59,7 @@ def extract_data_from_api(
 
     """
     api_url = vitacare_constants.BASE_URL.value[ap]
-    endpoint = vitacare_constants.ENDPOINT.value[endpoint]
+    endpoint_url = vitacare_constants.ENDPOINT.value[endpoint]
 
     # EXTRACT DATA
 
@@ -80,7 +78,7 @@ def extract_data_from_api(
     )
 
     response = cloud_function_request.run(
-        url=f"{api_url}{endpoint}",
+        url=f"{api_url}{endpoint_url}",
         request_type="GET",
         query_params={"date": str(target_day), "cnes": cnes},
         credential={"username": username, "password": password},
@@ -95,15 +93,18 @@ def extract_data_from_api(
     requested_data = json.loads(response["body"])
 
     if len(requested_data) > 0:
-        logger.info(f"Successful Request: retrieved {len(requested_data)} registers")
-        return requested_data
+        logger.info(f"Successful Request: retrieved {len(requested_data)} records")
+        return {"data": requested_data, "has_data": True}
+
     else:
-        logger.error("Failed Request: no data was retrieved")
-
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
-        if target_day.weekday() == 6 and endpoint == "movimento":  # Clinicas não abrem aos domingos
-            raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {endpoint})"))
+        if (
+            target_day.weekday() == 6 and endpoint == "movimento"
+        ):  # There is no stock movement on Sundays because the healthcenter is closed
+            logger.info("No data was retrieved. This is normal on Sundays as no data is expected.")
+            return {"has_data": False}
 
+        logger.error("Failed Request: no data was retrieved")
         raise ValueError(f"Empty response for ({cnes}, {target_day}, {endpoint})")
 
 

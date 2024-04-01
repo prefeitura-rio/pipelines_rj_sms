@@ -91,46 +91,47 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    raw_file = save_data_to_file(
-        data=api_data,
-        file_folder=local_folders["raw"],
-        table_id=TABLE_ID,
-        ap=ap,
-        cnes=CNES,
-        add_load_date_to_filename=True,
-        load_date=TARGET_DATE,
-        upstream_tasks=[api_data],
-    )
+    with case(api_data['has_data'], True):
+        raw_file = save_data_to_file(
+            data=api_data['data'],
+            file_folder=local_folders["raw"],
+            table_id=TABLE_ID,
+            ap=ap,
+            cnes=CNES,
+            add_load_date_to_filename=True,
+            load_date=TARGET_DATE,
+            upstream_tasks=[api_data],
+        )
 
-    #####################################
-    # Tasks section #3 - Transform data
-    #####################################
+        #####################################
+        # Tasks section #3 - Transform data
+        #####################################
 
-    transformed_file = transform_data(
-        file_path=raw_file, table_id=TABLE_ID, upstream_tasks=[raw_file]
-    )
+        transformed_file = transform_data(
+            file_path=raw_file, table_id=TABLE_ID, upstream_tasks=[raw_file]
+        )
 
-    #####################################
-    # Tasks section #4 - Load data
-    #####################################
+        #####################################
+        # Tasks section #4 - Load data
+        #####################################
 
-    create_partitions_task = create_partitions(
-        data_path=local_folders["raw"],
-        partition_directory=local_folders["partition_directory"],
-        upstream_tasks=[transformed_file],
-    )
+        create_partitions_task = create_partitions(
+            data_path=local_folders["raw"],
+            partition_directory=local_folders["partition_directory"],
+            upstream_tasks=[transformed_file],
+        )
 
-    upload_to_datalake_task = upload_to_datalake(
-        input_path=local_folders["partition_directory"],
-        dataset_id=DATASET_ID,
-        table_id=TABLE_ID,
-        if_exists="replace",
-        csv_delimiter=";",
-        if_storage_data_exists="replace",
-        biglake_table=True,
-        dataset_is_public=False,
-        upstream_tasks=[create_partitions_task],
-    )
+        upload_to_datalake_task = upload_to_datalake(
+            input_path=local_folders["partition_directory"],
+            dataset_id=DATASET_ID,
+            table_id=TABLE_ID,
+            if_exists="replace",
+            csv_delimiter=";",
+            if_storage_data_exists="replace",
+            biglake_table=True,
+            dataset_is_public=False,
+            upstream_tasks=[create_partitions_task],
+        )
 
     #####################################
     # Tasks section #3 - Save run metadata
