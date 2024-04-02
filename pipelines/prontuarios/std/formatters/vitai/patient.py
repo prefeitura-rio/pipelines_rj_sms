@@ -207,10 +207,15 @@ def standardize_telecom_data(data: dict) -> dict:
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
             return telecom_dic
 
-    data, phone_field_list = clean_phone_records(data)
     phone_list = []
-    for phone in phone_field_list:
-        telefone = format_telecom(data[phone], "phone")
+    phone_fields = [
+        column
+        for column in data.keys()
+        if column in ["telefone", "celular", "telefoneExtraUm", "telefoneExtraDois"]
+    ]
+    for phone in phone_fields:
+        value_phone_std = clean_phone_records(data[phone])
+        telefone = format_telecom(value_phone_std, "phone")
         if telefone is not None:
             phone_list.append(telefone)
 

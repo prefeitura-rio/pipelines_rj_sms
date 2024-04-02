@@ -30,7 +30,7 @@ def drop_invalid_records(data: dict) -> dict:
     Args:
         dic (dict) : Individual data record
     Returns:
-        dic (dict) : Individual data record standardized or None
+        dic (dict) : Individual data record standardized with is_valid flag
     """
     data["raw_source_id"] = data["id"]
     birth_date_field = [field for field in data.keys() if field in ["dataNascimento", "dt_nasc"]][0]
@@ -59,12 +59,13 @@ def drop_invalid_records(data: dict) -> dict:
     data["name"] = clean_name_fields(data["nome"])
 
     # Drop
+    data['is_valid'] = 1
     for value in list(itemgetter("patient_cpf", "gender", "birth_date")(data)):
         if (value is None) | (pd.isna(value)):
-            return
-        else:
-            pass
-    data["patient_code"] = data["patient_cpf"] + "." + data["birth_date"].replace("-", "")
+            data['is_valid'] = 0
+
+    if data['is_valid'] == 1:
+        data["patient_code"] = data["patient_cpf"] + "." + data["birth_date"].replace("-", "")
     return data
 
 
@@ -72,11 +73,14 @@ def clean_none_records(json_list: list) -> list:
     """
     Deleting None records (invalidated records) from payload
     Args:
-        json_list (list): Payload standartized
+        json_list (list): Payload standartized with is_valid flag
     Returns:
-        list: Payload standartized without None elements
+        valid: List of standardized payloads with is_valid flag set to 1
+        not_valid: id list of not valid payloads
     """
-    return [record for record in json_list if record is not None]
+    valid = [record for record in json_list if record['is_valid'] == 1]
+    not_valid = [record['id'] for record in json_list if record['is_valid'] == 0]
+    return valid, not_valid
 
 
 def prepare_to_load(data: dict) -> dict:
@@ -227,36 +231,29 @@ def clean_postal_code_info(data: dict) -> dict:
     return data
 
 
-def clean_phone_records(data: dict) -> dict:
+def clean_phone_records(phone_raw: str) -> str:
     """
-    Standardize phone data field to acceptable API format
+    Clean and validate phone field
 
     Args:
-        data (dict) : Individual data record
+        data (str) : Phone value
 
     Returns:
-        data (dict) : Individual data record standardized
-        phone_fields (list) : List of phone fields
+        phone_std (str) : Valid phone value or None
     """
-    phone_fields = [
-        column
-        for column in data.keys()
-        if column in ["telefone", "celular", "telefoneExtraUm", "telefoneExtraDois"]
-    ]
-    for phone_field in phone_fields:
-        if data[phone_field] is not None:
-            data[phone_field] = re.sub(r"[()-]", "", data[phone_field])
-            if (len(data[phone_field]) < 8) | (len(data[phone_field]) > 12):
-                data[phone_field] = None
-            elif bool(
-                re.search(
-                    "0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}", data[phone_field]
-                )
-            ):
-                data[phone_field] = None
-            elif bool(re.search("[^0-9]", data[phone_field])):
-                data[phone_field] = None
-    return data, phone_fields
+    if phone_raw is not None:
+        phone_std = re.sub(r"[()-]", "", phone_raw)
+        if (len(phone_std) < 8) | (len(phone_std) > 12):
+            return
+        elif bool(
+            re.search(
+                "0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}", phone_std
+            )
+        ):
+            return
+        elif bool(re.search("[^0-9]", phone_std)):
+            return
+        return phone_std
 
 
 def clean_email_records(data: dict) -> dict:

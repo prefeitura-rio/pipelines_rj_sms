@@ -92,9 +92,22 @@ def standardize_cns_list(data: dict) -> dict:
         data["cns_list"] = list(map(lambda p: dic_cns_value(p, True), lista))
         return data
     else:
-        data["cns_list"] = [dic_cns_value(lista[0], True)] + list(
-            map(lambda p: dic_cns_value(p, False), lista[1:])
-        )
+        lista.reverse()
+        cns_list_std = []
+        cns_list_values = []
+        for ind, value_raw in enumerate(lista):
+            value_std = None
+            if ind == 0:
+                value_std = dic_cns_value(value_raw, True)
+            else:
+                if value_raw not in cns_list_values:
+                    value_std = dic_cns_value(value_raw, False)
+
+            if value_std is not None:
+                cns_list_std.append(value_std)
+                cns_list_values.append(value_raw)
+        data["cns_list"] = cns_list_std
+
         return data
 
 
@@ -172,7 +185,10 @@ def standardize_telecom_data(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data, _ = clean_phone_records(data)
+
+    phones_unique = json.loads(data['telefones']) if data['telefones'] is not None else [None]
+    phones_unique = list(set(phones_unique))
+    phones_std = list(map(clean_phone_records, phones_unique))
     data = clean_email_records(data)
 
     def format_telecom(record, type_telecom):
@@ -191,10 +207,14 @@ def standardize_telecom_data(data: dict) -> dict:
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
             return telecom_dic
 
-    telefone = format_telecom(data["telefone"], "phone")
-    email = format_telecom(data["email"], "email")
+    phone_clean_list = []
+    for phone in phones_std:
+        if phone is not None:
+            phone_clean_list.append(format_telecom(phone, "phone"))
 
-    telecom_list = [contact for contact in [telefone, email] if contact is not None]
+    phone_clean_list.append(format_telecom(data["email"], "email"))
+
+    telecom_list = [contact for contact in phone_clean_list if contact is not None]
 
     if len(telecom_list) > 0:
         data["telecom_list"] = telecom_list
