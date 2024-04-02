@@ -12,7 +12,10 @@ with Flow("Tool: Deletar Flow Group") as flow:
     ENVIRONMENT = Parameter("environment", default="staging")
     FLOW_GROUP_ID = Parameter("flow_group_id", default="")
 
-    delete_flow_group(flow_group_id=FLOW_GROUP_ID)
+    delete_flow_group(
+        environment=ENVIRONMENT,
+        flow_group_id=FLOW_GROUP_ID
+    )
 
 flow.executor = LocalDaskExecutor(num_workers=10)
 flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
