@@ -6,7 +6,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def delete_flow_group(environment:str, flow_group_id: str):
+def delete_flow_group(environment: str, flow_group_id: str):
     """
     Deletes a flow group from Prefect Cloud.
 
