@@ -1,0 +1,25 @@
+from prefect.client import Client
+
+from pipelines.utils.credential_injector import authenticated_task as task
+
+
+@task
+def delete_flow_group(flow_group_id: str):
+    """
+    Deletes a flow group from Prefect Cloud.
+
+    :param flow_group_id: Flow group id.
+    """
+    client = Client()
+    client.graphql(
+        query="""
+        mutation {
+            delete_flow_group(input:{flow_group_id:"<FLOW_GROUP_ID>"}){
+                success
+            }
+        }
+        """.replace(
+            "<FLOW_GROUP_ID>", flow_group_id
+        )
+    )
+    return
