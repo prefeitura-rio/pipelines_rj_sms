@@ -68,6 +68,7 @@ def extract_data_from_blob(
     log(f"File replication date: {replication_date}")
 
     if replication_date != pd.Timestamp.now().strftime("%Y-%m-%d"):
+        log("File is not from current date", level="error")
         raise ENDRUN(
             state=Failed(f"File is not from current date. Replication date: {replication_date}")
         )
