@@ -59,12 +59,12 @@ def drop_invalid_records(data: dict) -> dict:
     data["name"] = clean_name_fields(data["nome"])
 
     # Drop
-    data['is_valid'] = 1
+    data["is_valid"] = 1
     for value in list(itemgetter("patient_cpf", "gender", "birth_date")(data)):
         if (value is None) | (pd.isna(value)):
-            data['is_valid'] = 0
+            data["is_valid"] = 0
 
-    if data['is_valid'] == 1:
+    if data["is_valid"] == 1:
         data["patient_code"] = data["patient_cpf"] + "." + data["birth_date"].replace("-", "")
     return data
 
@@ -78,8 +78,8 @@ def clean_none_records(json_list: list) -> list:
         valid: List of standardized payloads with is_valid flag set to 1
         not_valid: id list of not valid payloads
     """
-    valid = [record for record in json_list if record['is_valid'] == 1]
-    not_valid = [record['id'] for record in json_list if record['is_valid'] == 0]
+    valid = [record for record in json_list if record["is_valid"] == 1]
+    not_valid = [record["id"] for record in json_list if record["is_valid"] == 0]
     return valid, not_valid
 
 
@@ -246,9 +246,7 @@ def clean_phone_records(phone_raw: str) -> str:
         if (len(phone_std) < 8) | (len(phone_std) > 12):
             return
         elif bool(
-            re.search(
-                "0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}", phone_std
-            )
+            re.search("0{8,}|1{8,}|2{8,}|3{8,}|4{8,}|5{8,}|6{8,}|7{8,}|8{8,}|9{8,}", phone_std)
         ):
             return
         elif bool(re.search("[^0-9]", phone_std)):

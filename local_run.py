@@ -2,14 +2,13 @@
 import argparse
 
 from pipelines.prontuarios.std.vitai.flows import vitai_standardization
+
 # ==================================================
 # CONFIGURATION
 # --------------------------------------------------
 # Please, register here pairs: (flow, param)
 # ==================================================
-flows_run_cases = [
-    (vitai_standardization, {})
-]
+flows_run_cases = [(vitai_standardization, {})]
 
 
 # ==================================================

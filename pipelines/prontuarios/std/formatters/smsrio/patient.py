@@ -186,7 +186,7 @@ def standardize_telecom_data(data: dict) -> dict:
         data (dict) : Individual data record standardized
     """
 
-    phones_unique = json.loads(data['telefones']) if data['telefones'] is not None else [None]
+    phones_unique = json.loads(data["telefones"]) if data["telefones"] is not None else [None]
     phones_unique = list(set(phones_unique))
     phones_std = list(map(clean_phone_records, phones_unique))
     data = clean_email_records(data)
