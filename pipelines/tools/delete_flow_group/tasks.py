@@ -1,4 +1,5 @@
 from prefect.client import Client
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
@@ -11,7 +12,7 @@ def delete_flow_group(flow_group_id: str):
     :param flow_group_id: Flow group id.
     """
     client = Client()
-    client.graphql(
+    response = client.graphql(
         query="""
         mutation {
             delete_flow_group(input:{flow_group_id:"<FLOW_GROUP_ID>"}){
@@ -20,6 +21,8 @@ def delete_flow_group(flow_group_id: str):
         }
         """.replace(
             "<FLOW_GROUP_ID>", flow_group_id
-        )
+        ),
+        raise_on_error = True
     )
+    log(response)
     return
