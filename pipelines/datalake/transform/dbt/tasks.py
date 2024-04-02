@@ -105,24 +105,26 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     logs = process_dbt_logs(log_path="dbt_repository/logs/dbt.log")
     log_path = log_to_file(logs)
 
-    is_incomplete = False
+    is_successful, has_warnings = True, False
+
     general_report = []
     for command_result in running_results.result:
         status = command_result.status
         if status == "fail":
-            is_incomplete = True
+            is_successful = False
             general_report.append(
                 f"- 🛑 FAIL: `{command_result.node.name}`\n  - {command_result.message}"
-            )  # noqa
+            )
         elif status == "error":
-            is_incomplete = True
+            is_successful = False
             general_report.append(
                 f"- ❌ ERROR: `{command_result.node.name}`\n  - {command_result.message}"
-            )  # noqa
+            )
         elif status == "warn":
+            has_warnings = True
             general_report.append(
                 f"- ⚠️ WARN: `{command_result.node.name}`\n  - {command_result.message}"
-            )  # noqa
+            )
 
     general_report = sorted(general_report)
     general_report = "**Resumo**:\n" + "\n".join(general_report)
@@ -136,13 +138,14 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         param_report.append(f"- {key}: {value}")
     param_report = "\n".join(param_report)
 
-    should_fail_execution = is_incomplete or not running_results.success
+    fully_successful = is_successful and running_results.success
+    include_report = has_warnings or (not fully_successful)
 
     # DBT - Sending Logs to Discord
     command = prefect.context.get("parameters").get("command")
-    emoji = "❌" if should_fail_execution else "✅"
-    complement = "com Erros" if should_fail_execution else "sem Erros"
-    message = f"{param_report}\n{general_report}" if should_fail_execution else param_report
+    emoji = "❌" if not fully_successful else "✅"
+    complement = "com Erros" if not fully_successful else "sem Erros"
+    message = f"{param_report}\n{general_report}" if include_report else param_report
 
     send_message(
         title=f"{emoji} Execução `dbt {command}` finalizada {complement}",
@@ -151,7 +154,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         monitor_slug="dbt-runs",
     )
 
-    if should_fail_execution:
+    if not fully_successful:
         raise FAIL(general_report)
 
 
