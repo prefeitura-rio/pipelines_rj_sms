@@ -23,7 +23,7 @@ def delete_flow_group(flow_group_id: str):
         """.replace(
             "<FLOW_GROUP_ID>", flow_group_id
         ),
-        raise_on_error = True
+        raise_on_error=True,
     )
     log(response)
     return
