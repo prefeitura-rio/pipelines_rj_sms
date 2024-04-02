@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from prefect.client import Client
 
 from pipelines.utils.credential_injector import authenticated_task as task
