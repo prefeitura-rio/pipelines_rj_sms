@@ -727,6 +727,7 @@ def upload_to_datalake(
     dataset_id: str,
     table_id: str,
     if_exists: str = "replace",
+    source_format: str = "csv",
     csv_delimiter: str = ";",
     if_storage_data_exists: str = "replace",
     biglake_table: bool = True,
@@ -764,6 +765,7 @@ def upload_to_datalake(
             log(f"CREATING TABLE: {dataset_id}.{table_id}")
             tb.create(
                 path=input_path,
+                source_format=source_format,
                 csv_delimiter=csv_delimiter,
                 if_storage_data_exists=if_storage_data_exists,
                 biglake_table=biglake_table,
@@ -793,6 +795,7 @@ def upload_to_datalake(
 
                 tb.create(
                     path=input_path,
+                    source_format=source_format,
                     csv_delimiter=csv_delimiter,
                     if_storage_data_exists=if_storage_data_exists,
                     biglake_table=biglake_table,
