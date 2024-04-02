@@ -726,28 +726,34 @@ def upload_to_datalake(
     input_path: str,
     dataset_id: str,
     table_id: str,
-    if_exists: str = "replace",
+    dump_mode: str = "append",
     source_format: str = "csv",
     csv_delimiter: str = ";",
+    if_exists: str = "replace",
     if_storage_data_exists: str = "replace",
     biglake_table: bool = True,
     dataset_is_public: bool = False,
-    dump_mode: str = "append",
 ):
     """
-    Uploads data from a file to a BigQuery table in a specified dataset.
+    Uploads data to a Google Cloud Storage bucket and creates or appends to a BigQuery table.
 
     Args:
-        input_path (str): The path to the file containing the data to be uploaded.
-        dataset_id (str): The ID of the dataset where the table is located.
-        table_id (str): The ID of the table where the data will be uploaded.
-        if_exists (str, optional): Specifies what to do if the table already exists.
-            Defaults to "replace".
+        input_path (str): The path to the input data file.
+        dataset_id (str): The ID of the BigQuery dataset.
+        table_id (str): The ID of the BigQuery table.
+        dump_mode (str, optional): The dump mode for the table. Defaults to "append". Accepted values are "append" and "overwrite".
+        source_format (str, optional): The format of the input data. Defaults to "csv". Accepted values are "csv" and "parquet".
         csv_delimiter (str, optional): The delimiter used in the CSV file. Defaults to ";".
-        if_storage_data_exists (str, optional): Specifies what to do if the storage data
-            already exists. Defaults to "replace".
-        biglake_table (bool, optional): Specifies whether the table is a BigLake table.
-            Defaults to True.
+        if_exists (str, optional): The behavior if the table already exists. Defaults to "replace".
+        if_storage_data_exists (str, optional): The behavior if the storage data already exists. Defaults to "replace".
+        biglake_table (bool, optional): Whether the table is a BigLake table. Defaults to True.
+        dataset_is_public (bool, optional): Whether the dataset is public. Defaults to False.
+
+    Raises:
+        RuntimeError: If an error occurs during the upload process.
+
+    Returns:
+        None
     """
     tb = bd.Table(dataset_id=dataset_id, table_id=table_id)
     table_staging = f"{tb.table_full_name['staging']}"
