@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from prefect.client import Client
 from prefeitura_rio.pipelines_utils.logging import log
 
