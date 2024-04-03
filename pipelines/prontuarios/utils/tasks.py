@@ -15,7 +15,6 @@ import requests
 
 # from prefect import task
 from prefect.client import Client
-from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuario_constants
@@ -185,7 +184,7 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
         json=request_body,
     )
 
-    if request_response.status_code != 201:
+    if request_response.status_code not in [200, 201]:
         raise requests.exceptions.HTTPError(f"Error loading data: {request_response.text}")
 
 
