@@ -72,10 +72,17 @@ with Flow(
 
     lista_campos_api, logradouros_dict, city_dict, state_dict, country_dict = define_constants()
 
-    format_patient_list = format_json(json_list=raw_patient_data)
+    json_list_valid, list_invalid_id = format_json(json_list=raw_patient_data)
+
+    load_to_api_invalid_ids = load_to_api(
+        request_body=list_invalid_id,
+        endpoint_name="raw/patientrecords/setAsInvalid",
+        api_token=api_token,
+        environment=ENVIRONMENT,
+    )
 
     std_patient_list = standartize_data(
-        raw_data=format_patient_list,
+        raw_data=json_list_valid,
         logradouros_dict=logradouros_dict,
         city_dict=city_dict,
         state_dict=state_dict,

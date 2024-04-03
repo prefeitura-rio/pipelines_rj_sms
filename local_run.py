@@ -1,27 +1,14 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.execute_dbt.flows import sms_execute_dbt
-from pipelines.reports.endpoint_health.flows import disponibilidade_api
-from pipelines.tools.api_healthcheck.flows import monitoramento_api
+from pipelines.prontuarios.std.vitai.flows import vitai_standardization
 
 # ==================================================
 # CONFIGURATION
 # --------------------------------------------------
 # Please, register here pairs: (flow, param)
 # ==================================================
-flows_run_cases = [
-    (
-        sms_execute_dbt,
-        {
-            "command": "test",
-            "environment": "dev",
-            "model": None,
-        },
-    ),
-    (disponibilidade_api, {}),
-    (monitoramento_api, {}),
-]
+flows_run_cases = [(vitai_standardization, {})]
 
 
 # ==================================================

@@ -79,7 +79,7 @@ def define_constants() -> Tuple[dict, dict, dict]:
     return city_name_dict, state_dict, country_dict
 
 
-@task
+@task(nout=2)
 def format_json(json_list: list) -> list:
     """
     Drop invalid patient records, i.e. records without valid inputs on required fields
@@ -92,15 +92,15 @@ def format_json(json_list: list) -> list:
     log(f"Starting flow with {len(json_list)} registers")
 
     json_list_merged = list(map(merge_keys, json_list))
-    json_list_valid = list(map(drop_invalid_records, json_list_merged))
-    json_list_notna = clean_none_records(json_list_valid)
+    json_list_info = list(map(drop_invalid_records, json_list_merged))
+    json_list_valid, json_list_invalid = clean_none_records(json_list_info)
 
     log(
-        f"{len(json_list) - len(json_list_notna)} registers dropped,\
-         standardizing remaining {len(json_list_notna)} registers"
+        f"{len(json_list_invalid)} registers dropped,\
+        standardizing remaining {len(json_list_valid)} registers"
     )
 
-    return json_list_notna
+    return json_list_valid, json_list_invalid
 
 
 @task
