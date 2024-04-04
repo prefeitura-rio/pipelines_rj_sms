@@ -15,6 +15,7 @@ from pathlib import Path
 
 import prefect
 from google.cloud import bigquery
+from prefect.engine.signals import FAIL
 from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -105,7 +106,7 @@ def extract_data_from_api(
             return {"has_data": False}
 
         logger.error("Failed Request: no data was retrieved")
-        raise ValueError(f"Empty response for ({cnes}, {target_day}, {endpoint})")
+        raise FAIL(message=f"Empty response for ({cnes}, {target_day}, {endpoint})")
 
 
 @task
