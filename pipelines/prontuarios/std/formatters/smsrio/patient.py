@@ -157,7 +157,12 @@ def standardize_address_data(
     address_dic = {
         "use": None,
         "type": None,
-        "line": format_address(data["end_tp_logrado_nome"],data["end_logrado"],data["end_numero"],data["end_complem"]),
+        "line": format_address(
+            data["end_tp_logrado_nome"],
+            data["end_logrado"],
+            data["end_numero"],
+            data["end_complem"],
+        ),
         "city": data["city"],
         "country": data["country"],
         "state": data["state"],
