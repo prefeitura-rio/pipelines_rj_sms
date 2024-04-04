@@ -7,13 +7,13 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
-from pipelines.prontuarios.mrg.smsrio.constants import constants as smsrio_constants
-from pipelines.prontuarios.mrg.smsrio.schedules import smsrio_std_daily_update_schedule
-from pipelines.prontuarios.mrg.smsrio.tasks import (
-    define_constants,
-    format_json,
+from pipelines.prontuarios.mrg.constants import constants as mrg_constants
+from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
+from pipelines.prontuarios.mrg.tasks import (
     get_params,
-    standartize_data,
+    normalize_payload_list,
+    first_merge,
+    final_merge
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -24,8 +24,8 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
 with Flow(
-    name="Prontuários - Fundição de Pacientes ",
-) as smsrio_standardization:
+    name="Prontuários - Fundição de Pacientes",
+) as patientrecord_mrg:
     #####################################
     # Parameters
     #####################################
@@ -41,10 +41,10 @@ with Flow(
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
-        infisical_path=smsrio_constants.INFISICAL_PATH.value,
+        infisical_path=mrg_constants.INFISICAL_PATH.value,
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
-        infisical_api_username=smsrio_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=smsrio_constants.INFISICAL_API_PASSWORD.value,
+        infisical_api_username=mrg_constants.INFISICAL_API_USERNAME.value,
+        infisical_api_password=mrg_constants.INFISICAL_API_PASSWORD.value,
     )
 
     api_url = get_secret_key(
@@ -66,14 +66,21 @@ with Flow(
         auth_method="bearer",
     )
 
-   
-
     ####################################
-    # Task Section #2 - Transform Data
+    # Task Section #2 - Merge Data
     ####################################
 
-    std_patient_list = merge(
-        std_data=std_data_to_merge
+    std_patient_list = normalize_payload_list.map(
+        std_data=data_to_be_merged
+    )
+
+    merged_list, not_merged_list = first_merge.map(
+        group=std_patient_list
+    )
+
+    std_patient_list_final = final_merge.map(
+        merged_payload=merged_list,
+        not_merged_payload=not_merged_list
     )
 
     load_to_api_task = load_to_api(
@@ -84,9 +91,9 @@ with Flow(
     )
 
 
-smsrio_standardization.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-smsrio_standardization.executor = LocalDaskExecutor(num_workers=4)
-smsrio_standardization.run_config = KubernetesRun(
+patientrecord_mrg.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+patientrecord_mrg.executor = LocalDaskExecutor(num_workers=4)
+patientrecord_mrg.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -94,4 +101,4 @@ smsrio_standardization.run_config = KubernetesRun(
     memory_limit="5Gi",
 )
 
-smsrio_standardization.schedule = smsrio_std_daily_update_schedule
+patientrecord_mrg.schedule = mrg_daily_update_schedule
