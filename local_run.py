@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.prontuarios.std.vitai.flows import vitai_standardization
+from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 
 # ==================================================
 # CONFIGURATION
 # --------------------------------------------------
 # Please, register here pairs: (flow, param)
 # ==================================================
-flows_run_cases = [(vitai_standardization, {})]
+flows_run_cases = [(smsrio_standardization, {})]
 
 
 # ==================================================
@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description="Run a specific flow")
 parser.add_argument("--case", type=int, help="The index of the pair (flow, param) to run")
 
 parser.add_argument(
-    "--environment", type=str, help="The environment to run the flow on", default="dev"
+    "--environment", type=str, help="The environment to run the flow on", default="prod"
 )
 
 if __name__ == "__main__":
