@@ -7,7 +7,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.reports.endpoint_health.schedules import update_schedule
-from pipelines.reports.endpoint_health.tasks import create_description, send_report
+from pipelines.reports.endpoint_health.tasks import create_and_send_report
 from pipelines.utils.tasks import load_file_from_bigquery
 
 with Flow(
@@ -27,10 +27,9 @@ with Flow(
         table_name="api_health_check",
         environment=ENVIRONMENT,
     )
-    text_report = create_description(
+    create_and_send_report(
         endpoints_table=endpoints_table, results_table=health_check_results_table
     )
-    send_report(description=text_report)
 
 disponibilidade_api.schedule = update_schedule
 disponibilidade_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
