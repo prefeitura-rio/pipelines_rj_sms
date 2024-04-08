@@ -41,7 +41,9 @@ def create_and_send_report(endpoints_table, results_table):
         healthy_records = records[records["is_healthy"]]
         if not healthy_records.empty:
             last_healthy_record = healthy_records["moment"].iloc[-1]
-            hours_since_last_healthy = math.floor((today - last_healthy_record).total_seconds() / 3600) #noqa
+            hours_since_last_healthy = math.floor(
+                (today - last_healthy_record).total_seconds() / 3600
+            )  # noqa
             days_since_last_healthy = math.floor(hours_since_last_healthy / 24.0)
             hours_since_last_healthy = hours_since_last_healthy % 24
 
