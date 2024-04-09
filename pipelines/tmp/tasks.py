@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import requests
-from prefect import task
 from prefeitura_rio.pipelines_utils.logging import log
+
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
