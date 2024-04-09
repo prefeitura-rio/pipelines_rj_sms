@@ -18,15 +18,19 @@ with Flow(
     name="Tool: Monitoramento de API",
 ) as monitoramento_api:
     ENVIRONMENT = Parameter("environment", default="dev")
+    TAG = Parameter("tag", default="")
 
-    api_url_table = load_file_from_bigquery(
+    endpoints = load_file_from_bigquery(
         project_name="rj-sms",
-        dataset_name="gerenciamento",
-        table_name="api_url_list",
+        dataset_name="gerenciamento__monitoramento_de_api",
+        table_name="endpoint",
         environment=ENVIRONMENT,
     )
 
-    api_url_list = get_api_url(api_url_table=api_url_table)
+    api_url_list = get_api_url(
+        api_url_table=endpoints,
+        tag=TAG,
+    )
 
     results = check_api_health.map(api_info=api_url_list)
 
