@@ -10,7 +10,26 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def create_and_send_report(endpoints_table, results_table):
+def filter_dataframe_using_tag(dataframe, tag):
+    """
+    Filter a DataFrame using a tag.
+
+    Args:
+        dataframe (pandas.DataFrame): DataFrame to be filtered.
+        tag (str): Tag to be used to filter the DataFrame.
+
+    Returns:
+        pandas.DataFrame: Filtered DataFrame.
+
+    """
+    if tag == "":
+        return dataframe
+
+    return dataframe[dataframe["tag"] == tag]
+
+
+@task
+def create_and_send_report(endpoints_table, results_table, filter_tag):
     """
     Creates a description of endpoint health metrics.
 
@@ -27,7 +46,7 @@ def create_and_send_report(endpoints_table, results_table):
 
     # Iterate over each endpoint
     for _, endpoint in endpoints_table.iterrows():
-        records = results_table[results_table["api_url"] == endpoint["url"]]
+        records = results_table[results_table["endpoint_id"] == endpoint["id"]]
         records.sort_values(by="moment", inplace=True)
 
         today = datetime.datetime.now(tz=pytz.timezone("Brazil/East"))
@@ -70,8 +89,13 @@ def create_and_send_report(endpoints_table, results_table):
             line = f"- ❌ **{name.upper()}**: {availability:.0%} de disp. (última disp.: {last_healthy_record_text})"  # noqa
         reports.append(line)
 
+    if filter_tag != "":
+        body = f"### Método: `{filter_tag}`\n" + "\n".join(reports)
+    else:
+        body = "\n".join(reports)
+
     monitor.send_message(
         title="Disponibilidade de API nas últimas 24h",
-        message="\n".join(reports),
+        message=body,
         monitor_slug="endpoint-health",
     )

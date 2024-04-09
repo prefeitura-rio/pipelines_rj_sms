@@ -12,7 +12,10 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-flow_parameters = [{"environment": "prod"}]
+flow_parameters = [
+    {"environment": "prod", "filter_tag": "vitai-deprecated"},
+    {"environment": "prod", "filter_tag": "vitai"},
+]
 
 
 clocks = generate_dump_api_schedules(
