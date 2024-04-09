@@ -10,7 +10,7 @@ class constants(Enum):
     # Docker image
     DOCKER_TAG = "AUTO_REPLACE_DOCKER_TAG"
     DOCKER_IMAGE_NAME = "AUTO_REPLACE_DOCKER_IMAGE"
-    DOCKER_VERTEX_IMAGE_NAME = "southamerica-east1-docker.pkg.dev/rj-sms/pipelines-rj-sms"
+    DOCKER_VERTEX_IMAGE_NAME = "southamerica-east1-docker.pkg.dev/rj-sms/pipelines-rj-sms/image"
     DOCKER_IMAGE = f"{DOCKER_IMAGE_NAME}:{DOCKER_TAG}"
     DOCKER_VERTEX_IMAGE = f"{DOCKER_VERTEX_IMAGE_NAME}:{DOCKER_TAG}"
     GCS_FLOWS_BUCKET = "datario-public"
