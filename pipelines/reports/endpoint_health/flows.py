@@ -7,28 +7,37 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.reports.endpoint_health.schedules import update_schedule
-from pipelines.reports.endpoint_health.tasks import create_and_send_report
+from pipelines.reports.endpoint_health.tasks import (
+    create_and_send_report,
+    filter_dataframe_using_tag
+)
 from pipelines.utils.tasks import load_file_from_bigquery
 
 with Flow(
     name="Report: Disponibilidade de API",
 ) as disponibilidade_api:
     ENVIRONMENT = Parameter("environment", default="staging")
+    FILTER_TAG = Parameter("filter_tag", default="")
 
-    endpoints_table = load_file_from_bigquery(
+    all_endpoints_table = load_file_from_bigquery(
         project_name="rj-sms",
-        dataset_name="gerenciamento",
-        table_name="api_url_list",
+        dataset_name="gerenciamento__monitoramento_de_api",
+        table_name="endpoint",
         environment=ENVIRONMENT,
+    )
+    endpoints_table_with_tag = filter_dataframe_using_tag(
+        dataframe=all_endpoints_table,
+        tag=FILTER_TAG
     )
     health_check_results_table = load_file_from_bigquery(
         project_name="rj-sms",
-        dataset_name="gerenciamento",
-        table_name="api_health_check",
+        dataset_name="gerenciamento__monitoramento_de_api",
+        table_name="endpoint_ping",
         environment=ENVIRONMENT,
     )
     create_and_send_report(
-        endpoints_table=endpoints_table, results_table=health_check_results_table
+        endpoints_table=endpoints_table_with_tag,
+        results_table=health_check_results_table
     )
 
 disponibilidade_api.schedule = update_schedule

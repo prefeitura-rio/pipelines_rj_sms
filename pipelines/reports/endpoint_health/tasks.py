@@ -10,6 +10,24 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
+def filter_dataframe_using_tag(dataframe, tag):
+    """
+    Filter a DataFrame using a tag.
+
+    Args:
+        dataframe (pandas.DataFrame): DataFrame to be filtered.
+        tag (str): Tag to be used to filter the DataFrame.
+
+    Returns:
+        pandas.DataFrame: Filtered DataFrame.
+
+    """
+    if tag == "":
+        return dataframe
+    
+    return dataframe[dataframe["tag"] == tag]
+
+@task
 def create_and_send_report(endpoints_table, results_table):
     """
     Creates a description of endpoint health metrics.
@@ -27,7 +45,7 @@ def create_and_send_report(endpoints_table, results_table):
 
     # Iterate over each endpoint
     for _, endpoint in endpoints_table.iterrows():
-        records = results_table[results_table["api_url"] == endpoint["url"]]
+        records = results_table[results_table["endpoint_id"] == str(endpoint["id"])]
         records.sort_values(by="moment", inplace=True)
 
         today = datetime.datetime.now(tz=pytz.timezone("Brazil/East"))
