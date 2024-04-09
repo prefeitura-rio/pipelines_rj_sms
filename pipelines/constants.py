@@ -14,6 +14,8 @@ class constants(Enum):
     DOCKER_IMAGE = f"{DOCKER_IMAGE_NAME}:{DOCKER_TAG}"
     DOCKER_VERTEX_IMAGE = f"{DOCKER_VERTEX_IMAGE_NAME}:{DOCKER_TAG}"
     GCS_FLOWS_BUCKET = "datario-public"
+    INFISICAL_ADDRESS = "AUTO_REPLACE_INFISICAL_ADDRESS"
+    INFISICAL_TOKEN = "AUTO_REPLACE_INFISICAL_TOKEN"
 
     ######################################
     # Agent labels

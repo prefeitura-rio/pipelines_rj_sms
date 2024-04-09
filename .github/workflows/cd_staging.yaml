@@ -48,6 +48,10 @@ jobs:
         run: |-
           python .github/workflows/scripts/replace_docker_tag.py ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }} ${{ github.sha }}
 
+      - name: Set Infisical data in constants
+        run: |-
+          python .github/workflows/scripts/replace_infisical_data.py ${{ secrets.CONSTANTS_INFISICAL_ADDRESS }} ${{ secrets.CONSTANTS_INFISICAL_TOKEN }}
+
       - name: Get changed files for code tree analysis
         id: files
         uses: Ana06/get-changed-files@v2.1.0
