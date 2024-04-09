@@ -76,7 +76,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            southamerica-east1-docker.pkg.dev/rj-sms/pipelines-rj-sms:${{ github.sha }}
+            southamerica-east1-docker.pkg.dev/rj-sms/pipelines-rj-sms/image:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.revision=${{ github.sha }}
