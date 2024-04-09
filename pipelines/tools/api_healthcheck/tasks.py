@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import datetime
+import json
 import pytz
 import prefect
 import requests
-import json
 
 from google.cloud import bigquery
 
