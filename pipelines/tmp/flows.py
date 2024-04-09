@@ -18,7 +18,7 @@ with Flow(name="Vertex Agent Example") as tmp__vertex_agent_example__flow:
 # Storage and run configs
 tmp__vertex_agent_example__flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 tmp__vertex_agent_example__flow.run_config = VertexRun(
-    image=constants.DOCKER_IMAGE.value,
+    image=constants.DOCKER_VERTEX_IMAGE.value,
     labels=[
         constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
     ],
