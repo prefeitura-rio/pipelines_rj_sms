@@ -63,11 +63,19 @@ jobs:
           mkdir -p $HOME/.prefect
           echo $PREFECT_AUTH_TOML | base64 --decode > $HOME/.prefect/auth.toml
 
-      - name: Wait for Docker image to be available
+      - name: Wait for GHCR image to be available
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          check-name: 'Build Docker image'
+          check-name: 'GitHub Container Registry'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          verbose: true
+
+      - name: Wait for GAR image to be available
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          check-name: 'Google Artifact Registry'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           verbose: true
 
