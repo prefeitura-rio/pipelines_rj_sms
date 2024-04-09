@@ -19,8 +19,8 @@ on:
       - "Dockerfile"
 
 jobs:
-  build-container:
-    name: Build Docker image
+  build-container-github:
+    name: GitHub Container Registry
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,6 +41,42 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.event.repository.html_url }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+  build-container-google:
+    name: Google Artifact Registry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - id: auth
+        name: Login to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_PLAIN }}
+          token_format: access_token
+          service_account: github-actions@rj-sms.iam.gserviceaccount.com
+
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v1
+        with:
+          registry: southamerica-east1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            southamerica-east1-docker.pkg.dev/rj-sms/pipelines-rj-sms:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.revision=${{ github.sha }}
