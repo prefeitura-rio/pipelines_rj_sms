@@ -24,8 +24,9 @@ def filter_dataframe_using_tag(dataframe, tag):
     """
     if tag == "":
         return dataframe
-    
+
     return dataframe[dataframe["tag"] == tag]
+
 
 @task
 def create_and_send_report(endpoints_table, results_table, filter_tag):

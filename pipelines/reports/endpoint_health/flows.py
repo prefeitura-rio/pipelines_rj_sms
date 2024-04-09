@@ -9,7 +9,7 @@ from pipelines.constants import constants
 from pipelines.reports.endpoint_health.schedules import update_schedule
 from pipelines.reports.endpoint_health.tasks import (
     create_and_send_report,
-    filter_dataframe_using_tag
+    filter_dataframe_using_tag,
 )
 from pipelines.utils.tasks import load_file_from_bigquery
 
@@ -26,8 +26,7 @@ with Flow(
         environment=ENVIRONMENT,
     )
     endpoints_table_with_tag = filter_dataframe_using_tag(
-        dataframe=all_endpoints_table,
-        tag=FILTER_TAG
+        dataframe=all_endpoints_table, tag=FILTER_TAG
     )
     health_check_results_table = load_file_from_bigquery(
         project_name="rj-sms",
@@ -38,7 +37,7 @@ with Flow(
     create_and_send_report(
         endpoints_table=endpoints_table_with_tag,
         results_table=health_check_results_table,
-        filter_tag=FILTER_TAG
+        filter_tag=FILTER_TAG,
     )
 
 disponibilidade_api.schedule = update_schedule
