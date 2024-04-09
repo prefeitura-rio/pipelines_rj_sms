@@ -37,7 +37,8 @@ with Flow(
     )
     create_and_send_report(
         endpoints_table=endpoints_table_with_tag,
-        results_table=health_check_results_table
+        results_table=health_check_results_table,
+        filter_tag=FILTER_TAG
     )
 
 disponibilidade_api.schedule = update_schedule

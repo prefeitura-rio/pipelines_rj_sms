@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import datetime
-
+import pytz
 import prefect
 import requests
+import json
+
 from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -40,12 +42,17 @@ def check_api_health(api_info: dict):
     else:
         duration = response.elapsed.total_seconds()
         status_code = str(response.status_code)
-        is_healthy = status_code == str(api_info["expected_status_code"])
+        is_active = status_code == str(api_info["expected_status_code"])
+        is_up = True
 
         try:
             content = response.json()
+            if "status" in content:
+                is_up = content["status"] == "UP"
         except requests.exceptions.JSONDecodeError:
             content = response.text
+
+        is_healthy = is_active and is_up
 
         detail = {
             "status_code": status_code,
@@ -54,12 +61,11 @@ def check_api_health(api_info: dict):
         }
     logger.info(f"API Health {is_healthy}; Duration {duration}s; Status {status_code}")
     
-    import json
     return {
         "endpoint_id": api_info["id"],
         "is_healthy": is_healthy,
         "duration": duration,
-        "moment": datetime.datetime.now().isoformat(),
+        "moment": datetime.datetime.now(tz=pytz.timezone("Brazil/East")).isoformat(),
         "detail": json.dumps(detail)
     }
 
