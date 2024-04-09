@@ -13,7 +13,7 @@ from pipelines.tmp.tasks import get_ip_geolocation, get_my_ip, log_ip_and_info
 
 with Flow(name="Vertex Agent Example") as tmp__vertex_agent_example__flow:
     environment = Parameter("environment", default="dev")
-    ip = get_my_ip()
+    ip = get_my_ip(environment=environment)  # Just to keep environment at use
     info = get_ip_geolocation(ip=ip)
     log_ip_and_info(ip=ip, info=info)
 

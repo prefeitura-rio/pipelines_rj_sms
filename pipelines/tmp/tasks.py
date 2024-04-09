@@ -6,7 +6,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_my_ip():
+def get_my_ip(environment: str):
     return requests.get("https://api.ipify.org?format=json").json()["ip"]
 
 
