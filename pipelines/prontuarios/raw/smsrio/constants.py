@@ -15,4 +15,4 @@ class constants(Enum):
 
     SMSRIO_CNES = "7106513"
     SMSRIO_BUCKET = "prontuario-integrado"
-    SMSRIO_FILE_NAME = "smsrio_tb_pacientes_cns.csv"
+    SMSRIO_FILE_NAME = "smsrio_dump_2024-04/smsrio_paciente_cns_telefone.csv"
