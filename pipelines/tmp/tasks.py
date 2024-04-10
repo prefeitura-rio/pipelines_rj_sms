@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
+import os
 
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.tmp.sisreg.sisreg import Sisreg
+from pipelines.tmp.sisreg.constants import constants as sisreg_constants
+from pipelines.utils.tasks import get_secret_key
 
 
 @task
@@ -19,3 +23,27 @@ def get_ip_geolocation(ip: str):
 def log_ip_and_info(ip: str, info: dict):
     log(f"IP: {ip}")
     log(f"Info: {info}")
+
+
+@task
+def extract_escala(environment: str):
+
+    username = get_secret_key.run(
+        secret_path=sisreg_constants.INFISICAL_PATH.value,
+        secret_name=sisreg_constants.INFISICAL_VITACARE_USERNAME.value,
+        environment=environment,
+    )
+    password = get_secret_key.run(
+        secret_path=sisreg_constants.INFISICAL_PATH.value,
+        secret_name=sisreg_constants.INFISICAL_VITACARE_PASSWORD.value,
+        environment=environment,
+    )
+
+    sisreg = Sisreg(
+        user=username,
+        password=password,
+        download_path=os.getcwd(),
+    )
+    sisreg.login()
+
+    return sisreg.download_escala()
