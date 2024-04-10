@@ -7,8 +7,9 @@ from time import sleep
 
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 
 from pipelines.tmp.sisreg.utils import get_first_csv
 
@@ -31,16 +32,15 @@ class Sisreg:
     """
 
     def __init__(self, user, password, download_path):
-        self._options = Options()
-        self._options.add_argument(
-            "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"  # noqa: E501
-        )
-        self._prefs = {"download.default_directory": download_path}
-        self._options.add_experimental_option("prefs", self._prefs)
-        self._options.add_argument("--headless=new")
-        self._options.add_argument("-no-sandbox")
-        self._options.add_argument("--disable-dev-shm-usage")
-        self.browser = webdriver.Chrome(options=self._options)
+        self._options = FirefoxOptions()
+        self._options.headless = True  # Set headless mode
+        self._profile = FirefoxProfile()
+        self._profile.set_preference("browser.download.folderList", 2)
+        self._profile.set_preference("browser.download.manager.showWhenStarting", False)
+        self._profile.set_preference("browser.download.dir", download_path)
+        self._profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")
+        self._options.profile = self._profile
+        self.browser = webdriver.Firefox(options=self._options)
         self.user = user
         self.password = password
         self.download_path = download_path
@@ -101,20 +101,22 @@ class Sisreg:
         self.browser.get(
             "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?radioFiltro=cpf&status=&dataInicial=&dataFinal=&qtd_itens_pag=50&pagina=&ibge=330455&ordenacao=&clas_lista=ASC&etapa=EXPORTAR_ESCALAS&coluna="
         )
-        donwload_in_progress = True
+        download_in_progress = True
 
-        while donwload_in_progress:
+        log(os.listdir(self.download_path), level="debug")
+        
+        while download_in_progress:
             sleep(10)
-            if any(file.endswith(".crdownload") for file in os.listdir(self.download_path)):
+            if any(file.endswith(".part") for file in os.listdir(self.download_path)):
                 for file in os.listdir(self.download_path):
-                    if file.endswith(".crdownload"):
+                    if file.endswith(".part"):
                         file_size = os.path.getsize(file)
                         file_size_mb = file_size / (1024 * 1024)
                         log(
                             f"The file size of {file} is {file_size_mb:.2f} MB.",
                         )
             else:
-                donwload_in_progress = False
+                download_in_progress = False
                 log("Download finished!")
 
         return get_first_csv(self.download_path)
