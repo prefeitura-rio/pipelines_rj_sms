@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-import requests
-from prefeitura_rio.pipelines_utils.logging import log
 import os
 
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.tmp.sisreg.sisreg import Sisreg
+import requests
+from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.tmp.sisreg.constants import constants as sisreg_constants
+from pipelines.tmp.sisreg.sisreg import Sisreg
+from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import get_secret_key
 
 

@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
 # pylint: disable=line-too-long, C0114
 # flake8: noqa: E501
 
-import os
 import glob
-from prefeitura_rio.pipelines_utils.logging import log
+import os
+
 from google.cloud import storage
+from prefeitura_rio.pipelines_utils.logging import log
 
 
 def get_first_csv(folder_path):

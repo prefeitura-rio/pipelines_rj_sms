@@ -1,13 +1,15 @@
+# -*- coding: utf-8 -*-
 # pylint: disable=line-too-long, C0114
 # flake8: noqa: E501
 
-from time import sleep
 import os
-from prefeitura_rio.pipelines_utils.logging import log
+from time import sleep
 
+from prefeitura_rio.pipelines_utils.logging import log
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+
 from pipelines.tmp.sisreg.utils import get_first_csv
 
 
@@ -100,15 +102,13 @@ class Sisreg:
 
         while donwload_in_progress:
             sleep(10)
-            if any(
-                file.endswith(".crdownload") for file in os.listdir(self.download_path)
-            ):
+            if any(file.endswith(".crdownload") for file in os.listdir(self.download_path)):
                 for file in os.listdir(self.download_path):
                     if file.endswith(".crdownload"):
                         file_size = os.path.getsize(file)
                         file_size_mb = file_size / (1024 * 1024)
                         log(
-                            f"The file size of {file} is {file_size_mb:.2f} MB.",  
+                            f"The file size of {file} is {file_size_mb:.2f} MB.",
                         )
             else:
                 donwload_in_progress = False

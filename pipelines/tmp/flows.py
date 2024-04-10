@@ -9,7 +9,12 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.tmp.tasks import get_ip_geolocation, get_my_ip, log_ip_and_info, extract_escala
+from pipelines.tmp.tasks import (
+    extract_escala,
+    get_ip_geolocation,
+    get_my_ip,
+    log_ip_and_info,
+)
 
 with Flow(name="Vertex Agent Example") as tmp__vertex_agent_example__flow:
     environment = Parameter("environment", default="dev")
