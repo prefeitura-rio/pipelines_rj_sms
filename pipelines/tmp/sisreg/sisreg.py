@@ -41,7 +41,7 @@ class Sisreg:
         self._profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")
         self._options.profile = self._profile
         self.browser = webdriver.Firefox(options=self._options)
-        self.browser.set_page_load_timeout(1200)
+        self.browser.set_page_load_timeout(30)
         self.user = user
         self.password = password
         self.download_path = download_path
@@ -99,12 +99,15 @@ class Sisreg:
         """
         log("Downloading escala")
 
-        self.browser.get(
-            "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?radioFiltro=cpf&status=&dataInicial=&dataFinal=&qtd_itens_pag=50&pagina=&ibge=330455&ordenacao=&clas_lista=ASC&etapa=EXPORTAR_ESCALAS&coluna="
-        )
-        download_in_progress = True
+        try:
+            self.browser.get(
+                "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?radioFiltro=cpf&status=&dataInicial=&dataFinal=&qtd_itens_pag=50&pagina=&ibge=330455&ordenacao=&clas_lista=ASC&etapa=EXPORTAR_ESCALAS&coluna="
+            )
+        except Exception as e:
+            pass
 
-        log(os.listdir(self.download_path), level="debug")
+        log("lalala")
+        download_in_progress = True
 
         while download_in_progress:
             sleep(10)
