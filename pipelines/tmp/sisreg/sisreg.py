@@ -33,7 +33,7 @@ class Sisreg:
 
     def __init__(self, user, password, download_path):
         self._options = FirefoxOptions()
-        self._options.headless = True  # Set headless mode
+        self._options.add_argument("--headless")
         self._profile = FirefoxProfile()
         self._profile.set_preference("browser.download.folderList", 2)
         self._profile.set_preference("browser.download.manager.showWhenStarting", False)
