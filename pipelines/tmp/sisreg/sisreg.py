@@ -38,6 +38,7 @@ class Sisreg:
         self._prefs = {"download.default_directory": download_path}
         self._options.add_experimental_option("prefs", self._prefs)
         self._options.add_argument("--headless=new")
+        self._options.add_argument("--remote-debugging-pipe")
         self.browser = webdriver.Chrome(options=self._options)
         self.user = user
         self.password = password
