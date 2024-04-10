@@ -44,7 +44,7 @@ def check_api_health(api_info: dict):
 
         try:
             content = response.json()
-            if "status" in content:
+            if "status" in content and content["status"] in ["UP", "DOWN"]:
                 is_up = content["status"] == "UP"
         except requests.exceptions.JSONDecodeError:
             content = response.text
