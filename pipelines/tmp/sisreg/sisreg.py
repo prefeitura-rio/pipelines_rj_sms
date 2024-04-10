@@ -8,8 +8,8 @@ from time import sleep
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 from pipelines.tmp.sisreg.utils import get_first_csv
 
@@ -104,7 +104,7 @@ class Sisreg:
         download_in_progress = True
 
         log(os.listdir(self.download_path), level="debug")
-        
+
         while download_in_progress:
             sleep(10)
             if any(file.endswith(".part") for file in os.listdir(self.download_path)):
