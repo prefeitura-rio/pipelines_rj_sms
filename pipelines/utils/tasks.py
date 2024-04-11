@@ -449,7 +449,7 @@ def cloud_function_request(
 
     if env == "prod":
         cloud_function_url = "https://us-central1-rj-sms.cloudfunctions.net/vitacare"
-    elif env in ["dev","staging"]:
+    elif env in ["dev", "staging"]:
         cloud_function_url = "https://us-central1-rj-sms-dev.cloudfunctions.net/vitacare"
     else:
         raise ValueError("env must be 'prod' or 'dev'")
