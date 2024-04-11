@@ -30,5 +30,6 @@ class constants(Enum):
 
     PROJECT_NAME = {
         "dev": "staging",
+        "staging": "staging",
         "prod": "production",
     }
