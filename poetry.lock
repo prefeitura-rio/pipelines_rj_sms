@@ -524,20 +524,6 @@ files = [
 ]
 
 [[package]]
-name = "chromedriver-autoinstaller"
-version = "0.6.3"
-description = "Automatically install chromedriver that supports the currently installed version of chrome."
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "chromedriver-autoinstaller-0.6.3.tar.gz", hash = "sha256:63d320dce98e16bf5ca575c127954cdc97bf9d7bf38f25799b24e607125bb906"},
-    {file = "chromedriver_autoinstaller-0.6.3-py3-none-any.whl", hash = "sha256:0d6f1434c17d7c554804395e36d0eb7e1c9e78dde0e4dd828267a186da02a945"},
-]
-
-[package.dependencies]
-packaging = ">=23.1"
-
-[[package]]
 name = "click"
 version = "8.1.7"
 description = "Composable command line interface toolkit"
@@ -5318,4 +5304,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "9039fe4b16077bbb28e8707b6184011bf182352500599d4331756406dec3f4ae"
+content-hash = "d98e8fc48986a696ba754274ad05faf25004cca09563b79e64cd498763b88faa"
