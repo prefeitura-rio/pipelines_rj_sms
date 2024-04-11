@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103
+# pylint: disable=C0103, E1123
 """
 SISREG dumping flows
 """
@@ -70,16 +70,18 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg") as sms_dump_si
         upstream_tasks=[transformed_file],
     )
 
-    # upload_to_datalake_task = upload_to_datalake(
-    #    input_path=local_folders["partition_directory"],
-    #    dataset_id=DATASET_ID,
-    #    table_id=TABLE_ID,
-    #    if_exists="replace",
-    #    if_storage_data_exists="replace",
-    #    biglake_table=True,
-    #    dataset_is_public=False,
-    #    upstream_tasks=[create_partitions_task],
-    # )
+    upload_to_datalake_task = upload_to_datalake(
+        input_path=local_folders["partition_directory"],
+        dataset_id=DATASET_ID,
+        table_id=TABLE_ID,
+        dump_mode="append",
+        source_format="parquet",
+        if_exists="replace",
+        if_storage_data_exists="replace",
+        biglake_table=True,
+        dataset_is_public=False,
+        upstream_tasks=[create_partitions_task],
+    )
 
 
 # Storage and run configs
