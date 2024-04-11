@@ -489,12 +489,10 @@ def cloud_function_request(
         else:
             message = f"[Cloud Function] Request failed: {response.status_code} - {response.reason}"
             logger.info(message)
-            raise ENDRUN(state=Failed(message))
+            raise Exception(message)
 
     except Exception as e:
-        raise ENDRUN(
-            state=Failed(f"[Cloud Function] Request failed with unknown error: {e}")
-        ) from e
+        raise Exception(f"[Cloud Function] Request failed with unknown error: {e}")
 
 
 @task
