@@ -7,8 +7,6 @@ from datetime import date, timedelta
 
 import numpy as np
 import prefect
-from prefect.engine.signals import ENDRUN
-from prefect.engine.state import Failed
 
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.utils.misc import build_additional_fields, split_dataframe
