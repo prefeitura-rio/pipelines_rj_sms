@@ -16,7 +16,7 @@ flow_parameters = [
     {
         "dataset_id": "brutos_sisreg",
         "endpoint": "escala",
-        "environment": "dev",
+        "environment": "prod",
         "rename_flow": True,
         "table_id": "escala",
     },
@@ -24,7 +24,7 @@ flow_parameters = [
 
 sisreg_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2024, 1, 1, 22, 35, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 1, 1, 5, 50, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
     ],
