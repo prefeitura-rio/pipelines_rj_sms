@@ -24,9 +24,9 @@ flow_parameters = [
 
 sisreg_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2024, 1, 1, 22, 10, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 1, 1, 22, 35, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
+        constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
     ],
     flow_run_parameters=flow_parameters,
     runs_interval_minutes=30,
