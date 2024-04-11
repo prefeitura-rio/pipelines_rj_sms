@@ -178,7 +178,7 @@ def transform_data(file_path: str, table_id: str) -> str:
 
 
 @task
-def create_partitions(data_path: str, partition_directory: str):
+def create_partitions(data_path: str, partition_directory: str, file_type: str = "csv"):
     """
     Create partitions for the given data files and copy them to the specified partition directory.
 
@@ -195,7 +195,7 @@ def create_partitions(data_path: str, partition_directory: str):
     # check if data_path is a directory or a file
     if os.path.isdir(data_path):
         data_path = Path(data_path)
-        files = data_path.glob("*.csv")
+        files = data_path.glob(f"*.{file_type}")
     else:
         files = [data_path]
 
