@@ -11,7 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
-from pipelines.tmp.sisreg.utils import get_first_csv
+from pipelines.datalake.extract_load.sisreg_web.sisreg.utils import get_first_csv
 
 
 class Sisreg:
@@ -97,28 +97,32 @@ class Sisreg:
         Returns:
             None
         """
-        log("Downloading escala")
+        log(f"Downloading Escala to {self.download_path}")
 
         try:
             self.browser.get(
                 "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?radioFiltro=cpf&status=&dataInicial=&dataFinal=&qtd_itens_pag=50&pagina=&ibge=330455&ordenacao=&clas_lista=ASC&etapa=EXPORTAR_ESCALAS&coluna="
             )
-        except Exception as e:
+        except Exception: #pylint: disable=broad-except
             pass
 
-        log("lalala")
         download_in_progress = True
 
         while download_in_progress:
             sleep(10)
             if any(file.endswith(".part") for file in os.listdir(self.download_path)):
                 for file in os.listdir(self.download_path):
-                    if file.endswith(".part"):
-                        file_size = os.path.getsize(file)
-                        file_size_mb = file_size / (1024 * 1024)
-                        log(
-                            f"The file size of {file} is {file_size_mb:.2f} MB.",
-                        )
+
+                    try:
+                        if file.endswith(".part"):
+                            file_size = os.path.getsize(file)
+                            file_size_mb = file_size / (1024 * 1024)
+                            log(
+                                f"Current file size of {file} is {file_size_mb:.2f} MB.", level="debug",
+                            )
+                    except FileNotFoundError:
+                        log(f"File {file} not found in {self.download_path}", level="debug")
+
             else:
                 download_in_progress = False
                 log("Download finished!")
