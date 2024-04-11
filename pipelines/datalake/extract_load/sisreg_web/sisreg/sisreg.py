@@ -103,7 +103,7 @@ class Sisreg:
             self.browser.get(
                 "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?radioFiltro=cpf&status=&dataInicial=&dataFinal=&qtd_itens_pag=50&pagina=&ibge=330455&ordenacao=&clas_lista=ASC&etapa=EXPORTAR_ESCALAS&coluna="
             )
-        except Exception: #pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             pass
 
         download_in_progress = True
@@ -118,7 +118,8 @@ class Sisreg:
                             file_size = os.path.getsize(file)
                             file_size_mb = file_size / (1024 * 1024)
                             log(
-                                f"Current file size of {file} is {file_size_mb:.2f} MB.", level="debug",
+                                f"Current file size of {file} is {file_size_mb:.2f} MB.",
+                                level="debug",
                             )
                     except FileNotFoundError:
                         log(f"File {file} not found in {self.download_path}", level="debug")

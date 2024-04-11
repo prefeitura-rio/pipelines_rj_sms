@@ -9,13 +9,15 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.utils.tasks import create_folders, upload_to_datalake, create_partitions
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.datalake.extract_load.sisreg_web.constants import constants as sisreg_constants
+from pipelines.datalake.extract_load.sisreg_web.constants import (
+    constants as sisreg_constants,
+)
 from pipelines.datalake.extract_load.sisreg_web.tasks import (
     extract_data_from_sisreg,
     transform_data,
 )
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
 with Flow(name="DataLake - Extração e Carga de Dados - Sisreg") as sms_dump_sisreg:
     #####################################
@@ -68,7 +70,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg") as sms_dump_si
         upstream_tasks=[transformed_file],
     )
 
-    #upload_to_datalake_task = upload_to_datalake(
+    # upload_to_datalake_task = upload_to_datalake(
     #    input_path=local_folders["partition_directory"],
     #    dataset_id=DATASET_ID,
     #    table_id=TABLE_ID,
@@ -77,7 +79,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg") as sms_dump_si
     #    biglake_table=True,
     #    dataset_is_public=False,
     #    upstream_tasks=[create_partitions_task],
-    #)
+    # )
 
 
 # Storage and run configs

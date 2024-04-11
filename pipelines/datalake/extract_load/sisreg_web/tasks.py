@@ -4,17 +4,20 @@ SISREG dumping tasks
 """
 import os
 from datetime import timedelta
+
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import get_secret_key, add_load_date_column
+from pipelines.datalake.extract_load.sisreg_web.constants import (
+    constants as sisreg_constants,
+)
+from pipelines.datalake.extract_load.sisreg_web.sisreg.sisreg import Sisreg
 from pipelines.datalake.utils.data_transformations import (
     conform_header_to_datalake,
     convert_to_parquet,
 )
-from pipelines.datalake.extract_load.sisreg_web.constants import constants as sisreg_constants
-from pipelines.datalake.extract_load.sisreg_web.sisreg.sisreg import Sisreg
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.tasks import add_load_date_column, get_secret_key
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
