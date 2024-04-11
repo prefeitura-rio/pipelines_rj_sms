@@ -51,7 +51,7 @@ def extract_data_from_api(
         request_type="GET",
         query_params={"date": str(target_day), "cnes": cnes},
         credential={"username": username, "password": password},
-        env='prod',
+        env="prod",
     )
 
     if response["status_code"] != 200:
