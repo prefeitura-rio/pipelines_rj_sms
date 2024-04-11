@@ -63,7 +63,7 @@ def extract_data_from_api(
         logger.info(f"Successful Request: retrieved {len(requested_data)} registers")
     else:
         logger.error("Failed Request: no data was retrieved")
-        raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {entity_name})"))
+        raise Exception(f"Empty response for ({cnes}, {target_day}, {entity_name})")
 
     return requested_data
 
