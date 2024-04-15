@@ -7,10 +7,6 @@ from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.utils.credential_injector import (
-    authenticated_create_flow_run as create_flow_run,
-    authenticated_wait_for_flow_run as wait_for_flow_run
-)
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.raw.vitacare.schedules import vitacare_daily_update_schedule
@@ -33,6 +29,12 @@ from pipelines.prontuarios.utils.tasks import (
     transform_create_input_batches,
     transform_filter_valid_cpf,
     transform_to_raw_format,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
 )
 
 with Flow(

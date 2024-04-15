@@ -4,9 +4,17 @@ ARG PYTHON_VERSION=3.10-slim
 # Start Python image
 FROM python:${PYTHON_VERSION}
 
-# Install git
+# Install apt dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git python3-dev default-libmysqlclient-dev build-essential pkg-config && \
+    apt-get install -y --no-install-recommends \
+    git \
+    python3-dev \
+    default-libmysqlclient-dev \
+    build-essential \
+    pkg-config \
+    chromium \
+    chromium-driver \
+    && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
