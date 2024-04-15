@@ -169,7 +169,7 @@ with Flow(
     )
 
     wait_runs_task = wait_for_flow_run.map(
-        created_flow_runs,
+        flow_run_id=created_flow_runs,
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
