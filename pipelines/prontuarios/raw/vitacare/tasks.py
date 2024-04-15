@@ -7,8 +7,6 @@ from datetime import date, timedelta
 
 import numpy as np
 import prefect
-from prefect.engine.signals import ENDRUN
-from prefect.engine.state import Failed
 
 from pipelines.prontuarios.raw.vitacare.constants import constants as vitacare_constants
 from pipelines.prontuarios.utils.misc import build_additional_fields, split_dataframe
@@ -63,7 +61,7 @@ def extract_data_from_api(
         logger.info(f"Successful Request: retrieved {len(requested_data)} registers")
     else:
         logger.error("Failed Request: no data was retrieved")
-        raise ENDRUN(state=Failed(f"Empty response for ({cnes}, {target_day}, {entity_name})"))
+        raise Exception(f"Empty response for ({cnes}, {target_day}, {entity_name})")
 
     return requested_data
 
