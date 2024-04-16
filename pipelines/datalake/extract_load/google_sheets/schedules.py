@@ -38,7 +38,7 @@ flow_parameters = [
         "url_type": "google_sheet",
         "gsheets_sheet_name": "relacao_oficial",
         "dataset_id": "brutos_sheets",
-        "table_id": "assistencial_procedimentos",
+        "table_id": "assistencial_procedimento",
         "csv_delimiter": ";",
         "environment": "prod",
         "rename_flow": True,
@@ -48,7 +48,7 @@ flow_parameters = [
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 12, 20, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
