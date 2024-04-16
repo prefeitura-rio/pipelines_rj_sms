@@ -282,11 +282,11 @@ def download_azure_blob(
 @task(max_retries=3, retry_delay=timedelta(seconds=60), timeout=timedelta(minutes=5))
 def download_ftp(
     host: str,
-    user: str,
-    password: str,
     directory: str,
     file_name: str,
     output_path: str,
+    user: str = None,
+    password: str = None,
 ):
     """
     Downloads a file from an FTP server and saves it to the specified output path.
@@ -306,9 +306,14 @@ def download_ftp(
     file_path = f"{directory}/{file_name}"
     output_path = output_path + "/" + file_name
     log(output_path)
-    # Connect to the FTP server
     ftp = FTP(host)
-    ftp.login(user, password)
+    # Connect to the FTP server
+    if user is None or password is None:
+        log("Logging in anonymously")
+        ftp.login()
+    else:
+        log(f"Logging in as {user}")
+        ftp.login(user, password)
 
     # Get the size of the file
     ftp.voidcmd("TYPE I")
