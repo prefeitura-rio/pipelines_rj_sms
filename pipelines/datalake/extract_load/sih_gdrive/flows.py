@@ -17,29 +17,13 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitacare_api.constants import (
     constants as vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_api.schedules import (
-    vitacare_daily_update_schedule,
-)
 from pipelines.datalake.extract_load.sih_gdrive.tasks import (
-    #create_partitions,
     transform_data,
 )
 from pipelines.datalake.extract_load.vitacare_api.tasks import (
     create_partitions,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.prontuarios.utils.tasks import (
-    get_ap_from_cnes,
-    get_current_flow_labels,
-    get_healthcenter_name_from_cnes,
-    get_project_name,
-)
-from pipelines.utils.credential_injector import (
-    authenticated_create_flow_run as create_flow_run,
-)
-from pipelines.utils.credential_injector import (
-    authenticated_wait_for_flow_run as wait_for_flow_run,
-)
 from pipelines.utils.tasks import create_folders, upload_to_datalake
 
 with Flow(
