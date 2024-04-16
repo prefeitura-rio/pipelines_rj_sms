@@ -58,13 +58,13 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg") as sms_dump_si
     )
 
     #####################################
-    # Tasks section #3 - Transform data
+    # Tasks section #2 - Transform data
     #####################################
 
     transformed_file = transform_data(file_path=raw_file, endpoint=ENDPOINT)
 
     #####################################
-    # Tasks section #4 - Load data
+    # Tasks section #3 - Load data
     #####################################
 
     create_partitions_task = create_partitions(
