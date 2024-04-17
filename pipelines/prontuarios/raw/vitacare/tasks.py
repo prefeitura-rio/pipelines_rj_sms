@@ -187,7 +187,7 @@ def create_parameter_list(environment: str = "dev", initial_extraction: bool = F
 
     # Construct the parameters for the flow
     vitacare_flow_parameters = []
-    for entity in ["diagnostico"]:
+    for entity in ["pacientes"]:
         for cnes in cnes_vitacare:
             vitacare_flow_parameters.append(
                 {
