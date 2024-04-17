@@ -29,6 +29,8 @@ psycopg2-binary = "^2.9.9"
 discord-py = "^2.3.2"
 seaborn = "^0.13.2"
 selenium = "4.16.0"
+simpledbf = "^0.2.6"
+tables = "^3.9.2"
 
 
 [tool.poetry.group.dev]
