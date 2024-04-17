@@ -11,8 +11,8 @@ from datetime import date, datetime, timedelta
 
 import pandas as pd
 import pytz
-from simpledbf import Dbf5
 from prefeitura_rio.pipelines_utils.logging import log
+from simpledbf import Dbf5
 
 from pipelines.utils.data_cleaning import remove_columns_accents
 
