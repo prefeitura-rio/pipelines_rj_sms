@@ -2,9 +2,9 @@
 # pylint: disable=C0103, R0913, C0301, W3101
 # flake8: noqa: E501
 """
-Taks for DataSUS pipelines
+Tasks for DataSUS pipelines
 """
-from datetime import timedelta
+from datetime import datetime, timedelta
 import subprocess
 import os
 
@@ -13,8 +13,16 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import download_ftp
+from pipelines.datalake.utils.data_transformations import (
+    convert_to_parquet,
+    conform_header_to_datalake,
+    add_flow_metadata,
+)
 from pipelines.datalake.extract_load.datasus_ftp.constants import constants as datasus_constants
-from pipelines.datalake.extract_load.datasus_ftp.datasus.utils import (check_newest_file_version, fix_cnes_header, add_flow_metadata)
+from pipelines.datalake.extract_load.datasus_ftp.datasus.utils import (
+    check_newest_file_version,
+    fix_cnes_header,
+)
 
 
 @task(max_retries=2, timeout=timedelta(minutes=10), retry_delay=timedelta(seconds=10))
@@ -79,7 +87,7 @@ def extract_data_from_datasus(
             f"unzip {downloaded_file} DBF/*CBO* -d {download_path}", shell=True, check=False
         )
         unziped_files = [
-            f"{download_path}/{file}"
+            f"{download_path}/DBF/{file}"
             for file in os.listdir(f"{download_path}/DBF")
             if file.endswith(".dbf")
         ]
@@ -102,17 +110,50 @@ def transform_data(files_path: list[str], endpoint: str):
     """
     Transforms data from the DATASUS FTP server.
     """
+
+    raw_files = files_path
+
     if endpoint == "cbo":
-        pass
+
+        transformed_files = [
+            convert_to_parquet(file_path=file, file_type="dbf", encoding="latin-1")
+            for file in raw_files
+        ]
+        log("Files converted to parquet successfully")
+
+        # Add metadata
+        snapshot_date = datetime.fromtimestamp(os.path.getmtime(raw_files[0])).strftime("%Y-%m-%d")
+        transformed_files = [
+            add_flow_metadata(file_path=file, file_type="parquet", snapshot_date=snapshot_date)
+            for file in transformed_files
+        ]
+        log("Metadata added successfully")
+
+        transformed_files = [
+            conform_header_to_datalake(file_path=file, file_type="parquet")
+            for file in transformed_files
+        ]
+        log("Header conformed successfully")
+
     elif endpoint == "cnes":
-        
-        files = [fix_cnes_header(file) for file in files_path]
+
+        transformed_files = [fix_cnes_header(file) for file in raw_files]
         log("Header fixed successfully")
 
-        files = [add_flow_metadata(file_path=file, parse_date_from_filename=True) for file in files]
+        transformed_files = [
+            add_flow_metadata(file_path=file, file_type="csv", parse_date_from="filename")
+            for file in transformed_files
+        ]
         log("Metadata added successfully")
-        
-        return files
+
+        transformed_files = [
+            convert_to_parquet(file_path=file, csv_sep=";", encoding="utf-8")
+            for file in transformed_files
+        ]
+        log("Files converted to parquet successfully")
+
     else:
         log(f"Endpoint {endpoint} not found", level="error")
         raise FAIL(f"Endpoint {endpoint} not found")
+
+    return transformed_files

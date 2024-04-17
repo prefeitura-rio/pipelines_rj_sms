@@ -8,11 +8,8 @@ Utilities for DataSUS pipelines
 import re
 import shutil
 import tempfile
-from datetime import datetime
 from ftplib import FTP
 
-import pandas as pd
-import pytz
 from prefeitura_rio.pipelines_utils.logging import log
 
 
@@ -94,40 +91,4 @@ def fix_cnes_header(file_path: str):
     shutil.move(tf.name, file_path)
 
     log(f"Conformed: {file_path}", level="debug")
-    return file_path
-
-
-def add_flow_metadata(file_path: str, sep=";", snapshot_date=None, parse_date_from_filename=False):
-    """
-    Adds date metadata columns to all CSV files in a given directory.
-
-    Args:
-        directory (str): The directory containing the CSV files.
-        sep (str, optional): The delimiter used in the CSV files. Defaults to ";".
-        snapshot_date (str, optional): The date of the snapshot. Defaults to None.
-    """
-    tz = pytz.timezone("Brazil/East")
-
-    log(f"Adding date metadata to {file_path} ...", level="debug")
-    # construct the full file path
-
-    df = pd.read_csv(file_path, sep=sep, keep_default_na=False, dtype="str")
-
-    df["_data_carga"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-
-    if snapshot_date is not None:
-        df["_data_snapshot"] = snapshot_date
-    elif parse_date_from_filename:
-        date = re.findall(r"\d{6}", file_path)[0]
-        date = f"{date[:4]}-{date[-2:]}"
-        log(f"Date parsed from filename: {date}", level="debug")
-        if date:
-            df["_data_snapshot"] = date
-        else:
-            log("Failed to parse date from filename", level="error")
-            raise ValueError("Failed to parse date from filename")
-
-
-    df.to_csv(file_path, index=False, sep=sep, encoding="utf-8")
-    
     return file_path
