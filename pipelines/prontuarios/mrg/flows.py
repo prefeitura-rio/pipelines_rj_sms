@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case, unmapped
+from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
-from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
@@ -18,9 +17,7 @@ from pipelines.prontuarios.mrg.tasks import (
     put_to_api
 )
 from pipelines.prontuarios.utils.tasks import (
-    get_api_token,
-    get_mrg_flow_scheduled_day,
-    rename_current_mrg_flow_run,
+    get_api_token
 )
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -59,7 +56,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    #START_DATETIME = get_mrg_flow_scheduled_day()
+    # START_DATETIME = get_mrg_flow_scheduled_day()
     request_params = get_params(start_datetime=START_DATETIME, end_datetime=END_DATETIME)
 
     cpfs_w_new_data = load_from_api(

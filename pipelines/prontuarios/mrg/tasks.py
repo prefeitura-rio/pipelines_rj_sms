@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta
 import requests
-from typing import Tuple
-import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.prontuarios.mrg.ranking import *
-from pipelines.prontuarios.mrg.functions import *
+from pipelines.prontuarios.mrg.functions import (
+    normalize_payload_list,
+    first_merge,
+    final_merge,
+    sanity_check,
+    load_ranking
+)
 
 
 @task
@@ -28,9 +31,10 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
     #     to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
     # )
     return {
-        "start_datetime": start_datetime,#.strftime("%Y-%m-%d 00:00:00"),
-        "end_datetime": end_datetime#.strftime("%Y-%m-%d 00:00:00")
+        "start_datetime": start_datetime,  # .strftime("%Y-%m-%d 00:00:00"),
+        "end_datetime": end_datetime  # .strftime("%Y-%m-%d 00:00:00")
     }
+
 
 @task
 def print_n_patients(data: list):
@@ -40,15 +44,16 @@ def print_n_patients(data: list):
     Args:
         data (list): List of patients to perform merge.
     """
-    
+
     log(f"Merging registers for {len(data)} patients")
 
     return data
 
+
 @task
-def load_mergeable_data(url:str,
-                        cpfs:list,
-                        credentials:str) -> list:
+def load_mergeable_data(url: str,
+                        cpfs: list,
+                        credentials: str) -> list:
     """
     Loads mergeable data of patient from std patient API endpoint.
 
@@ -72,6 +77,7 @@ def load_mergeable_data(url:str,
             raise ValueError(f"API call failed, error: {response.status_code} - {response.reason}")
     return data
 
+
 @task
 def merge(data_to_merge) -> dict:
     """
@@ -83,16 +89,17 @@ def merge(data_to_merge) -> dict:
     Returns:
         sanitized_data (list): Merged data
     """
-    register_list = list(map(normalize_payload_list,data_to_merge))
+    register_list = list(map(normalize_payload_list, data_to_merge))
     log("Trying first merge")
     ranking_df = load_ranking()
-    merged_n_not_merged_data = list(map(lambda x: first_merge(x,ranking_df) ,register_list))
+    merged_n_not_merged_data = list(map(lambda x: first_merge(x, ranking_df), register_list))
     log("Final merge")
-    merged_data = list(map(final_merge,merged_n_not_merged_data))
+    merged_data = list(map(final_merge, merged_n_not_merged_data))
     log("Sanity check")
-    sanitized_data = list(map(sanity_check,merged_data))
+    sanitized_data = list(map(sanity_check, merged_data))
     return sanitized_data
-    
+
+
 @task(max_retries=3, retry_delay=timedelta(minutes=3))
 def put_to_api(request_body: dict, api_url: str, endpoint_name: str, api_token: str) -> None:
     """
