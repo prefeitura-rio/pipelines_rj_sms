@@ -113,7 +113,7 @@ with Flow(
     endpoint_name = get_entity_endpoint_name(entity=ENTITY)
 
     ####################################
-    # Task Section #4 - Load Data
+    # Task Section #4 - Loading Data to API
     ####################################
     load_to_api_task = load_to_api.map(
         request_body=request_bodies,
