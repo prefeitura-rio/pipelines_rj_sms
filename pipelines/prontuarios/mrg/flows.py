@@ -12,13 +12,11 @@ from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
 from pipelines.prontuarios.mrg.tasks import (
     get_params,
     load_mergeable_data,
-    print_n_patients,
     merge,
-    put_to_api
+    print_n_patients,
+    put_to_api,
 )
-from pipelines.prontuarios.utils.tasks import (
-    get_api_token
-)
+from pipelines.prontuarios.utils.tasks import get_api_token
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
 with Flow(
@@ -29,8 +27,8 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    START_DATETIME = Parameter("START_DATETIME", default='2024-03-14 17:03:25')
-    END_DATETIME = Parameter("END_DATETIME", default='2024-03-14 17:03:26')
+    START_DATETIME = Parameter("START_DATETIME", default="2024-03-14 17:03:25")
+    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:03:26")
 
     ####################################
     # Set environment
@@ -69,24 +67,20 @@ with Flow(
     cpfs_w_new_data_printed = print_n_patients(data=cpfs_w_new_data)
 
     data_to_be_merged = load_mergeable_data(
-        url=api_url + "std/patientrecords",
-        cpfs=cpfs_w_new_data_printed,
-        credentials=api_token
+        url=api_url + "std/patientrecords", cpfs=cpfs_w_new_data_printed, credentials=api_token
     )
 
     ####################################
     # Task Section #2 - Merge Data
     ####################################
 
-    std_patient_list_final = merge(
-        data_to_merge=data_to_be_merged
-    )
+    std_patient_list_final = merge(data_to_merge=data_to_be_merged)
 
     put_to_api(
         request_body=std_patient_list_final,
         api_url=api_url,
         endpoint_name="mrg/patient",
-        api_token=api_token
+        api_token=api_token,
     )
 
 
