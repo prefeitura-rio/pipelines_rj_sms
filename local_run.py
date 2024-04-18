@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.prontuarios.std.vitai.flows import vitai_standardization
+from pipelines.prontuarios.mrg.flows import patientrecord_mrg
 
 # ==================================================
 # CONFIGURATION
 # --------------------------------------------------
 # Please, register here pairs: (flow, param)
 # ==================================================
-flows_run_cases = [(vitai_standardization, {})]
+flows_run_cases = [(patientrecord_mrg, {"START_DATETIME":'2024-03-14 17:03:25', "END_DATETIME":'2024-03-14 17:03:26'})]
 
 
 # ==================================================

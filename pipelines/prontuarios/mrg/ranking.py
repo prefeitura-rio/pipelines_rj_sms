@@ -4,8 +4,7 @@ Ranking sources for data fields with conflicts
 """
 import pandas as pd
 
-def ranking_values(df_unique,field):
-    ranks_merge = pd.read_csv('merged_teste.csv')
+def ranking_values(df_unique,field,ranks_merge):
     from_to_dict = ranks_merge[ranks_merge['campo']==field][['smsrio','vitai']].to_dict(orient='records')[0]
     df_unique.loc[:,'ranking'] = df_unique.loc[:,'system'].map(from_to_dict)
     
