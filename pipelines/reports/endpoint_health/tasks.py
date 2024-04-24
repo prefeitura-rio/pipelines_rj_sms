@@ -12,7 +12,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 @task
 def filter_dataframe_using_tag(dataframe, tag):
     """
-    Filter a DataFrame using a tag.
+    Filter a DataFrame using a tag
 
     Args:
         dataframe (pandas.DataFrame): DataFrame to be filtered.
