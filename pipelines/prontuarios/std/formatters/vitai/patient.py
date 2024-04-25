@@ -224,7 +224,6 @@ def standardize_telecom_data(data: dict) -> dict:
     return data
 
 
-
 def transform_to_ibge_code(
     data: dict, city_name_dict: dict, state_dict: dict, country_dict: dict
 ) -> dict:
@@ -243,7 +242,7 @@ def transform_to_ibge_code(
     """
 
     # VITAI so tem uma info, consideramos smp residencia
-    if  data["municipio"] in city_name_dict.keys():
+    if data["municipio"] in city_name_dict.keys():
         data["city"] = city_name_dict[data["municipio"]]
         data["state"] = data["city"][0:2]
         data["country"] = "010"
