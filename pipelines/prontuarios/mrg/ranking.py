@@ -24,4 +24,3 @@ def ranking_values(df_unique, field, ranks_merge):
         df_unique = pd.concat([sub_df_r1, sub_df_resto])
 
     return df_unique
-

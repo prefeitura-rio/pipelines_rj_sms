@@ -18,7 +18,7 @@ from pipelines.prontuarios.mrg.tasks import (
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
-    transform_create_input_batches
+    transform_create_input_batches,
 )
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -30,8 +30,8 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    START_DATETIME = Parameter("START_DATETIME", default='2024-03-14 17:03:25')
-    END_DATETIME = Parameter("END_DATETIME", default='2024-03-14 17:04:26')
+    START_DATETIME = Parameter("START_DATETIME", default="2024-03-14 17:03:25")
+    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:04:26")
 
     ####################################
     # Set environment
@@ -79,14 +79,15 @@ with Flow(
 
     std_patient_list_final = merge(data_to_merge=data_to_be_merged)
 
-    std_patient_batches_final = transform_create_input_batches(input_list=std_patient_list_final,
-                                                               batch_size=5000)
+    std_patient_batches_final = transform_create_input_batches(
+        input_list=std_patient_list_final, batch_size=5000
+    )
 
     put_to_api.map(
         request_body=std_patient_batches_final,
         api_url=unmapped(api_url),
         endpoint_name=unmapped("mrg/patient"),
-        api_token=unmapped(api_token)
+        api_token=unmapped(api_token),
     )
 
 
