@@ -12,9 +12,9 @@ from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
 from pipelines.prontuarios.mrg.tasks import (
     get_params,
     load_mergeable_data,
-    print_n_patients,
     merge,
-    put_to_api
+    print_n_patients,
+    put_to_api,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -70,18 +70,14 @@ with Flow(
     cpfs_w_new_data_printed = print_n_patients(data=cpfs_w_new_data)
 
     data_to_be_merged = load_mergeable_data(
-        url=api_url + "std/patientrecords",
-        cpfs=cpfs_w_new_data_printed,
-        credentials=api_token
+        url=api_url + "std/patientrecords", cpfs=cpfs_w_new_data_printed, credentials=api_token
     )
 
     ####################################
     # Task Section #2 - Merge Data
     ####################################
 
-    std_patient_list_final = merge(
-        data_to_merge=data_to_be_merged
-    )
+    std_patient_list_final = merge(data_to_merge=data_to_be_merged)
 
     std_patient_batches_final = transform_create_input_batches(input_list=std_patient_list_final,
                                                                batch_size=5000)

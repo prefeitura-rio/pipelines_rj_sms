@@ -36,6 +36,12 @@ class constants(Enum):
         "6742831": "https://api.token.upasc.vitai.care/api/v1/",
         "6926177": "https://api.token.upasepetiba.vitai.care/api/v1/",
         "6487815": "https://api.token.upavk.vitai.care/api/v1/",
+        "2270242": "https://api.token.hmbr.vitai.care/api/v1/",
+        "2269481": "https://api.token.hmpiedade.vitai.care/api/v1/",
+        "2291266": "https://api.token.hmfst.vitai.care/api/v1/",
+        "2269341": "https://api.token.hmj.vitai.care/api/v1/",
+        "2270269": "https://api.token.hmmc.vitai.care/api/v1/",
+        "7110162": "https://api.token.uparm.vitai.care/api/v1/",
     }
 
     API_CNES_TO_MIN_DATE = {
@@ -58,4 +64,10 @@ class constants(Enum):
         "5717256": {"pacientes": "2016-08-19", "diagnostico": "2016-08-22"},
         "2298120": {"pacientes": "2016-10-31", "diagnostico": "2016-11-02"},
         "6716849": {"pacientes": "2020-04-01", "diagnostico": "2020-04-01"},
+        "2270242": {"pacientes": "2023-03-28", "diagnostico": "2023-02-21"},
+        "2269481": {"pacientes": "2022-08-25", "diagnostico": "2022-08-25"},
+        "2291266": {"pacientes": "2023-03-26", "diagnostico": "2023-02-26"},
+        "2269341": {"pacientes": "2023-01-17", "diagnostico": "2023-01-17"},
+        "2270269": {"pacientes": "2023-03-22", "diagnostico": "2023-02-04"},
+        "7110162": {"pacientes": "2015-05-01", "diagnostico": "2015-07-22"},
     }

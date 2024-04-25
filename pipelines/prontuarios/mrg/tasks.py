@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta
+
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.prontuarios.mrg.functions import (
-    normalize_payload_list,
-    first_merge,
     final_merge,
+    first_merge,
+    load_ranking,
+    normalize_payload_list,
     sanity_check,
-    load_ranking
 )
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
@@ -32,7 +33,7 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
     # )
     return {
         "start_datetime": start_datetime,  # .strftime("%Y-%m-%d 00:00:00"),
-        "end_datetime": end_datetime  # .strftime("%Y-%m-%d 00:00:00")
+        "end_datetime": end_datetime,  # .strftime("%Y-%m-%d 00:00:00")
     }
 
 
@@ -51,9 +52,7 @@ def print_n_patients(data: list):
 
 
 @task
-def load_mergeable_data(url: str,
-                        cpfs: list,
-                        credentials: str) -> list:
+def load_mergeable_data(url: str, cpfs: list, credentials: str) -> list:
     """
     Loads mergeable data of patient from std patient API endpoint.
 
@@ -70,7 +69,7 @@ def load_mergeable_data(url: str,
     headers = {"Authorization": f"Bearer {credentials}"}
     data = []
     for cpf in cpfs:
-        response = requests.get(url + '/' + cpf, headers=headers, timeout=180)
+        response = requests.get(url + "/" + cpf, headers=headers, timeout=180)
         if response.status_code == 200:
             data.append(response.json())
         else:
