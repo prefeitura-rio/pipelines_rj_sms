@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -17,7 +17,8 @@ from pipelines.prontuarios.mrg.tasks import (
     put_to_api
 )
 from pipelines.prontuarios.utils.tasks import (
-    get_api_token
+    get_api_token,
+    transform_create_input_batches
 )
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -30,7 +31,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
     START_DATETIME = Parameter("START_DATETIME", default='2024-03-14 17:03:25')
-    END_DATETIME = Parameter("END_DATETIME", default='2024-03-14 17:03:26')
+    END_DATETIME = Parameter("END_DATETIME", default='2024-03-14 17:04:26')
 
     ####################################
     # Set environment
@@ -82,11 +83,14 @@ with Flow(
         data_to_merge=data_to_be_merged
     )
 
-    put_to_api(
-        request_body=std_patient_list_final,
-        api_url=api_url,
-        endpoint_name="mrg/patient",
-        api_token=api_token
+    std_patient_batches_final = transform_create_input_batches(input_list=std_patient_list_final,
+                                                               batch_size=5000)
+
+    put_to_api.map(
+        request_body=std_patient_batches_final,
+        api_url=unmapped(api_url),
+        endpoint_name=unmapped("mrg/patient"),
+        api_token=unmapped(api_token)
     )
 
 
