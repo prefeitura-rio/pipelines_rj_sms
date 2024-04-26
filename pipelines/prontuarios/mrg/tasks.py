@@ -68,12 +68,11 @@ def load_mergeable_data(url: str, cpfs: list, credentials: str) -> list:
     """
     headers = {"Authorization": f"Bearer {credentials}"}
     data = []
-    for cpf in cpfs:
-        response = requests.get(url + "/" + cpf, headers=headers, timeout=180)
-        if response.status_code == 200:
-            data.append(response.json())
-        else:
-            raise ValueError(f"API call failed, error: {response.status_code} - {response.reason}")
+    response = requests.get(url + "/" + cpfs, headers=headers, timeout=180)
+    if response.status_code == 200:
+        data.append(response.json())
+    else:
+        raise ValueError(f"API call failed, error: {response.status_code} - {response.reason}")
     return data
 
 

@@ -69,8 +69,10 @@ with Flow(
 
     cpfs_w_new_data_printed = print_n_patients(data=cpfs_w_new_data)
 
-    data_to_be_merged = load_mergeable_data(
-        url=api_url + "std/patientrecords", cpfs=cpfs_w_new_data_printed, credentials=api_token
+    data_to_be_merged = load_mergeable_data.map(
+        url=unmapped(api_url + "std/patientrecords"), 
+        cpfs=cpfs_w_new_data_printed, 
+        credentials=unmapped(api_token)
     )
 
     ####################################
@@ -80,7 +82,7 @@ with Flow(
     std_patient_list_final = merge(data_to_merge=data_to_be_merged)
 
     std_patient_batches_final = transform_create_input_batches(
-        input_list=std_patient_list_final, batch_size=5000
+        input_list=std_patient_list_final, batch_size=1000
     )
 
     put_to_api.map(
