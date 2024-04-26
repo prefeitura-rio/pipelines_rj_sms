@@ -74,9 +74,9 @@ with Flow(
     )
 
     data_to_be_merged = load_mergeable_data.map(
-        url=unmapped(api_url + "std/patientrecords"), 
-        cpfs=cpfs_w_new_data_batches, 
-        credentials=unmapped(api_token)
+        url=unmapped(api_url + "std/patientrecords"),
+        cpfs=cpfs_w_new_data_batches,
+        credentials=unmapped(api_token),
     )
 
     ####################################
