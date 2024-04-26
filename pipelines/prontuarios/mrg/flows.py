@@ -70,9 +70,9 @@ with Flow(
     cpfs_w_new_data_printed = print_n_patients(data=cpfs_w_new_data)
 
     data_to_be_merged = load_mergeable_data.map(
-        url=unmapped(api_url + "std/patientrecords"), 
-        cpfs=cpfs_w_new_data_printed, 
-        credentials=unmapped(api_token)
+        url=unmapped(api_url + "std/patientrecords"),
+        cpfs=cpfs_w_new_data_printed,
+        credentials=unmapped(api_token),
     )
 
     ####################################
