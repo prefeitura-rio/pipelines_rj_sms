@@ -80,7 +80,7 @@ def standardize_nationality(data: dict) -> dict:
     return data
 
 
-def standardize_cns_list_vitai(data: dict) -> dict:
+def standardize_cns_list(data: dict) -> dict:
     """
     Standardize race field to acceptable API values
 
