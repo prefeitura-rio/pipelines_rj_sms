@@ -67,7 +67,7 @@ def load_mergeable_data(url: str, cpfs: list, credentials: str) -> list:
     """
     headers = {"Authorization": f"Bearer {credentials}"}
     data = []
-    for i,cpf in enumerate(cpfs):
+    for i, cpf in enumerate(cpfs):
         log(i)
         response = requests.get(url + "/" + cpf, headers=headers, timeout=180)
         if response.status_code == 200:
