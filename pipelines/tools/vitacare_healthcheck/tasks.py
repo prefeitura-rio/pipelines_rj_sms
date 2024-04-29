@@ -104,9 +104,6 @@ def get_file_content(file_metadata):
             file_content_json = json.loads(content)
         except json.JSONDecodeError:
             file_content_json = {}
-        
-    if "error" in file_content_json.keys():
-        raise Exception("Error in file content.")
 
     content_flattened = pd.json_normalize(file_content_json, sep="_")
     content_flattened["file_id"] = file_id
