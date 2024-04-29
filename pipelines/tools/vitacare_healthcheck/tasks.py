@@ -42,7 +42,7 @@ def get_files_from_folder(folder_id):
         for _file in ap_files:
             _file["ap"] = ap_folder["title"]
             files.append(_file)
-    log(f"Finishing")
+    log("Finishing")
 
     return files
 
