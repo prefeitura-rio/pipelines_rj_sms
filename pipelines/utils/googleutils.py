@@ -1,5 +1,6 @@
-from google.cloud import bigquery
+# -*- coding: utf-8 -*-
 import pandas as pd
+from google.cloud import bigquery
 
 
 def generate_bigquery_schema(df: pd.DataFrame) -> list[bigquery.SchemaField]:

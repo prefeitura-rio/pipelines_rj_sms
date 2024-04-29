@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
 import json
 from datetime import timedelta
-import prefect
 
+import pandas as pd
+import prefect
+from google.cloud import bigquery
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
-from google.cloud import bigquery
 
+from pipelines.tools.vitacare_healthcheck.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import generate_bigquery_schema
-from pipelines.tools.vitacare_healthcheck.constants import constants
 
 
 @task()
@@ -31,12 +31,13 @@ def get_files_from_folder(folder_id):
 
     files = []
     for ap_folder in ap_folders:
-        ap_files = drive.ListFile({"q": f"'{ap_folder['id']}' in parents and trashed=false"}).GetList()
+        ap_files = drive.ListFile(
+            {"q": f"'{ap_folder['id']}' in parents and trashed=false"}
+        ).GetList()
 
         for _file in ap_files:
-            _file['ap'] = ap_folder['title']
+            _file["ap"] = ap_folder["title"]
             files.append(_file)
-
 
     return files
 
@@ -45,7 +46,7 @@ def get_files_from_folder(folder_id):
 def get_structured_files_metadata(file_list):
     structured_file_list = []
     for _file in file_list:
-        title = _file["title"].replace(" - Copia","")
+        title = _file["title"].replace(" - Copia", "")
         datetime_str = title.split("-", 1)[1].split(".")[0]
         moment = pd.to_datetime(datetime_str, format="%Y-%m-%d-%Hh-%Mm")
 
@@ -72,8 +73,8 @@ def filter_files_by_date(files, min_date, day_interval=1):
 
     structured_file_list = pd.DataFrame(files)
     data = structured_file_list[
-        (structured_file_list["last_modified"] >= min_date) &
-        (structured_file_list["last_modified"] < max_date)
+        (structured_file_list["last_modified"] >= min_date)
+        & (structured_file_list["last_modified"] < max_date)
     ]
 
     return data.to_dict(orient="records")
@@ -92,7 +93,7 @@ def get_file_content(file_metadata):
     gauth.ServiceAuth()
     drive = GoogleDrive(gauth)
 
-    file_id = file_metadata['file_id']
+    file_id = file_metadata["file_id"]
     file = drive.CreateFile({"id": file_id})
 
     content = file.GetContentString(encoding="latin1")
@@ -104,7 +105,7 @@ def get_file_content(file_metadata):
             file_content_json = json.loads(content)
         except json.JSONDecodeError:
             file_content_json = {}
-        
+
     if "error" in file_content_json.keys():
         raise Exception("Error in file content.")
 
@@ -128,9 +129,10 @@ def json_records_to_dataframe(json_records):
     dataframe.sort_values(by="moment", inplace=True)
     return dataframe
 
+
 @task()
 def fix_column_typing(dataframe):
-    dataframe['interface_isVpn'] = dataframe['interface_isVpn'].astype(bool)
+    dataframe["interface_isVpn"] = dataframe["interface_isVpn"].astype(bool)
     return dataframe
 
 
