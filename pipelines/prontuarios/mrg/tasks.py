@@ -45,7 +45,6 @@ def print_n_patients(data: list):
     Args:
         data (list): List of patients to perform merge.
     """
-
     log(f"Merging registers for {len(data)} patients")
 
     return data
@@ -68,7 +67,8 @@ def load_mergeable_data(url: str, cpfs: list, credentials: str) -> list:
     """
     headers = {"Authorization": f"Bearer {credentials}"}
     data = []
-    for cpf in cpfs:
+    for i,cpf in enumerate(cpfs):
+        log(i)
         response = requests.get(url + "/" + cpf, headers=headers, timeout=180)
         if response.status_code == 200:
             data.append(response.json())
@@ -88,7 +88,8 @@ def merge(data_to_merge) -> dict:
     Returns:
         sanitized_data (list): Merged data
     """
-    register_list = list(map(normalize_payload_list, data_to_merge))
+    data_to_merge_list = [x for xs in data_to_merge for x in xs]
+    register_list = list(map(normalize_payload_list, data_to_merge_list))
     log("Trying first merge")
     ranking_df = load_ranking()
     merged_n_not_merged_data = list(map(lambda x: first_merge(x, ranking_df), register_list))

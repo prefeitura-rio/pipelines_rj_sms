@@ -30,8 +30,8 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    START_DATETIME = Parameter("START_DATETIME", default="2024-03-14 17:03:25")
-    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:03:26")
+    START_DATETIME = Parameter("START_DATETIME", default="2024-03-12 14:41")
+    END_DATETIME = Parameter("END_DATETIME", default="2024-03-12 14:42")
 
     ####################################
     # Set environment
@@ -98,7 +98,7 @@ with Flow(
 
 
 patientrecord_mrg.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-patientrecord_mrg.executor = LocalDaskExecutor(num_workers=2)
+patientrecord_mrg.executor = LocalDaskExecutor(num_workers=3)
 patientrecord_mrg.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
