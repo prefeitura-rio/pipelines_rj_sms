@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Custom script for registering flows.
+Custom script for registering flows
 """
 
 import ast
