@@ -26,11 +26,11 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
     """
     # start_datetime = '2024-03-14 17:03:25'
     # end_datetime = '2024-03-14 17:03:26' #start_datetime + timedelta(days=1)
-    # log(
-    #     f"""
-    #     Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
-    #     to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
-    # )
+    log(
+        f"""
+        Standardizing from {start_datetime}
+        to {end_datetime}"""
+    )
     return {
         "start_datetime": start_datetime,  # .strftime("%Y-%m-%d 00:00:00"),
         "end_datetime": end_datetime,  # .strftime("%Y-%m-%d 00:00:00")
@@ -51,7 +51,7 @@ def print_n_patients(data: list):
     return data
 
 
-@task
+
 def load_mergeable_data(url: str, cpfs: list, credentials: str) -> list:
     """
     Loads mergeable data of patient from std patient API endpoint.
