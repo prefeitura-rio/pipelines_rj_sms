@@ -28,7 +28,7 @@ def get_params(start_datetime: str) -> dict:
     """
     Creating params
     Args:
-        start_datetime (str) : initial date extraction
+        start_datetime (str) : initial date extraction.
 
     Returns:
         dict : params dictionary

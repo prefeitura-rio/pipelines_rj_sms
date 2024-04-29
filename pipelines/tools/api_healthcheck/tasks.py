@@ -23,7 +23,7 @@ def check_api_health(api_info: dict):
     logger = prefect.context.get("logger")
 
     endpoint_url = f"{api_info['url']}{api_info['target_endpoint']}"
-    logger.info(f"Checking API health for {endpoint_url}")
+    logger.info(f"Checking API health: {endpoint_url}")
 
     try:
         response = requests.get(url=endpoint_url, timeout=90)

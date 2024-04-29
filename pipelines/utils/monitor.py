@@ -15,7 +15,7 @@ async def send_discord_webhook(
     monitor_slug: str = Literal["endpoint-health", "dbt-runs", "data-ingestion"],
 ):
     """
-    Sends a message to a Discord webhook.
+    Sends a message to a Discord webhook
 
     Args:
         message (str): The message to send.
