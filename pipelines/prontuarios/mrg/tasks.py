@@ -51,7 +51,6 @@ def print_n_patients(data: list):
     return data
 
 
-
 def load_mergeable_data(url: str, cpfs: list, credentials: str) -> list:
     """
     Loads mergeable data of patient from std patient API endpoint.
