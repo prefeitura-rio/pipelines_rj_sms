@@ -34,7 +34,7 @@ def get_files_from_folder(folder_id):
 
     files = []
     for ap_folder in ap_folders:
-        log(f"Querying for files in /{ap_folder}/ folder")
+        log(f"Querying for files in /{ap_folder['title']} folder")
         ap_files = drive.ListFile(
             {"q": f"'{ap_folder['id']}' in parents and trashed=false"}
         ).GetList()
@@ -42,7 +42,8 @@ def get_files_from_folder(folder_id):
         for _file in ap_files:
             _file["ap"] = ap_folder["title"]
             files.append(_file)
-    log("Finishing")
+    log(f"Finishing with {len(files)} files")
+    log(f"Example: {files[0]}")
 
     return files
 
@@ -151,7 +152,7 @@ def loading_data_to_bigquery(data, environment):
 
     job_config = bigquery.LoadJobConfig(
         schema=generate_bigquery_schema(data),
-        write_disposition="WRITE_TRUNCATE",
+        write_disposition="WRITE_APPEND",
     )
     job = bq_client.load_table_from_dataframe(
         data, f"{project_name}.{dataset_name}.{table_name}", job_config=job_config
