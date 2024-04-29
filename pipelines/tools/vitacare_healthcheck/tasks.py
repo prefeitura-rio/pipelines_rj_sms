@@ -5,10 +5,10 @@ from datetime import timedelta
 import pandas as pd
 import prefect
 from google.cloud import bigquery
+from prefeitura_rio.pipelines_utils.logging import log
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
-from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.tools.vitacare_healthcheck.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import generate_bigquery_schema
