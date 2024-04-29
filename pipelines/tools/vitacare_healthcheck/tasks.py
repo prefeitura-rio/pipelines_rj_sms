@@ -8,6 +8,7 @@ from google.cloud import bigquery
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
+from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.tools.vitacare_healthcheck.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import generate_bigquery_schema
@@ -15,6 +16,7 @@ from pipelines.utils.googleutils import generate_bigquery_schema
 
 @task()
 def get_files_from_folder(folder_id):
+    log("Authenticating with Google Drive")
     gauth = GoogleAuth(
         settings={
             "client_config_backend": "service",
@@ -27,10 +29,12 @@ def get_files_from_folder(folder_id):
 
     drive = GoogleDrive(gauth)
 
+    log("Querying root folder")
     ap_folders = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
 
     files = []
     for ap_folder in ap_folders:
+        log(f"Querying for files in /{ap_folder}/ folder")
         ap_files = drive.ListFile(
             {"q": f"'{ap_folder['id']}' in parents and trashed=false"}
         ).GetList()
@@ -38,6 +42,7 @@ def get_files_from_folder(folder_id):
         for _file in ap_files:
             _file["ap"] = ap_folder["title"]
             files.append(_file)
+    log(f"Finishing")
 
     return files
 
