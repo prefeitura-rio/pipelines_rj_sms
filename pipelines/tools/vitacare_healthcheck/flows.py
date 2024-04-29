@@ -6,7 +6,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.tools.vitacare_healthcheck.constants import constants as vitacare_healthcheck_constants
+from pipelines.tools.vitacare_healthcheck.constants import constants as vitacare_constants
 from pipelines.tools.api_healthcheck.schedules import update_schedule
 from pipelines.prontuarios.utils.tasks import get_flow_scheduled_day
 from pipelines.tools.vitacare_healthcheck.tasks import (
@@ -25,7 +25,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
 
     file_list = get_files_from_folder(
-        folder_id=vitacare_healthcheck_constants.TARGET_FOLDER_ID.value
+        folder_id=vitacare_constants.TARGET_FOLDER_ID.value
     )
 
     target_day = get_flow_scheduled_day()
