@@ -12,7 +12,7 @@ from pipelines.utils.tasks import get_secret_key
 @task
 def get_prontuarios_database_url(environment):
     """
-    Get Prontuarios database url from Infisical Secrets
+    Get Prontuarios database url from Infisical Secrets.
 
     Args:
         environment (str): Environment
