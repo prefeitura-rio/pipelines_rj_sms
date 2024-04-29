@@ -7,10 +7,10 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.utils.tasks import get_flow_scheduled_day
-from pipelines.tools.api_healthcheck.schedules import update_schedule
 from pipelines.tools.vitacare_healthcheck.constants import (
     constants as vitacare_constants,
 )
+from pipelines.tools.vitacare_healthcheck.schedules import schedule
 from pipelines.tools.vitacare_healthcheck.tasks import (
     filter_files_by_date,
     fix_column_typing,
@@ -44,7 +44,7 @@ with Flow(
 
     loading_data_to_bigquery(data=files_fixed, environment=ENVIRONMENT)
 
-monitoramento.schedule = update_schedule
+monitoramento.schedule = schedule
 monitoramento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 monitoramento.executor = LocalDaskExecutor(num_workers=10)
 monitoramento.run_config = KubernetesRun(
