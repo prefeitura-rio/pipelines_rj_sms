@@ -3,10 +3,10 @@ from enum import Enum
 
 
 class constants(Enum):
-    ######################################
+    #######################################
     # Automatically managed,
     # please do not change these values
-    ######################################
+    #######################################
     # Docker image
     DOCKER_TAG = "AUTO_REPLACE_DOCKER_TAG"
     DOCKER_IMAGE_NAME = "AUTO_REPLACE_DOCKER_IMAGE"
