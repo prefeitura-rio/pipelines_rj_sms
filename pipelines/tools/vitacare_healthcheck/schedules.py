@@ -22,7 +22,7 @@ clocks = generate_dump_api_schedules(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=flow_parameters,
-    runs_interval_minutes=24*60,
+    runs_interval_minutes=24 * 60,
 )
 
 schedule = Schedule(clocks=untuple_clocks(clocks))
