@@ -120,6 +120,9 @@ def get_file_content(file_metadata):
     content_flattened["moment"] = file_metadata["moment"]
     content_flattened["file_last_modified"] = file_metadata["last_modified"]
 
+    if "error" not in content_flattened.columns:
+        content_flattened["error"] = None
+
     return content_flattened.to_dict(orient="records")[0]
 
 
