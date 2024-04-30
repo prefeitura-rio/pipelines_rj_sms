@@ -10,7 +10,7 @@ class constants(Enum):
     TARGET_FOLDER_ID = "1ClVX2dbWNxg2yHtXyH9mtEICrUpsy8bN"
 
     PROJECT_NAME = {
-        "prod": "rj-sms-prod",
+        "prod": "rj-sms",
         "staging": "rj-sms-dev",
         "dev": "rj-sms-dev",
     }
