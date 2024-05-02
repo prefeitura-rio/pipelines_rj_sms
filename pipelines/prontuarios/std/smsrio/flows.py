@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -20,6 +20,7 @@ from pipelines.prontuarios.utils.tasks import (
     get_std_flow_scheduled_day,
     load_to_api,
     rename_current_std_flow_run,
+    transform_create_input_batches
 )
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -90,11 +91,13 @@ with Flow(
         lista_campos_api=lista_campos_api,
     )
 
+    std_patient_list_batches = transform_create_input_batches(input_list=std_patient_list, batch_size=1000)
+
     load_to_api_task = load_to_api(
-        request_body=std_patient_list,
-        endpoint_name="std/patientrecords",
-        api_token=api_token,
-        environment=ENVIRONMENT,
+        request_body=std_patient_list_batches,
+        endpoint_name=unmapped("std/patientrecords"),
+        api_token=unmapped(api_token),
+        environment=unmapped(ENVIRONMENT),
     )
 
 
