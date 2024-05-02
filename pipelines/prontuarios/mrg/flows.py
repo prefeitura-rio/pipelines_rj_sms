@@ -70,7 +70,7 @@ with Flow(
     cpfs_w_new_data_printed = print_n_patients(data=cpfs_w_new_data)
 
     cpfs_w_new_data_batches = transform_create_input_batches(
-        input_list=cpfs_w_new_data_printed, batch_size=4000
+        input_list=cpfs_w_new_data_printed, batch_size=1000
     )
 
     data_to_be_merged = load_mergeable_data.map(
@@ -98,7 +98,7 @@ with Flow(
 
 
 patientrecord_mrg.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-patientrecord_mrg.executor = LocalDaskExecutor(num_workers=3)
+patientrecord_mrg.executor = LocalDaskExecutor(num_workers=6)
 patientrecord_mrg.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
