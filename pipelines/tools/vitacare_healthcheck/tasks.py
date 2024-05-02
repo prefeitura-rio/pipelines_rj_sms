@@ -9,10 +9,10 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
+from pipelines.prontuarios.utils.tasks import get_flow_scheduled_day
 from pipelines.tools.vitacare_healthcheck.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import generate_bigquery_schema
-
 
 @task()
 def get_files_from_folder(folder_id):
@@ -72,6 +72,11 @@ def get_structured_files_metadata(file_list):
 
 @task()
 def filter_files_by_date(files, min_date, day_interval=1):
+    if min_date == "":
+        min_date = get_flow_scheduled_day()
+    elif isinstance(min_date, str):
+        min_date = pd.to_datetime(min_date)
+
     max_date = min_date + pd.Timedelta(days=day_interval)
 
     min_date = min_date.strftime("%Y-%m-%d")
