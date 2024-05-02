@@ -74,7 +74,7 @@ def get_structured_files_metadata(file_list):
 @task()
 def filter_files_by_date(files, min_date, day_interval=1):
     if min_date == "":
-        min_date = get_flow_scheduled_day()
+        min_date = get_flow_scheduled_day.run()
     elif isinstance(min_date, str):
         min_date = pd.to_datetime(min_date)
 
