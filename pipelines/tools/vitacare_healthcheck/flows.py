@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from prefect import Parameter, case
-from prefect.tasks.control_flow import merge
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -30,14 +30,10 @@ with Flow(
 
     file_list = get_files_from_folder(folder_id=vitacare_constants.TARGET_FOLDER_ID.value)
 
-    structured_files_metadata = get_structured_files_metadata(
-        file_list=file_list
-    )
+    structured_files_metadata = get_structured_files_metadata(file_list=file_list)
 
     day_files = filter_files_by_date(
-        files=structured_files_metadata,
-        min_date=TARGET_DAY,
-        day_interval=DAY_INTERVAL
+        files=structured_files_metadata, min_date=TARGET_DAY, day_interval=DAY_INTERVAL
     )
 
     files = get_file_content.map(file_metadata=day_files)
