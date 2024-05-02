@@ -51,7 +51,7 @@ def extract_data_from_api(
         environment (str, optional): The environment to run the extraction in. Defaults to "dev".
 
     Returns:
-        dict: The extracted data from the API.
+        dict: The extracted data from the API
 
     Raises:
         ValueError: If the API response status code is not 200.
