@@ -98,7 +98,7 @@ with Flow(
 
 
 patientrecord_mrg.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-patientrecord_mrg.executor = LocalDaskExecutor(num_workers=6)
+patientrecord_mrg.executor = LocalDaskExecutor(num_workers=2)
 patientrecord_mrg.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
