@@ -91,7 +91,7 @@ with Flow(
 
     std_patient_list_batches = transform_create_input_batches(input_list=std_patient_list, batch_size=1000)
 
-    load_to_api_task = load_to_api(
+    load_to_api_task = load_to_api.map(
         request_body=std_patient_list_batches,
         endpoint_name=unmapped("std/patientrecords"),
         api_token=unmapped(api_token),
