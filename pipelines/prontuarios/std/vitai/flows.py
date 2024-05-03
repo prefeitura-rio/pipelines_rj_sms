@@ -20,7 +20,7 @@ from pipelines.prontuarios.utils.tasks import (
     get_std_flow_scheduled_day,
     load_to_api,
     rename_current_std_flow_run,
-    transform_create_input_batches
+    transform_create_input_batches,
 )
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -89,7 +89,9 @@ with Flow(
         country_dict=country_dict,
     )
 
-    std_patient_list_batches = transform_create_input_batches(input_list=std_patient_list, batch_size=1000)
+    std_patient_list_batches = transform_create_input_batches(
+        input_list=std_patient_list, batch_size=1000
+    )
 
     load_to_api_task = load_to_api.map(
         request_body=std_patient_list_batches,
