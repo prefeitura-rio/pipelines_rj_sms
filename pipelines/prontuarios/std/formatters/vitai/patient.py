@@ -93,19 +93,8 @@ def standardize_cns_list(data: dict) -> dict:
     lista = [data["cns"]]
     if (len(lista) == 1) & ((lista[0] is None) | (lista[0] == "")):
         return data
-    elif len(lista) == 1:
-        cns_list = [
-            cns for cns in list(map(lambda p: dic_cns_value(p, True), lista)) if cns is not None
-        ]
-        if len(cns_list) == 1:
-            data["cns_list"] = list(map(lambda p: dic_cns_value(p, True), lista))
-        else:
-            pass
-        return data
     else:
-        cns_list = [dic_cns_value(lista[0], True)] + list(
-            map(lambda p: dic_cns_value(p, False), lista[1:])
-        )
+        cns_list = list(map(lambda p: dic_cns_value(p, False), lista))
         cns_list_clean = [cns for cns in cns_list if cns is not None]
         data["cns_list"] = cns_list_clean
         return data
@@ -253,11 +242,7 @@ def transform_to_ibge_code(
     """
 
     # VITAI so tem uma info, consideramos smp residencia
-    if (data["municipio"] in city_name_dict.keys()) & (data["uf"] in state_dict.keys()):
-        data["city"] = city_name_dict[data["municipio"]]
-        data["state"] = state_dict[data["uf"]]
-        data["country"] = "010"
-    elif data["municipio"] in city_name_dict.keys():
+    if data["municipio"] in city_name_dict.keys():
         data["city"] = city_name_dict[data["municipio"]]
         data["state"] = data["city"][0:2]
         data["country"] = "010"
