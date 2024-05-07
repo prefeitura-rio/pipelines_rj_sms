@@ -2,7 +2,6 @@
 import asyncio
 
 from httpx import AsyncClient, AsyncHTTPTransport, ReadTimeout
-
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.mrg.functions import (
