@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from datetime import timedelta
+import asyncio
 
-import requests
+from httpx import AsyncClient, AsyncHTTPTransport, ReadTimeout
+
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.mrg.functions import (
@@ -51,28 +52,42 @@ def print_n_patients(data: list):
 
 
 @task
-def load_mergeable_data(url: str, cpfs: list, credentials: str) -> list:
-    """
-    Loads mergeable data of patient from std patient API endpoint.
+def load_mergeable_data(url: str, cpfs: list, credentials: str, batch_size: int = 100) -> list:
+    async def get_single_data(cpf):
+        transport = AsyncHTTPTransport(retries=3)
+        async with AsyncClient(transport=transport, timeout=180) as client:
+            try:
+                response = await client.get(
+                    url=url + "/" + cpf,
+                    headers={"Authorization": f"Bearer {credentials}"},
+                    timeout=180,
+                )
+            except ReadTimeout:
+                return None
+            if response.status_code not in [200]:
+                return None
+            else:
+                return response.json()
 
-    Args:
-        url (str): The URL of the API endpoint.
-        credentials (str): The authentication credentials.
+    async def main():
+        awaitables = [get_single_data(cpf) for cpf in cpfs]
+        awaitables = [
+            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)  # noqa
+        ]
+        log(f"Sending {len(awaitables)} request batches (BATCH_SIZE={batch_size})")
+        data = []
+        for i, awaitables_batch in enumerate(awaitables):
+            responses = await asyncio.gather(*awaitables_batch)
 
-    Returns:
-        dict: The JSON response from the API.
+            log(f"[{i}/{len(awaitables)}] {responses.count(None)} failed requests out of {len(responses)}") #noqa
+            data.extend(responses)
 
-    Raises:
-        Exception: If the API request fails.
-    """
-    headers = {"Authorization": f"Bearer {credentials}"}
-    data = []
-    for i, cpf in enumerate(cpfs):
-        response = requests.get(url + "/" + cpf, headers=headers, timeout=180)
-        if response.status_code == 200:
-            data.append(response.json())
-        else:
-            raise ValueError(f"API call failed, error: {response.status_code} - {response.reason}")
+        log(f"{data.count(None)} failed requests out of {len(data)}")
+        return data
+
+    data = asyncio.run(main())
+    data = list(filter(None, data))
+
     return data
 
 
@@ -87,8 +102,7 @@ def merge(data_to_merge) -> dict:
     Returns:
         sanitized_data (list): Merged data
     """
-    data_to_merge_list = [x for xs in data_to_merge for x in xs]
-    register_list = list(map(normalize_payload_list, data_to_merge_list))
+    register_list = list(map(normalize_payload_list, data_to_merge))
     log("Trying first merge")
     ranking_df = load_ranking()
     merged_n_not_merged_data = list(map(lambda x: first_merge(x, ranking_df), register_list))
@@ -99,29 +113,54 @@ def merge(data_to_merge) -> dict:
     return sanitized_data
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=3))
-def put_to_api(request_body: dict, api_url: str, endpoint_name: str, api_token: str) -> None:
+@task()
+def put_to_api(
+    payloads: dict, api_url: str, endpoint_name: str, api_token: str, batch_size: int = 100
+) -> None:
     """
-    Sends a PUT request to the specified API endpoint with the provided request body.
+    Sends multiple payloads to an API endpoint using the PUT method.
 
     Args:
-        request_body (dict): The JSON payload to be sent in the request.
-        endpoint_name (str): The name of the API endpoint to send the request to.
-        api_token (str): The API token used for authentication.
-        environment (str): The environment to use for the API request.
-
-    Raises:
-        Exception: If the request fails with a status code other than 201.
+        payloads (dict): A dictionary containing the payloads to be sent.
+        api_url (str): The base URL of the API.
+        endpoint_name (str): The name of the API endpoint.
+        api_token (str): The API token for authentication.
+        batch_size (int, optional): The number of payloads to send in each batch. Defaults to 100.
 
     Returns:
         None
     """
-    request_response = requests.put(
-        url=f"{api_url}{endpoint_name}",
-        headers={"Authorization": f"Bearer {api_token}"},
-        timeout=180,
-        json=request_body,
-    )
 
-    if request_response.status_code not in [200, 201]:
-        raise requests.exceptions.HTTPError(f"Error loading data: {request_response.text}")
+    async def put_single_patient(payload):
+        transport = AsyncHTTPTransport(retries=3)
+        async with AsyncClient(transport=transport, timeout=180) as client:
+            try:
+                response = await client.put(
+                    url=f"{api_url}{endpoint_name}",
+                    headers={"Authorization": f"Bearer {api_token}"},
+                    timeout=180,
+                    json=[payload],
+                )
+            except ReadTimeout:
+                return False
+            if response.status_code not in [200, 201]:
+                return False
+            else:
+                return True
+
+    async def main():
+        awaitables = [put_single_patient(payload) for payload in payloads]
+        awaitables = [
+            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)  # noqa
+        ]
+        log(f"Sending {len(awaitables)} request batches (BATCH_SIZE={batch_size})")
+        status = []
+        for i, awaitables_batch in enumerate(awaitables):
+            responses = await asyncio.gather(*awaitables_batch)
+            log(f"[{i}/{len(awaitables)}] {sum(responses)} successful requests out of {len(responses)}") #noqa
+
+            status.extend(responses)
+
+        log(f"{sum(status)} successful requests out of {len(status)}")
+
+    asyncio.run(main())
