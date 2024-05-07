@@ -149,9 +149,7 @@ def put_to_api(
 
     async def main():
         awaitables = [put_single_patient(payload) for payload in payloads]
-        awaitables = [
-            awaitables[i: i + batch_size] for i in range(0, len(awaitables), batch_size)
-        ]
+        awaitables = [awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)]
         log(f"Sending {len(awaitables)} request batches (BATCH_SIZE={batch_size})")
         status = []
         for i, awaitables_batch in enumerate(awaitables):
