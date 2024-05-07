@@ -79,7 +79,7 @@ def load_mergeable_data(url: str, cpfs: list, credentials: str, batch_size: int 
         for i, awaitables_batch in enumerate(awaitables):
             responses = await asyncio.gather(*awaitables_batch)
 
-            log(f"[{i}/{len(awaitables)}] {responses.count(None)} failed requests out of {len(responses)}") #noqa
+            log(f"[{i}/{len(awaitables)}] {responses.count(None)} failed out of {len(responses)}")
             data.extend(responses)
 
         log(f"{data.count(None)} failed requests out of {len(data)}")
@@ -125,7 +125,7 @@ def put_to_api(
         api_url (str): The base URL of the API.
         endpoint_name (str): The name of the API endpoint.
         api_token (str): The API token for authentication.
-        batch_size (int, optional): The number of payloads to send in each batch. Defaults to 100.
+        batch_size (int, optional): The number of payloads to send in each batch.
 
     Returns:
         None
@@ -151,13 +151,13 @@ def put_to_api(
     async def main():
         awaitables = [put_single_patient(payload) for payload in payloads]
         awaitables = [
-            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)  # noqa
+            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)
         ]
         log(f"Sending {len(awaitables)} request batches (BATCH_SIZE={batch_size})")
         status = []
         for i, awaitables_batch in enumerate(awaitables):
             responses = await asyncio.gather(*awaitables_batch)
-            log(f"[{i}/{len(awaitables)}] {sum(responses)} successful requests out of {len(responses)}") #noqa
+            log(f"[{i}/{len(awaitables)}] {sum(responses)} successful out of {len(responses)}")
 
             status.extend(responses)
 
