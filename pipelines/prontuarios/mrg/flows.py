@@ -16,9 +16,7 @@ from pipelines.prontuarios.mrg.tasks import (
     print_n_patients,
     put_to_api,
 )
-from pipelines.prontuarios.utils.tasks import (
-    get_api_token
-)
+from pipelines.prontuarios.utils.tasks import get_api_token
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
 with Flow(

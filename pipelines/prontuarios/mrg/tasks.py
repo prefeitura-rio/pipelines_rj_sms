@@ -2,7 +2,6 @@
 import asyncio
 
 from httpx import AsyncClient, AsyncHTTPTransport, ReadTimeout
-
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.mrg.functions import (
@@ -79,7 +78,9 @@ def load_mergeable_data(url: str, cpfs: list, credentials: str, batch_size: int 
         for i, awaitables_batch in enumerate(awaitables):
             responses = await asyncio.gather(*awaitables_batch)
 
-            log(f"[{i}/{len(awaitables)}] {responses.count(None)} failed requests out of {len(responses)}") #noqa
+            log(
+                f"[{i}/{len(awaitables)}] {responses.count(None)} failed requests out of {len(responses)}"
+            )  # noqa
             data.extend(responses)
 
         log(f"{data.count(None)} failed requests out of {len(data)}")
@@ -157,7 +158,9 @@ def put_to_api(
         status = []
         for i, awaitables_batch in enumerate(awaitables):
             responses = await asyncio.gather(*awaitables_batch)
-            log(f"[{i}/{len(awaitables)}] {sum(responses)} successful requests out of {len(responses)}") #noqa
+            log(
+                f"[{i}/{len(awaitables)}] {sum(responses)} successful requests out of {len(responses)}"
+            )  # noqa
 
             status.extend(responses)
 
