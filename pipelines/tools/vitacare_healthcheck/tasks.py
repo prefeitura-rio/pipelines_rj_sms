@@ -14,7 +14,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import generate_bigquery_schema
 
 
-@task()
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def get_files_from_folder(folder_id):
     log("Authenticating with Google Drive")
     gauth = GoogleAuth(
