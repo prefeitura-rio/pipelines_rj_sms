@@ -40,11 +40,11 @@ def transform_data(file_path: str, env: str) -> list[str]:
 
     for file in raw_files:
 
-        file_path = add_load_date_column.run(input_path=f"{file_path}/{file}", sep=",")
+        file_path = add_load_date_column.run(input_path=f"{file_path}/{file}", sep=",", encoding="latin1")
 
-        file_path = conform_header_to_datalake(file_path=file_path, file_type="csv", csv_sep=";")
+        file_path = conform_header_to_datalake(file_path=file_path, file_type="csv", csv_sep=",")
 
-        parquet_file_path = convert_to_parquet(file_path=file_path, csv_sep=";", encoding="utf-8")
+        parquet_file_path = convert_to_parquet(file_path=file_path, csv_sep=",", encoding="utf-8")
 
         # remove timestamp from file name
         file_path, file_name = os.path.split(parquet_file_path)

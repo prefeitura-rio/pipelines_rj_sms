@@ -46,16 +46,16 @@ with Flow(
     # Tasks section #3 - Transform data
     #####################################
 
-    transformed_file = transform_data(
-        file_path="/Users/thiagotrabach/projects/pipelines_rj_sms/data/raw", env=ENVIRONMENT
-    )
+    raw_folder = "/Users/thiagotrabach/Downloads/SIH-1"
+
+    transformed_file = transform_data(file_path=raw_folder, env=ENVIRONMENT)
 
     #####################################
     # Tasks section #4 - Load data
     #####################################
 
     create_partitions_task = create_partitions(
-        data_path="/Users/thiagotrabach/projects/pipelines_rj_sms/data/raw",
+        data_path=raw_folder,
         partition_directory="/Users/thiagotrabach/projects/pipelines_rj_sms/data/partition_directory",
         file_type="parquet",
         upstream_tasks=[transformed_file],

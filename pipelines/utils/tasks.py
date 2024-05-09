@@ -574,7 +574,7 @@ def unzip_file(file_path: str, output_path: str):
 
 
 @task
-def add_load_date_column(input_path: str, sep=";", load_date=None):
+def add_load_date_column(input_path: str, sep=";", load_date=None, encoding="utf-8"):
     """
     Adds a new column '_data_carga' to a CSV file located at input_path with the current date
     or a specified load date.
@@ -591,7 +591,7 @@ def add_load_date_column(input_path: str, sep=";", load_date=None):
     tz = pytz.timezone("Brazil/East")
     now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
-    df = pd.read_csv(input_path, sep=sep, keep_default_na=False, dtype="str")
+    df = pd.read_csv(input_path, sep=sep, keep_default_na=False, dtype="str", encoding=encoding)
 
     if load_date is None:
         df["_data_carga"] = now
