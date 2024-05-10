@@ -60,9 +60,7 @@ with Flow(
     )
 
     with case(RENAME_FLOW, True):
-        patient_count = get_patient_count(
-            data=meargeable_records
-        )
+        patient_count = get_patient_count(data=meargeable_records)
         rename_flow_task = rename_current_flow_run(
             environment=ENVIRONMENT, patient_count=patient_count
         )
