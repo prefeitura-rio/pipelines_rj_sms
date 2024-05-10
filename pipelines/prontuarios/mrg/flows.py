@@ -11,9 +11,7 @@ from pipelines.prontuarios.mrg.constants import constants as mrg_constants
 from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
 from pipelines.prontuarios.mrg.tasks import (
     get_params,
-    load_mergeable_data,
     merge,
-    print_n_patients,
     put_to_api,
 )
 from pipelines.prontuarios.utils.tasks import get_api_token
@@ -28,7 +26,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
     START_DATETIME = Parameter("START_DATETIME", default="2024-03-14 17:03:25")
-    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:05:21")
+    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:03:26")
 
     ####################################
     # Set environment
@@ -54,30 +52,25 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    # START_DATETIME = get_mrg_flow_scheduled_day()
-    request_params = get_params(start_datetime=START_DATETIME, end_datetime=END_DATETIME)
+    request_params = get_params(
+        start_datetime=START_DATETIME,
+        end_datetime=END_DATETIME
+    )
 
-    cpfs_w_new_data = load_from_api(
+    meargeable_records = load_from_api(
         url=api_url + "std/patientrecords/updated",
         params=request_params,
         credentials=api_token,
         auth_method="bearer",
     )
 
-    cpfs_w_new_data_printed = print_n_patients(data=cpfs_w_new_data)
-
-    data_to_be_merged = load_mergeable_data(
-        url=api_url + "std/patientrecords",
-        cpfs=cpfs_w_new_data_printed,
-        credentials=api_token,
-        batch_size=250,
-    )
-
     ####################################
     # Task Section #2 - Merge Data
     ####################################
 
-    std_patient_list_final = merge(data_to_merge=data_to_be_merged)
+    std_patient_list_final = merge(
+        data_to_merge=meargeable_records
+    )
 
     put_to_api(
         payloads=std_patient_list_final,
