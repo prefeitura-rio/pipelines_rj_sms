@@ -115,23 +115,10 @@ def merge(data_to_merge) -> dict:
 
 @task()
 def put_to_api(
-    payloads: dict, api_url: str, endpoint_name: str, api_token: str, batch_size: int = 100
+    payloads: list, api_url: str, endpoint_name: str, api_token: str, batch_size: int = 1000
 ) -> None:
-    """
-    Sends multiple payloads to an API endpoint using the PUT method.
 
-    Args:
-        payloads (dict): A dictionary containing the payloads to be sent.
-        api_url (str): The base URL of the API.
-        endpoint_name (str): The name of the API endpoint.
-        api_token (str): The API token for authentication.
-        batch_size (int, optional): The number of payloads to send in each batch.
-
-    Returns:
-        None
-    """
-
-    async def put_single_patient(payload):
+    async def send_data_batch(merged_patient_batch):
         transport = AsyncHTTPTransport(retries=3)
         async with AsyncClient(transport=transport, timeout=180) as client:
             try:
@@ -139,7 +126,7 @@ def put_to_api(
                     url=f"{api_url}{endpoint_name}",
                     headers={"Authorization": f"Bearer {api_token}"},
                     timeout=180,
-                    json=[payload],
+                    json=merged_patient_batch,
                 )
             except ReadTimeout:
                 return False
@@ -149,18 +136,17 @@ def put_to_api(
                 return True
 
     async def main():
-        awaitables = [put_single_patient(payload) for payload in payloads]
+        merged_data_in_batches = [
+            payloads[i : i + batch_size] 
+            for i in range(0, len(payloads), batch_size)
+        ]
         awaitables = [
-            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)
-        ]  # noqa
+            send_data_batch(batch) 
+            for batch in merged_data_in_batches
+        ]
         log(f"Sending {len(awaitables)} request batches (BATCH_SIZE={batch_size})")
-        status = []
-        for i, awaitables_batch in enumerate(awaitables):
-            responses = await asyncio.gather(*awaitables_batch)
-            log(f"[{i}/{len(awaitables)}] {sum(responses)} successful out of {len(responses)}")
 
-            status.extend(responses)
-
-        log(f"{sum(status)} successful requests out of {len(status)}")
+        responses = await asyncio.gather(*awaitables)
+        log(f"{sum(responses)} successful requests out of {len(responses)}")
 
     asyncio.run(main())
