@@ -41,7 +41,7 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="SMSRIO")
 
-    request_start_datetime = get_std_flow_scheduled_day(START_DATETIME)
+    request_start_datetime = get_std_flow_scheduled_day(start_datetime=START_DATETIME)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
