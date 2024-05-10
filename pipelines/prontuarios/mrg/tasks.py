@@ -117,7 +117,6 @@ def merge(data_to_merge) -> dict:
 def put_to_api(
     payloads: list, api_url: str, endpoint_name: str, api_token: str, batch_size: int = 1000
 ) -> None:
-
     async def send_data_batch(merged_patient_batch):
         transport = AsyncHTTPTransport(retries=3)
         async with AsyncClient(transport=transport, timeout=180) as client:
@@ -137,13 +136,9 @@ def put_to_api(
 
     async def main():
         merged_data_in_batches = [
-            payloads[i : i + batch_size] 
-            for i in range(0, len(payloads), batch_size)
+            payloads[i : i + batch_size] for i in range(0, len(payloads), batch_size)
         ]
-        awaitables = [
-            send_data_batch(batch) 
-            for batch in merged_data_in_batches
-        ]
+        awaitables = [send_data_batch(batch) for batch in merged_data_in_batches]
         log(f"Sending {len(awaitables)} request batches (BATCH_SIZE={batch_size})")
 
         responses = await asyncio.gather(*awaitables)
