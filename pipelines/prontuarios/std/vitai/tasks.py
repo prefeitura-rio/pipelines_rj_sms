@@ -35,8 +35,6 @@ def get_params(start_datetime: str) -> dict:
     Returns:
         dict : params dictionary
     """
-    if type(start_datetime) is str:
-        start_datetime = pd.to_datetime(start_datetime)
     end_datetime = start_datetime + timedelta(days=1)
     log(
         f"""Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
