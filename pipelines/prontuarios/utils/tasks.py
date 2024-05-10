@@ -128,7 +128,7 @@ def get_std_flow_scheduled_day(start_datetime) -> date:
     Returns:
         date: The scheduled day for the flow execution.
     """
-    if start_datetime == '':
+    if start_datetime == "":
         scheduled_start_time = prefect.context.get("scheduled_start_time")
         scheduled_date = scheduled_start_time - timedelta(days=1)
         return scheduled_date
