@@ -9,11 +9,7 @@ from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.mrg.constants import constants as mrg_constants
 from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
-from pipelines.prontuarios.mrg.tasks import (
-    get_params,
-    merge,
-    put_to_api,
-)
+from pipelines.prontuarios.mrg.tasks import get_params, merge, put_to_api
 from pipelines.prontuarios.utils.tasks import get_api_token
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -52,10 +48,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(
-        start_datetime=START_DATETIME,
-        end_datetime=END_DATETIME
-    )
+    request_params = get_params(start_datetime=START_DATETIME, end_datetime=END_DATETIME)
 
     meargeable_records = load_from_api(
         url=api_url + "std/patientrecords/updated",
@@ -68,9 +61,7 @@ with Flow(
     # Task Section #2 - Merge Data
     ####################################
 
-    std_patient_list_final = merge(
-        data_to_merge=meargeable_records
-    )
+    std_patient_list_final = merge(data_to_merge=meargeable_records)
 
     put_to_api(
         payloads=std_patient_list_final,
