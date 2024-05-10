@@ -32,7 +32,9 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    START_DATETIME = Parameter("start_datetime", default="")
+    START_DATETIME = Parameter("start_datetime",
+                               default=get_std_flow_scheduled_day(),
+                               required=True)
 
     ####################################
     # Set environment
