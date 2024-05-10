@@ -38,7 +38,7 @@ def get_params(start_datetime: str, end_datetime: str) -> dict:
 
 
 @task
-def print_n_patients(data: list):
+def get_patient_count(data: list):
     """
     Print number of patients to perform merge
 
@@ -47,7 +47,7 @@ def print_n_patients(data: list):
     """
     log(f"Merging registers for {len(data)} patients")
 
-    return data
+    return len(data)
 
 
 @task
@@ -101,6 +101,7 @@ def merge(data_to_merge) -> dict:
     Returns:
         sanitized_data (list): Merged data
     """
+    log(f"Merging data for {len(data_to_merge)} patients")
     register_list = list(map(normalize_payload_list, data_to_merge))
     log("Trying first merge")
     ranking_df = load_ranking()

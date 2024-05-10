@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter
+from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -13,8 +13,12 @@ from pipelines.prontuarios.mrg.tasks import (
     get_params,
     merge,
     put_to_api,
+    get_patient_count
 )
-from pipelines.prontuarios.utils.tasks import get_api_token
+from pipelines.prontuarios.utils.tasks import (
+    get_api_token,
+    rename_current_flow_run
+)
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
 with Flow(
@@ -31,9 +35,6 @@ with Flow(
     ####################################
     # Set environment
     ####################################
-
-    # with case(RENAME_FLOW, True):
-    #     rename_flow_task = rename_current_mrg_flow_run(environment=ENVIRONMENT)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -63,6 +64,14 @@ with Flow(
         credentials=api_token,
         auth_method="bearer",
     )
+
+    patient_count = get_patient_count(meargeable_records)
+
+    with case(RENAME_FLOW, True):
+        rename_flow_task = rename_current_flow_run(
+            environment=ENVIRONMENT,
+            patient_count=patient_count
+        )
 
     ####################################
     # Task Section #2 - Merge Data
