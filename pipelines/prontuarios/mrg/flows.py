@@ -53,10 +53,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(
-        start_datetime=START_DATETIME,
-        end_datetime=END_DATETIME
-    )
+    request_params = get_params(start_datetime=START_DATETIME, end_datetime=END_DATETIME)
 
     meargeable_records = load_from_api(
         url=api_url + "std/patientrecords/updated",
@@ -73,13 +70,19 @@ with Flow(
             patient_count=patient_count
         )
 
+    patient_count = get_patient_count(meargeable_records)
+
+    with case(RENAME_FLOW, True):
+        rename_flow_task = rename_current_flow_run(
+            environment=ENVIRONMENT,
+            patient_count=patient_count
+        )
+
     ####################################
     # Task Section #2 - Merge Data
     ####################################
 
-    std_patient_list_final = merge(
-        data_to_merge=meargeable_records
-    )
+    std_patient_list_final = merge(data_to_merge=meargeable_records)
 
     put_to_api(
         payloads=std_patient_list_final,
