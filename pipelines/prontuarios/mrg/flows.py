@@ -11,14 +11,11 @@ from pipelines.prontuarios.mrg.constants import constants as mrg_constants
 from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
 from pipelines.prontuarios.mrg.tasks import (
     get_params,
+    get_patient_count,
     merge,
     put_to_api,
-    get_patient_count
 )
-from pipelines.prontuarios.utils.tasks import (
-    get_api_token,
-    rename_current_flow_run
-)
+from pipelines.prontuarios.utils.tasks import get_api_token, rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
 with Flow(
@@ -67,8 +64,7 @@ with Flow(
             data=meargeable_records
         )
         rename_flow_task = rename_current_flow_run(
-            environment=ENVIRONMENT,
-            patient_count=patient_count
+            environment=ENVIRONMENT, patient_count=patient_count
         )
 
     ####################################
