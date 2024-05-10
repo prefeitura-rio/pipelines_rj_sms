@@ -32,6 +32,7 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    START_DATETIME = Parameter("start_datetime", default="")
 
     ####################################
     # Set environment
@@ -39,6 +40,9 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="SMSRIO")
+
+    with case(START_DATETIME, ""):
+        START_DATETIME = get_std_flow_scheduled_day()
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -57,7 +61,6 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    START_DATETIME = get_std_flow_scheduled_day()
     request_params = get_params(start_datetime=START_DATETIME)
 
     raw_patient_data = load_from_api(
