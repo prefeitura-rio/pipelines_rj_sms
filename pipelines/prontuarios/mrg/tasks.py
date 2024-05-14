@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import asyncio
 
-import httpx
 import httpcore
-
+import httpx
 from httpx import AsyncClient, AsyncHTTPTransport
 from prefeitura_rio.pipelines_utils.logging import log
 
