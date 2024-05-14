@@ -84,7 +84,7 @@ def standardize_cns_list(data: dict) -> dict:
         data (dict) : Individual data record standardized
     """
     lista = data["cns_provisorio"]
-    lista = json.loads(lista)
+    lista = json.loads(lista) if lista is not None else [None]
 
     if (len(lista) == 1) & (lista[0] is None):
         return data
