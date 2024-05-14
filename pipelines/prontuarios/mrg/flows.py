@@ -64,8 +64,7 @@ with Flow(
     mergeable_records_flattened = flatten_page_data(data_in_pages=mergeable_records_in_pages)
 
     mergeable_records_batches = transform_create_input_batches(
-        input_list=mergeable_records_flattened,
-        batch_size=1000
+        input_list=mergeable_records_flattened, batch_size=1000
     )
 
     with case(RENAME_FLOW, True):
