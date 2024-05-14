@@ -90,11 +90,10 @@ def get_mergeable_records_from_api(
             awaitables.append(
                 get_mergeable_records_batch_from_api(page, page_size, start_datetime, end_datetime)
             )
-        
+
         batch_size = 2
         awaitables_batch = [
-            awaitables[i:i + batch_size]
-            for i in range(0, len(awaitables), batch_size)
+            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)
         ]
         log(f"Retrieving data in {len(awaitables_batch)} batches")
 
@@ -103,7 +102,7 @@ def get_mergeable_records_from_api(
             log(f"Retrieving batch {i+1} of data")
             other_responses = await asyncio.gather(*batch)
             responses.extend(other_responses)
-        
+
         log(f"{responses.count(None)} failed requests out of {len(responses)}")
 
         return responses
