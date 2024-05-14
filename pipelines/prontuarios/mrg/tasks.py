@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import asyncio
 
-from httpx import AsyncClient, AsyncHTTPTransport, ReadTimeout
+import httpx
+import httpcore
+
+from httpx import AsyncClient, AsyncHTTPTransport
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.prontuarios.mrg.functions import (
@@ -66,7 +69,9 @@ def get_mergeable_records_from_api(
                     },
                     timeout=180,
                 )
-            except ReadTimeout:
+            except httpx.ReadTimeout:
+                return None
+            except httpcore.ReadTimeout:
                 return None
             if response.status_code not in [200]:
                 return None
@@ -164,7 +169,9 @@ def put_to_api(payload_in_batch: list, api_url: str, endpoint_name: str, api_tok
                     timeout=180,
                     json=merged_patient_batch,
                 )
-            except ReadTimeout:
+            except httpx.ReadTimeout:
+                return False
+            except httpcore.ReadTimeout:
                 return False
             if response.status_code not in [200, 201]:
                 return False
