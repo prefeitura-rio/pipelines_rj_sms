@@ -32,7 +32,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
     START_DATETIME = Parameter("START_DATETIME", default="2024-03-14 17:03:25")
-    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:03:26")
+    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:05:21")
 
     ####################################
     # Set environment
@@ -64,7 +64,8 @@ with Flow(
     mergeable_records_flattened = flatten_page_data(data_in_pages=mergeable_records_in_pages)
 
     mergeable_records_batches = transform_create_input_batches(
-        input_list=mergeable_records_flattened
+        input_list=mergeable_records_flattened,
+        batch_size=1000
     )
 
     with case(RENAME_FLOW, True):
