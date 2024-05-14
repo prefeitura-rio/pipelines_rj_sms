@@ -10,9 +10,9 @@ from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.mrg.constants import constants as mrg_constants
 from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
 from pipelines.prontuarios.mrg.tasks import (
-    get_patient_count,
-    get_mergeable_records_from_api,
     flatten_page_data,
+    get_mergeable_records_from_api,
+    get_patient_count,
     merge,
     put_to_api,
 )
