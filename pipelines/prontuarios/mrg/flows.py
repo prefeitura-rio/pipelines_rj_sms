@@ -32,7 +32,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
     START_DATETIME = Parameter("START_DATETIME", default="2024-03-14 17:03:25")
-    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:05:21")
+    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:04:00")
 
     ####################################
     # Set environment
@@ -63,11 +63,6 @@ with Flow(
 
     mergeable_records_flattened = flatten_page_data(data_in_pages=mergeable_records_in_pages)
 
-    mergeable_records_batches = transform_create_input_batches(
-        input_list=mergeable_records_flattened,
-        batch_size=1000
-    )
-
     with case(RENAME_FLOW, True):
         patient_count = get_patient_count(data=mergeable_records_flattened)
         rename_flow_task = rename_current_flow_run(
@@ -77,10 +72,15 @@ with Flow(
     ####################################
     # Task Section #2 - Merge Data
     ####################################
-    std_patient_list_final = merge.map(data_to_merge=mergeable_records_batches)
+    std_patient_list_final = merge(data_to_merge=mergeable_records_flattened)
+
+    batches = transform_create_input_batches(
+        input_list=std_patient_list_final,
+        batch_size=1000,
+    )
 
     put_to_api(
-        payload_in_batch=std_patient_list_final,
+        payload_in_batch=batches,
         api_url=api_url,
         endpoint_name="mrg/patient",
         api_token=api_token,
