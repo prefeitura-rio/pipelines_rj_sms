@@ -10,13 +10,18 @@ from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.mrg.constants import constants as mrg_constants
 from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
 from pipelines.prontuarios.mrg.tasks import (
-    get_params,
     get_patient_count,
+    get_mergeable_records_from_api,
+    flatten_page_data,
     merge,
     put_to_api,
 )
-from pipelines.prontuarios.utils.tasks import get_api_token, rename_current_flow_run
-from pipelines.utils.tasks import get_secret_key, load_from_api
+from pipelines.prontuarios.utils.tasks import (
+    get_api_token,
+    rename_current_flow_run,
+    transform_create_input_batches,
+)
+from pipelines.utils.tasks import get_secret_key
 
 with Flow(
     name="Prontuários - Unificação de Pacientes",
@@ -32,7 +37,6 @@ with Flow(
     ####################################
     # Set environment
     ####################################
-
     api_token = get_api_token(
         environment=ENVIRONMENT,
         infisical_path=mrg_constants.INFISICAL_PATH.value,
@@ -50,17 +54,21 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(start_datetime=START_DATETIME, end_datetime=END_DATETIME)
+    mergeable_records_in_pages = get_mergeable_records_from_api(
+        api_base_url=api_url,
+        api_token=api_token,
+        start_datetime=START_DATETIME,
+        end_datetime=END_DATETIME,
+    )
 
-    meargeable_records = load_from_api(
-        url=api_url + "std/patientrecords/updated",
-        params=request_params,
-        credentials=api_token,
-        auth_method="bearer",
+    mergeable_records_flattened = flatten_page_data(data_in_pages=mergeable_records_in_pages)
+
+    mergeable_records_batches = transform_create_input_batches(
+        input_list=mergeable_records_flattened
     )
 
     with case(RENAME_FLOW, True):
-        patient_count = get_patient_count(data=meargeable_records)
+        patient_count = get_patient_count(data=mergeable_records_flattened)
         rename_flow_task = rename_current_flow_run(
             environment=ENVIRONMENT, patient_count=patient_count
         )
@@ -68,15 +76,13 @@ with Flow(
     ####################################
     # Task Section #2 - Merge Data
     ####################################
-
-    std_patient_list_final = merge(data_to_merge=meargeable_records)
+    std_patient_list_final = merge.map(data_to_merge=mergeable_records_batches)
 
     put_to_api(
-        payloads=std_patient_list_final,
+        payload_in_batch=std_patient_list_final,
         api_url=api_url,
         endpoint_name="mrg/patient",
         api_token=api_token,
-        batch_size=250,
     )
 
 

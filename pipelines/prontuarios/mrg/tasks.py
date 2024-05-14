@@ -15,29 +15,6 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_params(start_datetime: str, end_datetime: str) -> dict:
-    """
-    Creating params
-    Args:
-        start_datetime (str) : initial date extraction
-
-    Returns:
-        dict : params dictionary
-    """
-    # start_datetime = '2024-03-14 17:03:25'
-    # end_datetime = '2024-03-14 17:03:26' #start_datetime + timedelta(days=1)
-    log(
-        f"""
-        Standardizing from {start_datetime}
-        to {end_datetime}"""
-    )
-    return {
-        "start_datetime": start_datetime,  # .strftime("%Y-%m-%d 00:00:00"),
-        "end_datetime": end_datetime,  # .strftime("%Y-%m-%d 00:00:00")
-    }
-
-
-@task
 def get_patient_count(data: list):
     """
     Print number of patients to perform merge
@@ -51,14 +28,42 @@ def get_patient_count(data: list):
 
 
 @task
-def load_mergeable_data(url: str, cpfs: list, credentials: str, batch_size: int = 100) -> list:
-    async def get_single_data(cpf):
+def get_mergeable_records_from_api(
+    api_base_url: str,
+    api_token: str,
+    start_datetime: str,
+    end_datetime: str,
+    page_size: int = 10000,
+) -> list:
+    """
+    Retrieves mergeable records from an API within a specified time range.
+
+    Args:
+        api_base_url (str): The base URL of the API.
+        api_token (str): The API token for authentication.
+        start_datetime (str): The start datetime for the time range.
+        end_datetime (str): The end datetime for the time range.
+        page_size (int, optional): The number of records to retrieve per page.
+
+    Returns:
+        list: A list of mergeable records retrieved from the API.
+    """
+
+    async def get_mergeable_records_batch_from_api(
+        page: int, page_size: int, start_datetime: str, end_datetime: str
+    ) -> dict:
         transport = AsyncHTTPTransport(retries=3)
         async with AsyncClient(transport=transport, timeout=180) as client:
             try:
                 response = await client.get(
-                    url=url + "/" + cpf,
-                    headers={"Authorization": f"Bearer {credentials}"},
+                    url=f"{api_base_url}std/patientrecords/updated",
+                    headers={"Authorization": f"Bearer {api_token}"},
+                    params={
+                        "page": page,
+                        "page_size": page_size,
+                        "start_datetime": start_datetime,
+                        "end_datetime": end_datetime,
+                    },
                     timeout=180,
                 )
             except ReadTimeout:
@@ -69,25 +74,46 @@ def load_mergeable_data(url: str, cpfs: list, credentials: str, batch_size: int 
                 return response.json()
 
     async def main():
-        awaitables = [get_single_data(cpf) for cpf in cpfs]
-        awaitables = [
-            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)  # noqa
-        ]
-        log(f"Sending {len(awaitables)} request batches (BATCH_SIZE={batch_size})")
-        data = []
-        for i, awaitables_batch in enumerate(awaitables):
-            responses = await asyncio.gather(*awaitables_batch)
+        first_response = await get_mergeable_records_batch_from_api(
+            1, page_size, start_datetime, end_datetime
+        )
+        page_count = first_response.get("page_count")
 
-            log(f"[{i}/{len(awaitables)}] {responses.count(None)} failed out of {len(responses)}")
-            data.extend(responses)
+        awaitables = []
+        for page in range(2, page_count + 1):
+            awaitables.append(
+                get_mergeable_records_batch_from_api(page, page_size, start_datetime, end_datetime)
+            )
 
-        log(f"{data.count(None)} failed requests out of {len(data)}")
-        return data
+        other_responses = await asyncio.gather(*awaitables)
+        responses = [first_response] + other_responses
+        log(f"{responses.count(None)} failed requests out of {len(responses)}")
+
+        return responses
 
     data = asyncio.run(main())
     data = list(filter(None, data))
 
     return data
+
+
+@task
+def flatten_page_data(data_in_pages: list[dict]) -> list:
+    """
+    Flattens a list of dictionaries containing data in pages.
+
+    Args:
+        data_in_pages (list[dict]): A list of dictionaries where each
+        dictionary represents a page of data.
+
+    Returns:
+        list: A flattened list of all items from all pages.
+
+    """
+    flattened_data = []
+    for page in data_in_pages:
+        flattened_data.extend(page["items"])
+    return flattened_data
 
 
 @task
@@ -114,9 +140,20 @@ def merge(data_to_merge) -> dict:
 
 
 @task()
-def put_to_api(
-    payloads: list, api_url: str, endpoint_name: str, api_token: str, batch_size: int = 1000
-) -> None:
+def put_to_api(payload_in_batch: list, api_url: str, endpoint_name: str, api_token: str) -> None:
+    """
+    Sends the payload in batches to the specified API endpoint using the PUT method.
+
+    Args:
+        payload_in_batch (list): A list of batches containing the payload data to be sent.
+        api_url (str): The base URL of the API.
+        endpoint_name (str): The name of the API endpoint to send the data to.
+        api_token (str): The API token for authentication.
+
+    Returns:
+        None
+    """
+
     async def send_data_batch(merged_patient_batch):
         transport = AsyncHTTPTransport(retries=3)
         async with AsyncClient(transport=transport, timeout=180) as client:
@@ -135,12 +172,7 @@ def put_to_api(
                 return True
 
     async def main():
-        merged_data_in_batches = [
-            payloads[i : i + batch_size] for i in range(0, len(payloads), batch_size)
-        ]
-        awaitables = [send_data_batch(batch) for batch in merged_data_in_batches]
-        log(f"Sending {len(awaitables)} request batches (BATCH_SIZE={batch_size})")
-
+        awaitables = [send_data_batch(batch) for batch in payload_in_batch]
         responses = await asyncio.gather(*awaitables)
         log(f"{sum(responses)} successful requests out of {len(responses)}")
 
