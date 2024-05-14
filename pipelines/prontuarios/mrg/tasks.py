@@ -56,7 +56,7 @@ def get_mergeable_records_from_api(
         page: int, page_size: int, start_datetime: str, end_datetime: str
     ) -> dict:
         transport = AsyncHTTPTransport(retries=3)
-        async with AsyncClient(transport=transport, timeout=180) as client:
+        async with AsyncClient(transport=transport, timeout=300) as client:
             try:
                 response = await client.get(
                     url=f"{api_base_url}std/patientrecords/updated",
@@ -67,7 +67,7 @@ def get_mergeable_records_from_api(
                         "start_datetime": start_datetime,
                         "end_datetime": end_datetime,
                     },
-                    timeout=180,
+                    timeout=300,
                 )
             except httpx.ReadTimeout:
                 return None
@@ -79,19 +79,32 @@ def get_mergeable_records_from_api(
                 return response.json()
 
     async def main():
+        log("Now retrieving first page of data")
         first_response = await get_mergeable_records_batch_from_api(
             1, page_size, start_datetime, end_datetime
         )
         page_count = first_response.get("page_count")
 
+        log(f"Planning retrieval of {page_count-1} pages of data")
         awaitables = []
         for page in range(2, page_count + 1):
             awaitables.append(
                 get_mergeable_records_batch_from_api(page, page_size, start_datetime, end_datetime)
             )
+        
+        batch_size = 2
+        awaitables_batch = [
+            awaitables[i:i + batch_size]
+            for i in range(0, len(awaitables), batch_size)
+        ]
+        log(f"Retrieving data in {len(awaitables_batch)} batches")
 
-        other_responses = await asyncio.gather(*awaitables)
-        responses = [first_response] + other_responses
+        responses = [first_response]
+        for i, batch in enumerate(awaitables_batch):
+            log(f"Retrieving batch {i+1} of data")
+            other_responses = await asyncio.gather(*batch)
+            responses.extend(other_responses)
+        
         log(f"{responses.count(None)} failed requests out of {len(responses)}")
 
         return responses
