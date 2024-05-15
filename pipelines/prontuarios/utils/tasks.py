@@ -137,6 +137,21 @@ def get_std_flow_scheduled_day(start_datetime) -> date:
 
 
 @task
+def get_mrg_flow_scheduled_day() -> date:
+    """
+    Returns the scheduled day for the flow execution.
+
+    The scheduled day is calculated by subtracting one day from the scheduled start time.
+
+    Returns:
+        date: The scheduled day for the flow execution.
+    """
+    scheduled_start_time = prefect.context.get("scheduled_start_time")
+    # scheduled_date = scheduled_start_time - timedelta(days=1)
+    return scheduled_start_time
+
+
+@task
 @stored_variable_converter()
 def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
     """
@@ -235,6 +250,31 @@ def rename_current_std_flow_run(environment: str, **kwargs) -> None:
     flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
 
     title = "Standardization routine"
+
+    params = [f"{key}={value}" for key, value in kwargs.items()]
+    params.append(f"env={environment}")
+    params = sorted(params)
+
+    flow_run_name = f"{title} ({', '.join(params)}): {flow_run_scheduled_time}"
+
+    client = Client()
+    client.set_flow_run_name(flow_run_id, flow_run_name)
+
+
+def rename_current_mrg_flow_run(environment: str, **kwargs) -> None:
+    """
+    Renames the current standardize flow run using the specified day
+
+    Args:
+        environment (str): The environment of the flow run
+
+    Returns:
+        None
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
+
+    title = "Merge routine"
 
     params = [f"{key}={value}" for key, value in kwargs.items()]
     params.append(f"env={environment}")
