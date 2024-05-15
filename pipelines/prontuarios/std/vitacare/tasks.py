@@ -64,9 +64,7 @@ def define_constants() -> Tuple[dict, dict, dict]:
     )
     city_dict = dict(zip(city["COD"].str.slice(start=0, stop=-1), city["COD"]))
 
-    countries = pd.read_csv(
-        "/home/jupyter/data/paises.csv", dtype={"country": str, "code": str}
-    )
+    countries = pd.read_csv("/home/jupyter/data/paises.csv", dtype={"country": str, "code": str})
     country_dict = dict(zip(countries["country"].str.upper(), countries["code"]))
 
     return city_dict, country_dict
@@ -97,9 +95,7 @@ def format_json(json_list: list) -> list:
 
 
 @task
-def standartize_data(
-    raw_data: list, city_dict: dict, country_dict: dict
-) -> list:
+def standartize_data(raw_data: list, city_dict: dict, country_dict: dict) -> list:
     """
     Standardize fields and prepare to post
     Args:
