@@ -52,9 +52,17 @@ def get_files_from_folder(folder_id):
 def get_structured_files_metadata(file_list):
     structured_file_list = []
     for _file in file_list:
+
         title = _file["title"].replace(" - Copia", "")
-        datetime_str = title.split("-", 1)[1].split(".")[0]
-        moment = pd.to_datetime(datetime_str, format="%Y-%m-%d-%Hh-%Mm")
+        try:
+            datetime_str = title.split("-", 1)[1].split(".")[0]
+        except Exception as e:
+            log(f"Error parsing datetime from file {title}: {e}")
+            continue
+
+        # Convert to datetime setting timezone to Rio de Janeiro
+        moment_naive = pd.to_datetime(datetime_str, format="%Y-%m-%d-%Hh-%Mm", utc=False)
+        moment_localized = moment_naive.tz_localize("America/Sao_Paulo")
 
         structured_file_list.append(
             {
@@ -64,7 +72,7 @@ def get_structured_files_metadata(file_list):
                 "last_modified": _file["modifiedDate"],
                 "ap": _file["ap"],
                 "cnes": title.split("-")[0],
-                "moment": moment,
+                "moment": moment_localized,
             }
         )
     return structured_file_list
