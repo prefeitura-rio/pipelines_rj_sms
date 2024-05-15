@@ -8,7 +8,9 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.std.vitacare.constants import constants as vitacare_constants
-from pipelines.prontuarios.std.vitacare.schedules import vitacare_std_daily_update_schedule
+from pipelines.prontuarios.std.vitacare.schedules import (
+    vitacare_std_daily_update_schedule,
+)
 from pipelines.prontuarios.std.vitacare.tasks import (
     define_constants,
     format_json,
