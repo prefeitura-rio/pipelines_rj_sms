@@ -71,6 +71,7 @@ def define_constants() -> Tuple[dict, dict, dict]:
 
     return city_dict, country_dict
 
+
 @task(nout=2)
 def format_json(json_list: list) -> list:
     """

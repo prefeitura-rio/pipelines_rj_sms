@@ -13,6 +13,7 @@ from pipelines.prontuarios.std.formatters.generic.patient import (
     dic_cns_value,
 )
 
+
 def transform_to_ibge_code(
     data: dict, city_dict: dict, country_dict: dict
 ) -> dict:
@@ -55,6 +56,7 @@ def transform_to_ibge_code(
 
     return data
 
+
 def standardize_address_data(
     data: dict, city_dict: dict, country_dict: dict
 ) -> dict:
@@ -72,25 +74,25 @@ def standardize_address_data(
         data (dict) : Individual data record standardized
     """
     data = transform_to_ibge_code(data, city_dict, country_dict)
-    
-    cep_field = [field for field in data.keys() if field in ["end_cep", "cep","CEP_LOGRADOURO"]][0]
+
+    cep_field = [field for field in data.keys() if field in ["end_cep", "cep", "CEP_LOGRADOURO"]][0]
     cep = data[cep_field]
     cep = re.sub("[^0-9]", "", cep)
     cep_l = cep[5:]
     if cep_l != '':
-        cep_l_std = cep_l.rjust(3,'0')
+        cep_l_std = cep_l.rjust(3, '0')
         cep = cep[:5]+cep_l_std
         data[cep_field] = cep
         data = clean_postal_code_info(data)
-    
+
     if pd.isna(data['tipoLogradouro']):
         data['tipoLogradouro'] = 'Rua'
 
     address_dic = {
         "use": None,
         "type": None,
-        "line": data['tipoLogradouro'] + ' ' + data['logradouro'] \
-        if (pd.isna(data['tipoLogradouro']) is False) & (pd.isna(data['logradouro']) is False) \
+        "line": data['tipoLogradouro'] + ' ' + data['logradouro']
+        if (pd.isna(data['tipoLogradouro']) is False) & (pd.isna(data['logradouro']) is False)
         else None,
         "city": data["city"],
         "country": data["country"],
@@ -107,6 +109,7 @@ def standardize_address_data(
             pass
     data["address_list"] = [dict(filter(lambda item: item[1] is not None, address_dic.items()))]
     return data
+
 
 def standardize_telecom_data(data: dict) -> dict:
     """
@@ -137,19 +140,20 @@ def standardize_telecom_data(data: dict) -> dict:
 
             telecom_dic = dict(filter(lambda item: item[1] is not None, telecom_dic.items()))
             return telecom_dic
-    
+
     phone_clean_list = []
     phone_clean_list.append(format_telecom(phone_std, "phone"))
     phone_clean_list.append(format_telecom(data["email"], "email"))
 
     telecom_list = [contact for contact in phone_clean_list if contact is not None]
-    
+
     if len(telecom_list) > 0:
         data["telecom_list"] = telecom_list
     else:
         pass
 
     return data
+
 
 def standardize_race(data: dict) -> dict:
     """
@@ -171,7 +175,8 @@ def standardize_race(data: dict) -> dict:
         if data["racaCor"] in ["branca", "preta", "parda", "amarela", "indigena"]:
             data["race"] = data["racaCor"]
         return data
-    
+
+
 def standardize_nationality(data: dict) -> dict:
     """
     Standardize nationality field to acceptable API values
@@ -182,8 +187,8 @@ def standardize_nationality(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    nationality_dict = {'BRASILEIRA':'B','ESTRANGEIRO':'E','NATURALIZADO':'N'}
-    
+    nationality_dict = {'BRASILEIRA': 'B', 'ESTRANGEIRO': 'E', 'NATURALIZADO': 'N'}
+
     if (data["nacionalidade"] is None) | (data["nacionalidade"] == ""):
         return data
     elif data["nacionalidade"].upper() in nationality_dict.keys():
@@ -191,7 +196,8 @@ def standardize_nationality(data: dict) -> dict:
         return data
     else:
         return data
-    
+
+
 def standardize_parents_names(data: dict) -> dict:
     """
     Standardize parent fields to acceptable API values
@@ -202,9 +208,12 @@ def standardize_parents_names(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data["mother_name"] = clean_name_fields(data["nomeMae"]) if clean_name_fields(data["nomeMae"]) != '' else None
-    data["father_name"] = clean_name_fields(data["nomePai"]) if clean_name_fields(data["nomePai"]) != '' else None
+    data["mother_name"] = clean_name_fields(
+        data["nomeMae"]) if clean_name_fields(data["nomeMae"]) != '' else None
+    data["father_name"] = clean_name_fields(
+        data["nomePai"]) if clean_name_fields(data["nomePai"]) != '' else None
     return data
+
 
 def standardize_cns_list(data: dict) -> dict:
     """
@@ -224,6 +233,7 @@ def standardize_cns_list(data: dict) -> dict:
 
     return data
 
+
 def standardize_decease_info(data: dict) -> dict:
     """
     Standardize decease field to acceptable API values
@@ -233,9 +243,9 @@ def standardize_decease_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data["obito"]=='false':
+    if data["obito"] == 'false':
         data["deceased"] = False
-    if data["obito"]=='true':
+    if data["obito"] == 'true':
         data["deceased"] = True
     else:
         data["deceased"] = None
