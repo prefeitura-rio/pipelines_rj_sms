@@ -16,7 +16,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 #####################################
 
 
-vitai_flow_parameters = [{"environment": "prod", "rename_flow": True}]
+vitai_flow_parameters = [{"environment": "prod", "rename_flow": True, "start_datetime": ""}]
 
 vitai_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
