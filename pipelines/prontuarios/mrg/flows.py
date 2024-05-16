@@ -19,6 +19,7 @@ from pipelines.prontuarios.mrg.tasks import (
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     rename_current_flow_run,
+    get_datetime_working_range,
     transform_create_input_batches,
 )
 from pipelines.utils.tasks import get_secret_key
@@ -31,8 +32,8 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    START_DATETIME = Parameter("START_DATETIME", default="2024-03-14 17:03:25")
-    END_DATETIME = Parameter("END_DATETIME", default="2024-03-14 17:04:00")
+    START_DATETIME = Parameter("start_datetime", default="")
+    END_DATETIME = Parameter("end_datetime", default="")
 
     ####################################
     # Set environment
@@ -54,11 +55,16 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
+    start_datetime, end_datetime = get_datetime_working_range(
+        start_datetime=START_DATETIME,
+        end_datetime=END_DATETIME
+    )
+
     mergeable_records_in_pages = get_mergeable_records_from_api(
         api_base_url=api_url,
         api_token=api_token,
-        start_datetime=START_DATETIME,
-        end_datetime=END_DATETIME,
+        start_datetime=start_datetime,
+        end_datetime=end_datetime,
     )
 
     mergeable_records_flattened = flatten_page_data(data_in_pages=mergeable_records_in_pages)
