@@ -3,6 +3,7 @@ import asyncio
 
 import httpcore
 import httpx
+import prefect
 from httpx import AsyncClient, AsyncHTTPTransport
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -54,6 +55,9 @@ def get_mergeable_records_from_api(
     async def get_mergeable_records_batch_from_api(
         page: int, page_size: int, start_datetime: str, end_datetime: str
     ) -> dict:
+        logger = prefect.context.get("logger")
+        logger.info(f"Retrieving page {page} of data")
+
         transport = AsyncHTTPTransport(retries=3)
         async with AsyncClient(transport=transport, timeout=300) as client:
             try:
@@ -69,12 +73,16 @@ def get_mergeable_records_from_api(
                     timeout=300,
                 )
             except httpx.ReadTimeout:
+                logger.info("HTTPX Read Timed Out")
                 return None
             except httpcore.ReadTimeout:
+                logger.info("HTTPCore Read Timed Out")
                 return None
             if response.status_code not in [200]:
+                logger.info(f"Failed request with status code {response.status_code}")
                 return None
             else:
+                logger.info("Successful request")
                 return response.json()
 
     async def main():
@@ -82,6 +90,8 @@ def get_mergeable_records_from_api(
         first_response = await get_mergeable_records_batch_from_api(
             1, page_size, start_datetime, end_datetime
         )
+        log("First page of data retrieved.")
+        log(first_response)
         page_count = first_response.get("page_count")
 
         log(f"Planning retrieval of {page_count-1} pages of data")
@@ -169,6 +179,7 @@ def put_to_api(payload_in_batch: list, api_url: str, endpoint_name: str, api_tok
     Returns:
         None
     """
+    logger = prefect.context.get("logger")
 
     async def send_data_batch(merged_patient_batch):
         transport = AsyncHTTPTransport(retries=3)
@@ -181,12 +192,16 @@ def put_to_api(payload_in_batch: list, api_url: str, endpoint_name: str, api_tok
                     json=merged_patient_batch,
                 )
             except httpx.ReadTimeout:
+                logger.info("HTTPX Read Timed Out")
                 return False
             except httpcore.ReadTimeout:
+                logger.info("HTTPCore Read Timed Out")
                 return False
             if response.status_code not in [200, 201]:
+                logger.info(f"Failed request with status code {response.status_code}")
                 return False
             else:
+                logger.info("Successful request")
                 return True
 
     async def main():
