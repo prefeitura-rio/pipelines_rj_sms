@@ -34,14 +34,15 @@ def get_params(start_datetime: datetime, end_datetime: datetime) -> dict:
     """
     log(
         f"""
-        Standardizing from {start_datetime}
-        to {end_datetime}"""
+        Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
+        to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
     )
     return {
-        "start_datetime": start_datetime,
-        "end_datetime": end_datetime,
+        "start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
+        "end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
         "datasource_system": "smsrio",
     }
+
 
 
 @task(nout=5)

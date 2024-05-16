@@ -34,8 +34,8 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    START_DATETIME = Parameter("start_datetime", default="", required=True)
-    END_DATETIME = Parameter("end_datetime", default="", required=True)
+    START_DATETIME = Parameter("start_datetime", default="")
+    END_DATETIME = Parameter("end_datetime", default="")
 
     ####################################
     # Set environment

@@ -31,19 +31,18 @@ def get_params(start_datetime: datetime, end_datetime: datetime) -> dict:
     Creating params
     Args:
         start_datetime (str) : initial date extraction.
-        end_datetime (str) : final date extraction.
 
     Returns:
         dict : params dictionary
     """
     log(
         f"""
-        Standardizing from {start_datetime}
-        to {end_datetime}"""
+        Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
+        to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
     )
     return {
-        "start_datetime": start_datetime,
-        "end_datetime": end_datetime,
+        "start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
+        "end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
         "datasource_system": "vitai",
     }
 
