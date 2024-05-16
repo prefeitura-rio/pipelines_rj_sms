@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import prefect
+
 import httpcore
 import httpx
+import prefect
 from httpx import AsyncClient, AsyncHTTPTransport
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -56,7 +57,7 @@ def get_mergeable_records_from_api(
     ) -> dict:
         logger = prefect.context.get("logger")
         logger.info(f"Retrieving page {page} of data")
-        
+
         transport = AsyncHTTPTransport(retries=3)
         async with AsyncClient(transport=transport, timeout=300) as client:
             try:
