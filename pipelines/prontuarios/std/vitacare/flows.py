@@ -19,7 +19,7 @@ from pipelines.prontuarios.std.vitacare.tasks import (
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
-    get_std_flow_scheduled_day,
+    get_datetime_working_range,
     load_to_api,
     rename_current_std_flow_run,
     transform_create_input_batches,
@@ -43,8 +43,11 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="vitacare")
-
-    #request_start_datetime = get_std_flow_scheduled_day(start_datetime=START_DATETIME)
+    
+    start_datetime, end_datetime = get_datetime_working_range(
+        start_datetime=START_DATETIME,
+        end_datetime=END_DATETIME,
+    )
 
     api_token = get_api_token(
         environment=ENVIRONMENT,

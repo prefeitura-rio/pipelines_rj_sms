@@ -103,52 +103,34 @@ def get_api_token(
         raise Exception(f"Error getting API token ({response.status_code}) - {response.json()}")
 
 
-@task
-def get_flow_scheduled_day() -> date:
-    """
-    Returns the scheduled day for the flow execution.
+@task(nout=2)
+def get_datetime_working_range(start_datetime: str = "", end_datetime: str = "", interval: int = 1):
+    logger = prefect.context.get("logger")
 
-    The scheduled day is calculated by subtracting one day from the scheduled start time.
-
-    Returns:
-        date: The scheduled day for the flow execution.
-    """
-    scheduled_start_time = prefect.context.get("scheduled_start_time")
-    scheduled_date = scheduled_start_time.date() - timedelta(days=1)
-    return scheduled_date
-
-
-@task
-def get_std_flow_scheduled_day(start_datetime) -> date:
-    """
-    Returns the scheduled day for the flow execution.
-
-    The scheduled day is calculated by subtracting one day from the scheduled start time.
-
-    Returns:
-        date: The scheduled day for the flow execution.
-    """
-    if start_datetime == "":
-        scheduled_start_time = prefect.context.get("scheduled_start_time")
-        scheduled_date = scheduled_start_time - timedelta(days=1)
-        return scheduled_date
+    logger.info(f"Calculating datetime range...")
+    if start_datetime == "" and end_datetime == "":
+        logger.info(
+            f"No start/end provided. Using {interval} as day interval and scheduled date as end"
+        )  # noqa
+        scheduled_datetime = prefect.context.get("scheduled_start_time")
+        end_datetime = scheduled_datetime.date()
+        start_datetime = end_datetime - timedelta(days=interval)
+    elif start_datetime == "" and end_datetime != "":
+        logger.info("No start provided. Using end datetime and provided interval")
+        end_datetime = pd.to_datetime(end_datetime)
+        start_datetime = end_datetime - timedelta(days=interval)
+    elif start_datetime != "" and end_datetime == "":
+        logger.info("No end provided. Using start datetime and provided interval")
+        start_datetime = pd.to_datetime(start_datetime)
+        end_datetime = start_datetime + timedelta(days=interval)
     else:
-        return pd.to_datetime(start_datetime)
+        logger.info("Start and end datetime provided. Using them.")
+        start_datetime = pd.to_datetime(start_datetime)
+        end_datetime = pd.to_datetime(end_datetime)
 
+    logger.info(f"Target date range: {start_datetime} -> {end_datetime}")
 
-@task
-def get_mrg_flow_scheduled_day() -> date:
-    """
-    Returns the scheduled day for the flow execution.
-
-    The scheduled day is calculated by subtracting one day from the scheduled start time.
-
-    Returns:
-        date: The scheduled day for the flow execution.
-    """
-    scheduled_start_time = prefect.context.get("scheduled_start_time")
-    # scheduled_date = scheduled_start_time - timedelta(days=1)
-    return scheduled_start_time
+    return start_datetime, end_datetime
 
 
 @task

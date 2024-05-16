@@ -52,9 +52,17 @@ def get_files_from_folder(folder_id):
 def get_structured_files_metadata(file_list):
     structured_file_list = []
     for _file in file_list:
+
         title = _file["title"].replace(" - Copia", "")
-        datetime_str = title.split("-", 1)[1].split(".")[0]
-        moment = pd.to_datetime(datetime_str, format="%Y-%m-%d-%Hh-%Mm")
+        try:
+            datetime_str = title.split("-", 1)[1].split(".")[0]
+        except Exception as e:
+            log(f"Error parsing datetime from file {title}: {e}")
+            continue
+
+        # Convert to datetime setting timezone to Rio de Janeiro
+        moment_naive = pd.to_datetime(datetime_str, format="%Y-%m-%d-%Hh-%Mm", utc=False)
+        moment_localized = moment_naive.tz_localize("America/Sao_Paulo")
 
         structured_file_list.append(
             {
@@ -64,23 +72,21 @@ def get_structured_files_metadata(file_list):
                 "last_modified": _file["modifiedDate"],
                 "ap": _file["ap"],
                 "cnes": title.split("-")[0],
-                "moment": moment,
+                "moment": moment_localized,
             }
         )
     return structured_file_list
 
 
 @task()
-def filter_files_by_date(files, min_date, day_interval=1):
-    max_date = min_date + pd.Timedelta(days=day_interval)
-
-    min_date = min_date.strftime("%Y-%m-%d")
-    max_date = max_date.strftime("%Y-%m-%d")
+def filter_files_by_date(files, start_datetime, end_datetime):
+    start_datetime = start_datetime.strftime("%Y-%m-%d")
+    end_datetime = end_datetime.strftime("%Y-%m-%d")
 
     structured_file_list = pd.DataFrame(files)
     data = structured_file_list[
-        (structured_file_list["last_modified"] >= min_date)
-        & (structured_file_list["last_modified"] < max_date)
+        (structured_file_list["last_modified"] >= start_datetime)
+        & (structured_file_list["last_modified"] < end_datetime)
     ]
 
     return data.to_dict(orient="records")

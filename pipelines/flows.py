@@ -16,11 +16,10 @@ from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.transform.dbt.flows import *
 from pipelines.prontuarios.mrg.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
-from pipelines.prontuarios.raw.vitacare.flows import *
 from pipelines.prontuarios.raw.vitai.flows import *
 from pipelines.prontuarios.std.smsrio.flows import *
-from pipelines.prontuarios.std.vitai.flows import *
 from pipelines.prontuarios.std.vitacare.flows import *
+from pipelines.prontuarios.std.vitai.flows import *
 from pipelines.reports.data_ingestion.flows import *
 from pipelines.reports.endpoint_health.flows import *
 from pipelines.tools.api_healthcheck.flows import *
