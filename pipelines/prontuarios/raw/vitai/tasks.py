@@ -192,33 +192,26 @@ def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> li
 
 
 @task
-def create_parameter_list(minimum_date: str = "", environment: str = "dev"):
-    """
-    Create a list of parameters for the Vitai flow.
-
-    Args:
-        minimum_date (str, optional): The minimum date for filtering the data. Defaults to ''.
-        environment (str, optional): The environment to run the flow in. Defaults to 'dev'.
-
-    Returns:
-        list: A list of dictionaries containing the parameters for the Vitai flow.
-    """
+def create_parameter_list(
+    start_datetime: str = "", end_datetime: str = "", environment: str = "dev"
+):
     vitai_flow_parameters = []
-    for entity in ["pacientes", "diagnostico"]:
+    for entity in ["pacientes"]:
         for cnes in vitai_constants.API_CNES_TO_URL.value.keys():
             params = {
                 "cnes": cnes,
                 "entity": entity,
                 "environment": environment,
                 "rename_flow": True,
+                "end_datetime": end_datetime,
             }
-            # Setup Minimum Date
-            if minimum_date != "":
+            # Setup Start Datetime
+            if start_datetime != "":
                 hard_min_date = vitai_constants.API_CNES_TO_MIN_DATE.value[cnes][entity]
-                if minimum_date < hard_min_date:
-                    params["minimum_date"] = hard_min_date
+                if start_datetime < hard_min_date:
+                    params["start_datetime"] = hard_min_date
                 else:
-                    params["minimum_date"] = minimum_date
+                    params["start_datetime"] = start_datetime
 
             vitai_flow_parameters.append(params)
 
