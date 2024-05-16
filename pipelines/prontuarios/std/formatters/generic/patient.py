@@ -33,14 +33,16 @@ def drop_invalid_records(data: dict) -> dict:
         dic (dict) : Individual data record standardized with is_valid flag
     """
     data["raw_source_id"] = data["id"]
-    name_list = [field for field in data.keys() if field in ["nome", 'NOME_DA_PESSOA_CADASTRADA']]
+    name_list = [field for field in data.keys() if field in ["nome", "NOME_DA_PESSOA_CADASTRADA"]]
     gender_list = [field for field in data.keys() if field in ["sexo", "SEXO"]]
-    birth_date_list = [field for field in data.keys() if field in ["dataNascimento", "dt_nasc","dataNascPaciente"]]
-    
-    name_field = name_list[0] if len(name_list) == 1 else ''
-    gender_field = gender_list[0] if len(gender_list) == 1 else ''
-    birth_date_field = birth_date_list[0] if len(birth_date_list) == 1 else ''
-    
+    birth_date_list = [
+        field for field in data.keys() if field in ["dataNascimento", "dt_nasc", "dataNascPaciente"]
+    ]
+
+    name_field = name_list[0] if len(name_list) == 1 else ""
+    gender_field = gender_list[0] if len(gender_list) == 1 else ""
+    birth_date_field = birth_date_list[0] if len(birth_date_list) == 1 else ""
+
     data["birth_date"] = clean_datetime_field(data.get(birth_date_field))
 
     # Remove registros com cpf invalido ou nulo
@@ -55,9 +57,17 @@ def drop_invalid_records(data: dict) -> dict:
         pass
 
     # Remove registros com sexo nulo ou invalido
-    if (data.get(gender_field) == "1") | (data.get(gender_field) == "M") | (data.get(gender_field).lower() == "male"):
+    if (
+        (data.get(gender_field) == "1")
+        | (data.get(gender_field) == "M")
+        | (data.get(gender_field).lower() == "male")
+    ):
         data["gender"] = "male"
-    elif (data.get(gender_field) == "2") | (data.get(gender_field) == "F") | (data.get(gender_field).lower() == "female"):
+    elif (
+        (data.get(gender_field) == "2")
+        | (data.get(gender_field) == "F")
+        | (data.get(gender_field).lower() == "female")
+    ):
         data["gender"] = "female"
     else:
         data["gender"] = None
@@ -224,7 +234,7 @@ def clean_postal_code_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    cep_list = [field for field in data.keys() if field in ["end_cep", "cep","CEP_LOGRADOURO"]]
+    cep_list = [field for field in data.keys() if field in ["end_cep", "cep", "CEP_LOGRADOURO"]]
     if len(cep_list) == 1:
         cep_field = cep_list[0]
         if data[cep_field] is not None:
@@ -271,9 +281,9 @@ def clean_email_records(data: dict) -> dict:
     if len(email_list) == 1:
         email_field = email_list[0]
         if data[email_field] is not None:
-            data['email'] = re.sub(r" ", "", data[email_field])
+            data["email"] = re.sub(r" ", "", data[email_field])
             if not bool(re.search(r"^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$", data[email_field])):
-                data['email'] = None
+                data["email"] = None
             else:
                 pass
     return data

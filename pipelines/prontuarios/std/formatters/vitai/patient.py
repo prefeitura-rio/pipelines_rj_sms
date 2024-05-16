@@ -242,7 +242,7 @@ def transform_to_ibge_code(
     """
 
     # VITAI so tem uma info, consideramos smp residencia
-    municipio = data.get("municipio","")
+    municipio = data.get("municipio", "")
     municipio_std = municipio.upper() if municipio is not None else None
     if municipio in city_name_dict.keys():
         data["city"] = city_name_dict[data["municipio"]]

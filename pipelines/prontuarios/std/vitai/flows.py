@@ -13,7 +13,7 @@ from pipelines.prontuarios.std.vitai.tasks import (
     define_constants,
     format_json,
     get_params,
-    standartize_data
+    standartize_data,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -98,7 +98,7 @@ with Flow(
     std_patient_list_batches = transform_create_input_batches(
         input_list=std_patient_list, batch_size=1000
     )
-    
+
     load_to_api_task = load_to_api.map(
         request_body=std_patient_list_batches,
         endpoint_name=unmapped("std/patientrecords"),

@@ -262,10 +262,10 @@ def transform_to_ibge_code(
         data["country"] = None
 
     # Dados local de nascimento:
-    if (data["cod_mun_nasc"] in city_dict.keys()):
+    if data["cod_mun_nasc"] in city_dict.keys():
         data["birth_city_cod"] = city_dict[data["cod_mun_nasc"]]
         data["birth_state_cod"] = data["birth_city_cod"][0:2]
-        data["birth_country_cod"] = '010'
+        data["birth_country_cod"] = "010"
     else:
         pass
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 from typing import Tuple
+
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
