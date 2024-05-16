@@ -104,7 +104,7 @@ def get_api_token(
 
 
 @task(nout=2)
-def get_datetime_working_range(start_datetime: str = "", end_datetime: str = "", interval: int = 1):
+def get_datetime_working_range(start_datetime: str = "", end_datetime: str = "", interval: int = 1, return_as_str: bool=False):
     logger = prefect.context.get("logger")
 
     logger.info(f"Calculating datetime range...")
@@ -129,6 +129,9 @@ def get_datetime_working_range(start_datetime: str = "", end_datetime: str = "",
         end_datetime = pd.to_datetime(end_datetime)
 
     logger.info(f"Target date range: {start_datetime} -> {end_datetime}")
+
+    if return_as_str:
+        return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
     return start_datetime, end_datetime
 

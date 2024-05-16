@@ -56,7 +56,9 @@ with Flow(
     # Task Section #1 - Get Data
     ####################################
     start_datetime, end_datetime = get_datetime_working_range(
-        start_datetime=START_DATETIME, end_datetime=END_DATETIME
+        start_datetime=START_DATETIME,
+        end_datetime=END_DATETIME,
+        return_as_str=True
     )
 
     mergeable_records_in_pages = get_mergeable_records_from_api(
