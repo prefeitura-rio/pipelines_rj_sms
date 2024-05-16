@@ -83,6 +83,7 @@ def get_mergeable_records_from_api(
             1, page_size, start_datetime, end_datetime
         )
         log("First page of data retrieved.")
+        log(first_response)
         page_count = first_response.get("page_count")
 
         log(f"Planning retrieval of {page_count-1} pages of data")
