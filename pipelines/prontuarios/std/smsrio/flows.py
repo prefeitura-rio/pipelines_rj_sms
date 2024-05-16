@@ -13,7 +13,7 @@ from pipelines.prontuarios.std.smsrio.tasks import (
     define_constants,
     format_json,
     get_params,
-    standartize_data
+    standartize_data,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
