@@ -33,9 +33,7 @@ with Flow(
     structured_files_metadata = get_structured_files_metadata(file_list=file_list)
 
     day_files = filter_files_by_date(
-        files=structured_files_metadata,
-        start_datetime=start_datetime,
-        end_datetime=end_datetime
+        files=structured_files_metadata, start_datetime=start_datetime, end_datetime=end_datetime
     )
 
     files = get_file_content.map(file_metadata=day_files)
