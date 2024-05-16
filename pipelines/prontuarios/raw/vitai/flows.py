@@ -21,7 +21,7 @@ from pipelines.prontuarios.raw.vitai.tasks import (
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_current_flow_labels,
-    get_flow_scheduled_day,
+    get_datetime_working_range,
     get_healthcenter_name_from_cnes,
     get_project_name,
     load_to_api,
@@ -49,7 +49,8 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     CNES = Parameter("cnes", default="5717256", required=True)
     ENTITY = Parameter("entity", default="diagnostico", required=True)
-    MIN_DATE = Parameter("minimum_date", default="", required=False)
+    START_DATETIME = Parameter("start_datetime", default="")
+    END_DATETIME = Parameter("end_datetime", default="")
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     ####################################
@@ -74,11 +75,14 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    maximum_date = get_flow_scheduled_day()
+    start_datetime, end_datetime = get_datetime_working_range(
+        start_datetime=START_DATETIME,
+        end_datetime=END_DATETIME
+    )
 
     dates_of_interest = get_dates_in_range(
-        minimum_date=MIN_DATE,
-        maximum_date=maximum_date,
+        minimum_date=start_datetime,
+        maximum_date=end_datetime,
     )
 
     assertion_task = assert_api_availability(cnes=CNES, method="request")
@@ -140,12 +144,17 @@ with Flow(
 ) as vitai_scheduler_flow:
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    MIN_DATE = Parameter("minimum_date", default="", required=False)
+    START_DATETIME = Parameter("start_datetime", default="")
+    END_DATETIME = Parameter("end_datetime", default="")
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT)
 
-    parameter_list = create_parameter_list(environment=ENVIRONMENT, minimum_date=MIN_DATE)
+    parameter_list = create_parameter_list(
+        environment=ENVIRONMENT,
+        start_datetime=START_DATETIME,
+        end_datetime=END_DATETIME
+    )
 
     project_name = get_project_name(environment=ENVIRONMENT)
 
