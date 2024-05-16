@@ -1,14 +1,24 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.prontuarios.mrg.flows import patientrecord_mrg
+from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 
 # ==================================================
 # CONFIGURATION
 # --------------------------------------------------
 # Please, register here pairs: (flow, param)
 # ==================================================
-flows_run_cases = [(patientrecord_mrg, {})]
+flows_run_cases = [
+    (
+        smsrio_standardization,
+        {
+            "environment": "dev",
+            "rename_flow": False,
+            "start_datetime": "2024-04-09 20:32:00",
+            "end_datetime": "2024-04-09 20:33:00",
+        },
+    )
+]
 
 
 # ==================================================

@@ -18,6 +18,7 @@ from pipelines.prontuarios.mrg.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.prontuarios.raw.vitai.flows import *
 from pipelines.prontuarios.std.smsrio.flows import *
+from pipelines.prontuarios.std.vitacare.flows import *
 from pipelines.prontuarios.std.vitai.flows import *
 from pipelines.reports.data_ingestion.flows import *
 from pipelines.reports.endpoint_health.flows import *

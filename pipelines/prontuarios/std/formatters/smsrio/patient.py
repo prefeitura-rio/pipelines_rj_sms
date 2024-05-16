@@ -163,10 +163,10 @@ def standardize_address_data(
             data["end_numero"],
             data["end_complem"],
         ),
-        "city": data["city"],
-        "country": data["country"],
-        "state": data["state"],
-        "postal_code": data["postal_code"],
+        "city": data.get("city"),
+        "country": data.get("country"),
+        "state": data.get("state"),
+        "postal_code": data.get("postal_code"),
         "start": None,
         "end": None,
     }
@@ -261,10 +261,11 @@ def transform_to_ibge_code(
         data["state"] = None
         data["country"] = None
 
-    if (data["cod_mun_nasc"] in city_dict.keys()) & (data["cod_pais_nasc"] in country_dict.keys()):
+    # Dados local de nascimento:
+    if data["cod_mun_nasc"] in city_dict.keys():
         data["birth_city_cod"] = city_dict[data["cod_mun_nasc"]]
         data["birth_state_cod"] = data["birth_city_cod"][0:2]
-        data["birth_country_cod"] = country_dict[data["cod_pais_nasc"]]
+        data["birth_country_cod"] = "010"
     else:
         pass
 
