@@ -45,7 +45,6 @@ def get_params(start_datetime: datetime, end_datetime: datetime) -> dict:
     }
 
 
-
 @task(nout=5)
 def define_constants() -> Tuple[list, dict, dict, dict, dict]:
     """
