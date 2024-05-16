@@ -76,8 +76,7 @@ with Flow(
     # Task Section #1 - Get Data
     ####################################
     start_datetime, end_datetime = get_datetime_working_range(
-        start_datetime=START_DATETIME,
-        end_datetime=END_DATETIME
+        start_datetime=START_DATETIME, end_datetime=END_DATETIME
     )
 
     dates_of_interest = get_dates_in_range(
@@ -151,9 +150,7 @@ with Flow(
         rename_current_flow_run(environment=ENVIRONMENT)
 
     parameter_list = create_parameter_list(
-        environment=ENVIRONMENT,
-        start_datetime=START_DATETIME,
-        end_datetime=END_DATETIME
+        environment=ENVIRONMENT, start_datetime=START_DATETIME, end_datetime=END_DATETIME
     )
 
     project_name = get_project_name(environment=ENVIRONMENT)
