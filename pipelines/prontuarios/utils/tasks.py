@@ -102,17 +102,16 @@ def get_api_token(
     else:
         raise Exception(f"Error getting API token ({response.status_code}) - {response.json()}")
 
+
 @task(nout=2)
-def get_datetime_working_range(
-    start_datetime: str = '',
-    end_datetime: str = '',
-    interval: int = 1
-):
+def get_datetime_working_range(start_datetime: str = "", end_datetime: str = "", interval: int = 1):
     logger = prefect.context.get("logger")
 
     logger.info(f"Calculating datetime range...")
     if start_datetime == "" and end_datetime == "":
-        logger.info(f"No start/end provided. Using {interval} as day interval and scheduled date as end") #noqa
+        logger.info(
+            f"No start/end provided. Using {interval} as day interval and scheduled date as end"
+        )  # noqa
         scheduled_datetime = prefect.context.get("scheduled_start_time")
         end_datetime = scheduled_datetime.date()
         start_datetime = end_datetime - timedelta(days=interval)
@@ -128,7 +127,7 @@ def get_datetime_working_range(
         logger.info("Start and end datetime provided. Using them.")
         start_datetime = pd.to_datetime(start_datetime)
         end_datetime = pd.to_datetime(end_datetime)
-    
+
     logger.info(f"Target date range: {start_datetime} -> {end_datetime}")
 
     return start_datetime, end_datetime

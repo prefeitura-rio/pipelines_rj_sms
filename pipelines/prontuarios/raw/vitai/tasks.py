@@ -192,7 +192,9 @@ def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> li
 
 
 @task
-def create_parameter_list(start_datetime: str = "", end_datetime: str = "", environment: str = "dev"):
+def create_parameter_list(
+    start_datetime: str = "", end_datetime: str = "", environment: str = "dev"
+):
     vitai_flow_parameters = []
     for entity in ["pacientes"]:
         for cnes in vitai_constants.API_CNES_TO_URL.value.keys():
@@ -201,7 +203,7 @@ def create_parameter_list(start_datetime: str = "", end_datetime: str = "", envi
                 "entity": entity,
                 "environment": environment,
                 "rename_flow": True,
-                "end_datetime": end_datetime
+                "end_datetime": end_datetime,
             }
             # Setup Start Datetime
             if start_datetime != "":
