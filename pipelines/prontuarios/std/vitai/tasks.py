@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Tuple
 
 # from unidecode import unidecode
@@ -26,16 +26,16 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_params(start_datetime: str) -> dict:
+def get_params(start_datetime: datetime, end_datetime: datetime) -> dict:
     """
     Creating params
     Args:
         start_datetime (str) : initial date extraction.
+        end_datetime (str) : final date extraction.
 
     Returns:
         dict : params dictionary
     """
-    end_datetime = start_datetime + timedelta(days=1)
     log(
         f"""Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
         to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
