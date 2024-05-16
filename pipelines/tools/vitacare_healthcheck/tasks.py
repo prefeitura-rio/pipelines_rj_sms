@@ -79,16 +79,14 @@ def get_structured_files_metadata(file_list):
 
 
 @task()
-def filter_files_by_date(files, min_date, day_interval=1):
-    max_date = min_date + pd.Timedelta(days=day_interval)
-
-    min_date = min_date.strftime("%Y-%m-%d")
-    max_date = max_date.strftime("%Y-%m-%d")
+def filter_files_by_date(files, start_datetime, end_datetime):
+    start_datetime = start_datetime.strftime("%Y-%m-%d")
+    end_datetime = end_datetime.strftime("%Y-%m-%d")
 
     structured_file_list = pd.DataFrame(files)
     data = structured_file_list[
-        (structured_file_list["last_modified"] >= min_date)
-        & (structured_file_list["last_modified"] < max_date)
+        (structured_file_list["last_modified"] >= start_datetime)
+        & (structured_file_list["last_modified"] < end_datetime)
     ]
 
     return data.to_dict(orient="records")

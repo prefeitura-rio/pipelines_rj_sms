@@ -73,14 +73,11 @@ with Flow(
 
     with case(IS_INITIAL_EXTRACTION, False):
         start_datetime, end_datetime = get_datetime_working_range(
-            start_datetime=START_DATETIME,
-            end_datetime=END_DATETIME
+            start_datetime=START_DATETIME, end_datetime=END_DATETIME
         )
 
         patient_data_db = extract_patient_data_from_db(
-            db_url=database_url,
-            time_window_start=start_datetime,
-            time_window_end=end_datetime
+            db_url=database_url, time_window_start=start_datetime, time_window_end=end_datetime
         )
 
     patient_data = merge(patient_data_gcs, patient_data_db)

@@ -18,8 +18,8 @@ from pipelines.prontuarios.mrg.tasks import (
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
-    rename_current_flow_run,
     get_datetime_working_range,
+    rename_current_flow_run,
     transform_create_input_batches,
 )
 from pipelines.utils.tasks import get_secret_key
@@ -56,8 +56,7 @@ with Flow(
     # Task Section #1 - Get Data
     ####################################
     start_datetime, end_datetime = get_datetime_working_range(
-        start_datetime=START_DATETIME,
-        end_datetime=END_DATETIME
+        start_datetime=START_DATETIME, end_datetime=END_DATETIME
     )
 
     mergeable_records_in_pages = get_mergeable_records_from_api(
