@@ -35,6 +35,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
     START_DATETIME = Parameter("start_datetime", default="", required=True)
+    END_DATETIME = Parameter("end_datetime", default="", required=True)
 
     ####################################
     # Set environment
@@ -43,7 +44,7 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="vitacare")
 
-    request_start_datetime = get_std_flow_scheduled_day(start_datetime=START_DATETIME)
+    #request_start_datetime = get_std_flow_scheduled_day(start_datetime=START_DATETIME)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -62,7 +63,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(start_datetime=request_start_datetime)
+    request_params = get_params(start_datetime=START_DATETIME,end_datetime=END_DATETIME)
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords/fromInsertionDatetime",
@@ -75,7 +76,7 @@ with Flow(
     # Task Section #2 - Transform Data
     ####################################
 
-    city_dict, country_dict = define_constants()
+    country_dict, city_dict_res, city_dict_nasc = define_constants()
 
     json_list_valid, list_invalid_id = format_json(json_list=raw_patient_data)
 
@@ -88,7 +89,8 @@ with Flow(
 
     std_patient_list = standartize_data(
         raw_data=json_list_valid,
-        city_dict=city_dict,
+        city_dict_nasc=city_dict_nasc,
+        city_dict_res=city_dict_res,
         country_dict=country_dict,
     )
 

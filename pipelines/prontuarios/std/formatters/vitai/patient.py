@@ -152,10 +152,10 @@ def standardize_address_data(
         "line": format_address(
             data["tipoLogradouro"], data["nomeLogradouro"], data["numero"], data["complemento"]
         ),
-        "city": data["city"],
-        "country": data["country"],
-        "state": data["state"],
-        "postal_code": data["postal_code"] if hasCep == 1 else None,
+        "city": data.get("city"),
+        "country": data.get("country"),
+        "state": data.get("state"),
+        "postal_code": data.get("postal_code") if hasCep == 1 else None,
         "start": None,
         "end": None,
     }
@@ -242,7 +242,9 @@ def transform_to_ibge_code(
     """
 
     # VITAI so tem uma info, consideramos smp residencia
-    if data["municipio"] in city_name_dict.keys():
+    municipio = data.get("municipio","")
+    municipio_std = municipio.upper() if municipio is not None else None
+    if municipio in city_name_dict.keys():
         data["city"] = city_name_dict[data["municipio"]]
         data["state"] = data["city"][0:2]
         data["country"] = "010"

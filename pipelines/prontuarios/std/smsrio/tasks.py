@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta
 from typing import Tuple
-
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -24,7 +23,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_params(start_datetime: str) -> dict:
+def get_params(start_datetime: str, end_datetime: str) -> dict:
     """
     Creating params
     Args:
@@ -33,15 +32,14 @@ def get_params(start_datetime: str) -> dict:
     Returns:
         dict : params dictionary
     """
-    end_datetime = start_datetime + timedelta(days=1)
     log(
         f"""
-        Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
-        to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
+        Standardizing from {start_datetime}
+        to {end_datetime}"""
     )
     return {
-        "start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
-        "end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
         "datasource_system": "smsrio",
     }
 

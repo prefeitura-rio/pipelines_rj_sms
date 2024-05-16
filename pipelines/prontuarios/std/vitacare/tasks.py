@@ -11,7 +11,7 @@ from pipelines.prontuarios.std.formatters.generic.patient import (
     merge_keys,
     prepare_to_load,
 )
-from pipelines.prontuarios.std.formatters.smsrio.patient import (
+from pipelines.prontuarios.std.formatters.vitacare.patient import (
     standardize_address_data,
     standardize_cns_list,
     standardize_decease_info,
@@ -24,7 +24,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_params(start_datetime: str) -> dict:
+def get_params(start_datetime: str, end_datetime: str) -> dict:
     """
     Creating params
     Args:
@@ -33,41 +33,41 @@ def get_params(start_datetime: str) -> dict:
     Returns:
         dict : params dictionary
     """
-    end_datetime = start_datetime + timedelta(days=1)
     log(
         f"""
-        Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
-        to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
+        Standardizing from {start_datetime}
+        to {end_datetime}"""
     )
     return {
-        "start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
-        "end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
-        "datasource_system": "smsrio",
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
+        "datasource_system": "vitacare",
     }
 
 
-@task(nout=2)
+@task(nout=3)
 def define_constants() -> Tuple[dict, dict, dict]:
     """
     Creating constants as global variables
 
     Returns:
-        lista_campos_api (list) : list of API acceptable parameters
-        logradouros_dict (dict) : From/to dictionary to normalize logradouros
-        city_dict (dict) : From/to dictionary to normalize city
-        state_dict (dict) : From/to dictionary to normalize state
         country_dict (dict) : From/to dictionary to normalize country
+        city_dict_res (dict) : From/to dictionary to normalize city (used in address)
+        city_dict_nasc (dict) : From/to dictionary to normalize city (used in birth_city)
     """
 
     city = pd.read_csv(
-        "/home/jupyter/data/municipios.csv", dtype={"COD UF": str, "COD": str, "NOME": str}
+        "pipelines/prontuarios/std/municipios.csv", dtype={"COD UF": str, "COD": str, "NOME": str}
     )
-    city_dict = dict(zip(city["COD"].str.slice(start=0, stop=-1), city["COD"]))
+    city_dict_nasc = dict(zip(city["COD"].str.slice(start=0, stop=-1), city["COD"]))
+    city_dict_res = dict(zip(city["COD"], city["COD"]))
 
-    countries = pd.read_csv("/home/jupyter/data/paises.csv", dtype={"country": str, "code": str})
+    countries = pd.read_csv(
+        "pipelines/prontuarios/std/paises.csv", dtype={"country": str, "code": str}
+    )
     country_dict = dict(zip(countries["country"].str.upper(), countries["code"]))
 
-    return city_dict, country_dict
+    return country_dict, city_dict_res, city_dict_nasc
 
 
 @task(nout=2)
@@ -95,12 +95,15 @@ def format_json(json_list: list) -> list:
 
 
 @task
-def standartize_data(raw_data: list, city_dict: dict, country_dict: dict) -> list:
+def standartize_data(
+    raw_data: list, city_dict_nasc: dict, city_dict_res: dict, country_dict: dict
+) -> list:
     """
     Standardize fields and prepare to post
     Args:
         raw_data (list): Raw data to be standardized
-        city_name_dict (dict): From/to dictionary to code city names
+        city_dict_nasc (dict): From/to dictionary to code city names (used in birth city)
+        city_dict_res (dict): From/to dictionary to code city names (used in address)
         state_dict (dict): From/to dictionary to code state names
         country_dict (dict): From/to dictionary to code country names
     Returns:
@@ -127,7 +130,8 @@ def standartize_data(raw_data: list, city_dict: dict, country_dict: dict) -> lis
         map(
             lambda p: standardize_address_data(
                 data=p,
-                city_dict=city_dict,
+                city_dict_res=city_dict_res,
+                city_dict_nasc=city_dict_nasc,
                 country_dict=country_dict,
             ),
             patients_json_std_decease,

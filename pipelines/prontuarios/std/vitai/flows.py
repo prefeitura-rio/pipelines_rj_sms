@@ -13,7 +13,7 @@ from pipelines.prontuarios.std.vitai.tasks import (
     define_constants,
     format_json,
     get_params,
-    standartize_data,
+    standartize_data
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -33,6 +33,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
     START_DATETIME = Parameter("start_datetime", default="", required=True)
+    END_DATETIME = Parameter("end_datetime", default="", required=True)
 
     ####################################
     # Set environment
@@ -41,7 +42,7 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="Vitai")
 
-    request_start_datetime = get_std_flow_scheduled_day(start_datetime=START_DATETIME)
+    #request_start_datetime = get_std_flow_scheduled_day(start_datetime=START_DATETIME)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -60,7 +61,8 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(start_datetime=request_start_datetime)
+    request_params = get_params(start_datetime=START_DATETIME,
+                                end_datetime=END_DATETIME)
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords/fromInsertionDatetime",
@@ -94,7 +96,7 @@ with Flow(
     std_patient_list_batches = transform_create_input_batches(
         input_list=std_patient_list, batch_size=1000
     )
-
+    
     load_to_api_task = load_to_api.map(
         request_body=std_patient_list_batches,
         endpoint_name=unmapped("std/patientrecords"),

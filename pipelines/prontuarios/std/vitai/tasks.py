@@ -26,7 +26,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_params(start_datetime: str) -> dict:
+def get_params(start_datetime: str, end_datetime: str) -> dict:
     """
     Creating params
     Args:
@@ -35,16 +35,17 @@ def get_params(start_datetime: str) -> dict:
     Returns:
         dict : params dictionary
     """
-    end_datetime = start_datetime + timedelta(days=1)
     log(
-        f"""Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
-        to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
+        f"""
+        Standardizing from {start_datetime}
+        to {end_datetime}"""
     )
     return {
-        "start_datetime": start_datetime.strftime("%Y-%m-%d 00:00:00"),
-        "end_datetime": end_datetime.strftime("%Y-%m-%d 00:00:00"),
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
         "datasource_system": "vitai",
     }
+
 
 
 @task(nout=3)
@@ -63,7 +64,7 @@ def define_constants() -> Tuple[dict, dict, dict]:
     city = pd.read_csv(
         "pipelines/prontuarios/std/municipios.csv", dtype={"COD UF": str, "COD": str, "NOME": str}
     )
-    city_name_dict = dict(zip(city["NOME"], city["COD"]))
+    city_name_dict = dict(zip(city["NOME"].str.upper(), city["COD"]))
 
     state = pd.read_csv(
         "pipelines/prontuarios/std/estados.csv", dtype={"COD": str, "NOME": str, "SIGLA": str}

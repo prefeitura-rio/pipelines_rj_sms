@@ -16,7 +16,10 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 #####################################
 
 
-vitacare_flow_parameters = [{"environment": "prod", "rename_flow": True}]
+vitacare_flow_parameters = [{"environment": "prod", 
+                             "rename_flow": True,
+                             "start_datetime": "",
+                             "end_datetime": ""}]
 
 vitacare_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
