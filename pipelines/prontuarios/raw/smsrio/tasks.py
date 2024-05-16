@@ -42,7 +42,7 @@ def get_smsrio_database_url(environment, squema: str = "sms_pacientes"):
 def extract_patient_data_from_db(
     db_url: str,
     time_window_start: date = None,
-    time_window_duration: int = 1,
+    time_window_end: date = None,
 ) -> pd.DataFrame:
     """
     Extracts patient data from the SMSRio database table using a (optional) time window.
@@ -85,7 +85,6 @@ def extract_patient_data_from_db(
     {WHERE_CLAUSE}
     GROUP BY tb_pacientes.id;"""
     if time_window_start:
-        time_window_end = time_window_start + timedelta(days=time_window_duration)
         query = query.replace(
             "{WHERE_CLAUSE}",
             f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}'",

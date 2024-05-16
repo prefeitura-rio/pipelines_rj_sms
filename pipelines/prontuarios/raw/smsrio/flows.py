@@ -22,7 +22,7 @@ from pipelines.prontuarios.raw.smsrio.tasks import (
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
-    get_flow_scheduled_day,
+    get_datetime_working_range,
     rename_current_flow_run,
     transform_split_dataframe,
 )
@@ -38,10 +38,10 @@ with Flow(
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev")
-
-    IS_INITIAL_EXTRACTION = Parameter("is_initial_extraction", default=False)
-
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    START_DATETIME = Parameter("start_datetime", default="")
+    END_DATETIME = Parameter("end_datetime", default="")
+    IS_INITIAL_EXTRACTION = Parameter("is_initial_extraction", default=False)
 
     #####################################
     # Set environment
@@ -72,12 +72,15 @@ with Flow(
         )
 
     with case(IS_INITIAL_EXTRACTION, False):
-        target_day = get_flow_scheduled_day()
+        start_datetime, end_datetime = get_datetime_working_range(
+            start_datetime=START_DATETIME,
+            end_datetime=END_DATETIME
+        )
 
         patient_data_db = extract_patient_data_from_db(
             db_url=database_url,
-            time_window_start=target_day,
-            time_window_duration=1,
+            time_window_start=start_datetime,
+            time_window_end=end_datetime
         )
 
     patient_data = merge(patient_data_gcs, patient_data_db)
