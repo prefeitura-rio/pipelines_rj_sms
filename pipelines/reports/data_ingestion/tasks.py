@@ -113,7 +113,7 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
     formatted_date = target_date.strftime("%d/%m/%Y")
 
     metrics = (
-        data.groupby(by=["system", "entity"])
+        data.groupby(by=["entity","system" ])
         .count()
         .reset_index()[
             ["entity", "system", "raw_acquisition_moment", "standardization_moment", "merge_moment"]
@@ -127,6 +127,7 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
                 "entity": "Entidade",
             }
         )
+        .sort_values(by=["entity","system"])
     )
 
     metrics["Status RAW->STD"] = metrics.apply(
