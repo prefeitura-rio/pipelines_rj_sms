@@ -103,7 +103,7 @@ def get_mergeable_records_from_api(
 
         batch_size = 2
         awaitables_batch = [
-            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)
+            awaitables[i: i + batch_size] for i in range(0, len(awaitables), batch_size)
         ]
         log(f"Retrieving data in {len(awaitables_batch)} batches")
 
