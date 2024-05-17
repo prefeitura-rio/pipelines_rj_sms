@@ -39,7 +39,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg") as sms_dump_si
     DATASET_ID = Parameter("dataset_id", default=sisreg_constants.DATASET_ID.value)
     TABLE_ID = Parameter("table_id", required=True)
 
-    #####################################
+    ####################################
     # Set environment
     ####################################
     local_folders = create_folders()
