@@ -65,7 +65,7 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
         raise FAIL(f"Endpoint {endpoint} not found")
 
 
-@task
+@task(max_retries=2, retry_delay=timedelta(minutes=1))
 def transform_data(file_path: str, endpoint: str) -> str:
     """
     Transforms the data in the given file path and returns the path of the transformed file.
