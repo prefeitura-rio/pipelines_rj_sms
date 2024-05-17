@@ -28,7 +28,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg") as sms_dump_si
     #####################################
 
     # Flow
-    ENVIRONMENT = Parameter("environment.", default="dev")
+    ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
     REPROCESS_MODE = Parameter("reprocess_mode", default=False)
 
