@@ -115,7 +115,9 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
     metrics = (
         data.groupby(by=["system", "entity"])
         .count()
-        .reset_index()[["entity", "system", "raw_acquisition_moment", "standardization_moment", "merge_moment"]]
+        .reset_index()[
+            ["entity", "system", "raw_acquisition_moment", "standardization_moment", "merge_moment"]
+        ]
         .rename(
             columns={
                 "raw_acquisition_moment": "RAW",
