@@ -8,6 +8,6 @@ from enum import Enum
 
 class constants(Enum):
 
-    INFISICAL_PATH = "/vitacare"
+    INFISICAL_PATH = "/prontuario-vitacare"
     INFISICAL_API_USERNAME = "API_USERNAME"
     INFISICAL_API_PASSWORD = "API_PASSWORD"
