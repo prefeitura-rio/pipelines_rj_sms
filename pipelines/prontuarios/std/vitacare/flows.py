@@ -66,7 +66,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    request_params = get_params(start_datetime=START_DATETIME, end_datetime=END_DATETIME)
+    request_params = get_params(start_datetime=start_datetime, end_datetime=end_datetime)
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords/fromInsertionDatetime",
