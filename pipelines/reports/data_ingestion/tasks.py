@@ -118,6 +118,7 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
         .reset_index()[
             ["entity", "system", "raw_acquisition_moment", "standardization_moment", "merge_moment"]
         ]
+        .sort_values(by=["entity", "system"])
         .rename(
             columns={
                 "raw_acquisition_moment": "RAW",
@@ -127,7 +128,6 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
                 "entity": "Entidade",
             }
         )
-        .sort_values(by=["entity", "system"])
     )
 
     metrics["Status RAW->STD"] = metrics.apply(
