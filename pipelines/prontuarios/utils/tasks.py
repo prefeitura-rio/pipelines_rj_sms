@@ -103,34 +103,41 @@ def get_api_token(
         raise Exception(f"Error getting API token ({response.status_code}) - {response.json()}")
 
 
-@task
-def get_flow_scheduled_day() -> date:
-    """
-    Returns the scheduled day for the flow execution.
+@task(nout=2)
+def get_datetime_working_range(
+    start_datetime: str = "", end_datetime: str = "", interval: int = 1, return_as_str: bool = False
+):
+    logger = prefect.context.get("logger")
 
-    The scheduled day is calculated by subtracting one day from the scheduled start time.
+    logger.info(f"Calculating datetime range...")
+    if start_datetime == "" and end_datetime == "":
+        logger.info(
+            f"No start/end provided. Using {interval} as day interval and scheduled date as end"
+        )  # noqa
+        scheduled_datetime = prefect.context.get("scheduled_start_time")
+        end_datetime = scheduled_datetime.date()
+        start_datetime = end_datetime - timedelta(days=interval)
+    elif start_datetime == "" and end_datetime != "":
+        logger.info("No start provided. Using end datetime and provided interval")
+        end_datetime = pd.to_datetime(end_datetime)
+        start_datetime = end_datetime - timedelta(days=interval)
+    elif start_datetime != "" and end_datetime == "":
+        logger.info("No end provided. Using start datetime and provided interval")
+        start_datetime = pd.to_datetime(start_datetime)
+        end_datetime = start_datetime + timedelta(days=interval)
+    else:
+        logger.info("Start and end datetime provided. Using them.")
+        start_datetime = pd.to_datetime(start_datetime)
+        end_datetime = pd.to_datetime(end_datetime)
 
-    Returns:
-        date: The scheduled day for the flow execution.
-    """
-    scheduled_start_time = prefect.context.get("scheduled_start_time")
-    scheduled_date = scheduled_start_time.date() - timedelta(days=1)
-    return scheduled_date
+    logger.info(f"Target date range: {start_datetime} -> {end_datetime}")
 
+    if return_as_str:
+        return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
 
-@task
-def get_std_flow_scheduled_day() -> date:
-    """
-    Returns the scheduled day for the flow execution.
-
-    The scheduled day is calculated by subtracting one day from the scheduled start time.
-
-    Returns:
-        date: The scheduled day for the flow execution.
-    """
-    scheduled_start_time = prefect.context.get("scheduled_start_time")
-    scheduled_date = scheduled_start_time - timedelta(days=1)
-    return scheduled_date
+    return start_datetime, end_datetime
 
 
 @task
@@ -232,6 +239,31 @@ def rename_current_std_flow_run(environment: str, **kwargs) -> None:
     flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
 
     title = "Standardization routine"
+
+    params = [f"{key}={value}" for key, value in kwargs.items()]
+    params.append(f"env={environment}")
+    params = sorted(params)
+
+    flow_run_name = f"{title} ({', '.join(params)}): {flow_run_scheduled_time}"
+
+    client = Client()
+    client.set_flow_run_name(flow_run_id, flow_run_name)
+
+
+def rename_current_mrg_flow_run(environment: str, **kwargs) -> None:
+    """
+    Renames the current standardize flow run using the specified day
+
+    Args:
+        environment (str): The environment of the flow run
+
+    Returns:
+        None
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
+
+    title = "Merge routine"
 
     params = [f"{key}={value}" for key, value in kwargs.items()]
     params.append(f"env={environment}")

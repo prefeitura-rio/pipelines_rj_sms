@@ -85,10 +85,12 @@ def get_inserted_registers(target_date: date, db_url: str) -> pd.DataFrame:
             raw.source_updated_at as event_moment,
             raw.created_at as raw_acquisition_moment,
             std.created_at as standardization_moment,
+            mrg_patient.created_at as merge_moment,
             'patient' as entity
         from raw__patientrecord raw
             inner join datasource d on d.cnes = raw.data_source_id
             left join public.std__patientrecord std on raw.id = std.raw_source_id
+            left join public.patient as mrg_patient on mrg_patient.patient_cpf = std.patient_cpf
         where date(raw.created_at) = '{target_date}'
         order by raw.source_updated_at desc
         """,
@@ -111,22 +113,28 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
     formatted_date = target_date.strftime("%d/%m/%Y")
 
     metrics = (
-        data.groupby(by=["system", "entity"])
+        data.groupby(by=["entity", "system"])
         .count()
-        .reset_index()[["system", "entity", "raw_acquisition_moment", "standardization_moment"]]
+        .reset_index()[
+            ["entity", "system", "raw_acquisition_moment", "standardization_moment", "merge_moment"]
+        ]
+        .sort_values(by=["entity", "system"])
         .rename(
             columns={
-                "raw_acquisition_moment": "Registros Brutos",
-                "standardization_moment": "Registros Padronizados",
+                "raw_acquisition_moment": "RAW",
+                "standardization_moment": "STD",
+                "merge_moment": "MRG",
                 "system": "Fonte de Dados",
                 "entity": "Entidade",
             }
         )
     )
 
-    metrics["Status"] = metrics.apply(
-        func=lambda x: "✅" if x["Registros Brutos"] == x["Registros Padronizados"] else "❌",
-        axis=1,
+    metrics["Status RAW->STD"] = metrics.apply(
+        func=lambda x: "✅" if x["RAW"] == x["STD"] else "❌", axis=1
+    )
+    metrics["Status STD->MRG"] = metrics.apply(
+        func=lambda x: "✅" if x["STD"] == x["MRG"] else "❌", axis=1
     )
 
     send_message(

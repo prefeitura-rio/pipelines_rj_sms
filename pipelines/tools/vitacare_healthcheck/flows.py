@@ -6,7 +6,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.utils.tasks import get_flow_scheduled_day
+from pipelines.prontuarios.utils.tasks import get_datetime_working_range
 from pipelines.tools.vitacare_healthcheck.constants import (
     constants as vitacare_constants,
 )
@@ -28,12 +28,12 @@ with Flow(
 
     file_list = get_files_from_folder(folder_id=vitacare_constants.TARGET_FOLDER_ID.value)
 
-    target_day = get_flow_scheduled_day()
+    start_datetime, end_datetime = get_datetime_working_range()
 
     structured_files_metadata = get_structured_files_metadata(file_list=file_list)
 
     day_files = filter_files_by_date(
-        files=structured_files_metadata, min_date=target_day, day_interval=1
+        files=structured_files_metadata, start_datetime=start_datetime, end_datetime=end_datetime
     )
 
     files = get_file_content.map(file_metadata=day_files)

@@ -24,16 +24,6 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
-        "url": "https://docs.google.com/spreadsheets/d/1PHbpFFSNWNaswecH1Z0tn62p5-2FqMJgjIXknkeGX34/edit?usp=sharing",  # noqa: E501
-        "url_type": "google_sheet",
-        "gsheets_sheet_name": "CONSOLIDADO",
-        "dataset_id": "brutos_sheets",
-        "table_id": "material_remume",
-        "csv_delimiter": "|",
-        "environment": "prod",
-        "rename_flow": True,
-    },
-    {
         "url": "https://docs.google.com/spreadsheets/d/1zbleYywgX2pGTxJ7U8WUVdq7VSNaE7wbUnmyLT1IAnc/edit#gid=1524508370",  # noqa: E501
         "url_type": "google_sheet",
         "gsheets_sheet_name": "relacao_materiais",
@@ -42,6 +32,16 @@ flow_parameters = [
         "csv_delimiter": "|",
         "environment": "prod",
         "rename_flow": True,
+    },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Farmácia Digital",
+        "rename_flow": True,
+        "table_id": "gerenciamento_acesso_looker_farmacia",
+        "url": "https://docs.google.com/spreadsheets/d/1VCtUiRFxMy1KatBfw9chUppPEIPSGDup9wiwfm9-Djo",  # noqa
+        "url_type": "google_sheet",
     },
 ]
 

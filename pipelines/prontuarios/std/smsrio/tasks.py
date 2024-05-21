@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import timedelta
+from datetime import datetime
 from typing import Tuple
 
 import pandas as pd
@@ -24,7 +24,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_params(start_datetime: str) -> dict:
+def get_params(start_datetime: datetime, end_datetime: datetime) -> dict:
     """
     Creating params
     Args:
@@ -33,7 +33,6 @@ def get_params(start_datetime: str) -> dict:
     Returns:
         dict : params dictionary
     """
-    end_datetime = start_datetime + timedelta(days=1)
     log(
         f"""
         Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
