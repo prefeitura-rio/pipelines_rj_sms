@@ -86,9 +86,11 @@ def standardize_address_data(
     address_dic = {
         "use": None,
         "type": None,
-        "line": data.get("tipoLogradouro") + " " + data.get("logradouro")
-        if (pd.isna(data.get("logradouro")) is False)
-        else None,
+        "line": (
+            data.get("tipoLogradouro") + " " + data.get("logradouro")
+            if (pd.isna(data.get("logradouro")) is False)
+            else None
+        ),
         "city": data.get("city"),
         "country": data.get("country"),
         "state": data.get("state"),
