@@ -1,9 +1,10 @@
-import prefect
+# -*- coding: utf-8 -*-
 import logging
 
+import prefect
 from typing_extensions import Literal
-from pipelines.utils.monitor import send_message
 
+from pipelines.utils.monitor import send_message
 
 LEVELS_CONFIG = {
     "debug": {"type": logging.DEBUG, "discord_forwarding": False, "icon": "🟦"},
@@ -36,8 +37,4 @@ def log(
     if LEVELS_CONFIG[level]["discord_forwarding"] or force_discord_forwarding:
         icon = LEVELS_CONFIG[level]["icon"]
         title = f"{icon} Log {level.capitalize()}"
-        send_message(
-            title=title,
-            message=msg,
-            monitor_slug="warning"
-        )
+        send_message(title=title, message=msg, monitor_slug="warning")

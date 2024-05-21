@@ -4,6 +4,7 @@ Tasks for SMSRio Raw Data Extraction
 """
 import json
 from datetime import date, timedelta
+
 import pandas as pd
 from sqlalchemy.exc import InternalError
 
@@ -11,9 +12,8 @@ from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_const
 from pipelines.prontuarios.utils.misc import build_additional_fields
 from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_format
 from pipelines.prontuarios.utils.validation import is_valid_cpf
-
-from pipelines.utils.logger import log
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_secret_key
 
 
@@ -97,7 +97,6 @@ def extract_patient_data_from_db(
     except InternalError as e:
         log(f"Error extracting data from database: {e}", level="error")
         raise e
-
 
 
 @task()
