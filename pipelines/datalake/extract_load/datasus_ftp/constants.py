@@ -14,7 +14,5 @@ class constants(Enum):
     DATASUS_FTP_SERVER = "ftp.datasus.gov.br"
     DATASUS_ENDPOINT = {
         "cnes": {"file_path": "/cnes", "base_file": "BASE_DE_DADOS_CNES"},
-        "cbo": {
-            "file_path": "/dissemin/publicos/CNES/200508_/Auxiliar"
-        },
+        "cbo": {"file_path": "/dissemin/publicos/CNES/200508_/Auxiliar"},
     }

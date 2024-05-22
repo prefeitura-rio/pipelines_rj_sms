@@ -10,18 +10,17 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.utils.tasks import create_folders
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.datalake.extract_load.datasus_ftp.tasks import (
-    extract_data_from_datasus,
-    transform_data,
-    create_many_partitions,
-    upload_many_to_datalake,
-)
 from pipelines.datalake.extract_load.datasus_ftp.schedules import (
     datasus_weekly_update_schedule,
 )
-
+from pipelines.datalake.extract_load.datasus_ftp.tasks import (
+    create_many_partitions,
+    extract_data_from_datasus,
+    transform_data,
+    upload_many_to_datalake,
+)
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.tasks import create_folders
 
 with Flow(name="DataLake - Extração e Carga de Dados - DataSUS") as sms_dump_datasus:
     #####################################

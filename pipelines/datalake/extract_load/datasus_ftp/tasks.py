@@ -26,7 +26,7 @@ from pipelines.datalake.utils.data_transformations import (
     convert_to_parquet,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import download_ftp, create_partitions, upload_to_datalake
+from pipelines.utils.tasks import create_partitions, download_ftp, upload_to_datalake
 
 
 @task(max_retries=2, timeout=timedelta(minutes=10), retry_delay=timedelta(seconds=10))
