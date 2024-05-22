@@ -7,9 +7,11 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
-from pipelines.prontuarios.std.vitai.constants import constants as vitai_constants
-from pipelines.prontuarios.std.vitai.schedules import vitai_std_daily_update_schedule
-from pipelines.prontuarios.std.vitai.tasks import (
+from pipelines.prontuarios.std.vitacare.constants import constants as vitacare_constants
+from pipelines.prontuarios.std.vitacare.schedules import (
+    vitacare_std_daily_update_schedule,
+)
+from pipelines.prontuarios.std.vitacare.tasks import (
     define_constants,
     format_json,
     get_params,
@@ -25,8 +27,8 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
 with Flow(
-    name="Prontuários (Vitai) - Padronização de Pacientes",
-) as vitai_standardization:
+    name="Prontuários (Vitacare) - Padronização de Pacientes",
+) as vitacare_standardization:
     #####################################
     # Parameters
     #####################################
@@ -40,7 +42,7 @@ with Flow(
     ####################################
 
     with case(RENAME_FLOW, True):
-        rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="Vitai")
+        rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="vitacare")
 
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=START_DATETIME,
@@ -49,10 +51,10 @@ with Flow(
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
-        infisical_path=vitai_constants.INFISICAL_PATH.value,
+        infisical_path=vitacare_constants.INFISICAL_PATH.value,
         infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
-        infisical_api_username=vitai_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=vitai_constants.INFISICAL_API_PASSWORD.value,
+        infisical_api_username=vitacare_constants.INFISICAL_API_USERNAME.value,
+        infisical_api_password=vitacare_constants.INFISICAL_API_PASSWORD.value,
     )
 
     api_url = get_secret_key(
@@ -77,7 +79,7 @@ with Flow(
     # Task Section #2 - Transform Data
     ####################################
 
-    city_name_dict, state_dict, country_dict = define_constants()
+    country_dict, city_dict_res, city_dict_nasc = define_constants()
 
     json_list_valid, list_invalid_id = format_json(json_list=raw_patient_data)
 
@@ -90,8 +92,8 @@ with Flow(
 
     std_patient_list = standartize_data(
         raw_data=json_list_valid,
-        city_name_dict=city_name_dict,
-        state_dict=state_dict,
+        city_dict_nasc=city_dict_nasc,
+        city_dict_res=city_dict_res,
         country_dict=country_dict,
     )
 
@@ -107,9 +109,9 @@ with Flow(
     )
 
 
-vitai_standardization.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-vitai_standardization.executor = LocalDaskExecutor(num_workers=4)
-vitai_standardization.run_config = KubernetesRun(
+vitacare_standardization.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitacare_standardization.executor = LocalDaskExecutor(num_workers=4)
+vitacare_standardization.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -117,5 +119,4 @@ vitai_standardization.run_config = KubernetesRun(
     memory_limit="5Gi",
 )
 
-
-vitai_standardization.schedule = vitai_std_daily_update_schedule
+vitacare_standardization.schedule = vitacare_std_daily_update_schedule

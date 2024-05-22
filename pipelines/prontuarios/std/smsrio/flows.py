@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -17,9 +17,10 @@ from pipelines.prontuarios.std.smsrio.tasks import (
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
-    get_std_flow_scheduled_day,
+    get_datetime_working_range,
     load_to_api,
     rename_current_std_flow_run,
+    transform_create_input_batches,
 )
 from pipelines.utils.tasks import get_secret_key, load_from_api
 
@@ -31,6 +32,8 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    START_DATETIME = Parameter("start_datetime", default="")
+    END_DATETIME = Parameter("end_datetime", default="")
 
     ####################################
     # Set environment
@@ -38,6 +41,11 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_std_flow_run(environment=ENVIRONMENT, unidade="SMSRIO")
+
+    start_datetime, end_datetime = get_datetime_working_range(
+        start_datetime=START_DATETIME,
+        end_datetime=END_DATETIME,
+    )
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -56,8 +64,7 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
-    START_DATETIME = get_std_flow_scheduled_day()
-    request_params = get_params(start_datetime=START_DATETIME)
+    request_params = get_params(start_datetime=start_datetime, end_datetime=end_datetime)
 
     raw_patient_data = load_from_api(
         url=api_url + "raw/patientrecords/fromInsertionDatetime",
@@ -90,11 +97,15 @@ with Flow(
         lista_campos_api=lista_campos_api,
     )
 
-    load_to_api_task = load_to_api(
-        request_body=std_patient_list,
-        endpoint_name="std/patientrecords",
-        api_token=api_token,
-        environment=ENVIRONMENT,
+    std_patient_list_batches = transform_create_input_batches(
+        input_list=std_patient_list, batch_size=1000
+    )
+
+    load_to_api_task = load_to_api.map(
+        request_body=std_patient_list_batches,
+        endpoint_name=unmapped("std/patientrecords"),
+        api_token=unmapped(api_token),
+        environment=unmapped(ENVIRONMENT),
     )
 
 

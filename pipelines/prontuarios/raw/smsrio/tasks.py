@@ -6,15 +6,14 @@ import json
 from datetime import date, timedelta
 
 import pandas as pd
-from prefeitura_rio.pipelines_utils.logging import log
+from sqlalchemy.exc import InternalError
 
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.misc import build_additional_fields
 from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_format
 from pipelines.prontuarios.utils.validation import is_valid_cpf
-
-# from prefect import task
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_secret_key
 
 
@@ -42,7 +41,7 @@ def get_smsrio_database_url(environment, squema: str = "sms_pacientes"):
 def extract_patient_data_from_db(
     db_url: str,
     time_window_start: date = None,
-    time_window_duration: int = 1,
+    time_window_end: date = None,
 ) -> pd.DataFrame:
     """
     Extracts patient data from the SMSRio database table using a (optional) time window.
@@ -85,7 +84,6 @@ def extract_patient_data_from_db(
     {WHERE_CLAUSE}
     GROUP BY tb_pacientes.id;"""
     if time_window_start:
-        time_window_end = time_window_start + timedelta(days=time_window_duration)
         query = query.replace(
             "{WHERE_CLAUSE}",
             f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}'",
@@ -93,9 +91,12 @@ def extract_patient_data_from_db(
     else:
         query = query.replace("{WHERE_CLAUSE}", "")
 
-    patients = pd.read_sql(query, db_url)
-
-    return patients
+    try:
+        patients = pd.read_sql(query, db_url)
+        return patients
+    except InternalError as e:
+        log(f"Error extracting data from database: {e}", level="error")
+        raise e
 
 
 @task()

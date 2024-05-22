@@ -8,7 +8,17 @@ from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 # --------------------------------------------------
 # Please, register here pairs: (flow, param)
 # ==================================================
-flows_run_cases = [(smsrio_standardization, {})]
+flows_run_cases = [
+    (
+        smsrio_standardization,
+        {
+            "environment": "dev",
+            "rename_flow": False,
+            "start_datetime": "2024-04-09 20:32:00",
+            "end_datetime": "2024-04-09 20:33:00",
+        },
+    )
+]
 
 
 # ==================================================
@@ -20,7 +30,7 @@ parser = argparse.ArgumentParser(description="Run a specific flow")
 parser.add_argument("--case", type=int, help="The index of the pair (flow, param) to run")
 
 parser.add_argument(
-    "--environment", type=str, help="The environment to run the flow on", default="prod"
+    "--environment", type=str, help="The environment to run the flow on", default="dev"
 )
 
 if __name__ == "__main__":

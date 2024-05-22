@@ -7,7 +7,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 def process_dbt_logs(log_path: str = "dbt_repository/logs/dbt.log") -> pd.DataFrame:
     """
-    Process the contents of a dbt log file and return a DataFrame containing the parsed log entries.
+    Process the contents of a dbt log file and return a DataFrame containing the parsed log entries
 
     Args:
         log_path (str): The path to the dbt log file. Defaults to "dbt_repository/logs/dbt.log".
@@ -51,7 +51,7 @@ def log_to_file(logs: pd.DataFrame, levels=None) -> str:
 
     report = []
     for _, row in logs.iterrows():
-        report.append(f"{row['time']} [{row['level'].rjust(5,' ')}] {row['text']}")
+        report.append(f"{row['time']} [{row['level'].rjust(5, ' ')}] {row['text']}")
     report = "\n".join(report)
     log(f"Logs do DBT:{report}")
 
