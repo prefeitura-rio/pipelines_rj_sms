@@ -15,7 +15,6 @@ class constants(Enum):
     DATASUS_ENDPOINT = {
         "cnes": {"file_path": "/cnes", "base_file": "BASE_DE_DADOS_CNES"},
         "cbo": {
-            "file_path": "/dissemin/publicos/CNES/200508_/Auxiliar",
-            "file": "TAB_CNES.zip",
+            "file_path": "/dissemin/publicos/CNES/200508_/Auxiliar"
         },
     }

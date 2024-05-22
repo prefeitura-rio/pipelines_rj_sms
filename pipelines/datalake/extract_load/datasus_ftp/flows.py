@@ -4,23 +4,24 @@
 SISREG dumping flows
 """
 from prefect import Parameter, case
-from prefect.run_configs import VertexRun
+from prefect.executors import LocalDaskExecutor
+from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-
-# from pipelines.datalake.extract_load.datasus_ftp.schedules import (
-#    datasus_daily_update_schedule,
-# )
+from pipelines.utils.tasks import create_folders
+from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.datalake.extract_load.datasus_ftp.tasks import (
     extract_data_from_datasus,
     transform_data,
-    create_partitions,
+    create_many_partitions,
     upload_many_to_datalake,
 )
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.tasks import create_folders
+from pipelines.datalake.extract_load.datasus_ftp.schedules import (
+    datasus_weekly_update_schedule,
+)
+
 
 with Flow(name="DataLake - Extração e Carga de Dados - DataSUS") as sms_dump_datasus:
     #####################################
@@ -39,7 +40,6 @@ with Flow(name="DataLake - Extração e Carga de Dados - DataSUS") as sms_dump_d
 
     # GCP
     DATASET_ID = Parameter("dataset_id", required=True)
-    TABLE_ID = Parameter("table_id", required=False)
 
     #####################################
     # Set environment
@@ -74,7 +74,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - DataSUS") as sms_dump_d
     # Tasks section #3 - Load data
     #####################################
 
-    create_partitions_task = create_partitions(
+    create_partitions_task = create_many_partitions(
         files_path=transformed_file,
         partition_directory=local_folders["partition_directory"],
         endpoint=ENDPOINT,
@@ -92,3 +92,13 @@ with Flow(name="DataLake - Extração e Carga de Dados - DataSUS") as sms_dump_d
         dataset_is_public=False,
         upstream_tasks=[create_partitions_task],
     )
+
+sms_dump_datasus.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_datasus.executor = LocalDaskExecutor(num_workers=1)
+sms_dump_datasus.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+)
+sms_dump_datasus.schedule = datasus_weekly_update_schedule

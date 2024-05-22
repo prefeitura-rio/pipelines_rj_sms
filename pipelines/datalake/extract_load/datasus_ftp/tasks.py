@@ -26,7 +26,7 @@ from pipelines.datalake.utils.data_transformations import (
     convert_to_parquet,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import download_ftp, upload_to_datalake
+from pipelines.utils.tasks import download_ftp, create_partitions, upload_to_datalake
 
 
 @task(max_retries=2, timeout=timedelta(minutes=10), retry_delay=timedelta(seconds=10))
@@ -51,8 +51,7 @@ def extract_data_from_datasus(
     host = datasus_constants.DATASUS_FTP_SERVER.value
     directory = datasus_constants.DATASUS_ENDPOINT.value[endpoint]["file_path"]
 
-    # Define file to download
-    if download_newest:
+    if endpoint == "cnes" and download_newest:
         response = check_newest_file_version(
             host=host,
             directory=directory,
@@ -61,30 +60,30 @@ def extract_data_from_datasus(
         file = response["file"]
     else:
         if file is None:
-            try:
-                file = datasus_constants.DATASUS_ENDPOINT.value[endpoint]["file"]
-            except KeyError as e:
-                log(
-                    f"File not found for {endpoint} in datasus_constants.DATASUS_ENDPOINT",
-                    level="error",
-                )
-                raise FAIL(f"File not found for endpoint {endpoint}") from e
+            log(
+                f"File must be provided for endpoint {endpoint} if download_newest is False",
+                level="error",
+            )
+            raise FAIL(f"File must be provided for endpoint {endpoint} if download_newest is False")
 
-    log(f"Downloading file {file} from {datasus_constants.DATASUS_FTP_SERVER.value}")
+        log(f"Downloading file {file} from {datasus_constants.DATASUS_FTP_SERVER.value}")
 
     # Download file
-    downloaded_file = download_ftp.run(
-        host=host,
-        directory=directory,
-        file_name=file,
-        output_path=download_path,
-    )
+    try:
+        downloaded_file = download_ftp.run(
+            host=host,
+            directory=directory,
+            file_name=file,
+            output_path=download_path,
+        )
+        if downloaded_file is None:
+            log(f"Failed to download file {file}", level="error")
+            raise FAIL(f"Failed to download file {file}")
+    except Exception as e:
+        log(f"Failed to download file {file}: {e}", level="error")
+        raise FAIL(f"Failed to download file {file}") from e
 
     # Unzip file
-    if downloaded_file is None:
-        log(f"Failed to download file {file}", level="error")
-        raise FAIL("Failed to download file")
-
     log("Unzipping file")
     if endpoint == "cbo":
         subprocess.run(
@@ -145,7 +144,7 @@ def transform_data(files_path: list[str], endpoint: str):
         log("Header fixed successfully")
 
         transformed_files = [
-            add_flow_metadata(file_path=file, file_type="csv", parse_date_from="filename")
+            add_flow_metadata(file_path=file, file_type="csv", sep=";", parse_date_from="filename")
             for file in transformed_files
         ]
         log("Metadata added successfully")
@@ -164,51 +163,92 @@ def transform_data(files_path: list[str], endpoint: str):
 
 
 @task
-def create_partitions(files_path: list[str], partition_directory: str, endpoint: str):
+def create_many_partitions(files_path: list[str], partition_directory: str, endpoint: str):
     """
-    Creates partitions for the transformed data.
+    Creates partitions for different tables.
     """
 
     if endpoint == "cbo":
-
         for file in files_path:
             shutil.copy(file, partition_directory)
         log("Partitions added successfully")
+
+    elif endpoint == "cnes":
+        for file in files_path:
+            # retrieve file name from path
+            file_name = Path(file).name.split(".")[0]
+
+            # remove the last 6 digits representing the date
+            table_id = file_name[:-6]
+            partition_date = f"{file_name[-6:-2]}-{file_name[-2:]}"
+
+            table_partition_folder = os.path.join(partition_directory, table_id)
+
+            create_partitions.run(
+                data_path=file,
+                partition_directory=table_partition_folder,
+                level="month",
+                partition_date=partition_date,
+            )
+            log(f"Partition {table_partition_folder} created successfully", level="debug")
     else:
         log(f"Endpoint {endpoint} not found", level="error")
         raise FAIL(f"Endpoint {endpoint} not found")
 
+
 @task
 def upload_many_to_datalake(
-        input_path:str,
-        dataset_id:str,
-        endpoint: str,
-        source_format="parquet",
-        if_exists="replace",
-        if_storage_data_exists="replace",
-        biglake_table=True,
-        dataset_is_public=False
-    ):
+    input_path: str,
+    dataset_id: str,
+    endpoint: str,
+    source_format="parquet",
+    if_exists="replace",
+    if_storage_data_exists="replace",
+    biglake_table=True,
+    dataset_is_public=False,
+):
+    """
+    Uploads different tables to data lake.
+    """
+
+    data_path = Path(input_path)
 
     if endpoint == "cbo":
 
-        data_path = Path(input_path)
         files = data_path.glob(f"*.{source_format}")
 
         for file in files:
             upload_to_datalake.run(
-                    input_path=file,
-                    dataset_id=dataset_id,
-                    table_id=file.name.split(".")[0].lower(),
-                    dump_mode="overwrite",
-                    source_format=source_format,
-                    if_exists=if_exists,
-                    if_storage_data_exists=if_storage_data_exists,
-                    biglake_table=biglake_table,
-                    dataset_is_public=dataset_is_public,
-                )
+                input_path=file,
+                dataset_id=dataset_id,
+                table_id=file.name.split(".")[0].lower(),
+                dump_mode="overwrite",
+                source_format=source_format,
+                if_exists=if_exists,
+                if_storage_data_exists=if_storage_data_exists,
+                biglake_table=biglake_table,
+                dataset_is_public=dataset_is_public,
+            )
         log("Files uploaded successfully", level="info")
-        
+
+    elif endpoint == "cnes":
+
+        folders = data_path.glob("*")
+
+        for folder in folders:
+            upload_to_datalake.run(
+                input_path=folder,
+                dataset_id=dataset_id,
+                table_id=folder.name,
+                dump_mode="append",
+                source_format=source_format,
+                if_exists=if_exists,
+                if_storage_data_exists=if_storage_data_exists,
+                biglake_table=biglake_table,
+                dataset_is_public=dataset_is_public,
+            )
+        log("Folders uploaded successfully", level="info")
+
     else:
         log(f"Endpoint {endpoint} not found", level="error")
         raise FAIL(f"Endpoint {endpoint} not found")
