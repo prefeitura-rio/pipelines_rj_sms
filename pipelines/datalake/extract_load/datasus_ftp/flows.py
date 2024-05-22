@@ -16,9 +16,11 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.datasus_ftp.tasks import (
     extract_data_from_datasus,
     transform_data,
+    create_partitions,
+    upload_many_to_datalake,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
+from pipelines.utils.tasks import create_folders
 
 with Flow(name="DataLake - Extração e Carga de Dados - DataSUS") as sms_dump_datasus:
     #####################################
@@ -37,7 +39,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - DataSUS") as sms_dump_d
 
     # GCP
     DATASET_ID = Parameter("dataset_id", required=True)
-    TABLE_ID = Parameter("table_id", required=True)
+    TABLE_ID = Parameter("table_id", required=False)
 
     #####################################
     # Set environment
@@ -72,21 +74,21 @@ with Flow(name="DataLake - Extração e Carga de Dados - DataSUS") as sms_dump_d
     # Tasks section #3 - Load data
     #####################################
 
-    # create_partitions_task = create_partitions(
-    #    data_path=transformed_file,
-    #    partition_directory=local_folders["partition_directory"],
-    #    upstream_tasks=[transformed_file],
-    # )
-#
-# upload_to_datalake_task = upload_to_datalake(
-#    input_path=local_folders["partition_directory"],
-#    dataset_id=DATASET_ID,
-#    table_id=TABLE_ID,
-#    dump_mode="append",
-#    source_format="parquet",
-#    if_exists="replace",
-#    if_storage_data_exists="replace",
-#    biglake_table=True,
-#    dataset_is_public=False,
-#    upstream_tasks=[create_partitions_task],
-# )
+    create_partitions_task = create_partitions(
+        files_path=transformed_file,
+        partition_directory=local_folders["partition_directory"],
+        endpoint=ENDPOINT,
+        upstream_tasks=[transformed_file],
+    )
+
+    upload_to_datalake_task = upload_many_to_datalake(
+        input_path=local_folders["partition_directory"],
+        dataset_id=DATASET_ID,
+        endpoint=ENDPOINT,
+        source_format="parquet",
+        if_exists="replace",
+        if_storage_data_exists="replace",
+        biglake_table=True,
+        dataset_is_public=False,
+        upstream_tasks=[create_partitions_task],
+    )

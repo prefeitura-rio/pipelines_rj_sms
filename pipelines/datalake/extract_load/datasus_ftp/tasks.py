@@ -5,8 +5,10 @@
 Tasks for DataSUS pipelines
 """
 import os
+import shutil
 import subprocess
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
@@ -24,7 +26,7 @@ from pipelines.datalake.utils.data_transformations import (
     convert_to_parquet,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import download_ftp
+from pipelines.utils.tasks import download_ftp, upload_to_datalake
 
 
 @task(max_retries=2, timeout=timedelta(minutes=10), retry_delay=timedelta(seconds=10))
@@ -159,3 +161,54 @@ def transform_data(files_path: list[str], endpoint: str):
         raise FAIL(f"Endpoint {endpoint} not found")
 
     return transformed_files
+
+
+@task
+def create_partitions(files_path: list[str], partition_directory: str, endpoint: str):
+    """
+    Creates partitions for the transformed data.
+    """
+
+    if endpoint == "cbo":
+
+        for file in files_path:
+            shutil.copy(file, partition_directory)
+        log("Partitions added successfully")
+    else:
+        log(f"Endpoint {endpoint} not found", level="error")
+        raise FAIL(f"Endpoint {endpoint} not found")
+
+@task
+def upload_many_to_datalake(
+        input_path:str,
+        dataset_id:str,
+        endpoint: str,
+        source_format="parquet",
+        if_exists="replace",
+        if_storage_data_exists="replace",
+        biglake_table=True,
+        dataset_is_public=False
+    ):
+
+    if endpoint == "cbo":
+
+        data_path = Path(input_path)
+        files = data_path.glob(f"*.{source_format}")
+
+        for file in files:
+            upload_to_datalake.run(
+                    input_path=file,
+                    dataset_id=dataset_id,
+                    table_id=file.name.split(".")[0].lower(),
+                    dump_mode="overwrite",
+                    source_format=source_format,
+                    if_exists=if_exists,
+                    if_storage_data_exists=if_storage_data_exists,
+                    biglake_table=biglake_table,
+                    dataset_is_public=dataset_is_public,
+                )
+        log("Files uploaded successfully", level="info")
+        
+    else:
+        log(f"Endpoint {endpoint} not found", level="error")
+        raise FAIL(f"Endpoint {endpoint} not found")
