@@ -40,13 +40,13 @@ with Flow(
 
     # GCP
     DATASET_ID = "brutos_sih"
-    TABLE_ID =  "indicadores_hospitalares"
+    TABLE_ID =  "indicadores_hospitalares_parquet"
 
     #####################################
     # Tasks section #3 - Transform data
     #####################################
 
-    raw_folder = "/Users/thiagotrabach/Downloads/SIH-1"
+    raw_folder = "/Users/thiagotrabach/Downloads/SIH"
 
     transformed_file = transform_data(file_path=raw_folder, env=ENVIRONMENT)
 
