@@ -303,8 +303,8 @@ def download_ftp(
         str: The local path where the downloaded file was saved.
     """
 
-    file_path = f"{directory}/{file_name}"
-    output_path = output_path + "/" + file_name
+    ftp_file_path = f"{directory}/{file_name}"
+    local_file_path = f"{output_path}/{file_name}"
     log(output_path)
     ftp = FTP(host)
     # Connect to the FTP server
@@ -317,7 +317,7 @@ def download_ftp(
 
     # Get the size of the file
     ftp.voidcmd("TYPE I")
-    total_size = ftp.size(file_path)
+    total_size = ftp.size(ftp_file_path)
 
     # Create a callback function to be called when each block is read
     def callback(block):
@@ -332,13 +332,15 @@ def download_ftp(
     downloaded_size = 0
 
     # Download the file
-    with open(output_path, "wb") as f:
-        ftp.retrbinary(f"RETR {file_path}", callback)
+    with open(local_file_path, "wb") as f:
+        ftp.retrbinary(f"RETR {ftp_file_path}", callback)
 
     # Close the connection
     ftp.quit()
 
-    return output_path
+    log(f"File downloaded to {local_file_path}", level="info")
+
+    return local_file_path
 
 
 @task()
