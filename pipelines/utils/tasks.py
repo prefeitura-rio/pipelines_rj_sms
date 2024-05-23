@@ -359,7 +359,7 @@ def download_ftp_new(
     ftp.cwd(directory)
 
     filesize = ftp.size(file_name) / MEGABYTE
-    print(f"Downloading: {file_name}   SIZE: {filesize:.1f} MB")
+    log(f"Downloading: {file_name}   SIZE: {filesize:.1f} MB", level="info")
 
     with SpooledTemporaryFile(max_size=MEGABYTE, mode="w+b") as ff:
         sock = ftp.transfercmd("RETR " + file_name)
@@ -371,12 +371,13 @@ def download_ftp_new(
         sock.close()
         ff.rollover()  # force saving to HDD of the final chunk!!
         ff.seek(0)  # prepare for data reading
-        print("Reading the buffer...")
 
         destination_file_path = os.path.join(output_path, file_name)
 
         with open(destination_file_path, "wb") as output_file:
             shutil.copyfileobj(ff, output_file)
+        
+        log(f"File downloaded to {destination_file_path}", level="info")
 
     ftp.quit()
 
