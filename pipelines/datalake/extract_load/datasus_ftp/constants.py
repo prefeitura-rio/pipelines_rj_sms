@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 """
-Constants for cnes dump.
+Constants for DataSUS dump.
 """
 from enum import Enum
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103, E1123
 """
-SISREG dumping flows
+DataSUS dumping flows
 """
 from prefect import Parameter, case
 from prefect.run_configs import VertexRun
