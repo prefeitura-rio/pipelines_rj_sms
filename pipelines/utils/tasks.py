@@ -844,7 +844,9 @@ def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv", csv_sep="
 
 @task
 def load_file_from_bigquery(
-    project_name: str, dataset_name: str, table_name: str,
+    project_name: str,
+    dataset_name: str,
+    table_name: str,
 ):
     """
     Load data from BigQuery table into a pandas DataFrame.
