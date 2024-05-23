@@ -14,7 +14,7 @@ import sys
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
-from io import FileIO, StringIO
+from io import StringIO
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
 
@@ -28,12 +28,6 @@ import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
 from google.cloud import bigquery, storage
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload
-from prefect.engine.signals import ENDRUN
-from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
@@ -282,7 +276,7 @@ def download_azure_blob(
 
 
 @task
-def download_ftp(
+def download_from_ftp(
     host: str,
     directory: str,
     file_name: str,
@@ -294,63 +288,19 @@ def download_ftp(
     Downloads a file from an FTP server and saves it to the specified output path.
 
     Args:
-        host (str): The FTP server hostname.
-        user (str): The FTP server username.
-        password (str): The FTP server password.
+        host (str): The FTP server host.
         directory (str): The directory on the FTP server where the file is located.
         file_name (str): The name of the file to download.
-        output_path (str): The local path where the downloaded file should be saved.
+        output_path (str): The path where the downloaded file should be saved.
+        user (str, optional): The username for authentication. Defaults to None.
+        password (str, optional): The password for authentication. Defaults to None.
 
     Returns:
-        str: The local path where the downloaded file was saved.
+        str: The full path of the downloaded file.
+
+    Raises:
+        ftplib.all_errors: If there is an error during the FTP connection or file transfer.
     """
-
-    ftp_file_path = f"{directory}/{file_name}"
-    local_file_path = f"{output_path}/{file_name}"
-    log(output_path)
-    ftp = FTP(host)
-    # Connect to the FTP server
-    if user is None or password is None:
-        log("Logging in anonymously")
-        ftp.login()
-    else:
-        log(f"Logging in as {user}")
-        ftp.login(user, password)
-
-    # Get the size of the file
-    ftp.voidcmd("TYPE I")
-    total_size = ftp.size(ftp_file_path)
-
-    # Create a callback function to be called when each block is read
-    def callback(block):
-        nonlocal downloaded_size
-        downloaded_size += len(block)
-        percent_complete = (downloaded_size / total_size) * 100
-        if percent_complete // 5 > (downloaded_size - len(block)) // (total_size / 20):
-            log(f"Download is {percent_complete:.0f}% complete")
-        f.write(block)
-
-    # Initialize the downloaded size
-    downloaded_size = 0
-
-    # Download the file
-    with open(local_file_path, "wb") as f:
-        ftp.retrbinary(f"RETR {ftp_file_path}", callback)
-
-    # Close the connection
-    ftp.quit()
-
-    log(f"File downloaded to {local_file_path}", level="info")
-
-    return local_file_path
-
-
-@task
-def download_ftp_new(
-    host, directory, file_name, output_path, user: str = None, password: str = None
-):
-
-    # output_file = os.path.join(output_path, file_name)
 
     MEGABYTE = 1024 * 1024
 
@@ -894,7 +844,7 @@ def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv", csv_sep="
 
 @task
 def load_file_from_bigquery(
-    project_name: str, dataset_name: str, table_name: str, environment: str = "dev"
+    project_name: str, dataset_name: str, table_name: str,
 ):
     """
     Load data from BigQuery table into a pandas DataFrame.

@@ -4,8 +4,7 @@
 SISREG dumping flows
 """
 from prefect import Parameter, case
-from prefect.executors import LocalDaskExecutor
-from prefect.run_configs import KubernetesRun, VertexRun
+from prefect.run_configs import VertexRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
@@ -107,14 +106,3 @@ sms_dump_datasus.run_config = VertexRun(
         "INFISICAL_TOKEN": constants.INFISICAL_TOKEN.value,
     },
 )
-
-# sms_dump_datasus.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-# sms_dump_datasus.executor = LocalDaskExecutor(num_workers=1)
-# sms_dump_datasus.run_config = KubernetesRun(
-#     image=constants.DOCKER_IMAGE.value,
-#     labels=[
-#         constants.RJ_SMS_AGENT_LABEL.value,
-#     ],
-#     memory_request="1536Mi",
-# )
-# sms_dump_datasus.schedule = datasus_weekly_update_schedule
