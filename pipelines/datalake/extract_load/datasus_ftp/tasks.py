@@ -86,7 +86,7 @@ def extract_data_from_datasus(
     # Unzip file
     log("Unzipping file", level="info")
     shutil.unpack_archive(downloaded_file, download_path, "zip")
-    
+
     if endpoint == "cbo":
         unziped_files = [
             f"{download_path}/DBF/{file}"
