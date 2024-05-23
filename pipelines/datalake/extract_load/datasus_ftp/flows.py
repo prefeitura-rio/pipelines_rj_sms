@@ -101,7 +101,7 @@ sms_dump_datasus.run_config = VertexRun(
         constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
     ],
     # https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
-    machine_type="e2-standard-2",
+    machine_type="e2-standard-4",
     env={
         "INFISICAL_ADDRESS": constants.INFISICAL_ADDRESS.value,
         "INFISICAL_TOKEN": constants.INFISICAL_TOKEN.value,
