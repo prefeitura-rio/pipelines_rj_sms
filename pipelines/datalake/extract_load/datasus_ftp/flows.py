@@ -99,5 +99,6 @@ sms_dump_datasus.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
+    memory_request="8Gi",
 )
 sms_dump_datasus.schedule = datasus_weekly_update_schedule
