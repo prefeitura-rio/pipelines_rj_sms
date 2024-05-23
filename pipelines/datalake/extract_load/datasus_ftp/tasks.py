@@ -70,15 +70,13 @@ def extract_data_from_datasus(
 
     # Download file
     try:
-        downloaded_file = download_ftp.run(
+        download_ftp.run(
             host=host,
             directory=directory,
             file_name=file,
             output_path=download_path,
         )
-        if downloaded_file is None:
-            log(f"Failed to download file {file}", level="error")
-            raise FAIL(f"Failed to download file {file}")
+        downloaded_file = f"{download_path}/{file}"
     except Exception as e:
         log(f"Failed to download file {file}: {e}", level="error")
         raise FAIL(f"Failed to download file {file}") from e
