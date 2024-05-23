@@ -95,9 +95,9 @@ with Flow(name="DataLake - Extração e Carga de Dados - DataSUS") as sms_dump_d
 sms_dump_datasus.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_dump_datasus.executor = LocalDaskExecutor(num_workers=1)
 sms_dump_datasus.run_config = KubernetesRun(
-   image=constants.DOCKER_IMAGE.value,
-   labels=[
-       constants.RJ_SMS_AGENT_LABEL.value,
-   ],
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
 )
 sms_dump_datasus.schedule = datasus_weekly_update_schedule
