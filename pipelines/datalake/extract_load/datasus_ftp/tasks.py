@@ -25,7 +25,7 @@ from pipelines.datalake.utils.data_transformations import (
     convert_to_parquet,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import create_partitions, download_ftp, upload_to_datalake
+from pipelines.utils.tasks import create_partitions, download_ftp_new, upload_to_datalake
 
 
 @task(max_retries=2, timeout=timedelta(minutes=20), retry_delay=timedelta(seconds=10))
@@ -69,7 +69,7 @@ def extract_data_from_datasus(
 
     # Download file
     try:
-        downloaded_file = download_ftp.run(
+        downloaded_file = download_ftp_new.run(
             host=host,
             directory=directory,
             file_name=file,

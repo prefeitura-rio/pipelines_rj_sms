@@ -40,6 +40,9 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.infisical import get_credentials_from_env, inject_bd_credentials
 
+import ftplib
+from tempfile import SpooledTemporaryFile
+
 
 @task
 def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
@@ -341,6 +344,42 @@ def download_ftp(
     log(f"File downloaded to {local_file_path}", level="info")
 
     return local_file_path
+
+
+@task
+def download_ftp_new(host, directory, file_name, output_path, user: str = None, password: str = None):
+
+    # output_file = os.path.join(output_path, file_name)
+
+    MEGABYTE = 1024 * 1024
+
+    ftp = ftplib.FTP(host=host, user=user, passwd=password, timeout=3600)
+    ftp.login()
+    ftp.cwd(directory)
+
+    filesize = ftp.size(file_name) / MEGABYTE
+    print(f"Downloading: {file_name}   SIZE: {filesize:.1f} MB")
+
+    with SpooledTemporaryFile(max_size=MEGABYTE, mode="w+b") as ff:
+        sock = ftp.transfercmd("RETR " + file_name)
+        while True:
+            buff = sock.recv(MEGABYTE)
+            if not buff:
+                break
+            ff.write(buff)
+        sock.close()
+        ff.rollover()  # force saving to HDD of the final chunk!!
+        ff.seek(0)  # prepare for data reading
+        print("Reading the buffer...")
+
+        destination_file_path = os.path.join(output_path, file_name)
+
+        with open(destination_file_path, "wb") as output_file:
+            shutil.copyfileobj(ff, output_file)
+
+    ftp.quit()
+
+    return destination_file_path
 
 
 @task()
