@@ -28,7 +28,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import create_partitions, download_ftp, upload_to_datalake
 
 
-@task(max_retries=2, timeout=timedelta(minutes=10), retry_delay=timedelta(seconds=10))
+@task(max_retries=2, timeout=timedelta(minutes=15), retry_delay=timedelta(seconds=10))
 def extract_data_from_datasus(
     endpoint: str,
     download_path: str,
