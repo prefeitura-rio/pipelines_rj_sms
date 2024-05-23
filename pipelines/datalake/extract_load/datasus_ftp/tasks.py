@@ -27,6 +27,7 @@ from pipelines.datalake.utils.data_transformations import (
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import create_partitions, download_ftp, upload_to_datalake
+import shutil
 
 
 @task(max_retries=2, timeout=timedelta(minutes=10), retry_delay=timedelta(seconds=10))
@@ -86,18 +87,15 @@ def extract_data_from_datasus(
         raise FAIL(f"Failed to download file {file}") from e
 
     # Unzip file
-    log("Unzipping file")
+    shutil.unpack_archive(downloaded_file, download_path, "zip")
     if endpoint == "cbo":
-        subprocess.run(
-            f"unzip {downloaded_file} DBF/*CBO* -d {download_path}", shell=True, check=False
-        )
+        #shutil.unpack_archive(downloaded_file, f"{download_path}/DBF", "zip")
         unziped_files = [
             f"{download_path}/DBF/{file}"
             for file in os.listdir(f"{download_path}/DBF")
-            if file.endswith(".dbf")
+            if file.startswith("CBO")
         ]
     else:
-        subprocess.run(f"unzip {downloaded_file} -d {download_path}", shell=True, check=False)
         unziped_files = [
             f"{download_path}/{file}" for file in os.listdir(download_path) if file.endswith(".csv")
         ]
