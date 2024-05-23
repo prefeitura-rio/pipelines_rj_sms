@@ -6,7 +6,6 @@ Tasks for DataSUS pipelines
 """
 import os
 import shutil
-import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -70,25 +69,25 @@ def extract_data_from_datasus(
 
     # Download file
     try:
-        download_ftp.run(
+        downloaded_file = download_ftp.run(
             host=host,
             directory=directory,
             file_name=file,
             output_path=download_path,
         )
-        downloaded_file = f"{download_path}/{file}"
 
-        log(f"Files in download path: {os.listdir(download_path)}", level="info")
-        log(f"Downloaded file: {downloaded_file}", level="info")
+        log(f"Files in download path: {os.listdir(download_path)}", level="debug")
+        log(f"Downloaded file path: {downloaded_file}", level="debug")
 
     except Exception as e:
         log(f"Failed to download file {file}: {e}", level="error")
         raise FAIL(f"Failed to download file {file}") from e
 
     # Unzip file
+    log("Unzipping file", level="info")
     shutil.unpack_archive(downloaded_file, download_path, "zip")
+    
     if endpoint == "cbo":
-        # shutil.unpack_archive(downloaded_file, f"{download_path}/DBF", "zip")
         unziped_files = [
             f"{download_path}/DBF/{file}"
             for file in os.listdir(f"{download_path}/DBF")
