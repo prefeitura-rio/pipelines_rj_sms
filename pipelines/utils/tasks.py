@@ -376,7 +376,7 @@ def download_ftp_new(
 
         with open(destination_file_path, "wb") as output_file:
             shutil.copyfileobj(ff, output_file)
-        
+
         log(f"File downloaded to {destination_file_path}", level="info")
 
     ftp.quit()
