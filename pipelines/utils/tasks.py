@@ -5,6 +5,7 @@
 General utilities for SMS pipelines
 """
 
+import ftplib
 import json
 import os
 import re
@@ -15,6 +16,7 @@ from datetime import date, datetime, timedelta
 from ftplib import FTP
 from io import FileIO, StringIO
 from pathlib import Path
+from tempfile import SpooledTemporaryFile
 
 import basedosdados as bd
 import google.auth.transport.requests
@@ -39,9 +41,6 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.infisical import get_credentials_from_env, inject_bd_credentials
-
-import ftplib
-from tempfile import SpooledTemporaryFile
 
 
 @task
@@ -347,7 +346,9 @@ def download_ftp(
 
 
 @task
-def download_ftp_new(host, directory, file_name, output_path, user: str = None, password: str = None):
+def download_ftp_new(
+    host, directory, file_name, output_path, user: str = None, password: str = None
+):
 
     # output_file = os.path.join(output_path, file_name)
 
