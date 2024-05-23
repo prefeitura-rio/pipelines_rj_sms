@@ -16,14 +16,14 @@ flow_parameters = [
     {
         "dataset_id": "brutos_cnes_web",
         "endpoint": "cnes",
-        "environment": "dev",
+        "environment": "prod",
         "download_newest": True,
         "rename_flow": True,
     },
     {
         "dataset_id": "brutos_datasus",
         "endpoint": "cbo",
-        "environment": "dev",
+        "environment": "prod",
         "download_newest": False,
         "file": "TAB_CNES.zip",
         "rename_flow": True,
@@ -32,7 +32,7 @@ flow_parameters = [
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=7),
-    start_date=datetime(2024, 5, 23, 14, 35, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 5, 26, 8, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
     ],
