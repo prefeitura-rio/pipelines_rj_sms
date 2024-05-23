@@ -80,7 +80,7 @@ def extract_data_from_datasus(
 
         log(f"Files in download path: {os.listdir(download_path)}", level="info")
         log(f"Downloaded file: {downloaded_file}", level="info")
-        
+
     except Exception as e:
         log(f"Failed to download file {file}: {e}", level="error")
         raise FAIL(f"Failed to download file {file}") from e
