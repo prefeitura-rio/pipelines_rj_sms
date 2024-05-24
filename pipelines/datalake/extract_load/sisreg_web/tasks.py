@@ -20,7 +20,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import add_load_date_column, get_secret_key
 
 
-@task(max_retries=2, retry_delay=timedelta(minutes=1))
+@task(max_retries=2, retry_delay=timedelta(minutes=3))
 def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str) -> None:
     """
     Extracts data from SISREG website.
@@ -59,13 +59,18 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
 
     if endpoint == "escala":
         file_path = sisreg.download_escala()
-        return file_path
+        log(f"File downloaded to: {file_path}", level="debug")
+        if file_path:
+            return file_path
+        else:
+            log("Error downloading file", level="error")
+            raise FAIL("Error downloading file")
     else:
         log(f"Endpoint {endpoint} not found", level="error")
         raise FAIL(f"Endpoint {endpoint} not found")
 
 
-@task(max_retries=2, retry_delay=timedelta(minutes=1))
+@task()
 def transform_data(file_path: str, endpoint: str) -> str:
     """
     Transforms the data in the given file path and returns the path of the transformed file.
