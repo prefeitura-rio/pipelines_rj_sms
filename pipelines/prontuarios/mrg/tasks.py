@@ -36,7 +36,7 @@ def get_mergeable_records_from_api(
     api_token: str,
     start_datetime: str,
     end_datetime: str,
-    page_size: int = 10000,
+    page_size: int = 1000,
 ) -> list:
     """
     Retrieves mergeable records from an API within a specified time range.
@@ -66,7 +66,7 @@ def get_mergeable_records_from_api(
                     headers={"Authorization": f"Bearer {api_token}"},
                     params={
                         "page": page,
-                        "page_size": page_size,
+                        "size": page_size,
                         "start_datetime": start_datetime,
                         "end_datetime": end_datetime,
                     },
