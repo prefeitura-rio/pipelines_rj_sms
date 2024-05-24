@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import date, timedelta
+from typing import Literal
 
 import pandas as pd
 
@@ -49,58 +50,77 @@ def get_target_date(custom_target_date: str) -> date:
         return date.fromisoformat(custom_target_date)
 
 
-@task
-def get_inserted_registers(target_date: date, db_url: str) -> pd.DataFrame:
-    """
-    Retrieves the inserted raw registers from the database within a specified time window.
-
-    Args:
-        db_url (str): The URL of the database.
-        time_window_start (date, optional): The start date of the time window.
-        time_window_duration (int, optional): The duration of the time window in days.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the inserted raw registers.
-    """
-    conditions = pd.read_sql(
+@task(retry_delay=timedelta(minutes=5), max_retries=3)
+def get_raw_entity(
+    target_date: date,
+    db_url: str,
+    entity_name: Literal["patientrecord", "patientcondition", "encounter"],
+) -> pd.DataFrame:
+    records = pd.read_sql(
         f"""
-        select
-            d.system, raw.patient_code,
-            raw.source_updated_at as event_moment,
-            raw.created_at as raw_acquisition_moment,
-            std.created_at as standardization_moment,
-            'condition' as entity
-        from raw__patientcondition raw
-            inner join datasource d on d.cnes = raw.data_source_id
-            left join public.std__patientcondition std on raw.id = std.raw_source_id
-        where date(raw.created_at) = '{target_date}'
-        order by raw.source_updated_at desc
+        SELECT 
+            patient_code, 
+            datasource.system,
+            MAX(created_at) AS moment
+        FROM raw__{entity_name}
+            INNER JOIN datasource 
+                on cnes = raw__{entity_name}.data_source_id
+        WHERE DATE(created_at) = '{target_date}'
+        GROUP BY patient_code, datasource.system;
         """,
         db_url,
     )
-    patient = pd.read_sql(
+    return records
+
+
+@task(retry_delay=timedelta(minutes=5), max_retries=3)
+def get_std_entity(
+    target_date: date,
+    db_url: str,
+    entity_name: Literal["patientrecord", "patientcondition", "encounter"],
+) -> pd.DataFrame:
+    records = pd.read_sql(
         f"""
-        select
-            d.system, raw.patient_code,
-            raw.source_updated_at as event_moment,
-            raw.created_at as raw_acquisition_moment,
-            std.created_at as standardization_moment,
-            mrg_patient.created_at as merge_moment,
-            'patient' as entity
-        from raw__patientrecord raw
-            inner join datasource d on d.cnes = raw.data_source_id
-            left join public.std__patientrecord std on raw.id = std.raw_source_id
-            left join public.patient as mrg_patient on mrg_patient.patient_cpf = std.patient_cpf
-        where date(raw.created_at) = '{target_date}'
-        order by raw.source_updated_at desc
+        SELECT
+            std__{entity_name}.patient_code,
+            datasource.system,
+            MAX(std__{entity_name}.created_at) AS moment
+        FROM std__{entity_name}
+            INNER JOIN raw__{entity_name} 
+                on std__{entity_name}.raw_source_id = raw__{entity_name}.id
+            INNER JOIN datasource 
+                on cnes = raw__{entity_name}.data_source_id
+        WHERE DATE(std__{entity_name}.created_at) = '{target_date}'
+        GROUP BY std__{entity_name}.patient_code, datasource.system;
         """,
         db_url,
     )
-    return pd.concat([conditions, patient], ignore_index=True)
+    return records
+
+
+@task(retry_delay=timedelta(minutes=5), max_retries=3)
+def get_mrg_patientrecords(target_date: date, db_url: str) -> pd.DataFrame:
+    records = pd.read_sql(
+        f"""
+        SELECT
+            patient_code,
+            MAX(patient.created_at) AS moment
+        FROM patient
+        WHERE DATE(created_at) = '{target_date}'
+        GROUP BY patient_code;
+        """,
+        db_url,
+    )
+    return records
 
 
 @task
-def create_report(target_date: date, data: pd.DataFrame) -> None:
+def create_report(
+    target_date: date,
+    raw_patientrecord: pd.DataFrame,
+    std_patientrecord: pd.DataFrame,
+    mrg_patient: pd.DataFrame
+) -> None:
     """
     Creates a raw report from the raw data.
 
@@ -112,36 +132,36 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
     """
     formatted_date = target_date.strftime("%d/%m/%Y")
 
-    metrics = (
-        data.groupby(by=["entity", "system"])
-        .count()
-        .reset_index()[
-            ["entity", "system", "raw_acquisition_moment", "standardization_moment", "merge_moment"]
-        ]
-        .rename(
-            columns={
-                "raw_acquisition_moment": "RAW",
-                "standardization_moment": "STD",
-                "merge_moment": "MRG",
-                "system": "Fonte de Dados",
-                "entity": "Entidade",
-            }
-        )
-        .sort_values(by=["entity", "system"])
-    )
-
-    metrics["Status RAW->STD"] = metrics.apply(
-        func=lambda x: "✅" if x["RAW"] == x["STD"] else "❌", axis=1
-    )
-    metrics["Status STD->MRG"] = metrics.apply(
-        func=lambda x: "✅" if x["STD"] == x["MRG"] else "❌", axis=1
-    )
+    raw_patientrecord = {
+        'total': raw_patientrecord.shape[0],
+        'vitai': raw_patientrecord[raw_patientrecord.system == 'vitai'].shape[0],
+        'vitacare': raw_patientrecord[raw_patientrecord.system == 'vitacare'].shape[0],
+        'smsrio': raw_patientrecord[raw_patientrecord.system == 'smsrio'].shape[0],
+    }
+    std_patientrecord = {
+        'total': std_patientrecord.shape[0],
+        'vitai': std_patientrecord[std_patientrecord.system == 'vitai'].shape[0],
+        'vitacare': std_patientrecord[std_patientrecord.system == 'vitacare'].shape[0],
+        'smsrio': std_patientrecord[std_patientrecord.system == 'smsrio'].shape[0],
+    }
+    mrg_patient = {
+        'total': mrg_patient.shape[0],
+    }
 
     send_message(
         title=f"Ingestão Diária de Dados Brutos: {formatted_date}",
-        message=f"""Quantidade de Dados Inseridos na base:
-        ```{metrics.to_markdown(index=False)}```
-        """,
+        message=f"""
+### Pacientes
+- **RAW**: +{raw_patientrecord['total']} registros no total
+    - VITAI: +{raw_patientrecord['vitai']} registros
+    - VITACARE: +{raw_patientrecord['vitacare']} registros
+    - SMSRIO: +{raw_patientrecord['smsrio']} registros
+- **STD**: +{std_patientrecord['total']} registros no total
+    - VITAI: +{std_patientrecord['vitai']} registros
+    - VITACARE: +{std_patientrecord['vitacare']} registros
+    - SMSRIO: +{std_patientrecord['smsrio']} registros
+- **MRG**: +{mrg_patient['total']} registros no total
+""",
         monitor_slug="data-ingestion",
     )
     return None
