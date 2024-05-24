@@ -151,15 +151,16 @@ def create_report(
     send_message(
         title=f"Ingestão Diária de Dados Brutos: {formatted_date}",
         message=f"""
-### Pacientes
+## Pacientes
+__Registros Criados no Dia:__
 - **RAW**: +{raw_patientrecord['total']} registros no total
-    - VITAI: +{raw_patientrecord['vitai']} registros
-    - VITACARE: +{raw_patientrecord['vitacare']} registros
-    - SMSRIO: +{raw_patientrecord['smsrio']} registros
+  - VITAI: +{raw_patientrecord['vitai']} registros
+  - VITACARE: +{raw_patientrecord['vitacare']} registros
+  - SMSRIO: +{raw_patientrecord['smsrio']} registros
 - **STD**: +{std_patientrecord['total']} registros no total
-    - VITAI: +{std_patientrecord['vitai']} registros
-    - VITACARE: +{std_patientrecord['vitacare']} registros
-    - SMSRIO: +{std_patientrecord['smsrio']} registros
+  - VITAI: +{std_patientrecord['vitai']} registros
+  - VITACARE: +{std_patientrecord['vitacare']} registros
+  - SMSRIO: +{std_patientrecord['smsrio']} registros
 - **MRG**: +{mrg_patient['total']} registros no total
 """,
         monitor_slug="data-ingestion",
