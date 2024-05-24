@@ -58,12 +58,12 @@ def get_raw_entity(
 ) -> pd.DataFrame:
     records = pd.read_sql(
         f"""
-        SELECT 
-            patient_code, 
+        SELECT
+            patient_code,
             datasource.system,
             MAX(created_at) AS moment
         FROM raw__{entity_name}
-            INNER JOIN datasource 
+            INNER JOIN datasource
                 on cnes = raw__{entity_name}.data_source_id
         WHERE DATE(created_at) = '{target_date}'
         GROUP BY patient_code, datasource.system;
@@ -86,9 +86,9 @@ def get_std_entity(
             datasource.system,
             MAX(std__{entity_name}.created_at) AS moment
         FROM std__{entity_name}
-            INNER JOIN raw__{entity_name} 
+            INNER JOIN raw__{entity_name}
                 on std__{entity_name}.raw_source_id = raw__{entity_name}.id
-            INNER JOIN datasource 
+            INNER JOIN datasource
                 on cnes = raw__{entity_name}.data_source_id
         WHERE DATE(std__{entity_name}.created_at) = '{target_date}'
         GROUP BY std__{entity_name}.patient_code, datasource.system;
@@ -119,7 +119,7 @@ def create_report(
     target_date: date,
     raw_patientrecord: pd.DataFrame,
     std_patientrecord: pd.DataFrame,
-    mrg_patient: pd.DataFrame
+    mrg_patient: pd.DataFrame,
 ) -> None:
     """
     Creates a raw report from the raw data.
@@ -133,19 +133,19 @@ def create_report(
     formatted_date = target_date.strftime("%d/%m/%Y")
 
     raw_patientrecord = {
-        'total': raw_patientrecord.shape[0],
-        'vitai': raw_patientrecord[raw_patientrecord.system == 'vitai'].shape[0],
-        'vitacare': raw_patientrecord[raw_patientrecord.system == 'vitacare'].shape[0],
-        'smsrio': raw_patientrecord[raw_patientrecord.system == 'smsrio'].shape[0],
+        "total": raw_patientrecord.shape[0],
+        "vitai": raw_patientrecord[raw_patientrecord.system == "vitai"].shape[0],
+        "vitacare": raw_patientrecord[raw_patientrecord.system == "vitacare"].shape[0],
+        "smsrio": raw_patientrecord[raw_patientrecord.system == "smsrio"].shape[0],
     }
     std_patientrecord = {
-        'total': std_patientrecord.shape[0],
-        'vitai': std_patientrecord[std_patientrecord.system == 'vitai'].shape[0],
-        'vitacare': std_patientrecord[std_patientrecord.system == 'vitacare'].shape[0],
-        'smsrio': std_patientrecord[std_patientrecord.system == 'smsrio'].shape[0],
+        "total": std_patientrecord.shape[0],
+        "vitai": std_patientrecord[std_patientrecord.system == "vitai"].shape[0],
+        "vitacare": std_patientrecord[std_patientrecord.system == "vitacare"].shape[0],
+        "smsrio": std_patientrecord[std_patientrecord.system == "smsrio"].shape[0],
     }
     mrg_patient = {
-        'total': mrg_patient.shape[0],
+        "total": mrg_patient.shape[0],
     }
 
     send_message(
