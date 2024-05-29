@@ -847,7 +847,7 @@ def load_file_from_bigquery(
     project_name: str,
     dataset_name: str,
     table_name: str,
-    environment = "dev",
+    environment="dev",
 ):
     """
     Load data from BigQuery table into a pandas DataFrame.
