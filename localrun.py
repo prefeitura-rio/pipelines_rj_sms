@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 import importlib
+
 import yaml
 
 
-def get_case(case_slug: str)->dict:
+def get_case(case_slug: str) -> dict:
     case_file = yaml.safe_load(open("localrun.cases.yaml"))
 
-    for case in case_file['cases']:
+    for case in case_file["cases"]:
         if case["case_slug"] == case_slug:
             return case
-    
+
     raise ValueError(f"Case {case_slug} not found in localrun.cases.yaml")
 
 
@@ -27,12 +28,12 @@ if __name__ == "__main__":
     override_params = selected.get("override_params", {})
 
     # Import and get flow variable
-    flow_name = selected_case.get('flow_name')
-    flow_module = importlib.import_module(selected_case.get('flow_path'))
+    flow_name = selected_case.get("flow_name")
+    flow_module = importlib.import_module(selected_case.get("flow_path"))
     flow = getattr(flow_module, flow_name)
 
     # Get original flow parameters
-    original_params = selected_case.get('params')
+    original_params = selected_case.get("params")
 
     # Merge original and override parameters
     flow_params = {**original_params, **override_params}
