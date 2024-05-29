@@ -24,14 +24,9 @@ with Flow(
 
     target_date = get_target_date(custom_target_date=CUSTOM_TARGET_DATE)
 
-    records_summary = get_records_summary(
-        target_date=target_date, db_url=db_url
-    )
+    records_summary = get_records_summary(target_date=target_date, db_url=db_url)
 
-    create_report(
-        target_date=target_date,
-        records_summary=records_summary
-    )
+    create_report(target_date=target_date, records_summary=records_summary)
 
 flow.schedule = update_schedule
 flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
