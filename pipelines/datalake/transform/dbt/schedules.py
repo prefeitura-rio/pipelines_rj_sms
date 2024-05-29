@@ -18,7 +18,7 @@ daily_parameters = [
 ]
 
 weekly_parameters = [
-    {"command": "test", "environment": "dev", "rename_flow": True},
+    {"command": "run", "environment": "dev", "rename_flow": True},
 ]
 
 
