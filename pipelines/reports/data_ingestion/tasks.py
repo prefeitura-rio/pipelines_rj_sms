@@ -142,7 +142,7 @@ def create_report(
             "mrg_id"
         ].nunique(),  # noqa
         "smsrio": records_summary[records_summary["datasource"] == "smsrio"]["mrg_id"].nunique(),
-        "total": records_summary["patient_code"].nunique(),
+        "total": records_summary["mrg_id"].nunique(),
     }
     df = pd.DataFrame(
         [
