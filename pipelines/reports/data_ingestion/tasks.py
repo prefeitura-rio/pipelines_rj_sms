@@ -175,7 +175,9 @@ def create_report(
         title=f"Ingestão Diária de Dados Brutos: {formatted_date}",
         message=f"""
 ## Pacientes
+```
 {df.to_markdown()}
+```
 """,
         monitor_slug="data-ingestion",
     )
