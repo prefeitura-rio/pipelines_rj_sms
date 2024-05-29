@@ -148,3 +148,6 @@ dmypy.json
 
 # VSCode project settings
 .vscode/
+
+# Local Run Files
+localrun.selected.yaml
