@@ -48,78 +48,35 @@ def get_target_date(custom_target_date: str) -> date:
         return date.today() - timedelta(days=1)
     else:
         return date.fromisoformat(custom_target_date)
-
-
+    
 @task(retry_delay=timedelta(minutes=5), max_retries=3)
-def get_raw_entity(
-    target_date: date,
+def get_records_summary(
     db_url: str,
-    entity_name: Literal["patientrecord", "patientcondition", "encounter"],
-) -> pd.DataFrame:
-    records = pd.read_sql(
-        f"""
-        SELECT
-            patient_code,
-            datasource.system,
-            MAX(created_at) AS moment
-        FROM raw__{entity_name}
-            INNER JOIN datasource
-                on cnes = raw__{entity_name}.data_source_id
-        WHERE DATE(created_at) = '{target_date}'
-        GROUP BY patient_code, datasource.system;
-        """,
-        db_url,
-    )
-    return records
-
-
-@task(retry_delay=timedelta(minutes=5), max_retries=3)
-def get_std_entity(
     target_date: date,
-    db_url: str,
-    entity_name: Literal["patientrecord", "patientcondition", "encounter"],
 ) -> pd.DataFrame:
+
     records = pd.read_sql(
         f"""
-        SELECT
-            std__{entity_name}.patient_code,
-            datasource.system,
-            MAX(std__{entity_name}.created_at) AS moment
-        FROM std__{entity_name}
-            INNER JOIN raw__{entity_name}
-                on std__{entity_name}.raw_source_id = raw__{entity_name}.id
-            INNER JOIN datasource
-                on cnes = raw__{entity_name}.data_source_id
-        WHERE DATE(std__{entity_name}.created_at) = '{target_date}'
-        GROUP BY std__{entity_name}.patient_code, datasource.system;
+        select distinct on (raw.id, std.id, mrg.id)
+            datasource.system as datasource,
+            raw.patient_code,
+            raw.id as raw_id, raw.created_at as raw_created_at,
+            std.id as std_id, std.created_at as std_created_at,
+            mrg.id as mrg_id, mrg.updated_at as mrg_updated_at
+        from raw__patientrecord raw
+            inner join datasource on raw.data_source_id = datasource.cnes
+            left join std__patientrecord std on raw.id = std.raw_source_id
+            left join patient mrg on mrg.patient_code = std.patient_code and mrg.updated_at > std.created_at
+        where date(raw.created_at) = '{target_date}';
         """,
-        db_url,
+        db_url
     )
     return records
-
-
-@task(retry_delay=timedelta(minutes=5), max_retries=3)
-def get_mrg_patientrecords(target_date: date, db_url: str) -> pd.DataFrame:
-    records = pd.read_sql(
-        f"""
-        SELECT
-            patient_code,
-            MAX(patient.created_at) AS moment
-        FROM patient
-        WHERE DATE(created_at) = '{target_date}'
-        GROUP BY patient_code;
-        """,
-        db_url,
-    )
-    return records
-
 
 @task
 def create_report(
     target_date: date,
-    raw_patientrecord: pd.DataFrame,
-    std_patientrecord: pd.DataFrame,
-    mrg_patient: pd.DataFrame,
+    records_summary: pd.DataFrame,
 ) -> None:
     """
     Creates a raw report from the raw data.
@@ -132,36 +89,44 @@ def create_report(
     """
     formatted_date = target_date.strftime("%d/%m/%Y")
 
-    raw_patientrecord = {
-        "total": raw_patientrecord.shape[0],
-        "vitai": raw_patientrecord[raw_patientrecord.system == "vitai"].shape[0],
-        "vitacare": raw_patientrecord[raw_patientrecord.system == "vitacare"].shape[0],
-        "smsrio": raw_patientrecord[raw_patientrecord.system == "smsrio"].shape[0],
+    raw = {
+        'vitai_total': records_summary[records_summary['datasource'] == 'vitai']['raw_id'].nunique(),
+        'vitai_unique': records_summary[records_summary['datasource'] == 'vitai']['patient_code'].nunique(),
+        'vitacare_total': records_summary[records_summary['datasource'] == 'vitacare']['raw_id'].nunique(),
+        'vitacare_unique': records_summary[records_summary['datasource'] == 'vitacare']['patient_code'].nunique(),
+        'smsrio_total': records_summary[records_summary['datasource'] == 'smsrio']['raw_id'].nunique(),
+        'smsrio_unique': records_summary[records_summary['datasource'] == 'smsrio']['patient_code'].nunique(),
+        'total': records_summary['raw_id'].nunique(),
+        'unique': records_summary['patient_code'].nunique(),
     }
-    std_patientrecord = {
-        "total": std_patientrecord.shape[0],
-        "vitai": std_patientrecord[std_patientrecord.system == "vitai"].shape[0],
-        "vitacare": std_patientrecord[std_patientrecord.system == "vitacare"].shape[0],
-        "smsrio": std_patientrecord[std_patientrecord.system == "smsrio"].shape[0],
+    std = {
+        'vitai_total': records_summary[records_summary['datasource'] == 'vitai']['std_id'].nunique(),
+        'vitai_unique': records_summary[records_summary['datasource'] == 'vitai']['patient_code'].nunique(),
+        'vitacare_total': records_summary[records_summary['datasource'] == 'vitacare']['std_id'].nunique(),
+        'vitacare_unique': records_summary[records_summary['datasource'] == 'vitacare']['patient_code'].nunique(),
+        'smsrio_total': records_summary[records_summary['datasource'] == 'smsrio']['std_id'].nunique(),
+        'smsrio_unique': records_summary[records_summary['datasource'] == 'smsrio']['patient_code'].nunique(),
+        'total': records_summary['std_id'].nunique(),
+        'unique': records_summary['patient_code'].nunique(),
     }
-    mrg_patient = {
-        "total": mrg_patient.shape[0],
+    mrg = {
+        'vitai': records_summary[records_summary['datasource'] == 'vitai']['mrg_id'].nunique(),
+        'vitacare': records_summary[records_summary['datasource'] == 'vitacare']['mrg_id'].nunique(),
+        'smsrio': records_summary[records_summary['datasource'] == 'smsrio']['mrg_id'].nunique(),
+        'total': records_summary['patient_code'].nunique(),
     }
+    df = pd.DataFrame([
+        [f"{raw['vitacare_total']} ({raw['vitacare_unique']})", f"{std['vitacare_total']} ({std['vitacare_unique']})", f"{mrg['vitacare']}"],
+        [f"{raw['vitai_total']} ({raw['vitai_unique']})", f"{std['vitai_total']} ({std['vitai_unique']})", f"{mrg['vitai']}"],
+        [f"{raw['smsrio_total']} ({raw['smsrio_unique']})", f"{std['smsrio_total']} ({std['smsrio_unique']})", f"{mrg['smsrio']}"],
+        [f"{raw['total']} ({raw['unique']})", f"{std['total']} ({std['unique']})", f"{mrg['total']}"],
+    ], columns=['RAW', 'STD', 'MRG'], index=['VITACARE', 'VITAI', 'SMSRIO', 'Total'])
 
     send_message(
         title=f"Ingestão Diária de Dados Brutos: {formatted_date}",
         message=f"""
 ## Pacientes
-__Registros Criados no Dia:__
-- **RAW**: +{raw_patientrecord['total']} registros no total
-  - VITAI: +{raw_patientrecord['vitai']} registros
-  - VITACARE: +{raw_patientrecord['vitacare']} registros
-  - SMSRIO: +{raw_patientrecord['smsrio']} registros
-- **STD**: +{std_patientrecord['total']} registros no total
-  - VITAI: +{std_patientrecord['vitai']} registros
-  - VITACARE: +{std_patientrecord['vitacare']} registros
-  - SMSRIO: +{std_patientrecord['smsrio']} registros
-- **MRG**: +{mrg_patient['total']} registros no total
+{df.to_markdown()}
 """,
         monitor_slug="data-ingestion",
     )

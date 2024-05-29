@@ -9,10 +9,8 @@ from pipelines.constants import constants
 from pipelines.reports.data_ingestion.schedules import update_schedule
 from pipelines.reports.data_ingestion.tasks import (
     create_report,
-    get_mrg_patientrecords,
     get_prontuarios_database_url,
-    get_raw_entity,
-    get_std_entity,
+    get_records_summary,
     get_target_date,
 )
 
@@ -26,25 +24,13 @@ with Flow(
 
     target_date = get_target_date(custom_target_date=CUSTOM_TARGET_DATE)
 
-    raw_patientrecord = get_raw_entity(
-        target_date=target_date, db_url=db_url, entity_name="patientrecord"
+    records_summary = get_records_summary(
+        target_date=target_date, db_url=db_url
     )
-    raw_patientcondition = get_raw_entity(
-        target_date=target_date, db_url=db_url, entity_name="patientcondition"
-    )
-    std_patientrecord = get_std_entity(
-        target_date=target_date, db_url=db_url, entity_name="patientrecord"
-    )
-    std_patientcondition = get_std_entity(
-        target_date=target_date, db_url=db_url, entity_name="patientcondition"
-    )
-    mrg_patient = get_mrg_patientrecords(target_date=target_date, db_url=db_url)
 
     create_report(
         target_date=target_date,
-        raw_patientrecord=raw_patientrecord,
-        std_patientrecord=std_patientrecord,
-        mrg_patient=mrg_patient,
+        records_summary=records_summary
     )
 
 flow.schedule = update_schedule
