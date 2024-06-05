@@ -35,7 +35,8 @@ def parse_date(date: str) -> str:
     Parses the given date string and returns it in the format "%Y-%m-%d".
 
     Args:
-        date (str): The date string to be parsed. Can be '', 'today', 'tomorrow', 'yesterday', or any other valid date string.
+        date (str): The date string to be parsed. Can be '', 'today', 'tomorrow', 
+            'yesterday', or any other valid date string.
 
     Returns:
         str: The parsed date string in the format "%Y-%m-%d".
