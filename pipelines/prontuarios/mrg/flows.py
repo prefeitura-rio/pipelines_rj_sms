@@ -11,6 +11,7 @@ from pipelines.prontuarios.mrg.constants import constants as mrg_constants
 from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
 from pipelines.prontuarios.mrg.tasks import (
     flatten_page_data,
+    parse_date,
     get_mergeable_records_from_api,
     get_patient_count,
     merge,
@@ -32,8 +33,8 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    START_DATETIME = Parameter("start_datetime", default="")
-    END_DATETIME = Parameter("end_datetime", default="")
+    START_DATETIME = Parameter("start_datetime", default="today")
+    END_DATETIME = Parameter("end_datetime", default="tomorrow")
 
     ####################################
     # Set environment
@@ -55,8 +56,13 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
+    parsed_start_datetime = parse_date(date=START_DATETIME)
+    parsed_end_datetime = parse_date(date=END_DATETIME)
+
     start_datetime, end_datetime = get_datetime_working_range(
-        start_datetime=START_DATETIME, end_datetime=END_DATETIME, return_as_str=True
+        start_datetime=parsed_start_datetime,
+        end_datetime=parsed_end_datetime,
+        return_as_str=True
     )
 
     mergeable_records_in_pages = get_mergeable_records_from_api(

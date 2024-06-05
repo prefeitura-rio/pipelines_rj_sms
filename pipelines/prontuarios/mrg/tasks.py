@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
 import asyncio
-
 import httpcore
 import httpx
 import prefect
@@ -28,6 +28,31 @@ def get_patient_count(data: list):
     log(f"Merging registers for {len(data)} patients")
 
     return len(data)
+
+@task
+def parse_date(date: str) -> str:
+    """
+    Parses the given date string and returns it in the format "%Y-%m-%d".
+
+    Args:
+        date (str): The date string to be parsed. Can be '', 'today', 'tomorrow', 'yesterday', or any other valid date string.
+
+    Returns:
+        str: The parsed date string in the format "%Y-%m-%d".
+    """
+    scheduled_datetime = prefect.context.get("scheduled_start_time")
+
+    if date == 'today':
+        date_value = scheduled_datetime.date()
+        return date_value.strftime("%Y-%m-%d")
+    elif date == 'tomorrow':
+        date_value = scheduled_datetime.date() + timedelta(days=1)
+        return date_value.strftime("%Y-%m-%d")
+    elif date == 'yesterday':
+        date_value = scheduled_datetime.date() - timedelta(days=1)
+        return date_value.strftime("%Y-%m-%d")
+    else:
+        return date
 
 
 @task
@@ -182,13 +207,14 @@ def put_to_api(payload_in_batch: list, api_url: str, endpoint_name: str, api_tok
     logger = prefect.context.get("logger")
 
     async def send_data_batch(merged_patient_batch):
+            
         transport = AsyncHTTPTransport(retries=3)
-        async with AsyncClient(transport=transport, timeout=180) as client:
+        async with AsyncClient(transport=transport, timeout=500) as client:
             try:
                 response = await client.put(
                     url=f"{api_url}{endpoint_name}",
                     headers={"Authorization": f"Bearer {api_token}"},
-                    timeout=180,
+                    timeout=500,
                     json=merged_patient_batch,
                 )
             except httpx.ReadTimeout:
