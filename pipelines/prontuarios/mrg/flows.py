@@ -11,10 +11,10 @@ from pipelines.prontuarios.mrg.constants import constants as mrg_constants
 from pipelines.prontuarios.mrg.schedules import mrg_daily_update_schedule
 from pipelines.prontuarios.mrg.tasks import (
     flatten_page_data,
-    parse_date,
     get_mergeable_records_from_api,
     get_patient_count,
     merge,
+    parse_date,
     put_to_api,
 )
 from pipelines.prontuarios.utils.tasks import (
@@ -60,9 +60,7 @@ with Flow(
     parsed_end_datetime = parse_date(date=END_DATETIME)
 
     start_datetime, end_datetime = get_datetime_working_range(
-        start_datetime=parsed_start_datetime,
-        end_datetime=parsed_end_datetime,
-        return_as_str=True
+        start_datetime=parsed_start_datetime, end_datetime=parsed_end_datetime, return_as_str=True
     )
 
     mergeable_records_in_pages = get_mergeable_records_from_api(

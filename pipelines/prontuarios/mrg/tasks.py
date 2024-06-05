@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from datetime import timedelta
 import asyncio
+from datetime import timedelta
+
 import httpcore
 import httpx
 import prefect
@@ -29,6 +30,7 @@ def get_patient_count(data: list):
 
     return len(data)
 
+
 @task
 def parse_date(date: str) -> str:
     """
@@ -42,13 +44,13 @@ def parse_date(date: str) -> str:
     """
     scheduled_datetime = prefect.context.get("scheduled_start_time")
 
-    if date == 'today':
+    if date == "today":
         date_value = scheduled_datetime.date()
         return date_value.strftime("%Y-%m-%d")
-    elif date == 'tomorrow':
+    elif date == "tomorrow":
         date_value = scheduled_datetime.date() + timedelta(days=1)
         return date_value.strftime("%Y-%m-%d")
-    elif date == 'yesterday':
+    elif date == "yesterday":
         date_value = scheduled_datetime.date() - timedelta(days=1)
         return date_value.strftime("%Y-%m-%d")
     else:
@@ -207,7 +209,7 @@ def put_to_api(payload_in_batch: list, api_url: str, endpoint_name: str, api_tok
     logger = prefect.context.get("logger")
 
     async def send_data_batch(merged_patient_batch):
-            
+
         transport = AsyncHTTPTransport(retries=3)
         async with AsyncClient(transport=transport, timeout=500) as client:
             try:
