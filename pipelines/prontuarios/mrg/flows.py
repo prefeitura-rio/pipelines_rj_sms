@@ -14,6 +14,7 @@ from pipelines.prontuarios.mrg.tasks import (
     get_mergeable_records_from_api,
     get_patient_count,
     merge,
+    parse_date,
     put_to_api,
 )
 from pipelines.prontuarios.utils.tasks import (
@@ -32,8 +33,8 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    START_DATETIME = Parameter("start_datetime", default="")
-    END_DATETIME = Parameter("end_datetime", default="")
+    START_DATETIME = Parameter("start_datetime", default="today")
+    END_DATETIME = Parameter("end_datetime", default="tomorrow")
 
     ####################################
     # Set environment
@@ -55,8 +56,11 @@ with Flow(
     ####################################
     # Task Section #1 - Get Data
     ####################################
+    parsed_start_datetime = parse_date(date=START_DATETIME)
+    parsed_end_datetime = parse_date(date=END_DATETIME)
+
     start_datetime, end_datetime = get_datetime_working_range(
-        start_datetime=START_DATETIME, end_datetime=END_DATETIME, return_as_str=True
+        start_datetime=parsed_start_datetime, end_datetime=parsed_end_datetime, return_as_str=True
     )
 
     mergeable_records_in_pages = get_mergeable_records_from_api(

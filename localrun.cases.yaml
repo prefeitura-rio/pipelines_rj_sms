@@ -9,3 +9,8 @@ cases:
     flow_name: "flow"
     params:
       environment: "dev"
+  - case_slug: "mrg-patientrecord"
+    flow_path: "pipelines.prontuarios.mrg.flows"
+    flow_name: "patientrecord_mrg"
+    params:
+      environment: "dev"

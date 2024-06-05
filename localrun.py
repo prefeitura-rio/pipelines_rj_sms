@@ -39,4 +39,4 @@ if __name__ == "__main__":
     flow_params = {**original_params, **override_params}
 
     # Run the flow with the parameters
-    flow.run(**flow_params)
+    flow.run(**flow_params, run_on_schedule=False)
