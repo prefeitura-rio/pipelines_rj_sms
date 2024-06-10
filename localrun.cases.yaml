@@ -1,0 +1,16 @@
+cases:
+  - case_slug: "report-endpoint-health"
+    flow_path: "pipelines.reports.endpoint_health.flows"
+    flow_name: "disponibilidade_api"
+    params:
+      environment: "dev"
+  - case_slug: "report-data-ingestion"
+    flow_path: "pipelines.reports.data_ingestion.flows"
+    flow_name: "flow"
+    params:
+      environment: "dev"
+  - case_slug: "mrg-patientrecord"
+    flow_path: "pipelines.prontuarios.mrg.flows"
+    flow_name: "patientrecord_mrg"
+    params:
+      environment: "dev"

@@ -104,7 +104,7 @@ with Flow(
         )
 
         #####################################
-        # Tasks section #3 - Transform data
+        # Tasks section #2 - Transform data
         #####################################
 
         transformed_file = transform_data(
@@ -112,7 +112,7 @@ with Flow(
         )
 
         #####################################
-        # Tasks section #4 - Load data
+        # Tasks section #3 - Load data
         #####################################
 
         create_partitions_task = create_partitions(

@@ -2,14 +2,12 @@
 
 ## Setup
 
-### Preparação de Ambiente
+### Etapa 1 - Preparação de Ambiente
 - Na raiz do projeto, prepare o ambiente:
  - `poetry shell`
  - `poetry install`
-- Na raiz do projeto, fora do ambiente virtual:
- - `pip install flake8`
 
-### Debugging
+### Etapa 2 - Configuração de Debugging
 - Crie pasta na raiz: `.vscode`
 - Dentro da pasta, crie um arquivo: `launch.json` e coloque o seguinte conteúdo dentro dele:
 
@@ -18,28 +16,53 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug: Flows",
+            "name": "Projeto",
             "type": "debugpy",
             "request": "launch",
-            "program": "local_run.py",
-            "args": [
-                "--case", "0"
-            ],
+            "program": "localrun.py",
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "env": {
-                "INFISICAL_ADDRESS": <INFISICAL_ADDRESS>,
-                "INFISICAL_TOKEN": <INFISICAL_TOKEN>,
-                "PREFECT__LOGGING__LEVEL": "DEBUG"
+                "INFISICAL_ADDRESS": "${INFISICAL_ADDRESS}",
+                "INFISICAL_TOKEN": "${INFISICAL_TOKEN}",
+                "PREFECT__LOGGING__LEVEL": "INFO"
             }
         }
     ]
 }
 ```
-- Agora este projeto fica disponível na aba de Debugging.
+- Crie também um arquivo `.env` na raiz do projeto que defina as variáveis de ambiente: `INFISICAL_ADDRESS` e `INFISICAL_TOKEN`
+    - Para preencher estes valores, entre em contato com o responsável pelo projeto.
 
-## Rodando (local)
-- Para rodar basta usar o Debugger do VSCode, que vai detectar automaticamente a configuração feita.
+### Etapa 3 - Configurando Seleção de Casos
+_Casos (inspirado em casos de teste) são combinações de flow com parâmetros especificos. Eles estão definidos no arquivo `localrun.cases.yaml`. Na hora de executar localmente um caso, o script `localrun.py` procura qual está selecionado no arquivo `localrun.selected.yaml`._
+- Crie um arquivo `localrun.selected.yaml` com conteúdo semelhante ao abaixo.
+
+```yaml
+selected_case: "report-data-ingestion"
+override_params:
+  environment: "dev"
+```
+
+- O arquivo acima diz que o caso de slug `report-data-ingestion` será executado quando iniciar a depuração. Além disso, ele t
+- Pronto, agora este projeto fica disponível na aba de Debugging do VSCode para depuração.
+
+### Etapa 4 (opcional) - Definindo Novos Casos
+- Edite o arquivo `localrun.cases.yaml` criando novos casos. São os campos:
+    - `case_slug`: Apelido do caso que serve como identificador.
+    - `flow_path`: Caminho do módulo python em que o flow está definido. O mesmo usando no import do python.
+    - `flow_name`: Nome da variável que o flow está armazenado dentro do módulo definido em `flow_path`.
+    - `params`: Parâmetros que serão utilizados na execução do flow.
+- O exemplo abaixo representa a definição de um caso:
+
+```yaml
+cases:
+  - case_slug: "report-endpoint-health"
+    flow_path: "pipelines.reports.endpoint_health.flows"
+    flow_name: "disponibilidade_api"
+    params:
+      environment: "dev"
+```
 
 ## Deploy em Staging
 - Sempre trabalhe com branchs `staging/<nome>`

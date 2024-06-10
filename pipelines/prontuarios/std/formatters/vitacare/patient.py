@@ -86,9 +86,11 @@ def standardize_address_data(
     address_dic = {
         "use": None,
         "type": None,
-        "line": data.get("tipoLogradouro") + " " + data.get("logradouro")
-        if (pd.isna(data.get("logradouro")) is False)
-        else None,
+        "line": (
+            data.get("tipoLogradouro") + " " + data.get("logradouro")
+            if (pd.isna(data.get("logradouro")) is False)
+            else None
+        ),
         "city": data.get("city"),
         "country": data.get("country"),
         "state": data.get("state"),
@@ -244,9 +246,9 @@ def standardize_decease_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if (data.get("obito") == "false") | (data.get("obito") == False):
+    if (data.get("obito") == "false") | (data.get("obito") is False):
         data["deceased"] = False
-    if (data.get("obito") == "true") | (data.get("obito") == True):
+    if (data.get("obito") == "true") | (data.get("obito") is True):
         data["deceased"] = True
     else:
         data["deceased"] = None

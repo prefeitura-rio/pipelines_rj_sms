@@ -6,15 +6,14 @@ import json
 from datetime import date, timedelta
 
 import pandas as pd
-from prefeitura_rio.pipelines_utils.logging import log
+from sqlalchemy.exc import InternalError
 
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.misc import build_additional_fields
 from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_format
 from pipelines.prontuarios.utils.validation import is_valid_cpf
-
-# from prefect import task
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_secret_key
 
 
@@ -92,9 +91,12 @@ def extract_patient_data_from_db(
     else:
         query = query.replace("{WHERE_CLAUSE}", "")
 
-    patients = pd.read_sql(query, db_url)
-
-    return patients
+    try:
+        patients = pd.read_sql(query, db_url)
+        return patients
+    except InternalError as e:
+        log(f"Error extracting data from database: {e}", level="error")
+        raise e
 
 
 @task()

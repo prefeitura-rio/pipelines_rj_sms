@@ -40,7 +40,7 @@ flow_parameters = [
         "gsheets_sheet_name": "Farmácia Digital",
         "rename_flow": True,
         "table_id": "gerenciamento_acesso_looker_farmacia",
-        "url": "https://docs.google.com/spreadsheets/d/1VCtUiRFxMy1KatBfw9chUppPEIPSGDup9wiwfm9-Djo",
+        "url": "https://docs.google.com/spreadsheets/d/1VCtUiRFxMy1KatBfw9chUppPEIPSGDup9wiwfm9-Djo",  # noqa
         "url_type": "google_sheet",
     },
 ]
