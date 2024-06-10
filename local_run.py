@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
+from pipelines.prontuarios.std.vitai.flows import vitai_standardization
 
 # ==================================================
 # CONFIGURATION
@@ -10,12 +10,12 @@ from pipelines.prontuarios.std.smsrio.flows import smsrio_standardization
 # ==================================================
 flows_run_cases = [
     (
-        smsrio_standardization,
+        vitai_standardization,
         {
-            "environment": "dev",
+            "environment": "prod",
             "rename_flow": False,
-            "start_datetime": "2024-04-09 20:32:00",
-            "end_datetime": "2024-04-09 20:33:00",
+            "start_datetime": "2024-04-09 00:00:00",
+            "end_datetime": "2024-04-10 00:00:00",
         },
     )
 ]
@@ -36,7 +36,7 @@ parser.add_argument(
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    flow, params = flows_run_cases[args.case]
+    flow, params = flows_run_cases[args.case[0]]
 
     params["environment"] = args.environment
     params["run_on_schedule"] = False

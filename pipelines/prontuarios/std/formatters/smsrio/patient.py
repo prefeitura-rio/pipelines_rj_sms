@@ -27,12 +27,12 @@ def standardize_race(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if (data["racaCor"] is None) | (data["racaCor"] == ""):
+    if (data.get("racaCor") is None) | (data.get("racaCor") == ""):
         return data
-    elif bool(re.search("SEM INFO", data["racaCor"])):
+    elif bool(re.search("SEM INFO", data.get("racaCor"))):
         return data
     else:
-        data["racaCor"] = data["racaCor"].lower()
+        data["racaCor"] = data.get("racaCor").lower()
         data["racaCor"] = unidecode(data["racaCor"])
         if data["racaCor"] in ["branca", "preta", "parda", "amarela", "indigena"]:
             data["race"] = data["racaCor"]
@@ -49,12 +49,12 @@ def standardize_nationality(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if (data["nacionalidade"] is None) | (data["nacionalidade"] == ""):
+    if (data.get("nacionalidade") is None) | (data.get("nacionalidade") == ""):
         return data
-    elif data["nacionalidade"] == "A":
+    elif data.get("nacionalidade") == "A":
         return data
     else:
-        data["nationality"] = data["nacionalidade"]
+        data["nationality"] = data.get("nacionalidade")
         return data
 
 
@@ -68,8 +68,8 @@ def standardize_parents_names(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data["father_name"] = clean_name_fields(data["nome_pai"])
-    data["mother_name"] = clean_name_fields(data["nome_mae"])
+    data["father_name"] = clean_name_fields(data.get("nome_pai"))
+    data["mother_name"] = clean_name_fields(data.get("nome_mae"))
     return data
 
 
@@ -83,7 +83,7 @@ def standardize_cns_list(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    lista = data["cns_provisorio"]
+    lista = data.get("cns_provisorio")
     lista = json.loads(lista) if lista is not None else [None]
 
     if (len(lista) == 1) & (lista[0] is None):
@@ -121,13 +121,13 @@ def standardize_decease_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data["deceased_date"] = clean_datetime_field(data["dt_obito"])
+    data["deceased_date"] = clean_datetime_field(data.get("dt_obito"))
 
-    if data["obito"] == "1":
+    if data.get("obito") == "1":
         data["deceased"] = True
-    elif data["obito"] == "0":
+    elif data.get("obito") == "0":
         data["deceased"] = False
-    elif pd.notna(data["deceased_date"]):
+    elif pd.notna(data.get("deceased_date")):
         data["deceased"] = True
     else:
         pass
@@ -158,10 +158,10 @@ def standardize_address_data(
         "use": None,
         "type": None,
         "line": format_address(
-            data["end_tp_logrado_nome"],
-            data["end_logrado"],
-            data["end_numero"],
-            data["end_complem"],
+            data.get("end_tp_logrado_nome"),
+            data.get("end_logrado"),
+            data.get("end_numero"),
+            data.get("end_complem"),
         ),
         "city": data.get("city"),
         "country": data.get("country"),
@@ -191,7 +191,7 @@ def standardize_telecom_data(data: dict) -> dict:
         data (dict) : Individual data record standardized
     """
 
-    phones_unique = json.loads(data["telefones"]) if data["telefones"] is not None else [None]
+    phones_unique = json.loads(data.get("telefones")) if data.get("telefones") is not None else [None]
     phones_unique = list(set(phones_unique))
     phones_std = list(map(clean_phone_records, phones_unique))
     data = clean_email_records(data)
@@ -217,7 +217,7 @@ def standardize_telecom_data(data: dict) -> dict:
         if phone is not None:
             phone_clean_list.append(format_telecom(phone, "phone"))
 
-    phone_clean_list.append(format_telecom(data["email"], "email"))
+    phone_clean_list.append(format_telecom(data.get("email"), "email"))
 
     telecom_list = [contact for contact in phone_clean_list if contact is not None]
 
@@ -246,14 +246,14 @@ def transform_to_ibge_code(
         data (dict) : Individual data record standardized
     """
     # Normalizando tipo de logradouros
-    if data["end_tp_logrado_cod"] in logradouros_dict.keys():
-        data["end_tp_logrado_nome"] = logradouros_dict[data["end_tp_logrado_cod"]]
+    if data.get("end_tp_logrado_cod") in logradouros_dict.keys():
+        data["end_tp_logrado_nome"] = logradouros_dict[data.get("end_tp_logrado_cod")]
     else:
         data["end_tp_logrado_nome"] = None
 
     # Dados local de residencia:
-    if data["cod_mun_res"] in city_dict.keys():
-        data["city"] = city_dict[data["cod_mun_res"]]
+    if data.get("cod_mun_res") in city_dict.keys():
+        data["city"] = city_dict[data.get("cod_mun_res")]
         data["state"] = data["city"][0:2]
         data["country"] = "010"
     else:
@@ -262,8 +262,8 @@ def transform_to_ibge_code(
         data["country"] = None
 
     # Dados local de nascimento:
-    if data["cod_mun_nasc"] in city_dict.keys():
-        data["birth_city_cod"] = city_dict[data["cod_mun_nasc"]]
+    if data.get("cod_mun_nasc") in city_dict.keys():
+        data["birth_city_cod"] = city_dict[data.get("cod_mun_nasc")]
         data["birth_state_cod"] = data["birth_city_cod"][0:2]
         data["birth_country_cod"] = "010"
     else:
