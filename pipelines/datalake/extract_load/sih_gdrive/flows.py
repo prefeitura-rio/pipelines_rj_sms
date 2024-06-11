@@ -40,7 +40,7 @@ with Flow(
 
     # GCP
     DATASET_ID = "brutos_sih"
-    TABLE_ID =  "indicadores_hospitalares_parquet"
+    TABLE_ID =  "indicadores_hospitalares"
 
     #####################################
     # Tasks section #3 - Transform data
