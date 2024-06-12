@@ -26,8 +26,17 @@ def standardize_parents_names(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    data["father_name"] = clean_name_fields(data["nomePai"])
-    data["mother_name"] = clean_name_fields(data["nomeMae"])
+    data["father_name"] = (
+        clean_name_fields(data.get("nomePai"))
+        if clean_name_fields(data.get("nomePai")) != ""
+        else None
+    )
+    data["mother_name"] = (
+        clean_name_fields(data.get("nomeMae"))
+        if clean_name_fields(data.get("nomeMae")) != ""
+        else None
+    )
+
     return data
 
 
@@ -41,21 +50,21 @@ def standardize_race(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data["racaCor"] is None:
+    if data.get("racaCor") is None:
         return data
-    elif (bool(re.search("SEM INFO", data["racaCor"]))) | (
-        bool(re.search("RECEM NASCIDO N/A", data["racaCor"]))
+    elif (bool(re.search("SEM INFO", data.get("racaCor")))) | (
+        bool(re.search("RECEM NASCIDO N/A", data.get("racaCor")))
     ):
         return data
 
-    elif data["racaCor"] == "NEGRO":
+    elif data.get("racaCor") == "NEGRO":
         data["race"] = "preta"
         return data
     else:
-        data["racaCor"] = data["racaCor"].lower()
-        data["racaCor"] = unidecode(data["racaCor"])
-        if data["racaCor"] in ["branca", "preta", "parda", "amarela", "indigena"]:
-            data["race"] = data["racaCor"]
+        data["racaCor"] = data.get("racaCor").lower()
+        data["racaCor"] = unidecode(data.get("racaCor"))
+        if data.get("racaCor") in ["branca", "preta", "parda", "amarela", "indigena"]:
+            data["race"] = data.get("racaCor")
         return data
 
 
@@ -69,11 +78,11 @@ def standardize_nationality(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    if data["nacionalidade"] is None:
+    if data.get("nacionalidade") is None:
         return data
-    elif data["nacionalidade"] == "BRASILEIRA":
+    elif data.get("nacionalidade") == "BRASILEIRA":
         data["nationality"] = "B"
-    elif data["nacionalidade"] == "NATURALIZADA":
+    elif data.get("nacionalidade") == "NATURALIZADA":
         data["nationality"] = "N"
     else:
         data["nacionality"] = "E"
@@ -90,7 +99,7 @@ def standardize_cns_list(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    lista = [data["cns"]]
+    lista = [data.get("cns")]
     if (len(lista) == 1) & ((lista[0] is None) | (lista[0] == "")):
         return data
     else:
@@ -109,16 +118,17 @@ def standardize_decease_info(data: dict) -> dict:
     Returns:
         data (dict) : Individual data record standardized
     """
-    deceased_date_field = [field for field in data.keys() if field in ["dt_obito", "dataObito"]][0]
-
-    data["deceased_date"] = clean_datetime_field(data[deceased_date_field])
-    if not pd.isna(data["deceased_date"]):
-        data["deceased"] = True
-    elif "obito" in data.keys():
-        if data["obito"] == 1:
+    deceased_date_list = [field for field in data.keys() if field in ["dt_obito", "dataObito"]]
+    if len(deceased_date_list) == 1:
+        deceased_date_field = deceased_date_list[0]
+        data["deceased_date"] = clean_datetime_field(data[deceased_date_field])
+        if not pd.isna(data["deceased_date"]):
             data["deceased"] = True
-    else:
-        data["deceased"] = False
+        elif "obito" in data.keys():
+            if data["obito"] == 1:
+                data["deceased"] = True
+        else:
+            data["deceased"] = False
 
     return data
 
@@ -146,11 +156,17 @@ def standardize_address_data(
     else:
         hasCep = 0
 
+    if pd.isna(data.get("tipoLogradouro")):
+        data["tipoLogradouro"] = "Rua"
+
     address_dic = {
         "use": None,
         "type": None,
         "line": format_address(
-            data["tipoLogradouro"], data["nomeLogradouro"], data["numero"], data["complemento"]
+            data.get("tipoLogradouro"),
+            data.get("nomeLogradouro"),
+            data.get("numero"),
+            data.get("complemento"),
         ),
         "city": data.get("city"),
         "country": data.get("country"),
