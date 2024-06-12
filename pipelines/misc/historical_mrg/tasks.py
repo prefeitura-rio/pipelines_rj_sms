@@ -32,11 +32,7 @@ def build_db_url(environment: str):
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
-def build_param_list(
-    batch_size: int,
-    environment: str,
-    db_url: str
-):
+def build_param_list(batch_size: int, environment: str, db_url: str):
     query = """
         SELECT COUNT(DISTINCT patient_cpf) as total
         FROM std__patientrecord
