@@ -14,6 +14,18 @@ cases:
     flow_name: "patientrecord_mrg"
     params:
       environment: "dev"
+  - case_slug: "datalake-extract_load-vitacare-agendador"
+    flow_path: "pipelines.datalake.extract_load.vitacare_api.flows"
+    flow_name: "sms_dump_vitacare_estoque_scheduler"
+    params:
+      environment: "dev"
+      rename_flow: false
+      endpoint: "posicao"
+      target_date: "today"
+      ap: None
+      dataset_id: "brutos_prontuario_vitacare"
+      table_id: "estoque_posicao"
+
   - case_slug: "mrg-patientrecord-historical_batch"
     flow_path: "pipelines.misc.historical_mrg.flows"
     flow_name: "mrg_historic_patientrecord_batch"

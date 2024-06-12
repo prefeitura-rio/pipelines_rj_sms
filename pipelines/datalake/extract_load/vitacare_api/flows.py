@@ -189,6 +189,7 @@ with Flow(
             environment=ENVIRONMENT,
             endpoint=ENDPOINT,
             target_date=TARGET_DATE,
+            ap=AP,
         )
 
     parameter_list = create_parameter_list(
