@@ -2,9 +2,9 @@
 import asyncio
 from datetime import timedelta
 from math import ceil
-import pandas as pd
 
 import httpx
+import pandas as pd
 from httpx import AsyncClient
 
 from pipelines.prontuarios.mrg.functions import (
