@@ -3,12 +3,18 @@
 Utils for merge flow
 """
 from typing import Tuple
-
 import pandas as pd
+
+from pipelines.utils.logger import log
 
 
 def ranking_values(df_unique, field, ranks_merge):
-    from_to_dict = ranks_merge[ranks_merge["campo"] == field][["smsrio", "vitai"]].to_dict(
+    ranking_config = ranks_merge[ranks_merge["campo"] == field]
+    if ranking_config.empty:
+        log(f"`{field}` not found in ranking config", level="error")
+        raise Exception(f"{field} not found in ranking config")
+
+    from_to_dict = ranking_config[["smsrio", "vitai"]].to_dict(
         orient="records"
     )[0]
     df_unique.loc[:, "ranking"] = df_unique.loc[:, "system"].map(from_to_dict)
@@ -46,6 +52,9 @@ def normalize_payload_list(register_list: dict) -> pd.DataFrame:
 def first_merge(group: dict, ranking_df: pd.DataFrame) -> Tuple[dict, dict]:
     fields_to_pass = [
         "event_moment",
+        "id",
+        "created_at",
+        "updated_at",
         "ingestion_moment",
         "active",
         "raw_source_id",

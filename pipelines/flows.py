@@ -25,3 +25,4 @@ from pipelines.reports.endpoint_health.flows import *
 from pipelines.tools.api_healthcheck.flows import *
 from pipelines.tools.unschedule_old_flows.flows import *
 from pipelines.tools.vitacare_healthcheck.flows import *
+from pipelines.misc.historical_mrg.flows import *
