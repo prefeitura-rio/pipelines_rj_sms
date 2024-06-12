@@ -3,6 +3,7 @@
 Utils for merge flow
 """
 from typing import Tuple
+
 import pandas as pd
 
 from pipelines.utils.logger import log
@@ -14,9 +15,7 @@ def ranking_values(df_unique, field, ranks_merge):
         log(f"`{field}` not found in ranking config", level="error")
         raise Exception(f"{field} not found in ranking config")
 
-    from_to_dict = ranking_config[["smsrio", "vitai"]].to_dict(
-        orient="records"
-    )[0]
+    from_to_dict = ranking_config[["smsrio", "vitai"]].to_dict(orient="records")[0]
     df_unique.loc[:, "ranking"] = df_unique.loc[:, "system"].map(from_to_dict)
 
     if len(df_unique[df_unique["ranking"] == 1]) != 1:
