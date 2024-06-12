@@ -14,3 +14,15 @@ cases:
     flow_name: "patientrecord_mrg"
     params:
       environment: "dev"
+  - case_slug: "mrg-patientrecord-historical_batch"
+    flow_path: "pipelines.misc.historical_mrg.flows"
+    flow_name: "mrg_historic_patientrecord_batch"
+    params:
+      environment: "dev"
+      limit: 1000
+      offset: 0
+  - case_slug: "mrg-patientrecord-historical"
+    flow_path: "pipelines.misc.historical_mrg.flows"
+    flow_name: "mrg_historic_patientrecord"
+    params:
+      environment: "dev"
