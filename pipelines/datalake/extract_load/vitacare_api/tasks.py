@@ -285,7 +285,6 @@ def create_parameter_list(
 # REPROCESS TASKS
 # ==============================
 
-
 @task
 def retrieve_cases_to_reprocessed_from_birgquery(
     dataset_id: str, table_id: str, query_limit: None
