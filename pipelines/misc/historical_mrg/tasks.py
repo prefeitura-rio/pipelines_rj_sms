@@ -2,6 +2,7 @@
 import asyncio
 from datetime import timedelta
 from math import ceil
+import pandas as pd
 
 import httpx
 from httpx import AsyncClient
