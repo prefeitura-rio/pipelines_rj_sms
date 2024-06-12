@@ -6,32 +6,28 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.utils.tasks import get_secret_key
-from pipelines.prontuarios.constants import constants as prontuarios_constants
-from pipelines.prontuarios.utils.tasks import (
-    get_api_token,
-    rename_current_flow_run
-)
-from pipelines.utils.credential_injector import (
-    authenticated_create_flow_run as create_flow_run, 
-    authenticated_wait_for_flow_run as wait_for_flow_run
-)
-
-from pipelines.prontuarios.mrg.constants import constants as mrg_constants
 from pipelines.misc.historical_mrg.tasks import (
     build_db_url,
     build_param_list,
-    send_merged_data_to_api,
     get_mergeable_data_from_db,
-    merge_patientrecords
+    merge_patientrecords,
+    send_merged_data_to_api,
 )
+from pipelines.prontuarios.constants import constants as prontuarios_constants
+from pipelines.prontuarios.mrg.constants import constants as mrg_constants
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_current_flow_labels,
     get_project_name,
-    rename_current_flow_run
+    rename_current_flow_run,
 )
-
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
+from pipelines.utils.tasks import get_secret_key
 
 with Flow(
     name="Prontuários - Unificação de Pacientes (Histórico) - Batch",
@@ -60,30 +56,19 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(
-            environment=ENVIRONMENT,
-            is_initial_extraction=True
+            environment=ENVIRONMENT, is_initial_extraction=True
         )
     ####################################
     # Set environment
     ####################################
-        
+
     db_url = build_db_url(environment=ENVIRONMENT)
 
-    mergeable_data = get_mergeable_data_from_db(
-        limit=LIMIT,
-        offset=OFFSET,
-        db_url=db_url
-    )
+    mergeable_data = get_mergeable_data_from_db(limit=LIMIT, offset=OFFSET, db_url=db_url)
 
-    merged_data = merge_patientrecords(
-        mergeable_data=mergeable_data
-    )
+    merged_data = merge_patientrecords(mergeable_data=mergeable_data)
 
-    send_merged_data_to_api(
-        merged_data=merged_data,
-        api_token=api_token,
-        api_url=api_url
-    )
+    send_merged_data_to_api(merged_data=merged_data, api_token=api_token, api_url=api_url)
 
 mrg_historic_patientrecord_batch.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 mrg_historic_patientrecord_batch.executor = LocalDaskExecutor(num_workers=1)
@@ -132,4 +117,3 @@ mrg_historic_patientrecord.run_config = KubernetesRun(
     ],
     memory_limit="5Gi",
 )
-
