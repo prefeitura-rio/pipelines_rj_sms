@@ -4,7 +4,7 @@ from datetime import timedelta
 
 import asyncio
 import httpx
-from httpx import AsyncClient, AsyncHTTPTransport
+from httpx import AsyncClient
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -36,7 +36,7 @@ def build_param_list(
     environment: str,
     db_url: str
 ):
-    query = f"""
+    query = """
         SELECT COUNT(DISTINCT patient_cpf) as total
         FROM std__patientrecord
     """
