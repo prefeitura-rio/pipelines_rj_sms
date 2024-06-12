@@ -20,9 +20,7 @@ from pipelines.utils.tasks import get_secret_key
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def build_db_url(environment: str):
-    # host = get_secret_key.run(secret_path="/", secret_name="DB_IP", environment=environment)
-    host = get_secret_key.run(secret_path="/", secret_name="DB_IP", environment="dev")
-
+    host = get_secret_key.run(secret_path="/", secret_name="DB_IP", environment=environment)
     user = get_secret_key.run(secret_path="/", secret_name="DB_USER", environment=environment)
     password = get_secret_key.run(
         secret_path="/", secret_name="DB_PASSWORD", environment=environment
