@@ -64,9 +64,9 @@ def execute_dbt(
     repository_path: str,
     command: str = "run",
     target: str = "dev",
-    model: str = "",
-    select: str = "",
-    exclude: str = "",
+    model="",
+    select="",
+    exclude="",
 ):
     """
     Executes a dbt command with the specified parameters.
@@ -131,7 +131,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         if status == "fail":
             is_successful = False
             general_report.append(
-                f"- 🛑 FAIL: `{command_result.node.name}`\n  - {command_result.message}"
+                f"- 🛑 FAIL: `{command_result.node.name}`\n  - {command_result.message}\n  - select * from {command_result.node.relation_name}"
             )
         elif status == "error":
             is_successful = False
@@ -141,7 +141,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         elif status == "warn":
             has_warnings = True
             general_report.append(
-                f"- ⚠️ WARN: `{command_result.node.name}`\n  - {command_result.message}"
+                f"- ⚠️ WARN: `{command_result.node.name}`\n  - {command_result.message}\n  - select * from {command_result.node.relation_name}"
             )
 
     general_report = sorted(general_report)
@@ -177,7 +177,13 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
 
 
 @task
-def rename_current_flow_run_dbt(command: str, model: str, target: str) -> None:
+def rename_current_flow_run_dbt(
+    command: str,
+    target: str,
+    model: str,
+    select: str,
+    exclude: str,
+) -> None:
     """
     Rename the current flow run.
     """
@@ -186,5 +192,11 @@ def rename_current_flow_run_dbt(command: str, model: str, target: str) -> None:
 
     if model:
         client.set_flow_run_name(flow_run_id, f"dbt {command} --model {model} --target {target}")
+    elif select:
+        client.set_flow_run_name(flow_run_id, f"dbt {command} --select {select} --target {target}")
+    elif exclude:
+        client.set_flow_run_name(
+            flow_run_id, f"dbt {command} --exclude {exclude} --target {target}"
+        )
     else:
         client.set_flow_run_name(flow_run_id, f"dbt {command} --target {target}")
