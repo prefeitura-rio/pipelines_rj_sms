@@ -60,15 +60,29 @@ def download_repository():
 
 
 @task
-def execute_dbt(repository_path: str, command: str = "run", target: str = "dev", model: str = ""):
+def execute_dbt(
+    repository_path: str,
+    command: str = "run",
+    target: str = "dev",
+    model: str = "",
+    select: str = "",
+    exclude: str = "",
+):
     """
-    Execute commands in DBT.
+    Executes a dbt command with the specified parameters.
 
     Args:
-        command (str): Command to be executed by DBT. Can be "run", "build" or "test".
-        model (str): Name of model. Can be empty.
-        target (str): Name of the target that will be used by dbt
+        repository_path (str): The path to the dbt repository.
+        command (str, optional): The dbt command to execute. Defaults to "run".
+        target (str, optional): The dbt target to use. Defaults to "dev".
+        model (str, optional): The specific dbt model to run. Defaults to "".
+        select (str, optional): The dbt selector to filter models. Defaults to "".
+        exclude (str, optional): The dbt selector to exclude models. Defaults to "".
+
+    Returns:
+        dbtRunnerResult: The result of the dbt command execution.
     """
+
     cli_args = [
         command,
         "--profiles-dir",
@@ -81,6 +95,10 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
 
     if model:
         cli_args.extend(["--models", model])
+    if select:
+        cli_args.extend(["--select", select])
+    if exclude:
+        cli_args.extend(["--exclude", exclude])
 
     dbt = dbtRunner()
     running_result: dbtRunnerResult = dbt.invoke(cli_args)
