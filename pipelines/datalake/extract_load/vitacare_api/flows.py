@@ -52,7 +52,7 @@ with Flow(
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    REPROCESS_MODE = Parameter("reprocess_mode", default=False)
+    IS_ROUTINE = Parameter("is_routine", default=True)
 
     # Vitacare API
     CNES = Parameter("cnes", default=None, required=True)
@@ -75,6 +75,7 @@ with Flow(
 
         rename_current_flow_run(
             environment=ENVIRONMENT,
+            is_routine=IS_ROUTINE,
             target_date=TARGET_DATE,
             unidade=healthcenter_name,
             endpoint=ENDPOINT,
@@ -231,76 +232,3 @@ sms_dump_vitacare_estoque_scheduler.run_config = KubernetesRun(
     ],
 )
 sms_dump_vitacare_estoque_scheduler.schedule = vitacare_daily_update_schedule
-
-
-# with Flow(
-#    name="Dump Vitacare Reprocessamento - Reprocessar dados de Farmácia Vitacare",
-# ) as sms_dump_vitacare_estoque_reprocessamento:
-#    #####################################
-#    # Parameters
-#    #####################################
-#
-#    # Flow
-#    RENAME_FLOW = Parameter("rename_flow", default=False)
-#
-#    # INFISICAL
-#    INFISICAL_PATH = vitacare_constants.INFISICAL_PATH.value
-#
-#    # Vitacare API
-#    ENDPOINT = Parameter("endpoint", required=True)
-#
-#    # GCP
-#    ENVIRONMENT = Parameter("environment", default="dev")
-#    DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
-#    TABLE_ID = Parameter("table_id", required=True)
-#
-#    # Reprocess
-#    PARALLEL_RUNS = Parameter("parallel_runs", default=20)
-#    LIMIT_RUNS = Parameter("limit_runs", default=None)
-#
-#    #####################################
-#    # Set environment
-#    ####################################
-#    inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
-#
-#    with case(RENAME_FLOW, True):
-#        rename_flow_task = rename_current_flow(
-#            table_id=TABLE_ID, upstream_tasks=[inject_gcp_credentials_task]
-#        )
-#
-#    ####################################
-#    # Tasks section #1 - Acccess reprocessing cases
-#    #####################################
-#
-#    retrieve_cases_task = retrieve_cases_to_reprocessed_from_birgquery(
-#        dataset_id=DATASET_ID,
-#        table_id=TABLE_ID,
-#        query_limit=LIMIT_RUNS,
-#        upstream_tasks=[inject_gcp_credentials_task],
-#    )
-#
-#    ####################################
-#    # Tasks section #2 - Reprocess cases
-#    #####################################
-#
-#    creat_multiples_flows_runs_task = creat_multiples_flows_runs(
-#        run_list=retrieve_cases_task,
-#        environment=ENVIRONMENT,
-#        table_id=TABLE_ID,
-#        endpoint=ENDPOINT,
-#        parallel_runs=PARALLEL_RUNS,
-#        upstream_tasks=[retrieve_cases_task],
-#    )
-#
-#
-# sms_dump_vitacare_estoque_reprocessamento.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-# sms_dump_vitacare_estoque_reprocessamento.executor = LocalDaskExecutor(num_workers=10)
-# sms_dump_vitacare_estoque_reprocessamento.run_config = KubernetesRun(
-#    image=constants.DOCKER_IMAGE.value,
-#    labels=[
-#        constants.RJ_SMS_AGENT_LABEL.value,
-#    ],
-#    memory_limit="2Gi",
-# )
-
-# sms_dump_vitacare_estoque_reprocessamento.schedule = vitacare_daily_reprocess_schedule
