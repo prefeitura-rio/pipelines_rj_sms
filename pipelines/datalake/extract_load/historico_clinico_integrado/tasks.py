@@ -32,7 +32,7 @@ def download_from_db(
         str: The file path of the downloaded CSV file.
     """
 
-    connection_string = f"{db_url}/{db_schema}"
+    connection_string = f"{db_url}"
 
     query = f"SELECT * FROM {db_table} limit 50"
 
