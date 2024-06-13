@@ -23,8 +23,6 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
-                "INFISICAL_ADDRESS": "${INFISICAL_ADDRESS}",
-                "INFISICAL_TOKEN": "${INFISICAL_TOKEN}",
                 "PREFECT__LOGGING__LEVEL": "INFO"
             }
         }

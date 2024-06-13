@@ -26,7 +26,7 @@ from pipelines.prontuarios.utils.tasks import (
 from pipelines.utils.tasks import get_secret_key
 
 with Flow(
-    name="Prontuários - Unificação de Pacientes",
+    name="Prontuários - Unificação de Pacientes (Rotineiro)",
 ) as patientrecord_mrg:
     #####################################
     # Parameters

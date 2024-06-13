@@ -15,15 +15,16 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.historico_clinico_integrado.constants import (
     constants as hci_constants,
 )
+
 # from pipelines.datalake.extract_load.historico_clinico_integrado.schedules import (
 #     vitacare_daily_update_schedule,
 # )
 from pipelines.datalake.extract_load.historico_clinico_integrado.tasks import (
-   download_from_db,
-   build_gcp_table
+    build_gcp_table,
+    download_from_db,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.tasks import create_folders, upload_to_datalake, get_secret_key
+from pipelines.utils.tasks import create_folders, get_secret_key, upload_to_datalake
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Histórico Clínico Integrado",
@@ -48,13 +49,10 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    build_gcp_table_task = build_gcp_table(
-    db_table=TABLE_ID)
+    build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
     with case(RENAME_FLOW, True):
 
-        rename_current_flow_run(
-            environment=ENVIRONMENT
-        )
+        rename_current_flow_run(environment=ENVIRONMENT)
     ####################################
     # Tasks section #1 - Get data
     #####################################
@@ -71,7 +69,7 @@ with Flow(
         db_schema=hci_constants.SCHEMA_ID.value,
         db_table=TABLE_ID,
         file_folder=create_folders_task["raw"],
-        file_name=TABLE_ID
+        file_name=TABLE_ID,
     )
     #####################################
     # Tasks section #2 - Transform data and Create table
@@ -85,9 +83,8 @@ with Flow(
         csv_delimiter=";",
         if_storage_data_exists="replace",
         biglake_table=True,
-        dataset_is_public=False
+        dataset_is_public=False,
     )
-
 
 
 dump_hci.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

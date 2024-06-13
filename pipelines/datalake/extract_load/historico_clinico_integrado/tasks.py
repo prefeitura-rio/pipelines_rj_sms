@@ -5,9 +5,9 @@ Tasks for SMSRio Dump
 from datetime import timedelta
 
 import pandas as pd
-from pipelines.utils.credential_injector import authenticated_task as task
 from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))

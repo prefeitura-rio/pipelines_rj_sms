@@ -230,7 +230,12 @@ def create_partitions(data_path: str, partition_directory: str):
 # ==============================
 @task
 def create_parameter_list(
-    endpoint: str, target_date: str, dataset_id: str, table_id: str, environment: str = "dev"
+    endpoint: str,
+    target_date: str,
+    dataset_id: str,
+    table_id: str,
+    environment: str = "dev",
+    area_programatica: str = None,
 ):
     """
     Create a list of parameters for running the Vitacare flow.
@@ -248,10 +253,17 @@ def create_parameter_list(
         table_name="estabelecimento",
     )
     # Filter the units using Vitacare
-    unidades_vitacare = dados_mestres[
-        (dados_mestres["prontuario_versao"] == "vitacare")
-        & (dados_mestres["prontuario_estoque_tem_dado"] == "sim")
-    ]
+    if area_programatica:
+        unidades_vitacare = dados_mestres[
+            (dados_mestres["prontuario_versao"] == "vitacare")
+            & (dados_mestres["prontuario_estoque_tem_dado"] == "sim")
+            & (dados_mestres["area_programatica"] == area_programatica)
+        ]
+    else:
+        unidades_vitacare = dados_mestres[
+            (dados_mestres["prontuario_versao"] == "vitacare")
+            & (dados_mestres["prontuario_estoque_tem_dado"] == "sim")
+        ]
 
     # Get their CNES list
     cnes_vitacare = unidades_vitacare["id_cnes"].tolist()
