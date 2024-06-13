@@ -15,4 +15,4 @@ class constants(Enum):
     INFISICAL_DB_URL = "PRONTUARIOS_DB_URL"
     SCHEMA_ID = ""
     DATASET_ID = "historico_clinico_integrado"
-    TABLE_ID = {"patient":"patient_records"}
+    TABLE_ID = {"patient": "patient_records"}
