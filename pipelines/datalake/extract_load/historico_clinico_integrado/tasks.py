@@ -8,9 +8,6 @@ import pandas as pd
 from pipelines.utils.credential_injector import authenticated_task as task
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.datalake.extract_load.smsrio_mysql.constants import (
-    constants as smsrio_constants,
-)
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
