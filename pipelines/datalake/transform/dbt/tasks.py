@@ -131,7 +131,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         if status == "fail":
             is_successful = False
             general_report.append(
-                f"- 🛑 FAIL: `{command_result.node.name}`\n  - {command_result.message}\n  - select * from {command_result.node.relation_name}"
+                f"- 🛑 FAIL: `{command_result.node.name}`\n   {command_result.message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
             )
         elif status == "error":
             is_successful = False
@@ -141,7 +141,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         elif status == "warn":
             has_warnings = True
             general_report.append(
-                f"- ⚠️ WARN: `{command_result.node.name}`\n  - {command_result.message}\n  - select * from {command_result.node.relation_name}"
+                f"- ⚠️ WARN: `{command_result.node.name}`\n   {command_result.message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
             )
 
     general_report = sorted(general_report)
