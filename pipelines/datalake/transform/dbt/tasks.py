@@ -153,8 +153,10 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     for key, value in prefect.context.get("parameters").items():
         if key == "rename_flow":
             continue
-        param_report.append(f"- {key}: {value}")
+        if value:
+            param_report.append(f"- {key}: {'`' + value + '`'}")
     param_report = "\n".join(param_report)
+    param_report += " \n"
 
     fully_successful = is_successful and running_results.success
     include_report = has_warnings or (not fully_successful)
