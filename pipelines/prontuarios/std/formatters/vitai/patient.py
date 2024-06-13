@@ -30,13 +30,13 @@ def standardize_parents_names(data: dict) -> dict:
         clean_name_fields(data.get("nomePai"))
         if clean_name_fields(data.get("nomePai")) != ""
         else None
-        )
+    )
     data["mother_name"] = (
         clean_name_fields(data.get("nomeMae"))
         if clean_name_fields(data.get("nomeMae")) != ""
         else None
-        )
-    
+    )
+
     return data
 
 
@@ -163,7 +163,10 @@ def standardize_address_data(
         "use": None,
         "type": None,
         "line": format_address(
-            data.get("tipoLogradouro"), data.get("nomeLogradouro"), data.get("numero"), data.get("complemento")
+            data.get("tipoLogradouro"),
+            data.get("nomeLogradouro"),
+            data.get("numero"),
+            data.get("complemento"),
         ),
         "city": data.get("city"),
         "country": data.get("country"),

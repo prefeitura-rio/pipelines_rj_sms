@@ -178,6 +178,7 @@ with Flow(
     # Vitacare API
     ENDPOINT = Parameter("endpoint", required=True)
     TARGET_DATE = Parameter("target_date", default="today")
+    AP = Parameter("ap", default=None)
 
     # GCP
     DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
@@ -188,11 +189,13 @@ with Flow(
             environment=ENVIRONMENT,
             endpoint=ENDPOINT,
             target_date=TARGET_DATE,
+            ap=AP,
         )
 
     parameter_list = create_parameter_list(
         environment=ENVIRONMENT,
         endpoint=ENDPOINT,
+        area_programatica=AP,
         target_date=TARGET_DATE,
         dataset_id=DATASET_ID,
         table_id=TABLE_ID,
