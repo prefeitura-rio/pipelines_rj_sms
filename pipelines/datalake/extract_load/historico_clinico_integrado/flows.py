@@ -59,7 +59,7 @@ with Flow(
     get_secret_task = get_secret_key(
         secret_path=INFISICAL_PATH,
         secret_name=INFISICAL_DBURL,
-        environment='prod',
+        environment="prod",
     )
 
     create_folders_task = create_folders()
