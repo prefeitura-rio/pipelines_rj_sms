@@ -156,3 +156,4 @@ localrun.selected.yaml
 dbt_packages/
 dbt_repository/
 logs/
+dbt_log.txt
