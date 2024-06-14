@@ -8,12 +8,15 @@ import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.datalake.extract_load.historico_clinico_integrado.constants import (
+    constants as hci_constants,
+)
+
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def download_from_db(
     db_url: str,
-    db_schema: str,
     db_table: str,
     file_folder: str,
     file_name: str,
@@ -34,7 +37,7 @@ def download_from_db(
 
     connection_string = f"{db_url}"
 
-    query = f"SELECT * FROM {db_table} limit 50"
+    query = f"SELECT * FROM {db_table} limit 100000"
 
     table = pd.read_sql(query, connection_string)
 
@@ -50,4 +53,4 @@ def download_from_db(
 @task
 def build_gcp_table(db_table: str) -> str:
     """Generate the GCP table name from the database table name."""
-    return db_table
+    return hci_constants.TABLE_ID.value[db_table]

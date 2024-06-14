@@ -10,21 +10,26 @@ import pytz
 from prefect.schedules import Schedule
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.smsrio_mysql.constants import (
-    constants as smsrio_constants,
-)
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [
     {
-        "table_id": "estoque",
-        "dataset_id": smsrio_constants.DATASET_ID.value,
+        "table_id": "mrg__patient",
         "environment": "prod",
         "rename_flow": True,
     },
     {
-        "table_id": "itens_estoque",
-        "dataset_id": smsrio_constants.DATASET_ID.value,
+        "table_id": "mrg__patientcns",
+        "environment": "prod",
+        "rename_flow": True,
+    },    
+    {
+        "table_id": "mrg__patientaddress",
+        "environment": "prod",
+        "rename_flow": True,
+    }, 
+    {
+        "table_id": "mrg__patienttelecom",
         "environment": "prod",
         "rename_flow": True,
     },
@@ -41,4 +46,4 @@ clocks = generate_dump_api_schedules(
     runs_interval_minutes=0,
 )
 
-smsrio_daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))
+hci_daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))
