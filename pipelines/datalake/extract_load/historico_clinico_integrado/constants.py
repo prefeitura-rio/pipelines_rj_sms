@@ -15,7 +15,9 @@ class constants(Enum):
     INFISICAL_DB_URL = "PRONTUARIOS_DB_URL"
     SCHEMA_ID = ""
     DATASET_ID = "historico_clinico_integrado"
-    TABLE_ID = {"mrg__patient": "paciente",
-                "mrg__patientcns":"paciente_cns",
-                "mrg__patientaddress":"paciente_endereco",
-                "mrg__patienttelecom":"paciente_contato"}
+    TABLE_ID = {
+        "mrg__patient": "paciente",
+        "mrg__patientcns": "paciente_cns",
+        "mrg__patientaddress": "paciente_endereco",
+        "mrg__patienttelecom": "paciente_contato",
+    }

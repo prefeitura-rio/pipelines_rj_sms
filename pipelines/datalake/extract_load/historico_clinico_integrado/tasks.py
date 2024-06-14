@@ -7,11 +7,10 @@ from datetime import timedelta
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.datalake.extract_load.historico_clinico_integrado.constants import (
     constants as hci_constants,
 )
-
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))

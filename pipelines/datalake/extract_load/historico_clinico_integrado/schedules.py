@@ -22,12 +22,12 @@ flow_parameters = [
         "table_id": "mrg__patientcns",
         "environment": "prod",
         "rename_flow": True,
-    },    
+    },
     {
         "table_id": "mrg__patientaddress",
         "environment": "prod",
         "rename_flow": True,
-    }, 
+    },
     {
         "table_id": "mrg__patienttelecom",
         "environment": "prod",

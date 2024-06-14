@@ -15,7 +15,6 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.historico_clinico_integrado.constants import (
     constants as hci_constants,
 )
-
 from pipelines.datalake.extract_load.historico_clinico_integrado.schedules import (
     hci_daily_update_schedule,
 )
@@ -52,7 +51,7 @@ with Flow(
     build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
     with case(RENAME_FLOW, True):
 
-        rename_current_flow_run(environment=ENVIRONMENT,table = TABLE_ID)
+        rename_current_flow_run(environment=ENVIRONMENT, table=TABLE_ID)
     ####################################
     # Tasks section #1 - Get data
     #####################################
@@ -97,4 +96,3 @@ dump_hci.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 # dump_hci.schedule = hci_daily_update_schedule
-
