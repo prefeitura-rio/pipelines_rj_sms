@@ -29,6 +29,8 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     # DBT
     COMMAND = Parameter("command", default="test", required=False)
     MODEL = Parameter("model", default=None, required=False)
+    SELECT = Parameter("select", default=None, required=False)
+    EXCLUDE = Parameter("exclude", default=None, required=False)
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -38,7 +40,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     ####################################
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run_dbt(
-            command=COMMAND, model=MODEL, target=ENVIRONMENT
+            command=COMMAND, model=MODEL, select=SELECT, exclude=EXCLUDE, target=ENVIRONMENT
         )
 
     ####################################
@@ -48,7 +50,12 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     download_repository_task = download_repository()
 
     running_results = execute_dbt(
-        repository_path=download_repository_task, command=COMMAND, target=ENVIRONMENT, model=MODEL
+        repository_path=download_repository_task,
+        command=COMMAND,
+        target=ENVIRONMENT,
+        model=MODEL,
+        select=SELECT,
+        exclude=EXCLUDE,
     )
 
     create_dbt_report_task = create_dbt_report(running_results=running_results)
