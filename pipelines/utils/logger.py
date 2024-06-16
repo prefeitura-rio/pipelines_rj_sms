@@ -34,6 +34,12 @@ def log(
     """
     prefect.context.get("logger").log(LEVELS_CONFIG[level]["type"], msg)
 
+    params = prefect.context.get("parameters", {})
+    environment = params.get("environment", "dev")
+
+    if environment not in ["staging", "prod"]:
+        return
+
     if LEVELS_CONFIG[level]["discord_forwarding"] or force_discord_forwarding:
         icon = LEVELS_CONFIG[level]["icon"]
         title = f"{icon} Log {level.capitalize()}"
