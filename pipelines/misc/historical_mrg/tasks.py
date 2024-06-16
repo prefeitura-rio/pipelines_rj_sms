@@ -2,6 +2,7 @@
 import asyncio
 from datetime import timedelta
 from math import ceil
+from typing import Literal
 
 import httpx
 import pandas as pd
@@ -89,7 +90,7 @@ def get_mergeable_data_from_db(limit: int, offset: int, db_url: str) -> pd.DataF
     return mergeable_data
 
 
-@task
+@task(nout=4)
 def merge_patientrecords(mergeable_data: pd.DataFrame):
 
     mergeable_data.loc[mergeable_data["birth_date"].notna(), "birth_date"] = mergeable_data.loc[
@@ -122,22 +123,50 @@ def merge_patientrecords(mergeable_data: pd.DataFrame):
     merged_data = list(map(final_merge, merged_n_not_merged_data))
 
     log("Sanity check")
-    sanitized_data = list(map(sanity_check, merged_data))
+    patient_data = list(map(sanity_check, merged_data))
 
-    return sanitized_data
+    # Remove null fields from dict
+    patient_data = [{k: v for k, v in record.items() if v is not None} for record in patient_data]
+
+    #Splitting Entities
+    addresses, telecoms, cnss = [], [], []
+    for record in patient_data:
+        # Address
+        address_list = record.pop("address_list", [])
+        for address in address_list:
+            address["patient_code"] = record["patient_code"]
+        addresses.extend(address_list)
+
+        # Telecom
+        telecom_list = record.pop("telecom_list", [])
+        for telecom in telecom_list:
+            telecom["patient_code"] = record["patient_code"]
+        telecoms.extend(telecom_list)
+
+        # CNS
+        cns_list = record.pop("cns_list", [])
+        for cns in cns_list:
+            cns["patient_code"] = record["patient_code"]
+        cnss.extend(cns_list)
+
+    return patient_data, addresses, telecoms, cnss
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=2))
-def send_merged_data_to_api(merged_data: list[dict], api_url: str, api_token: str):
-    # Remove null fields from dict
-    merged_data = [{k: v for k, v in record.items() if v is not None} for record in merged_data]
+def send_merged_data_to_api(
+    endpoint_name: Literal['mrg/patient', 'mrg/patientaddress', 'mrg/patienttelecom', 'mrg/patientcns'],
+    merged_data: list[dict],
+    api_url: str,
+    api_token: str
+):
+    log(f"Sending {endpoint_name} data to API")
 
-    # Send payload
-    async def send():
-        async with AsyncClient(timeout=500) as client:
+    async def send_payload():
+        timeout = 60 * 10
+        async with AsyncClient(timeout=timeout) as client:
             try:
                 response = await client.put(
-                    url=f"{api_url}mrg/patient",
+                    url=f"{api_url}{endpoint_name}",
                     headers={"Authorization": f"Bearer {api_token}"},
                     json=merged_data,
                 )
@@ -145,12 +174,12 @@ def send_merged_data_to_api(merged_data: list[dict], api_url: str, api_token: st
                 raise
             return response
 
-    response = asyncio.run(send())
+    response = asyncio.run(send_payload())
 
     # Decision based on response
     if response.status_code in [200, 201]:
-        log("Data sent successfully")
+        log(f"{endpoint_name} data sent successfully")
         return response
     else:
-        log(f"Error sending data to API: {response.text}", level="error")
-        raise Exception(f"Error sending data to API: {response.text}")
+        log(f"Error sending {endpoint_name} data to API: {response.text}", level="error")
+        raise Exception(f"Error sending {endpoint_name} data to API: {response.text}")

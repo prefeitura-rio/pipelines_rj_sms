@@ -61,14 +61,51 @@ with Flow(
     ####################################
     # Set environment
     ####################################
-
     db_url = build_db_url(environment=ENVIRONMENT)
 
+    ####################################
+    # Get data
+    ####################################
     mergeable_data = get_mergeable_data_from_db(limit=LIMIT, offset=OFFSET, db_url=db_url)
 
-    merged_data = merge_patientrecords(mergeable_data=mergeable_data)
+    ####################################
+    # Merge
+    ####################################
+    patient_data, addresses_data, telecoms_data, cnss_data = merge_patientrecords(
+        mergeable_data=mergeable_data
+    )
 
-    send_merged_data_to_api(merged_data=merged_data, api_token=api_token, api_url=api_url)
+    ####################################
+    # Send Data to API
+    ####################################
+    patient_send_task = send_merged_data_to_api(
+        endpoint_name="mrg/patient",
+        merged_data=patient_data, 
+        api_token=api_token,
+        api_url=api_url
+    )
+    send_merged_data_to_api(
+        endpoint_name="mrg/patientaddress",
+        merged_data=addresses_data, 
+        api_token=api_token,
+        api_url=api_url,
+        upstream_tasks=[patient_send_task]
+    )
+    send_merged_data_to_api(
+        endpoint_name="mrg/patienttelecom",
+        merged_data=telecoms_data, 
+        api_token=api_token,
+        api_url=api_url,
+        upstream_tasks=[patient_send_task]
+    )
+    send_merged_data_to_api(
+        endpoint_name="mrg/patientcns",
+        merged_data=cnss_data, 
+        api_token=api_token,
+        api_url=api_url,
+        upstream_tasks=[patient_send_task]
+    )
+
 
 mrg_historic_patientrecord_batch.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 mrg_historic_patientrecord_batch.executor = LocalDaskExecutor(num_workers=1)
@@ -85,10 +122,11 @@ with Flow(
 ) as mrg_historic_patientrecord:
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    BATCH_SIZE = Parameter("batch_size", default=1000, required=True)
 
     db_url = build_db_url(environment=ENVIRONMENT)
 
-    params = build_param_list(batch_size=1000, db_url=db_url, environment=ENVIRONMENT)
+    params = build_param_list(batch_size=BATCH_SIZE, db_url=db_url, environment=ENVIRONMENT)
 
     project_name = get_project_name(environment=ENVIRONMENT)
 
