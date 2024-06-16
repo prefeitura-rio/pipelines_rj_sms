@@ -101,11 +101,14 @@ def merge_patientrecords(mergeable_data: pd.DataFrame):
     )
 
     # Rename columns to routine format
-    mergeable_data.rename(columns={
-        "birth_state_id": "birth_state_cod",
-        "birth_city_id": "birth_city_cod",
-        "birth_country_id": "birth_country_cod",
-    }, inplace=True)
+    mergeable_data.rename(
+        columns={
+            "birth_state_id": "birth_state_cod",
+            "birth_city_id": "birth_city_cod",
+            "birth_country_id": "birth_country_cod",
+        },
+        inplace=True,
+    )
 
     grouped = mergeable_data.groupby("patient_code").apply(lambda x: x.to_dict(orient="records"))
 
@@ -154,13 +157,13 @@ def merge_patientrecords(mergeable_data: pd.DataFrame):
         for cns in cns_list:
             cns["patient_code"] = record["patient_code"]
         cnss.extend(cns_list)
-    
+
     # Rename back columns to DB format
     for patient in patient_data:
         for birth_col in ["birth_state_cod", "birth_city_cod", "birth_country_cod"]:
             if birth_col in patient:
-                patient[birth_col.replace("cod","id")] = patient.pop(birth_col, None)
-        
+                patient[birth_col.replace("cod", "id")] = patient.pop(birth_col, None)
+
     return patient_data, addresses, telecoms, cnss
 
 
