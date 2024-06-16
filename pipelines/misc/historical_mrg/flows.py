@@ -79,31 +79,28 @@ with Flow(
     # Send Data to API
     ####################################
     patient_send_task = send_merged_data_to_api(
-        endpoint_name="mrg/patient",
-        merged_data=patient_data, 
-        api_token=api_token,
-        api_url=api_url
+        endpoint_name="mrg/patient", merged_data=patient_data, api_token=api_token, api_url=api_url
     )
     send_merged_data_to_api(
         endpoint_name="mrg/patientaddress",
-        merged_data=addresses_data, 
+        merged_data=addresses_data,
         api_token=api_token,
         api_url=api_url,
-        upstream_tasks=[patient_send_task]
+        upstream_tasks=[patient_send_task],
     )
     send_merged_data_to_api(
         endpoint_name="mrg/patienttelecom",
-        merged_data=telecoms_data, 
+        merged_data=telecoms_data,
         api_token=api_token,
         api_url=api_url,
-        upstream_tasks=[patient_send_task]
+        upstream_tasks=[patient_send_task],
     )
     send_merged_data_to_api(
         endpoint_name="mrg/patientcns",
-        merged_data=cnss_data, 
+        merged_data=cnss_data,
         api_token=api_token,
         api_url=api_url,
-        upstream_tasks=[patient_send_task]
+        upstream_tasks=[patient_send_task],
     )
 
 

@@ -128,7 +128,7 @@ def merge_patientrecords(mergeable_data: pd.DataFrame):
     # Remove null fields from dict
     patient_data = [{k: v for k, v in record.items() if v is not None} for record in patient_data]
 
-    #Splitting Entities
+    # Splitting Entities
     addresses, telecoms, cnss = [], [], []
     for record in patient_data:
         # Address
@@ -154,10 +154,12 @@ def merge_patientrecords(mergeable_data: pd.DataFrame):
 
 @task(max_retries=3, retry_delay=timedelta(minutes=2))
 def send_merged_data_to_api(
-    endpoint_name: Literal['mrg/patient', 'mrg/patientaddress', 'mrg/patienttelecom', 'mrg/patientcns'],
+    endpoint_name: Literal[
+        "mrg/patient", "mrg/patientaddress", "mrg/patienttelecom", "mrg/patientcns"
+    ],
     merged_data: list[dict],
     api_url: str,
-    api_token: str
+    api_token: str,
 ):
     log(f"Sending {endpoint_name} data to API")
 
