@@ -12,6 +12,8 @@ from pipelines.misc.historical_mrg.tasks import (
     get_mergeable_data_from_db,
     merge_patientrecords,
     send_merged_data_to_api,
+    have_already_executed,
+    save_progress
 )
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.mrg.constants import constants as mrg_constants
@@ -66,42 +68,65 @@ with Flow(
     ####################################
     # Get data
     ####################################
-    mergeable_data = get_mergeable_data_from_db(limit=LIMIT, offset=OFFSET, db_url=db_url)
 
-    ####################################
-    # Merge
-    ####################################
-    patient_data, addresses_data, telecoms_data, cnss_data = merge_patientrecords(
-        mergeable_data=mergeable_data
+    have_already_executed = have_already_executed(
+        limit=LIMIT,
+        offset=OFFSET,
+        environment=ENVIRONMENT
     )
 
-    ####################################
-    # Send Data to API
-    ####################################
-    patient_send_task = send_merged_data_to_api(
-        endpoint_name="mrg/patient", merged_data=patient_data, api_token=api_token, api_url=api_url
-    )
-    send_merged_data_to_api(
-        endpoint_name="mrg/patientaddress",
-        merged_data=addresses_data,
-        api_token=api_token,
-        api_url=api_url,
-        upstream_tasks=[patient_send_task],
-    )
-    send_merged_data_to_api(
-        endpoint_name="mrg/patienttelecom",
-        merged_data=telecoms_data,
-        api_token=api_token,
-        api_url=api_url,
-        upstream_tasks=[patient_send_task],
-    )
-    send_merged_data_to_api(
-        endpoint_name="mrg/patientcns",
-        merged_data=cnss_data,
-        api_token=api_token,
-        api_url=api_url,
-        upstream_tasks=[patient_send_task],
-    )
+    with case(have_already_executed, False):
+        mergeable_data = get_mergeable_data_from_db(limit=LIMIT, offset=OFFSET, db_url=db_url)
+
+        ####################################
+        # Merge
+        ####################################
+        patient_data, addresses_data, telecoms_data, cnss_data = merge_patientrecords(
+            mergeable_data=mergeable_data
+        )
+
+        ####################################
+        # Send Data to API
+        ####################################
+        patient_send_task = send_merged_data_to_api(
+            endpoint_name="mrg/patient", merged_data=patient_data, api_token=api_token, api_url=api_url
+        )
+        address_send_task = send_merged_data_to_api(
+            endpoint_name="mrg/patientaddress",
+            merged_data=addresses_data,
+            api_token=api_token,
+            api_url=api_url,
+            upstream_tasks=[patient_send_task],
+        )
+        telecom_send_task = send_merged_data_to_api(
+            endpoint_name="mrg/patienttelecom",
+            merged_data=telecoms_data,
+            api_token=api_token,
+            api_url=api_url,
+            upstream_tasks=[patient_send_task],
+        )
+        cns_send_task = send_merged_data_to_api(
+            endpoint_name="mrg/patientcns",
+            merged_data=cnss_data,
+            api_token=api_token,
+            api_url=api_url,
+            upstream_tasks=[patient_send_task],
+        )
+
+        ####################################
+        # Save Progress
+        ####################################
+        save_progress(
+            limit=LIMIT,
+            offset=OFFSET,
+            environment=ENVIRONMENT,
+            upstream_tasks=[
+                patient_send_task,
+                address_send_task,
+                telecom_send_task,
+                cns_send_task
+            ]
+        )
 
 
 mrg_historic_patientrecord_batch.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
