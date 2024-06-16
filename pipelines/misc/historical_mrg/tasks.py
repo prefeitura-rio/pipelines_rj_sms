@@ -221,7 +221,7 @@ def save_progress(limit: int, offset: int, environment: str):
     )
 
     if errors == []:
-        log(f"Inserted row")
+        log("Inserted row")
     else:
         log(f"Errors: {errors}", level="error")
         raise ValueError(f"Errors: {errors}")
