@@ -56,7 +56,7 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(
-            environment=ENVIRONMENT, is_initial_extraction=True
+            environment=ENVIRONMENT, is_initial_extraction=True, limit=LIMIT, offset=OFFSET
         )
     ####################################
     # Set environment
