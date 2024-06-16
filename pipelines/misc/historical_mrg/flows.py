@@ -10,10 +10,10 @@ from pipelines.misc.historical_mrg.tasks import (
     build_db_url,
     build_param_list,
     get_mergeable_data_from_db,
-    merge_patientrecords,
-    send_merged_data_to_api,
     have_already_executed,
-    save_progress
+    merge_patientrecords,
+    save_progress,
+    send_merged_data_to_api,
 )
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.mrg.constants import constants as mrg_constants
@@ -70,9 +70,7 @@ with Flow(
     ####################################
 
     have_already_executed = have_already_executed(
-        limit=LIMIT,
-        offset=OFFSET,
-        environment=ENVIRONMENT
+        limit=LIMIT, offset=OFFSET, environment=ENVIRONMENT
     )
 
     with case(have_already_executed, False):
@@ -89,7 +87,10 @@ with Flow(
         # Send Data to API
         ####################################
         patient_send_task = send_merged_data_to_api(
-            endpoint_name="mrg/patient", merged_data=patient_data, api_token=api_token, api_url=api_url
+            endpoint_name="mrg/patient",
+            merged_data=patient_data,
+            api_token=api_token,
+            api_url=api_url,
         )
         address_send_task = send_merged_data_to_api(
             endpoint_name="mrg/patientaddress",
@@ -120,12 +121,7 @@ with Flow(
             limit=LIMIT,
             offset=OFFSET,
             environment=ENVIRONMENT,
-            upstream_tasks=[
-                patient_send_task,
-                address_send_task,
-                telecom_send_task,
-                cns_send_task
-            ]
+            upstream_tasks=[patient_send_task, address_send_task, telecom_send_task, cns_send_task],
         )
 
 

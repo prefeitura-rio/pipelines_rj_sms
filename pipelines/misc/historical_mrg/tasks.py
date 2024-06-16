@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import asyncio
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from math import ceil
 from typing import Literal
 
 import httpx
 import pandas as pd
-from httpx import AsyncClient
 from google.cloud import bigquery
+from httpx import AsyncClient
 
 from pipelines.prontuarios.mrg.functions import (
     final_merge,
@@ -202,6 +202,7 @@ def send_merged_data_to_api(
         log(f"Error sending {endpoint_name} data to API: {response.text}", level="error")
         raise Exception(f"Error sending {endpoint_name} data to API: {response.text}")
 
+
 @task()
 def save_progress(limit: int, offset: int, environment: str):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
@@ -225,6 +226,7 @@ def save_progress(limit: int, offset: int, environment: str):
         log(f"Errors: {errors}", level="error")
         raise ValueError(f"Errors: {errors}")
 
+
 @task()
 def have_already_executed(limit: int, offset: int, environment: str):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
@@ -242,8 +244,8 @@ def have_already_executed(limit: int, offset: int, environment: str):
     """
     all_records = bq_client.query(query).result().to_dataframe()
     results = all_records[
-        (all_records.limit == limit) & 
-        (all_records.offset == offset) & 
-        (all_records.environment == environment)
+        (all_records.limit == limit)
+        & (all_records.offset == offset)
+        & (all_records.environment == environment)
     ]
     return not results.empty
