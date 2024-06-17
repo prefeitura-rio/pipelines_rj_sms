@@ -94,4 +94,4 @@ dump_hci.run_config = KubernetesRun(
     ],
     memory_limit="2Gi",
 )
-# dump_hci.schedule = hci_daily_update_schedule
+dump_hci.schedule = hci_daily_update_schedule
