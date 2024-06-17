@@ -118,8 +118,7 @@ def get_mergeable_records_from_api(
         first_response = await get_mergeable_records_batch_from_api(
             1, page_size, start_datetime, end_datetime
         )
-        log("First page of data retrieved.")
-        log(first_response)
+        log(f"First page of data retrieved with length {len(first_response['items'])}.")
         page_count = first_response.get("page_count")
 
         log(f"Planning retrieval of {page_count-1} pages of data")
@@ -170,7 +169,7 @@ def flatten_page_data(data_in_pages: list[dict]) -> list:
     return flattened_data
 
 
-@task
+@task(nout=4)
 def merge(data_to_merge) -> dict:
     """
     Loads mergeable data of patient from std patient API endpoint.
@@ -181,6 +180,7 @@ def merge(data_to_merge) -> dict:
     Returns:
         sanitized_data (list): Merged data
     """
+
     log(f"Merging data for {len(data_to_merge)} patients")
     register_list = list(map(normalize_payload_list, data_to_merge))
     log("Trying first merge")
@@ -189,53 +189,30 @@ def merge(data_to_merge) -> dict:
     log("Final merge")
     merged_data = list(map(final_merge, merged_n_not_merged_data))
     log("Sanity check")
-    sanitized_data = list(map(sanity_check, merged_data))
-    return sanitized_data
+    patient_data = list(map(sanity_check, merged_data))
 
+    # Remove null fields from dict
+    patient_data = [{k: v for k, v in record.items() if v is not None} for record in patient_data]
 
-@task()
-def put_to_api(payload_in_batch: list, api_url: str, endpoint_name: str, api_token: str) -> None:
-    """
-    Sends the payload in batches to the specified API endpoint using the PUT method.
+    # Splitting Entities
+    addresses, telecoms, cnss = [], [], []
+    for record in patient_data:
+        # Address
+        address_list = record.pop("address_list", [])
+        for address in address_list:
+            address["patient_code"] = record["patient_code"]
+        addresses.extend(address_list)
 
-    Args:
-        payload_in_batch (list): A list of batches containing the payload data to be sent.
-        api_url (str): The base URL of the API.
-        endpoint_name (str): The name of the API endpoint to send the data to.
-        api_token (str): The API token for authentication.
+        # Telecom
+        telecom_list = record.pop("telecom_list", [])
+        for telecom in telecom_list:
+            telecom["patient_code"] = record["patient_code"]
+        telecoms.extend(telecom_list)
 
-    Returns:
-        None
-    """
-    logger = prefect.context.get("logger")
+        # CNS
+        cns_list = record.pop("cns_list", [])
+        for cns in cns_list:
+            cns["patient_code"] = record["patient_code"]
+        cnss.extend(cns_list)
 
-    async def send_data_batch(merged_patient_batch):
-
-        transport = AsyncHTTPTransport(retries=3)
-        async with AsyncClient(transport=transport, timeout=500) as client:
-            try:
-                response = await client.put(
-                    url=f"{api_url}{endpoint_name}",
-                    headers={"Authorization": f"Bearer {api_token}"},
-                    timeout=500,
-                    json=merged_patient_batch,
-                )
-            except httpx.ReadTimeout:
-                logger.info("HTTPX Read Timed Out")
-                return False
-            except httpcore.ReadTimeout:
-                logger.info("HTTPCore Read Timed Out")
-                return False
-            if response.status_code not in [200, 201]:
-                logger.info(f"Failed request with status code {response.status_code}")
-                return False
-            else:
-                logger.info("Successful request")
-                return True
-
-    async def main():
-        awaitables = [send_data_batch(batch) for batch in payload_in_batch]
-        responses = await asyncio.gather(*awaitables)
-        log(f"{sum(responses)} successful requests out of {len(responses)}")
-
-    asyncio.run(main())
+    return patient_data, addresses, telecoms, cnss
