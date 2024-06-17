@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#noqa
+# flake8: noqa
 """
 Tasks for SMSRio Raw Data Extraction
 """
