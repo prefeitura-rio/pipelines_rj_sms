@@ -5,13 +5,13 @@
 General utilities for SMS pipelines
 """
 
+import asyncio
 import ftplib
 import json
 import os
 import re
 import shutil
 import sys
-import asyncio
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
@@ -20,11 +20,11 @@ from pathlib import Path
 from tempfile import SpooledTemporaryFile
 from typing import Literal
 
-import httpx
 import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token
 import gspread
+import httpx
 import pandas as pd
 import prefect
 import pytz
