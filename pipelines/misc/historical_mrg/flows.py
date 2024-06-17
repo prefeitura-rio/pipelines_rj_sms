@@ -91,6 +91,7 @@ with Flow(
             request_body=patient_data,
             api_token=api_token,
             api_url=api_url,
+            environment=ENVIRONMENT,
             method="PUT",
         )
         address_send_task = load_to_api(
@@ -98,6 +99,7 @@ with Flow(
             request_body=addresses_data,
             api_token=api_token,
             api_url=api_url,
+            environment=ENVIRONMENT,
             method="PUT",
             upstream_tasks=[patient_send_task],
         )
@@ -106,6 +108,7 @@ with Flow(
             request_body=telecoms_data,
             api_token=api_token,
             api_url=api_url,
+            environment=ENVIRONMENT,
             method="PUT",
             upstream_tasks=[patient_send_task],
         )
@@ -114,6 +117,7 @@ with Flow(
             request_body=cnss_data,
             api_token=api_token,
             api_url=api_url,
+            environment=ENVIRONMENT,
             method="PUT",
             upstream_tasks=[patient_send_task],
         )
