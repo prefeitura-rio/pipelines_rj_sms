@@ -168,41 +168,6 @@ def merge_patientrecords(mergeable_data: pd.DataFrame):
     return patient_data, addresses, telecoms, cnss
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=2))
-def send_merged_data_to_api(
-    endpoint_name: Literal[
-        "mrg/patient", "mrg/patientaddress", "mrg/patienttelecom", "mrg/patientcns"
-    ],
-    merged_data: list[dict],
-    api_url: str,
-    api_token: str,
-):
-    log(f"Sending {endpoint_name} data to API")
-
-    async def send_payload():
-        timeout = 60 * 10
-        async with AsyncClient(timeout=timeout) as client:
-            try:
-                response = await client.put(
-                    url=f"{api_url}{endpoint_name}",
-                    headers={"Authorization": f"Bearer {api_token}"},
-                    json=merged_data,
-                )
-            except httpx.ReadTimeout:
-                raise
-            return response
-
-    response = asyncio.run(send_payload())
-
-    # Decision based on response
-    if response.status_code in [200, 201]:
-        log(f"{endpoint_name} data sent successfully")
-        return response
-    else:
-        log(f"Error sending {endpoint_name} data to API: {response.text}", level="error")
-        raise Exception(f"Error sending {endpoint_name} data to API: {response.text}")
-
-
 @task()
 def save_progress(limit: int, offset: int, environment: str):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")

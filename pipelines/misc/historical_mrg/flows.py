@@ -13,7 +13,6 @@ from pipelines.misc.historical_mrg.tasks import (
     have_already_executed,
     merge_patientrecords,
     save_progress,
-    send_merged_data_to_api,
 )
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.mrg.constants import constants as mrg_constants
@@ -21,6 +20,7 @@ from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_current_flow_labels,
     get_project_name,
+    load_to_api,
     rename_current_flow_run,
 )
 from pipelines.utils.credential_injector import (
@@ -86,31 +86,35 @@ with Flow(
         ####################################
         # Send Data to API
         ####################################
-        patient_send_task = send_merged_data_to_api(
+        patient_send_task = load_to_api(
             endpoint_name="mrg/patient",
-            merged_data=patient_data,
+            request_body=patient_data,
             api_token=api_token,
             api_url=api_url,
+            method="PUT"
         )
-        address_send_task = send_merged_data_to_api(
+        address_send_task = load_to_api(
             endpoint_name="mrg/patientaddress",
-            merged_data=addresses_data,
+            request_body=addresses_data,
             api_token=api_token,
             api_url=api_url,
+            method="PUT",
             upstream_tasks=[patient_send_task],
         )
-        telecom_send_task = send_merged_data_to_api(
+        telecom_send_task = load_to_api(
             endpoint_name="mrg/patienttelecom",
-            merged_data=telecoms_data,
+            request_body=telecoms_data,
             api_token=api_token,
             api_url=api_url,
+            method="PUT",
             upstream_tasks=[patient_send_task],
         )
-        cns_send_task = send_merged_data_to_api(
+        cns_send_task = load_to_api(
             endpoint_name="mrg/patientcns",
-            merged_data=cnss_data,
+            request_body=cnss_data,
             api_token=api_token,
             api_url=api_url,
+            method="PUT",
             upstream_tasks=[patient_send_task],
         )
 
@@ -151,7 +155,7 @@ with Flow(
     current_flow_run_labels = get_current_flow_labels()
 
     created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("Prontuários (Vitai) - Extração de Dados"),
+        flow_name=unmapped("Prontuários - Unificação de Pacientes (Histórico) - Batch"),
         project_name=unmapped(project_name),
         parameters=params,
         labels=unmapped(current_flow_run_labels),

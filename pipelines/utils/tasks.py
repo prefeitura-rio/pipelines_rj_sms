@@ -11,13 +11,16 @@ import os
 import re
 import shutil
 import sys
+import asyncio
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
 from io import StringIO
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
+from typing import Literal
 
+import httpx
 import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token

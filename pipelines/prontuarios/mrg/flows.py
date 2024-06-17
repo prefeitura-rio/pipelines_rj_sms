@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -15,13 +15,13 @@ from pipelines.prontuarios.mrg.tasks import (
     get_patient_count,
     merge,
     parse_date,
-    put_to_api,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_datetime_working_range,
     rename_current_flow_run,
     transform_create_input_batches,
+    load_to_api
 )
 from pipelines.utils.tasks import get_secret_key
 
@@ -81,18 +81,69 @@ with Flow(
     ####################################
     # Task Section #2 - Merge Data
     ####################################
-    std_patient_list_final = merge(data_to_merge=mergeable_records_flattened)
+    patient_data, addresses_data, telecoms_data, cnss_data = merge(data_to_merge=mergeable_records_flattened)
 
-    batches = transform_create_input_batches(
-        input_list=std_patient_list_final,
-        batch_size=1000,
+    ####################################
+    # Task Section #3 - Sending Data
+    ####################################
+
+    # Patient
+    patient_batches = transform_create_input_batches(
+        input_list=patient_data,
+        batch_size=5000,
+    )
+    patient_load_task = load_to_api.map(
+        request_body=patient_batches,
+        api_url=unmapped(api_url),
+        environment=unmapped(ENVIRONMENT),
+        endpoint_name=unmapped("mrg/patient"),
+        api_token=unmapped(api_token),
+        method=unmapped("PUT")
     )
 
-    put_to_api(
-        payload_in_batch=batches,
-        api_url=api_url,
-        endpoint_name="mrg/patient",
-        api_token=api_token,
+    # Address
+    address_batches = transform_create_input_batches(
+        input_list=addresses_data,
+        batch_size=5000,
+    )
+    load_to_api.map(
+        request_body=address_batches,
+        api_url=unmapped(api_url),
+        environment=unmapped(ENVIRONMENT),
+        endpoint_name=unmapped("mrg/patientaddress"),
+        api_token=unmapped(api_token),
+        method=unmapped("PUT"),
+        upstream_tasks=[unmapped(patient_load_task)]
+    )
+
+    # Telecom
+    telecom_batches = transform_create_input_batches(
+        input_list=telecoms_data,
+        batch_size=5000,
+    )  
+    load_to_api.map(
+        request_body=telecom_batches,
+        api_url=unmapped(api_url),
+        environment=unmapped(ENVIRONMENT),
+        endpoint_name=unmapped("mrg/patienttelecom"),
+        api_token=unmapped(api_token),
+        method=unmapped("PUT"),
+        upstream_tasks=[unmapped(patient_load_task)]
+    )
+
+    # CNS
+    cns_batches = transform_create_input_batches(
+        input_list=cnss_data,
+        batch_size=5000,
+    )
+    load_to_api.map(
+        request_body=cns_batches,
+        api_url=unmapped(api_url),
+        environment=unmapped(ENVIRONMENT),
+        endpoint_name=unmapped("mrg/patientcns"),
+        api_token=unmapped(api_token),
+        method=unmapped("PUT"),
+        upstream_tasks=[unmapped(patient_load_task)]
     )
 
 

@@ -22,6 +22,7 @@ from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.stored_variable import stored_variable_converter
+from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery
 
 
@@ -163,7 +164,16 @@ def transform_to_raw_format(json_data: dict, cnes: str) -> dict:
 
 @task(max_retries=3, retry_delay=timedelta(minutes=3))
 @stored_variable_converter()
-def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environment: str) -> None:
+def load_to_api(
+    request_body: dict,
+    endpoint_name: str,
+    api_token: str,
+    environment: str,
+    api_url: str = None,
+    method: str = "POST",
+    parameters: dict = {},
+    sucessfull_status_codes: list[int] = [200, 201],
+) -> None:
     """
     Sends a POST request to the specified API endpoint with the provided request body.
 
@@ -179,20 +189,26 @@ def load_to_api(request_body: dict, endpoint_name: str, api_token: str, environm
     Returns:
         None
     """
-    api_url = get_secret_key.run(
-        secret_path="/",
-        secret_name=prontuario_constants.INFISICAL_API_URL.value,
-        environment=environment,
-    )
-    request_response = requests.post(
+    log(f"Loading data to API: {endpoint_name}")
+    if api_url is None:
+        api_url = get_secret_key.run(
+            secret_path="/",
+            secret_name=prontuario_constants.INFISICAL_API_URL.value,
+            environment=environment,
+        )
+    request_response = requests.request(
+        method=method,
         url=f"{api_url}{endpoint_name}",
         headers={"Authorization": f"Bearer {api_token}"},
         timeout=180,
         json=request_body,
+        params=parameters,
     )
 
-    if request_response.status_code not in [200, 201]:
+    if request_response.status_code not in sucessfull_status_codes:
         raise requests.exceptions.HTTPError(f"Error loading data: {request_response.text}")
+    else:
+        log(f"Data loaded successfully: [{request_response.status_code}] {request_response.text}")
 
 
 @task
