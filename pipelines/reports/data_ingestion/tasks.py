@@ -57,18 +57,17 @@ def get_records_summary(
 
     records = pd.read_sql(
         f"""
-        select distinct on (raw.id, std.id, mrg.id)
+        select distinct on (raw.id, std.id, mrg.patient_code)
             datasource.system as datasource,
             raw.patient_code,
             raw.id as raw_id, raw.created_at as raw_created_at,
             std.id as std_id, std.created_at as std_created_at,
-            mrg.id as mrg_id, mrg.updated_at as mrg_updated_at
+            mrg.patient_code as mrg_id, mrg.updated_at as mrg_updated_at
         from raw__patientrecord raw
             inner join datasource on raw.data_source_id = datasource.cnes
             left join std__patientrecord std on raw.id = std.raw_source_id
-            left join patient mrg
-                on mrg.patient_code = std.patient_code and
-                    mrg.updated_at > std.created_at
+            left join mrg__patient mrg
+                on mrg.patient_code = std.patient_code and mrg.updated_at > std.created_at
         where date(raw.created_at) = '{target_date}';
         """,
         db_url,
