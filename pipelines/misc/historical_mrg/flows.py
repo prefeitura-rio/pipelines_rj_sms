@@ -91,7 +91,7 @@ with Flow(
             request_body=patient_data,
             api_token=api_token,
             api_url=api_url,
-            method="PUT"
+            method="PUT",
         )
         address_send_task = load_to_api(
             endpoint_name="mrg/patientaddress",

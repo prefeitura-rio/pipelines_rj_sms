@@ -19,9 +19,9 @@ from pipelines.prontuarios.mrg.tasks import (
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_datetime_working_range,
+    load_to_api,
     rename_current_flow_run,
     transform_create_input_batches,
-    load_to_api
 )
 from pipelines.utils.tasks import get_secret_key
 
@@ -81,7 +81,9 @@ with Flow(
     ####################################
     # Task Section #2 - Merge Data
     ####################################
-    patient_data, addresses_data, telecoms_data, cnss_data = merge(data_to_merge=mergeable_records_flattened)
+    patient_data, addresses_data, telecoms_data, cnss_data = merge(
+        data_to_merge=mergeable_records_flattened
+    )
 
     ####################################
     # Task Section #3 - Sending Data
@@ -98,7 +100,7 @@ with Flow(
         environment=unmapped(ENVIRONMENT),
         endpoint_name=unmapped("mrg/patient"),
         api_token=unmapped(api_token),
-        method=unmapped("PUT")
+        method=unmapped("PUT"),
     )
 
     # Address
@@ -113,14 +115,14 @@ with Flow(
         endpoint_name=unmapped("mrg/patientaddress"),
         api_token=unmapped(api_token),
         method=unmapped("PUT"),
-        upstream_tasks=[unmapped(patient_load_task)]
+        upstream_tasks=[unmapped(patient_load_task)],
     )
 
     # Telecom
     telecom_batches = transform_create_input_batches(
         input_list=telecoms_data,
         batch_size=5000,
-    )  
+    )
     load_to_api.map(
         request_body=telecom_batches,
         api_url=unmapped(api_url),
@@ -128,7 +130,7 @@ with Flow(
         endpoint_name=unmapped("mrg/patienttelecom"),
         api_token=unmapped(api_token),
         method=unmapped("PUT"),
-        upstream_tasks=[unmapped(patient_load_task)]
+        upstream_tasks=[unmapped(patient_load_task)],
     )
 
     # CNS
@@ -143,7 +145,7 @@ with Flow(
         endpoint_name=unmapped("mrg/patientcns"),
         api_token=unmapped(api_token),
         method=unmapped("PUT"),
-        upstream_tasks=[unmapped(patient_load_task)]
+        upstream_tasks=[unmapped(patient_load_task)],
     )
 
 
