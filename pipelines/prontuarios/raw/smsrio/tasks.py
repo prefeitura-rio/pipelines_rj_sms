@@ -68,7 +68,7 @@ def extract_patient_data_from_db(
     FROM tb_pacientes
     LEFT JOIN tb_cns_provisorios on tb_cns_provisorios.cns = tb_pacientes.cns
     LEFT JOIN tb_pacientes_telefones on tb_pacientes_telefones.cns = tb_pacientes.cns
-    WHERE {WHERE_CLAUSE}
+    {WHERE_CLAUSE}
     GROUP BY tb_pacientes.id, tb_cns_provisorios.cns, tb_pacientes_telefones.cns;"""
     if time_window_start:
         query = query.replace(
