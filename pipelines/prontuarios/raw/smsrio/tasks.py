@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa
 """
 Tasks for SMSRio Raw Data Extraction
 """
@@ -61,32 +62,18 @@ def extract_patient_data_from_db(
         end_tp_logrado_cod, end_logrado, end_numero, end_comunidade,
         end_complem, end_bairro, end_cep, cod_mun_res, uf_res,
         cod_mun_nasc, uf_nasc, cod_pais_nasc,
-        email, timestamp,
-        json_array_append(extra_cns.extra_cns, '$', tb_pacientes.cns) as cns_provisorio,
-        json_array_append(extra_telefone.extra_telefone, '$', tb_pacientes.telefone) as telefones
+        email, tb_pacientes.timestamp,
+        json_array_append(CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', tb_cns_provisorios.cns_provisorio, '"')), ']'), '$', tb_pacientes.cns) as cns_provisorio,
+        json_array_append(CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', tb_pacientes_telefones.telefone, '"')), ']'), '$', tb_pacientes.telefone) as telefones
     FROM tb_pacientes
-        -- LISTA DE CNS
-        LEFT JOIN (
-            select
-                tb_cns_provisorios.cns,
-                json_arrayagg(tb_cns_provisorios.cns_provisorio) as extra_cns
-            from tb_cns_provisorios
-            GROUP BY tb_cns_provisorios.cns
-        ) as extra_cns ON tb_pacientes.cns = extra_cns.cns
-        -- LISTA DE TELEFONES
-        LEFT JOIN (
-            select
-                tb_pacientes_telefones.cns,
-                json_arrayagg(tb_pacientes_telefones.telefone) as extra_telefone
-            from tb_pacientes_telefones
-            GROUP BY tb_pacientes_telefones.cns
-        ) as extra_telefone ON tb_pacientes.cns = extra_telefone.cns
+    LEFT JOIN tb_cns_provisorios on tb_cns_provisorios.cns = tb_pacientes.cns
+    LEFT JOIN tb_pacientes_telefones on tb_pacientes_telefones.cns = tb_pacientes.cns
     {WHERE_CLAUSE}
-    GROUP BY tb_pacientes.id;"""
+    GROUP BY tb_pacientes.id, tb_cns_provisorios.cns, tb_pacientes_telefones.cns;"""
     if time_window_start:
         query = query.replace(
             "{WHERE_CLAUSE}",
-            f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}'",
+            f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}' ",
         )  # noqa
     else:
         query = query.replace("{WHERE_CLAUSE}", "")
