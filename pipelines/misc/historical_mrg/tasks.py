@@ -47,7 +47,7 @@ def build_param_list(batch_size: int, environment: str, db_url: str):
     for i in range(batch_count):
         params.append(
             {
-                "enviroment": environment,
+                "environment": environment,
                 "rename_flow": True,
                 "limit": batch_size,
                 "offset": i * batch_size,
