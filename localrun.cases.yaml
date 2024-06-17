@@ -44,3 +44,12 @@ cases:
       environment: "dev"
       rename_flow: false
       command: "test"
+  - case_slug: "smsrio-raw-routine"
+    flow_path: "pipelines.prontuarios.raw.smsrio.flows"
+    flow_name: "sms_prontuarios_raw_smsrio"
+    params:
+      environment: "dev"
+      rename_flow: false
+      is_initial_extraction: false
+      start_datetime: "2024-06-05"
+      end_datetime: "2024-06-06"
