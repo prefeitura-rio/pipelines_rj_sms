@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#noqa
+# noqa
 """
 Tasks for SMSRio Raw Data Extraction
 """
