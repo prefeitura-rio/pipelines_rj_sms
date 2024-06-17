@@ -66,7 +66,6 @@ with Flow(
 
     download_task = download_from_db(
         db_url=get_secret_task,
-        db_schema=hci_constants.SCHEMA_ID.value,
         db_table=TABLE_ID,
         file_folder=create_folders_task["raw"],
         file_name=TABLE_ID,
