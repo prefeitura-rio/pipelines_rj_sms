@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-import asyncio
 from datetime import datetime, timedelta
 from math import ceil
-from typing import Literal
 
-import httpx
 import pandas as pd
 from google.cloud import bigquery
-from httpx import AsyncClient
 
 from pipelines.prontuarios.mrg.functions import (
     final_merge,
