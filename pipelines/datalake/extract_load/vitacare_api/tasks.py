@@ -4,18 +4,16 @@
 Tasks for dump_api_vitacare
 """
 
-import hashlib
 import json
 import os
 import re
 import shutil
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import prefect
+from prefect.engine.signals import FAIL
 from google.cloud import bigquery
-from prefect.tasks.prefect import create_flow_run
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.vitacare_api.constants import (
@@ -36,7 +34,7 @@ from pipelines.utils.tasks import (
 )
 
 
-@task(max_retries=4, retry_delay=timedelta(minutes=3))
+@task(max_retries=4, retry_delay=timedelta(minutes=4))
 def extract_data_from_api(
     cnes: str, ap: str, target_day: str, endpoint: str, environment: str = "dev"
 ) -> dict:
@@ -98,8 +96,8 @@ def extract_data_from_api(
 
     else:
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
-        if (
-            target_day.weekday() == 6 and endpoint == "movimento"
+        if endpoint == "movimento" and (
+            target_day.weekday() == 6 or prefect.context.task_run_count == 5
         ):  # There is no stock movement on Sundays because the healthcenter is closed
             logger.info("No data was retrieved. This is normal on Sundays as no data is expected.")
             return {"has_data": False}
@@ -236,6 +234,7 @@ def create_parameter_list(
     table_id: str,
     environment: str = "dev",
     area_programatica: str = None,
+    is_routine: bool = True,
 ):
     """
     Create a list of parameters for running the Vitacare flow.
@@ -247,43 +246,58 @@ def create_parameter_list(
         list: A list of dictionaries containing the flow run parameters.
     """
     # Access the health units information from BigQuery table
-    dados_mestres = load_file_from_bigquery.run(
-        project_name="rj-sms",
-        dataset_name="saude_dados_mestres",
-        table_name="estabelecimento",
-    )
-    # Filter the units using Vitacare
-    if area_programatica:
-        unidades_vitacare = dados_mestres[
-            (dados_mestres["prontuario_versao"] == "vitacare")
-            & (dados_mestres["prontuario_estoque_tem_dado"] == "sim")
-            & (dados_mestres["area_programatica"] == area_programatica)
-        ]
+    if is_routine:
+        dataset_name = "saude_dados_mestres"
+        table_name = "estabelecimento"
     else:
-        unidades_vitacare = dados_mestres[
-            (dados_mestres["prontuario_versao"] == "vitacare")
-            & (dados_mestres["prontuario_estoque_tem_dado"] == "sim")
+        dataset_name = "gerenciamento__reprocessamento"
+        if endpoint == "movimento":
+            table_name = "brutos_prontuario_vitacare__estoque_movimento"
+        else:
+            log("Invalid endpoint", level="error")
+            raise FAIL("Invalid endpoint")
+
+    table_data = load_file_from_bigquery.run(
+        project_name="rj-sms",
+        dataset_name=dataset_name,
+        table_name=table_name,
+    )
+
+    # Filter the queried table
+    if is_routine:
+        results = table_data[
+            (table_data["prontuario_versao"] == "vitacare")
+            & (table_data["prontuario_estoque_tem_dado"] == "sim")
         ]
+        results["data"] = convert_str_to_date(target_date)
+    else:
+        results = table_data[
+            (table_data["retry_status"] == "pending")
+            | (table_data["retry_status"] == "in progress")
+        ]
+        results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
+    if area_programatica:
+        results = results[results["area_programatica"] == area_programatica]
 
-    # Get their CNES list
-    cnes_vitacare = unidades_vitacare["id_cnes"].tolist()
+    if results.empty:
+        log("No data to process", level="error")
+        raise FAIL("No data to process")
 
-    # Get the date of yesterday
-    target_date = convert_str_to_date(target_date)
+    results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
 
     # Construct the parameters for the flow
     vitacare_flow_parameters = []
-    for cnes in cnes_vitacare:
+    for cnes, date in results_tuples:
         vitacare_flow_parameters.append(
             {
                 "cnes": cnes,
                 "endpoint": endpoint,
-                "target_date": target_date,
+                "target_date": date,
                 "dataset_id": dataset_id,
                 "table_id": table_id,
                 "environment": environment,
                 "rename_flow": True,
-                "reprocess_mode": False,
+                "is_routine": is_routine,
             }
         )
 
@@ -296,128 +310,6 @@ def create_parameter_list(
 # ==============================
 # REPROCESS TASKS
 # ==============================
-
-
-@task
-def retrieve_cases_to_reprocessed_from_birgquery(
-    dataset_id: str, table_id: str, query_limit: None
-) -> list:
-    """
-    Retrieves cases to be reprocessed from BigQuery.
-
-    Returns:
-        list: A list of dictionaries representing the retrieved rows from BigQuery.
-    """
-    # Define your BigQuery client
-    client = bigquery.Client()
-
-    # Specify your dataset and table
-    dataset_controle = "controle_reprocessamento"
-    table_id = f"{dataset_id}__{table_id}"
-    full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
-
-    if query_limit:
-        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' ORDER BY data DESC LIMIT {query_limit} "  # noqa: E501
-    else:
-        retrieve_query = f"SELECT * FROM `{full_table_id}` WHERE reprocessing_status = 'pending' ORDER BY data DESC"  # noqa: E501
-
-    query_job = client.query(retrieve_query)
-    query_job.result()
-
-    data_list = []
-    for row in query_job:
-        # Here, we're using a simple integer index as the key
-        # You can replace this with a unique identifier from your row, if available
-        data_list.append(dict(row))
-
-    log(f"{len(data_list)} rows retrieved from BigQuery.")
-
-    return data_list
-
-
-@task
-def build_params_reprocess(
-    environment: str, ap: str, endpoint: str, table_id: str, data: str, cnes: str
-) -> dict:
-    """
-    Build the parameters for the API request.
-
-    Args:
-        date_param (str, optional): The date parameter. Defaults to "today".
-        cnes (str, optional): The CNES ID. Defaults to None.
-
-    Returns:
-        dict: The parameters for the API request.
-    """
-    params = {
-        "environment": environment,
-        "ap": ap,
-        "endpoint": endpoint,
-        "table_id": table_id,
-        "date": data,
-        "cnes": cnes,
-        "rename_flow": False,
-        "reprocess_mode": True,
-    }
-
-    log(f"Params built: {params}")
-    return params
-
-
-@task
-def creat_multiples_flows_runs(
-    run_list: list, environment: str, table_id: str, endpoint: str, parallel_runs: int = 10
-):
-    """
-    Create multiple flow runs based on the given run list.
-
-    Args:
-        run_list (list): A list of runs containing information such as area_programatica, data, id_cnes, etc.
-        environment (str): The environment to run the flows in.
-        table_id (str): The ID of the table to process.
-        endpoint (str): The endpoint to use for processing.
-
-    Returns:
-        None
-    """  # noqa: E501
-
-    if environment == "dev":
-        project_name = "staging"
-    elif environment == "prod":
-        project_name = "production"
-
-    start_time = datetime.now() + timedelta(minutes=1)
-    parallel_runs_counter = 0
-    count = 0
-
-    for run in run_list:
-        params = build_params_reprocess.run(
-            environment=environment,
-            ap=run["area_programatica"],
-            endpoint=endpoint,
-            table_id=table_id,
-            data=run["data"].strftime("%Y-%m-%d"),
-            cnes=run["id_cnes"],
-        )
-
-        idempotency_key = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()
-
-        create_flow_run.run(
-            flow_name="Dump Vitacare - Ingerir dados do prontuário Vitacare",
-            project_name=project_name,
-            parameters=params,
-            run_name=f"REPROCESS: {table_id}__ap_{run['area_programatica']}.cnes_{run['id_cnes']}__{run['data'].strftime('%Y-%m-%d')}",  # noqa: E501
-            idempotency_key=idempotency_key,
-            scheduled_start_time=start_time + timedelta(minutes=2 * count),
-        )
-
-        time.sleep(0.5)
-
-        parallel_runs_counter += 1
-
-        if parallel_runs_counter == parallel_runs:
-            parallel_runs_counter = 0
-            count += 1
 
 
 @task(max_retries=5, retry_delay=timedelta(seconds=5))

@@ -175,6 +175,7 @@ with Flow(
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    IS_ROUTINE = Parameter("is_routine", default=True)
 
     # Vitacare API
     ENDPOINT = Parameter("endpoint", required=True)
@@ -185,10 +186,15 @@ with Flow(
     DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
     TABLE_ID = Parameter("table_id", required=True)
 
+    #####################################
+    # Set environment
+    ####################################
+
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
             endpoint=ENDPOINT,
+            is_routine=IS_ROUTINE,
             target_date=TARGET_DATE,
             ap=AP,
         )
@@ -196,6 +202,7 @@ with Flow(
     parameter_list = create_parameter_list(
         environment=ENVIRONMENT,
         endpoint=ENDPOINT,
+        is_routine=IS_ROUTINE,
         area_programatica=AP,
         target_date=TARGET_DATE,
         dataset_id=DATASET_ID,
