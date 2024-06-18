@@ -22,7 +22,6 @@ cases:
       rename_flow: false
       endpoint: "posicao"
       target_date: "today"
-      ap: None
       dataset_id: "brutos_prontuario_vitacare"
       table_id: "estoque_posicao"
   - case_slug: "mrg-patientrecord-historical_batch"
