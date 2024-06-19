@@ -12,8 +12,8 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import prefect
-from prefect.engine.signals import FAIL
 from google.cloud import bigquery
+from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.vitacare_api.constants import (
@@ -108,7 +108,9 @@ def extract_data_from_api(
     else:
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
         if endpoint == "movimento" and (
-            target_day.weekday() == 6 or prefect.context.task_run_count == 2  # TODO: check if this is the best way to check if it's the first run
+            target_day.weekday() == 6
+            or prefect.context.task_run_count
+            == 2  # TODO: check if this is the best way to check if it's the first run
         ):
             logger.info("No data was retrieved. This is normal on Sundays as no data is expected.")
             return {"has_data": False}

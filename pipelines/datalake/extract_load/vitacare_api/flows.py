@@ -143,7 +143,7 @@ with Flow(
             ap=ap,
             cnes=CNES,
             target_date=TARGET_DATE,
-            max_retries=2
+            max_retries=2,
         )
         write_retry_result.set_upstream(api_data)
 
