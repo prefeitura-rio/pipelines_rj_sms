@@ -288,6 +288,7 @@ def create_parameter_list(
             (table_data["retry_status"] == "pending")
             | (table_data["retry_status"] == "in progress")
         ]
+        results = results[results["data"] >= datetime.strptime("2024-05-01", '%Y-%m-%d').date()]  # TODO: remove this line after the reprocessing is done
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
     if area_programatica:
         results = results[results["area_programatica"] == area_programatica]
