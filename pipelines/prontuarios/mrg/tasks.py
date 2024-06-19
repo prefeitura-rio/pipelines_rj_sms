@@ -2,7 +2,6 @@
 import asyncio
 from datetime import timedelta
 
-import httpcore
 import httpx
 import prefect
 from httpx import AsyncClient, AsyncHTTPTransport
@@ -101,13 +100,13 @@ def get_mergeable_records_from_api(
                     timeout=300,
                 )
             except httpx.ReadTimeout:
-                log(f"Failed Retrieval of page {page}/{page_count_str}: Read Timeout", level="error") #noqa
+                log(f"Failed Retrieval of page {page}/{page_count_str}: Read Timeout", level="error")  # noqa
                 return None
             if response.status_code not in [200]:
-                log(f"Failed Retrieval of page {page}/{page_count_str}: {response.status_code} {response.text}", level="error") #noqa
+                log(f"Failed Retrieval of page {page}/{page_count_str}: {response.status_code} {response.text}", level="error")  # noqa
                 return None
             else:
-                log(f"Sucessful Retrieval of page {page}/{page_count_str}: {len(response.json()['items'])} registers") #noqa
+                log(f"Sucessful Retrieval of page {page}/{page_count_str}: {len(response.json()['items'])} registers")  # noqa
                 return response.json()
 
     async def main():
@@ -128,7 +127,7 @@ def get_mergeable_records_from_api(
 
         batch_size = 2
         awaitables_batch = [
-            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)
+            awaitables[i: i + batch_size] for i in range(0, len(awaitables), batch_size)
         ]
 
         responses = [first_response]
@@ -184,7 +183,7 @@ def merge(data_to_merge) -> dict:
     log(f"Applying First merge in {len(register_list)} patients")
     ranking_df = load_ranking()
     merged_n_not_merged_data = list(map(lambda x: first_merge(x, ranking_df), register_list))
-    
+
     log(f"Applying Final merge in {len(merged_n_not_merged_data)} patients")
     merged_data = list(map(final_merge, merged_n_not_merged_data))
 
@@ -214,7 +213,7 @@ def merge(data_to_merge) -> dict:
         for cns in cns_list:
             cns["patient_code"] = record["patient_code"]
         cnss.extend(cns_list)
-    
+
     log(f"{len(patient_data)} patients merged successfully")
     log(f"{len(addresses)} addresses to insert")
     log(f"{len(telecoms)} telecoms to insert")
