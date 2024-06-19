@@ -81,10 +81,10 @@ def get_mergeable_records_from_api(
     """
 
     async def get_mergeable_records_batch_from_api(
-        page: int, page_size: int, start_datetime: str, end_datetime: str
+        page: int, page_count_str: str, page_size: int, start_datetime: str, end_datetime: str
     ) -> dict:
-        logger = prefect.context.get("logger")
-        logger.info(f"Retrieving page {page} of data")
+
+        log(f"Beginning page {page}/{page_count_str}")
 
         transport = AsyncHTTPTransport(retries=3)
         async with AsyncClient(transport=transport, timeout=300) as client:
@@ -101,42 +101,39 @@ def get_mergeable_records_from_api(
                     timeout=300,
                 )
             except httpx.ReadTimeout:
-                logger.info("HTTPX Read Timed Out")
-                return None
-            except httpcore.ReadTimeout:
-                logger.info("HTTPCore Read Timed Out")
+                log(f"Failed Retrieval of page {page}/{page_count_str}: Read Timeout", level="error") #noqa
                 return None
             if response.status_code not in [200]:
-                logger.info(f"Failed request with status code {response.status_code}")
+                log(f"Failed Retrieval of page {page}/{page_count_str}: {response.status_code} {response.text}", level="error") #noqa
                 return None
             else:
-                logger.info("Successful request")
+                log(f"Sucessful Retrieval of page {page}/{page_count_str}: {len(response.json()['items'])} registers") #noqa
                 return response.json()
 
     async def main():
-        log("Now retrieving first page of data")
         first_response = await get_mergeable_records_batch_from_api(
-            1, page_size, start_datetime, end_datetime
+            1, '?', page_size, start_datetime, end_datetime
         )
         log(f"First page of data retrieved with length {len(first_response['items'])}.")
         page_count = first_response.get("page_count")
 
-        log(f"Planning retrieval of {page_count-1} pages of data")
         awaitables = []
         for page in range(2, page_count + 1):
             awaitables.append(
-                get_mergeable_records_batch_from_api(page, page_size, start_datetime, end_datetime)
+                get_mergeable_records_batch_from_api(
+                    page, str(page_count),
+                    page_size, start_datetime, end_datetime
+                )
             )
 
         batch_size = 2
         awaitables_batch = [
             awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)
         ]
-        log(f"Retrieving data in {len(awaitables_batch)} batches")
 
         responses = [first_response]
         for i, batch in enumerate(awaitables_batch):
-            log(f"Retrieving batch {i+1} of data")
+            log(f"BATCH [{i+1}/{len(awaitables_batch)}]")
             other_responses = await asyncio.gather(*batch)
             responses.extend(other_responses)
 
@@ -183,18 +180,21 @@ def merge(data_to_merge) -> dict:
 
     log(f"Merging data for {len(data_to_merge)} patients")
     register_list = list(map(normalize_payload_list, data_to_merge))
-    log("Trying first merge")
+
+    log(f"Applying First merge in {len(register_list)} patients")
     ranking_df = load_ranking()
     merged_n_not_merged_data = list(map(lambda x: first_merge(x, ranking_df), register_list))
-    log("Final merge")
+    
+    log(f"Applying Final merge in {len(merged_n_not_merged_data)} patients")
     merged_data = list(map(final_merge, merged_n_not_merged_data))
-    log("Sanity check")
+
+    log(f"Applying Sanity check in {len(merged_data)} patients")
     patient_data = list(map(sanity_check, merged_data))
 
-    # Remove null fields from dict
+    log(f"Removing null fields in {len(patient_data)} patients")
     patient_data = [{k: v for k, v in record.items() if v is not None} for record in patient_data]
 
-    # Splitting Entities
+    log(f"Splitting entities from {len(patient_data)} patients")
     addresses, telecoms, cnss = [], [], []
     for record in patient_data:
         # Address
@@ -214,5 +214,10 @@ def merge(data_to_merge) -> dict:
         for cns in cns_list:
             cns["patient_code"] = record["patient_code"]
         cnss.extend(cns_list)
+    
+    log(f"{len(patient_data)} patients merged successfully")
+    log(f"{len(addresses)} addresses to insert")
+    log(f"{len(telecoms)} telecoms to insert")
+    log(f"{len(cnss)} CNS to insert")
 
     return patient_data, addresses, telecoms, cnss
