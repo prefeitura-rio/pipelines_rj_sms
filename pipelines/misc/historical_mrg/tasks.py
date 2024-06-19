@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
 from math import ceil
 
-import httpx
 import pandas as pd
-from httpx import AsyncClient
+from google.cloud import bigquery
 
 from pipelines.prontuarios.mrg.functions import (
     final_merge,
@@ -49,7 +47,7 @@ def build_param_list(batch_size: int, environment: str, db_url: str):
     for i in range(batch_count):
         params.append(
             {
-                "enviroment": environment,
+                "environment": environment,
                 "rename_flow": True,
                 "limit": batch_size,
                 "offset": i * batch_size,
@@ -89,15 +87,24 @@ def get_mergeable_data_from_db(limit: int, offset: int, db_url: str) -> pd.DataF
     return mergeable_data
 
 
-@task
+@task(nout=4)
 def merge_patientrecords(mergeable_data: pd.DataFrame):
-
     mergeable_data.loc[mergeable_data["birth_date"].notna(), "birth_date"] = mergeable_data.loc[
         mergeable_data["birth_date"].notna(), "birth_date"
     ].astype(str)
 
     mergeable_data.loc[mergeable_data["deceased_date"].notna(), "deceased_date"] = (
         mergeable_data.loc[mergeable_data["deceased_date"].notna(), "deceased_date"].astype(str)
+    )
+
+    # Rename columns to routine format
+    mergeable_data.rename(
+        columns={
+            "birth_state_id": "birth_state_cod",
+            "birth_city_id": "birth_city_cod",
+            "birth_country_id": "birth_country_cod",
+        },
+        inplace=True,
     )
 
     grouped = mergeable_data.groupby("patient_code").apply(lambda x: x.to_dict(orient="records"))
@@ -122,35 +129,84 @@ def merge_patientrecords(mergeable_data: pd.DataFrame):
     merged_data = list(map(final_merge, merged_n_not_merged_data))
 
     log("Sanity check")
-    sanitized_data = list(map(sanity_check, merged_data))
+    patient_data = list(map(sanity_check, merged_data))
 
-    return sanitized_data
-
-
-@task(max_retries=3, retry_delay=timedelta(minutes=2))
-def send_merged_data_to_api(merged_data: list[dict], api_url: str, api_token: str):
     # Remove null fields from dict
-    merged_data = [{k: v for k, v in record.items() if v is not None} for record in merged_data]
+    patient_data = [{k: v for k, v in record.items() if v is not None} for record in patient_data]
 
-    # Send payload
-    async def send():
-        async with AsyncClient(timeout=500) as client:
-            try:
-                response = await client.put(
-                    url=f"{api_url}mrg/patient",
-                    headers={"Authorization": f"Bearer {api_token}"},
-                    json=merged_data,
-                )
-            except httpx.ReadTimeout:
-                raise
-            return response
+    # Splitting Entities
+    addresses, telecoms, cnss = [], [], []
+    for record in patient_data:
+        # Address
+        address_list = record.pop("address_list", [])
+        for address in address_list:
+            address["patient_code"] = record["patient_code"]
+        addresses.extend(address_list)
 
-    response = asyncio.run(send())
+        # Telecom
+        telecom_list = record.pop("telecom_list", [])
+        for telecom in telecom_list:
+            telecom["patient_code"] = record["patient_code"]
+        telecoms.extend(telecom_list)
 
-    # Decision based on response
-    if response.status_code in [200, 201]:
-        log("Data sent successfully")
-        return response
+        # CNS
+        cns_list = record.pop("cns_list", [])
+        for cns in cns_list:
+            cns["patient_code"] = record["patient_code"]
+        cnss.extend(cns_list)
+
+    # Rename back columns to DB format
+    for patient in patient_data:
+        for birth_col in ["birth_state_cod", "birth_city_cod", "birth_country_cod"]:
+            if birth_col in patient:
+                patient[birth_col.replace("cod", "id")] = patient.pop(birth_col, None)
+
+    return patient_data, addresses, telecoms, cnss
+
+
+@task()
+def save_progress(limit: int, offset: int, environment: str):
+    bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
+    table = bq_client.get_table("rj-sms.gerenciamento__mrg_historico.status")
+
+    errors = bq_client.insert_rows_json(
+        table,
+        [
+            {
+                "limit": limit,
+                "offset": offset,
+                "environment": environment,
+                "moment": datetime.now().isoformat(),
+            }
+        ],
+    )
+
+    if errors == []:
+        log("Inserted row")
     else:
-        log(f"Error sending data to API: {response.text}", level="error")
-        raise Exception(f"Error sending data to API: {response.text}")
+        log(f"Errors: {errors}", level="error")
+        raise ValueError(f"Errors: {errors}")
+
+
+@task()
+def have_already_executed(limit: int, offset: int, environment: str):
+    bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
+
+    try:
+        bq_client.get_table("rj-sms.gerenciamento__mrg_historico.status")
+    except Exception:
+        return False
+
+    # Get table content
+    query = f"""
+        SELECT *
+        FROM rj-sms.gerenciamento__mrg_historico.status
+        WHERE `limit` = {limit} AND `offset` = {offset} AND environment = '{environment}'
+    """
+    all_records = bq_client.query(query).result().to_dataframe()
+    results = all_records[
+        (all_records.limit == limit)
+        & (all_records.offset == offset)
+        & (all_records.environment == environment)
+    ]
+    return not results.empty

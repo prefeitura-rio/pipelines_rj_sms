@@ -26,6 +26,22 @@ cases:
     flow_name: "mrg_historic_patientrecord"
     params:
       environment: "dev"
+  - case_slug: "datalake-transform-dbt"
+    flow_path: "pipelines.datalake.transform.dbt.flows"
+    flow_name: "sms_execute_dbt"
+    params:
+      environment: "dev"
+      rename_flow: false
+      command: "test"
+  - case_slug: "smsrio-raw-routine"
+    flow_path: "pipelines.prontuarios.raw.smsrio.flows"
+    flow_name: "sms_prontuarios_raw_smsrio"
+    params:
+      environment: "dev"
+      rename_flow: false
+      is_initial_extraction: false
+      start_datetime: "2024-06-05"
+      end_datetime: "2024-06-06"
   - case_slug: "datalake-extract_load-vitacare-agendador"
     flow_path: "pipelines.datalake.extract_load.vitacare_api.flows"
     flow_name: "sms_dump_vitacare_estoque_scheduler"
