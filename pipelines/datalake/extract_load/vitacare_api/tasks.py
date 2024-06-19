@@ -8,7 +8,7 @@ import json
 import os
 import re
 import shutil
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import prefect
@@ -34,7 +34,7 @@ from pipelines.utils.tasks import (
 )
 
 
-@task(max_retries=4, retry_delay=timedelta(minutes=4))
+@task(max_retries=1, retry_delay=timedelta(minutes=4))
 def extract_data_from_api(
     cnes: str, ap: str, target_day: str, endpoint: str, environment: str = "dev"
 ) -> dict:
@@ -91,14 +91,25 @@ def extract_data_from_api(
     requested_data = json.loads(response["body"])
 
     if len(requested_data) > 0:
+
+        # check if the data was replicated today. This is exclusive to the endpoint "posicao"
+        if endpoint == "posicao":
+            replication_date = datetime.strptime(
+                requested_data[0]["dtaReplicacao"], "%Y-%m-%d %H:%M:%S.%f"
+            ).date()
+            if replication_date != date.today():
+                err_msg = f"Date mismatch: replication date is {replication_date} instead of {date.today()}"  # noqa: E501
+                logger.error(err_msg)
+                raise ValueError(err_msg)
+
         logger.info(f"Successful Request: retrieved {len(requested_data)} records")
         return {"data": requested_data, "has_data": True}
 
     else:
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
         if endpoint == "movimento" and (
-            target_day.weekday() == 6 or prefect.context.task_run_count == 5
-        ):  # There is no stock movement on Sundays because the healthcenter is closed
+            target_day.weekday() == 6 or prefect.context.task_run_count == 2  # TODO: check if this is the best way to check if it's the first run
+        ):
             logger.info("No data was retrieved. This is normal on Sundays as no data is expected.")
             return {"has_data": False}
 
@@ -287,12 +298,12 @@ def create_parameter_list(
 
     # Construct the parameters for the flow
     vitacare_flow_parameters = []
-    for cnes, date in results_tuples:
+    for cnes, target_date in results_tuples:
         vitacare_flow_parameters.append(
             {
                 "cnes": cnes,
                 "endpoint": endpoint,
-                "target_date": date,
+                "target_date": target_date,
                 "dataset_id": dataset_id,
                 "table_id": table_id,
                 "environment": environment,
@@ -313,55 +324,94 @@ def create_parameter_list(
 
 
 @task(max_retries=5, retry_delay=timedelta(seconds=5))
-def write_on_bq_on_table(
-    response: dict, dataset_id: str, table_id: str, ap: str, cnes: str, data: str
+def write_retry_results_on_bq(
+    endpoint: str, response: dict, ap: str, cnes: str, target_date: str, max_retries: int = 2
 ):
     """
-    Writes the response data to a BigQuery table.
+    Writes the retry results to BigQuery.
 
     Args:
-        response (dict): The response data from the API.
-        dataset_id (str): The ID of the BigQuery dataset.
-        table_id (str): The ID of the BigQuery table.
+        endpoint (str): The endpoint for the API.
+        response (dict): The response from the API.
         ap (str): The area programatica.
-        cnes (str): The ID of the CNES.
-        data (str): The date of the data.
-
-    Returns:
-        None
+        cnes (str): The CNES.
+        target_date (str): The target date.
+        max_retries (int, optional): The maximum number of retries. Defaults to 2.
     """
-    log(f"Writing response to BigQuery for {cnes} - {ap} - {data}")
+
     # Define your BigQuery client
     client = bigquery.Client()
 
     # Specify your dataset and table
-    dataset_controle = "controle_reprocessamento"
-    table_id = f"{dataset_id}__{table_id}"
-    full_table_id = f"{client.project}.{dataset_controle}.{table_id}"
+    dataset_id = "gerenciamento__reprocessamento"
+    if endpoint == "movimento":
+        table_id = "brutos_prontuario_vitacare__estoque_movimento"
+    else:
+        err_msg = "Invalid endpoint"
+        log(err_msg, level="error")
+        raise FAIL(err_msg)
+
+    full_table_id = f"{client.project}.{dataset_id}.{table_id}"
+
+    # retrieve the data to be updated from the table
+    retrieve_query = f"""
+        SELECT *
+        FROM `{full_table_id}`
+        WHERE id_cnes = '{cnes}' AND data = '{target_date}'
+        """
+
+    query_job = client.query(retrieve_query)
+    results = query_job.result()
+
+    if results.total_rows == 1:
+        results_list = []
+        for row in results:
+            result_dict = {
+                "id_cnes": row["id_cnes"],
+                "area_programatica": row["area_programatica"],
+                "data": row["data"],
+                "nome_limpo": row["nome_limpo"],
+                "retry_status": row["retry_status"],
+                "retry_attempts_count": row["retry_attempts_count"],
+                "request_row_count": row["request_row_count"],
+            }
+            results_list.append(result_dict)
+        previous_record = results_list[0]
+    else:
+        err_msg = f"Records found: {results.total_rows}. Expected 1."
+        log(err_msg, level="error")
+        raise FAIL(err_msg)
+
+    # Update the retry status and retry attempts count
+    retry_attempts_count = previous_record["retry_attempts_count"] + 1
 
     record_to_update = {
         "id_cnes": cnes,
         "area_programatica": ap,
-        "data": data,
-        "reprocessing_status": "success" if response["status_code"] == 200 else "failed",
-        "request_response_code": response["status_code"],
-        "request_row_count": (
-            len(json.loads(response["body"])) if response["status_code"] == 200 else 0
+        "data": target_date,
+        "nome_limpo": previous_record["nome_limpo"],
+        "retry_status": (
+            "finished"
+            if response["has_data"] is True or retry_attempts_count >= max_retries
+            else "in progress"
         ),
+        "retry_attempts_count": retry_attempts_count,
+        "request_row_count": (len(response["data"]) if response["has_data"] is True else 0),
     }
 
-    log(f"Record to update: {record_to_update}")
+    log(f"Record to update: {record_to_update}", level="debug")
 
     # Construct the query
     record_str = (
-        "STRUCT<id_cnes STRING, area_programatica STRING, data DATE, reprocessing_status STRING, request_response_code STRING, request_row_count INT64>("  # noqa: E501
+        "STRUCT<id_cnes STRING, area_programatica STRING, data DATE, nome_limpo STRING, retry_status STRING, retry_attempts_count INT64, request_row_count INT64>("  # noqa: E501
         + ", ".join(
             [
                 f"'{record_to_update['id_cnes']}'",
                 f"'{record_to_update['area_programatica']}'",
                 f"'{record_to_update['data']}'",
-                f"'{record_to_update['reprocessing_status']}'",
-                f"'{record_to_update['request_response_code']}'",
+                f"'{record_to_update['nome_limpo']}'",
+                f"'{record_to_update['retry_status']}'",
+                str(record_to_update["retry_attempts_count"]),
                 str(record_to_update["request_row_count"]),
             ]
         )
@@ -373,16 +423,16 @@ def write_on_bq_on_table(
         ON T.id_cnes = S.id_cnes AND T.data = S.data
         WHEN MATCHED THEN
         UPDATE SET
-            T.reprocessing_status = S.reprocessing_status,
-            T.request_response_code = S.request_response_code,
+            T.retry_status = S.retry_status,
+            T.retry_attempts_count = S.retry_attempts_count,
             T.request_row_count = S.request_row_count
         WHEN NOT MATCHED THEN
-        INSERT (id_cnes, area_programatica, data, reprocessing_status, request_response_code, request_row_count)
-        VALUES(id_cnes, area_programatica, data, reprocessing_status, request_response_code, request_row_count)
+        INSERT (id_cnes, area_programatica, data, nome_limpo, retry_status, retry_attempts_count, request_row_count)
+        VALUES(id_cnes, area_programatica, data, nome_limpo, retry_status, retry_attempts_count, request_row_count)
         """  # noqa: E501
 
     # Run the query
     query_job = client.query(merge_query)
     query_job.result()  # Wait for the job to complete
 
-    print("Upsert operation completed.")
+    log("Record updated successfully", level="info")
