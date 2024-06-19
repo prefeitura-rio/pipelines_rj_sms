@@ -100,18 +100,25 @@ def get_mergeable_records_from_api(
                     timeout=300,
                 )
             except httpx.ReadTimeout:
-                log(f"Failed Retrieval of page {page}/{page_count_str}: Read Timeout", level="error")  # noqa
+                log(
+                    f"Failed Retrieval of page {page}/{page_count_str}: Read Timeout", level="error"
+                )  # noqa
                 return None
             if response.status_code not in [200]:
-                log(f"Failed Retrieval of page {page}/{page_count_str}: {response.status_code} {response.text}", level="error")  # noqa
+                log(
+                    f"Failed Retrieval of page {page}/{page_count_str}: {response.status_code} {response.text}",
+                    level="error",
+                )  # noqa
                 return None
             else:
-                log(f"Sucessful Retrieval of page {page}/{page_count_str}: {len(response.json()['items'])} registers")  # noqa
+                log(
+                    f"Sucessful Retrieval of page {page}/{page_count_str}: {len(response.json()['items'])} registers"
+                )  # noqa
                 return response.json()
 
     async def main():
         first_response = await get_mergeable_records_batch_from_api(
-            1, '?', page_size, start_datetime, end_datetime
+            1, "?", page_size, start_datetime, end_datetime
         )
         log(f"First page of data retrieved with length {len(first_response['items'])}.")
         page_count = first_response.get("page_count")
@@ -120,14 +127,13 @@ def get_mergeable_records_from_api(
         for page in range(2, page_count + 1):
             awaitables.append(
                 get_mergeable_records_batch_from_api(
-                    page, str(page_count),
-                    page_size, start_datetime, end_datetime
+                    page, str(page_count), page_size, start_datetime, end_datetime
                 )
             )
 
         batch_size = 2
         awaitables_batch = [
-            awaitables[i: i + batch_size] for i in range(0, len(awaitables), batch_size)
+            awaitables[i : i + batch_size] for i in range(0, len(awaitables), batch_size)
         ]
 
         responses = [first_response]
