@@ -45,6 +45,6 @@ cases:
       endpoint: "movimento"
       is_routine: true
       cnes: "2269953"
-      target_date: "2024-06-01"
+      target_date: "2024-06-03"
       dataset_id: "brutos_prontuario_vitacare"
       table_id: "estoque_movimento"

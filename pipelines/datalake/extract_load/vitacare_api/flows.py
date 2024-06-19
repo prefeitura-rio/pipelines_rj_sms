@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103, E1123, C0301
+# pylint: disable=C0103
 # flake8: noqa E501
 """
 Vitacare healthrecord dumping flows
@@ -26,6 +26,7 @@ from pipelines.datalake.extract_load.vitacare_api.tasks import (
     extract_data_from_api,
     save_data_to_file,
     transform_data,
+    write_retry_results_on_bq,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.prontuarios.utils.tasks import (
@@ -101,16 +102,13 @@ with Flow(
             cnes=CNES,
             add_load_date_to_filename=True,
             load_date=TARGET_DATE,
-            upstream_tasks=[api_data],
         )
 
         #####################################
         # Tasks section #2 - Transform data
         #####################################
 
-        transformed_file = transform_data(
-            file_path=raw_file, table_id=TABLE_ID, upstream_tasks=[raw_file]
-        )
+        transformed_file = transform_data(file_path=raw_file, table_id=TABLE_ID)
 
         #####################################
         # Tasks section #3 - Load data
@@ -119,8 +117,8 @@ with Flow(
         create_partitions_task = create_partitions(
             data_path=local_folders["raw"],
             partition_directory=local_folders["partition_directory"],
-            upstream_tasks=[transformed_file],
         )
+        create_partitions_task.set_upstream(transformed_file)
 
         upload_to_datalake_task = upload_to_datalake(
             input_path=local_folders["partition_directory"],
@@ -131,23 +129,22 @@ with Flow(
             if_storage_data_exists="replace",
             biglake_table=True,
             dataset_is_public=False,
-            upstream_tasks=[create_partitions_task],
         )
+        upload_to_datalake_task.set_upstream(create_partitions_task)
 
     #####################################
     # Tasks section #3 - Save run metadata
     #####################################
 
-    # with case(REPROCESS_MODE, True):
-    #    write_on_bq_on_table_task = write_on_bq_on_table(
-    #        response=download_task,
-    #        dataset_id=DATASET_ID,
-    #        table_id=TABLE_ID,
-    #        ap=AP,
-    #        cnes=CNES,
-    #        data=DATE,
-    #        upstream_tasks=[save_data_task],
-    #    )
+    with case(IS_ROUTINE, False):
+        write_retry_result = write_retry_results_on_bq(
+            endpoint=ENDPOINT,
+            response=api_data,
+            ap=ap,
+            cnes=CNES,
+            target_date=TARGET_DATE,
+        )
+        write_retry_result.set_upstream(api_data)
 
 
 sms_dump_vitacare_estoque.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
