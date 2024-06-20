@@ -143,7 +143,8 @@ def create_report(
         "smsrio": records_summary[records_summary["datasource"] == "smsrio"]["mrg_id"].nunique(),
         "total": records_summary["mrg_id"].nunique(),
     }
-    percent = lambda x, y: f"{(x/y)*100:.2f}%"
+    def percent(x, y):
+        return f"{(x/y)*100:.2f}%"
 
     df = pd.DataFrame(
         [
