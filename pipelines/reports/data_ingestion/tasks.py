@@ -143,6 +143,7 @@ def create_report(
         "smsrio": records_summary[records_summary["datasource"] == "smsrio"]["mrg_id"].nunique(),
         "total": records_summary["mrg_id"].nunique(),
     }
+
     def percent(x, y):
         return f"{(x/y)*100:.2f}%"
 
