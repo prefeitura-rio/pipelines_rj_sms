@@ -26,6 +26,7 @@ cases:
     flow_name: "mrg_historic_patientrecord"
     params:
       environment: "dev"
+      batch_size: 5000
   - case_slug: "datalake-transform-dbt"
     flow_path: "pipelines.datalake.transform.dbt.flows"
     flow_name: "sms_execute_dbt"
