@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
-from math import ceil
 
 import pandas as pd
 from google.cloud import bigquery
