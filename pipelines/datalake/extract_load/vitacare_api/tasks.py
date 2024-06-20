@@ -289,7 +289,8 @@ def create_parameter_list(
             | (table_data["retry_status"] == "in progress")
         ]
         results = results[
-            results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date()
+            (results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date())
+            & (table_data["retry_attempts_count"] == 0)
         ]  # TODO: remove this line after the reprocessing is done
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
     if area_programatica:
