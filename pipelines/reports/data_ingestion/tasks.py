@@ -143,31 +143,38 @@ def create_report(
         "smsrio": records_summary[records_summary["datasource"] == "smsrio"]["mrg_id"].nunique(),
         "total": records_summary["mrg_id"].nunique(),
     }
+    percent = lambda x, y: f"{(x/y)*100:.2f}%"
+
     df = pd.DataFrame(
         [
             [
-                f"{raw['vitacare_total']} ({raw['vitacare_unique']})",
-                f"{std['vitacare_total']} ({std['vitacare_unique']})",
-                f"{mrg['vitacare']}",
+                f"{raw['vitacare_unique']} únicos ({raw['vitacare_total']} total)",
+                f"{std['vitacare_unique']} únicos ({std['vitacare_total']} total)",
+                f"{mrg['vitacare']} total",
+                f"{percent(mrg['vitacare'], std['vitacare_unique'])}",
             ],
             [
-                f"{raw['vitai_total']} ({raw['vitai_unique']})",
-                f"{std['vitai_total']} ({std['vitai_unique']})",
-                f"{mrg['vitai']}",
+                f"{raw['vitai_unique']} únicos ({raw['vitai_total']} total)",
+                f"{std['vitai_unique']} únicos ({std['vitai_total']} total)",
+                f"{mrg['vitai']} total",
+                f"{percent(mrg['vitai'], std['vitai_unique'])}",
             ],
             [
-                f"{raw['smsrio_total']} ({raw['smsrio_unique']})",
-                f"{std['smsrio_total']} ({std['smsrio_unique']})",
-                f"{mrg['smsrio']}",
+                f"{raw['smsrio_unique']} únicos ({raw['smsrio_total']} total)",
+                f"{std['smsrio_unique']} únicos ({std['smsrio_total']} total)",
+                f"{mrg['smsrio']} total",
+                f"{percent(mrg['smsrio'], std['smsrio_unique'])}",
             ],
+            ["", "", "", ""],
             [
-                f"{raw['total']} ({raw['unique']})",
-                f"{std['total']} ({std['unique']})",
-                f"{mrg['total']}",
+                f"{raw['unique']} únicos ({raw['total']} total)",
+                f"{std['unique']} únicos ({std['total']} total)",
+                f"{mrg['total']} total",
+                f"{percent(mrg['total'], std['unique'])}",
             ],
         ],
-        columns=["RAW", "STD", "MRG"],
-        index=["VITACARE", "VITAI", "SMSRIO", "Total"],
+        columns=["RAW", "STD", "MRG", "%"],
+        index=["VITACARE", "VITAI", "SMSRIO", "", "Total"],
     )
 
     send_message(
