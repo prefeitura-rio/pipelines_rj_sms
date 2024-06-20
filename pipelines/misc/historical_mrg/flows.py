@@ -156,23 +156,23 @@ with Flow(
         progress_table=progress_table,
     )
 
-    # project_name = get_project_name(environment=ENVIRONMENT)
+    project_name = get_project_name(environment=ENVIRONMENT)
 
-    # current_flow_run_labels = get_current_flow_labels()
+    current_flow_run_labels = get_current_flow_labels()
 
-    # created_flow_runs = create_flow_run.map(
-    #     flow_name=unmapped("Prontuários - Unificação de Pacientes (Histórico) - Batch"),
-    #     project_name=unmapped(project_name),
-    #     parameters=params,
-    #     labels=unmapped(current_flow_run_labels),
-    # )
+    created_flow_runs = create_flow_run.map(
+        flow_name=unmapped("Prontuários - Unificação de Pacientes (Histórico) - Batch"),
+        project_name=unmapped(project_name),
+        parameters=params,
+        labels=unmapped(current_flow_run_labels),
+    )
 
-    # wait_runs_task = wait_for_flow_run.map(
-    #     flow_run_id=created_flow_runs,
-    #     stream_states=unmapped(True),
-    #     stream_logs=unmapped(True),
-    #     raise_final_state=unmapped(True),
-    # )
+    wait_runs_task = wait_for_flow_run.map(
+        flow_run_id=created_flow_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
+    )
 
 mrg_historic_patientrecord.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 mrg_historic_patientrecord.executor = LocalDaskExecutor(num_workers=1)
