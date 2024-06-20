@@ -101,19 +101,19 @@ def get_mergeable_records_from_api(
                 )
             except httpx.ReadTimeout:
                 log(
-                    f"Failed Retrieval of page {page}/{page_count_str}: Read Timeout", level="error"
-                )  # noqa
+                    f"Failed Retrieval of page {page}/{page_count_str}: Read Timeout", level="error" # noqa
+                )
                 return None
             if response.status_code not in [200]:
                 log(
-                    f"Failed Retrieval of page {page}/{page_count_str}: {response.status_code} {response.text}",
+                    f"Failed Retrieval of page {page}/{page_count_str}: {response.status_code} {response.text}", # noqa
                     level="error",
-                )  # noqa
+                )
                 return None
             else:
                 log(
-                    f"Sucessful Retrieval of page {page}/{page_count_str}: {len(response.json()['items'])} registers"
-                )  # noqa
+                    f"Sucessful Retrieval of page {page}/{page_count_str}: {len(response.json()['items'])} registers"# noqa
+                )  
                 return response.json()
 
     async def main():
