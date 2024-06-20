@@ -10,9 +10,9 @@ from pipelines.misc.historical_mrg.tasks import (
     build_db_url,
     build_param_list,
     get_mergeable_data_from_db,
+    get_progress_table,
     merge_patientrecords,
     save_progress,
-    get_progress_table,
 )
 from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.mrg.constants import constants as mrg_constants

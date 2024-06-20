@@ -46,7 +46,7 @@ def build_param_list(batch_size: int, environment: str, db_url: str, progress_ta
         skippable_offsets = []
         log("No progress found")
     else:
-        skippable_offsets = progress_table[ progress_table.limit == batch_size ].offset.to_list()
+        skippable_offsets = progress_table[progress_table.limit == batch_size].offset.to_list()
         log(f"Progress found: {len(skippable_offsets)} to skip")
 
     all_offsets = list(range(0, count, batch_size))
@@ -193,6 +193,7 @@ def save_progress(limit: int, offset: int, environment: str):
     else:
         log(f"Errors: {errors}", level="error")
         raise ValueError(f"Errors: {errors}")
+
 
 @task()
 def get_progress_table(environment: str):
