@@ -36,7 +36,7 @@ def download_from_db(
 
     connection_string = f"{db_url}"
 
-    query = f"SELECT * FROM {db_table}"
+    query = f"SELECT * FROM {db_table} LIMIT 100000"
 
     table = pd.read_sql(query, connection_string)
 
