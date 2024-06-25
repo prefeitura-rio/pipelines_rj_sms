@@ -65,3 +65,11 @@ cases:
       target_date: "2024-06-03"
       dataset_id: "brutos_prontuario_vitacare"
       table_id: "estoque_movimento"
+  - case_slug: "sms_dump_vitai_rio_saude"
+    flow_path: "pipelines.datalake.extract_load.vitai_db.flows"
+    flow_name: "sms_dump_vitai_rio_saude"
+    params:
+      environment: "dev"
+      rename_flow: false
+      start_datetime: "2024-06-10 12:00:00"
+      end_datetime: "2024-06-10 12:30:00"
