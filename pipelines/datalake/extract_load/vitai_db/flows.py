@@ -6,19 +6,15 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-
 from pipelines.datalake.extract_load.vitai_db.tasks import (
-    get_table_names,
     download_table_data_to_parquet,
+    get_table_names,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_datetime_working_range,
-    rename_current_flow_run
+    rename_current_flow_run,
 )
-from pipelines.utils.tasks import (
-   upload_to_datalake,
-   get_secret_key
-)
+from pipelines.utils.tasks import get_secret_key, upload_to_datalake
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde)",
@@ -39,16 +35,12 @@ with Flow(
     )
 
     db_url = get_secret_key(
-        environment=ENVIRONMENT,
-        secret_name="DB_URL",
-        secret_path="/prontuario-vitai"
+        environment=ENVIRONMENT, secret_name="DB_URL", secret_path="/prontuario-vitai"
     )
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
-            environment=ENVIRONMENT,
-            start_datetime=start_datetime,
-            end_datetime=end_datetime
+            environment=ENVIRONMENT, start_datetime=start_datetime, end_datetime=end_datetime
         )
 
     #####################################

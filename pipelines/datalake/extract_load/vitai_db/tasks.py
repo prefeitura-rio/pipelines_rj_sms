@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 import os
 from datetime import timedelta
+
 import pandas as pd
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -26,10 +28,7 @@ def get_table_names():
 
 @task(max_retries=3, retry_delay=timedelta(seconds=120))
 def download_table_data_to_parquet(
-    db_url: str,
-    table_name: str,
-    start_datetime: str,
-    end_datetime: str
+    db_url: str, table_name: str, start_datetime: str, end_datetime: str
 ) -> pd.DataFrame:
     df = pd.read_sql(
         f"""
@@ -37,7 +36,7 @@ def download_table_data_to_parquet(
         from basecentral.{table_name}
         where datahora between '{start_datetime}' and '{end_datetime}'
         """,
-        db_url
+        db_url,
     )
 
     if not os.path.isdir("./tabledata"):
