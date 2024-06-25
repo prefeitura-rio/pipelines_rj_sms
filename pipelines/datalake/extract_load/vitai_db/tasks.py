@@ -12,17 +12,17 @@ from pipelines.utils.logger import log
 def get_table_names():
     return [
         "paciente",
-        # "alergia",
-        # "atendimento",
-        # "boletim",
-        # "cirurgia",
-        # "classificacao_risco",
-        # "diagnostico",
-        # "exame",
-        # "internacao",
-        # "profissional",
-        # "m_estabelecimento",
-        # "produto_saldo_atual"
+        "alergia",
+        "atendimento",
+        "boletim",
+        "cirurgia",
+        "classificacao_risco",
+        "diagnostico",
+        "exame",
+        "internacao",
+        "profissional",
+        "m_estabelecimento",
+        "produto_saldo_atual"
     ]
 
 
@@ -40,9 +40,11 @@ def download_table_data_to_parquet(
     )
 
     if not os.path.isdir("./tabledata"):
+        log("Creating tabledata directory")
         os.mkdir("./tabledata")
 
     file_path = f"./tabledata/{table_name}-{start_datetime}-{end_datetime}.parquet"
+    log(f"Saving table data to {file_path}")
     df.to_parquet(file_path)
 
     return file_path
