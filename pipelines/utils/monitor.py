@@ -11,6 +11,7 @@ from prefeitura_rio.pipelines_utils.infisical import get_secret
 def get_environment():
     return prefect.context.get("parameters").get("environment")
 
+
 async def send_discord_webhook(
     text_content: str,
     file_path: str = None,
