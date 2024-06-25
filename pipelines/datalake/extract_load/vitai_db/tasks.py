@@ -22,7 +22,7 @@ def get_table_names():
         "internacao",
         "profissional",
         "m_estabelecimento",
-        "produto_saldo_atual"
+        "produto_saldo_atual",
     ]
 
 
