@@ -48,7 +48,7 @@ def download_table_data_to_parquet(
                 level="error",
             )
             return ""
-    
+
     log("DTYPES:")
     log(df.dtypes)
 
