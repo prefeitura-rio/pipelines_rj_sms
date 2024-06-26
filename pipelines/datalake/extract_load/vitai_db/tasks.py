@@ -40,7 +40,7 @@ def download_table_data_to_csv(
             where datahora between '{start_datetime}' and '{end_datetime}'
             """,
             db_url,
-            dtype=str
+            dtype=str,
         )
     except ProgrammingError as e:
         if isinstance(e.orig, psycopg2.errors.InsufficientPrivilege):
