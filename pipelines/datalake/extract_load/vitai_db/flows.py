@@ -7,7 +7,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitai_db.tasks import (
-    download_table_data_to_parquet,
+    download_table_data_to_csv,
     get_table_names,
 )
 from pipelines.prontuarios.utils.tasks import (
@@ -48,7 +48,7 @@ with Flow(
     #####################################
     table_names = get_table_names()
 
-    table_data_files = download_table_data_to_parquet.map(
+    table_data_files = download_table_data_to_csv.map(
         db_url=unmapped(db_url),
         table_name=table_names,
         start_datetime=unmapped(start_datetime),
