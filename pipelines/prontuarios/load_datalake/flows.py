@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -63,12 +63,14 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    load_to_api_task = load_to_api(
-        request_body=payload_clean,
-        endpoint_name="mrg/professionals",
-        api_token=api_token,
-        method="PUT",
-        environment=ENVIRONMENT,
+    list_batches = transform_create_input_batches(input_list=payload_clean,batch_size=5000)
+
+    load_to_api_task = load_to_api.map(
+        request_body=list_batches,
+        endpoint_name=unmapped("mrg/professionals"),
+        api_token=unmapped(api_token),
+        method=unmapped("PUT"),
+        environment=unmapped(ENVIRONMENT),
     )
 
 
