@@ -48,6 +48,12 @@ def download_table_data_to_parquet(
                 level="error",
             )
             return ""
+    
+    log("DTYPES:")
+    log(df.dtypes)
+
+    if "datahora" in df.columns:
+        df["datahora"] = pd.to_datetime(df["datahora"], errors="coerce")
 
     if not os.path.isdir("./tabledata"):
         log("Creating tabledata directory")
