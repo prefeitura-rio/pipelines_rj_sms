@@ -54,7 +54,7 @@ def download_table_data_to_parquet(
     log(f"Saving table data to {file_path}")
     df.to_parquet(
         file_path,
-        use_deprecated_int96_timestamps=True,
+        coerce_timestamps="us",
     )
 
     return file_path
