@@ -8,6 +8,10 @@ from discord import Embed, File, Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
 
+def get_environment():
+    return prefect.context.get("parameters").get("environment")
+
+
 async def send_discord_webhook(
     text_content: str,
     file_path: str = None,
@@ -21,8 +25,9 @@ async def send_discord_webhook(
         message (str): The message to send.
         username (str, optional): The username to use when sending the message. Defaults to None.
     """
+    environment = get_environment()
     secret_name = f"DISCORD_WEBHOOK_URL_{monitor_slug.upper()}"
-    webhook_url = get_secret(secret_name=secret_name, environment="prod").get(secret_name)
+    webhook_url = get_secret(secret_name=secret_name, environment=environment).get(secret_name)
 
     async with aiohttp.ClientSession() as session:
         kwargs = {"content": text_content}
