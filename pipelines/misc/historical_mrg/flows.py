@@ -10,7 +10,7 @@ from pipelines.misc.historical_mrg.tasks import (
     build_db_url,
     build_param_list,
     get_mergeable_data_from_db,
-    have_already_executed,
+    get_progress_table,
     merge_patientrecords,
     save_progress,
 )
@@ -69,68 +69,63 @@ with Flow(
     # Get data
     ####################################
 
-    have_already_executed = have_already_executed(
-        limit=LIMIT, offset=OFFSET, environment=ENVIRONMENT
+    mergeable_data = get_mergeable_data_from_db(limit=LIMIT, offset=OFFSET, db_url=db_url)
+
+    ####################################
+    # Merge
+    ####################################
+    patient_data, addresses_data, telecoms_data, cnss_data = merge_patientrecords(
+        mergeable_data=mergeable_data
     )
 
-    with case(have_already_executed, False):
-        mergeable_data = get_mergeable_data_from_db(limit=LIMIT, offset=OFFSET, db_url=db_url)
+    ####################################
+    # Send Data to API
+    ####################################
+    patient_send_task = load_to_api(
+        endpoint_name="mrg/patient",
+        request_body=patient_data,
+        api_token=api_token,
+        api_url=api_url,
+        environment=ENVIRONMENT,
+        method="PUT",
+    )
+    address_send_task = load_to_api(
+        endpoint_name="mrg/patientaddress",
+        request_body=addresses_data,
+        api_token=api_token,
+        api_url=api_url,
+        environment=ENVIRONMENT,
+        method="PUT",
+        upstream_tasks=[patient_send_task],
+    )
+    telecom_send_task = load_to_api(
+        endpoint_name="mrg/patienttelecom",
+        request_body=telecoms_data,
+        api_token=api_token,
+        api_url=api_url,
+        environment=ENVIRONMENT,
+        method="PUT",
+        upstream_tasks=[patient_send_task],
+    )
+    cns_send_task = load_to_api(
+        endpoint_name="mrg/patientcns",
+        request_body=cnss_data,
+        api_token=api_token,
+        api_url=api_url,
+        environment=ENVIRONMENT,
+        method="PUT",
+        upstream_tasks=[patient_send_task],
+    )
 
-        ####################################
-        # Merge
-        ####################################
-        patient_data, addresses_data, telecoms_data, cnss_data = merge_patientrecords(
-            mergeable_data=mergeable_data
-        )
-
-        ####################################
-        # Send Data to API
-        ####################################
-        patient_send_task = load_to_api(
-            endpoint_name="mrg/patient",
-            request_body=patient_data,
-            api_token=api_token,
-            api_url=api_url,
-            environment=ENVIRONMENT,
-            method="PUT",
-        )
-        address_send_task = load_to_api(
-            endpoint_name="mrg/patientaddress",
-            request_body=addresses_data,
-            api_token=api_token,
-            api_url=api_url,
-            environment=ENVIRONMENT,
-            method="PUT",
-            upstream_tasks=[patient_send_task],
-        )
-        telecom_send_task = load_to_api(
-            endpoint_name="mrg/patienttelecom",
-            request_body=telecoms_data,
-            api_token=api_token,
-            api_url=api_url,
-            environment=ENVIRONMENT,
-            method="PUT",
-            upstream_tasks=[patient_send_task],
-        )
-        cns_send_task = load_to_api(
-            endpoint_name="mrg/patientcns",
-            request_body=cnss_data,
-            api_token=api_token,
-            api_url=api_url,
-            environment=ENVIRONMENT,
-            method="PUT",
-            upstream_tasks=[patient_send_task],
-        )
-
-        ####################################
-        # Save Progress
-        ####################################
-        save_progress(
-            limit=LIMIT,
-            offset=OFFSET,
-            environment=ENVIRONMENT,
-            upstream_tasks=[patient_send_task, address_send_task, telecom_send_task, cns_send_task],
-        )
+    ####################################
+    # Save Progress
+    ####################################
+    save_progress(
+        limit=LIMIT,
+        offset=OFFSET,
+        environment=ENVIRONMENT,
+        upstream_tasks=[patient_send_task, address_send_task, telecom_send_task, cns_send_task],
+    )
 
 
 mrg_historic_patientrecord_batch.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
@@ -152,7 +147,14 @@ with Flow(
 
     db_url = build_db_url(environment=ENVIRONMENT)
 
-    params = build_param_list(batch_size=BATCH_SIZE, db_url=db_url, environment=ENVIRONMENT)
+    progress_table = get_progress_table(environment=ENVIRONMENT)
+
+    params = build_param_list(
+        batch_size=BATCH_SIZE,
+        db_url=db_url,
+        environment=ENVIRONMENT,
+        progress_table=progress_table,
+    )
 
     project_name = get_project_name(environment=ENVIRONMENT)
 
