@@ -43,7 +43,7 @@ def download_table_data_to_parquet(
         )
     except ProgrammingError as e:
         if isinstance(e.orig, psycopg2.errors.InsufficientPrivilege):
-            log(f"No privilege to table {table_name}", level="error")
+            log(f"Insufficient privilege to table basecentral.`{table_name}`. Ignoring table.", level="error")
             return ""
 
     if not os.path.isdir("./tabledata"):
