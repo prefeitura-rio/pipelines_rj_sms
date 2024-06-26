@@ -70,7 +70,7 @@ with Flow(
     )
 
 sms_dump_vitai_rio_saude.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitai_rio_saude.executor = LocalDaskExecutor(num_workers=1)
+sms_dump_vitai_rio_saude.executor = LocalDaskExecutor(num_workers=5)
 sms_dump_vitai_rio_saude.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
