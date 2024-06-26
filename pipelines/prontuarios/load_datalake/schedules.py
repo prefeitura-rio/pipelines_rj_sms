@@ -20,8 +20,8 @@ datalake_to_hci_flow_parameters = [
         "dataset_id": "saude_dados_mestres", "project_id": "rj-sms"}
 ]
 datalake_to_hci_clocks = generate_dump_api_schedules(
-    interval=timedelta(days=1),
-    start_date=datetime(2024, 1, 1, 4, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    interval=timedelta(days=7),
+    start_date=datetime(2024, 1, 1, 6, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

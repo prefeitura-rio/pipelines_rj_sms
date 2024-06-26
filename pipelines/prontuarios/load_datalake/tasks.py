@@ -30,8 +30,6 @@ def load_file_from_bigquery(
     table = client.get_table(table_ref)
 
     df = client.list_rows(table).to_dataframe()
-    df_sample = df.sample(1000)
-    df_sample.to_csv('sample.csv')
 
     log(f'Dataset loaded with {len(df)} rows')
 
