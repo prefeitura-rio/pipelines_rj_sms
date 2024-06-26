@@ -59,6 +59,7 @@ def download_table_data_to_csv(
         file_path,
         index=False,
         header=True,
+        sep=";"
     )
 
     return file_path
