@@ -10,8 +10,6 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.smsrio_mysql_general.constants import (
     constants as smsrio_constants,
@@ -24,6 +22,7 @@ from pipelines.datalake.extract_load.smsrio_mysql_general.tasks import (
     build_gcp_table,
     download_from_db,
 )
+from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import create_folders, get_secret_key, upload_to_datalake
 
 with Flow(
@@ -55,9 +54,7 @@ with Flow(
     build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
 
     with case(RENAME_FLOW, True):
-        rename_current_flow_run(environment=ENVIRONMENT, 
-                                table=TABLE_ID, 
-                                schema=SCHEMA)
+        rename_current_flow_run(environment=ENVIRONMENT, table=TABLE_ID, schema=SCHEMA)
 
     ####################################
     # Tasks section #1 - Get data
