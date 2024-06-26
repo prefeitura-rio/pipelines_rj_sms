@@ -6,20 +6,16 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.vitai_db.schedules import (
+    vitai_db_extraction_schedule,
+)
 from pipelines.datalake.extract_load.vitai_db.tasks import (
+    get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
-    get_last_timestamp_from_tables
 )
-from pipelines.prontuarios.utils.tasks import (
-    rename_current_flow_run,
-    get_project_name
-)
-from pipelines.utils.tasks import (
-    get_secret_key,
-    upload_to_datalake,
-)
-from pipelines.datalake.extract_load.vitai_db.schedules import vitai_db_extraction_schedule
+from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
+from pipelines.utils.tasks import get_secret_key, upload_to_datalake
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde)",
@@ -31,9 +27,7 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     with case(RENAME_FLOW, True):
-        rename_current_flow_run(
-            environment=ENVIRONMENT
-        )
+        rename_current_flow_run(environment=ENVIRONMENT)
 
     #####################################
     # Tasks section #2 - Extraction Preparation
@@ -42,10 +36,8 @@ with Flow(
         environment=ENVIRONMENT, secret_name="DB_URL", secret_path="/prontuario-vitai"
     )
 
-    project_name = get_project_name(
-        environment=ENVIRONMENT
-    )
-    
+    project_name = get_project_name(environment=ENVIRONMENT)
+
     tables_to_import = list_tables_to_import()
 
     most_recent_timestamp_per_table = get_last_timestamp_from_tables(
@@ -61,7 +53,7 @@ with Flow(
     file_names = import_vitai_table_to_csv.map(
         db_url=unmapped("db_url"),
         table_name=tables_to_import,
-        interval_start=most_recent_timestamp_per_table
+        interval_start=most_recent_timestamp_per_table,
     )
 
     #####################################

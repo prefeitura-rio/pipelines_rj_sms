@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import datetime
 import os
+
 import google
 import pandas as pd
 import psycopg2
-
-from sqlalchemy.exc import ProgrammingError
 from google.cloud import bigquery
+from sqlalchemy.exc import ProgrammingError
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -23,14 +23,15 @@ def list_tables_to_import():
         "classificacao_risco",
         "diagnostico",
         "exame",
-        "profissional"
+        "profissional",
     ]
+
 
 @task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
 def get_last_timestamp_from_tables(
     project_name: str, dataset_name: str, table_names: list[str], column_name: str
 ) -> pd.DataFrame:
-    
+
     client = bigquery.Client()
 
     subqueries = [
@@ -47,9 +48,10 @@ def get_last_timestamp_from_tables(
     # Order values as in table_names list
     max_values = []
     for table_name in table_names:
-        max_values.append( results[results['table_name'] == table_name].max_value.iloc[0] )
+        max_values.append(results[results["table_name"] == table_name].max_value.iloc[0])
 
     return max_values
+
 
 @task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
 def import_vitai_table_to_csv(
@@ -78,7 +80,7 @@ def import_vitai_table_to_csv(
     except ProgrammingError as e:
         if isinstance(e.orig, psycopg2.errors.InsufficientPrivilege):
             log(
-                f"Insufficient privilege to table basecentral.`{table_name}`. Ignoring table.", #noqa
+                f"Insufficient privilege to table basecentral.`{table_name}`. Ignoring table.",  # noqa
                 level="error",
             )
             return ""
@@ -102,6 +104,7 @@ def import_vitai_table_to_csv(
 
     return file_path
 
+
 @task(nout=2)
 def get_upload_params_in_config(config: dict):
-    return config['file_path'], config['table_name']
+    return config["file_path"], config["table_name"]
