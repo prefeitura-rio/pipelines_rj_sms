@@ -17,9 +17,9 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.smsrio_mysql_general.constants import (
     constants as smsrio_constants,
 )
-from pipelines.datalake.extract_load.smsrio_mysql_general.schedules import (
-    smsrio_daily_update_schedule,
-)
+# from pipelines.datalake.extract_load.smsrio_mysql_general.schedules import (
+    # smsrio_daily_update_schedule,
+# )
 from pipelines.datalake.extract_load.smsrio_mysql_general.tasks import (
     build_gcp_table,
     download_from_db,
