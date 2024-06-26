@@ -56,8 +56,8 @@ def download_table_data_to_csv(
 
     df["datalake__imported_at"] = pd.Timestamp.now(tz="America/Sao_Paulo")
     log(
-        f"Added `imported_at` column to dataframe with current timestamp: {df['imported_at'].iloc[0]}"
-    )  # noqa
+        f"Added `imported_at` column to dataframe with current timestamp: {df['imported_at'].iloc[0]}" # noqa
+    )
 
     if not os.path.isdir("./tabledata"):
         log("Creating tabledata directory")
