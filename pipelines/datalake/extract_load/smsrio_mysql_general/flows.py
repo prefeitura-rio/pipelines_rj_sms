@@ -49,7 +49,7 @@ with Flow(
     SCHEMA = Parameter("schema", required=True)
 
     # GCP
-    ENVIRONMENT = Parameter("environment", default="dev")
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
     DATASET_ID = Parameter("dataset_id", default=smsrio_constants.DATASET_ID.value)
 
     #####################################
