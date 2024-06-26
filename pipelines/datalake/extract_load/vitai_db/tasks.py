@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-import psycopg2
-import pandas as pd
-
-from sqlalchemy.exc import ProgrammingError
 from datetime import timedelta
+
+import pandas as pd
+import psycopg2
+from sqlalchemy.exc import ProgrammingError
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
