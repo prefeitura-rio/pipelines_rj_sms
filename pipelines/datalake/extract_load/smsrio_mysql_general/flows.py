@@ -9,9 +9,8 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
-from prefeitura_rio.pipelines_utils.prefect import (
-    task_rename_current_flow_run_dataset_table,
-)
+
+from pipelines.datalake.utils.tasks import rename_current_flow_run
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.smsrio_mysql_general.constants import (
@@ -56,9 +55,9 @@ with Flow(
     build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
 
     with case(RENAME_FLOW, True):
-        rename_flow_task = task_rename_current_flow_run_dataset_table(
-            prefix="Dump SMS Rio: ", dataset_id=DATASET_ID, table_id=build_gcp_table_task
-        )
+        rename_current_flow_run(environment=ENVIRONMENT, 
+                                table=TABLE_ID, 
+                                schema=SCHEMA)
 
     ####################################
     # Tasks section #1 - Get data
