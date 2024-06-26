@@ -69,7 +69,7 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    list_batches = transform_create_input_batches(input_list=payload_clean,batch_size=5000)
+    list_batches = transform_create_input_batches(input_list=payload_clean, batch_size=5000)
 
     load_to_api_task = load_to_api.map(
         request_body=list_batches,
