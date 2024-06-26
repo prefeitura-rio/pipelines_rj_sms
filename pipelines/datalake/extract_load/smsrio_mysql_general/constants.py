@@ -17,5 +17,5 @@ class constants(Enum):
     TABLE_ID = {
         "estoque": "estoque_posicao_almoxarifado_aps_dengue",
         "itens_estoque": "materiais_almoxarifado_dengue",
-        "contatos_equipe": "equipe_contatos"
+        "contatos_equipe": "equipe_contatos",
     }
