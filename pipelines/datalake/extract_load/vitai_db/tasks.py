@@ -45,6 +45,9 @@ def download_table_data_to_parquet(
 
     file_path = f"./tabledata/{table_name}-{start_datetime}-{end_datetime}.parquet"
     log(f"Saving table data to {file_path}")
-    df.to_parquet(file_path)
+    df.to_parquet(
+        file_path,
+        use_deprecated_int96_timestamps=True,
+    )
 
     return file_path
