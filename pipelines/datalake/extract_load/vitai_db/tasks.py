@@ -62,11 +62,6 @@ def download_table_data_to_csv(
 
     file_path = f"""./tabledata/{table_name}-{start_datetime}-{end_datetime}.csv"""  # noqa
     log(f"Saving table data to {file_path}")
-    df.to_csv(
-        file_path,
-        index=False,
-        header=True,
-        sep=";"
-    )
+    df.to_csv(file_path, index=False, header=True, sep=";")
 
     return file_path
