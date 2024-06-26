@@ -48,13 +48,15 @@ def download_table_data_to_csv(
                 level="error",
             )
             return ""
-    
-    if 'id' in df.columns:
+
+    if "id" in df.columns:
         log("Detected `id` column in dataframe. Renaming to `gid`", level="warning")
-        df.rename(columns={'id':'gid'}, inplace=True)
-    
-    df['datalake__imported_at'] = pd.Timestamp.now(tz='America/Sao_Paulo')
-    log(f"Added `imported_at` column to dataframe with current timestamp: {df['imported_at'].iloc[0]}") #noqa
+        df.rename(columns={"id": "gid"}, inplace=True)
+
+    df["datalake__imported_at"] = pd.Timestamp.now(tz="America/Sao_Paulo")
+    log(
+        f"Added `imported_at` column to dataframe with current timestamp: {df['imported_at'].iloc[0]}"
+    )  # noqa
 
     if not os.path.isdir("./tabledata"):
         log("Creating tabledata directory")
