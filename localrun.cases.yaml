@@ -71,5 +71,3 @@ cases:
     params:
       environment: "dev"
       rename_flow: false
-      start_datetime: "2024-06-10 12:00:00"
-      end_datetime: "2024-06-10 12:30:00"

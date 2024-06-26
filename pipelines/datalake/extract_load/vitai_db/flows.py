@@ -7,61 +7,70 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitai_db.tasks import (
-    download_table_data_to_csv,
-    get_table_names,
+    import_vitai_table_to_csv,
+    list_tables_to_import,
+    get_last_timestamp_from_tables
 )
 from pipelines.prontuarios.utils.tasks import (
-    get_datetime_working_range,
     rename_current_flow_run,
+    get_project_name
 )
-from pipelines.utils.tasks import get_secret_key, upload_to_datalake
+from pipelines.utils.tasks import (
+    get_secret_key,
+    upload_to_datalake,
+)
+from pipelines.datalake.extract_load.vitai_db.schedules import vitai_db_extraction_schedule
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde)",
 ) as sms_dump_vitai_rio_saude:
     #####################################
-    # Tasks section #1 - Listing Parameters
+    # Tasks section #1 - Setup Environment
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    START_DATETIME = Parameter("start_datetime", default="")
-    END_DATETIME = Parameter("end_datetime", default="")
+
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(
+            environment=ENVIRONMENT
+        )
 
     #####################################
-    # Tasks section #2 - Setup
+    # Tasks section #2 - Extraction Preparation
     #####################################
-    start_datetime, end_datetime = get_datetime_working_range(
-        start_datetime=START_DATETIME, end_datetime=END_DATETIME
-    )
-
     db_url = get_secret_key(
         environment=ENVIRONMENT, secret_name="DB_URL", secret_path="/prontuario-vitai"
     )
 
-    with case(RENAME_FLOW, True):
-        rename_current_flow_run(
-            environment=ENVIRONMENT, start_datetime=start_datetime, end_datetime=end_datetime
-        )
+    project_name = get_project_name(
+        environment=ENVIRONMENT
+    )
+    
+    tables_to_import = list_tables_to_import()
+
+    most_recent_timestamp_per_table = get_last_timestamp_from_tables(
+        project_name="rj-sms-dev",
+        dataset_name="vitai_db",
+        table_names=tables_to_import,
+        column_name="datahora",
+    )
 
     #####################################
     # Tasks section #3 - Downloading Table Data
     #####################################
-    table_names = get_table_names()
-
-    table_data_files = download_table_data_to_csv.map(
-        db_url=unmapped(db_url),
-        table_name=table_names,
-        start_datetime=unmapped(start_datetime),
-        end_datetime=unmapped(end_datetime),
+    file_names = import_vitai_table_to_csv.map(
+        db_url=unmapped("db_url"),
+        table_name=tables_to_import,
+        interval_start=most_recent_timestamp_per_table
     )
 
     #####################################
     # Tasks section #2 - Uploading to Datalake
     #####################################
     upload_to_datalake_task = upload_to_datalake.map(
-        input_path=table_data_files,
+        input_path=file_names,
         dataset_id=unmapped("vitai_db"),
-        table_id=table_names,
+        table_id=tables_to_import,
         if_exists=unmapped("replace"),
         source_format=unmapped("csv"),
         if_storage_data_exists=unmapped("replace"),
@@ -69,8 +78,9 @@ with Flow(
         dataset_is_public=unmapped(False),
     )
 
+sms_dump_vitai_rio_saude.schedule = vitai_db_extraction_schedule
 sms_dump_vitai_rio_saude.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitai_rio_saude.executor = LocalDaskExecutor(num_workers=5)
+sms_dump_vitai_rio_saude.executor = LocalDaskExecutor(num_workers=1)
 sms_dump_vitai_rio_saude.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
