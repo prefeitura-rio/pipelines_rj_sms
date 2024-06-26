@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-from datetime import timedelta
-
+import psycopg2
 import pandas as pd
+
+from sqlalchemy.exc import ProgrammingError
+from datetime import timedelta
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -30,14 +32,19 @@ def get_table_names():
 def download_table_data_to_parquet(
     db_url: str, table_name: str, start_datetime: str, end_datetime: str
 ) -> pd.DataFrame:
-    df = pd.read_sql(
-        f"""
-        select *
-        from basecentral.{table_name}
-        where datahora between '{start_datetime}' and '{end_datetime}'
-        """,
-        db_url,
-    )
+    try:
+        df = pd.read_sql(
+            f"""
+            select *
+            from basecentral.{table_name}
+            where datahora between '{start_datetime}' and '{end_datetime}'
+            """,
+            db_url,
+        )
+    except ProgrammingError as e:
+        if isinstance(e.orig, psycopg2.errors.InsufficientPrivilege):
+            log(f"No privilege to table {table_name}", level="error")
+            return ""
 
     if not os.path.isdir("./tabledata"):
         log("Creating tabledata directory")

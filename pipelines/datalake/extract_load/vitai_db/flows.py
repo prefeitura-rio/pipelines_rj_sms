@@ -64,7 +64,7 @@ with Flow(
         table_id=table_names,
         if_exists=unmapped("replace"),
         source_format=unmapped("parquet"),
-        if_storage_data_exists=unmapped("append"),
+        if_storage_data_exists=unmapped("replace"),
         biglake_table=unmapped(True),
         dataset_is_public=unmapped(False),
     )
