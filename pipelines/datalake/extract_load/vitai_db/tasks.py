@@ -53,7 +53,7 @@ def download_table_data_to_csv(
         log("Creating tabledata directory")
         os.mkdir("./tabledata")
 
-    file_path = f"""./tabledata/{table_name}-{start_datetime.replace(" ","")}-{end_datetime.replace(" ","")}.csv"""  # noqa
+    file_path = f"""./tabledata/{table_name}-{start_datetime}-{end_datetime}.csv"""  # noqa
     log(f"Saving table data to {file_path}")
     df.to_csv(
         file_path,
