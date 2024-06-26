@@ -7,11 +7,15 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuarios_constants
-from pipelines.prontuarios.load_datalake.constants import constants as datalake_constants
-from pipelines.prontuarios.load_datalake.schedules import datalake_to_hci_daily_update_schedule
+from pipelines.prontuarios.load_datalake.constants import (
+    constants as datalake_constants,
+)
+from pipelines.prontuarios.load_datalake.schedules import (
+    datalake_to_hci_daily_update_schedule,
+)
 from pipelines.prontuarios.load_datalake.tasks import (
+    clean_null_values,
     load_file_from_bigquery,
-    clean_null_values
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -39,13 +43,15 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(
-            environment=ENVIRONMENT, tabela=TABLE_ID, dataset=DATASET_ID)
+            environment=ENVIRONMENT, tabela=TABLE_ID, dataset=DATASET_ID
+        )
 
     dataframe = load_file_from_bigquery(
         project_name=PROJECT_ID,
         dataset_name=DATASET_ID,
         table_name=TABLE_ID,
-        environment=ENVIRONMENT)
+        environment=ENVIRONMENT,
+    )
 
     payload_clean = clean_null_values(df=dataframe)
 
