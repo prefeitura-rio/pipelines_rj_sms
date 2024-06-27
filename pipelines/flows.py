@@ -16,6 +16,7 @@ from pipelines.datalake.extract_load.vitacare_api.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.transform.dbt.flows import *
 from pipelines.misc.historical_mrg.flows import *
+from pipelines.prontuarios.load_datalake.flows import *
 from pipelines.prontuarios.mrg.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.prontuarios.raw.vitai.flows import *
@@ -27,4 +28,3 @@ from pipelines.reports.endpoint_health.flows import *
 from pipelines.tools.api_healthcheck.flows import *
 from pipelines.tools.unschedule_old_flows.flows import *
 from pipelines.tools.vitacare_healthcheck.flows import *
-from pipelines.prontuarios.load_datalake.flows import *
