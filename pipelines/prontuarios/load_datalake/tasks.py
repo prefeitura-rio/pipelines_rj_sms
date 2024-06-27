@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
-from google.cloud import bigquery
-from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
