@@ -51,7 +51,7 @@ with Flow(
     # Tasks section #3 - Downloading Table Data
     #####################################
     file_names = import_vitai_table_to_csv.map(
-        db_url=unmapped("db_url"),
+        db_url=unmapped(db_url),
         table_name=tables_to_import,
         interval_start=most_recent_timestamp_per_table,
     )
