@@ -33,9 +33,9 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    TABLE_ID = Parameter("table_id", default=datalake_constants.TABLE_ID, required=True)
-    DATASET_ID = Parameter("dataset_id", default=datalake_constants.DATASET_ID, required=True)
-    PROJECT_ID = Parameter("project_id", default=datalake_constants.PROJECT_ID, required=True)
+    TABLE_ID = Parameter("table_id", required=True)
+    DATASET_ID = Parameter("dataset_id", required=True)
+    PROJECT_ID = Parameter("project_id", required=True)
 
     ####################################
     # Set environment
