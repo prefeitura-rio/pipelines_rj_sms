@@ -32,4 +32,6 @@ class constants(Enum):
         "dev": "staging",
         "staging": "staging",
         "prod": "production",
+        "local-prod": "production",
+        "local-staging": "staging",
     }
