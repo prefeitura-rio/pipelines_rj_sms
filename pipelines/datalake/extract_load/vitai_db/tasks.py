@@ -62,7 +62,6 @@ def import_vitai_table_to_csv(
     if interval_end is None:
         interval_end = pd.Timestamp.now(tz="America/Sao_Paulo")
 
-    
     interval_start = interval_start.strftime("%Y-%m-%d %H:%M:%S")
     interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")
 
