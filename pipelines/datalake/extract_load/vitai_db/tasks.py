@@ -62,6 +62,10 @@ def import_vitai_table_to_csv(
     if interval_end is None:
         interval_end = pd.Timestamp.now(tz="America/Sao_Paulo")
 
+    
+    interval_start = interval_start.strftime("%Y-%m-%d %H:%M:%S")
+    interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")
+
     query = f"""
         select *
         from basecentral.{table_name}
@@ -83,6 +87,7 @@ def import_vitai_table_to_csv(
                 level="error",
             )
             return ""
+        raise
 
     if "id" in df.columns:
         log("Detected `id` column in dataframe. Renaming to `gid`", level="warning")
