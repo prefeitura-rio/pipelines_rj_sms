@@ -48,7 +48,7 @@ def get_last_timestamp_from_tables(
     max_values = []
     for table_name in table_names:
         max_datetime = results[results["table_name"] == table_name].max_value.iloc[0]
-        max_datetime = datetime.datetime.strptime(max_datetime, '%Y-%m-%d %H:%M:%S.%f')
+        max_datetime = datetime.datetime.strptime(max_datetime, "%Y-%m-%d %H:%M:%S.%f")
         max_values.append(max_datetime)
 
     return max_values
