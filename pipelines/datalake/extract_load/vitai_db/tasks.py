@@ -2,7 +2,6 @@
 import datetime
 import os
 
-import google
 import pandas as pd
 import psycopg2
 from google.cloud import bigquery
