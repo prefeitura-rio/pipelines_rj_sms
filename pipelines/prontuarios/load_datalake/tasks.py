@@ -7,36 +7,6 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
-@task
-def load_file_from_bigquery(
-    project_name: str,
-    dataset_name: str,
-    table_name: str,
-    environment="dev",
-):
-    """
-    Load data from BigQuery table into a pandas DataFrame.
-
-    Args:
-        project_name (str): The name of the BigQuery project.
-        dataset_name (str): The name of the BigQuery dataset.
-        table_name (str): The name of the BigQuery table.
-
-    Returns:
-        pandas.DataFrame: The loaded data from the BigQuery table.
-    """
-    client = bigquery.Client()
-
-    dataset_ref = bigquery.DatasetReference(project_name, dataset_name)
-    table_ref = dataset_ref.table(table_name)
-    table = client.get_table(table_ref)
-
-    df = client.list_rows(table).to_dataframe()
-
-    log(f"Dataset loaded with {len(df)} rows")
-
-    return df
-
 
 @task
 def clean_null_values(df: pd.DataFrame):

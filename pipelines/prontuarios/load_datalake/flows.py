@@ -15,7 +15,6 @@ from pipelines.prontuarios.load_datalake.schedules import (
 )
 from pipelines.prontuarios.load_datalake.tasks import (
     clean_null_values,
-    load_file_from_bigquery,
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -23,7 +22,9 @@ from pipelines.prontuarios.utils.tasks import (
     rename_current_flow_run,
     transform_create_input_batches,
 )
-from pipelines.utils.tasks import get_secret_key
+from pipelines.utils.tasks import (
+    get_secret_key, 
+    load_file_from_bigquery)
 
 with Flow(
     name="Prontuários - Extraindo dados do Datalake para o HCI",
