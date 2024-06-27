@@ -71,3 +71,12 @@ cases:
     params:
       environment: "dev"
       rename_flow: false
+  - case_slug: "load-hci-from-datake"
+    flow_path: "pipelines.prontuarios.load_datalake.flows"
+    flow_name: "datalake_to_hci"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "saude_dados_mestres"
+      table_id: "profissional_saude"
+      project_id: "rj-sms-dev"
