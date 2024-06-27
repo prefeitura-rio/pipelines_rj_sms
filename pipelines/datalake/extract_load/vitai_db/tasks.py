@@ -70,7 +70,7 @@ def import_vitai_table_to_csv(
     query = f"""
         select *
         from basecentral.{table_name}
-        where datahora >= '{interval_start}' and < '{interval_end}'
+        where datahora >= '{interval_start}' and datahora < '{interval_end}'
         """
     log("Executing query:")
     log(query)
