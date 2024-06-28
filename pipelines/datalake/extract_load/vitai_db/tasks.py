@@ -2,6 +2,7 @@
 import datetime
 import os
 
+import google
 import pandas as pd
 import psycopg2
 from google.cloud import bigquery
@@ -39,27 +40,31 @@ def get_bigquery_project_from_environment(environment: str) -> str:
 @task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
 def get_last_timestamp_from_tables(
     project_name: str, dataset_name: str, table_names: list[str], column_name: str
-) -> pd.DataFrame:
+) -> list:
 
     client = bigquery.Client()
 
-    subqueries = [
-        f"""
+    default_max_value = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(minutes=30)
+
+    max_values = []
+    for table_name in table_names:
+        query = f"""
         SELECT MAX({column_name}) as max_value, "{table_name}" as table_name
         FROM `{project_name}.{dataset_name}_staging.{table_name}`
         """
-        for table_name in table_names
-    ]
 
-    query = " UNION ALL ".join(subqueries)
-    results = client.query(query).result().to_dataframe()
+        try:
+            result = client.query(query).result().to_dataframe().max_value.iloc[0]
+            if result is None:
+                log(f"Table {table_name} is empty. Ignoring table.", level="warning")
+                max_value = default_max_value
+            else:
+                max_value = pd.to_datetime(result, format="%Y-%m-%d %H:%M:%S.%f")
+        except google.api_core.exceptions.NotFound:
+            log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="warning")
+            max_value = default_max_value
 
-    # Order values as in table_names list
-    max_values = []
-    for table_name in table_names:
-        max_datetime = results[results["table_name"] == table_name].max_value.iloc[0]
-        max_datetime = datetime.datetime.strptime(max_datetime, "%Y-%m-%d %H:%M:%S.%f")
-        max_values.append(max_datetime)
+        max_values.append(max_value)
 
     return max_values
 
@@ -100,14 +105,15 @@ def import_vitai_table_to_csv(
             return ""
         raise
 
+    log(f"Query executed successfully. Found {df.shape[0]} rows.")
+
     if "id" in df.columns:
         log("Detected `id` column in dataframe. Renaming to `gid`", level="warning")
         df.rename(columns={"id": "gid"}, inplace=True)
 
-    df["datalake__imported_at"] = pd.Timestamp.now(tz="America/Sao_Paulo")
-    log(
-        f"Added `imported_at` column to dataframe with current timestamp: {df['datalake__imported_at'].iloc[0]}"  # noqa
-    )
+    now = pd.Timestamp.now(tz="America/Sao_Paulo")
+    df["datalake__imported_at"] = now
+    log(f"Added `imported_at` column to dataframe with current timestamp: {now}")
 
     if not os.path.isdir("./tabledata"):
         log("Creating tabledata directory")
@@ -120,6 +126,6 @@ def import_vitai_table_to_csv(
     return file_path
 
 
-@task(nout=2)
-def get_upload_params_in_config(config: dict):
-    return config["file_path"], config["table_name"]
+@task()
+def create_datalake_table_name(table_name: str) -> str:
+    return f"{table_name}_eventos"
