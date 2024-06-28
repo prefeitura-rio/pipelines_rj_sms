@@ -55,7 +55,9 @@ def get_last_timestamp_from_tables(
             result = client.query(query).result().to_dataframe().max_value.iloc[0]
             if result is None:
                 log(f"Table {table_name} is empty. Ignoring table.", level="warning")
-                max_value = datetime.datetime.now(z="America/Sao_Paulo") - datetime.timedelta(minutes=30)
+                max_value = datetime.datetime.now(z="America/Sao_Paulo") - datetime.timedelta(
+                    minutes=30
+                )
             else:
                 max_value = datetime.datetime.strptime(result, "%Y-%m-%d %H:%M:%S.%f")
         except google.api_core.exceptions.NotFound:
