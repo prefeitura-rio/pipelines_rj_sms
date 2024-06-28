@@ -26,6 +26,16 @@ def list_tables_to_import():
     ]
 
 
+@task()
+def get_bigquery_project_from_environment(environment: str) -> str:
+    if environment in ["prod", "local-prod"]:
+        return "rj-sms"
+    elif environment in ["dev", "staging", "local-staging"]:
+        return "rj-sms-dev"
+    else:
+        raise ValueError(f"Invalid environment: {environment}")
+
+
 @task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
 def get_last_timestamp_from_tables(
     project_name: str, dataset_name: str, table_names: list[str], column_name: str
