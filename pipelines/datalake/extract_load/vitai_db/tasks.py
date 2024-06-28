@@ -66,7 +66,7 @@ def get_last_timestamp_from_tables(
             else:
                 max_value = pd.to_datetime(result, format="%Y-%m-%d %H:%M:%S.%f")
         except google.api_core.exceptions.NotFound:
-            log(f"Table {table_name} not found in BigQuery. Ignoring table", level="warning")
+            log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="warning")
             max_value = default_max_value
 
         max_values.append(max_value)
