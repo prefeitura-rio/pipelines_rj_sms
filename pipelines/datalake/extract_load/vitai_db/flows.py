@@ -42,18 +42,19 @@ with Flow(
 
     tables_to_import = list_tables_to_import()
 
+    datalake_table_names = create_datalake_table_name.map(
+        table_name=tables_to_import
+    )
+
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     most_recent_timestamp_per_table = get_last_timestamp_from_tables(
         project_name=bigquery_project,
         dataset_name="brutos_vitai_db",
-        table_names=tables_to_import,
+        table_names=datalake_table_names,
         column_name="datahora",
     )
 
-    datalake_table_names = create_datalake_table_name.map(
-        table_name=tables_to_import
-    )
 
     #####################################
     # Tasks section #3 - Downloading Table Data
