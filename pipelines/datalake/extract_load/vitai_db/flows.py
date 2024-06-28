@@ -10,10 +10,10 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
     vitai_db_extraction_schedule,
 )
 from pipelines.datalake.extract_load.vitai_db.tasks import (
+    get_bigquery_project_from_environment,
     get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
-    get_bigquery_project_from_environment
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key, upload_to_datalake

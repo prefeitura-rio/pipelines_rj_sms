@@ -25,11 +25,12 @@ def list_tables_to_import():
         "profissional",
     ]
 
+
 @task()
 def get_bigquery_project_from_environment(environment: str) -> str:
-    if environment in ['prod', 'local-prod']:
+    if environment in ["prod", "local-prod"]:
         return "rj-sms"
-    elif environment in ['dev','staging', 'local-staging']:
+    elif environment in ["dev", "staging", "local-staging"]:
         return "rj-sms-dev"
     else:
         raise ValueError(f"Invalid environment: {environment}")
