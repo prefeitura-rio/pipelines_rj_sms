@@ -53,10 +53,13 @@ def get_last_timestamp_from_tables(
 
         try:
             result = client.query(query).result().to_dataframe().max_value.iloc[0]
-            max_value = datetime.datetime.strptime(result, "%Y-%m-%d %H:%M:%S.%f")
+            if result is None:
+                max_value = datetime.datetime.now() - datetime.timedelta(minutes=30)
+            else:
+                max_value = datetime.datetime.strptime(result, "%Y-%m-%d %H:%M:%S.%f")
         except google.api_core.exceptions.NotFound:
             log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="error")
-            max_value = datetime.datetime.now() - datetime.timedelta(minutes=30)
+            max_value = datetime.datetime.now(tz="America/Sao_Paulo") - datetime.timedelta(minutes=30)
 
         max_values.append(max_value)
 
