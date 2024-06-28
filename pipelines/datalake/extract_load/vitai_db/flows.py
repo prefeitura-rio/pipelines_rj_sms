@@ -10,10 +10,10 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
     vitai_db_extraction_schedule,
 )
 from pipelines.datalake.extract_load.vitai_db.tasks import (
+    create_datalake_table_name,
     get_bigquery_project_from_environment,
     get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
-    create_datalake_table_name,
     list_tables_to_import,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
@@ -42,9 +42,7 @@ with Flow(
 
     tables_to_import = list_tables_to_import()
 
-    datalake_table_names = create_datalake_table_name.map(
-        table_name=tables_to_import
-    )
+    datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
 
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
@@ -54,7 +52,6 @@ with Flow(
         table_names=datalake_table_names,
         column_name="datahora",
     )
-
 
     #####################################
     # Tasks section #3 - Downloading Table Data

@@ -2,9 +2,9 @@
 import datetime
 import os
 
+import google
 import pandas as pd
 import psycopg2
-import google
 from google.cloud import bigquery
 from sqlalchemy.exc import ProgrammingError
 
@@ -15,9 +15,15 @@ from pipelines.utils.logger import log
 @task()
 def list_tables_to_import():
     return [
-        "paciente", "alergia", "atendimento",
-        "boletim", "cirurgia", "classificacao_risco",
-        "diagnostico", "exame", "profissional",
+        "paciente",
+        "alergia",
+        "atendimento",
+        "boletim",
+        "cirurgia",
+        "classificacao_risco",
+        "diagnostico",
+        "exame",
+        "profissional",
     ]
 
 
@@ -51,7 +57,7 @@ def get_last_timestamp_from_tables(
         except google.api_core.exceptions.NotFound:
             log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="error")
             max_value = datetime.datetime.now() - datetime.timedelta(minutes=30)
-        
+
         max_values.append(max_value)
 
     return max_values
