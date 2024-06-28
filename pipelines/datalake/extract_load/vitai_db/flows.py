@@ -13,6 +13,7 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
+    get_bigquery_project_from_environment
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key, upload_to_datalake
@@ -40,8 +41,10 @@ with Flow(
 
     tables_to_import = list_tables_to_import()
 
+    bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
+
     most_recent_timestamp_per_table = get_last_timestamp_from_tables(
-        project_name="rj-sms-dev",
+        project_name=bigquery_project,
         dataset_name="vitai_db",
         table_names=tables_to_import,
         column_name="datahora",
