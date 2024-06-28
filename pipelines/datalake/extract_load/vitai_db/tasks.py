@@ -37,6 +37,11 @@ def get_bigquery_project_from_environment(environment: str) -> str:
         raise ValueError(f"Invalid environment: {environment}")
 
 
+@task()
+def get_interval_start_list(interval_start:str, table_names: list[str]) -> list:
+    value = pd.to_datetime(interval_start, format="%Y-%m-%d %H:%M:%S")
+    return [value for _ in table_names]
+
 @task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
 def get_last_timestamp_from_tables(
     project_name: str, dataset_name: str, table_names: list[str], column_name: str

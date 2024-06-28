@@ -876,3 +876,7 @@ def load_file_from_bigquery(
     df = client.list_rows(table).to_dataframe()
 
     return df
+
+@task()
+def is_equal(value, target):
+    return value == target
