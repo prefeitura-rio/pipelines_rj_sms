@@ -44,6 +44,8 @@ def get_last_timestamp_from_tables(
 
     client = bigquery.Client()
 
+    default_max_value = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(minutes=30)
+
     max_values = []
     for table_name in table_names:
         query = f"""
@@ -55,16 +57,12 @@ def get_last_timestamp_from_tables(
             result = client.query(query).result().to_dataframe().max_value.iloc[0]
             if result is None:
                 log(f"Table {table_name} is empty. Ignoring table.", level="warning")
-                max_value = datetime.datetime.now(tz="America/Sao_Paulo") - datetime.timedelta(
-                    minutes=30
-                )
+                max_value = default_max_value
             else:
-                max_value = datetime.datetime.strptime(result, "%Y-%m-%d %H:%M:%S.%f")
+                max_value = pd.to_datetime(result, format="%Y-%m-%d %H:%M:%S.%f")
         except google.api_core.exceptions.NotFound:
             log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="warning")
-            max_value = datetime.datetime.now(tz="America/Sao_Paulo") - datetime.timedelta(
-                minutes=30
-            )
+            max_value = default_max_value
 
         max_values.append(max_value)
 
