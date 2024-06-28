@@ -25,6 +25,9 @@ def list_tables_to_import():
         "profissional",
     ]
 
+@task()
+def create_datalake_table_name(table_name: str) -> str:
+    return f"{table_name}_eventos"
 
 @task()
 def get_bigquery_project_from_environment(environment: str) -> str:

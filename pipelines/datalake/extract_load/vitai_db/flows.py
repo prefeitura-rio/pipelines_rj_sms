@@ -13,6 +13,7 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     get_bigquery_project_from_environment,
     get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
+    create_datalake_table_name,
     list_tables_to_import,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
@@ -45,9 +46,13 @@ with Flow(
 
     most_recent_timestamp_per_table = get_last_timestamp_from_tables(
         project_name=bigquery_project,
-        dataset_name="vitai_db",
+        dataset_name="brutos_vitai_db",
         table_names=tables_to_import,
         column_name="datahora",
+    )
+
+    datalake_table_names = create_datalake_table_name.map(
+        table_name=tables_to_import
     )
 
     #####################################
@@ -65,7 +70,7 @@ with Flow(
     upload_to_datalake_task = upload_to_datalake.map(
         input_path=file_names,
         dataset_id=unmapped("vitai_db"),
-        table_id=tables_to_import,
+        table_id=datalake_table_names,
         if_exists=unmapped("replace"),
         source_format=unmapped("csv"),
         if_storage_data_exists=unmapped("replace"),
