@@ -57,6 +57,7 @@ with Flow(
     # Tasks section #3 - Interval Start Setup
     #####################################
     is_interval_start_none = is_equal(value=INTERVAL_START, target=None)
+    
 
     with case(is_interval_start_none, True):
         most_recent_timestamp_per_table = get_last_timestamp_from_tables(
