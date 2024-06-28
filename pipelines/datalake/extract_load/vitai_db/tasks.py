@@ -99,14 +99,15 @@ def import_vitai_table_to_csv(
             return ""
         raise
 
+    log(f"Query executed successfully. Found {df.shape[0]} rows.")
+
     if "id" in df.columns:
         log("Detected `id` column in dataframe. Renaming to `gid`", level="warning")
         df.rename(columns={"id": "gid"}, inplace=True)
 
-    df["datalake__imported_at"] = pd.Timestamp.now(tz="America/Sao_Paulo")
-    log(
-        f"Added `imported_at` column to dataframe with current timestamp: {df['datalake__imported_at'].iloc[0]}"  # noqa
-    )
+    now = pd.Timestamp.now(tz="America/Sao_Paulo")
+    df["datalake__imported_at"] = now
+    log(f"Added `imported_at` column to dataframe with current timestamp: {now}")
 
     if not os.path.isdir("./tabledata"):
         log("Creating tabledata directory")
