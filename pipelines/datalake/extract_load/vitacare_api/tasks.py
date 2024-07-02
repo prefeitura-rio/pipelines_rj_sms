@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable= C0301
+# pylint: disable= C0301. fixme
 """
 Tasks for dump_api_vitacare
 """
@@ -100,7 +100,7 @@ def extract_data_from_api(
             if replication_date != date.today():
                 err_msg = f"Date mismatch: replication date is {replication_date} instead of {date.today()}"  # noqa: E501
                 logger.error(err_msg)
-                raise ValueError(err_msg)
+                return {"has_data": False}
 
         logger.info(f"Successful Request: retrieved {len(requested_data)} records")
         return {"data": requested_data, "has_data": True}
@@ -109,7 +109,7 @@ def extract_data_from_api(
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
         if endpoint == "movimento" and (
             target_day.weekday() == 6
-            or prefect.context.task_run_count
+            or prefect.context.task_run_count  # pylint: disable=no-member
             == 2  # TODO: check if this is the best way to check if it's the first run
         ):
             logger.info("No data was retrieved. This is normal on Sundays as no data is expected.")
@@ -288,9 +288,7 @@ def create_parameter_list(
             (table_data["retry_status"] == "pending")
             | (table_data["retry_status"] == "in progress")
         ]
-        results = results[
-            results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date()
-        ]  # TODO: remove this line after the reprocessing is done
+        results = results[(results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date())]
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
     if area_programatica:
         results = results[results["area_programatica"] == area_programatica]

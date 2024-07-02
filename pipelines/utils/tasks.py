@@ -877,6 +877,7 @@ def load_file_from_bigquery(
 
     return df
 
+
 @task()
 def is_equal(value, target):
     return value == target
