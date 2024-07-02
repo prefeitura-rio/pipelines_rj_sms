@@ -29,6 +29,9 @@ async def send_discord_webhook(
     secret_name = f"DISCORD_WEBHOOK_URL_{monitor_slug.upper()}"
     webhook_url = get_secret(secret_name=secret_name, environment=environment).get(secret_name)
 
+    if len(text_content)> 2000:
+        raise ValueError(f"Message content is too long: {len(text_content)} > 2000 characters.")
+
     async with aiohttp.ClientSession() as session:
         kwargs = {"content": text_content}
         if username:
