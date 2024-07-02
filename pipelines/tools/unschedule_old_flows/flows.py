@@ -25,7 +25,7 @@ with Flow("Tool: Desagendador de Flows Fantasmas") as unscheduler_flow:
 
     with case(MODE, "fix"):
         cancel_archived_flow_runs = archive_flow_versions.map(
-            archived_flow_runs=archived_flow_versions_with_runs
+            flow_versions_to_archive=archived_flow_versions_with_runs
         )
     with case(MODE, "report"):
         report_to_discord(flows_to_archive=archived_flow_versions_with_runs)
