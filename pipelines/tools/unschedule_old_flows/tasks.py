@@ -146,7 +146,7 @@ def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
         return []
 
     lines = [
-        f"- {flow['name']} @ v{flow['version']} ({flow['id']}) has {flow['invalid_runs_count']} invalid runs" # noqa
+        f"- {flow['name']} @ v{flow['version']} ({flow['id']}) has {flow['invalid_runs_count']} invalid runs"  # noqa
         for flow in flow_versions_to_cancel
     ]
     message = f"Archived Flows with Scheduled Runs in Project {project_name}:\n" + "\n".join(lines)
