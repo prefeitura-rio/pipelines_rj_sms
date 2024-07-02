@@ -11,7 +11,7 @@ class constants(Enum):
     Constant values for the vitai db extraction flows
     """
 
-    DATASET_NAME = "vitai_db"
+    DATASET_NAME = "brutos_prontuario_vitai"
     BQ_PROJECT_FROM_ENVIRONMENT = {
         "dev": "rj-sms-dev",
         "staging": "rj-sms-dev",
