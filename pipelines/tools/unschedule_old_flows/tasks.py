@@ -83,7 +83,7 @@ def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
     log(f"Querying for archived flow runs of {flow_name} < v{last_version} in {project_name}.")
     now = datetime.now().isoformat()
     query = """
-        query($flow_name: String, $last_version: Int, $now: timestamptz!, $offset: Int, $project_name: String){
+        query($flow_name: String, $last_version: Int, $now: timestamptz!, $offset: Int, $project_name: String){ # noqa
             flow(
                 where:{
                     name: {_eq:$flow_name},
