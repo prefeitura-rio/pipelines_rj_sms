@@ -175,13 +175,21 @@ def report_to_discord(flows_to_archive: list[list[dict]]):
             flow_title = f"{flow['name']} @ v{flow['version']}"
             flow_url = f"https://pipelines.dados.rio/flow/{flow['id']}"
             reports.append(
-                f"""- [{flow_title}]({flow_url}) has {flow['invalid_runs_count']} invalid runs"""
+                f"""- [{flow_title}]({flow_url}) tem {flow['invalid_runs_count']} execuções indevidas agendadas""" # noqa
             )
 
     reports = sorted(reports)
 
+    if len(reports) == 0:
+        send_message(
+            title="Listagem de Flows Fantasmas",
+            message="Nenhum foi encontrado",
+            monitor_slug="warning",
+        )
+        return
+
     send_message(
-        title="Archived Flows with Scheduled Runs",
+        title="Listagem de Flows Fantasmas",
         message="\n".join(reports),
         monitor_slug="warning",
     )
