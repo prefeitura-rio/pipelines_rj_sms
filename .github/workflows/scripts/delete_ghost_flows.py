@@ -4,9 +4,10 @@ Custom script for deleting ghost flows in Prefect Cloud.
 """
 import argparse
 from datetime import datetime
+
+from loguru import logger
 from prefect import Client
 from prefect.utilities.graphql import with_args
-from loguru import logger
 
 
 def log(message, level="debug"):
@@ -37,7 +38,8 @@ def get_project_id(client: Client, project: str) -> str:
     )
     if resp.data.project:
         return resp.data.project[0].id
-    raise Exception(f"Project {project!r} does not exist") # noqa
+    raise Exception(f"Project {project!r} does not exist")  # noqa
+
 
 def query_non_archived_flows(prefect_client, environment="staging"):
     """
@@ -183,30 +185,25 @@ def query_archived_flow_versions_with_runs(flow_data, prefect_client, environmen
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Process a project name.')
-    parser.add_argument('--project', type=str, required=True, help='Name of the project')
-    parser.add_argument('--environment', type=str, required=True, help='Environment the project')
+    parser = argparse.ArgumentParser(description="Process a project name.")
+    parser.add_argument("--project", type=str, required=True, help="Name of the project")
+    parser.add_argument("--environment", type=str, required=True, help="Environment the project")
 
     args = parser.parse_args()
 
     prefect_client = Client()
 
-    active_flows = query_non_archived_flows(
-        prefect_client,
-        args.environment
-    )
+    active_flows = query_non_archived_flows(prefect_client, args.environment)
 
     results = []
     for flow in active_flows:
         flows_to_archive = query_archived_flow_versions_with_runs(
-            flow,
-            prefect_client,
-            args.environment
+            flow, prefect_client, args.environment
         )
         results.extend(flows_to_archive)
-    
+
     log(f"Total archived flows with scheduled runs: {len(results)}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
