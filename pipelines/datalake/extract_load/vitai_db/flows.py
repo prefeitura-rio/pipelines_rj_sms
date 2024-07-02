@@ -7,6 +7,7 @@ from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.vitai_db.constants import constants as vitai_constants
 from pipelines.datalake.extract_load.vitai_db.schedules import (
     vitai_db_extraction_schedule,
 )
@@ -57,7 +58,7 @@ with Flow(
     with case(is_interval_start_none, True):
         most_recent_timestamp_per_table = get_last_timestamp_from_tables(
             project_name=bigquery_project,
-            dataset_name="brutos_vitai_db",
+            dataset_name=vitai_constants.DATASET_NAME.value,
             table_names=datalake_table_names,
             column_name="datahora",
         )
@@ -82,7 +83,7 @@ with Flow(
     #####################################
     upload_to_datalake_task = upload_to_datalake.map(
         input_path=file_names,
-        dataset_id=unmapped("brutos_vitai_db"),
+        dataset_id=unmapped(vitai_constants.DATASET_NAME.value),
         table_id=datalake_table_names,
         if_exists=unmapped("replace"),
         source_format=unmapped("csv"),
