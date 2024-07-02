@@ -49,7 +49,7 @@ reprocess_flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
         "is_routine": False,
-        "table_id": "estoque_movimento"
+        "table_id": "estoque_movimento",
     }
 ]
 
