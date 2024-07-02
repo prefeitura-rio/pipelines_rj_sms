@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -18,7 +18,7 @@ with Flow("Tool: Desagendador de Flows Fantasmas") as unscheduler_flow:
 
     archived_flow_runs = query_archived_flow_versions_with_runs.map(
         flow_data=non_archived_flows,
-        environment=ENVIRONMENT
+        environment=unmapped(ENVIRONMENT)
     )
 
 unscheduler_flow.executor = LocalDaskExecutor(num_workers=1)
