@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable= C0301
+# pylint: disable= C0301. fixme
 """
 Tasks for dump_api_vitacare
 """
@@ -109,7 +109,7 @@ def extract_data_from_api(
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
         if endpoint == "movimento" and (
             target_day.weekday() == 6
-            or prefect.context.task_run_count
+            or prefect.context.task_run_count  # pylint: disable=no-member
             == 2  # TODO: check if this is the best way to check if it's the first run
         ):
             logger.info("No data was retrieved. This is normal on Sundays as no data is expected.")
