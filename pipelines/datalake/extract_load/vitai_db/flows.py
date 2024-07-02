@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from prefect import Parameter, case, unmapped
-from prefect.tasks.control_flow import merge
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -13,17 +13,13 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_datalake_table_name,
     get_bigquery_project_from_environment,
-    get_last_timestamp_from_tables,
     get_interval_start_list,
+    get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
-from pipelines.utils.tasks import (
-    get_secret_key,
-    upload_to_datalake,
-    is_equal
-)
+from pipelines.utils.tasks import get_secret_key, is_equal, upload_to_datalake
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde)",
@@ -57,7 +53,6 @@ with Flow(
     # Tasks section #3 - Interval Start Setup
     #####################################
     is_interval_start_none = is_equal(value=INTERVAL_START, target=None)
-    
 
     with case(is_interval_start_none, True):
         most_recent_timestamp_per_table = get_last_timestamp_from_tables(
@@ -68,10 +63,9 @@ with Flow(
         )
     with case(is_interval_start_none, False):
         received_intervals_start = get_interval_start_list(
-            interval_start=INTERVAL_START,
-            table_names=tables_to_import
+            interval_start=INTERVAL_START, table_names=tables_to_import
         )
-    
+
     intervals_start_per_table = merge(most_recent_timestamp_per_table, received_intervals_start)
 
     #####################################
