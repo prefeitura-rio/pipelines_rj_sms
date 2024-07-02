@@ -87,4 +87,4 @@ jobs:
       
       - name: Delete Ghost Flows
         run: |-
-          python .github/workflows/scripts/delete_ghost_flows.py --project $PREFECT__SERVER__PROJECT
+          python .github/workflows/scripts/delete_ghost_flows.py --project $PREFECT__SERVER__PROJECT --environment prod
