@@ -175,7 +175,7 @@ def report_to_discord(flows_to_archive: list[list[dict]]):
             flow_title = f"{flow['name']} @ v{flow['version']}"
             flow_url = f"https://pipelines.dados.rio/flow/{flow['id']}"
             reports.append(
-                f"""- [{flow_title}]({flow_url}) tem {flow['invalid_runs_count']} execuções indevidas agendadas""" # noqa
+                f"""- [{flow_title}]({flow_url}) tem {flow['invalid_runs_count']} execuções indevidas agendadas"""  # noqa
             )
 
     reports = sorted(reports)
