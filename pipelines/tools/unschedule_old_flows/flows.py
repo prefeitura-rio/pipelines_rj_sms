@@ -17,7 +17,7 @@ with Flow("Tool: Desagendador de Flows Fantasmas") as unscheduler_flow:
     non_archived_flows = query_non_archived_flows(environment=ENVIRONMENT)
 
     archived_flow_runs = query_archived_flow_versions_with_runs.map(
-        flows=non_archived_flows,
+        flow_data=non_archived_flows,
         environment=ENVIRONMENT
     )
 
