@@ -94,7 +94,7 @@ def send_message(title, message, monitor_slug, file_path=None, username=None):
             message_contents.append(header_content + page)
         else:
             message_contents.append(page)
-    
+
     # Send message to Discord
     async def main(contents):
         for content in contents:
@@ -102,6 +102,7 @@ def send_message(title, message, monitor_slug, file_path=None, username=None):
                 text_content=content,
                 file_path=file_path,
                 username=username,
-                monitor_slug=monitor_slug
+                monitor_slug=monitor_slug,
             )
+
     asyncio.run(main(message_contents))
