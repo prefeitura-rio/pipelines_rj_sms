@@ -86,7 +86,7 @@ jobs:
       - name: Register Prefect flows
         run: |-
           python .github/workflows/scripts/register_flows.py --project $PREFECT__SERVER__PROJECT --path pipelines/ --no-schedule --filter-affected-flows
-      
+
       - name: Delete Ghost Flows
         run: |-
           python .github/workflows/scripts/delete_ghost_flows.py --project $PREFECT__SERVER__PROJECT --environment prod
