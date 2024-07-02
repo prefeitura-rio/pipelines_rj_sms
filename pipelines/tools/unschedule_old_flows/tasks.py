@@ -178,6 +178,8 @@ def report_to_discord(flows_to_archive: list[list[dict]]):
                 f"""- [{flow_title}]({flow_url}) has {flow['invalid_runs_count']} invalid runs"""
             )
 
+    reports = sorted(reports)
+
     send_message(
         title="Archived Flows with Scheduled Runs",
         message="\n".join(reports),
@@ -212,5 +214,6 @@ def archive_flow_versions(flow_versions_to_archive: list) -> None:
         report = f"- [{flow_title}]({flow_url}) arquivado com status=`{response}`"
 
         reports.append(report)
-
+    
+    reports = sorted(reports)
     log("\n".join(reports))
