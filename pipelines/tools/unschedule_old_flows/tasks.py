@@ -146,7 +146,7 @@ def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
         return []
 
     lines = [
-        f"- {flow['name']} @ v{flow['version']} ({flow['id']}) has {flow['invalid_runs_count']} invalid runs"
+        f"- {flow['name']} @ v{flow['version']} ({flow['id']}) has {flow['invalid_runs_count']} invalid runs" # noqa
         for flow in flow_versions_to_cancel
     ]
     message = f"Archived Flows with Scheduled Runs in Project {project_name}:\n" + "\n".join(lines)
@@ -204,9 +204,13 @@ def archive_flow_versions(flow_versions_to_archive: list) -> None:
         }
     """
     reports = []
-    for flow_version in flow_versions_to_archive:
-        response = prefect_client.graphql(query=query, variables=dict(flow_id=flow_version["id"]))
-        report = f"- Flow {flow_version['name']} de versão {flow_version['id']} arquivado com status: {response}"  # noqa
-        log(report)
+    for flow in flow_versions_to_archive:
+        response = prefect_client.graphql(query=query, variables=dict(flow_id=flow["id"]))
+
+        flow_title = f"{flow['name']} @ v{flow['version']}"
+        flow_url = f"https://pipelines.dados.rio/flow/{flow['id']}"
+        report = f"- [{flow_title}]({flow_url}) arquivado com status=`{response}`"
 
         reports.append(report)
+
+    log("\n".join(reports))
