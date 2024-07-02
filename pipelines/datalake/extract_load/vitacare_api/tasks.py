@@ -100,7 +100,7 @@ def extract_data_from_api(
             if replication_date != date.today():
                 err_msg = f"Date mismatch: replication date is {replication_date} instead of {date.today()}"  # noqa: E501
                 logger.error(err_msg)
-                raise ValueError(err_msg)
+                return {"has_data": False}
 
         logger.info(f"Successful Request: retrieved {len(requested_data)} records")
         return {"data": requested_data, "has_data": True}
