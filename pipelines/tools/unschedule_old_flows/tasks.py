@@ -123,7 +123,6 @@ def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
     )
 
     data = request_response["data"]
-    log(f"Number of Archived Flows with Scheduled Runs: {len(data['flow'])}")
 
     flow_versions_to_cancel = []
     for flow in data["flow"]:
@@ -147,7 +146,7 @@ def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
         return []
 
     lines = [
-        f"- {flow['name']} @ v{flow['version']} ({flow['id']}) has {len(flow_runs)} invalid runs"
+        f"- {flow['name']} @ v{flow['version']} ({flow['id']}) has {flow['invalid_runs_count']} invalid runs"
         for flow in flow_versions_to_cancel
     ]
     message = f"Archived Flows with Scheduled Runs in Project {project_name}:\n" + "\n".join(lines)
