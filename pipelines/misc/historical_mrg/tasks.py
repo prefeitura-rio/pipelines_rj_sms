@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
-from math import ceil
 
 import pandas as pd
 from google.cloud import bigquery
@@ -29,7 +28,7 @@ def build_db_url(environment: str):
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
-def build_param_list(batch_size: int, environment: str, db_url: str):
+def build_param_list(batch_size: int, environment: str, db_url: str, progress_table: pd.DataFrame):
     query = """
         SELECT COUNT(DISTINCT patient_cpf) as total
         FROM std__patientrecord
@@ -41,20 +40,27 @@ def build_param_list(batch_size: int, environment: str, db_url: str):
         raise e
 
     count = results["total"].values[0]
-    batch_count = ceil(count / batch_size)
 
-    params = []
-    for i in range(batch_count):
-        params.append(
-            {
-                "environment": environment,
-                "rename_flow": True,
-                "limit": batch_size,
-                "offset": i * batch_size,
-            }
-        )
+    if progress_table.empty:
+        skippable_offsets = []
+        log("No progress found")
+    else:
+        skippable_offsets = progress_table[progress_table.limit == batch_size].offset.to_list()
+        log(f"Progress found: {len(skippable_offsets)} to skip")
 
-    return params
+    all_offsets = list(range(0, count, batch_size))
+    planned_offsets = [offset for offset in all_offsets if offset not in skippable_offsets]
+
+    params_df = pd.DataFrame(
+        {
+            "environment": environment,
+            "rename_flow": True,
+            "limit": batch_size,
+            "offset": planned_offsets,
+        }
+    )
+
+    return params_df.to_dict(orient="records")
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
@@ -189,24 +195,19 @@ def save_progress(limit: int, offset: int, environment: str):
 
 
 @task()
-def have_already_executed(limit: int, offset: int, environment: str):
+def get_progress_table(environment: str):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
 
     try:
         bq_client.get_table("rj-sms.gerenciamento__mrg_historico.status")
     except Exception:
-        return False
+        log("Table not found")
+        return None
 
-    # Get table content
     query = f"""
         SELECT *
         FROM rj-sms.gerenciamento__mrg_historico.status
-        WHERE `limit` = {limit} AND `offset` = {offset} AND environment = '{environment}'
+        WHERE environment = '{environment}'
     """
     all_records = bq_client.query(query).result().to_dataframe()
-    results = all_records[
-        (all_records.limit == limit)
-        & (all_records.offset == offset)
-        & (all_records.environment == environment)
-    ]
-    return not results.empty
+    return all_records

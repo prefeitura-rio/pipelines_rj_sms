@@ -143,31 +143,43 @@ def create_report(
         "smsrio": records_summary[records_summary["datasource"] == "smsrio"]["mrg_id"].nunique(),
         "total": records_summary["mrg_id"].nunique(),
     }
+
+    def percent(x, y):
+        try:
+            return f"{(x/y)*100:.2f}%"
+        except ZeroDivisionError:
+            return "0%"
+
     df = pd.DataFrame(
         [
             [
-                f"{raw['vitacare_total']} ({raw['vitacare_unique']})",
-                f"{std['vitacare_total']} ({std['vitacare_unique']})",
+                f"{raw['vitacare_unique']} ({raw['vitacare_total']})",
+                f"{std['vitacare_unique']} ({std['vitacare_total']})",
                 f"{mrg['vitacare']}",
+                f"{percent(mrg['vitacare'], std['vitacare_unique'])}",
             ],
             [
-                f"{raw['vitai_total']} ({raw['vitai_unique']})",
-                f"{std['vitai_total']} ({std['vitai_unique']})",
+                f"{raw['vitai_unique']} ({raw['vitai_total']})",
+                f"{std['vitai_unique']} ({std['vitai_total']})",
                 f"{mrg['vitai']}",
+                f"{percent(mrg['vitai'], std['vitai_unique'])}",
             ],
             [
-                f"{raw['smsrio_total']} ({raw['smsrio_unique']})",
-                f"{std['smsrio_total']} ({std['smsrio_unique']})",
+                f"{raw['smsrio_unique']} ({raw['smsrio_total']})",
+                f"{std['smsrio_unique']} ({std['smsrio_total']})",
                 f"{mrg['smsrio']}",
+                f"{percent(mrg['smsrio'], std['smsrio_unique'])}",
             ],
+            ["", "", "", ""],
             [
-                f"{raw['total']} ({raw['unique']})",
-                f"{std['total']} ({std['unique']})",
+                f"{raw['unique']} ({raw['total']})",
+                f"{std['unique']} ({std['total']})",
                 f"{mrg['total']}",
+                f"{percent(mrg['total'], std['unique'])}",
             ],
         ],
-        columns=["RAW", "STD", "MRG"],
-        index=["VITACARE", "VITAI", "SMSRIO", "Total"],
+        columns=["RAW", "STD", "MRG", "%"],
+        index=["VITACARE", "VITAI", "SMSRIO", "", "Total"],
     )
 
     send_message(

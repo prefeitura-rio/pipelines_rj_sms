@@ -754,6 +754,10 @@ def upload_to_datalake(
     Returns:
         None
     """
+    if input_path == "":
+        log("Received input_path=''. No data to upload", level="warning")
+        return
+
     tb = bd.Table(dataset_id=dataset_id, table_id=table_id)
     table_staging = f"{tb.table_full_name['staging']}"
     st = bd.Storage(dataset_id=dataset_id, table_id=table_id)
@@ -872,3 +876,7 @@ def load_file_from_bigquery(
     df = client.list_rows(table).to_dataframe()
 
     return df
+
+@task()
+def is_equal(value, target):
+    return value == target
