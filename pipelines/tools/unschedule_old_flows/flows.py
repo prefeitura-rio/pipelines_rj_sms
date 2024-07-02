@@ -7,8 +7,8 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.tools.unschedule_old_flows.tasks import (
-    query_non_archived_flows,
     query_archived_flow_versions_with_runs,
+    query_non_archived_flows,
 )
 
 with Flow("Tool: Desagendador de Flows Fantasmas") as unscheduler_flow:
@@ -17,8 +17,7 @@ with Flow("Tool: Desagendador de Flows Fantasmas") as unscheduler_flow:
     non_archived_flows = query_non_archived_flows(environment=ENVIRONMENT)
 
     archived_flow_runs = query_archived_flow_versions_with_runs.map(
-        flows=non_archived_flows,
-        environment=ENVIRONMENT
+        flows=non_archived_flows, environment=ENVIRONMENT
     )
 
 unscheduler_flow.executor = LocalDaskExecutor(num_workers=1)

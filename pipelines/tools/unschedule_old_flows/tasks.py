@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 from datetime import datetime
+
 from prefect.client import Client
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -72,7 +74,7 @@ def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
                 - version (int): The version of the flow.
                 - invalid_runs_count (int): The number of invalid runs for the flow.
     """
-    
+
     project_name = "production" if environment == "prod" else environment
     prefect_client = Client()
     flow_name, last_version = flow_data
