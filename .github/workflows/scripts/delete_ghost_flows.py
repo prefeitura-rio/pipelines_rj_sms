@@ -184,6 +184,35 @@ def query_archived_flow_versions_with_runs(flow_data, prefect_client, environmen
     return flow_versions_to_cancel
 
 
+def archive_flow_versions(flow_versions_to_archive: list, prefect_client: Client) -> None:
+    """
+    Archive flow versions from the API.
+    """
+    query = """
+        mutation($flow_id: UUID!) {
+            archive_flow (
+                input: {
+                    flow_id: $flow_id
+                }
+            ) {
+                success
+            }
+        }
+    """
+    reports = []
+    for flow in flow_versions_to_archive:
+        response = prefect_client.graphql(query=query, variables=dict(flow_id=flow["id"]))
+
+        flow_title = f"{flow['name']} @ v{flow['version']}"
+        flow_url = f"https://pipelines.dados.rio/flow/{flow['id']}"
+        report = f"- [{flow_title}]({flow_url}) arquivado com status=`{response}`"
+
+        reports.append(report)
+
+    reports = sorted(reports)
+    log("\n".join(reports))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Process a project name.")
     parser.add_argument("--project", type=str, required=True, help="Name of the project")
@@ -203,6 +232,9 @@ def main():
         results.extend(flows_to_archive)
 
     log(f"Total archived flows with scheduled runs: {len(results)}")
+
+    #archive_flow_versions(results, prefect_client)
+    #log("Done!")
 
 
 if __name__ == "__main__":
