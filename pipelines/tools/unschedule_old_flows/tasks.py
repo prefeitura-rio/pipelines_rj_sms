@@ -5,6 +5,7 @@ from prefect.client import Client
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
+from pipelines.utils.monitor import send_message
 
 
 @task
@@ -146,23 +147,51 @@ def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
         return []
 
     lines = [
-        f"- {flow['name']}@v{flow['version']} ({flow['id']}) has {len(flow_runs)} invalid runs"
+        f"- {flow['name']} @ v{flow['version']} ({flow['id']}) has {len(flow_runs)} invalid runs"
         for flow in flow_versions_to_cancel
     ]
     message = f"Archived Flows with Scheduled Runs in Project {project_name}:\n" + "\n".join(lines)
-    log(message, level="error")
+    log(message)
 
     return flow_versions_to_cancel
 
 
-@task
-def cancel_flows(flow_versions_to_cancel: list, prefect_client: Client = None) -> None:
+@task()
+def report_to_discord(flows_to_archive: list[list[dict]]):
     """
-    Cancels a flow run from the API.
-    """
+    Sends a report to Discord with information about flows to be archived.
 
-    if not prefect_client:
-        prefect_client = Client()
+    Args:
+        flows_to_archive (list[list[dict]]): A list of flows to be archived. Each flow is
+            represented as a dictionary.
+
+    Returns:
+        None
+    """
+    reports = []
+    for flow_list in flows_to_archive:
+        for flow in flow_list:
+            if flow["invalid_runs_count"] == 0:
+                continue
+            flow_title = f"{flow['name']} @ v{flow['version']}"
+            flow_url = f"https://pipelines.dados.rio/flow/{flow['id']}"
+            reports.append(
+                f"""- [{flow_title}]({flow_url}) has {flow['invalid_runs_count']} invalid runs"""
+            )
+
+    send_message(
+        title="Archived Flows with Scheduled Runs",
+        message="\n".join(reports),
+        monitor_slug="warning",
+    )
+
+
+@task
+def archive_flow_versions(flow_versions_to_archive: list) -> None:
+    """
+    Archive flow versions from the API.
+    """
+    prefect_client = Client()
 
     query = """
         mutation($flow_id: UUID!) {
@@ -176,7 +205,7 @@ def cancel_flows(flow_versions_to_cancel: list, prefect_client: Client = None) -
         }
     """
     reports = []
-    for flow_version in flow_versions_to_cancel:
+    for flow_version in flow_versions_to_archive:
         response = prefect_client.graphql(query=query, variables=dict(flow_id=flow_version["id"]))
         report = f"- Flow {flow_version['name']} de versão {flow_version['id']} arquivado com status: {response}"  # noqa
         log(report)
