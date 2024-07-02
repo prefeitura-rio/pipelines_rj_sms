@@ -214,6 +214,6 @@ def archive_flow_versions(flow_versions_to_archive: list) -> None:
         report = f"- [{flow_title}]({flow_url}) arquivado com status=`{response}`"
 
         reports.append(report)
-    
+
     reports = sorted(reports)
     log("\n".join(reports))
