@@ -43,6 +43,8 @@ def download_from_db(
 
     table = pd.read_sql(query, connection_string)
 
+    log(f"{len(table)} rows downloaded")
+
     destination_file_path = f"{file_folder}/{file_name}.csv"
 
     table.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
