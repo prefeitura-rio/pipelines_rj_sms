@@ -68,7 +68,7 @@ with Flow(
         db_table=TABLE_ID,
         file_folder=create_folders_task["raw"],
         file_name=TABLE_ID,
-        historical_mode=HISTORICAL_MODE
+        historical_mode=HISTORICAL_MODE,
     )
     #####################################
     # Tasks section #2 - Transform data and Create table

@@ -4,8 +4,8 @@ Tasks for SMSRio Dump
 """
 from datetime import timedelta
 
-import prefect
 import pandas as pd
+import prefect
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.historico_clinico_integrado.constants import (
@@ -16,11 +16,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def download_from_db(
-    db_url: str,
-    db_table: str,
-    file_folder: str,
-    file_name: str,
-    historical_mode: bool
+    db_url: str, db_table: str, file_folder: str, file_name: str, historical_mode: bool
 ) -> None:
     """
     Downloads data from a database table and saves it as a CSV file.
@@ -39,8 +35,12 @@ def download_from_db(
 
     connection_string = f"{db_url}"
     target_date = prefect.context.get("scheduled_start_time").date()
-    time_clause = f"WHERE (created_at = {target_date}) OR (updated_at = {target_date})" if historical_mode==False else ""
-    query = f"SELECT * FROM {db_table}"+time_clause
+    time_clause = (
+        f"WHERE (created_at = {target_date}) OR (updated_at = {target_date})"
+        if historical_mode == False
+        else ""
+    )
+    query = f"SELECT * FROM {db_table}" + time_clause
     log(query)
 
     table = pd.read_sql(query, connection_string)
