@@ -37,7 +37,7 @@ def download_from_db(
     target_date = prefect.context.get("scheduled_start_time").date()
 
     time_clause = (
-        f""" WHERE (CAST(created_at as DATE) = '{target_date}')
+        f""" WHERE (CAST(created_at as DATE) = '{target_date}') 
             OR (CAST(updated_at as DATE) = '{target_date}')
             """
         if historical_mode is False
@@ -51,7 +51,7 @@ def download_from_db(
 
     log(f"{len(table)} rows downloaded")
 
-    destination_file_path = f"{file_folder}/{file_name}/{target_date}.csv"
+    destination_file_path = f"{file_folder}/{file_name}_{target_date}.csv"
 
     table.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
 
