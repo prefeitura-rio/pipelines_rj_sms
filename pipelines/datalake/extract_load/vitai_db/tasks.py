@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-import os
 import datetime
+import os
 import uuid
+
 import google
 import pandas as pd
 from google.cloud import bigquery
@@ -108,10 +109,7 @@ def import_vitai_table_to_csv(
     # Separate dataframe per day for partitioning
     df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
     days = df["partition_date"].unique()
-    dfs = [
-        (day, df[df["partition_date"] == day].drop(columns=["partition_date"]))
-        for day in days
-    ]
+    dfs = [(day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days]
 
     output_paths = []
     for day, df_day in dfs:
