@@ -39,7 +39,7 @@ def download_from_db(
 
     connection_string = f"{db_url}"
     target_date = prefect.context.get("scheduled_start_time").date()
-    time_clause = f"WHERE (created_at = {target_date}) OR (updated_at = {target_date})" if historical_mode==False else ""
+    time_clause = f"WHERE (created_at = {target_date}) OR (updated_at = {target_date})" if historical_mode is False else ""
     query = f"SELECT * FROM {db_table}"+time_clause
     log(query)
 
