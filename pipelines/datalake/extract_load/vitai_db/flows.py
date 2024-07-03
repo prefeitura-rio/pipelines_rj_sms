@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case, unmapped
+from prefect import Parameter, case, flatten, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -7,6 +7,9 @@ from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.vitai_db.constants import (
+    constants as vitai_constants,
+)
 from pipelines.datalake.extract_load.vitai_db.schedules import (
     vitai_db_extraction_schedule,
 )
@@ -19,7 +22,13 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     list_tables_to_import,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
-from pipelines.utils.tasks import get_secret_key, is_equal, upload_to_datalake
+from pipelines.utils.tasks import (
+    create_folders,
+    create_partitions,
+    get_secret_key,
+    is_equal,
+    upload_to_datalake,
+)
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde)",
@@ -33,6 +42,8 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT)
+
+    folders = create_folders()
 
     #####################################
     # Tasks section #2 - Extraction Preparation
@@ -57,7 +68,7 @@ with Flow(
     with case(is_interval_start_none, True):
         most_recent_timestamp_per_table = get_last_timestamp_from_tables(
             project_name=bigquery_project,
-            dataset_name="brutos_vitai_db",
+            dataset_name=vitai_constants.DATASET_NAME.value,
             table_names=datalake_table_names,
             column_name="datahora",
         )
@@ -71,24 +82,36 @@ with Flow(
     #####################################
     # Tasks section #3 - Downloading Table Data
     #####################################
-    file_names = import_vitai_table_to_csv.map(
+    file_list_per_table = import_vitai_table_to_csv.map(
         db_url=unmapped(db_url),
         table_name=tables_to_import,
+        output_file_folder=unmapped(folders["raw"]),
         interval_start=intervals_start_per_table,
+    )
+    file_list = flatten(file_list_per_table)
+
+    #####################################
+    # Tasks section #4 - Partitioning Data
+    #####################################
+    create_partitions_task = create_partitions(
+        data_path=folders["raw"],
+        partition_directory=folders["partition_directory"],
+        upstream_tasks=[file_list],
     )
 
     #####################################
-    # Tasks section #2 - Uploading to Datalake
+    # Tasks section #5 - Uploading to Datalake
     #####################################
     upload_to_datalake_task = upload_to_datalake.map(
-        input_path=file_names,
-        dataset_id=unmapped("brutos_vitai_db"),
+        input_path=unmapped(folders["partition_directory"]),
         table_id=datalake_table_names,
+        dataset_id=unmapped(vitai_constants.DATASET_NAME.value),
         if_exists=unmapped("replace"),
         source_format=unmapped("csv"),
         if_storage_data_exists=unmapped("replace"),
         biglake_table=unmapped(True),
         dataset_is_public=unmapped(False),
+        upstream_tasks=[unmapped(create_partitions_task)],
     )
 
 sms_dump_vitai_rio_saude.schedule = vitai_db_extraction_schedule
