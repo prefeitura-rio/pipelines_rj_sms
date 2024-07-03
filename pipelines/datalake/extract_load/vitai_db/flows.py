@@ -7,7 +7,9 @@ from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.vitai_db.constants import constants as vitai_constants
+from pipelines.datalake.extract_load.vitai_db.constants import (
+    constants as vitai_constants,
+)
 from pipelines.datalake.extract_load.vitai_db.schedules import (
     vitai_db_extraction_schedule,
 )
