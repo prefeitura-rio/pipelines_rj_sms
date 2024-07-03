@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-import datetime
 import os
-
+import datetime
+import uuid
 import google
 import pandas as pd
-import psycopg2
 from google.cloud import bigquery
-from sqlalchemy.exc import ProgrammingError
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -15,10 +13,10 @@ from pipelines.utils.logger import log
 @task()
 def list_tables_to_import():
     return [
+        "boletim",
         "paciente",
         "alergia",
         "atendimento",
-        "boletim",
         "cirurgia",
         "classificacao_risco",
         "diagnostico",
@@ -79,6 +77,7 @@ def get_last_timestamp_from_tables(
 def import_vitai_table_to_csv(
     db_url: str,
     table_name: str,
+    output_file_folder: str,
     interval_start: pd.Timestamp,
     interval_end: pd.Timestamp = None,
 ) -> str:
@@ -92,25 +91,10 @@ def import_vitai_table_to_csv(
         select *
         from basecentral.{table_name}
         where datahora >= '{interval_start}' and datahora < '{interval_end}'
-        """
-    log("Executing query:")
-    log(query)
+    """
+    log("Built query:\n" + query)
 
-    try:
-        df = pd.read_sql(
-            query,
-            db_url,
-            dtype=str,
-        )
-    except ProgrammingError as e:
-        if isinstance(e.orig, psycopg2.errors.InsufficientPrivilege):
-            log(
-                f"Insufficient privilege to table basecentral.`{table_name}`. Ignoring table.",  # noqa
-                level="error",
-            )
-            return ""
-        raise
-
+    df = pd.read_sql(query, db_url, dtype=str)
     log(f"Query executed successfully. Found {df.shape[0]} rows.")
 
     if "id" in df.columns:
@@ -119,17 +103,24 @@ def import_vitai_table_to_csv(
 
     now = pd.Timestamp.now(tz="America/Sao_Paulo")
     df["datalake__imported_at"] = now
-    log(f"Added `imported_at` column to dataframe with current timestamp: {now}")
+    log(f"Added `datalake__imported_at` column to dataframe with current timestamp: {now}")
 
-    if not os.path.isdir("./tabledata"):
-        log("Creating tabledata directory")
-        os.mkdir("./tabledata")
+    # Separate dataframe per day for partitioning
+    df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
+    days = df["partition_date"].unique()
+    dfs = [
+        (day, df[df["partition_date"] == day].drop(columns=["partition_date"]))
+        for day in days
+    ]
 
-    file_path = f"""./tabledata/{table_name}-{interval_start}-{interval_end}.csv"""  # noqa
-    log(f"Saving table data to {file_path}")
-    df.to_csv(file_path, index=False, header=True, sep=";")
+    output_paths = []
+    for day, df_day in dfs:
+        file_path = os.path.join(output_file_folder, f"{table_name}_{day}_{uuid.uuid4()}.csv")
+        df_day.to_csv(file_path, index=False, header=True, sep=";")
+        output_paths.append(file_path)
+        log(f"Saving table data to {file_path}")
 
-    return file_path
+    return output_paths
 
 
 @task()
