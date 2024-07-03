@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case, unmapped, flatten
+from prefect import Parameter, case, flatten, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -23,11 +23,11 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.tasks import (
+    create_folders,
+    create_partitions,
     get_secret_key,
     is_equal,
     upload_to_datalake,
-    create_folders,
-    create_partitions,
 )
 
 with Flow(
@@ -89,7 +89,7 @@ with Flow(
         interval_start=intervals_start_per_table,
     )
     file_list = flatten(file_list_per_table)
-    
+
     #####################################
     # Tasks section #4 - Partitioning Data
     #####################################
