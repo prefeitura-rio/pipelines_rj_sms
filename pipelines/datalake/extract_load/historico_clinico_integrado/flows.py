@@ -80,7 +80,7 @@ with Flow(
         table_id=build_gcp_table_task,
         if_exists="replace",
         csv_delimiter=";",
-        if_storage_data_exists="append",
+        if_storage_data_exists="replace",
         biglake_table=True,
         dataset_is_public=False,
     )

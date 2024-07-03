@@ -51,7 +51,7 @@ def download_from_db(
 
     log(f"{len(table)} rows downloaded")
 
-    destination_file_path = f"{file_folder}/{file_name}/{prefect.context.get("scheduled_start_time").date()}.csv"
+    destination_file_path = f"{file_folder}/{file_name}/{target_date}.csv"
 
     table.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
 
