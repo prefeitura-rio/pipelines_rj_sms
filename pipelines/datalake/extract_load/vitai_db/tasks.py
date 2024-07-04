@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import os
+import shutil
 import uuid
 import prefect
 
@@ -135,3 +136,15 @@ def get_current_flow_labels() -> list[str]:
     flow_run_id = prefect.context.get("flow_run_id")
     flow_run_view = FlowRunView.from_flow_run_id(flow_run_id)
     return flow_run_view.labels
+
+@task
+def create_folder(title='', subtitle=''):
+    folder_path = os.path.join(os.getcwd(), "data", title, subtitle)
+
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path, ignore_errors=False)
+    os.makedirs(folder_path)
+
+
+    return folder_path
+

@@ -20,11 +20,14 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
+<<<<<<< Updated upstream
     get_current_flow_labels
+=======
+    create_folder
+>>>>>>> Stashed changes
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.tasks import (
-    create_folders,
     create_partitions,
     get_secret_key,
     is_equal,
@@ -50,8 +53,6 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT)
 
-    folders = create_folders()
-
     #####################################
     # Tasks section #2 - Extraction Preparation
     #####################################
@@ -64,6 +65,15 @@ with Flow(
     tables_to_import = list_tables_to_import()
 
     datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
+
+    raw_folders = create_folder.map(
+        title=unmapped("raw"),
+        subtitle=datalake_table_names
+    )
+    partition_folders = create_folder.map(
+        title=unmapped("partition_directory"),
+        subtitle=datalake_table_names
+    )
 
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
@@ -92,7 +102,7 @@ with Flow(
     file_list_per_table = import_vitai_table_to_csv.map(
         db_url=unmapped(db_url),
         table_name=tables_to_import,
-        output_file_folder=unmapped(folders["raw"]),
+        output_file_folder=raw_folders,
         interval_start=intervals_start_per_table,
     )
     file_list = flatten(file_list_per_table)
@@ -100,17 +110,17 @@ with Flow(
     #####################################
     # Tasks section #4 - Partitioning Data
     #####################################
-    create_partitions_task = create_partitions(
-        data_path=folders["raw"],
-        partition_directory=folders["partition_directory"],
-        upstream_tasks=[file_list],
+    create_partitions_task = create_partitions.map(
+        data_path=raw_folders,
+        partition_directory=partition_folders,
+        upstream_tasks=[unmapped(file_list)],
     )
 
     #####################################
     # Tasks section #5 - Uploading to Datalake
     #####################################
     upload_to_datalake_task = upload_to_datalake.map(
-        input_path=unmapped(folders["partition_directory"]),
+        input_path=partition_folders,
         table_id=datalake_table_names,
         dataset_id=unmapped(vitai_constants.DATASET_NAME.value),
         if_exists=unmapped("replace"),
