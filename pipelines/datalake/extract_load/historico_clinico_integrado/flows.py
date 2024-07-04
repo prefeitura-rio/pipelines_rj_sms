@@ -36,6 +36,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
     HISTORICAL_MODE = Parameter("historical_mode", default=False)
+    TARGET_DATE = Parameter("target_date", default="")
 
     # INFISICAL
     INFISICAL_PATH = hci_constants.INFISICAL_PATH.value
@@ -66,6 +67,7 @@ with Flow(
     download_task = download_from_db(
         db_url=get_secret_task,
         db_table=TABLE_ID,
+        target_date=TARGET_DATE,
         file_folder=create_folders_task["raw"],
         file_name=TABLE_ID,
         historical_mode=HISTORICAL_MODE,

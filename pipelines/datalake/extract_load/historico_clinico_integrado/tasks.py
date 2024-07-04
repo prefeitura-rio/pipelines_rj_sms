@@ -16,7 +16,8 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def download_from_db(
-    db_url: str, db_table: str, file_folder: str, file_name: str, historical_mode: bool
+    db_url: str, db_table: str, target_date: str, file_folder: str,
+    file_name: str, historical_mode: bool
 ) -> None:
     """
     Downloads data from a database table and saves it as a CSV file.
@@ -25,6 +26,7 @@ def download_from_db(
         db_url (str): The URL of the database.
         db_schema (str): The schema of the database.
         db_table (str): The name of the table to download data from.
+        target_date (str): Target date of run
         file_folder (str): The folder where the CSV file will be saved.
         file_name (str): The name of the CSV file.
         historical_mode (bool): Boolean to historical extraction
@@ -34,8 +36,8 @@ def download_from_db(
     """
 
     connection_string = f"{db_url}"
-    target_date = prefect.context.get("scheduled_start_time").date()
-
+    if historical_mode is False & target_date == "":
+        target_date = prefect.context.get("scheduled_start_time").date()
     time_clause = (
         f""" WHERE (CAST(created_at as DATE) = '{target_date}')
             OR (CAST(updated_at as DATE) = '{target_date}')
