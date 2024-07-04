@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-
+"""
+Tasks to download data from Google Drive.
+"""
 from datetime import datetime, timedelta
 
 import prefect
@@ -99,7 +101,7 @@ def filter_files_by_date(files, start_datetime=None, end_datetime=None):
             filtered_files.append(file)
 
     log(
-        f"{len(filtered_files)} files filtered for dates between {start_datetime} and {end_datetime}",
+        f"{len(filtered_files)} files found for dates between {start_datetime} and {end_datetime}",
         level="info",
     )
 
