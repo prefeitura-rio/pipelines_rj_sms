@@ -15,22 +15,15 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
 )
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_datalake_table_name,
+    create_folder,
     get_bigquery_project_from_environment,
     get_current_flow_labels,
     get_interval_start_list,
     get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
-    get_current_flow_labels,
-    create_folder
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
-from pipelines.utils.tasks import (
-    create_partitions,
-    get_secret_key,
-    is_equal,
-    upload_to_datalake,
-)
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
@@ -70,13 +63,9 @@ with Flow(
 
     datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
 
-    raw_folders = create_folder.map(
-        title=unmapped("raw"),
-        subtitle=datalake_table_names
-    )
+    raw_folders = create_folder.map(title=unmapped("raw"), subtitle=datalake_table_names)
     partition_folders = create_folder.map(
-        title=unmapped("partition_directory"),
-        subtitle=datalake_table_names
+        title=unmapped("partition_directory"), subtitle=datalake_table_names
     )
 
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
