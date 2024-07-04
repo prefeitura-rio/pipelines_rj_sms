@@ -44,7 +44,7 @@ def get_files_from_folder(folder_id, file_extension="csv"):
         if file["title"].endswith(file_extension):
             files_list.append(file)
 
-    log(f"Finishing with {len(files_list)} files", level="info")
+    log(f"{len(files_list)} files found in Google Drive folder.", level="info")
     log(f"Files: {files_list}", level="debug")
 
     return files_list
@@ -98,6 +98,11 @@ def filter_files_by_date(files, start_datetime=None, end_datetime=None):
         if start_datetime <= last_update <= end_datetime:
             filtered_files.append(file)
 
+    log(
+        f"{len(filtered_files)} files filtered for dates between {start_datetime} and {end_datetime}",
+        level="info",
+    )
+
     return filtered_files
 
 
@@ -121,6 +126,7 @@ def download_files(files, folder_path):
         file.GetContentFile(f"{folder_path}/{file['title']}")
         downloaded_files.append(f"{folder_path}/{file['title']}")
 
-    log(f"Files downloaded: {downloaded_files}", level="info")
+    log(f"{len(downloaded_files)} files downloaded to {folder_path}", level="info")
+    log(f"Files downloaded: {downloaded_files}", level="debug")
 
     return downloaded_files
