@@ -35,8 +35,13 @@ def rename_current_flow_run(environment: str, is_routine: bool = True, **kwargs)
 
     title = "Routine" if is_routine else "Reprocess"
 
-    params = [f"{key}={value}" for key, value in kwargs.items() if key != "target_date"]
+    params = [f"{key}={value}" for key, value in kwargs.items() if key not in ["ap", "target_date"]]
     params.append(f"env={environment}")
+
+    if "ap" in kwargs:
+        ap = "Todas" if kwargs.get("ap") is None else kwargs.get("ap")
+        params.append(f"ap={ap}")
+
     params = sorted(params)
 
     if "target_date" in kwargs:
