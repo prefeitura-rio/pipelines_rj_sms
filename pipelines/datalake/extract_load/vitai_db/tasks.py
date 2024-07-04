@@ -2,10 +2,12 @@
 import datetime
 import os
 import uuid
+import prefect
 
 import google
 import pandas as pd
 from google.cloud import bigquery
+from prefect.backend import FlowRunView
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -124,3 +126,12 @@ def import_vitai_table_to_csv(
 @task()
 def create_datalake_table_name(table_name: str) -> str:
     return f"{table_name}_eventos"
+
+@task
+def get_current_flow_labels() -> list[str]:
+    """
+    Get the labels of the current flow.
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_view = FlowRunView.from_flow_run_id(flow_run_id)
+    return flow_run_view.labels
