@@ -80,3 +80,12 @@ cases:
       dataset_id: "saude_dados_mestres"
       table_id: "profissional_saude"
       project_id: "rj-sms-dev"
+  - case_slug: "datalake-extract_load-sih"
+    flow_path: "pipelines.datalake.extract_load.sih_gdrive.flows"
+    flow_name: "sms_dump_sih"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_sih"
+      table_id: "indicadores_hospitalares"
+
