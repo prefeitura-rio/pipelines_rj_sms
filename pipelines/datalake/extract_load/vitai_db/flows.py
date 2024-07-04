@@ -16,12 +16,19 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_datalake_table_name,
     get_bigquery_project_from_environment,
+    get_current_flow_labels,
     get_interval_start_list,
     get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
 from pipelines.utils.tasks import (
     create_folders,
     create_partitions,
@@ -113,6 +120,25 @@ with Flow(
         dataset_is_public=unmapped(False),
         upstream_tasks=[unmapped(create_partitions_task)],
     )
+
+    #####################################
+    # Tasks section #6 - Running DBT Models
+    #####################################
+    current_flow_run_labels = get_current_flow_labels()
+
+    dbt_run_flow = create_flow_run(
+        flow_name="DataLake - Transformação - DBT",
+        project_name=project_name,
+        parameters={
+            "command": "run",
+            "select": "tag:vitai_db",
+            "environment": ENVIRONMENT,
+            "rename_flow": True,
+        },
+        labels=current_flow_run_labels,
+        upstream_tasks=[upload_to_datalake_task],
+    )
+    wait_for_flow_run(flow_run_id=dbt_run_flow)
 
 sms_dump_vitai_rio_saude.schedule = vitai_db_extraction_schedule
 sms_dump_vitai_rio_saude.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
