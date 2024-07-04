@@ -65,30 +65,28 @@ with Flow(
     # Tasks section #2 - Transform data
     #####################################
 
-    raw_folder = "/Users/thiagotrabach/Downloads/SIH"
-
     transformed_file = transform_data(file_path=raw_folder, env=ENVIRONMENT)
 
     #####################################
     # Tasks section #3 - Load data
     #####################################
 
-    create_partitions_task = create_partitions(
-        data_path=raw_folder,
-        partition_directory="/Users/thiagotrabach/projects/pipelines_rj_sms/data/partition_directory",
-        file_type="parquet",
-        upstream_tasks=[transformed_file],
-    )
-
-    upload_to_datalake_task = upload_to_datalake(
-        input_path="/Users/thiagotrabach/projects/pipelines_rj_sms/data/partition_directory",
-        dataset_id=DATASET_ID,
-        table_id=TABLE_ID,
-        dump_mode="append",
-        source_format="parquet",
-        if_exists="replace",
-        if_storage_data_exists="replace",
-        biglake_table=True,
-        dataset_is_public=False,
-        upstream_tasks=[create_partitions_task],
-    )
+    #create_partitions_task = create_partitions(
+    #    data_path=raw_folder,
+    #    partition_directory="/Users/thiagotrabach/projects/pipelines_rj_sms/data/partition_directory",
+    #    file_type="parquet",
+    #    upstream_tasks=[transformed_file],
+    #)
+#
+    #upload_to_datalake_task = upload_to_datalake(
+    #    input_path="/Users/thiagotrabach/projects/pipelines_rj_sms/data/partition_directory",
+    #    dataset_id=DATASET_ID,
+    #    table_id=TABLE_ID,
+    #    dump_mode="append",
+    #    source_format="parquet",
+    #    if_exists="replace",
+    #    if_storage_data_exists="replace",
+    #    biglake_table=True,
+    #    dataset_is_public=False,
+    #    upstream_tasks=[create_partitions_task],
+    #)
