@@ -16,15 +16,13 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_datalake_table_name,
     get_bigquery_project_from_environment,
+    get_current_flow_labels,
     get_interval_start_list,
     get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
-<<<<<<< Updated upstream
-    get_current_flow_labels
-=======
+    get_current_flow_labels,
     create_folder
->>>>>>> Stashed changes
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.tasks import (
@@ -38,6 +36,12 @@ from pipelines.utils.credential_injector import (
 )
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
+)
+from pipelines.utils.tasks import (
+    create_partitions,
+    get_secret_key,
+    is_equal,
+    upload_to_datalake,
 )
 
 with Flow(
@@ -143,10 +147,10 @@ with Flow(
             "command": "run",
             "select": "tag:vitai_db",
             "environment": ENVIRONMENT,
-            "rename_flow": True
+            "rename_flow": True,
         },
         labels=current_flow_run_labels,
-        upstream_tasks=[upload_to_datalake_task]
+        upstream_tasks=[upload_to_datalake_task],
     )
     wait_for_flow_run(flow_run_id=dbt_run_flow)
 

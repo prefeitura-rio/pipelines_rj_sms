@@ -3,10 +3,10 @@ import datetime
 import os
 import shutil
 import uuid
-import prefect
 
 import google
 import pandas as pd
+import prefect
 from google.cloud import bigquery
 from prefect.backend import FlowRunView
 
@@ -18,14 +18,14 @@ from pipelines.utils.logger import log
 def list_tables_to_import():
     return [
         "paciente",
-        # "boletim",
-        # "alergia",
-        # "atendimento",
-        # "cirurgia",
-        # "classificacao_risco",
-        # "diagnostico",
-        # "exame",
-        # "profissional",
+        "boletim",
+        "alergia",
+        "atendimento",
+        "cirurgia",
+        "classificacao_risco",
+        "diagnostico",
+        "exame",
+        "profissional",
     ]
 
 
@@ -127,6 +127,7 @@ def import_vitai_table_to_csv(
 @task()
 def create_datalake_table_name(table_name: str) -> str:
     return f"{table_name}_eventos"
+
 
 @task
 def get_current_flow_labels() -> list[str]:
