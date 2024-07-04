@@ -39,7 +39,7 @@ def rename_current_flow_run(environment: str, is_routine: bool = True, **kwargs)
     params.append(f"env={environment}")
 
     if "ap" in kwargs:
-        ap = "Todas" if kwargs.get("ap") is None else kwargs.get("ap")
+        ap = "all" if kwargs.get("ap") is None else kwargs.get("ap")
         params.append(f"ap={ap}")
 
     params = sorted(params)
