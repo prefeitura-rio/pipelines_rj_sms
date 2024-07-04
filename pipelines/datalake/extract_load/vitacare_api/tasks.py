@@ -34,7 +34,7 @@ from pipelines.utils.tasks import (
 )
 
 
-@task(max_retries=1, retry_delay=timedelta(minutes=4))
+@task(max_retries=2, retry_delay=timedelta(minutes=4))
 def extract_data_from_api(
     cnes: str, ap: str, target_day: str, endpoint: str, environment: str = "dev"
 ) -> dict:
@@ -109,10 +109,9 @@ def extract_data_from_api(
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
         if endpoint == "movimento" and (
             target_day.weekday() == 6
-            or prefect.context.task_run_count  # pylint: disable=no-member
-            == 2  # TODO: check if this is the best way to check if it's the first run
+            or prefect.context.task_run_count == 2  # pylint: disable=no-member
         ):
-            logger.info("No data was retrieved. This is normal on Sundays as no data is expected.")
+            logger.info("No data was retrieved for the target day")
             return {"has_data": False}
 
         logger.error("Failed Request: no data was retrieved")
