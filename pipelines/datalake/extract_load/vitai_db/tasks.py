@@ -17,14 +17,14 @@ from pipelines.utils.logger import log
 def list_tables_to_import():
     return [
         "paciente",
-        # "boletim",
-        # "alergia",
-        # "atendimento",
-        # "cirurgia",
-        # "classificacao_risco",
-        # "diagnostico",
-        # "exame",
-        # "profissional",
+        "boletim",
+        "alergia",
+        "atendimento",
+        "cirurgia",
+        "classificacao_risco",
+        "diagnostico",
+        "exame",
+        "profissional",
     ]
 
 
