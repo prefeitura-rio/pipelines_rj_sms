@@ -7,10 +7,16 @@ from datetime import timedelta
 
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
+
+from pipelines.datalake.extract_load.sisreg_web.sisreg.sisreg import Sisreg
 from pipelines.datalake.utils.data_extraction.google_drive import (
-    get_files_from_folder,
-    filter_files_by_date,
     download_files,
+    filter_files_by_date,
+    get_files_from_folder,
+)
+from pipelines.datalake.utils.data_transformations import (
+    conform_header_to_datalake,
+    convert_to_parquet,
 )
 from pipelines.prontuarios.utils.tasks import get_datetime_working_range
 from pipelines.tools.vitacare_healthcheck.tasks import (
@@ -19,11 +25,6 @@ from pipelines.tools.vitacare_healthcheck.tasks import (
     get_structured_files_metadata,
     json_records_to_dataframe,
     loading_data_to_bigquery,
-)
-from pipelines.datalake.extract_load.sisreg_web.sisreg.sisreg import Sisreg
-from pipelines.datalake.utils.data_transformations import (
-    conform_header_to_datalake,
-    convert_to_parquet,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import add_load_date_column

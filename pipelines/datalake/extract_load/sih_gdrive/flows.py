@@ -17,14 +17,11 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.sih_gdrive.constants import (
     constants as sih_constants,
 )
-
 from pipelines.datalake.extract_load.sih_gdrive.tasks import (
     dowload_from_gdrive,
     transform_data,
 )
-from pipelines.datalake.extract_load.vitacare_api.tasks import (
-    create_partitions,
-)
+from pipelines.datalake.extract_load.vitacare_api.tasks import create_partitions
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import create_folders, upload_to_datalake
 

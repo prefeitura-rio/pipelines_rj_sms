@@ -3,7 +3,6 @@
 from datetime import datetime, timedelta
 
 import prefect
-
 from prefeitura_rio.pipelines_utils.logging import log
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
@@ -76,7 +75,7 @@ def filter_files_by_date(files, start_datetime=None, end_datetime=None):
                 "Invalid start_datetime format. Must be in the format %Y-%m-%dT%H:%M:%S.%fZ"
             ) from exc
     else:
-        start_datetime = (prefect.context.get("scheduled_start_time") - timedelta(days=1))
+        start_datetime = prefect.context.get("scheduled_start_time") - timedelta(days=1)
 
     if end_datetime:
         try:
@@ -100,6 +99,7 @@ def filter_files_by_date(files, start_datetime=None, end_datetime=None):
             filtered_files.append(file)
 
     return filtered_files
+
 
 @task
 def download_files(files, folder_path):
