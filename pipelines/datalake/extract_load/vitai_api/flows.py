@@ -17,6 +17,7 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitai_api.constants import (
     constants as vitai_constants,
 )
+
 # from pipelines.datalake.extract_load.vitai_api.schedules import (
 #     vitai_daily_update_schedule,
 # )
