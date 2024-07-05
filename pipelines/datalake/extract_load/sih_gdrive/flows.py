@@ -13,6 +13,9 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.datalake.utils.data_extraction.google_drive import dowload_from_gdrive
 from pipelines.datalake.extract_load.sih_gdrive.constants import (
     constants as sih_constants,
 )
@@ -20,9 +23,8 @@ from pipelines.datalake.extract_load.sih_gdrive.tasks import (
     generate_filters,
     transform_data,
 )
-from pipelines.datalake.utils.data_extraction.google_drive import dowload_from_gdrive
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
+from pipelines.datalake.extract_load.sih_gdrive.schedules import daily_update_schedule
+
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - SIH",
@@ -108,3 +110,4 @@ sms_dump_sih.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
 )
+sms_dump_sih.schedule = daily_update_schedule
