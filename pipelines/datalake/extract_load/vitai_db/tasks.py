@@ -112,7 +112,7 @@ def import_vitai_table_to_csv(
     # Separate dataframe per day for partitioning
     if df.empty:
         log("Empty dataframe. Preparing to send file with only headers", level="warning")
-        dfs = [(pd.to_datetime(now).dt.date, df)]
+        dfs = [(str(now.date()), df)]
     else:
         log("Non Empty dataframe. Splitting Dataframe in multiple files by day", level="warning")
         df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
