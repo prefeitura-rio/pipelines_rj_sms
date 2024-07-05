@@ -69,6 +69,8 @@ def authenticated_create_flow_run(**kwargs):
         Any: The result of the `create_flow_run.run` function.
 
     """
+    logger = prefect.context.get("logger")
+    logger.debug(f"Created Flow Run with params: {kwargs}")
     return create_flow_run.run(**kwargs)
 
 
@@ -84,4 +86,6 @@ def authenticated_wait_for_flow_run(**kwargs):
         Any: The result of the `wait_for_flow_run.run` function.
 
     """
+    logger = prefect.context.get("logger")
+    logger.debug(f"Waiting Flow Run with params: {kwargs}")
     return wait_for_flow_run.run(**kwargs)
