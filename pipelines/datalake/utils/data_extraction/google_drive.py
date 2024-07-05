@@ -69,7 +69,6 @@ def filter_files_by_date(files, start_date=None, end_date=None):
         ValueError: If the start_date or end_date has an invalid format.
 
     """
-    _dates_declared = True if start_date and end_date else False
 
     if start_date:
         try:
@@ -98,19 +97,13 @@ def filter_files_by_date(files, start_date=None, end_date=None):
         last_update = modified_date if modified_date > created_date else created_date
         last_update = last_update.date()
 
-        if start_date < last_update <= end_date:
+        if start_date <= last_update <= end_date:
             filtered_files.append(file)
 
-    if _dates_declared:
-        log(
-            f"{len(filtered_files)} files updated between {start_date} and {end_date}",
-            level="info",
-        )
-    else:
-        log(
-            f"{len(filtered_files)} files updated at {end_date}",
-            level="info",
-        )
+    log(
+        f"{len(filtered_files)} files updated between {start_date} and {end_date}",
+        level="info",
+    )
 
     return filtered_files
 
