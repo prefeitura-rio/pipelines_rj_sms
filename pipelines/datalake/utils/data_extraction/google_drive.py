@@ -79,7 +79,7 @@ def filter_files_by_date(files, start_date=None, end_date=None):
                 "Invalid start_datetime format. Must be in the format %Y-%m-%d"
             ) from exc
     else:
-        start_date = prefect.context.get("scheduled_start_time") - timedelta(days=1).date()
+        start_date = (prefect.context.get("scheduled_start_time") - timedelta(days=1)).date()
 
     if end_date:
         try:
