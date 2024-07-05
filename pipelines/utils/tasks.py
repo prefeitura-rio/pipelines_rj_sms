@@ -5,7 +5,6 @@
 General utilities for SMS pipelines
 """
 
-import asyncio
 import ftplib
 import json
 import os
@@ -18,13 +17,11 @@ from ftplib import FTP
 from io import StringIO
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
-from typing import Literal
 
 import basedosdados as bd
 import google.auth.transport.requests
 import google.oauth2.id_token
 import gspread
-import httpx
 import pandas as pd
 import prefect
 import pytz
@@ -490,10 +487,10 @@ def cloud_function_request(
         else:
             message = f"[Cloud Function] Request failed: {response.status_code} - {response.reason}"
             logger.info(message)
-            raise Exception(message)
+            raise RuntimeError(message)
 
     except Exception as e:
-        raise Exception(f"[Cloud Function] Request failed with unknown error: {e}")
+        raise RuntimeError(f"[Cloud Function] Request failed with unknown error: {e}") from e
 
 
 @task
@@ -863,7 +860,6 @@ def load_file_from_bigquery(
     project_name: str,
     dataset_name: str,
     table_name: str,
-    environment="dev",
 ):
     """
     Load data from BigQuery table into a pandas DataFrame.
