@@ -632,18 +632,22 @@ def from_json_to_csv(input_path, sep=";"):
 
 
 @task
-def create_partitions(data_path: str, partition_directory: str, level="day", partition_date=None):
+def create_partitions(
+    data_path: str, partition_directory: str, level="day", partition_date=None, file_type="csv"
+):
     """
-    Creates partitions for each file in the given data path and saves them in the
-    partition directory.
+    Create partitions for files based on the specified level and partition date.
 
     Args:
-        data_path (str): The path to the data directory.
-        partition_directory (str): The path to the partition directory.
-        level (str): The level of partitioning. Can be "day" or "month". Defaults to "day".
+        data_path (str or list): The path to the data file(s) or a list of file paths.
+        partition_directory (str): The directory where the partitions will be created.
+        level (str, optional): The partition level. Can be "day" or "month". Defaults to "day".
+        partition_date (str, optional): The partition date in the format "YYYY-MM-DD" or "YYYY-MM".
+            If not provided, the date will be extracted from the file name. Defaults to None.
+        file_type (str, optional): The file type of the data file(s). Defaults to "csv".
 
     Raises:
-        FileExistsError: If the partition directory already exists.
+        ValueError: If data_path is not a string or a list.
         ValueError: If the partition level is not "day" or "month".
 
     Returns:
@@ -651,11 +655,16 @@ def create_partitions(data_path: str, partition_directory: str, level="day", par
     """
 
     # check if data_path is a directory or a file
-    if os.path.isdir(data_path):
-        data_path = Path(data_path)
-        files = data_path.glob("*.csv")
+    if isinstance(data_path, str):
+        if os.path.isdir(data_path):
+            data_path = Path(data_path)
+            files = data_path.glob(f"*.{file_type}")
+        else:
+            files = [data_path]
+    elif isinstance(data_path, list):
+        files = data_path
     else:
-        files = [data_path]
+        raise ValueError("data_path must be a string or a list")
     #
     # Create partition directories for each file
     for file_name in files:
