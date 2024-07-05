@@ -13,18 +13,17 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.datalake.utils.data_extraction.google_drive import dowload_from_gdrive
 from pipelines.datalake.extract_load.sih_gdrive.constants import (
     constants as sih_constants,
 )
+from pipelines.datalake.extract_load.sih_gdrive.schedules import daily_update_schedule
 from pipelines.datalake.extract_load.sih_gdrive.tasks import (
     generate_filters,
     transform_data,
 )
-from pipelines.datalake.extract_load.sih_gdrive.schedules import daily_update_schedule
-
+from pipelines.datalake.utils.data_extraction.google_drive import dowload_from_gdrive
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - SIH",

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103,C0301
 """
-Schedules for the sih dump 
+Schedules for the sih dump
 """
 
 from datetime import datetime, timedelta
