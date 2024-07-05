@@ -117,7 +117,9 @@ def import_vitai_table_to_csv(
         log("Non Empty dataframe. Splitting Dataframe in multiple files by day", level="warning")
         df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
         days = df["partition_date"].unique()
-        dfs = [(day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days] # noqa
+        dfs = [
+            (day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days
+        ]  # noqa
 
     # Save dataframes to csv files
     output_paths = []
