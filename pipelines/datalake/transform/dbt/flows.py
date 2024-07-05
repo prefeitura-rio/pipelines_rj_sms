@@ -15,8 +15,8 @@ from pipelines.datalake.transform.dbt.tasks import (
     create_dbt_report,
     download_repository,
     execute_dbt,
+    get_target_from_environment,
     rename_current_flow_run_dbt,
-    get_target_from_environment
 )
 
 with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:

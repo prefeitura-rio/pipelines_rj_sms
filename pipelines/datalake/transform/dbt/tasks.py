@@ -203,6 +203,7 @@ def rename_current_flow_run_dbt(
     else:
         client.set_flow_run_name(flow_run_id, f"dbt {command} --target {target}")
 
+
 @task()
 def get_target_from_environment(environment: str):
     """
@@ -215,9 +216,5 @@ def get_target_from_environment(environment: str):
         str: The target environment corresponding to the given environment.
 
     """
-    converter = {
-        "prod": "prod",
-        "dev": "dev",
-        "staging": "dev"
-    }
+    converter = {"prod": "prod", "dev": "dev", "staging": "dev"}
     return converter.get(environment, "dev")
