@@ -88,3 +88,13 @@ with Flow(
         dataset_is_public=False,
     )
     upload_to_datalake_task.set_upstream(create_partitions_task)
+
+
+sms_dump_sih.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_sih.executor = LocalDaskExecutor(num_workers=1)
+sms_dump_sih.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+)
