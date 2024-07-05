@@ -8,7 +8,6 @@ import prefect
 from prefeitura_rio.pipelines_utils.logging import log
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
-from pytz import timezone
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
@@ -54,61 +53,66 @@ def get_files_from_folder(folder_id, file_extension="csv"):
 
 
 @task
-def filter_files_by_date(files, start_datetime=None, end_datetime=None):
+def filter_files_by_date(files, start_date=None, end_date=None):
     """
-    Filters a list of files based on their modified or created dates.
+    Filters a list of files based on their modified or created date.
 
     Args:
-        files (list): A list of files to be filtered.
-        start_datetime (str, optional): The start datetime for filtering. Defaults to None.
-        end_datetime (str, optional): The end datetime for filtering. Defaults to None.
+        files (list): A list of files to filter.
+        start_date (str, optional): The start date for filtering. Defaults to None.
+        end_date (str, optional): The end date for filtering. Defaults to None.
 
     Returns:
         list: A list of filtered files.
 
     Raises:
-        ValueError: If the start_datetime or end_datetime has an invalid format.
+        ValueError: If the start_date or end_date has an invalid format.
 
     """
-    if start_datetime:
-        try:
-            start_datetime = datetime.strptime(start_datetime, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except ValueError as exc:
-            raise ValueError(
-                "Invalid start_datetime format. Must be in the format %Y-%m-%dT%H:%M:%S.%fZ"
-            ) from exc
-    else:
-        start_datetime = prefect.context.get("scheduled_start_time") - timedelta(days=1)
+    _dates_declared = True if start_date and end_date else False
 
-    if end_datetime:
+    if start_date:
         try:
-            end_datetime = datetime.strptime(end_datetime, "%Y-%m-%dT%H:%M:%S.%fZ")
+            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
         except ValueError as exc:
             raise ValueError(
-                "Invalid end_datetime format. Must be in the format %Y-%m-%dT%H:%M:%S.%fZ"
+                "Invalid start_datetime format. Must be in the format %Y-%m-%d"
             ) from exc
     else:
-        end_datetime = prefect.context.get("scheduled_start_time")
+        start_date = prefect.context.get("scheduled_start_time") - timedelta(days=1).date()
+
+    if end_date:
+        try:
+            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        except ValueError as exc:
+            raise ValueError(
+                "Invalid end_datetime format. Must be in the format %Y-%m-%d"
+            ) from exc
+    else:
+        end_date = prefect.context.get("scheduled_start_time").date()
 
     filtered_files = []
 
     for file in files:
-        modified_date = datetime.strptime(file["modifiedDate"], "%Y-%m-%dT%H:%M:%S.%fZ").astimezone(
-            timezone("UTC")
-        )
-        created_date = datetime.strptime(file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ").astimezone(
-            timezone("UTC")
-        )
+        modified_date = datetime.strptime(file["modifiedDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
+        created_date = datetime.strptime(file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
 
         last_update = modified_date if modified_date > created_date else created_date
+        last_update = last_update.date()
 
-        if start_datetime <= last_update <= end_datetime:
+        if start_date < last_update <= end_date:
             filtered_files.append(file)
 
-    log(
-        f"{len(filtered_files)} files found for dates between {start_datetime} and {end_datetime}",
-        level="info",
-    )
+    if _dates_declared:
+        log(
+            f"{len(filtered_files)} files updated between {start_date} and {end_date}",
+            level="info",
+        )
+    else:
+        log(
+            f"{len(filtered_files)} files updated at {end_date}",
+            level="info",
+        )
 
     return filtered_files
 

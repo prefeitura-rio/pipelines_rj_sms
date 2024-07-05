@@ -64,30 +64,31 @@ with Flow(
     # Tasks section #2 - Transform data
     #####################################
 
-    transformed_files = transform_data(files_path=raw_files)
+    with case(raw_files["has_data"], True):
+        transformed_files = transform_data(files_path=raw_files["files"])
 
-    #####################################
-    # Tasks section #3 - Load data
-    #####################################
+        #####################################
+        # Tasks section #3 - Load data
+        #####################################
 
-    create_partitions_task = create_partitions(
-        data_path=transformed_files,
-        partition_directory=local_folders["partition_directory"],
-        file_type="parquet",
-    )
+        create_partitions_task = create_partitions(
+            data_path=transformed_files,
+            partition_directory=local_folders["partition_directory"],
+            file_type="parquet",
+        )
 
-    upload_to_datalake_task = upload_to_datalake(
-        input_path=local_folders["partition_directory"],
-        dataset_id=DATASET_ID,
-        table_id=TABLE_ID,
-        dump_mode="append",
-        source_format="parquet",
-        if_exists="replace",
-        if_storage_data_exists="replace",
-        biglake_table=True,
-        dataset_is_public=False,
-    )
-    upload_to_datalake_task.set_upstream(create_partitions_task)
+        upload_to_datalake_task = upload_to_datalake(
+            input_path=local_folders["partition_directory"],
+            dataset_id=DATASET_ID,
+            table_id=TABLE_ID,
+            dump_mode="append",
+            source_format="parquet",
+            if_exists="replace",
+            if_storage_data_exists="replace",
+            biglake_table=True,
+            dataset_is_public=False,
+        )
+        upload_to_datalake_task.set_upstream(create_partitions_task)
 
 
 sms_dump_sih.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

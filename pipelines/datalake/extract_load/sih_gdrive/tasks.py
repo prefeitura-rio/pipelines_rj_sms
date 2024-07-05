@@ -36,13 +36,13 @@ def dowload_from_gdrive(folder_id: str, destination_folder: str) -> str:
 
     last_24h_files = filter_files_by_date.run(
         files=files,
-        # start_datetime="2024-07-04T00:00:00.000Z",  # TODO: remove variable
-        # end_datetime="2024-07-04T22:19:34.153Z",  # TODO: remove variable
     )
 
-    downloaded_files = download_files.run(files=last_24h_files, folder_path=destination_folder)
-
-    return downloaded_files
+    if last_24h_files:
+        downloaded_files = download_files.run(files=last_24h_files, folder_path=destination_folder)
+        return {"has_data": True, "files": downloaded_files}
+    else:
+        return {"has_data": False}
 
 
 @task
