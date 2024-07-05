@@ -5,9 +5,8 @@
 SIH dumping flows
 """
 # from datetime import timedelta
-from datetime import timedelta
 
-from prefect import Parameter, case, unmapped
+from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -65,28 +64,27 @@ with Flow(
     # Tasks section #2 - Transform data
     #####################################
 
-    transformed_file = transform_data(file_path=raw_folder, env=ENVIRONMENT)
+    transformed_files = transform_data(files_path=raw_files)
 
     #####################################
     # Tasks section #3 - Load data
     #####################################
 
-    # create_partitions_task = create_partitions(
-    #    data_path=raw_folder,
-    #    partition_directory="/Users/thiagotrabach/projects/pipelines_rj_sms/data/partition_directory",
-    #    file_type="parquet",
-    #    upstream_tasks=[transformed_file],
-    # )
-#
-# upload_to_datalake_task = upload_to_datalake(
-#    input_path="/Users/thiagotrabach/projects/pipelines_rj_sms/data/partition_directory",
-#    dataset_id=DATASET_ID,
-#    table_id=TABLE_ID,
-#    dump_mode="append",
-#    source_format="parquet",
-#    if_exists="replace",
-#    if_storage_data_exists="replace",
-#    biglake_table=True,
-#    dataset_is_public=False,
-#    upstream_tasks=[create_partitions_task],
-# )
+    create_partitions_task = create_partitions(
+        data_path=transformed_files,
+        partition_directory=local_folders["partition_directory"],
+        file_type="parquet",
+    )
+
+    upload_to_datalake_task = upload_to_datalake(
+        input_path=local_folders["partition_directory"],
+        dataset_id=DATASET_ID,
+        table_id=TABLE_ID,
+        dump_mode="append",
+        source_format="parquet",
+        if_exists="replace",
+        if_storage_data_exists="replace",
+        biglake_table=True,
+        dataset_is_public=False,
+    )
+    upload_to_datalake_task.set_upstream(create_partitions_task)
