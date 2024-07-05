@@ -110,10 +110,16 @@ def import_vitai_table_to_csv(
     log(f"Added `datalake__imported_at` column to dataframe with current timestamp: {now}")
 
     # Separate dataframe per day for partitioning
-    df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
-    days = df["partition_date"].unique()
-    dfs = [(day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days]
+    if df.empty:
+        log("Empty dataframe. Preparing to send file with only headers", level="warning")
+        dfs = [(pd.to_datetime(now).dt.date, df)]
+    else:
+        log("Non Empty dataframe. Splitting Dataframe in multiple files by day", level="warning")
+        df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
+        days = df["partition_date"].unique()
+        dfs = [(day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days] # noqa
 
+    # Save dataframes to csv files
     output_paths = []
     for day, df_day in dfs:
         file_path = os.path.join(output_file_folder, f"{table_name}_{day}_{uuid.uuid4()}.csv")
