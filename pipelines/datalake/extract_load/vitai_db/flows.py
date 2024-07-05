@@ -63,10 +63,7 @@ with Flow(
 
     datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
 
-    raw_folders = create_folder.map(
-        title=unmapped("raw"),
-        subtitle=datalake_table_names
-    )
+    raw_folders = create_folder.map(title=unmapped("raw"), subtitle=datalake_table_names)
     partition_folders = create_folder.map(
         title=unmapped("partition_directory"), subtitle=datalake_table_names
     )
