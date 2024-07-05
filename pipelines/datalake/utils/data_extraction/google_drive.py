@@ -160,7 +160,7 @@ def dowload_from_gdrive(
     if filter_type == "last_updated":
 
         start_date, end_date = filter_param
-        
+
         filtered_files = filter_files_by_date.run(
             files=files,
             start_date=start_date,
