@@ -147,4 +147,6 @@ def create_folder(title="", subtitle=""):
         shutil.rmtree(folder_path, ignore_errors=False)
     os.makedirs(folder_path)
 
+    log(f"Created folder: {folder_path}")
+
     return folder_path
