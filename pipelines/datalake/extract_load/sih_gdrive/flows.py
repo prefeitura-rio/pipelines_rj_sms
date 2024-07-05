@@ -20,9 +20,8 @@ from pipelines.datalake.extract_load.sih_gdrive.tasks import (
     dowload_from_gdrive,
     transform_data,
 )
-from pipelines.utils.tasks import create_partitions
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.tasks import create_folders, upload_to_datalake
+from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - SIH",
