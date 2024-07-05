@@ -10,6 +10,7 @@ import re
 import shutil
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import List
 
 import prefect
 from google.cloud import bigquery
@@ -188,13 +189,14 @@ def transform_data(file_path: str, table_id: str) -> str:
 
 
 @task
-def create_partitions(data_path: str, partition_directory: str):
+def create_partitions(data_path: List[str] | str, partition_directory: str, file_type="csv"):
     """
     Create partitions for the given data files and copy them to the specified partition directory.
 
     Args:
         data_path (str): The path to the data file(s) or directory containing the data files.
         partition_directory (str): The directory where the partitions will be created.
+        file_type (str, optional): The file type of the data files. Defaults to "csv".
 
     Raises:
         ValueError: If the filename does not contain a date in the format YYYY-MM-DD.
@@ -203,11 +205,16 @@ def create_partitions(data_path: str, partition_directory: str):
         None
     """
     # check if data_path is a directory or a file
-    if os.path.isdir(data_path):
-        data_path = Path(data_path)
-        files = data_path.glob("*.csv")
+    if isinstance(data_path, str):
+        if os.path.isdir(data_path):
+            data_path = Path(data_path)
+            files = data_path.glob(f"*.{file_type}")
+        else:
+            files = [data_path]
+    elif isinstance(data_path, list):
+        files = data_path
     else:
-        files = [data_path]
+        raise ValueError("data_path must be a string or a list")
 
     # Create partition directories for each file
     for file_name in files:
