@@ -158,14 +158,14 @@ def dowload_from_gdrive(
     files = get_files_from_folder.run(folder_id=folder_id, file_extension="dbc")
 
     if filter_type == "last_updated":
-
-        start_date, end_date = filter_param
-
-        filtered_files = filter_files_by_date.run(
-            files=files,
-            start_date=start_date,
-            end_date=end_date,
-        )
+        if filter_param:
+            filtered_files = filter_files_by_date.run(
+                files=files,
+                start_date=filter_param[0],
+                end_date=filter_param[1],
+            )
+        else:
+            filtered_files = filter_files_by_date.run(files=files)
     else:
         raise ValueError(f"Invalid filter type: {filter_type}")
 
