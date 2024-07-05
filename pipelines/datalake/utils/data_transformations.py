@@ -12,6 +12,7 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 import pytz
 from prefeitura_rio.pipelines_utils.logging import log
+import pyreaddbc
 from simpledbf import Dbf5
 
 from pipelines.utils.data_cleaning import remove_columns_accents
@@ -99,20 +100,26 @@ def convert_to_parquet(
         str: The path to the converted Parquet file.
     """
 
-    if file_type == "csv":
-        dataframe = pd.read_csv(
-            file_path,
-            sep=csv_sep,
-            dtype=str,
-            keep_default_na=False,
-            encoding=encoding,
-        )
-    elif file_type == "dbf":
-        dbf = Dbf5(file_path, codec=encoding)
-        dataframe = dbf.to_dataframe()
-    else:
-        log(f"File type {file_type} not found", level="error")
-        raise ValueError("The file type must be 'csv' or 'dbf'")
+    match file_type:
+        case "csv":
+            dataframe = pd.read_csv(
+                file_path,
+                sep=csv_sep,
+                dtype=str,
+                keep_default_na=False,
+                encoding=encoding,
+            )
+        case "dbc":
+            dbf_file = file_path.replace(".dbc", ".dbf")
+            pyreaddbc.dbc2dbf(file_path, dbf_file)
+            dbf = Dbf5(dbf_file, codec=encoding)
+            dataframe = dbf.to_dataframe()
+        case "dbf":
+            dbf = Dbf5(file_path, codec=encoding)
+            dataframe = dbf.to_dataframe()
+        case _:
+            log(f"File type {file_type} not found", level="error")
+            raise ValueError("The file type must be 'csv', 'dbc' or 'dbf")
 
     parquet_file_path = file_path.replace(f".{file_type}", ".parquet")
     dataframe.to_parquet(parquet_file_path, index=False)
