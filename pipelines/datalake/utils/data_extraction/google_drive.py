@@ -8,6 +8,7 @@ import prefect
 from prefeitura_rio.pipelines_utils.logging import log
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
+from pytz import timezone
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
@@ -92,8 +93,12 @@ def filter_files_by_date(files, start_datetime=None, end_datetime=None):
     filtered_files = []
 
     for file in files:
-        modified_date = datetime.strptime(file["modifiedDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
-        created_date = datetime.strptime(file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
+        modified_date = datetime.strptime(file["modifiedDate"], "%Y-%m-%dT%H:%M:%S.%fZ").astimezone(
+            timezone("UTC")
+        )
+        created_date = datetime.strptime(file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ").astimezone(
+            timezone("UTC")
+        )
 
         last_update = modified_date if modified_date > created_date else created_date
 
