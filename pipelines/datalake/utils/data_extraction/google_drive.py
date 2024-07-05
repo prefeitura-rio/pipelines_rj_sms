@@ -85,9 +85,7 @@ def filter_files_by_date(files, start_date=None, end_date=None):
         try:
             end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
         except ValueError as exc:
-            raise ValueError(
-                "Invalid end_datetime format. Must be in the format %Y-%m-%d"
-            ) from exc
+            raise ValueError("Invalid end_datetime format. Must be in the format %Y-%m-%d") from exc
     else:
         end_date = prefect.context.get("scheduled_start_time").date()
 
