@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# noqa E501
 """
 Tasks to download data from Google Drive.
 """
@@ -132,3 +133,44 @@ def download_files(files, folder_path):
     log(f"Files downloaded: {downloaded_files}", level="debug")
 
     return downloaded_files
+
+
+@task
+def dowload_from_gdrive(
+    folder_id: str,
+    destination_folder: str,
+    filter_type: str = "last_updated",
+    filter_param: str | tuple = None,
+) -> str:
+    """
+    Downloads files from a Google Drive folder based on specified filters.
+
+    Args:
+        folder_id (str): The ID of the Google Drive folder.
+        destination_folder (str): The path to the destination folder where the downloaded files will be saved.
+        filter_type (str, optional): The type of filter to apply. Defaults to "last_updated".
+        filter_param (str | tuple, optional): The parameter(s) to use for filtering the files. Defaults to None.
+
+    Returns:
+        str: A dictionary indicating whether data was found and the downloaded files.
+
+    """
+    files = get_files_from_folder.run(folder_id=folder_id, file_extension="dbc")
+
+    if filter_type == "last_updated":
+
+        start_date, end_date = filter_param
+        
+        filtered_files = filter_files_by_date.run(
+            files=files,
+            start_date=start_date,
+            end_date=end_date,
+        )
+    else:
+        raise ValueError(f"Invalid filter type: {filter_type}")
+
+    if filtered_files:
+        downloaded_files = download_files.run(files=filtered_files, folder_path=destination_folder)
+        return {"has_data": True, "files": downloaded_files}
+
+    return {"has_data": False}

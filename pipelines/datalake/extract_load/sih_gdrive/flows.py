@@ -16,11 +16,9 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.sih_gdrive.constants import (
     constants as sih_constants,
 )
-from pipelines.datalake.extract_load.sih_gdrive.tasks import (
-    dowload_from_gdrive,
-    transform_data,
-)
+from pipelines.datalake.extract_load.sih_gdrive.tasks import generate_filters, transform_data
 from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.datalake.utils.data_extraction.google_drive import dowload_from_gdrive
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
 with Flow(
@@ -34,7 +32,9 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
-    # SIH
+    # GOOGLE DRIVE
+    LAST_UPDATE_START_DATE = Parameter("last_update_start_date", default=None)
+    LAST_UPDATE_END_DATE = Parameter("last_update_end_date", default=None)
 
     # GCP
     DATASET_ID = Parameter("dataset_id", required=True)
@@ -55,8 +55,15 @@ with Flow(
     # Tasks section #1 - Extract data
     ####################################
 
+    filters = generate_filters(
+        last_update_start_date=LAST_UPDATE_START_DATE, last_update_end_date=LAST_UPDATE_END_DATE
+    )
+
     raw_files = dowload_from_gdrive(
-        folder_id=sih_constants.GDRIVE_FOLDER_ID.value, destination_folder=local_folders["raw"]
+        folder_id=sih_constants.GDRIVE_FOLDER_ID.value,
+        destination_folder=local_folders["raw"],
+        filter_type="last_updated",
+        filter_param=filters,
     )
 
     #####################################

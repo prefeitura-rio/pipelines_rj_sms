@@ -7,11 +7,6 @@ from typing import List
 
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.datalake.utils.data_extraction.google_drive import (
-    download_files,
-    filter_files_by_date,
-    get_files_from_folder,
-)
 from pipelines.datalake.utils.data_transformations import (
     conform_header_to_datalake,
     convert_to_parquet,
@@ -20,29 +15,21 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def dowload_from_gdrive(folder_id: str, destination_folder: str) -> str:
+def generate_filters(last_update_start_date: str = None, last_update_end_date: str = None):
     """
-    Downloads the file from Google Drive.
+    Generate filters based on the provided start and end dates.
 
     Args:
-        file_id (str): The file ID in Google Drive.
-        file_path (str): The path to save the downloaded file.
+        last_update_start_date (str, optional): The start date for filtering. Defaults to None.
+        last_update_end_date (str, optional): The end date for filtering. Defaults to None.
 
     Returns:
-        str: The path of the downloaded file.
+        tuple: A tuple containing the start and end dates if both are provided, otherwise None.
     """
+    if last_update_start_date and last_update_end_date:
+        return (last_update_start_date, last_update_end_date)
 
-    files = get_files_from_folder.run(folder_id=folder_id, file_extension="dbc")
-
-    last_24h_files = filter_files_by_date.run(
-        files=files,
-    )
-
-    if last_24h_files:
-        downloaded_files = download_files.run(files=last_24h_files, folder_path=destination_folder)
-        return {"has_data": True, "files": downloaded_files}
-    else:
-        return {"has_data": False}
+    return None
 
 
 @task
