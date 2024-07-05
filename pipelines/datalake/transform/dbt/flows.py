@@ -16,6 +16,7 @@ from pipelines.datalake.transform.dbt.tasks import (
     download_repository,
     execute_dbt,
     rename_current_flow_run_dbt,
+    get_target_from_environment
 )
 
 with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
@@ -38,9 +39,11 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     #####################################
     # Set environment
     ####################################
+    target = get_target_from_environment(environment=ENVIRONMENT)
+
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run_dbt(
-            command=COMMAND, model=MODEL, select=SELECT, exclude=EXCLUDE, target=ENVIRONMENT
+            command=COMMAND, model=MODEL, select=SELECT, exclude=EXCLUDE, target=target
         )
 
     ####################################
@@ -52,7 +55,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     running_results = execute_dbt(
         repository_path=download_repository_task,
         command=COMMAND,
-        target=ENVIRONMENT,
+        target=target,
         model=MODEL,
         select=SELECT,
         exclude=EXCLUDE,
