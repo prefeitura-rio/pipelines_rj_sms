@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# noqa E501
+# pylint: disable=C0301
+# flake8: noqa E501
 """
 Tasks to download data from Google Drive.
 """
