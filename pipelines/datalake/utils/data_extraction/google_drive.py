@@ -155,7 +155,7 @@ def dowload_from_gdrive(
         str: A dictionary indicating whether data was found and the downloaded files.
 
     """
-    
+
     files = get_files_from_folder.run(folder_id=folder_id, file_extension="dbc")
 
     if filter_type == "last_updated":
