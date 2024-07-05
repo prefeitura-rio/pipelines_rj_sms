@@ -6,7 +6,7 @@ import os
 from typing import List
 
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.utils.credential_injector import authenticated_task as task
+
 from pipelines.datalake.utils.data_extraction.google_drive import (
     download_files,
     filter_files_by_date,
@@ -16,6 +16,8 @@ from pipelines.datalake.utils.data_transformations import (
     conform_header_to_datalake,
     convert_to_parquet,
 )
+from pipelines.utils.credential_injector import authenticated_task as task
+
 
 @task
 def dowload_from_gdrive(folder_id: str, destination_folder: str) -> str:
