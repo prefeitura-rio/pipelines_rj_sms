@@ -42,9 +42,10 @@ def download_from_db(
     connection_string = f"{db_url}"
     if historical_mode is False & target_date == "":
         target_date = prefect.context.get("scheduled_start_time").date()
+        window_date =  target_date - timedelta(days=7)
     time_clause = (
-        f""" WHERE (CAST(created_at as DATE) = '{target_date}')
-            OR (CAST(updated_at as DATE) = '{target_date}')
+        f""" WHERE (CAST(created_at as DATE) <= '{target_date}' AND CAST(created_at as DATE) > '{window_date}')
+            OR (CAST(updated_at as DATE) <= '{target_date}' AND CAST(updated_at as DATE) > '{window_date}')
             """
         if historical_mode is False
         else ""
