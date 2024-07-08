@@ -167,12 +167,6 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     complement = "com Erros" if not fully_successful else "sem Erros"
     message = f"{param_report}\n{general_report}" if include_report else param_report
 
-    if len(message) > 1600:
-        while len(message) > 1600:
-            last_item = message.rfind("- ")
-            message = message[:last_item]
-        message += " **Mensagem truncada devido ao tamanho. Verifique o log para mais detalhes.**"
-
     send_message(
         title=f"{emoji} Execução `dbt {command}` finalizada {complement}",
         message=message,
@@ -208,3 +202,19 @@ def rename_current_flow_run_dbt(
         )
     else:
         client.set_flow_run_name(flow_run_id, f"dbt {command} --target {target}")
+
+
+@task()
+def get_target_from_environment(environment: str):
+    """
+    Retrieves the target environment based on the given environment parameter.
+
+    Args:
+        environment (str): The environment for which to retrieve the target.
+
+    Returns:
+        str: The target environment corresponding to the given environment.
+
+    """
+    converter = {"prod": "prod", "dev": "dev", "staging": "dev"}
+    return converter.get(environment, "dev")

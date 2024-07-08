@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable= C0301
+# pylint: disable= C0301. fixme
 """
 Tasks for dump_api_vitacare
 """
@@ -10,6 +10,7 @@ import re
 import shutil
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import List
 
 import prefect
 from google.cloud import bigquery
@@ -34,7 +35,7 @@ from pipelines.utils.tasks import (
 )
 
 
-@task(max_retries=1, retry_delay=timedelta(minutes=4))
+@task(max_retries=3, retry_delay=timedelta(minutes=4))
 def extract_data_from_api(
     cnes: str, ap: str, target_day: str, endpoint: str, environment: str = "dev"
 ) -> dict:
@@ -100,7 +101,7 @@ def extract_data_from_api(
             if replication_date != date.today():
                 err_msg = f"Date mismatch: replication date is {replication_date} instead of {date.today()}"  # noqa: E501
                 logger.error(err_msg)
-                raise ValueError(err_msg)
+                return {"has_data": False}
 
         logger.info(f"Successful Request: retrieved {len(requested_data)} records")
         return {"data": requested_data, "has_data": True}
@@ -109,10 +110,9 @@ def extract_data_from_api(
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
         if endpoint == "movimento" and (
             target_day.weekday() == 6
-            or prefect.context.task_run_count
-            == 2  # TODO: check if this is the best way to check if it's the first run
+            or prefect.context.task_run_count == 2  # pylint: disable=no-member
         ):
-            logger.info("No data was retrieved. This is normal on Sundays as no data is expected.")
+            logger.info("No data was retrieved for the target day")
             return {"has_data": False}
 
         logger.error("Failed Request: no data was retrieved")
@@ -189,13 +189,14 @@ def transform_data(file_path: str, table_id: str) -> str:
 
 
 @task
-def create_partitions(data_path: str, partition_directory: str):
+def create_partitions(data_path: List[str] | str, partition_directory: str, file_type="csv"):
     """
     Create partitions for the given data files and copy them to the specified partition directory.
 
     Args:
         data_path (str): The path to the data file(s) or directory containing the data files.
         partition_directory (str): The directory where the partitions will be created.
+        file_type (str, optional): The file type of the data files. Defaults to "csv".
 
     Raises:
         ValueError: If the filename does not contain a date in the format YYYY-MM-DD.
@@ -204,11 +205,16 @@ def create_partitions(data_path: str, partition_directory: str):
         None
     """
     # check if data_path is a directory or a file
-    if os.path.isdir(data_path):
-        data_path = Path(data_path)
-        files = data_path.glob("*.csv")
+    if isinstance(data_path, str):
+        if os.path.isdir(data_path):
+            data_path = Path(data_path)
+            files = data_path.glob(f"*.{file_type}")
+        else:
+            files = [data_path]
+    elif isinstance(data_path, list):
+        files = data_path
     else:
-        files = [data_path]
+        raise ValueError("data_path must be a string or a list")
 
     # Create partition directories for each file
     for file_name in files:
@@ -288,9 +294,7 @@ def create_parameter_list(
             (table_data["retry_status"] == "pending")
             | (table_data["retry_status"] == "in progress")
         ]
-        results = results[
-            results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date()
-        ]  # TODO: remove this line after the reprocessing is done
+        results = results[(results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date())]
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
     if area_programatica:
         results = results[results["area_programatica"] == area_programatica]

@@ -65,6 +65,12 @@ cases:
       target_date: "2024-06-03"
       dataset_id: "brutos_prontuario_vitacare"
       table_id: "estoque_movimento"
+  - case_slug: "sms_dump_vitai_rio_saude"
+    flow_path: "pipelines.datalake.extract_load.vitai_db.flows"
+    flow_name: "sms_dump_vitai_rio_saude"
+    params:
+      environment: "dev"
+      rename_flow: false
   - case_slug: "load-hci-from-datake"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
     flow_name: "datalake_to_hci"
@@ -74,3 +80,14 @@ cases:
       dataset_id: "saude_dados_mestres"
       table_id: "profissional_saude"
       project_id: "rj-sms-dev"
+  - case_slug: "datalake-extract_load-sih"
+    flow_path: "pipelines.datalake.extract_load.sih_gdrive.flows"
+    flow_name: "sms_dump_sih"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_sih"
+      table_id: "indicadores_hospitalares"
+      last_update_start_date: "2024-07-04"
+      last_update_end_date: "2024-07-05"
+

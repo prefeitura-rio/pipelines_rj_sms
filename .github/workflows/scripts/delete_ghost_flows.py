@@ -1,15 +1,47 @@
 # -*- coding: utf-8 -*-
+"""
+Custom script for deleting ghost flows in Prefect Cloud.
+"""
+import argparse
 from datetime import datetime
 
-from prefect.client import Client
-
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.logger import log
-from pipelines.utils.monitor import send_message
+from loguru import logger
+from prefect import Client
+from prefect.utilities.graphql import with_args
 
 
-@task
-def query_non_archived_flows(environment="staging"):
+def log(message, level="debug"):
+    if level == "debug":
+        logger.debug(message)
+    elif level == "info":
+        logger.info(message)
+    elif level == "warning":
+        logger.warning(message)
+    elif level == "error":
+        logger.error(message)
+
+
+def get_project_id(client: Client, project: str) -> str:
+    """
+    (Adapted from Prefect original code.)
+
+    Get a project id given a project name.
+
+    Args:
+        - project (str): the project name
+
+    Returns:
+        - str: the project id
+    """
+    resp = client.graphql(
+        {"query": {with_args("project", {"where": {"name": {"_eq": project}}}): {"id"}}}
+    )
+    if resp.data.project:
+        return resp.data.project[0].id
+    raise Exception(f"Project {project!r} does not exist")  # noqa
+
+
+def query_non_archived_flows(prefect_client, environment="staging"):
     """
     Queries the non-archived flows from the Prefect API for a given environment.
 
@@ -23,7 +55,6 @@ def query_non_archived_flows(environment="staging"):
         Exception: If there is an error in the GraphQL request or response.
     """
     project_name = "production" if environment == "prod" else environment
-    prefect_client = Client()
     query = """
         query ($offset: Int, $project_name: String){
             flow(
@@ -58,8 +89,7 @@ def query_non_archived_flows(environment="staging"):
     return unique_non_archived_flows
 
 
-@task
-def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
+def query_archived_flow_versions_with_runs(flow_data, prefect_client, environment="staging"):
     """
     Queries for archived flow versions with scheduled runs.
 
@@ -77,7 +107,6 @@ def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
     """
 
     project_name = "production" if environment == "prod" else environment
-    prefect_client = Client()
     flow_name, last_version = flow_data
 
     log(f"Querying for archived flow runs of {flow_name} < v{last_version} in {project_name}.")
@@ -155,53 +184,10 @@ def query_archived_flow_versions_with_runs(flow_data, environment="staging"):
     return flow_versions_to_cancel
 
 
-@task()
-def report_to_discord(flows_to_archive: list[list[dict]]):
-    """
-    Sends a report to Discord with information about flows to be archived.
-
-    Args:
-        flows_to_archive (list[list[dict]]): A list of flows to be archived. Each flow is
-            represented as a dictionary.
-
-    Returns:
-        None
-    """
-    reports = []
-    for flow_list in flows_to_archive:
-        for flow in flow_list:
-            if flow["invalid_runs_count"] == 0:
-                continue
-            flow_title = f"{flow['name']} @ v{flow['version']}"
-            flow_url = f"https://pipelines.dados.rio/flow/{flow['id']}"
-            reports.append(
-                f"""- [{flow_title}]({flow_url}) tem {flow['invalid_runs_count']} execuções indevidas agendadas"""  # noqa
-            )
-
-    reports = sorted(reports)
-
-    if len(reports) == 0:
-        send_message(
-            title="Listagem de Flows Fantasmas",
-            message="Nenhum foi encontrado",
-            monitor_slug="warning",
-        )
-        return
-
-    send_message(
-        title="Listagem de Flows Fantasmas",
-        message="\n".join(reports),
-        monitor_slug="warning",
-    )
-
-
-@task
-def archive_flow_versions(flow_versions_to_archive: list) -> None:
+def archive_flow_versions(flow_versions_to_archive: list, prefect_client: Client) -> None:
     """
     Archive flow versions from the API.
     """
-    prefect_client = Client()
-
     query = """
         mutation($flow_id: UUID!) {
             archive_flow (
@@ -225,3 +211,31 @@ def archive_flow_versions(flow_versions_to_archive: list) -> None:
 
     reports = sorted(reports)
     log("\n".join(reports))
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Process a project name.")
+    parser.add_argument("--project", type=str, required=True, help="Name of the project")
+    parser.add_argument("--environment", type=str, required=True, help="Environment the project")
+
+    args = parser.parse_args()
+
+    prefect_client = Client()
+
+    active_flows = query_non_archived_flows(prefect_client, args.environment)
+
+    results = []
+    for flow in active_flows:
+        flows_to_archive = query_archived_flow_versions_with_runs(
+            flow, prefect_client, args.environment
+        )
+        results.extend(flows_to_archive)
+
+    log(f"Total archived flows with scheduled runs: {len(results)}")
+
+    # archive_flow_versions(results, prefect_client)
+    # log("Done!")
+
+
+if __name__ == "__main__":
+    main()

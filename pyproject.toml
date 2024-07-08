@@ -33,6 +33,7 @@ pydrive2 = "^1.19.0"
 httpx = "^0.27.0"
 simpledbf = "^0.2.6"
 tables = "^3.9.2"
+pyreaddbc = "^1.2.0"
 
 
 [tool.poetry.group.dev]
