@@ -15,15 +15,22 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
 )
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_datalake_table_name,
+    create_folder,
     get_bigquery_project_from_environment,
+    get_current_flow_labels,
     get_interval_start_list,
     get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
 from pipelines.utils.tasks import (
-    create_folders,
     create_partitions,
     get_secret_key,
     is_equal,
@@ -43,8 +50,6 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT)
 
-    folders = create_folders()
-
     #####################################
     # Tasks section #2 - Extraction Preparation
     #####################################
@@ -57,6 +62,11 @@ with Flow(
     tables_to_import = list_tables_to_import()
 
     datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
+
+    raw_folders = create_folder.map(title=unmapped("raw"), subtitle=datalake_table_names)
+    partition_folders = create_folder.map(
+        title=unmapped("partition_directory"), subtitle=datalake_table_names
+    )
 
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
@@ -85,7 +95,7 @@ with Flow(
     file_list_per_table = import_vitai_table_to_csv.map(
         db_url=unmapped(db_url),
         table_name=tables_to_import,
-        output_file_folder=unmapped(folders["raw"]),
+        output_file_folder=raw_folders,
         interval_start=intervals_start_per_table,
     )
     file_list = flatten(file_list_per_table)
@@ -93,17 +103,17 @@ with Flow(
     #####################################
     # Tasks section #4 - Partitioning Data
     #####################################
-    create_partitions_task = create_partitions(
-        data_path=folders["raw"],
-        partition_directory=folders["partition_directory"],
-        upstream_tasks=[file_list],
+    create_partitions_task = create_partitions.map(
+        data_path=raw_folders,
+        partition_directory=partition_folders,
+        upstream_tasks=[unmapped(file_list)],
     )
 
     #####################################
     # Tasks section #5 - Uploading to Datalake
     #####################################
     upload_to_datalake_task = upload_to_datalake.map(
-        input_path=unmapped(folders["partition_directory"]),
+        input_path=partition_folders,
         table_id=datalake_table_names,
         dataset_id=unmapped(vitai_constants.DATASET_NAME.value),
         if_exists=unmapped("replace"),
@@ -113,6 +123,25 @@ with Flow(
         dataset_is_public=unmapped(False),
         upstream_tasks=[unmapped(create_partitions_task)],
     )
+
+    #####################################
+    # Tasks section #6 - Running DBT Models
+    #####################################
+    current_flow_run_labels = get_current_flow_labels()
+
+    dbt_run_flow = create_flow_run(
+        flow_name="DataLake - Transformação - DBT",
+        project_name=project_name,
+        parameters={
+            "command": "run",
+            "select": "tag:vitai_db",
+            "environment": ENVIRONMENT,
+            "rename_flow": True,
+        },
+        labels=current_flow_run_labels,
+        upstream_tasks=[upload_to_datalake_task],
+    )
+    wait_for_flow_run(flow_run_id=dbt_run_flow)
 
 sms_dump_vitai_rio_saude.schedule = vitai_db_extraction_schedule
 sms_dump_vitai_rio_saude.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

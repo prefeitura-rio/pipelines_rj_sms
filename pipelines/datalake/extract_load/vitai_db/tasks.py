@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 import datetime
 import os
+import shutil
 import uuid
 
 import google
 import pandas as pd
+import prefect
 from google.cloud import bigquery
+from prefect.backend import FlowRunView
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -15,14 +18,14 @@ from pipelines.utils.logger import log
 def list_tables_to_import():
     return [
         "paciente",
-        # "boletim",
-        # "alergia",
-        # "atendimento",
-        # "cirurgia",
-        # "classificacao_risco",
-        # "diagnostico",
-        # "exame",
-        # "profissional",
+        "boletim",
+        "alergia",
+        "atendimento",
+        "cirurgia",
+        "classificacao_risco",
+        "diagnostico",
+        "exame",
+        "profissional",
     ]
 
 
@@ -107,10 +110,18 @@ def import_vitai_table_to_csv(
     log(f"Added `datalake__imported_at` column to dataframe with current timestamp: {now}")
 
     # Separate dataframe per day for partitioning
-    df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
-    days = df["partition_date"].unique()
-    dfs = [(day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days]
+    if df.empty:
+        log("Empty dataframe. Preparing to send file with only headers", level="warning")
+        dfs = [(str(now.date()), df)]
+    else:
+        log("Non Empty dataframe. Splitting Dataframe in multiple files by day", level="warning")
+        df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
+        days = df["partition_date"].unique()
+        dfs = [
+            (day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days
+        ]  # noqa
 
+    # Save dataframes to csv files
     output_paths = []
     for day, df_day in dfs:
         file_path = os.path.join(output_file_folder, f"{table_name}_{day}_{uuid.uuid4()}.csv")
@@ -124,3 +135,26 @@ def import_vitai_table_to_csv(
 @task()
 def create_datalake_table_name(table_name: str) -> str:
     return f"{table_name}_eventos"
+
+
+@task
+def get_current_flow_labels() -> list[str]:
+    """
+    Get the labels of the current flow.
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_view = FlowRunView.from_flow_run_id(flow_run_id)
+    return flow_run_view.labels
+
+
+@task
+def create_folder(title="", subtitle=""):
+    folder_path = os.path.join(os.getcwd(), "data", title, subtitle)
+
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path, ignore_errors=False)
+    os.makedirs(folder_path)
+
+    log(f"Created folder: {folder_path}")
+
+    return folder_path
