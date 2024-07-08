@@ -47,6 +47,7 @@ with Flow(
         project_name=PROJECT_ID,
         dataset_name=DATASET_ID,
         table_name=TABLE_ID,
+        environment=ENVIRONMENT,
     )
 
     payload_clean = clean_null_values(df=dataframe)
