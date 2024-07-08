@@ -135,7 +135,7 @@ with Flow(
         parameters={
             "command": "run",
             "select": "tag:vitai",
-            "exclude":"tag:vitai_estoque",
+            "exclude": "tag:vitai_estoque",
             "environment": ENVIRONMENT,
             "rename_flow": True,
         },
