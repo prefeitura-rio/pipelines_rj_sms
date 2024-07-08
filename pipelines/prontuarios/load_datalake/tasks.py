@@ -23,10 +23,9 @@ def clean_null_values(df: pd.DataFrame):
 
     df["cbo"] = df["cbo"].apply(normalize_list)
     df["conselho"] = df["conselho"].apply(normalize_list)
-    df["data_referencia"] = df["data_referencia"].astype(str)
 
     payload = df[
-        ["id_profissional_sus", "cpf", "cns", "nome", "cbo", "conselho", "data_referencia"]
+        ["id_profissional_sus", "cpf", "cns", "nome", "cbo", "conselho"]
     ].to_dict(orient="records")
 
     return payload
