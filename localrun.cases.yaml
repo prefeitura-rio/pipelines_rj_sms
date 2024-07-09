@@ -99,3 +99,11 @@ cases:
       dataset_id: "brutos_sisreg"
       table_id: "escala"
       endpoint: "escala"
+  - case_slug: "datalake-extract_load-osinfo"
+    flow_path: "pipelines.datalake.extract_load.osinfo_web.flows"
+    flow_name: "sms_dump_osinfo"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_osinfo"
+      table_id: "despesas"
