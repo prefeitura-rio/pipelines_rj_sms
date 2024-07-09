@@ -91,7 +91,7 @@ with Flow(
             input_path=local_folders["partition_directory"],
             dataset_id=DATASET_ID,
             table_id=TABLE_ID,
-            dump_mode="overwrite",
+            dump_mode="append",
             source_format="parquet",
             if_exists="replace",
             if_storage_data_exists="replace",
