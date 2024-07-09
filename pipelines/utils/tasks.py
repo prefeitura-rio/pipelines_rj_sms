@@ -857,9 +857,7 @@ def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv", csv_sep="
 
 @task
 def load_file_from_bigquery(
-    project_name: str,
-    dataset_name: str,
-    table_name: str,
+    project_name: str, dataset_name: str, table_name: str, environment: str = "dev"
 ):
     """
     Load data from BigQuery table into a pandas DataFrame.
@@ -868,11 +866,13 @@ def load_file_from_bigquery(
         project_name (str): The name of the BigQuery project.
         dataset_name (str): The name of the BigQuery dataset.
         table_name (str): The name of the BigQuery table.
+        environment (str, optional): DON'T REMOVE THIS ARGUMENT.
 
     Returns:
         pandas.DataFrame: The loaded data from the BigQuery table.
     """
     client = bigquery.Client()
+    log(f"[Ignore] Using Parameter to avoid Warnings: {environment}")
 
     dataset_ref = bigquery.DatasetReference(project_name, dataset_name)
     table_ref = dataset_ref.table(table_name)
