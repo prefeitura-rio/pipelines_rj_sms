@@ -26,6 +26,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
 
     # Flow
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    SEND_DISCORD_REPORT = Parameter("send_discord_report", default=True)
 
     # DBT
     COMMAND = Parameter("command", default="test", required=False)
@@ -61,7 +62,8 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
         exclude=EXCLUDE,
     )
 
-    create_dbt_report_task = create_dbt_report(running_results=running_results)
+    with case(SEND_DISCORD_REPORT, True):
+        create_dbt_report_task = create_dbt_report(running_results=running_results)
 
 # Storage and run configs
 sms_execute_dbt.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
