@@ -6,6 +6,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.tools.unschedule_old_flows.schedules import schedule
 from pipelines.tools.unschedule_old_flows.tasks import (
     archive_flow_versions,
     query_archived_flow_versions_with_runs,
@@ -36,3 +37,4 @@ unscheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
+unscheduler_flow.schedule = schedule
