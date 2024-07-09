@@ -51,7 +51,7 @@ with Flow(
 
     endpoint = return_endpoint(table_id=TABLE_ID)
 
-    payload_clean = clean_null_values(df=dataframe,endpoint=endpoint)
+    payload_clean = clean_null_values(df=dataframe, endpoint=endpoint)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
