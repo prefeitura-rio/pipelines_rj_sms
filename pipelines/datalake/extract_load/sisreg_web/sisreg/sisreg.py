@@ -81,8 +81,8 @@ class Sisreg:
         log(f"Current url: {self.browser.current_url}", level="debug")
 
         if self.browser.current_url == "https://sisregiii.saude.gov.br/cgi-bin/index":
-            #if self.browser.find_element(By.XPATH, "/html/body/center/div[2]/form/div[1]"):
-#
+            # if self.browser.find_element(By.XPATH, "/html/body/center/div[2]/form/div[1]"):
+            #
             #    raise PermissionError("Failed to log in. Password expired")
             log("Logged in successfully")
         else:
@@ -106,7 +106,7 @@ class Sisreg:
             self.browser.get(
                 "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?radioFiltro=cpf&status=&dataInicial=&dataFinal=&qtd_itens_pag=50&pagina=&ibge=330455&ordenacao=&clas_lista=ASC&etapa=EXPORTAR_ESCALAS&coluna="
             )
-        except Exception as e: 
+        except Exception as e:
             raise RuntimeError("Failed to reach Escala page") from e
 
         download_in_progress = True
