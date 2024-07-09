@@ -12,6 +12,7 @@ from pipelines.tools.unschedule_old_flows.tasks import (
     query_non_archived_flows,
     report_to_discord,
 )
+from pipelines.tools.unschedule_old_flows.schedules import schedule
 
 with Flow("Tool: Desagendador de Flows Fantasmas") as unscheduler_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
@@ -36,3 +37,4 @@ unscheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
+unscheduler_flow.schedule = schedule
