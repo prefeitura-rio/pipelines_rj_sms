@@ -26,7 +26,7 @@ datalake_to_hci_flow_parameters = [
     {
         "environment": "prod",
         "rename_flow": True,
-        "table_id": "equipe_profissional_saudee",
+        "table_id": "equipe_profissional_saude",
         "dataset_id": "saude_dados_mestres",
         "project_id": "rj-sms",
     },
