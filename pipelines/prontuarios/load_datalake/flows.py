@@ -49,7 +49,7 @@ with Flow(
         table_name=TABLE_ID,
     )
 
-    endpoint = return_endpoint(TABLE_ID)
+    endpoint = return_endpoint(table_id=TABLE_ID)
 
     payload_clean = clean_null_values(df=dataframe,endpoint=endpoint)
 
