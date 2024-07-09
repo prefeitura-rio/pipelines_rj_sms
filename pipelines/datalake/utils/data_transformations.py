@@ -113,10 +113,12 @@ def convert_to_parquet(
             dbf_file = file_path.replace(".dbc", ".dbf")
             pyreaddbc.dbc2dbf(file_path, dbf_file)
             dbf = Dbf5(dbf_file, codec=encoding)
-            dataframe = dbf.to_dataframe()
+            dataframe = dbf.to_dataframe(na="")
+            dataframe = dataframe.astype(str)
         case "dbf":
             dbf = Dbf5(file_path, codec=encoding)
-            dataframe = dbf.to_dataframe()
+            dataframe = dbf.to_dataframe(na="")
+            dataframe = dataframe.astype(str)
         case _:
             log(f"File type {file_type} not found", level="error")
             raise ValueError("The file type must be 'csv', 'dbc' or 'dbf")
