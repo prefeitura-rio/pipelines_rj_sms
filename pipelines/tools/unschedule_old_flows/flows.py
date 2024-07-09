@@ -6,13 +6,13 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.tools.unschedule_old_flows.schedules import schedule
 from pipelines.tools.unschedule_old_flows.tasks import (
     archive_flow_versions,
     query_archived_flow_versions_with_runs,
     query_non_archived_flows,
     report_to_discord,
 )
-from pipelines.tools.unschedule_old_flows.schedules import schedule
 
 with Flow("Tool: Desagendador de Flows Fantasmas") as unscheduler_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
