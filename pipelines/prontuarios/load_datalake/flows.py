@@ -49,7 +49,7 @@ with Flow(
         table_name=TABLE_ID,
     )
 
-    payload_clean = clean_null_values(df=dataframe)
+    payload_clean = clean_null_values(df=dataframe,endpoint=datalake_constants.ENDPOINT.value[TABLE_ID])
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -69,7 +69,7 @@ with Flow(
 
     load_to_api_task = load_to_api.map(
         request_body=list_batches,
-        endpoint_name=unmapped("mrg/professionals"),
+        endpoint_name=unmapped(datalake_constants.ENDPOINT.value[TABLE_ID]),
         api_token=unmapped(api_token),
         method=unmapped("PUT"),
         environment=unmapped(ENVIRONMENT),
