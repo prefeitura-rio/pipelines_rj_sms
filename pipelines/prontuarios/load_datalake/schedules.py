@@ -23,13 +23,13 @@ datalake_to_hci_flow_parameters = [
         "dataset_id": "saude_dados_mestres",
         "project_id": "rj-sms",
     },
-        {
+    {
         "environment": "prod",
         "rename_flow": True,
         "table_id": "equipe_profissional_saudee",
         "dataset_id": "saude_dados_mestres",
         "project_id": "rj-sms",
-    }
+    },
 ]
 datalake_to_hci_clocks = generate_dump_api_schedules(
     interval=timedelta(days=7),
