@@ -49,7 +49,9 @@ with Flow(
         table_name=TABLE_ID,
     )
 
-    payload_clean = clean_null_values(df=dataframe,endpoint=datalake_constants.ENDPOINT.value[TABLE_ID])
+    payload_clean = clean_null_values(
+        df=dataframe, endpoint=datalake_constants.ENDPOINT.value[TABLE_ID]
+    )
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
