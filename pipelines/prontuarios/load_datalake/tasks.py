@@ -6,7 +6,7 @@ from pipelines.prontuarios.load_datalake.constants import (
     constants as datalake_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-
+from pipelines.utils.logger import log
 
 @task
 def return_endpoint(table_id: str):
@@ -37,6 +37,8 @@ def clean_null_values(df: pd.DataFrame, endpoint: str):
                     pass
         new_row = [dic for dic in row if dic["is_valid"] is True]
         return new_row
+    
+    log(f"{len(df)} rows downloaded, treating null values")
 
     if endpoint == "mrg/professionals":
         df["cbo"] = df["cbo"].apply(lambda x: normalize_list(x, endpoint))
