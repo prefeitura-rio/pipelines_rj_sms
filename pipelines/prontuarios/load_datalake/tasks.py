@@ -8,6 +8,14 @@ from pipelines.prontuarios.load_datalake.constants import (
 )
 
 @task
+def return_endpoint(table_id: str):
+    """
+    Return endpoint based on table to be uploaded
+    """
+    return datalake_constants.ENDPOINT.value[table_id]
+
+
+@task
 def clean_null_values(df: pd.DataFrame, endpoint: str):
     """
     Delete null values from payload and prepare data to post

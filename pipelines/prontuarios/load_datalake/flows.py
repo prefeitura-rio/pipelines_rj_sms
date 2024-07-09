@@ -13,7 +13,7 @@ from pipelines.prontuarios.load_datalake.constants import (
 from pipelines.prontuarios.load_datalake.schedules import (
     datalake_to_hci_daily_update_schedule,
 )
-from pipelines.prontuarios.load_datalake.tasks import clean_null_values
+from pipelines.prontuarios.load_datalake.tasks import clean_null_values, return_endpoint
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     load_to_api,
@@ -49,7 +49,9 @@ with Flow(
         table_name=TABLE_ID,
     )
 
-    payload_clean = clean_null_values(df=dataframe,endpoint=datalake_constants.ENDPOINT.value[TABLE_ID])
+    endpoint = return_endpoint(TABLE_ID)
+
+    payload_clean = clean_null_values(df=dataframe,endpoint=endpoint)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -69,7 +71,7 @@ with Flow(
 
     load_to_api_task = load_to_api.map(
         request_body=list_batches,
-        endpoint_name=unmapped(datalake_constants.ENDPOINT.value[TABLE_ID]),
+        endpoint_name=unmapped(endpoint),
         api_token=unmapped(api_token),
         method=unmapped("PUT"),
         environment=unmapped(ENVIRONMENT),
