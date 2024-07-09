@@ -81,10 +81,15 @@ class Sisreg:
         log(f"Current url: {self.browser.current_url}", level="debug")
 
         if self.browser.current_url == "https://sisregiii.saude.gov.br/cgi-bin/index":
-            # if self.browser.find_element(By.XPATH, "/html/body/center/div[2]/form/div[1]"):
-            #
-            #    raise PermissionError("Failed to log in. Password expired")
-            log("Logged in successfully")
+            try:
+                self.browser.switch_to.frame("f_main")
+                log("Switched to frame f_main", level="debug")
+            finally:
+                if "Senha expirada" in self.browser.page_source:
+                    log("Password expired. Please change your password.", level="error")
+                    self.browser.quit()
+                    raise PermissionError("Password expired. Please change your password.")
+                log("Logged in successfully")
         else:
             log("Failed to log in", level="error")
             self.browser.quit()
