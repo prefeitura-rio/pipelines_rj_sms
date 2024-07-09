@@ -33,7 +33,7 @@ class Sisreg:
 
     def __init__(self, user, password, download_path):
         self._options = FirefoxOptions()
-        self._options.add_argument("--headless")
+        # self._options.add_argument("--headless")
         self._profile = FirefoxProfile()
         self._profile.set_preference("browser.download.folderList", 2)
         self._profile.set_preference("browser.download.manager.showWhenStarting", False)
@@ -81,6 +81,9 @@ class Sisreg:
         log(f"Current url: {self.browser.current_url}", level="debug")
 
         if self.browser.current_url == "https://sisregiii.saude.gov.br/cgi-bin/index":
+            #if self.browser.find_element(By.XPATH, "/html/body/center/div[2]/form/div[1]"):
+#
+            #    raise PermissionError("Failed to log in. Password expired")
             log("Logged in successfully")
         else:
             log("Failed to log in", level="error")
@@ -103,8 +106,8 @@ class Sisreg:
             self.browser.get(
                 "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?radioFiltro=cpf&status=&dataInicial=&dataFinal=&qtd_itens_pag=50&pagina=&ibge=330455&ordenacao=&clas_lista=ASC&etapa=EXPORTAR_ESCALAS&coluna="
             )
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except Exception as e: 
+            raise RuntimeError("Failed to reach Escala page") from e
 
         download_in_progress = True
 

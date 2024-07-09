@@ -88,6 +88,14 @@ cases:
       rename_flow: false
       dataset_id: "brutos_sih"
       table_id: "indicadores_hospitalares"
-      last_update_start_date: "2024-07-04"
-      last_update_end_date: "2024-07-05"
-
+      last_update_start_date: "2024-07-07"
+      last_update_end_date: "2024-07-08"
+  - case_slug: "datalake-extract_load-sisreg"
+    flow_path: "pipelines.datalake.extract_load.sisreg_web.flows"
+    flow_name: "sms_dump_sisreg"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_sisreg"
+      table_id: "escala"
+      endpoint: "escala"
