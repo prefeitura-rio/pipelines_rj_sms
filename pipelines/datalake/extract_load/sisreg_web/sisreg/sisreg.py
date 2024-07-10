@@ -33,7 +33,7 @@ class Sisreg:
 
     def __init__(self, user, password, download_path):
         self._options = FirefoxOptions()
-        # self._options.add_argument("--headless")
+        self._options.add_argument("--headless")
         self._profile = FirefoxProfile()
         self._profile.set_preference("browser.download.folderList", 2)
         self._profile.set_preference("browser.download.manager.showWhenStarting", False)
@@ -81,15 +81,20 @@ class Sisreg:
         log(f"Current url: {self.browser.current_url}", level="debug")
 
         if self.browser.current_url == "https://sisregiii.saude.gov.br/cgi-bin/index":
-            try:
-                self.browser.switch_to.frame("f_main")
-                log("Switched to frame f_main", level="debug")
-            finally:
-                if "Senha expirada" in self.browser.page_source:
-                    log("Password expired. Please change your password.", level="error")
-                    self.browser.quit()
-                    raise PermissionError("Password expired. Please change your password.")
+
+            self.browser.switch_to.frame("f_main")
+            log("Switched to frame f_main", level="debug")
+
+            if "Leia com regularidade" in self.browser.page_source:
                 log("Logged in successfully")
+            elif "Senha expirada" in self.browser.page_source:
+                log("Password expired. Please change your password.", level="error")
+                self.browser.quit()
+                raise PermissionError("Password expired. Please change your password.")
+            else:
+                log("Unknow login error", level="error")
+                self.browser.quit()
+                raise PermissionError("Unknown login error")
         else:
             log("Failed to log in", level="error")
             self.browser.quit()
@@ -111,8 +116,8 @@ class Sisreg:
             self.browser.get(
                 "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?radioFiltro=cpf&status=&dataInicial=&dataFinal=&qtd_itens_pag=50&pagina=&ibge=330455&ordenacao=&clas_lista=ASC&etapa=EXPORTAR_ESCALAS&coluna="
             )
-        except Exception as e:
-            raise RuntimeError("Failed to reach Escala page") from e
+        except Exception:  # pylint: disable=broad-except
+            pass
 
         download_in_progress = True
 
