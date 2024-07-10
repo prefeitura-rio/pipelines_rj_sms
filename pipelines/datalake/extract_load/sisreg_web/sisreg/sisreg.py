@@ -116,8 +116,8 @@ class Sisreg:
             self.browser.get(
                 "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?radioFiltro=cpf&status=&dataInicial=&dataFinal=&qtd_itens_pag=50&pagina=&ibge=330455&ordenacao=&clas_lista=ASC&etapa=EXPORTAR_ESCALAS&coluna="
             )
-        except Exception as e:
-            raise RuntimeError("Failed to reach Escala page") from e
+        except Exception:  # pylint: disable=broad-except
+            pass
 
         download_in_progress = True
 
