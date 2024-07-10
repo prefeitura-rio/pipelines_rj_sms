@@ -81,15 +81,20 @@ class Sisreg:
         log(f"Current url: {self.browser.current_url}", level="debug")
 
         if self.browser.current_url == "https://sisregiii.saude.gov.br/cgi-bin/index":
-            try:
-                self.browser.switch_to.frame("f_main")
-                log("Switched to frame f_main", level="debug")
-            finally:
-                if "Senha expirada" in self.browser.page_source:
-                    log("Password expired. Please change your password.", level="error")
-                    self.browser.quit()
-                    raise PermissionError("Password expired. Please change your password.")
+
+            self.browser.switch_to.frame("f_main")
+            log("Switched to frame f_main", level="debug")
+
+            if "Leia com regularidade" in self.browser.page_source:
                 log("Logged in successfully")
+            elif "Senha expirada" in self.browser.page_source:
+                log("Password expired. Please change your password.", level="error")
+                self.browser.quit()
+                raise PermissionError("Password expired. Please change your password.")
+            else:
+                log("Unknow login error", level="error")
+                self.browser.quit()
+                raise PermissionError("Unknown login error")
         else:
             log("Failed to log in", level="error")
             self.browser.quit()
