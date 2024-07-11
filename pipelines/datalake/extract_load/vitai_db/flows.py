@@ -3,7 +3,6 @@ from prefect import Parameter, case, flatten, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -16,10 +15,9 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_datalake_table_name,
     create_folder,
+    create_working_time_range,
     get_bigquery_project_from_environment,
     get_current_flow_labels,
-    get_interval_start_list,
-    get_last_timestamp_from_tables,
     import_vitai_table_to_csv,
     list_tables_to_import,
 )
@@ -30,12 +28,7 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-from pipelines.utils.tasks import (
-    create_partitions,
-    get_secret_key,
-    is_equal,
-    upload_to_datalake,
-)
+from pipelines.utils.tasks import create_partitions, get_secret_key, upload_to_datalake
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde)",
@@ -44,8 +37,12 @@ with Flow(
     # Tasks section #1 - Setup Environment
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    INCREMENT_MODELS = Parameter("increment_models", default=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
+
+    # In case the user want to force a interval
     INTERVAL_START = Parameter("interval_start", default=None)
+    INTERVAL_END = Parameter("interval_end", default=None)
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT)
@@ -71,37 +68,30 @@ with Flow(
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     ####################################
-    # Tasks section #3 - Interval Start Setup
+    # Tasks section #3 - Interval Setup
     #####################################
-    is_interval_start_none = is_equal(value=INTERVAL_START, target=None)
-
-    with case(is_interval_start_none, True):
-        most_recent_timestamp_per_table = get_last_timestamp_from_tables(
-            project_name=bigquery_project,
-            dataset_name=vitai_constants.DATASET_NAME.value,
-            table_names=datalake_table_names,
-            column_name="datahora",
-        )
-    with case(is_interval_start_none, False):
-        received_intervals_start = get_interval_start_list(
-            interval_start=INTERVAL_START, table_names=tables_to_import
-        )
-
-    intervals_start_per_table = merge(most_recent_timestamp_per_table, received_intervals_start)
+    interval_start_per_table, interval_end_per_table = create_working_time_range(
+        project_name=bigquery_project,
+        dataset_name=vitai_constants.DATASET_NAME.value,
+        table_names=datalake_table_names,
+        interval_start=INTERVAL_START,
+        interval_end=INTERVAL_END,
+    )
 
     #####################################
-    # Tasks section #3 - Downloading Table Data
+    # Tasks section #4 - Downloading Table Data
     #####################################
     file_list_per_table = import_vitai_table_to_csv.map(
         db_url=unmapped(db_url),
         table_name=tables_to_import,
         output_file_folder=raw_folders,
-        interval_start=intervals_start_per_table,
+        interval_start=interval_start_per_table,
+        interval_end=interval_end_per_table,
     )
     file_list = flatten(file_list_per_table)
 
     #####################################
-    # Tasks section #4 - Partitioning Data
+    # Tasks section #5 - Partitioning Data
     #####################################
     create_partitions_task = create_partitions.map(
         data_path=raw_folders,
@@ -110,7 +100,7 @@ with Flow(
     )
 
     #####################################
-    # Tasks section #5 - Uploading to Datalake
+    # Tasks section #6 - Uploading to Datalake
     #####################################
     upload_to_datalake_task = upload_to_datalake.map(
         input_path=partition_folders,
@@ -125,25 +115,26 @@ with Flow(
     )
 
     #####################################
-    # Tasks section #6 - Running DBT Models
+    # Tasks section #7 - Running DBT Models
     #####################################
-    current_flow_run_labels = get_current_flow_labels()
+    with case(INCREMENT_MODELS, True):
+        current_flow_run_labels = get_current_flow_labels()
 
-    dbt_run_flow = create_flow_run(
-        flow_name="DataLake - Transformação - DBT",
-        project_name=project_name,
-        parameters={
-            "command": "run",
-            "select": "tag:vitai",
-            "exclude": "tag:vitai_estoque",
-            "environment": ENVIRONMENT,
-            "rename_flow": True,
-            "send_discord_report": False,
-        },
-        labels=current_flow_run_labels,
-        upstream_tasks=[upload_to_datalake_task],
-    )
-    wait_for_flow_run(flow_run_id=dbt_run_flow)
+        dbt_run_flow = create_flow_run(
+            flow_name="DataLake - Transformação - DBT",
+            project_name=project_name,
+            parameters={
+                "command": "run",
+                "select": "tag:vitai",
+                "exclude": "tag:vitai_estoque",
+                "environment": ENVIRONMENT,
+                "rename_flow": True,
+                "send_discord_report": False,
+            },
+            labels=current_flow_run_labels,
+            upstream_tasks=[upload_to_datalake_task],
+        )
+        wait_for_flow_run(flow_run_id=dbt_run_flow)
 
 sms_dump_vitai_rio_saude.schedule = vitai_db_extraction_schedule
 sms_dump_vitai_rio_saude.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
