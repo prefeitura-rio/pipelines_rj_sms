@@ -87,10 +87,10 @@ class RunResultSummarizer:
             return self.warn(result)
 
     def error(self, result):
-        return f"{result.node.name}: {result.message.replace('__','_')}"
+        return f"{result.node.name}: {result.message.replace('__', '_')}"
 
     def fail(self, result):
-        return f"{result.node.name}: {result.message} ```select * from {result.node.relation_name.replace('`','')}``` \n"  # noqa
+        return f"{result.node.name}: {result.message} ```select * from {result.node.relation_name.replace('`', '')}``` \n"  # noqa
 
     def warn(self, result):
         return f"{result.node.name}: ({result.message})"
