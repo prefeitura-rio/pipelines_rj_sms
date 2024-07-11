@@ -12,7 +12,6 @@ import dbt.contracts
 import git
 import prefect
 from dbt.cli.main import dbtRunner, dbtRunnerResult
-from dbt.contracts.results import SourceFreshnessResult
 from prefect.client import Client
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
@@ -21,7 +20,7 @@ from pipelines.datalake.transform.dbt.constants import (
     constants as execute_dbt_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.dbt_log_processor import log_to_file, process_dbt_logs
+from pipelines.utils.dbt import log_to_file, process_dbt_logs, Summarizer
 from pipelines.utils.monitor import send_message
 
 
@@ -124,34 +123,18 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     """
     logs = process_dbt_logs(log_path="dbt_repository/logs/dbt.log")
     log_path = log_to_file(logs)
-
-    # Each result type has a different way to summarize the results
-    def default_result_summarizer(command_result):
-        return f"{command_result.message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
-    
-    def freshness_result_summarizer(command_result):
-        freshness = command_result.node.freshness
-        warn_criteria = f"WARN>={freshness.warn_after.count} {freshness.warn_after.period}"
-        error_criteria = f"ERROR>={freshness.error_after.count} {freshness.error_after.period}"
-        return f"{command_result.node.name} ({warn_criteria} and {error_criteria})"
+    summarizer = Summarizer()
 
     is_successful, has_warnings = True, False
 
     general_report = []
     for command_result in running_results.result:
-        # Define how to constuct report lines based on the result type
-        if type(command_result) == SourceFreshnessResult:
-            summarizer = freshness_result_summarizer
-        else:
-            summarizer = default_result_summarizer
-
-        # Construct the report line about the current result
         if command_result.status == "fail":
             is_successful = False
             general_report.append(f"- 🛑 FAIL: {summarizer(command_result)}")
         elif command_result.status == "error":
             is_successful = False
-            general_report.append(f"- ❌ ERROR: {summarizer(command_result).replace('__','_')}")
+            general_report.append(f"- ❌ ERROR: {summarizer(command_result)}")
         elif command_result.status == "warn":
             has_warnings = True
             general_report.append(f"- ⚠️ WARN: {summarizer(command_result)}")
