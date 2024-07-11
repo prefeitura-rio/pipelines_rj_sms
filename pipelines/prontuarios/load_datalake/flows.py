@@ -15,8 +15,8 @@ from pipelines.prontuarios.load_datalake.schedules import (
 )
 from pipelines.prontuarios.load_datalake.tasks import (
     clean_null_values,
+    fix_array_to_list,
     return_endpoint,
-    fix_array_to_list
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
@@ -57,7 +57,7 @@ with Flow(
 
     payload_clean = clean_null_values(df=dataframe, endpoint=endpoint)
 
-    payload_fix =  fix_array_to_list(json_normalized=payload_clean)
+    payload_fix = fix_array_to_list(json_normalized=payload_clean)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -73,7 +73,7 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    list_batches = transform_create_input_batches(input_list=payload_fix , batch_size=5000)
+    list_batches = transform_create_input_batches(input_list=payload_fix, batch_size=5000)
 
     load_to_api_task = load_to_api.map(
         request_body=list_batches,

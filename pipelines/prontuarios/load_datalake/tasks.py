@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import pandas as pd
-import numpy as np
 import datetime
+
+import numpy as np
+import pandas as pd
+
 from pipelines.prontuarios.load_datalake.constants import (
     constants as datalake_constants,
 )
@@ -54,20 +56,22 @@ def clean_null_values(df: pd.DataFrame, endpoint: str):
 
     return payload
 
+
 @task
 def fix_array_to_list(json_normalized: list):
     """
     Fix array field to list field
     """
+
     def transform_to_list(dic):
-      dic_array={}
-      for k,v in dic.items():
-        if (type(v) == np.ndarray):
-          dic_array[k] = v.tolist()
-        elif (type(v) == datetime.date):
-           dic_array[k] = str(v)
-        else:
-          dic_array[k] = v
-      return dic_array
+        dic_array = {}
+        for k, v in dic.items():
+            if type(v) == np.ndarray:
+                dic_array[k] = v.tolist()
+            elif type(v) == datetime.date:
+                dic_array[k] = str(v)
+            else:
+                dic_array[k] = v
+        return dic_array
 
     return list(map(transform_to_list, json_normalized))
