@@ -16,10 +16,10 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_datalake_table_name,
     create_folder,
+    create_working_time_range,
     get_bigquery_project_from_environment,
     get_current_flow_labels,
     get_interval_start_list,
-    create_working_time_range,
     import_vitai_table_to_csv,
     list_tables_to_import,
 )
@@ -81,7 +81,7 @@ with Flow(
         dataset_name=vitai_constants.DATASET_NAME.value,
         table_names=datalake_table_names,
         interval_start=INTERVAL_START,
-        interval_end=INTERVAL_END
+        interval_end=INTERVAL_END,
     )
 
     #####################################
@@ -92,7 +92,7 @@ with Flow(
         table_name=tables_to_import,
         output_file_folder=raw_folders,
         interval_start=interval_start_per_table,
-        interval_end=interval_end_per_table
+        interval_end=interval_end_per_table,
     )
     file_list = flatten(file_list_per_table)
 

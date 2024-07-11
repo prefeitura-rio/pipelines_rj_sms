@@ -51,7 +51,7 @@ def create_working_time_range(
     dataset_name: str,
     table_names: list[str],
     interval_start: str = None,
-    interval_end: str = None
+    interval_end: str = None,
 ) -> list:
     interval_start_values = []
     interval_end_values = []
@@ -86,15 +86,17 @@ def create_working_time_range(
 
             interval_start_values.append(max_value)
     else:
-        interval_start_values = [pd.to_datetime(
-            interval_start, format="%Y-%m-%d %H:%M:%S") for _ in table_names]
+        interval_start_values = [
+            pd.to_datetime(interval_start, format="%Y-%m-%d %H:%M:%S") for _ in table_names
+        ]
 
     if not interval_end:
         log("Interval end not provided. Getting current timestamp.", level="warning")
         interval_end_values = [pd.Timestamp.now(tz="America/Sao_Paulo") for _ in table_names]
     else:
-        interval_end_values = [pd.to_datetime(
-            interval_end, format="%Y-%m-%d %H:%M:%S") for _ in table_names]
+        interval_end_values = [
+            pd.to_datetime(interval_end, format="%Y-%m-%d %H:%M:%S") for _ in table_names
+        ]
 
     for table_name, start, end in zip(table_names, interval_start_values, interval_end_values):
         log(f"Table {table_name} will be extracted from {start} to {end}")
