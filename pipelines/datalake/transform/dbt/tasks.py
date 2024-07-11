@@ -154,7 +154,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         if key == "rename_flow":
             continue
         if value:
-            param_report.append(f"- {key}: {'`' + value + '`'}")
+            param_report.append(f"- {key}: `{value}`")
     param_report = "\n".join(param_report)
     param_report += " \n"
 
