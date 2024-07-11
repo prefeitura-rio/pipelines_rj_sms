@@ -37,7 +37,7 @@ with Flow(
     # Tasks section #1 - Setup Environment
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    INCREMENT_MODELS = Parameter("increment_models", default=True) 
+    INCREMENT_MODELS = Parameter("increment_models", default=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     # In case the user want to force a interval
