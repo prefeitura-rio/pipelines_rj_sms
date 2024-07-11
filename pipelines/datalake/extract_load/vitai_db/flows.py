@@ -19,7 +19,7 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     get_bigquery_project_from_environment,
     get_current_flow_labels,
     get_interval_start_list,
-    get_last_timestamp_from_tables,
+    create_working_time_range,
     import_vitai_table_to_csv,
     list_tables_to_import,
 )
@@ -45,7 +45,10 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
+
+    # In case the user want to force a interval
     INTERVAL_START = Parameter("interval_start", default=None)
+    INTERVAL_END = Parameter("interval_end", default=None)
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT)
@@ -71,37 +74,30 @@ with Flow(
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     ####################################
-    # Tasks section #3 - Interval Start Setup
+    # Tasks section #3 - Interval Setup
     #####################################
-    is_interval_start_none = is_equal(value=INTERVAL_START, target=None)
-
-    with case(is_interval_start_none, True):
-        most_recent_timestamp_per_table = get_last_timestamp_from_tables(
-            project_name=bigquery_project,
-            dataset_name=vitai_constants.DATASET_NAME.value,
-            table_names=datalake_table_names,
-            column_name="datahora",
-        )
-    with case(is_interval_start_none, False):
-        received_intervals_start = get_interval_start_list(
-            interval_start=INTERVAL_START, table_names=tables_to_import
-        )
-
-    intervals_start_per_table = merge(most_recent_timestamp_per_table, received_intervals_start)
+    interval_start_per_table, interval_end_per_table = create_working_time_range(
+        project_name=bigquery_project,
+        dataset_name=vitai_constants.DATASET_NAME.value,
+        table_names=datalake_table_names,
+        interval_start=INTERVAL_START,
+        interval_end=INTERVAL_END
+    )
 
     #####################################
-    # Tasks section #3 - Downloading Table Data
+    # Tasks section #4 - Downloading Table Data
     #####################################
     file_list_per_table = import_vitai_table_to_csv.map(
         db_url=unmapped(db_url),
         table_name=tables_to_import,
         output_file_folder=raw_folders,
-        interval_start=intervals_start_per_table,
+        interval_start=interval_start_per_table,
+        interval_end=interval_end_per_table
     )
     file_list = flatten(file_list_per_table)
 
     #####################################
-    # Tasks section #4 - Partitioning Data
+    # Tasks section #5 - Partitioning Data
     #####################################
     create_partitions_task = create_partitions.map(
         data_path=raw_folders,
@@ -110,7 +106,7 @@ with Flow(
     )
 
     #####################################
-    # Tasks section #5 - Uploading to Datalake
+    # Tasks section #6 - Uploading to Datalake
     #####################################
     upload_to_datalake_task = upload_to_datalake.map(
         input_path=partition_folders,
@@ -125,7 +121,7 @@ with Flow(
     )
 
     #####################################
-    # Tasks section #6 - Running DBT Models
+    # Tasks section #7 - Running DBT Models
     #####################################
     current_flow_run_labels = get_current_flow_labels()
 
