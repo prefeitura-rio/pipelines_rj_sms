@@ -3,7 +3,6 @@ from prefect import Parameter, case, flatten, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
@@ -19,7 +18,6 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_working_time_range,
     get_bigquery_project_from_environment,
     get_current_flow_labels,
-    get_interval_start_list,
     import_vitai_table_to_csv,
     list_tables_to_import,
 )
@@ -33,7 +31,6 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.tasks import (
     create_partitions,
     get_secret_key,
-    is_equal,
     upload_to_datalake,
 )
 
