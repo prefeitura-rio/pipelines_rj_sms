@@ -37,6 +37,7 @@ with Flow(
     # Tasks section #1 - Setup Environment
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    INCREMENT_MODELS = Parameter("increment_models", default=True) 
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     # In case the user want to force a interval
@@ -116,23 +117,24 @@ with Flow(
     #####################################
     # Tasks section #7 - Running DBT Models
     #####################################
-    current_flow_run_labels = get_current_flow_labels()
+    with case(INCREMENT_MODELS, True):
+        current_flow_run_labels = get_current_flow_labels()
 
-    dbt_run_flow = create_flow_run(
-        flow_name="DataLake - Transformação - DBT",
-        project_name=project_name,
-        parameters={
-            "command": "run",
-            "select": "tag:vitai",
-            "exclude": "tag:vitai_estoque",
-            "environment": ENVIRONMENT,
-            "rename_flow": True,
-            "send_discord_report": False,
-        },
-        labels=current_flow_run_labels,
-        upstream_tasks=[upload_to_datalake_task],
-    )
-    wait_for_flow_run(flow_run_id=dbt_run_flow)
+        dbt_run_flow = create_flow_run(
+            flow_name="DataLake - Transformação - DBT",
+            project_name=project_name,
+            parameters={
+                "command": "run",
+                "select": "tag:vitai",
+                "exclude": "tag:vitai_estoque",
+                "environment": ENVIRONMENT,
+                "rename_flow": True,
+                "send_discord_report": False,
+            },
+            labels=current_flow_run_labels,
+            upstream_tasks=[upload_to_datalake_task],
+        )
+        wait_for_flow_run(flow_run_id=dbt_run_flow)
 
 sms_dump_vitai_rio_saude.schedule = vitai_db_extraction_schedule
 sms_dump_vitai_rio_saude.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
