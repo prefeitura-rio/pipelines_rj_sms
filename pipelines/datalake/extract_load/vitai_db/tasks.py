@@ -56,6 +56,9 @@ def create_working_time_range(
     interval_start_values = []
     interval_end_values = []
 
+    seven_days_ago = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(days=7)
+    seven_days_ago = seven_days_ago.strftime("%Y-%m-%d")
+
     if not interval_start:
         log("Interval start not provided. Getting max value from staging tables.", level="warning")
         client = bigquery.Client()
@@ -67,6 +70,7 @@ def create_working_time_range(
             query = f"""
             SELECT MAX(datahora) as max_value, "{table_name}" as table_name
             FROM `{project_name}.{dataset_name}_staging.{table_name}`
+            WHERE data_particao > '{seven_days_ago}'
             """
 
             try:
