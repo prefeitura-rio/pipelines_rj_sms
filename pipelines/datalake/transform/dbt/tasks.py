@@ -128,7 +128,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     # Each result type has a different way to summarize the results
     def default_result_summarizer(command_result):
         return f"{command_result.message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
-    
+
     def freshness_result_summarizer(command_result):
         freshness = command_result.node.freshness
         warn_criteria = f"WARN>={freshness.warn_after.count} {freshness.warn_after.period}"
