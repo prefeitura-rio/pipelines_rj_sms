@@ -99,3 +99,12 @@ cases:
       dataset_id: "brutos_sisreg"
       table_id: "escala"
       endpoint: "escala"
+  - case_slug: "datalake-to-hci"
+    flow_path: "pipelines.prontuarios.load_datalake.flows"
+    flow_name: "datalake_to_hci"
+    params:
+      environment: "dev"
+      rename_flow: false
+      table_id: "equipe_profissional_saude"
+      dataset_id: "saude_dados_mestres"
+      project_id: "rj-sms-dev"
