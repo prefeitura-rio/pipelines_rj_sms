@@ -130,7 +130,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         status = command_result.status
         name = command_result.node.name
         message = command_result.message if command_result.message else ""
-        
+
         if status == "fail":
             is_successful = False
             general_report.append(
@@ -138,9 +138,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
             )
         elif status == "error":
             is_successful = False
-            general_report.append(
-                f"- ❌ ERROR: `{name}`\n  {message.replace('__','_')} \n"
-            )
+            general_report.append(f"- ❌ ERROR: `{name}`\n  {message.replace('__','_')} \n")
         elif status == "warn":
             has_warnings = True
             general_report.append(
