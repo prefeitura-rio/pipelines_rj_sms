@@ -98,7 +98,7 @@ def create_working_time_range(
     return interval_start_values, interval_end_values
 
 
-@task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
+@task()
 def import_vitai_table_to_csv(
     db_url: str,
     table_name: str,
