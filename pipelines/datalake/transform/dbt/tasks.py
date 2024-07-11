@@ -82,9 +82,9 @@ def execute_dbt(
     Returns:
         dbtRunnerResult: The result of the dbt command execution.
     """
+    commands = command.split(" ")
 
-    cli_args = [
-        command,
+    cli_args = commands + [
         "--profiles-dir",
         repository_path,
         "--project-dir",
