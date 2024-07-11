@@ -10,9 +10,11 @@ class constants(Enum):
     INFISICAL_PATH = "/smsrio"
     INFISICAL_API_USERNAME = "API_USERNAME"
     INFISICAL_API_PASSWORD = "API_PASSWORD"
-    ENDPOINT = {"profissional_saude": "mrg/professionals",
-                "profissional_saude_equipe_desatualizada": "mrg/professionals",
-                "equipe_profissional_saude": "mrg/teams"}
+    ENDPOINT = {
+        "profissional_saude": "mrg/professionals",
+        "profissional_saude_equipe_desatualizada": "mrg/professionals",
+        "equipe_profissional_saude": "mrg/teams",
+    }
     ENDPOINT_REQUIRED_FIELDS = {
         "mrg/professionals": ["id_cbo", "id_registro_conselho"],
         "mrg/teams": [
