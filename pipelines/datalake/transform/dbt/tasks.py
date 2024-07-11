@@ -20,7 +20,7 @@ from pipelines.datalake.transform.dbt.constants import (
     constants as execute_dbt_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.dbt import log_to_file, process_dbt_logs, Summarizer
+from pipelines.utils.dbt import Summarizer, log_to_file, process_dbt_logs
 from pipelines.utils.monitor import send_message
 
 

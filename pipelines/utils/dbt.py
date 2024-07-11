@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import re
-import pandas as pd
 
-from dbt.contracts.results import SourceFreshnessResult, RunResult
+import pandas as pd
+from dbt.contracts.results import RunResult, SourceFreshnessResult
 from prefeitura_rio.pipelines_utils.logging import log
+
 
 def process_dbt_logs(log_path: str = "dbt_repository/logs/dbt.log") -> pd.DataFrame:
     """
@@ -60,6 +61,7 @@ def log_to_file(logs: pd.DataFrame, levels=None) -> str:
 
     return "dbt_log.txt"
 
+
 # =============================
 # SUMMARIZERS
 # =============================
@@ -83,13 +85,13 @@ class RunResultSummarizer:
             return self.fail(result)
         elif result.status == "warn":
             return self.warn(result)
-    
+
     def error(self, result):
         return f"{result.node.name}: {result.message.replace('__','_')}"
-    
+
     def fail(self, result):
-        return f"{result.node.name}: {result.message} ```select * from {result.node.relation_name.replace('`','')}``` \n" # noqa
-    
+        return f"{result.node.name}: {result.message} ```select * from {result.node.relation_name.replace('`','')}``` \n"  # noqa
+
     def warn(self, result):
         return f"{result.node.name}: ({result.message})"
 
@@ -112,7 +114,7 @@ class FreshnessResultSummarizer:
             return self.fail(result)
         elif result.status == "warn":
             return self.warn(result)
-    
+
     def error(self, result):
         freshness = result.node.freshness
         error_criteria = f">={freshness.error_after.count} {freshness.error_after.period}"
@@ -120,7 +122,7 @@ class FreshnessResultSummarizer:
 
     def fail(self, result):
         return f"{result.node.name}"
-    
+
     def warn(self, result):
         freshness = result.node.freshness
         warn_criteria = f">={freshness.warn_after.count} {freshness.warn_after.period}"
@@ -131,7 +133,7 @@ class Summarizer:
     """
     A class that provides summarization functionality for different result types.
 
-    This class can be called with a result object and it will return a summarized version 
+    This class can be called with a result object and it will return a summarized version
         of the result.
 
     Attributes:
