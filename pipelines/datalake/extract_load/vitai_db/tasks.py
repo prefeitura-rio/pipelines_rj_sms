@@ -45,48 +45,73 @@ def get_interval_start_list(interval_start: str, table_names: list[str]) -> list
     return [value for _ in table_names]
 
 
-@task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
-def get_last_timestamp_from_tables(
-    project_name: str, dataset_name: str, table_names: list[str], column_name: str
+@task(nout=2, max_retries=3, retry_delay=datetime.timedelta(seconds=120))
+def create_working_time_range(
+    project_name: str,
+    dataset_name: str,
+    table_names: list[str],
+    interval_start: str = None,
+    interval_end: str = None,
 ) -> list:
+    interval_start_values = []
+    interval_end_values = []
 
-    client = bigquery.Client()
+    seven_days_ago = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(days=7)
+    seven_days_ago = seven_days_ago.strftime("%Y-%m-%d")
 
-    default_max_value = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(minutes=30)
+    if not interval_start:
+        log("Interval start not provided. Getting max value from staging tables.", level="warning")
+        client = bigquery.Client()
 
-    max_values = []
-    for table_name in table_names:
-        query = f"""
-        SELECT MAX({column_name}) as max_value, "{table_name}" as table_name
-        FROM `{project_name}.{dataset_name}_staging.{table_name}`
-        """
+        default_max_value = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(minutes=30)
 
-        try:
-            result = client.query(query).result().to_dataframe().max_value.iloc[0]
-            if result is None:
-                log(f"Table {table_name} is empty. Ignoring table.", level="warning")
+        interval_start_values = []
+        for table_name in table_names:
+            query = f"""
+            SELECT MAX(datahora) as max_value, "{table_name}" as table_name
+            FROM `{project_name}.{dataset_name}_staging.{table_name}`
+            WHERE data_particao > '{seven_days_ago}'
+            """
+
+            try:
+                result = client.query(query).result().to_dataframe().max_value.iloc[0]
+                if result is None:
+                    log(f"Table {table_name} is empty. Ignoring table.", level="warning")
+                    max_value = default_max_value
+                else:
+                    max_value = pd.to_datetime(result, format="%Y-%m-%d %H:%M:%S.%f")
+            except google.api_core.exceptions.NotFound:
+                log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="warning")
                 max_value = default_max_value
-            else:
-                max_value = pd.to_datetime(result, format="%Y-%m-%d %H:%M:%S.%f")
-        except google.api_core.exceptions.NotFound:
-            log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="warning")
-            max_value = default_max_value
 
-        max_values.append(max_value)
+            interval_start_values.append(max_value)
+    else:
+        interval_start_values = [
+            pd.to_datetime(interval_start, format="%Y-%m-%d %H:%M:%S") for _ in table_names
+        ]
 
-    return max_values
+    if not interval_end:
+        log("Interval end not provided. Getting current timestamp.", level="warning")
+        interval_end_values = [pd.Timestamp.now(tz="America/Sao_Paulo") for _ in table_names]
+    else:
+        interval_end_values = [
+            pd.to_datetime(interval_end, format="%Y-%m-%d %H:%M:%S") for _ in table_names
+        ]
+
+    for table_name, start, end in zip(table_names, interval_start_values, interval_end_values):
+        log(f"Table {table_name} will be extracted from {start} to {end}")
+
+    return interval_start_values, interval_end_values
 
 
-@task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
+@task()
 def import_vitai_table_to_csv(
     db_url: str,
     table_name: str,
     output_file_folder: str,
     interval_start: pd.Timestamp,
-    interval_end: pd.Timestamp = None,
+    interval_end: pd.Timestamp,
 ) -> str:
-    if interval_end is None:
-        interval_end = pd.Timestamp.now(tz="America/Sao_Paulo")
 
     interval_start = interval_start.strftime("%Y-%m-%d %H:%M:%S")
     interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")
