@@ -118,15 +118,15 @@ class FreshnessResultSummarizer:
     def error(self, result):
         freshness = result.node.freshness
         error_criteria = f">={freshness.error_after.count} {freshness.error_after.period}"
-        return f"{result.node.relation_name}: ({error_criteria})"
+        return f"{result.node.relation_name.replace('`','')}: ({error_criteria})"
 
     def fail(self, result):
-        return f"{result.node.relation_name}"
+        return f"{result.node.relation_name.replace('`','')}"
 
     def warn(self, result):
         freshness = result.node.freshness
         warn_criteria = f">={freshness.warn_after.count} {freshness.warn_after.period}"
-        return f"{result.node.relation_name}: ({warn_criteria})"
+        return f"{result.node.relation_name.replace('`','')}: ({warn_criteria})"
 
 
 class Summarizer:
