@@ -28,11 +28,7 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-from pipelines.utils.tasks import (
-    create_partitions,
-    get_secret_key,
-    upload_to_datalake,
-)
+from pipelines.utils.tasks import create_partitions, get_secret_key, upload_to_datalake
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde)",
