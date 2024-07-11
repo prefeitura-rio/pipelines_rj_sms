@@ -128,20 +128,23 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     general_report = []
     for command_result in running_results.result:
         status = command_result.status
+        name = command_result.node.name
+        message = command_result.message if command_result.message else ""
+        
         if status == "fail":
             is_successful = False
             general_report.append(
-                f"- 🛑 FAIL: `{command_result.node.name}`\n   {command_result.message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
+                f"- 🛑 FAIL: `{name}`\n   {message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
             )
         elif status == "error":
             is_successful = False
             general_report.append(
-                f"- ❌ ERROR: `{command_result.node.name}`\n  {command_result.message.replace('__','_')} \n"
+                f"- ❌ ERROR: `{name}`\n  {message.replace('__','_')} \n"
             )
         elif status == "warn":
             has_warnings = True
             general_report.append(
-                f"- ⚠️ WARN: `{command_result.node.name}`\n   {command_result.message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
+                f"- ⚠️ WARN: `{name}`\n   {message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
             )
 
     general_report = sorted(general_report, reverse=True)
