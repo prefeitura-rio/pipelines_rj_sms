@@ -15,8 +15,8 @@ from pipelines.prontuarios.load_datalake.schedules import (
 )
 from pipelines.prontuarios.load_datalake.tasks import (
     clean_null_values,
+    fix_array_to_list,
     return_endpoint,
-    fix_array_to_list
 )
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
