@@ -13,7 +13,11 @@ from pipelines.prontuarios.load_datalake.constants import (
 from pipelines.prontuarios.load_datalake.schedules import (
     datalake_to_hci_daily_update_schedule,
 )
-from pipelines.prontuarios.load_datalake.tasks import clean_null_values
+from pipelines.prontuarios.load_datalake.tasks import (
+    clean_null_values,
+    fix_array_to_list,
+    return_endpoint,
+)
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     load_to_api,
@@ -47,10 +51,13 @@ with Flow(
         project_name=PROJECT_ID,
         dataset_name=DATASET_ID,
         table_name=TABLE_ID,
-        environment=ENVIRONMENT,
     )
 
-    payload_clean = clean_null_values(df=dataframe)
+    endpoint = return_endpoint(table_id=TABLE_ID)
+
+    payload_clean = clean_null_values(df=dataframe, endpoint=endpoint)
+
+    payload_fix = fix_array_to_list(json_normalized=payload_clean)
 
     api_token = get_api_token(
         environment=ENVIRONMENT,
@@ -66,11 +73,11 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    list_batches = transform_create_input_batches(input_list=payload_clean, batch_size=5000)
+    list_batches = transform_create_input_batches(input_list=payload_fix, batch_size=5000)
 
     load_to_api_task = load_to_api.map(
         request_body=list_batches,
-        endpoint_name=unmapped("mrg/professionals"),
+        endpoint_name=unmapped(endpoint),
         api_token=unmapped(api_token),
         method=unmapped("PUT"),
         environment=unmapped(ENVIRONMENT),
