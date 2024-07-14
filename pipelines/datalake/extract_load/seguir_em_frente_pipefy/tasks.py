@@ -4,7 +4,7 @@
 """
 Pipefy dumping tasks
 """
-import datetime, timedelta
+import datetime
 import os
 import time
 from typing import List
