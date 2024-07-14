@@ -67,7 +67,21 @@ def pipefy_generate_access_token(environment: str = "prod") -> str:
 def download_from_pipefy(
     endpoint: str, destination_folder: str, environment: str = "dev"
 ) -> List[str]:
+    """
+    Downloads a report from Pipefy and saves it to the specified destination folder.
 
+    Args:
+        endpoint (str): The endpoint of the report to download.
+        destination_folder (str): The folder where the downloaded file will be saved.
+        environment (str, optional): The environment to use for generating the access token. Defaults to "dev".
+
+    Returns:
+        List[str]: A list containing the file path of the downloaded file.
+
+    Raises:
+        ConnectionError: If there is an error downloading the file.
+
+    """
     access_token = pipefy_generate_access_token.run(environment=environment)
 
     url = "https://api.pipefy.com/graphql"

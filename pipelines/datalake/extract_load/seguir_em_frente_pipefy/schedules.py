@@ -27,6 +27,13 @@ flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
     },
+    {
+        "endpoint": "ficha_ponto",
+        "dataset_id": "brutos_seguir_em_frente",
+        "table_id": "ficha_ponto",
+        "environment": "prod",
+        "rename_flow": True,
+    },
 ]
 
 clocks = generate_dump_api_schedules(
