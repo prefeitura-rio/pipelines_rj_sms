@@ -8,6 +8,7 @@ import datetime, timedelta
 import os
 import time
 from typing import List
+from datetime import timedelta
 
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
