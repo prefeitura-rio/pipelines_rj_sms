@@ -29,6 +29,6 @@ class constants(Enum):
         "ficha_ponto": {
             "pipe_name": "Enviar Ficha de Ponto",
             "pipe_id": "304256507",
-            "report_id": "300712294",
+            "report_id": "300712308",
         },
     }

@@ -4,7 +4,7 @@
 """
 Pipefy dumping tasks
 """
-import datetime
+import datetime, timedelta
 import os
 import time
 from typing import List
@@ -65,7 +65,7 @@ def pipefy_generate_access_token(environment: str = "prod") -> str:
     return response.json()["access_token"]
 
 
-@task
+@task(max_retries=2, retry_delay=timedelta(minutes=1))
 def download_from_pipefy(
     endpoint: str, destination_folder: str, environment: str = "dev"
 ) -> List[str]:
