@@ -13,15 +13,11 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.seguir_em_frente_pipefy.constants import (
-    constants as pipefy_constants,
-)
-from pipelines.datalake.extract_load.sih_gdrive.schedules import daily_update_schedule
+from pipelines.datalake.extract_load.seguir_em_frente_pipefy.schedules import daily_update_schedule
 from pipelines.datalake.extract_load.seguir_em_frente_pipefy.tasks import (
     download_from_pipefy,
     transform_data,
 )
-from pipelines.datalake.utils.data_extraction.google_drive import dowload_from_gdrive
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
@@ -93,12 +89,12 @@ with Flow(
     upload_to_datalake_task.set_upstream(create_partitions_task)
 
 
-# sms_dump_seguir_em_frente.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-# sms_dump_seguir_em_frente.executor = LocalDaskExecutor(num_workers=1)
-# sms_dump_seguir_em_frente.run_config = KubernetesRun(
-#     image=constants.DOCKER_IMAGE.value,
-#     labels=[
-#         constants.RJ_SMS_AGENT_LABEL.value,
-#     ],
-# )
-# sms_dump_seguir_em_frente.schedule = daily_update_schedule
+sms_dump_seguir_em_frente.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_seguir_em_frente.executor = LocalDaskExecutor(num_workers=1)
+sms_dump_seguir_em_frente.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+)
+sms_dump_seguir_em_frente.schedule = daily_update_schedule
