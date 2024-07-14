@@ -4,10 +4,10 @@ Pipefy dumping tasks
 """
 import datetime
 import os
-import requests
 from typing import List
 import time
 
+import requests
 
 from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.utils.tasks import get_secret_key
@@ -58,7 +58,7 @@ def pipefy_generate_access_token(environment: str = "prod") -> str:
     response = requests.post(url, json=payload, headers=headers, timeout=30)
 
     if response.status_code != 200:
-        log(f"Error generating access token: {response.text}")
+        log(f"Error generating access token: {response.text}",level="error")
         raise ConnectionError(f"Error generating access token: {response.text}")
 
     log("Access token generated successfully")
@@ -106,7 +106,7 @@ def download_from_pipefy(
     response = requests.get(export_url, timeout=240)
 
     if response.status_code != 200:
-        log(f"Error downloading file: {response.text}")
+        log(f"Error downloading file: {response.text}", level="error")
         raise ConnectionError(f"Error downloading file: {response.text}")
     with open(file_path, "wb") as file:
         file.write(response.content)
