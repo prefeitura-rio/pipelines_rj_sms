@@ -116,4 +116,4 @@ cases:
       rename_flow: false
       dataset_id: "brutos_seguir_em_frente"
       table_id: "controle_presenca"
-      endpoint: "presenca"  
+      endpoint: "presenca"

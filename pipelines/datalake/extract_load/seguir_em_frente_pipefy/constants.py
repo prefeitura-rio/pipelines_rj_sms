@@ -10,7 +10,7 @@ class constants(Enum):
     """
     Constant values for pipefy flows.
     """
-    
+
     INFISICAL_PATH = "/seguir-em-frente"
     INFISICAL_PIPEFY_CLIENT_ID = "PIPEFY_CLIENT_ID"
     INFISICAL_PIPEFY_CLIENT_SECRET = "PIPEFY_CLIENT_SECRET"

@@ -4,23 +4,21 @@ Pipefy dumping tasks
 """
 import datetime
 import os
-from typing import List
 import time
+from typing import List
 
 import requests
-
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.utils.tasks import get_secret_key
 
+from pipelines.datalake.extract_load.seguir_em_frente_pipefy.constants import (
+    constants as pipefy_constants,
+)
 from pipelines.datalake.utils.data_transformations import (
     conform_header_to_datalake,
     convert_to_parquet,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-
-from pipelines.datalake.extract_load.seguir_em_frente_pipefy.constants import (
-    constants as pipefy_constants,
-)
+from pipelines.utils.tasks import get_secret_key
 
 
 @task
@@ -58,7 +56,7 @@ def pipefy_generate_access_token(environment: str = "prod") -> str:
     response = requests.post(url, json=payload, headers=headers, timeout=30)
 
     if response.status_code != 200:
-        log(f"Error generating access token: {response.text}",level="error")
+        log(f"Error generating access token: {response.text}", level="error")
         raise ConnectionError(f"Error generating access token: {response.text}")
 
     log("Access token generated successfully")
@@ -83,7 +81,11 @@ def download_from_pipefy(
     pipe_id = pipefy_constants.ENPOINT.value[endpoint]["pipe_id"]
     report_id = pipefy_constants.ENPOINT.value[endpoint]["report_id"]
 
-    body = "mutation { \n exportPipeReport(input: {" + f"pipeId: {pipe_id}, pipeReportId: {report_id}" + "}) { \n pipeReportExport { \n id \n } \n } \n }"  # noqa
+    body = (
+        "mutation { \n exportPipeReport(input: {"
+        + f"pipeId: {pipe_id}, pipeReportId: {report_id}"
+        + "}) { \n pipeReportExport { \n id \n } \n } \n }"
+    )  # noqa
 
     payload = {"query": body}
     response = requests.post(url, json=payload, headers=headers, timeout=30)
@@ -92,7 +94,11 @@ def download_from_pipefy(
     log(f"Report URL requested with ID: {export_id}")
 
     # Request report exportation's url
-    body = "{ \n pipeReportExport(id: " + export_id + " ) { \n fileURL \n state \n startedAt \n requestedBy { \n id \n } \n } \n }"  # noqa
+    body = (
+        "{ \n pipeReportExport(id: "
+        + export_id
+        + " ) { \n fileURL \n state \n startedAt \n requestedBy { \n id \n } \n } \n }"
+    )  # noqa
     payload = {"query": body}
     response = requests.post(url, json=payload, headers=headers, timeout=30)
     export_url = response.json()["data"]["pipeReportExport"]["fileURL"]

@@ -13,20 +13,20 @@ from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [
-    {   
+    {
         "endpoint": "bolsista",
         "dataset_id": "brutos_seguir_em_frente",
         "table_id": "bolsita",
         "environment": "prod",
         "rename_flow": True,
     },
-    {   
+    {
         "endpoint": "presenca",
         "dataset_id": "brutos_seguir_em_frente",
         "table_id": "controle_presenca",
         "environment": "prod",
         "rename_flow": True,
-    }
+    },
 ]
 
 clocks = generate_dump_api_schedules(

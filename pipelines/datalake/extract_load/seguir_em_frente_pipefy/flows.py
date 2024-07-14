@@ -13,7 +13,9 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.seguir_em_frente_pipefy.schedules import daily_update_schedule
+from pipelines.datalake.extract_load.seguir_em_frente_pipefy.schedules import (
+    daily_update_schedule,
+)
 from pipelines.datalake.extract_load.seguir_em_frente_pipefy.tasks import (
     download_from_pipefy,
     transform_data,
