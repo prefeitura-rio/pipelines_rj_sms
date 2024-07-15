@@ -7,6 +7,7 @@ from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
+from pipelines.utils.googleutils import generate_bigquery_schema
 
 
 @task()
@@ -28,35 +29,28 @@ def get_progress_table(slug: str, environment: str):
 @task()
 def save_progress(slug: str, environment: str, **kwargs):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
-    table_name = f"rj-sms.gerenciamento__progresso_{slug}.status"
+    dataset_name = f"rj-sms.gerenciamento__progresso_{slug}"
     
-    columns = ["environment", "moment"]
-    for key, _ in kwargs.items():
-        columns.append(key)
+    rows_to_insert = pd.DataFrame([
+        {
+            "environment": environment,
+            "moment": datetime.now().isoformat(),
+            **kwargs,
+        }
+    ])
+    log(rows_to_insert)
 
-    try:
-        table = bq_client.get_table(table_name)
-    except google.api_core.exceptions.NotFound:
-        schema = [bigquery.SchemaField(column_name, "STRING", mode="REQUIRED") for column_name in columns]
-        table = bigquery.Table(table_name, schema=schema)
-        table = bq_client.create_table(table)
+    bq_client.create_dataset(dataset_name, exists_ok=True)
+    bq_client.create_table(f"{dataset_name}.status", exists_ok=True)
 
-    errors = bq_client.insert_rows_json(
-        table,
-        [
-            {
-                "environment": environment,
-                "moment": datetime.now().isoformat(),
-                **kwargs,
-            }
-        ],
+    job_config = bigquery.LoadJobConfig(
+        schema=generate_bigquery_schema(rows_to_insert),
+        write_disposition="WRITE_APPEND",
     )
-
-    if errors == []:
-        log("Inserted row")
-    else:
-        log(f"Errors: {errors}", level="error")
-        raise ValueError(f"Errors: {errors}")
+    job = bq_client.load_table_from_dataframe(
+        rows_to_insert, f"{dataset_name}.status", job_config=job_config
+    )
+    job.result()
 
 
 @task()
