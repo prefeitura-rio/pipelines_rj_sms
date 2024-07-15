@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case, unmapped, flatten
+from prefect import Parameter, case, flatten, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
-
-from pipelines.misc.historical_vitai_db.tasks import (
-    build_param_list,
-    get_progress_table,
-    save_progress,
-)
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitai_db.constants import (
@@ -25,6 +19,11 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     get_bigquery_project_from_environment,
     get_current_flow_labels,
     import_vitai_table_to_csv,
+)
+from pipelines.misc.historical_vitai_db.tasks import (
+    build_param_list,
+    get_progress_table,
+    save_progress,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.credential_injector import (
@@ -149,10 +148,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     TABLE_NAME = Parameter("table_name", default="paciente", required=True)
 
-    progress_table = get_progress_table(
-        slug="historico_vitai_db",
-        environment=ENVIRONMENT
-    )
+    progress_table = get_progress_table(slug="historico_vitai_db", environment=ENVIRONMENT)
 
     params = build_param_list(
         environment=ENVIRONMENT,
