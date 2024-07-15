@@ -46,9 +46,6 @@ def download_from_db(
     time_clause = (
         f"""
             WHERE
-                (CAST(created_at as DATE) <= '{target_date}'
-                AND CAST(created_at as DATE) > '{window_date}')
-            OR
                 (CAST(updated_at as DATE) <= '{target_date}'
                 AND CAST(updated_at as DATE) > '{window_date}')
         """
