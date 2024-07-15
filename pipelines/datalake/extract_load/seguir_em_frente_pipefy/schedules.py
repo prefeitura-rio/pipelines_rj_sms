@@ -16,7 +16,7 @@ flow_parameters = [
     {
         "endpoint": "bolsista",
         "dataset_id": "brutos_seguir_em_frente",
-        "table_id": "bolsita",
+        "table_id": "bolsista",
         "environment": "prod",
         "rename_flow": True,
     },
