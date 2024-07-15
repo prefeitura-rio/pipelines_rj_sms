@@ -29,7 +29,7 @@ datalake_to_hci_flow_parameters = [
         "table_id": "equipe_profissional_saude",
         "dataset_id": "saude_dados_mestres",
         "project_id": "rj-sms",
-    }
+    },
 ]
 datalake_to_hci_clocks = generate_dump_api_schedules(
     interval=timedelta(days=7),
