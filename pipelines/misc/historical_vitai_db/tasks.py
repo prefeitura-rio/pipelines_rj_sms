@@ -6,8 +6,8 @@ import pandas as pd
 from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.logger import log
 from pipelines.utils.googleutils import generate_bigquery_schema
+from pipelines.utils.logger import log
 
 
 @task()
@@ -30,14 +30,16 @@ def get_progress_table(slug: str, environment: str):
 def save_progress(slug: str, environment: str, **kwargs):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
     dataset_name = f"rj-sms.gerenciamento__progresso_{slug}"
-    
-    rows_to_insert = pd.DataFrame([
-        {
-            "environment": environment,
-            "moment": datetime.now().isoformat(),
-            **kwargs,
-        }
-    ])
+
+    rows_to_insert = pd.DataFrame(
+        [
+            {
+                "environment": environment,
+                "moment": datetime.now().isoformat(),
+                **kwargs,
+            }
+        ]
+    )
     log(rows_to_insert)
 
     bq_client.create_dataset(dataset_name, exists_ok=True)
