@@ -55,7 +55,7 @@ def save_progress(slug: str, environment: str, **kwargs):
 
 
 @task()
-def build_param_list(progress_table, environment: str, table_name: str, window_size: int = 15):
+def build_param_list(progress_table, environment: str, table_name: str, window_size: int = 7):
     def calculate_windows(year, window_size):
         # Verifica se o ano é bissexto
         days = 366 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 365
