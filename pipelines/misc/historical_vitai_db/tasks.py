@@ -94,7 +94,7 @@ def build_param_list(progress_table, environment: str, table_name: str, window_s
             )
 
     candidates = pd.DataFrame(params)
-    if progress_table:
+    if progress_table is not None:
         candidates = candidates.merge(
             how="outer", right=progress_table, on=["interval_start", "interval_end"], indicator=True
         )
