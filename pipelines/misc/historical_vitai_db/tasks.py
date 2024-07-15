@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 
-import google.api_core.exceptions
 import pandas as pd
 from google.cloud import bigquery
 
