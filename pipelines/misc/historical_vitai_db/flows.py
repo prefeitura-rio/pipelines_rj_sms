@@ -61,7 +61,7 @@ with Flow(
 
     project_name = get_project_name(environment=ENVIRONMENT)
 
-    tables_to_import = to_list(TABLE_NAME)
+    tables_to_import = to_list(element=TABLE_NAME)
 
     datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
 
