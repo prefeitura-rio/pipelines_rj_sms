@@ -35,7 +35,8 @@ with Flow(
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    REPROCESS_MODE = Parameter("reprocess_mode", default=False)
+    HISTORICAL_MODE = Parameter("historical_mode", default=False)
+    TARGET_DATE = Parameter("target_date", default="")
 
     # INFISICAL
     INFISICAL_PATH = hci_constants.INFISICAL_PATH.value
@@ -66,8 +67,10 @@ with Flow(
     download_task = download_from_db(
         db_url=get_secret_task,
         db_table=TABLE_ID,
+        target_date=TARGET_DATE,
         file_folder=create_folders_task["raw"],
         file_name=TABLE_ID,
+        historical_mode=HISTORICAL_MODE,
     )
     #####################################
     # Tasks section #2 - Transform data and Create table
@@ -92,6 +95,6 @@ dump_hci.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi",
+    memory_limit="8Gi",
 )
 dump_hci.schedule = hci_daily_update_schedule
