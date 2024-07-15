@@ -67,7 +67,7 @@ def build_param_list(progress_table, environment: str, table_name: str, window_s
         for i in range(len(ranges) - 1):
             start_day = datetime(year, 1, 1) + timedelta(days=ranges[i])
             end_day = datetime(year, 1, 1) + timedelta(days=ranges[i + 1]) - timedelta(days=1)
-            windows.append((start_day.strftime("%d/%m/%Y"), end_day.strftime("%d/%m/%Y")))
+            windows.append((start_day.strftime("%Y-%m-%d 00:00:00"), end_day.strftime("%Y-%m-%d 00:00:00")))
 
         # Adiciona a última janela
         if ranges[-1] < days:
