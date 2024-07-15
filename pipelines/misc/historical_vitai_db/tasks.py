@@ -29,7 +29,7 @@ def get_progress_table(slug: str, environment: str):
 def save_progress(slug: str, environment: str, **kwargs):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
     table_name = f"rj-sms.gerenciamento__progresso_{slug}.status"
-    
+
     columns = ["environment", "moment"]
     for key, _ in kwargs.items():
         columns.append(key)
@@ -37,7 +37,9 @@ def save_progress(slug: str, environment: str, **kwargs):
     try:
         table = bq_client.get_table(table_name)
     except google.api_core.exceptions.NotFound:
-        schema = [bigquery.SchemaField(column_name, "STRING", mode="REQUIRED") for column_name in columns]
+        schema = [
+            bigquery.SchemaField(column_name, "STRING", mode="REQUIRED") for column_name in columns
+        ]
         table = bigquery.Table(table_name, schema=schema)
         table = bq_client.create_table(table)
 
