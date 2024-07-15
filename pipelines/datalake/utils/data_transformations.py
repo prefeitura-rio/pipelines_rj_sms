@@ -119,9 +119,11 @@ def convert_to_parquet(
             dbf = Dbf5(file_path, codec=encoding)
             dataframe = dbf.to_dataframe(na="")
             dataframe = dataframe.astype(str)
+        case "xlsx":
+            dataframe = pd.read_excel(file_path, keep_default_na=False, dtype=str)
         case _:
             log(f"File type {file_type} not found", level="error")
-            raise ValueError("The file type must be 'csv', 'dbc' or 'dbf")
+            raise ValueError("The file type must be 'csv', 'dbc', 'dbf' or 'xlsx'")
 
     parquet_file_path = file_path.replace(f".{file_type}", ".parquet")
     dataframe.to_parquet(parquet_file_path, index=False)
