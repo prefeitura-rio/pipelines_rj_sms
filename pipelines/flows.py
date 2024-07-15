@@ -9,6 +9,7 @@ Imports all flows for every project so we can register all of them.
 from pipelines.datalake.extract_load.datasus_ftp.flows import *
 from pipelines.datalake.extract_load.google_sheets.flows import *
 from pipelines.datalake.extract_load.historico_clinico_integrado.flows import *
+from pipelines.datalake.extract_load.seguir_em_frente_pipefy.flows import *
 from pipelines.datalake.extract_load.sih_gdrive.flows import *
 from pipelines.datalake.extract_load.sisreg_web.flows import *
 from pipelines.datalake.extract_load.smsrio_mysql.flows import *
