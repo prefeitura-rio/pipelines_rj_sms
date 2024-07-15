@@ -12,7 +12,8 @@ from pipelines.utils.logger import log
 @task()
 def get_progress_table(slug: str, environment: str):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
-    table_name = f"rj-sms.gerenciamento__progresso_{slug}.status"
+    project_name = "rj-sms" if environment in ["prod", "local-prod"] else "rj-sms-dev"
+    table_name = f"{project_name}.gerenciamento__progresso_{slug}.status"
 
     try:
         bq_client.get_table(table_name)
@@ -28,7 +29,8 @@ def get_progress_table(slug: str, environment: str):
 @task()
 def save_progress(slug: str, environment: str, **kwargs):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
-    dataset_name = f"rj-sms.gerenciamento__progresso_{slug}"
+    project_name = "rj-sms" if environment in ["prod", "local-prod"] else "rj-sms-dev"
+    dataset_name = f"{project_name}.gerenciamento__progresso_{slug}"
 
     rows_to_insert = pd.DataFrame(
         [
