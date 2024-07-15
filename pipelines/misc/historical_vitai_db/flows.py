@@ -24,6 +24,7 @@ from pipelines.misc.historical_vitai_db.tasks import (
     build_param_list,
     get_progress_table,
     save_progress,
+    to_list
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.credential_injector import (
@@ -60,7 +61,7 @@ with Flow(
 
     project_name = get_project_name(environment=ENVIRONMENT)
 
-    tables_to_import = [TABLE_NAME]
+    tables_to_import = to_list(TABLE_NAME)
 
     datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
 
