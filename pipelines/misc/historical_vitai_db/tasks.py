@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 
+import google.api_core.exceptions
 import pandas as pd
 from google.cloud import bigquery
 
@@ -29,7 +30,11 @@ def save_progress(slug: str, environment: str, **kwargs):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
     table_name = f"rj-sms.gerenciamento__progresso_{slug}.status"
 
-    table = bq_client.get_table(table_name)
+    try:
+        table = bq_client.get_table(table_name)
+    except google.api_core.exceptions.NotFound:
+        table = bigquery.Table(table_name)
+        table = bq_client.create_table(table)
 
     errors = bq_client.insert_rows_json(
         table,
