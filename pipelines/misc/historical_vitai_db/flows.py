@@ -148,6 +148,7 @@ with Flow(
 ) as vitai_db_historical:
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     TABLE_NAME = Parameter("table_name", default="paciente", required=True)
+    WINDOW_SIZE = Parameter("window_size", default=7)
 
     progress_table = get_progress_table(slug="historico_vitai_db", environment=ENVIRONMENT)
 
@@ -155,6 +156,7 @@ with Flow(
         environment=ENVIRONMENT,
         table_name=TABLE_NAME,
         progress_table=progress_table,
+        window_size=WINDOW_SIZE,
     )
 
     project_name = get_project_name(environment=ENVIRONMENT)
