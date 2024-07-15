@@ -94,13 +94,15 @@ def build_param_list(progress_table, environment: str, table_name: str, window_s
             )
 
     candidates = pd.DataFrame(params)
+    candidates_columns = candidates.columns.tolist()
+
     if progress_table is not None:
         candidates = candidates.merge(
-            how="outer", right=progress_table, on=["interval_start", "interval_end"], indicator=True
+            how="outer", right=progress_table, on=["interval_start", "interval_end", "environment"], indicator=True
         )
-        remaining = candidates[candidates["_merge"] == "left_only"].to_dict(orient="records")
+        remaining = candidates[candidates["_merge"] == "left_only"][candidates_columns].to_dict(orient="records")
     else:
-        remaining = candidates.to_dict(orient="records")
+        remaining = candidates[candidates_columns].to_dict(orient="records")
 
     return remaining
 
