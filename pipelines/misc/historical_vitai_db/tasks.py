@@ -99,6 +99,7 @@ def build_param_list(progress_table, environment: str, table_name: str, window_s
 
     return remaining
 
+
 @task
 def to_list(element):
     return [element]

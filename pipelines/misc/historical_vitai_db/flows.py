@@ -24,7 +24,7 @@ from pipelines.misc.historical_vitai_db.tasks import (
     build_param_list,
     get_progress_table,
     save_progress,
-    to_list
+    to_list,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.credential_injector import (
