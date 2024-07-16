@@ -102,6 +102,7 @@ with Flow(
         data_path=raw_folders,
         partition_directory=partition_folders,
         upstream_tasks=[unmapped(file_list)],
+        file_type=unmapped("parquet"),
     )
 
     #####################################
@@ -112,7 +113,7 @@ with Flow(
         table_id=datalake_table_names,
         dataset_id=unmapped(vitai_constants.DATASET_NAME.value),
         if_exists=unmapped("replace"),
-        source_format=unmapped("csv"),
+        source_format=unmapped("parquet"),
         if_storage_data_exists=unmapped("replace"),
         biglake_table=unmapped(True),
         dataset_is_public=unmapped(False),
