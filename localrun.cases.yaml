@@ -117,3 +117,12 @@ cases:
       dataset_id: "brutos_seguir_em_frente"
       table_id: "controle_presenca"
       endpoint: "presenca"
+  - case_slug: "datalake-extract_load-tpc"
+    flow_path: "pipelines.datalake.extract_load.tpc_azure_blob.flows"
+    flow_name: "sms_dump_tpc"
+    params:
+      environment: "dev"
+      rename_flow: false
+      blob_file: "posicao"
+      dataset_id: "brutos_estoque_central_tpc"
+      table_id: "estoque_posicao"
