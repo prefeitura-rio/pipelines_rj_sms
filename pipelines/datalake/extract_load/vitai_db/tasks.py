@@ -189,6 +189,7 @@ def create_folder(title="", subtitle=""):
 
     return folder_path
 
+
 @task()
 def upload_folders_to_datalake(
     input_paths: list[str],

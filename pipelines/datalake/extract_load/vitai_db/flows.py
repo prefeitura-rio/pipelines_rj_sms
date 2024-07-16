@@ -19,8 +19,8 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     get_bigquery_project_from_environment,
     get_current_flow_labels,
     import_vitai_table,
-    upload_folders_to_datalake,
     list_tables_to_import,
+    upload_folders_to_datalake,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.credential_injector import (
