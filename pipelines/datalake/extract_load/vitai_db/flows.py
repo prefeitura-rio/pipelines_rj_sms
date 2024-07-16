@@ -97,6 +97,7 @@ with Flow(
         data_path=raw_folders,
         partition_directory=partition_folders,
         upstream_tasks=[unmapped(file_list)],
+        file_type='parquet'
     )
 
     #####################################
