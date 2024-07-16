@@ -122,7 +122,7 @@ def import_vitai_table(
         from basecentral.{table_name}
         where datahora >= '{interval_start}' and datahora < '{interval_end}'
     """
-    log("Built query:\n" + query)
+    log("Built query: \n" + query)
 
     df = pd.read_sql(query, db_url, dtype=str)
     log(f"Query executed successfully. Found {df.shape[0]} rows.")
