@@ -111,7 +111,7 @@ with Flow(
     #####################################
     upload_to_datalake_task = upload_folders_to_datalake(
         input_paths=partition_folders,
-        table_id=datalake_table_names,
+        table_ids=datalake_table_names,
         dataset_id=vitai_constants.DATASET_NAME.value,
         if_exists="replace",
         source_format="parquet",

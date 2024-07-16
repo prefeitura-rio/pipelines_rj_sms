@@ -193,12 +193,14 @@ def create_folder(title="", subtitle=""):
 @task()
 def upload_folders_to_datalake(
     input_paths: list[str],
+    table_ids: list[str],
     **kwargs,
 ):
-    for input_path in input_paths:
+    for input_path, table_id in zip(input_paths, table_ids):
         try:
             upload_to_datalake.run(
                 input_path=input_path,
+                table_id=table_id,
                 **kwargs,
             )
         except Exception as e:
