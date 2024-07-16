@@ -12,6 +12,9 @@ from prefect.backend import FlowRunView
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
+from pipelines.datalake.utils.data_transformations import (
+    convert_to_parquet,
+)
 
 
 @task()
@@ -105,7 +108,7 @@ def create_working_time_range(
 
 
 @task()
-def import_vitai_table_to_csv(
+def import_vitai_table(
     db_url: str,
     table_name: str,
     output_file_folder: str,
@@ -151,8 +154,11 @@ def import_vitai_table_to_csv(
     for day, df_day in dfs:
         file_path = os.path.join(output_file_folder, f"{table_name}_{day}_{uuid.uuid4()}.csv")
         df_day.to_csv(file_path, index=False, header=True, sep=";")
-        output_paths.append(file_path)
-        log(f"Saving table data to {file_path}")
+        log(f"Saving CSV table data to {file_path}")
+
+        file_path_parquet = convert_to_parquet(file_path=file_path, file_type="csv")
+        log(f"Converted table data to parquet in {file_path_parquet}")
+        output_paths.append(file_path_parquet)
 
     return output_paths
 

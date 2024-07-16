@@ -18,7 +18,7 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_working_time_range,
     get_bigquery_project_from_environment,
     get_current_flow_labels,
-    import_vitai_table_to_csv,
+    import_vitai_table,
     list_tables_to_import,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
@@ -81,7 +81,7 @@ with Flow(
     #####################################
     # Tasks section #4 - Downloading Table Data
     #####################################
-    file_list_per_table = import_vitai_table_to_csv.map(
+    file_list_per_table = import_vitai_table.map(
         db_url=unmapped(db_url),
         table_name=tables_to_import,
         output_file_folder=raw_folders,
@@ -107,7 +107,7 @@ with Flow(
         table_id=datalake_table_names,
         dataset_id=unmapped(vitai_constants.DATASET_NAME.value),
         if_exists=unmapped("replace"),
-        source_format=unmapped("csv"),
+        source_format=unmapped("parquet"),
         if_storage_data_exists=unmapped("replace"),
         biglake_table=unmapped(True),
         dataset_is_public=unmapped(False),
