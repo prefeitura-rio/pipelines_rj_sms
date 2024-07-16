@@ -19,12 +19,12 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     get_bigquery_project_from_environment,
     get_current_flow_labels,
     import_vitai_table,
+    upload_folders_to_datalake,
 )
 from pipelines.misc.historical_vitai_db.tasks import (
     build_param_list,
     get_progress_table,
     save_progress,
-    upload_folders_to_datalake,
     to_list,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
@@ -110,7 +110,7 @@ with Flow(
     # Tasks section #6 - Uploading to Datalake
     #####################################
     upload_to_datalake_task = upload_folders_to_datalake(
-        input_path=partition_folders,
+        input_paths=partition_folders,
         table_id=datalake_table_names,
         dataset_id=vitai_constants.DATASET_NAME.value,
         if_exists="replace",
