@@ -9,9 +9,8 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
-from prefeitura_rio.pipelines_utils.prefect import (
-    task_rename_current_flow_run_dataset_table,
-)
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.smsrio_mysql.constants import (
@@ -27,7 +26,6 @@ from pipelines.datalake.extract_load.smsrio_mysql.tasks import (
 from pipelines.utils.tasks import (
     create_folders,
     get_secret_key,
-    inject_gcp_credentials,
     upload_to_datalake,
 )
 
@@ -47,6 +45,7 @@ with Flow(
 
     # SMSRio DB
     TABLE_ID = Parameter("table_id", required=True)
+    SCHEMA = Parameter("schema", required=True)
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -55,19 +54,13 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
-
     build_gcp_table_task = build_gcp_table(
-        db_table=TABLE_ID, upstream_tasks=[inject_gcp_credentials_task]
+        db_table=TABLE_ID
     )
 
     with case(RENAME_FLOW, True):
-        rename_flow_task = task_rename_current_flow_run_dataset_table(
-            prefix="Dump SMS Rio: ",
-            dataset_id=DATASET_ID,
-            table_id=build_gcp_table_task,
-            upstream_tasks=[inject_gcp_credentials_task, build_gcp_table_task],
-        )
+        rename_current_flow_run(environment=ENVIRONMENT, dataset=DATASET_ID, table=build_gcp_table_task)
+
 
     ####################################
     # Tasks section #1 - Get data
@@ -75,19 +68,17 @@ with Flow(
     get_secret_task = get_secret_key(
         secret_path=INFISICAL_PATH,
         secret_name=INFISICAL_DBURL,
-        environment="prod",
-        upstream_tasks=[inject_gcp_credentials_task],
+        environment="prod"
     )
 
-    create_folders_task = create_folders(upstream_tasks=[get_secret_task])
+    create_folders_task = create_folders()
 
     download_task = download_from_db(
         db_url=get_secret_task,
-        db_schema=smsrio_constants.SCHEMA_ID.value,
+        db_schema=SCHEMA,
         db_table=TABLE_ID,
         file_folder=create_folders_task["raw"],
-        file_name=TABLE_ID,
-        upstream_tasks=[create_folders_task],
+        file_name=TABLE_ID
     )
 
     #####################################
@@ -102,8 +93,7 @@ with Flow(
         csv_delimiter=";",
         if_storage_data_exists="replace",
         biglake_table=True,
-        dataset_is_public=False,
-        upstream_tasks=[build_gcp_table_task],
+        dataset_is_public=False
     )
 
 

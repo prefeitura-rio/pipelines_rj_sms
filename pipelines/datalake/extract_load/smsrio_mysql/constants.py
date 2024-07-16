@@ -13,9 +13,10 @@ class constants(Enum):
 
     INFISICAL_PATH = "/smsrio"
     INFISICAL_DB_URL = "DB_URL"
-    SCHEMA_ID = "subpav_arboviroses"
     DATASET_ID = "brutos_plataforma_smsrio"
     TABLE_ID = {
         "estoque": "estoque_posicao_almoxarifado_aps_dengue",
         "itens_estoque": "materiais_almoxarifado_dengue",
+        "contatos_equipes": "equipe_contato",
+        "Unidades_OSA": "unidade_osa",
     }

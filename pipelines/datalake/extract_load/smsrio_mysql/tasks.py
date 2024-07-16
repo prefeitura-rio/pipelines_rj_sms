@@ -5,7 +5,7 @@ Tasks for SMSRio Dump
 from datetime import timedelta
 
 import pandas as pd
-from prefect import task
+from pipelines.utils.credential_injector import authenticated_task as task
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.smsrio_mysql.constants import (
