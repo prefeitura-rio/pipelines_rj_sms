@@ -65,6 +65,12 @@ cases:
       target_date: "2024-06-03"
       dataset_id: "brutos_prontuario_vitacare"
       table_id: "estoque_movimento"
+  - case_slug: "sms_dump_vitai_rio_saude"
+    flow_path: "pipelines.datalake.extract_load.vitai_db.flows"
+    flow_name: "sms_dump_vitai_rio_saude"
+    params:
+      environment: "dev"
+      rename_flow: false
   - case_slug: "load-hci-from-datake"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
     flow_name: "datalake_to_hci"
@@ -74,3 +80,49 @@ cases:
       dataset_id: "saude_dados_mestres"
       table_id: "profissional_saude"
       project_id: "rj-sms-dev"
+  - case_slug: "datalake-extract_load-sih"
+    flow_path: "pipelines.datalake.extract_load.sih_gdrive.flows"
+    flow_name: "sms_dump_sih"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_sih"
+      table_id: "indicadores_hospitalares"
+      last_update_start_date: "2024-07-07"
+      last_update_end_date: "2024-07-08"
+  - case_slug: "datalake-extract_load-sisreg"
+    flow_path: "pipelines.datalake.extract_load.sisreg_web.flows"
+    flow_name: "sms_dump_sisreg"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_sisreg"
+      table_id: "escala"
+      endpoint: "escala"
+  - case_slug: "datalake-to-hci"
+    flow_path: "pipelines.prontuarios.load_datalake.flows"
+    flow_name: "datalake_to_hci"
+    params:
+      environment: "dev"
+      rename_flow: false
+      table_id: "equipe_profissional_saude"
+      dataset_id: "saude_dados_mestres"
+      project_id: "rj-sms-dev"
+  - case_slug: "datalake-extract_load-seguir_em_frente"
+    flow_path: "pipelines.datalake.extract_load.seguir_em_frente_pipefy.flows"
+    flow_name: "sms_dump_seguir_em_frente"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_seguir_em_frente"
+      table_id: "controle_presenca"
+      endpoint: "presenca"
+  - case_slug: "datalake-extract_load-tpc"
+    flow_path: "pipelines.datalake.extract_load.tpc_azure_blob.flows"
+    flow_name: "sms_dump_tpc"
+    params:
+      environment: "dev"
+      rename_flow: false
+      blob_file: "posicao"
+      dataset_id: "brutos_estoque_central_tpc"
+      table_id: "estoque_posicao"

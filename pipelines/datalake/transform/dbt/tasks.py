@@ -8,6 +8,7 @@ Tasks for execute_dbt
 import os
 import shutil
 
+import dbt.contracts
 import git
 import prefect
 from dbt.cli.main import dbtRunner, dbtRunnerResult
@@ -19,7 +20,7 @@ from pipelines.datalake.transform.dbt.constants import (
     constants as execute_dbt_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.dbt_log_processor import log_to_file, process_dbt_logs
+from pipelines.utils.dbt import Summarizer, log_to_file, process_dbt_logs
 from pipelines.utils.monitor import send_message
 
 
@@ -82,9 +83,9 @@ def execute_dbt(
     Returns:
         dbtRunnerResult: The result of the dbt command execution.
     """
+    commands = command.split(" ")
 
-    cli_args = [
-        command,
+    cli_args = commands + [
         "--profiles-dir",
         repository_path,
         "--project-dir",
@@ -122,28 +123,23 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     """
     logs = process_dbt_logs(log_path="dbt_repository/logs/dbt.log")
     log_path = log_to_file(logs)
+    summarizer = Summarizer()
 
     is_successful, has_warnings = True, False
 
     general_report = []
     for command_result in running_results.result:
-        status = command_result.status
-        if status == "fail":
+        if command_result.status == "fail":
             is_successful = False
-            general_report.append(
-                f"- 🛑 FAIL: `{command_result.node.name}`\n   {command_result.message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
-            )
-        elif status == "error":
+            general_report.append(f"- 🛑 FAIL: {summarizer(command_result)}")
+        elif command_result.status == "error":
             is_successful = False
-            general_report.append(
-                f"- ❌ ERROR: `{command_result.node.name}`\n  {command_result.message.replace('__','_')} \n"
-            )
-        elif status == "warn":
+            general_report.append(f"- ❌ ERROR: {summarizer(command_result)}")
+        elif command_result.status == "warn":
             has_warnings = True
-            general_report.append(
-                f"- ⚠️ WARN: `{command_result.node.name}`\n   {command_result.message}: ``` select * from {command_result.node.relation_name.replace('`','')}``` \n"
-            )
+            general_report.append(f"- ⚠️ WARN: {summarizer(command_result)}")
 
+    # Sort and log the general report
     general_report = sorted(general_report, reverse=True)
     general_report = "**Resumo**:\n" + "\n".join(general_report)
     log(general_report)
@@ -154,7 +150,7 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         if key == "rename_flow":
             continue
         if value:
-            param_report.append(f"- {key}: {'`' + value + '`'}")
+            param_report.append(f"- {key}: `{value}`")
     param_report = "\n".join(param_report)
     param_report += " \n"
 
@@ -166,12 +162,6 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     emoji = "❌" if not fully_successful else "✅"
     complement = "com Erros" if not fully_successful else "sem Erros"
     message = f"{param_report}\n{general_report}" if include_report else param_report
-
-    if len(message) > 1600:
-        while len(message) > 1600:
-            last_item = message.rfind("- ")
-            message = message[:last_item]
-        message += " **Mensagem truncada devido ao tamanho. Verifique o log para mais detalhes.**"
 
     send_message(
         title=f"{emoji} Execução `dbt {command}` finalizada {complement}",
@@ -208,3 +198,19 @@ def rename_current_flow_run_dbt(
         )
     else:
         client.set_flow_run_name(flow_run_id, f"dbt {command} --target {target}")
+
+
+@task()
+def get_target_from_environment(environment: str):
+    """
+    Retrieves the target environment based on the given environment parameter.
+
+    Args:
+        environment (str): The environment for which to retrieve the target.
+
+    Returns:
+        str: The target environment corresponding to the given environment.
+
+    """
+    converter = {"prod": "prod", "dev": "dev", "staging": "dev"}
+    return converter.get(environment, "dev")

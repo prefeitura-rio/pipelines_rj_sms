@@ -15,6 +15,7 @@ from pipelines.datalake.transform.dbt.tasks import (
     create_dbt_report,
     download_repository,
     execute_dbt,
+    get_target_from_environment,
     rename_current_flow_run_dbt,
 )
 
@@ -25,6 +26,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
 
     # Flow
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    SEND_DISCORD_REPORT = Parameter("send_discord_report", default=True)
 
     # DBT
     COMMAND = Parameter("command", default="test", required=False)
@@ -38,9 +40,11 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     #####################################
     # Set environment
     ####################################
+    target = get_target_from_environment(environment=ENVIRONMENT)
+
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run_dbt(
-            command=COMMAND, model=MODEL, select=SELECT, exclude=EXCLUDE, target=ENVIRONMENT
+            command=COMMAND, model=MODEL, select=SELECT, exclude=EXCLUDE, target=target
         )
 
     ####################################
@@ -52,13 +56,14 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     running_results = execute_dbt(
         repository_path=download_repository_task,
         command=COMMAND,
-        target=ENVIRONMENT,
+        target=target,
         model=MODEL,
         select=SELECT,
         exclude=EXCLUDE,
     )
 
-    create_dbt_report_task = create_dbt_report(running_results=running_results)
+    with case(SEND_DISCORD_REPORT, True):
+        create_dbt_report_task = create_dbt_report(running_results=running_results)
 
 # Storage and run configs
 sms_execute_dbt.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
