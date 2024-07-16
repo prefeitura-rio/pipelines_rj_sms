@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint: disable= C0301
+# flake8: noqa E501
 import re
 
 import pandas as pd
@@ -132,7 +134,6 @@ class FreshnessResultSummarizer:
 class Summarizer:
     """
     A class that provides summarization functionality for different result types.
-
     This class can be called with a result object and it will return a summarized version
         of the result.
 
