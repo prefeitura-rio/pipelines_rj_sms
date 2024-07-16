@@ -24,6 +24,7 @@ from pipelines.misc.historical_vitai_db.tasks import (
     build_param_list,
     get_progress_table,
     save_progress,
+    upload_folders_to_datalake,
     to_list,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
@@ -33,7 +34,7 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-from pipelines.utils.tasks import create_partitions, get_secret_key, upload_to_datalake
+from pipelines.utils.tasks import create_partitions, get_secret_key
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Batch",
@@ -108,16 +109,16 @@ with Flow(
     #####################################
     # Tasks section #6 - Uploading to Datalake
     #####################################
-    upload_to_datalake_task = upload_to_datalake.map(
+    upload_to_datalake_task = upload_folders_to_datalake(
         input_path=partition_folders,
         table_id=datalake_table_names,
-        dataset_id=unmapped(vitai_constants.DATASET_NAME.value),
-        if_exists=unmapped("replace"),
-        source_format=unmapped("parquet"),
-        if_storage_data_exists=unmapped("replace"),
-        biglake_table=unmapped(True),
-        dataset_is_public=unmapped(False),
-        upstream_tasks=[unmapped(create_partitions_task)],
+        dataset_id=vitai_constants.DATASET_NAME.value,
+        if_exists="replace",
+        source_format="parquet",
+        if_storage_data_exists="replace",
+        biglake_table=True,
+        dataset_is_public=False,
+        upstream_tasks=[create_partitions_task],
     )
 
     #####################################
@@ -129,13 +130,13 @@ with Flow(
         table=TABLE_NAME,
         interval_start=INTERVAL_START,
         interval_end=INTERVAL_END,
-        upstream_tasks=[unmapped(upload_to_datalake_task)],
+        upstream_tasks=[upload_to_datalake_task],
     )
 
 
 sms_dump_vitai_rio_saude_batch.schedule = vitai_db_extraction_schedule
 sms_dump_vitai_rio_saude_batch.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitai_rio_saude_batch.executor = LocalDaskExecutor(num_workers=1)
+sms_dump_vitai_rio_saude_batch.executor = LocalDaskExecutor(num_workers=5)
 sms_dump_vitai_rio_saude_batch.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[

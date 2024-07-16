@@ -13,6 +13,7 @@ from prefect.backend import FlowRunView
 from pipelines.datalake.utils.data_transformations import convert_to_parquet
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
+from pipelines.utils.tasks import upload_to_datalake
 
 
 @task()
@@ -105,7 +106,7 @@ def create_working_time_range(
     return interval_start_values, interval_end_values
 
 
-@task()
+@task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
 def import_vitai_table(
     db_url: str,
     table_name: str,
@@ -187,3 +188,37 @@ def create_folder(title="", subtitle=""):
     log(f"Created folder: {folder_path}")
 
     return folder_path
+
+@task()
+def upload_folders_to_datalake(
+    input_paths: list[str],
+    dataset_id: str,
+    table_id: str,
+    dump_mode: str,
+    source_format: str,
+    csv_delimiter: str,
+    if_exists: str,
+    if_storage_data_exists,
+    biglake_table: bool,
+    dataset_is_public: bool,
+):
+    for input_path in input_paths:
+        try:
+            upload_to_datalake.run(
+                input_path=input_path,
+                dataset_id=dataset_id,
+                table_id=table_id,
+                dump_mode=dump_mode,
+                source_format=source_format,
+                csv_delimiter=csv_delimiter,
+                if_exists=if_exists,
+                if_storage_data_exists=if_storage_data_exists,
+                biglake_table=biglake_table,
+                dataset_is_public=dataset_is_public,
+            )
+        except Exception as e:
+            log(f"Error uploading data {input_path} to datalake: {e}", level="error")
+            raise e
+        else:
+            log(f"Data {input_path} uploaded to datalake successfully")
+    return
