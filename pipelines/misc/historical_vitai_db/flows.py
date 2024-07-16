@@ -19,7 +19,12 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     get_bigquery_project_from_environment,
     get_current_flow_labels,
     import_vitai_table,
-    list_tables_to_import,
+)
+from pipelines.misc.historical_vitai_db.tasks import (
+    build_param_list,
+    get_progress_table,
+    save_progress,
+    to_list,
 )
 from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.utils.credential_injector import (
@@ -31,18 +36,18 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.tasks import create_partitions, get_secret_key, upload_to_datalake
 
 with Flow(
-    name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde)",
-) as sms_dump_vitai_rio_saude:
+    name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Batch",
+) as sms_dump_vitai_rio_saude_batch:
     #####################################
     # Tasks section #1 - Setup Environment
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    INCREMENT_MODELS = Parameter("increment_models", default=True)
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     # In case the user want to force a interval
     INTERVAL_START = Parameter("interval_start", default=None)
     INTERVAL_END = Parameter("interval_end", default=None)
+    TABLE_NAME = Parameter("table_name", default="paciente")
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT)
@@ -56,7 +61,7 @@ with Flow(
 
     project_name = get_project_name(environment=ENVIRONMENT)
 
-    tables_to_import = list_tables_to_import()
+    tables_to_import = to_list(element=TABLE_NAME)
 
     datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
 
@@ -116,31 +121,66 @@ with Flow(
     )
 
     #####################################
-    # Tasks section #7 - Running DBT Models
+    # Tasks section #7 - Saving Progress
     #####################################
-    with case(INCREMENT_MODELS, True):
-        current_flow_run_labels = get_current_flow_labels()
+    save_progress_task = save_progress(
+        slug="historico_vitai_db",
+        environment=ENVIRONMENT,
+        table=TABLE_NAME,
+        interval_start=INTERVAL_START,
+        interval_end=INTERVAL_END,
+        upstream_tasks=[unmapped(upload_to_datalake_task)],
+    )
 
-        dbt_run_flow = create_flow_run(
-            flow_name="DataLake - Transformação - DBT",
-            project_name=project_name,
-            parameters={
-                "command": "run",
-                "select": "tag:vitai",
-                "exclude": "tag:vitai_estoque",
-                "environment": ENVIRONMENT,
-                "rename_flow": True,
-                "send_discord_report": False,
-            },
-            labels=current_flow_run_labels,
-            upstream_tasks=[upload_to_datalake_task],
-        )
-        wait_for_flow_run(flow_run_id=dbt_run_flow)
 
-sms_dump_vitai_rio_saude.schedule = vitai_db_extraction_schedule
-sms_dump_vitai_rio_saude.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitai_rio_saude.executor = LocalDaskExecutor(num_workers=1)
-sms_dump_vitai_rio_saude.run_config = KubernetesRun(
+sms_dump_vitai_rio_saude_batch.schedule = vitai_db_extraction_schedule
+sms_dump_vitai_rio_saude_batch.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_vitai_rio_saude_batch.executor = LocalDaskExecutor(num_workers=1)
+sms_dump_vitai_rio_saude_batch.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="5Gi",
+)
+
+with Flow(
+    name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Histórico",
+) as vitai_db_historical:
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    TABLE_NAME = Parameter("table_name", default="paciente", required=True)
+    WINDOW_SIZE = Parameter("window_size", default=7)
+
+    progress_table = get_progress_table(slug="historico_vitai_db", environment=ENVIRONMENT)
+
+    params = build_param_list(
+        environment=ENVIRONMENT,
+        table_name=TABLE_NAME,
+        progress_table=progress_table,
+        window_size=WINDOW_SIZE,
+    )
+
+    project_name = get_project_name(environment=ENVIRONMENT)
+
+    current_flow_run_labels = get_current_flow_labels()
+
+    created_flow_runs = create_flow_run.map(
+        flow_name=unmapped("Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Batch"),
+        project_name=unmapped(project_name),
+        parameters=params,
+        labels=unmapped(current_flow_run_labels),
+    )
+
+    wait_runs_task = wait_for_flow_run.map(
+        flow_run_id=created_flow_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
+    )
+
+vitai_db_historical.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+vitai_db_historical.executor = LocalDaskExecutor(num_workers=1)
+vitai_db_historical.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
