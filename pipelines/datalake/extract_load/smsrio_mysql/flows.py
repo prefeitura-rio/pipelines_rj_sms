@@ -9,8 +9,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.smsrio_mysql.constants import (
@@ -23,11 +21,8 @@ from pipelines.datalake.extract_load.smsrio_mysql.tasks import (
     build_gcp_table,
     download_from_db,
 )
-from pipelines.utils.tasks import (
-    create_folders,
-    get_secret_key,
-    upload_to_datalake,
-)
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.tasks import create_folders, get_secret_key, upload_to_datalake
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - SMS Rio Plataforma",
@@ -54,21 +49,18 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    build_gcp_table_task = build_gcp_table(
-        db_table=TABLE_ID
-    )
+    build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
 
     with case(RENAME_FLOW, True):
-        rename_current_flow_run(environment=ENVIRONMENT, dataset=DATASET_ID, table=build_gcp_table_task)
-
+        rename_current_flow_run(
+            environment=ENVIRONMENT, dataset=DATASET_ID, table=build_gcp_table_task
+        )
 
     ####################################
     # Tasks section #1 - Get data
     #####################################
     get_secret_task = get_secret_key(
-        secret_path=INFISICAL_PATH,
-        secret_name=INFISICAL_DBURL,
-        environment="prod"
+        secret_path=INFISICAL_PATH, secret_name=INFISICAL_DBURL, environment="prod"
     )
 
     create_folders_task = create_folders()
@@ -78,7 +70,7 @@ with Flow(
         db_schema=SCHEMA,
         db_table=TABLE_ID,
         file_folder=create_folders_task["raw"],
-        file_name=TABLE_ID
+        file_name=TABLE_ID,
     )
 
     #####################################
@@ -93,7 +85,7 @@ with Flow(
         csv_delimiter=";",
         if_storage_data_exists="replace",
         biglake_table=True,
-        dataset_is_public=False
+        dataset_is_public=False,
     )
 
 

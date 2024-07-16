@@ -21,22 +21,21 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "schema": "subpav_arboviroses"
-
+        "schema": "subpav_arboviroses",
     },
     {
         "table_id": "itens_estoque",
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "schema": "subpav_arboviroses"
-    },    
+        "schema": "subpav_arboviroses",
+    },
     {
         "table_id": "contatos_equipes",
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "schema": "subpav_cnes"
+        "schema": "subpav_cnes",
     },
 ]
 
