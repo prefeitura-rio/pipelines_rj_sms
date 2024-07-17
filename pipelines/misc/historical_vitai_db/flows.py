@@ -136,7 +136,7 @@ with Flow(
 
 sms_dump_vitai_rio_saude_batch.schedule = vitai_db_extraction_schedule
 sms_dump_vitai_rio_saude_batch.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitai_rio_saude_batch.executor = LocalDaskExecutor(num_workers=5)
+sms_dump_vitai_rio_saude_batch.executor = LocalDaskExecutor(num_workers=6)
 sms_dump_vitai_rio_saude_batch.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
