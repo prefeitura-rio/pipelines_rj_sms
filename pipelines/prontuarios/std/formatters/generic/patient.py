@@ -77,7 +77,7 @@ def drop_invalid_records(data: dict) -> dict:
 
     # Drop
     data["is_valid"] = 1
-    for value in list(itemgetter("patient_cpf", "gender", "birth_date")(data)):
+    for value in list(itemgetter("patient_cpf", "gender", "birth_date","name")(data)):
         if (value is None) | (pd.isna(value)):
             data["is_valid"] = 0
 
@@ -180,7 +180,7 @@ def clean_name_fields(name: str) -> str:
         name = unidecode(name)
 
         if bool(re.search(r"[^\w ]", name)) | len(name.split()) < 2:
-            return ""
+            return None
         else:
             return name
 
@@ -281,7 +281,11 @@ def clean_email_records(data: dict) -> dict:
     if len(email_list) == 1:
         email_field = email_list[0]
         if data[email_field] is not None:
-            data["email"] = re.sub(r" ", "", data[email_field])
+            data["email"] = re.sub(r" ", "", data[email_field].lower())
+            data["email"] = re.sub(r"((not)|(notem)|(x{2,})|(ntem)|(teste)|(nt)|(np)|(ni)|(nenhum\w*)|(sem\w*)|(n)|(nao\w*)|(não\w*))@", "", data["email"])
+            data["email"] = re.sub(r"@((x{2,})|(teste)|(nenhum\w*)|(sem)|(nao\w*)|(não\w*)).", "", data["email"])
+            data["email"] = re.sub(r"((g+a+m*a*i*l*)|(g+m+a*i*l*))", "gmail", data["email"])
+            data["email"] = re.sub(r"((h+o+t+m*a*i*l*))", "hotmail", data["email"])
             if not bool(re.search(r"^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$", data[email_field])):
                 data["email"] = None
             else:
