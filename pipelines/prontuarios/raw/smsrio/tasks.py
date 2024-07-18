@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa
 """
 Tasks for SMSRio Raw Data Extraction
 """
@@ -6,15 +7,14 @@ import json
 from datetime import date, timedelta
 
 import pandas as pd
-from prefeitura_rio.pipelines_utils.logging import log
+from sqlalchemy.exc import InternalError
 
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.utils.misc import build_additional_fields
 from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_format
 from pipelines.prontuarios.utils.validation import is_valid_cpf
-
-# from prefect import task
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_secret_key
 
 
@@ -42,7 +42,7 @@ def get_smsrio_database_url(environment, squema: str = "sms_pacientes"):
 def extract_patient_data_from_db(
     db_url: str,
     time_window_start: date = None,
-    time_window_duration: int = 1,
+    time_window_end: date = None,
 ) -> pd.DataFrame:
     """
     Extracts patient data from the SMSRio database table using a (optional) time window.
@@ -62,40 +62,28 @@ def extract_patient_data_from_db(
         end_tp_logrado_cod, end_logrado, end_numero, end_comunidade,
         end_complem, end_bairro, end_cep, cod_mun_res, uf_res,
         cod_mun_nasc, uf_nasc, cod_pais_nasc,
-        email, timestamp,
-        json_array_append(extra_cns.extra_cns, '$', tb_pacientes.cns) as cns_provisorio,
-        json_array_append(extra_telefone.extra_telefone, '$', tb_pacientes.telefone) as telefones
+        email, tb_pacientes.timestamp,
+        json_array_append(CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', tb_cns_provisorios.cns_provisorio, '"')), ']'), '$', tb_pacientes.cns) as cns_provisorio,
+        json_array_append(CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', tb_pacientes_telefones.telefone, '"')), ']'), '$', tb_pacientes.telefone) as telefones
     FROM tb_pacientes
-        -- LISTA DE CNS
-        LEFT JOIN (
-            select
-                tb_cns_provisorios.cns,
-                json_arrayagg(tb_cns_provisorios.cns_provisorio) as extra_cns
-            from tb_cns_provisorios
-            GROUP BY tb_cns_provisorios.cns
-        ) as extra_cns ON tb_pacientes.cns = extra_cns.cns
-        -- LISTA DE TELEFONES
-        LEFT JOIN (
-            select
-                tb_pacientes_telefones.cns,
-                json_arrayagg(tb_pacientes_telefones.telefone) as extra_telefone
-            from tb_pacientes_telefones
-            GROUP BY tb_pacientes_telefones.cns
-        ) as extra_telefone ON tb_pacientes.cns = extra_telefone.cns
+    LEFT JOIN tb_cns_provisorios on tb_cns_provisorios.cns = tb_pacientes.cns
+    LEFT JOIN tb_pacientes_telefones on tb_pacientes_telefones.cns = tb_pacientes.cns
     {WHERE_CLAUSE}
-    GROUP BY tb_pacientes.id;"""
+    GROUP BY tb_pacientes.id, tb_cns_provisorios.cns, tb_pacientes_telefones.cns;"""
     if time_window_start:
-        time_window_end = time_window_start + timedelta(days=time_window_duration)
         query = query.replace(
             "{WHERE_CLAUSE}",
-            f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}'",
+            f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}' ",
         )  # noqa
     else:
         query = query.replace("{WHERE_CLAUSE}", "")
 
-    patients = pd.read_sql(query, db_url)
-
-    return patients
+    try:
+        patients = pd.read_sql(query, db_url)
+        return patients
+    except InternalError as e:
+        log(f"Error extracting data from database: {e}", level="error")
+        raise e
 
 
 @task()

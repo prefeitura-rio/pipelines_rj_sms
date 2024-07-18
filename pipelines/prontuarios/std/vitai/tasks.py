@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import timedelta
+from datetime import datetime
 from typing import Tuple
 
 # from unidecode import unidecode
@@ -26,19 +26,18 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_params(start_datetime: str) -> dict:
+def get_params(start_datetime: datetime, end_datetime: datetime) -> dict:
     """
     Creating params
     Args:
-        start_datetime (str) : initial date extraction
+        start_datetime (str) : initial date extraction.
 
     Returns:
         dict : params dictionary
     """
-
-    end_datetime = start_datetime + timedelta(days=1)
     log(
-        f"""Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
+        f"""
+        Standardizing from {start_datetime.strftime("%Y-%m-%d 00:00:00")}
         to {end_datetime.strftime("%Y-%m-%d 00:00:00")}"""
     )
     return {
@@ -64,7 +63,7 @@ def define_constants() -> Tuple[dict, dict, dict]:
     city = pd.read_csv(
         "pipelines/prontuarios/std/municipios.csv", dtype={"COD UF": str, "COD": str, "NOME": str}
     )
-    city_name_dict = dict(zip(city["NOME"], city["COD"]))
+    city_name_dict = dict(zip(city["NOME"].str.upper(), city["COD"]))
 
     state = pd.read_csv(
         "pipelines/prontuarios/std/estados.csv", dtype={"COD": str, "NOME": str, "SIGLA": str}
@@ -79,7 +78,7 @@ def define_constants() -> Tuple[dict, dict, dict]:
     return city_name_dict, state_dict, country_dict
 
 
-@task
+@task(nout=2)
 def format_json(json_list: list) -> list:
     """
     Drop invalid patient records, i.e. records without valid inputs on required fields
@@ -92,15 +91,15 @@ def format_json(json_list: list) -> list:
     log(f"Starting flow with {len(json_list)} registers")
 
     json_list_merged = list(map(merge_keys, json_list))
-    json_list_valid = list(map(drop_invalid_records, json_list_merged))
-    json_list_notna = clean_none_records(json_list_valid)
+    json_list_info = list(map(drop_invalid_records, json_list_merged))
+    json_list_valid, json_list_invalid = clean_none_records(json_list_info)
 
     log(
-        f"{len(json_list) - len(json_list_notna)} registers dropped,\
-         standardizing remaining {len(json_list_notna)} registers"
+        f"{len(json_list_invalid)} registers dropped,\
+        standardizing remaining {len(json_list_valid)} registers"
     )
 
-    return json_list_notna
+    return json_list_valid, json_list_invalid
 
 
 @task

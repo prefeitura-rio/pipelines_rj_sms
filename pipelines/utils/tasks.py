@@ -5,6 +5,7 @@
 General utilities for SMS pipelines
 """
 
+import ftplib
 import json
 import os
 import re
@@ -13,8 +14,9 @@ import sys
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
-from io import FileIO, StringIO
+from io import StringIO
 from pathlib import Path
+from tempfile import SpooledTemporaryFile
 
 import basedosdados as bd
 import google.auth.transport.requests
@@ -26,12 +28,6 @@ import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
 from google.cloud import bigquery, storage
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload
-from prefect.engine.signals import ENDRUN
-from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
@@ -279,61 +275,63 @@ def download_azure_blob(
     return destination_file_path
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=60), timeout=timedelta(minutes=5))
-def download_ftp(
+@task
+def download_from_ftp(
     host: str,
-    user: str,
-    password: str,
     directory: str,
     file_name: str,
     output_path: str,
+    user: str = None,
+    password: str = None,
 ):
     """
     Downloads a file from an FTP server and saves it to the specified output path.
 
     Args:
-        host (str): The FTP server hostname.
-        user (str): The FTP server username.
-        password (str): The FTP server password.
+        host (str): The FTP server host.
         directory (str): The directory on the FTP server where the file is located.
         file_name (str): The name of the file to download.
-        output_path (str): The local path where the downloaded file should be saved.
+        output_path (str): The path where the downloaded file should be saved.
+        user (str, optional): The username for authentication. Defaults to None.
+        password (str, optional): The password for authentication. Defaults to None.
 
     Returns:
-        str: The local path where the downloaded file was saved.
+        str: The full path of the downloaded file.
+
+    Raises:
+        ftplib.all_errors: If there is an error during the FTP connection or file transfer.
     """
 
-    file_path = f"{directory}/{file_name}"
-    output_path = output_path + "/" + file_name
-    log(output_path)
-    # Connect to the FTP server
-    ftp = FTP(host)
-    ftp.login(user, password)
+    MEGABYTE = 1024 * 1024
 
-    # Get the size of the file
-    ftp.voidcmd("TYPE I")
-    total_size = ftp.size(file_path)
+    ftp = ftplib.FTP(host=host, user=user, passwd=password, timeout=3600)
+    ftp.login()
+    ftp.cwd(directory)
 
-    # Create a callback function to be called when each block is read
-    def callback(block):
-        nonlocal downloaded_size
-        downloaded_size += len(block)
-        percent_complete = (downloaded_size / total_size) * 100
-        if percent_complete // 5 > (downloaded_size - len(block)) // (total_size / 20):
-            log(f"Download is {percent_complete:.0f}% complete")
-        f.write(block)
+    filesize = ftp.size(file_name) / MEGABYTE
+    log(f"Downloading: {file_name}   SIZE: {filesize:.1f} MB", level="info")
 
-    # Initialize the downloaded size
-    downloaded_size = 0
+    with SpooledTemporaryFile(max_size=MEGABYTE, mode="w+b") as ff:
+        sock = ftp.transfercmd("RETR " + file_name)
+        while True:
+            buff = sock.recv(MEGABYTE)
+            if not buff:
+                break
+            ff.write(buff)
+        sock.close()
+        ff.rollover()  # force saving to HDD of the final chunk!!
+        ff.seek(0)  # prepare for data reading
 
-    # Download the file
-    with open(output_path, "wb") as f:
-        ftp.retrbinary(f"RETR {file_path}", callback)
+        destination_file_path = os.path.join(output_path, file_name)
 
-    # Close the connection
+        with open(destination_file_path, "wb") as output_file:
+            shutil.copyfileobj(ff, output_file)
+
+        log(f"File downloaded to {destination_file_path}", level="info")
+
     ftp.quit()
 
-    return output_path
+    return destination_file_path
 
 
 @task()
@@ -449,7 +447,7 @@ def cloud_function_request(
 
     if env == "prod":
         cloud_function_url = "https://us-central1-rj-sms.cloudfunctions.net/vitacare"
-    elif env == "dev":
+    elif env in ["dev", "staging"]:
         cloud_function_url = "https://us-central1-rj-sms-dev.cloudfunctions.net/vitacare"
     else:
         raise ValueError("env must be 'prod' or 'dev'")
@@ -489,12 +487,10 @@ def cloud_function_request(
         else:
             message = f"[Cloud Function] Request failed: {response.status_code} - {response.reason}"
             logger.info(message)
-            raise ENDRUN(state=Failed(message))
+            raise RuntimeError(message)
 
     except Exception as e:
-        raise ENDRUN(
-            state=Failed(f"[Cloud Function] Request failed with unknown error: {e}")
-        ) from e
+        raise RuntimeError(f"[Cloud Function] Request failed with unknown error: {e}") from e
 
 
 @task
@@ -633,18 +629,22 @@ def from_json_to_csv(input_path, sep=";"):
 
 
 @task
-def create_partitions(data_path: str, partition_directory: str, level="day", partition_date=None):
+def create_partitions(
+    data_path: str, partition_directory: str, level="day", partition_date=None, file_type="csv"
+):
     """
-    Creates partitions for each file in the given data path and saves them in the
-    partition directory.
+    Create partitions for files based on the specified level and partition date.
 
     Args:
-        data_path (str): The path to the data directory.
-        partition_directory (str): The path to the partition directory.
-        level (str): The level of partitioning. Can be "day" or "month". Defaults to "day".
+        data_path (str or list): The path to the data file(s) or a list of file paths.
+        partition_directory (str): The directory where the partitions will be created.
+        level (str, optional): The partition level. Can be "day" or "month". Defaults to "day".
+        partition_date (str, optional): The partition date in the format "YYYY-MM-DD" or "YYYY-MM".
+            If not provided, the date will be extracted from the file name. Defaults to None.
+        file_type (str, optional): The file type of the data file(s). Defaults to "csv".
 
     Raises:
-        FileExistsError: If the partition directory already exists.
+        ValueError: If data_path is not a string or a list.
         ValueError: If the partition level is not "day" or "month".
 
     Returns:
@@ -652,11 +652,16 @@ def create_partitions(data_path: str, partition_directory: str, level="day", par
     """
 
     # check if data_path is a directory or a file
-    if os.path.isdir(data_path):
-        data_path = Path(data_path)
-        files = data_path.glob("*.csv")
+    if isinstance(data_path, str):
+        if os.path.isdir(data_path):
+            data_path = Path(data_path)
+            files = data_path.glob(f"*.{file_type}")
+        else:
+            files = [data_path]
+    elif isinstance(data_path, list):
+        files = data_path
     else:
-        files = [data_path]
+        raise ValueError("data_path must be a string or a list")
     #
     # Create partition directories for each file
     for file_name in files:
@@ -717,6 +722,7 @@ def create_partitions(data_path: str, partition_directory: str, level="day", par
 
         # Copy file(s) to partition directory
         shutil.copy(file_name, output_directory)
+        log(f"File {file_name} copied to partition directory: {output_directory}")
 
     log("Partitions created successfully")
 
@@ -755,6 +761,10 @@ def upload_to_datalake(
     Returns:
         None
     """
+    if input_path == "":
+        log("Received input_path=''. No data to upload", level="warning")
+        return
+
     tb = bd.Table(dataset_id=dataset_id, table_id=table_id)
     table_staging = f"{tb.table_full_name['staging']}"
     st = bd.Storage(dataset_id=dataset_id, table_id=table_id)
@@ -763,6 +773,7 @@ def upload_to_datalake(
         f"https://console.cloud.google.com/storage/browser/{st.bucket_name}"
         f"/staging/{dataset_id}/{table_id}"
     )
+    log(f"Uploading file {input_path} to {storage_path} with {source_format} format")
 
     try:
         table_exists = tb.table_exists(mode="staging")
@@ -857,11 +868,13 @@ def load_file_from_bigquery(
         project_name (str): The name of the BigQuery project.
         dataset_name (str): The name of the BigQuery dataset.
         table_name (str): The name of the BigQuery table.
+        environment (str, optional): DON'T REMOVE THIS ARGUMENT.
 
     Returns:
         pandas.DataFrame: The loaded data from the BigQuery table.
     """
     client = bigquery.Client()
+    log(f"[Ignore] Using Parameter to avoid Warnings: {environment}")
 
     dataset_ref = bigquery.DatasetReference(project_name, dataset_name)
     table_ref = dataset_ref.table(table_name)
@@ -870,3 +883,8 @@ def load_file_from_bigquery(
     df = client.list_rows(table).to_dataframe()
 
     return df
+
+
+@task()
+def is_equal(value, target):
+    return value == target

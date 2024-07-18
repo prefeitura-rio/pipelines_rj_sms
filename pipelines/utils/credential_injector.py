@@ -7,9 +7,7 @@ from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 from pipelines.utils.infisical import inject_bd_credentials
 
 
-def authenticated_task(
-    fn: Callable = None, **task_init_kwargs: Any
-) -> Union[
+def authenticated_task(fn: Callable = None, **task_init_kwargs: Any) -> Union[
     prefect.tasks.core.function.FunctionTask,
     Callable[[Callable], prefect.tasks.core.function.FunctionTask],
 ]:
@@ -71,6 +69,8 @@ def authenticated_create_flow_run(**kwargs):
         Any: The result of the `create_flow_run.run` function.
 
     """
+    logger = prefect.context.get("logger")
+    logger.debug(f"Created Flow Run with params: {kwargs}")
     return create_flow_run.run(**kwargs)
 
 
@@ -86,4 +86,6 @@ def authenticated_wait_for_flow_run(**kwargs):
         Any: The result of the `wait_for_flow_run.run` function.
 
     """
+    logger = prefect.context.get("logger")
+    logger.debug(f"Waiting Flow Run with params: {kwargs}")
     return wait_for_flow_run.run(**kwargs)

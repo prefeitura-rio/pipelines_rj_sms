@@ -17,9 +17,10 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitai_api.constants import (
     constants as vitai_constants,
 )
-from pipelines.datalake.extract_load.vitai_api.schedules import (
-    vitai_daily_update_schedule,
-)
+
+# from pipelines.datalake.extract_load.vitai_api.schedules import (
+#     vitai_daily_update_schedule,
+# )
 from pipelines.datalake.extract_load.vitai_api.tasks import build_date_param, build_url
 from pipelines.utils.tasks import (
     add_load_date_column,
@@ -130,7 +131,7 @@ sms_dump_vitai.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi",
+    memory_limit="4Gi",
 )
 
-sms_dump_vitai.schedule = vitai_daily_update_schedule
+# sms_dump_vitai.schedule = vitai_daily_update_schedule

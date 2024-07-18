@@ -12,7 +12,7 @@ from pipelines.utils.tasks import get_secret_key
 @task
 def get_prontuarios_database_url(environment):
     """
-    Get Prontuarios database url from Infisical Secrets
+    Get Prontuarios database url from Infisical Secrets.
 
     Args:
         environment (str): Environment
@@ -49,56 +49,37 @@ def get_target_date(custom_target_date: str) -> date:
         return date.fromisoformat(custom_target_date)
 
 
-@task
-def get_inserted_registers(target_date: date, db_url: str) -> pd.DataFrame:
-    """
-    Retrieves the inserted raw registers from the database within a specified time window.
+@task(retry_delay=timedelta(minutes=5), max_retries=3)
+def get_records_summary(
+    db_url: str,
+    target_date: date,
+) -> pd.DataFrame:
 
-    Args:
-        db_url (str): The URL of the database.
-        time_window_start (date, optional): The start date of the time window.
-        time_window_duration (int, optional): The duration of the time window in days.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the inserted raw registers.
-    """
-    conditions = pd.read_sql(
+    records = pd.read_sql(
         f"""
-        select
-            d.system, raw.patient_code,
-            raw.source_updated_at as event_moment,
-            raw.created_at as raw_acquisition_moment,
-            std.created_at as standardization_moment,
-            'condition' as entity
-        from raw__patientcondition raw
-            inner join datasource d on d.cnes = raw.data_source_id
-            left join public.std__patientcondition std on raw.id = std.raw_source_id
-        where date(raw.created_at) = '{target_date}'
-        order by raw.source_updated_at desc
-        """,
-        db_url,
-    )
-    patient = pd.read_sql(
-        f"""
-        select
-            d.system, raw.patient_code,
-            raw.source_updated_at as event_moment,
-            raw.created_at as raw_acquisition_moment,
-            std.created_at as standardization_moment,
-            'patient' as entity
+        select distinct on (raw.id, std.id, mrg.patient_code)
+            datasource.system as datasource,
+            raw.patient_code,
+            raw.id as raw_id, raw.created_at as raw_created_at,
+            std.id as std_id, std.created_at as std_created_at,
+            mrg.patient_code as mrg_id, mrg.updated_at as mrg_updated_at
         from raw__patientrecord raw
-            inner join datasource d on d.cnes = raw.data_source_id
-            left join public.std__patientrecord std on raw.id = std.raw_source_id
-        where date(raw.created_at) = '{target_date}'
-        order by raw.source_updated_at desc
+            inner join datasource on raw.data_source_id = datasource.cnes
+            left join std__patientrecord std on raw.id = std.raw_source_id
+            left join mrg__patient mrg
+                on mrg.patient_code = std.patient_code and mrg.updated_at > std.created_at
+        where date(raw.created_at) = '{target_date}';
         """,
         db_url,
     )
-    return pd.concat([conditions, patient], ignore_index=True)
+    return records
 
 
 @task
-def create_report(target_date: date, data: pd.DataFrame) -> None:
+def create_report(
+    target_date: date,
+    records_summary: pd.DataFrame,
+) -> None:
     """
     Creates a raw report from the raw data.
 
@@ -110,29 +91,105 @@ def create_report(target_date: date, data: pd.DataFrame) -> None:
     """
     formatted_date = target_date.strftime("%d/%m/%Y")
 
-    metrics = (
-        data.groupby(by=["system", "entity"])
-        .count()
-        .reset_index()[["system", "entity", "raw_acquisition_moment", "standardization_moment"]]
-        .rename(
-            columns={
-                "raw_acquisition_moment": "Registros Brutos",
-                "standardization_moment": "Registros Padronizados",
-                "system": "Fonte de Dados",
-                "entity": "Entidade",
-            }
-        )
-    )
+    raw = {
+        "vitai_total": records_summary[records_summary["datasource"] == "vitai"][
+            "raw_id"
+        ].nunique(),  # noqa
+        "vitai_unique": records_summary[records_summary["datasource"] == "vitai"][
+            "patient_code"
+        ].nunique(),  # noqa
+        "vitacare_total": records_summary[records_summary["datasource"] == "vitacare"][
+            "raw_id"
+        ].nunique(),  # noqa
+        "vitacare_unique": records_summary[records_summary["datasource"] == "vitacare"][
+            "patient_code"
+        ].nunique(),  # noqa
+        "smsrio_total": records_summary[records_summary["datasource"] == "smsrio"][
+            "raw_id"
+        ].nunique(),  # noqa
+        "smsrio_unique": records_summary[records_summary["datasource"] == "smsrio"][
+            "patient_code"
+        ].nunique(),  # noqa
+        "total": records_summary["raw_id"].nunique(),
+        "unique": records_summary["patient_code"].nunique(),
+    }
+    std = {
+        "vitai_total": records_summary[records_summary["datasource"] == "vitai"][
+            "std_id"
+        ].nunique(),  # noqa
+        "vitai_unique": records_summary[records_summary["datasource"] == "vitai"][
+            "patient_code"
+        ].nunique(),  # noqa
+        "vitacare_total": records_summary[records_summary["datasource"] == "vitacare"][
+            "std_id"
+        ].nunique(),  # noqa
+        "vitacare_unique": records_summary[records_summary["datasource"] == "vitacare"][
+            "patient_code"
+        ].nunique(),  # noqa
+        "smsrio_total": records_summary[records_summary["datasource"] == "smsrio"][
+            "std_id"
+        ].nunique(),  # noqa
+        "smsrio_unique": records_summary[records_summary["datasource"] == "smsrio"][
+            "patient_code"
+        ].nunique(),  # noqa
+        "total": records_summary["std_id"].nunique(),
+        "unique": records_summary["patient_code"].nunique(),
+    }
+    mrg = {
+        "vitai": records_summary[records_summary["datasource"] == "vitai"]["mrg_id"].nunique(),
+        "vitacare": records_summary[records_summary["datasource"] == "vitacare"][
+            "mrg_id"
+        ].nunique(),  # noqa
+        "smsrio": records_summary[records_summary["datasource"] == "smsrio"]["mrg_id"].nunique(),
+        "total": records_summary["mrg_id"].nunique(),
+    }
 
-    metrics["Status"] = metrics.apply(
-        func=lambda x: "✅" if x["Registros Brutos"] == x["Registros Padronizados"] else "❌", axis=1
+    def percent(x, y):
+        try:
+            return f"{(x/y)*100:.2f}%"
+        except ZeroDivisionError:
+            return "0%"
+
+    df = pd.DataFrame(
+        [
+            [
+                f"{raw['vitacare_unique']} ({raw['vitacare_total']})",
+                f"{std['vitacare_unique']} ({std['vitacare_total']})",
+                f"{mrg['vitacare']}",
+                f"{percent(mrg['vitacare'], std['vitacare_unique'])}",
+            ],
+            [
+                f"{raw['vitai_unique']} ({raw['vitai_total']})",
+                f"{std['vitai_unique']} ({std['vitai_total']})",
+                f"{mrg['vitai']}",
+                f"{percent(mrg['vitai'], std['vitai_unique'])}",
+            ],
+            [
+                f"{raw['smsrio_unique']} ({raw['smsrio_total']})",
+                f"{std['smsrio_unique']} ({std['smsrio_total']})",
+                f"{mrg['smsrio']}",
+                f"{percent(mrg['smsrio'], std['smsrio_unique'])}",
+            ],
+            ["", "", "", ""],
+            [
+                f"{raw['unique']} ({raw['total']})",
+                f"{std['unique']} ({std['total']})",
+                f"{mrg['total']}",
+                f"{percent(mrg['total'], std['unique'])}",
+            ],
+        ],
+        columns=["RAW", "STD", "MRG", "%"],
+        index=["VITACARE", "VITAI", "SMSRIO", "", "Total"],
     )
 
     send_message(
         title=f"Ingestão Diária de Dados Brutos: {formatted_date}",
-        message=f"""Quantidade de Dados Inseridos na base:
-        ```{metrics.to_markdown(index=False)}```
-        """,
+        message=f"""
+## Pacientes
+```
+{df.to_markdown()}
+```
+""",
         monitor_slug="data-ingestion",
     )
     return None

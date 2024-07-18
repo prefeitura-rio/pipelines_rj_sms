@@ -13,12 +13,14 @@ from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 daily_parameters = [
-    {"command": "run", "environment": "prod", "rename_flow": True},
+    {"command": "run", "environment": "prod", "rename_flow": True, "select": "tag:daily"},
     {"command": "test", "environment": "prod", "rename_flow": True},
+    {"command": "source freshness", "environment": "prod", "rename_flow": True},
 ]
 
 weekly_parameters = [
-    {"command": "test", "environment": "dev", "rename_flow": True},
+    {"command": "run", "environment": "prod", "rename_flow": True, "select": "tag:weekly"},
+    {"command": "run", "environment": "dev", "rename_flow": True},
 ]
 
 
@@ -34,12 +36,12 @@ dbt_daily_clocks = generate_dump_api_schedules(
 
 dbt_weekly_clocks = generate_dump_api_schedules(
     interval=timedelta(days=7),
-    start_date=datetime(2024, 3, 17, 6, 50, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 3, 17, 6, 20, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=weekly_parameters,
-    runs_interval_minutes=10,
+    runs_interval_minutes=30,
 )
 
 

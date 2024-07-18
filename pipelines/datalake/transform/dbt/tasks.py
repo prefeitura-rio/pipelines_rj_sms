@@ -8,6 +8,7 @@ Tasks for execute_dbt
 import os
 import shutil
 
+import dbt.contracts
 import git
 import prefect
 from dbt.cli.main import dbtRunner, dbtRunnerResult
@@ -19,7 +20,7 @@ from pipelines.datalake.transform.dbt.constants import (
     constants as execute_dbt_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.dbt_log_processor import log_to_file, process_dbt_logs
+from pipelines.utils.dbt import Summarizer, log_to_file, process_dbt_logs
 from pipelines.utils.monitor import send_message
 
 
@@ -60,17 +61,31 @@ def download_repository():
 
 
 @task
-def execute_dbt(repository_path: str, command: str = "run", target: str = "dev", model: str = ""):
+def execute_dbt(
+    repository_path: str,
+    command: str = "run",
+    target: str = "dev",
+    model="",
+    select="",
+    exclude="",
+):
     """
-    Execute commands in DBT.
+    Executes a dbt command with the specified parameters.
 
     Args:
-        command (str): Command to be executed by DBT. Can be "run", "build" or "test".
-        model (str): Name of model. Can be empty.
-        target (str): Name of the target that will be used by dbt
+        repository_path (str): The path to the dbt repository.
+        command (str, optional): The dbt command to execute. Defaults to "run".
+        target (str, optional): The dbt target to use. Defaults to "dev".
+        model (str, optional): The specific dbt model to run. Defaults to "".
+        select (str, optional): The dbt selector to filter models. Defaults to "".
+        exclude (str, optional): The dbt selector to exclude models. Defaults to "".
+
+    Returns:
+        dbtRunnerResult: The result of the dbt command execution.
     """
-    cli_args = [
-        command,
+    commands = command.split(" ")
+
+    cli_args = commands + [
         "--profiles-dir",
         repository_path,
         "--project-dir",
@@ -81,6 +96,10 @@ def execute_dbt(repository_path: str, command: str = "run", target: str = "dev",
 
     if model:
         cli_args.extend(["--models", model])
+    if select:
+        cli_args.extend(["--select", select])
+    if exclude:
+        cli_args.extend(["--exclude", exclude])
 
     dbt = dbtRunner()
     running_result: dbtRunnerResult = dbt.invoke(cli_args)
@@ -104,27 +123,24 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     """
     logs = process_dbt_logs(log_path="dbt_repository/logs/dbt.log")
     log_path = log_to_file(logs)
+    summarizer = Summarizer()
 
-    is_incomplete = False
+    is_successful, has_warnings = True, False
+
     general_report = []
     for command_result in running_results.result:
-        status = command_result.status
-        if status == "fail":
-            is_incomplete = True
-            general_report.append(
-                f"- 🛑 FAIL: `{command_result.node.name}`\n  - {command_result.message}"
-            )  # noqa
-        elif status == "error":
-            is_incomplete = True
-            general_report.append(
-                f"- ❌ ERROR: `{command_result.node.name}`\n  - {command_result.message}"
-            )  # noqa
-        elif status == "warn":
-            general_report.append(
-                f"- ⚠️ WARN: `{command_result.node.name}`\n  - {command_result.message}"
-            )  # noqa
+        if command_result.status == "fail":
+            is_successful = False
+            general_report.append(f"- 🛑 FAIL: {summarizer(command_result)}")
+        elif command_result.status == "error":
+            is_successful = False
+            general_report.append(f"- ❌ ERROR: {summarizer(command_result)}")
+        elif command_result.status == "warn":
+            has_warnings = True
+            general_report.append(f"- ⚠️ WARN: {summarizer(command_result)}")
 
-    general_report = sorted(general_report)
+    # Sort and log the general report
+    general_report = sorted(general_report, reverse=True)
     general_report = "**Resumo**:\n" + "\n".join(general_report)
     log(general_report)
 
@@ -133,16 +149,19 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     for key, value in prefect.context.get("parameters").items():
         if key == "rename_flow":
             continue
-        param_report.append(f"- {key}: {value}")
+        if value:
+            param_report.append(f"- {key}: `{value}`")
     param_report = "\n".join(param_report)
+    param_report += " \n"
 
-    should_fail_execution = is_incomplete or not running_results.success
+    fully_successful = is_successful and running_results.success
+    include_report = has_warnings or (not fully_successful)
 
     # DBT - Sending Logs to Discord
     command = prefect.context.get("parameters").get("command")
-    emoji = "❌" if should_fail_execution else "✅"
-    complement = "com Erros" if should_fail_execution else "sem Erros"
-    message = f"{param_report}\n{general_report}" if should_fail_execution else param_report
+    emoji = "❌" if not fully_successful else "✅"
+    complement = "com Erros" if not fully_successful else "sem Erros"
+    message = f"{param_report}\n{general_report}" if include_report else param_report
 
     send_message(
         title=f"{emoji} Execução `dbt {command}` finalizada {complement}",
@@ -151,12 +170,18 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
         monitor_slug="dbt-runs",
     )
 
-    if should_fail_execution:
+    if not fully_successful:
         raise FAIL(general_report)
 
 
 @task
-def rename_current_flow_run_dbt(command: str, model: str, target: str) -> None:
+def rename_current_flow_run_dbt(
+    command: str,
+    target: str,
+    model: str,
+    select: str,
+    exclude: str,
+) -> None:
     """
     Rename the current flow run.
     """
@@ -165,5 +190,27 @@ def rename_current_flow_run_dbt(command: str, model: str, target: str) -> None:
 
     if model:
         client.set_flow_run_name(flow_run_id, f"dbt {command} --model {model} --target {target}")
+    elif select:
+        client.set_flow_run_name(flow_run_id, f"dbt {command} --select {select} --target {target}")
+    elif exclude:
+        client.set_flow_run_name(
+            flow_run_id, f"dbt {command} --exclude {exclude} --target {target}"
+        )
     else:
         client.set_flow_run_name(flow_run_id, f"dbt {command} --target {target}")
+
+
+@task()
+def get_target_from_environment(environment: str):
+    """
+    Retrieves the target environment based on the given environment parameter.
+
+    Args:
+        environment (str): The environment for which to retrieve the target.
+
+    Returns:
+        str: The target environment corresponding to the given environment.
+
+    """
+    converter = {"prod": "prod", "dev": "dev", "staging": "dev"}
+    return converter.get(environment, "dev")

@@ -1,0 +1,138 @@
+cases:
+  - case_slug: "report-endpoint-health"
+    flow_path: "pipelines.reports.endpoint_health.flows"
+    flow_name: "disponibilidade_api"
+    params:
+      environment: "dev"
+  - case_slug: "report-data-ingestion"
+    flow_path: "pipelines.reports.data_ingestion.flows"
+    flow_name: "flow"
+    params:
+      environment: "dev"
+  - case_slug: "mrg-patientrecord"
+    flow_path: "pipelines.prontuarios.mrg.flows"
+    flow_name: "patientrecord_mrg"
+    params:
+      environment: "dev"
+  - case_slug: "mrg-patientrecord-historical_batch"
+    flow_path: "pipelines.misc.historical_mrg.flows"
+    flow_name: "mrg_historic_patientrecord_batch"
+    params:
+      environment: "dev"
+      limit: 1000
+      offset: 0
+  - case_slug: "mrg-patientrecord-historical"
+    flow_path: "pipelines.misc.historical_mrg.flows"
+    flow_name: "mrg_historic_patientrecord"
+    params:
+      environment: "dev"
+      batch_size: 5000
+  - case_slug: "datalake-transform-dbt"
+    flow_path: "pipelines.datalake.transform.dbt.flows"
+    flow_name: "sms_execute_dbt"
+    params:
+      environment: "dev"
+      rename_flow: false
+      command: "test"
+  - case_slug: "smsrio-raw-routine"
+    flow_path: "pipelines.prontuarios.raw.smsrio.flows"
+    flow_name: "sms_prontuarios_raw_smsrio"
+    params:
+      environment: "dev"
+      rename_flow: false
+      is_initial_extraction: false
+      start_datetime: "2024-06-05"
+      end_datetime: "2024-06-06"
+  - case_slug: "datalake-extract_load-vitacare-agendador"
+    flow_path: "pipelines.datalake.extract_load.vitacare_api.flows"
+    flow_name: "sms_dump_vitacare_estoque_scheduler"
+    params:
+      environment: "dev"
+      rename_flow: false
+      endpoint: "movimento"
+      is_routine: false
+      dataset_id: "brutos_prontuario_vitacare"
+      table_id: "estoque_movimento"
+  - case_slug: "datalake-extract_load-vitacare-extract_load"
+    flow_path: "pipelines.datalake.extract_load.vitacare_api.flows"
+    flow_name: "sms_dump_vitacare_estoque"
+    params:
+      environment: "dev"
+      rename_flow: false
+      endpoint: "movimento"
+      is_routine: true
+      cnes: "2269953"
+      target_date: "2024-06-03"
+      dataset_id: "brutos_prontuario_vitacare"
+      table_id: "estoque_movimento"
+  - case_slug: "sms_dump_vitai_rio_saude"
+    flow_path: "pipelines.datalake.extract_load.vitai_db.flows"
+    flow_name: "sms_dump_vitai_rio_saude"
+    params:
+      environment: "dev"
+      rename_flow: false
+  - case_slug: "load-hci-from-datake"
+    flow_path: "pipelines.prontuarios.load_datalake.flows"
+    flow_name: "datalake_to_hci"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "saude_dados_mestres"
+      table_id: "profissional_saude"
+      project_id: "rj-sms-dev"
+  - case_slug: "datalake-extract_load-sih"
+    flow_path: "pipelines.datalake.extract_load.sih_gdrive.flows"
+    flow_name: "sms_dump_sih"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_sih"
+      table_id: "indicadores_hospitalares"
+      last_update_start_date: "2024-07-07"
+      last_update_end_date: "2024-07-08"
+  - case_slug: "datalake-extract_load-sisreg"
+    flow_path: "pipelines.datalake.extract_load.sisreg_web.flows"
+    flow_name: "sms_dump_sisreg"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_sisreg"
+      table_id: "escala"
+      endpoint: "escala"
+  - case_slug: "vitai_db_historical"
+    flow_path: "pipelines.misc.historical_vitai_db.flows"
+    flow_name: "vitai_db_historical"
+    params:
+      environment: "dev"
+  - case_slug: "sms_dump_vitai_rio_saude_batch"
+    flow_path: "pipelines.misc.historical_vitai_db.flows"
+    flow_name: "sms_dump_vitai_rio_saude_batch"
+    params:
+      environment: "dev"
+  - case_slug: "datalake-to-hci"
+    flow_path: "pipelines.prontuarios.load_datalake.flows"
+    flow_name: "datalake_to_hci"
+    params:
+      environment: "dev"
+      rename_flow: false
+      table_id: "equipe_profissional_saude"
+      dataset_id: "saude_dados_mestres"
+      project_id: "rj-sms-dev"
+  - case_slug: "datalake-extract_load-seguir_em_frente"
+    flow_path: "pipelines.datalake.extract_load.seguir_em_frente_pipefy.flows"
+    flow_name: "sms_dump_seguir_em_frente"
+    params:
+      environment: "dev"
+      rename_flow: false
+      dataset_id: "brutos_seguir_em_frente"
+      table_id: "controle_presenca"
+      endpoint: "presenca"
+  - case_slug: "datalake-extract_load-tpc"
+    flow_path: "pipelines.datalake.extract_load.tpc_azure_blob.flows"
+    flow_name: "sms_dump_tpc"
+    params:
+      environment: "dev"
+      rename_flow: false
+      blob_file: "posicao"
+      dataset_id: "brutos_estoque_central_tpc"
+      table_id: "estoque_posicao"

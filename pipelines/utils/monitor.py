@@ -8,21 +8,29 @@ from discord import Embed, File, Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
 
+def get_environment():
+    return prefect.context.get("parameters").get("environment")
+
+
 async def send_discord_webhook(
     text_content: str,
     file_path: str = None,
     username: str = None,
-    monitor_slug: str = Literal["endpoint-health", "dbt-runs", "data-ingestion"],
+    monitor_slug: str = Literal["endpoint-health", "dbt-runs", "data-ingestion", "warning"],
 ):
     """
-    Sends a message to a Discord webhook.
+    Sends a message to a Discord webhook
 
     Args:
         message (str): The message to send.
         username (str, optional): The username to use when sending the message. Defaults to None.
     """
+    environment = get_environment()
     secret_name = f"DISCORD_WEBHOOK_URL_{monitor_slug.upper()}"
-    webhook_url = get_secret(secret_name=secret_name, environment="prod").get(secret_name)
+    webhook_url = get_secret(secret_name=secret_name, environment=environment).get(secret_name)
+
+    if len(text_content) > 2000:
+        raise ValueError(f"Message content is too long: {len(text_content)} > 2000 characters.")
 
     async with aiohttp.ClientSession() as session:
         kwargs = {"content": text_content}
@@ -57,16 +65,47 @@ def send_message(title, message, monitor_slug, file_path=None, username=None):
     task_name = prefect.context.get("task_full_name")
     task_run_id = prefect.context.get("task_run_id")
 
-    content = f"""
+    header_content = f"""
 ## {title}
 > Environment: {environment}
 > Flow Run: [{flow_name}](https://pipelines.dados.rio/flow-run/{flow_run_id})
 > Task Run: [{task_name}](https://pipelines.dados.rio/task-run/{task_run_id})
-
-{message}
     """
-    asyncio.run(
-        send_discord_webhook(
-            text_content=content, file_path=file_path, username=username, monitor_slug=monitor_slug
-        )
-    )
+    # Calculate max char count for message
+    message_max_char_count = 2000 - len(header_content)
+
+    # Split message into lines
+    message_lines = message.split("\n")
+
+    # Split message into pages
+    pages = []
+    current_page = ""
+    for line in message_lines:
+        if len(current_page) + 2 + len(line) < message_max_char_count:
+            current_page += "\n" + line
+        else:
+            pages.append(current_page)
+            current_page = line
+
+    # Append last page
+    pages.append(current_page)
+
+    # Build message content using Header in first page
+    message_contents = []
+    for page_idx, page in enumerate(pages):
+        if page_idx == 0:
+            message_contents.append(header_content + page)
+        else:
+            message_contents.append(page)
+
+    # Send message to Discord
+    async def main(contents):
+        for content in contents:
+            await send_discord_webhook(
+                text_content=content,
+                file_path=file_path,
+                username=username,
+                monitor_slug=monitor_slug,
+            )
+
+    asyncio.run(main(message_contents))

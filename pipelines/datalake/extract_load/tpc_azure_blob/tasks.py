@@ -61,7 +61,7 @@ def extract_data_from_blob(
 
     # CHECK IF FILE IS FROM CURRENT DATE
     log("Verifying if file is from current date")
-    df = pd.read_csv(file_path, sep=";", dtype=str, keep_default_na=False)
+    df = pd.read_csv(file_path, sep=";", dtype=str, keep_default_na=False, nrows=1)
     replication_date = df.data_atualizacao[0]
     replication_date = pd.Timestamp(replication_date).strftime("%Y-%m-%d")
 

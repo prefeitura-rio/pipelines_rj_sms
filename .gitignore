@@ -148,3 +148,12 @@ dmypy.json
 
 # VSCode project settings
 .vscode/
+
+# Local Run Files
+localrun.selected.yaml
+
+#dbt
+dbt_packages/
+dbt_repository/
+logs/
+dbt_log.txt
