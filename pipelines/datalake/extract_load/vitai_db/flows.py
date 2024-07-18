@@ -131,7 +131,7 @@ with Flow(
                 "exclude": "tag:vitai_estoque",
                 "environment": ENVIRONMENT,
                 "rename_flow": True,
-                "send_discord_report": False
+                "send_discord_report": False,
             },
             labels=current_flow_run_labels,
             upstream_tasks=[upload_to_datalake_task],

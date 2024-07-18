@@ -149,7 +149,7 @@ with Flow(
     WINDOW_SIZE = Parameter("window_size", default=7)
 
     rename_current_flow_run(
-        name_template="""Histórico da tabela '{table_name}'- Janela:{window_size} ({environment})""", # noqa
+        name_template="""Histórico da tabela '{table_name}'- Janela:{window_size} ({environment})""",  # noqa
         table_name=TABLE_NAME,
         window_size=WINDOW_SIZE,
         environment=ENVIRONMENT,

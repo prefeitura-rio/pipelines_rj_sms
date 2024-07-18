@@ -213,10 +213,7 @@ def load_to_api(
 
 
 @task
-def rename_current_flow_run(
-    name_template: Optional[str] = None,
-    **kwargs
-) -> None:
+def rename_current_flow_run(name_template: Optional[str] = None, **kwargs) -> None:
     """
     Renames the current flow run using the specified environment and CNES.
 
