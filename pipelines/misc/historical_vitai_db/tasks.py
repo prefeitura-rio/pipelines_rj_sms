@@ -103,8 +103,8 @@ def build_param_list(progress_table, environment: str, table_name: str, window_s
     if progress_table is not None:
         candidates = candidates.merge(
             how="outer",
-            right=progress_table,
-            on=["interval_start", "interval_end", "environment"],
+            right=progress_table.rename(columns={"table": "table_name"}),
+            on=["interval_start", "interval_end", "environment", "table_name"],
             indicator=True,
         )
         remaining = candidates[candidates["_merge"] == "left_only"][candidates_columns].to_dict(
