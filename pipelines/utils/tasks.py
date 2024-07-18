@@ -722,6 +722,7 @@ def create_partitions(
 
         # Copy file(s) to partition directory
         shutil.copy(file_name, output_directory)
+        log(f"File {file_name} copied to partition directory: {output_directory}")
 
     log("Partitions created successfully")
 
@@ -772,6 +773,7 @@ def upload_to_datalake(
         f"https://console.cloud.google.com/storage/browser/{st.bucket_name}"
         f"/staging/{dataset_id}/{table_id}"
     )
+    log(f"Uploading file {input_path} to {storage_path} with {source_format} format")
 
     try:
         table_exists = tb.table_exists(mode="staging")

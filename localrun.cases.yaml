@@ -99,6 +99,16 @@ cases:
       dataset_id: "brutos_sisreg"
       table_id: "escala"
       endpoint: "escala"
+  - case_slug: "vitai_db_historical"
+    flow_path: "pipelines.misc.historical_vitai_db.flows"
+    flow_name: "vitai_db_historical"
+    params:
+      environment: "dev"
+  - case_slug: "sms_dump_vitai_rio_saude_batch"
+    flow_path: "pipelines.misc.historical_vitai_db.flows"
+    flow_name: "sms_dump_vitai_rio_saude_batch"
+    params:
+      environment: "dev"
   - case_slug: "datalake-to-hci"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
     flow_name: "datalake_to_hci"

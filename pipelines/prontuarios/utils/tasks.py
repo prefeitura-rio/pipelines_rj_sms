@@ -8,6 +8,7 @@ import gc
 import hashlib
 import json
 from datetime import date, datetime, timedelta
+from typing import Optional
 
 import pandas as pd
 import prefect
@@ -212,32 +213,32 @@ def load_to_api(
 
 
 @task
-def rename_current_flow_run(
-    environment: str, is_initial_extraction: bool = False, **kwargs
-) -> None:
+def rename_current_flow_run(name_template: Optional[str] = None, **kwargs) -> None:
     """
     Renames the current flow run using the specified environment and CNES.
 
     Args:
-        environment (str): The environment of the flow run.
-        cnes (str): The CNES (National Registry of Health Establishments) of the flow run.
+        name_template (str, optional): The template to use for the flow run name. Defaults to None.
+        **kwargs: The parameters to use for the flow run name.
 
     Returns:
         None
     """
     flow_run_id = prefect.context.get("flow_run_id")
-    flow_run_scheduled_time = prefect.context.get("scheduled_start_time").date()
+    scheduled_date = prefect.context.get("scheduled_start_time").date()
 
-    title = "Initialization" if is_initial_extraction else "Routine"
+    if name_template is None:
+        params = sorted([f"{key}={value}" for key, value in kwargs.items()])
+        flow_run_name = f"{', '.join(params)} at {scheduled_date}"
+    else:
+        flow_run_name = name_template.format(**kwargs, scheduled_date=scheduled_date)
 
-    params = [f"{key}={value}" for key, value in kwargs.items()]
-    params.append(f"env={environment}")
-    params = sorted(params)
-
-    flow_run_name = f"{title} ({', '.join(params)}): {flow_run_scheduled_time}"
-
-    client = Client()
-    client.set_flow_run_name(flow_run_id, flow_run_name)
+    try:
+        client = Client()
+        client.set_flow_run_name(flow_run_id, flow_run_name)
+    except Exception as e:
+        log(f"Error renaming flow run: {e}", level="warning")
+        log(f"This is expected if the flow is running in a local environment")
 
 
 @task
