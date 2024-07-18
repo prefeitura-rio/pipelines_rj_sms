@@ -9,9 +9,6 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitai_db.constants import (
     constants as vitai_constants,
 )
-from pipelines.datalake.extract_load.vitai_db.schedules import (
-    vitai_db_extraction_schedule,
-)
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_datalake_table_name,
     create_folder,
@@ -134,7 +131,6 @@ with Flow(
     )
 
 
-sms_dump_vitai_rio_saude_batch.schedule = vitai_db_extraction_schedule
 sms_dump_vitai_rio_saude_batch.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_dump_vitai_rio_saude_batch.executor = LocalDaskExecutor(num_workers=6)
 sms_dump_vitai_rio_saude_batch.run_config = KubernetesRun(
