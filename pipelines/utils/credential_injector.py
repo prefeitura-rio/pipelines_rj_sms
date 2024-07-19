@@ -33,7 +33,7 @@ def authenticated_task(fn: Callable = None, **task_init_kwargs: Any) -> Union[
             ), "Environment not found in flow parameters"
             logger = prefect.context.get("logger")
             env = prefect.context.get("parameters")["environment"]
-            logger.debug(f"[Injected] Set BD credentials for environment {env}")
+            logger.debug(f"[Injected] Set BD credentials for environment {env}.")
             inject_bd_credentials(environment=env)
 
             logger.debug("[Injected] Now executing function normally...")
