@@ -3,7 +3,6 @@ from typing import Any, Callable, Union
 
 import prefect
 from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
-
 from pipelines.utils.infisical import inject_bd_credentials
 
 
