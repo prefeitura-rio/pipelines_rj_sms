@@ -110,7 +110,7 @@ def extract_data_from_api(
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
         if endpoint == "movimento" and (
             target_day.weekday() == 6
-            or prefect.context.task_run_count == 2  # pylint: disable=no-member
+            or prefect.context.task_run_count >= 2  # pylint: disable=no-member
         ):
             logger.info("No data was retrieved for the target day")
             return {"has_data": False}
