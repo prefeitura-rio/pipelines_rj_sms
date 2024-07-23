@@ -14,7 +14,7 @@ from typing import List
 
 import prefect
 from google.cloud import bigquery
-from prefect.engine.signals import FAIL, ENDRUN, SUCCESS
+from prefect.engine.signals import ENDRUN, FAIL, SUCCESS
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.vitacare_api.constants import (
