@@ -14,7 +14,7 @@ from typing import List
 
 import prefect
 from google.cloud import bigquery
-from prefect.engine.signals import FAIL
+from prefect.engine.signals import FAIL, ENDRUN, SUCCESS
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.vitacare_api.constants import (
@@ -300,8 +300,12 @@ def create_parameter_list(
         results = results[results["area_programatica"] == area_programatica]
 
     if results.empty:
-        log("No data to process", level="error")
-        raise FAIL("No data to process")
+        if not is_routine:
+            log("No data to reprocess", level="info")
+            raise ENDRUN(SUCCESS(message="No data to process"))
+        else:
+            log("No data to process", level="error")
+            raise FAIL("No data to process")
 
     results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
 
