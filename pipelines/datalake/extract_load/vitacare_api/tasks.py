@@ -302,7 +302,7 @@ def create_parameter_list(
     if results.empty:
         if not is_routine:
             log("No data to reprocess", level="info")
-            raise ENDRUN(SUCCESS(message="No data to process"))
+            raise ENDRUN(SUCCESS)
         else:
             log("No data to process", level="error")
             raise FAIL("No data to process")
