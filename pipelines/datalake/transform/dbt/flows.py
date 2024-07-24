@@ -61,7 +61,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
         model=MODEL,
         select=SELECT,
         exclude=EXCLUDE,
-        flag=FLAG
+        flag=FLAG,
     )
 
     with case(SEND_DISCORD_REPORT, True):

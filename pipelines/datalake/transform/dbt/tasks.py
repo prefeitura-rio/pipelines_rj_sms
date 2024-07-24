@@ -225,7 +225,7 @@ def get_target_from_environment(environment: str):
     """
     converter = {
         "prod": "prod",
-        "local-prod":"prod",
+        "local-prod": "prod",
         "staging": "dev",
         "local-staging": "dev",
         "dev": "dev",
