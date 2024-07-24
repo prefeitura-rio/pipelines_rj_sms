@@ -33,6 +33,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     MODEL = Parameter("model", default=None, required=False)
     SELECT = Parameter("select", default=None, required=False)
     EXCLUDE = Parameter("exclude", default=None, required=False)
+    FLAG = Parameter("flag", default=None, required=False)
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -60,6 +61,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
         model=MODEL,
         select=SELECT,
         exclude=EXCLUDE,
+        flag=FLAG
     )
 
     with case(SEND_DISCORD_REPORT, True):
