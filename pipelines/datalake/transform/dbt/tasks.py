@@ -68,6 +68,7 @@ def execute_dbt(
     model="",
     select="",
     exclude="",
+    flag="",
 ):
     """
     Executes a dbt command with the specified parameters.
@@ -100,9 +101,19 @@ def execute_dbt(
         cli_args.extend(["--select", select])
     if exclude:
         cli_args.extend(["--exclude", exclude])
+    if flag:
+        cli_args.extend([flag])
 
     dbt = dbtRunner()
     running_result: dbtRunnerResult = dbt.invoke(cli_args)
+
+    if not os.path.exists("dbt_repository/logs/dbt.log"):
+        send_message(
+            title="❌ Erro ao executar DBT",
+            message="Não foi possível encontrar o arquivo de logs.",
+            monitor_slug="warnings",
+        )
+        raise FAIL("DBT Run seems not successful. No logs found.")
 
     return running_result
 
@@ -212,5 +223,11 @@ def get_target_from_environment(environment: str):
         str: The target environment corresponding to the given environment.
 
     """
-    converter = {"prod": "prod", "dev": "dev", "staging": "dev"}
+    converter = {
+        "prod": "prod",
+        "local-prod": "prod",
+        "staging": "dev",
+        "local-staging": "dev",
+        "dev": "dev",
+    }
     return converter.get(environment, "dev")
