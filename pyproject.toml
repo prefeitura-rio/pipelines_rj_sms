@@ -51,6 +51,7 @@ idna = "^3.7"
 pillow = "^10.3.0"
 certifi = "^2024.07.04"
 tqdm = "^4.66.3"
+infisical = "1.5.0"
 
 [tool.poetry.group.dev]
 optional = true
