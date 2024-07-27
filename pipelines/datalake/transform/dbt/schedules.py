@@ -13,13 +13,12 @@ from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 daily_parameters = [
-    {"command": "run", "environment": "prod", "rename_flow": True, "select": "tag:daily"},
-    {"command": "test", "environment": "prod", "rename_flow": True},
+    {"command": "build", "environment": "prod", "rename_flow": True, "select": "tag:daily"},
     {"command": "source freshness", "environment": "prod", "rename_flow": True},
 ]
 
 weekly_parameters = [
-    {"command": "run", "environment": "prod", "rename_flow": True, "select": "tag:weekly"},
+    {"command": "build", "environment": "prod", "rename_flow": True, "select": "tag:weekly"},
     {"command": "run", "environment": "dev", "rename_flow": True},
 ]
 
@@ -31,7 +30,7 @@ dbt_daily_clocks = generate_dump_api_schedules(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=daily_parameters,
-    runs_interval_minutes=10,
+    runs_interval_minutes=15,
 )
 
 dbt_weekly_clocks = generate_dump_api_schedules(
