@@ -28,6 +28,8 @@ def list_tables_to_import():
         "diagnostico",
         "exame",
         "profissional",
+        "m_estabelecimento",
+        "relato_cirurgico",
     ]
 
 
