@@ -289,11 +289,6 @@ def create_parameter_list(
             & (table_data["prontuario_estoque_tem_dado"] == "sim")
         ]
         results["data"] = convert_str_to_date(target_date)
-
-        if results.empty:
-            log("No data to process", level="error")
-            raise FAIL("No data to process")
-
     else:
         results = table_data[
             (table_data["retry_status"] == "pending")
@@ -301,13 +296,12 @@ def create_parameter_list(
         ]
         results = results[(results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date())]
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
-
-        if results.empty:
-            log("No data to reprocess", level="info")
-            return {"has_parameters": False}
-
     if area_programatica:
         results = results[results["area_programatica"] == area_programatica]
+
+    if results.empty:
+        log("No data to process", level="error")
+        raise FAIL("No data to process")
 
     results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
 
@@ -330,7 +324,7 @@ def create_parameter_list(
     logger = prefect.context.get("logger")
     logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
 
-    return {"has_parameters": True, "parameters": vitacare_flow_parameters}
+    return vitacare_flow_parameters
 
 
 # ==============================
