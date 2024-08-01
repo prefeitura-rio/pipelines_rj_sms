@@ -88,7 +88,7 @@ def create_working_time_range(
                 log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="warning")
                 max_value = default_max_value
 
-            interval_start_values.append(max_value)
+            interval_start_values.append(max_value - pd.Timedelta(hours=3))
     else:
         interval_start_values = [
             pd.to_datetime(interval_start, format="%Y-%m-%d %H:%M:%S") for _ in table_names
