@@ -299,7 +299,7 @@ def create_parameter_list(
     if area_programatica:
         results = results[results["area_programatica"] == area_programatica]
 
-    if results.empty:
+    if results.empty and is_routine:
         log("No data to process", level="error")
         raise FAIL("No data to process")
 
