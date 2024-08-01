@@ -15,7 +15,7 @@ from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_form
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import get_secret_key
+from pipelines.utils.tasks import get_secret_key, load_table_from_database
 
 
 @task
@@ -55,57 +55,90 @@ def extract_patient_data_from_db(
     Returns:
         pd.DataFrame: A DataFrame containing the extracted patient data.
     """
-    query = """
-    SELECT
-        cpf as patient_cpf, nome, nome_mae, nome_pai, dt_nasc, sexo,
-        racaCor, nacionalidade, obito, dt_obito,
-        end_tp_logrado_cod, end_logrado, end_numero, end_comunidade,
-        end_complem, end_bairro, end_cep, cod_mun_res, uf_res,
-        cod_mun_nasc, uf_nasc, cod_pais_nasc,
-        email, tb_pacientes.timestamp,
-        json_array_append(CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', tb_cns_provisorios.cns_provisorio, '"')), ']'), '$', tb_pacientes.cns) as cns_provisorio,
-        json_array_append(CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', tb_pacientes_telefones.telefone, '"')), ']'), '$', tb_pacientes.telefone) as telefones
-    FROM tb_pacientes
-    LEFT JOIN tb_cns_provisorios on tb_cns_provisorios.cns = tb_pacientes.cns
-    LEFT JOIN tb_pacientes_telefones on tb_pacientes_telefones.cns = tb_pacientes.cns
-    {WHERE_CLAUSE}
-    GROUP BY tb_pacientes.id, tb_cns_provisorios.cns, tb_pacientes_telefones.cns;"""
-    if time_window_start:
-        query = query.replace(
-            "{WHERE_CLAUSE}",
-            f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}' ",
-        )  # noqa
-    else:
-        query = query.replace("{WHERE_CLAUSE}", "")
+    log(f"Extracting patient data from {time_window_start} to {time_window_end}")
+    patients = load_table_from_database.run(
+        db_url=db_url,
+        query=f"""
+            SELECT
+                id as source_id,
+                cpf as patient_cpf, nome,nome_mae,
+                nome_pai, dt_nasc, sexo, racaCor,
+                nacionalidade, obito, dt_obito,
+                end_tp_logrado_cod, end_logrado, end_numero,
+                end_comunidade, end_complem, end_bairro,
+                end_cep, cod_mun_res,
+                uf_res, cod_mun_nasc, uf_nasc, cod_pais_nasc, email,
+                timestamp, cns, telefone
+            FROM tb_pacientes
+            WHERE timestamp BETWEEN '{time_window_start}' AND '{time_window_end}';
+        """,
+    )
+    log(f"Extracted {patients.shape[0]} patients")
 
-    try:
-        patients = pd.read_sql(query, db_url)
-        return patients
-    except InternalError as e:
-        log(f"Error extracting data from database: {e}", level="error")
-        raise e
+    log(f"Extracting CNS data from {time_window_start} to {time_window_end}")
+    cnss = load_table_from_database.run(
+        db_url=db_url,
+        query=f"""
+            SELECT
+                cns,
+                JSON_ARRAY_APPEND(JSON_ARRAYAGG(cns_provisorio), '$', cns) as cns_provisorios
+            FROM tb_cns_provisorios
+            WHERE
+                cns IN (
+                    SELECT tb_pacientes.cns
+                    FROM tb_pacientes
+                    WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}'
+                )
+            GROUP BY cns;
+        """,
+    )
+    log(f"Extracted {cnss.shape[0]} CNS data")
 
+    log(f"Extracting Telefone data from {time_window_start} to {time_window_end}")
+    telefones = load_table_from_database.run(
+        db_url=db_url,
+        query=f"""
+            SELECT
+                cns,
+                JSON_ARRAYAGG(telefone) as telefones
+            from tb_pacientes_telefones
+            WHERE cns IN (
+                SELECT tb_pacientes.cns
+                FROM tb_pacientes
+                WHERE tb_pacientes.timestamp BETWEEN  '{time_window_start}' AND '{time_window_end}'
+            )
+            GROUP BY cns;
+        """,
+    )
+    log(f"Extracted {telefones.shape[0]} Telefone data")
 
-@task()
-def transform_data_to_json(dataframe, identifier_column="patient_cpf") -> list[dict]:
-    """
-    Transform dataframe to json, exposing the identifier_column as a field
+    patients = patients.merge(cnss, on="cns", how="left").merge(telefones, on="cns", how="left")
 
-    Args:
-        dataframe (pd.DataFrame): Dataframe to transform
-        identifier_column (str): Identifier column
+    def handle_cns(cns):
+        if cns:
+            try:
+                cns = json.loads(cns)
+            except TypeError:
+                cns = []
+        else:
+            cns = []
+        return cns[::-1]
 
-    Returns:
-        list (list[dict]): List of jsons
-    """
-    assert identifier_column in dataframe.columns, "identifier_column column not found"
+    patients["cns_provisorios"] = patients["cns_provisorios"].apply(handle_cns)
 
-    output = []
-    for _, row in dataframe.iterrows():
-        row_as_json = row.to_json(date_format="iso")
-        output.append({identifier_column: row[identifier_column], "data": json.loads(row_as_json)})
+    def join_phones(row):
+        main_phone = row["telefone"]
+        try:
+            phone_list = json.loads(row["telefones"])
+        except TypeError:
+            phone_list = []
+        if main_phone:
+            phone_list.append(main_phone)
+        return phone_list[::-1]
 
-    return output
+    patients["telefones"] = patients.apply(join_phones, axis=1)
+
+    return patients
 
 
 @task
@@ -146,6 +179,7 @@ def load_patient_data_to_api(patient_data: pd.DataFrame, environment: str, api_t
         cpf_get_function=lambda data: data["patient_cpf"],
         birth_data_get_function=lambda data: data["dt_nasc"],
         source_updated_at_get_function=lambda data: data["timestamp"],
+        source_id_get_function=lambda data: data["source_id"],
     )
 
     request_bodies = transform_to_raw_format.run(

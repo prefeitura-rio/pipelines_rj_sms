@@ -28,6 +28,7 @@ def build_additional_fields(
     cpf_get_function: Callable[[str], str],
     birth_data_get_function: Callable[[str], str],
     source_updated_at_get_function: Callable[[str], str],
+    source_id_get_function: Callable[[str], str],
 ) -> dict:
     """
     Builds additional fields for each data item in the given data list.
@@ -52,6 +53,7 @@ def build_additional_fields(
             patient_cpf = cpf_get_function(data)
             birth_date = birth_data_get_function(data)
             source_updated_at = source_updated_at_get_function(data)
+            source_id = source_id_get_function(data)
         except TypeError:
             continue
 
@@ -84,6 +86,7 @@ def build_additional_fields(
             "patient_cpf": clean_patient_cpf,
             "patient_code": patient_code,
             "source_updated_at": source_updated_at,
+            "source_id": source_id,
             "data": data,
         }
         items.append(group)

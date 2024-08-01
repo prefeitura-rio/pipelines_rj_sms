@@ -17,6 +17,7 @@ from ftplib import FTP
 from io import StringIO
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
+from typing import Optional
 
 import basedosdados as bd
 import google.auth.transport.requests
@@ -31,6 +32,7 @@ from google.cloud import bigquery, storage
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
+from sqlalchemy.exc import InternalError
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
@@ -888,3 +890,31 @@ def load_file_from_bigquery(
 @task()
 def is_equal(value, target):
     return value == target
+
+
+@task
+def load_table_from_database(
+    db_url: str,
+    query: str,
+    time_window_start: Optional[date] = None,
+    time_window_end: Optional[date] = None,
+) -> pd.DataFrame:
+
+    if "{WHERE_CLAUSE}" in query:
+        if time_window_start and time_window_end:
+            query = query.replace(
+                "{WHERE_CLAUSE}",
+                f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}' ",
+            )
+        else:
+            query = query.replace("{WHERE_CLAUSE}", "")
+
+    # Remove line breaks from the query and print in log
+    log(f"Query: " + " ".join(query.replace("\n", " ").split()))
+
+    try:
+        patients = pd.read_sql(query, db_url)
+        return patients
+    except InternalError as e:
+        log(f"Error extracting data from database: {e}", level="error")
+        raise e
