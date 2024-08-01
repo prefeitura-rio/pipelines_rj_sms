@@ -145,7 +145,7 @@ def group_data_by_patient(data: list[dict], entity_type: str) -> dict:
             cpf_get_function=lambda data: data["cpf"],
             birth_data_get_function=lambda data: data["dataNascimento"],
             source_updated_at_get_function=lambda data: data["dataHora"],
-            source_id=lambda _: None
+            source_id=lambda _: None,
         )
     else:
         raise ValueError(f"Invalid entity type: {entity_type}")

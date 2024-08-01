@@ -15,10 +15,7 @@ from pipelines.prontuarios.utils.tasks import load_to_api, transform_to_raw_form
 from pipelines.prontuarios.utils.validation import is_valid_cpf
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import (
-    get_secret_key,
-    load_table_from_database,
-)
+from pipelines.utils.tasks import get_secret_key, load_table_from_database
 
 
 @task
@@ -70,7 +67,7 @@ def extract_patient_data_from_db(
                 end_tp_logrado_cod, end_logrado, end_numero,
                 end_comunidade, end_complem, end_bairro,
                 end_cep, cod_mun_res,
-                uf_res, cod_mun_nasc, uf_nasc, cod_pais_nasc, email, 
+                uf_res, cod_mun_nasc, uf_nasc, cod_pais_nasc, email,
                 timestamp, cns, telefone
             FROM tb_pacientes
             WHERE timestamp BETWEEN '{time_window_start}' AND '{time_window_end}';
@@ -101,7 +98,7 @@ def extract_patient_data_from_db(
     telefones = load_table_from_database.run(
         db_url=db_url,
         query=f"""
-            SELECT 
+            SELECT
                 cns,
                 JSON_ARRAYAGG(telefone) as telefones
             from tb_pacientes_telefones
@@ -115,9 +112,7 @@ def extract_patient_data_from_db(
     )
     log(f"Extracted {telefones.shape[0]} Telefone data")
 
-    patients = patients \
-        .merge(cnss, on="cns", how="left") \
-        .merge(telefones, on="cns", how="left")
+    patients = patients.merge(cnss, on="cns", how="left").merge(telefones, on="cns", how="left")
 
     def handle_cns(cns):
         if cns:
@@ -128,6 +123,7 @@ def extract_patient_data_from_db(
         else:
             cns = []
         return cns[::-1]
+
     patients["cns_provisorios"] = patients["cns_provisorios"].apply(handle_cns)
 
     def join_phones(row):
@@ -139,9 +135,11 @@ def extract_patient_data_from_db(
         if main_phone:
             phone_list.append(main_phone)
         return phone_list[::-1]
+
     patients["telefones"] = patients.apply(join_phones, axis=1)
 
     return patients
+
 
 @task
 def transform_filter_invalid_cpf(dataframe: pd.DataFrame, cpf_column: str) -> pd.DataFrame:
