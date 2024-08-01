@@ -122,7 +122,7 @@ def extract_patient_data_from_db(
                 cns = []
         else:
             cns = []
-        return cns[::-1]
+        return json.dumps(cns[::-1])
 
     patients["cns_provisorios"] = patients["cns_provisorios"].apply(handle_cns)
 
@@ -134,7 +134,7 @@ def extract_patient_data_from_db(
             phone_list = []
         if main_phone:
             phone_list.append(main_phone)
-        return phone_list[::-1]
+        return json.dumps(phone_list[::-1])
 
     patients["telefones"] = patients.apply(join_phones, axis=1)
 
