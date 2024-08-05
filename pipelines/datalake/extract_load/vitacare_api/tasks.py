@@ -108,7 +108,7 @@ def extract_data_from_api(
 
     else:
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
-        if endpoint == "movimento" and (
+        if endpoint in ("movimento", "vacina") and (
             target_day.weekday() == 6
             or prefect.context.task_run_count >= 2  # pylint: disable=no-member
         ):
@@ -183,7 +183,8 @@ def transform_data(file_path: str, table_id: str) -> str:
 
     add_load_date_column.run(input_path=csv_file_path, sep=";")
 
-    fix_payload_column_order(filepath=csv_file_path, table_id=table_id)
+    if table_id in ("estoque_posicao", "estoque_movimento"):
+        fix_payload_column_order(filepath=csv_file_path, table_id=table_id)
 
     return csv_file_path
 
