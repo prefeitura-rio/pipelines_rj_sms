@@ -85,7 +85,7 @@ def extract_data_from_api(
     )
 
     if response["status_code"] != 200:
-        raise ValueError(
+        raise FAIL(
             f"Failed to extract data from API: {response['status_code']} - {response['body']}"
         )
 
@@ -116,7 +116,7 @@ def extract_data_from_api(
             return {"has_data": False}
 
         logger.error("Failed Request: no data was retrieved")
-        raise ValueError(f"Empty response for ({cnes}, {target_day}, {endpoint})")
+        raise FAIL(f"Empty response for ({cnes}, {target_day}, {endpoint})")
 
 
 @task
