@@ -30,6 +30,7 @@ class constants(Enum):
     ENDPOINT = {
         "posicao": "/reports/pharmacy/stocks",
         "movimento": "/reports/pharmacy/movements",
+        "vacina": "/reports/vacinas/listagemvacina",
     }
 
     DATASET_ID = "brutos_prontuario_vitacare"
