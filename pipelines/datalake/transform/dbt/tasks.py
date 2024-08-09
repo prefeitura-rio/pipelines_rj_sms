@@ -8,7 +8,6 @@ Tasks for execute_dbt
 import os
 import shutil
 
-import dbt.contracts
 import git
 import prefect
 from dbt.cli.main import dbtRunner, dbtRunnerResult
@@ -26,7 +25,6 @@ from pipelines.datalake.transform.dbt.constants import (
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.dbt import Summarizer, log_to_file, process_dbt_logs
 from pipelines.utils.monitor import send_message
-
 
 @task
 def download_repository():
@@ -90,29 +88,33 @@ def execute_dbt(
     commands = command.split(" ")
 
     cli_args = commands + [
-        "--profiles-dir",
-        repository_path,
-        "--project-dir",
-        repository_path,
-        "--target",
-        target,
-    ]
+            "--profiles-dir",
+            repository_path,
+            "--project-dir",
+            repository_path]
 
-    if select:
-        cli_args.extend(["--select", select])
-    if exclude:
-        cli_args.extend(["--exclude", exclude])
-    if state:
-        cli_args.extend(["--state", state])
-    if flag:
-        cli_args.extend([flag])
+    if command in ("build", "data_test", "run", "test"):
 
-    log(f"Executing dbt command: {' '.join(cli_args)}", level="info")
+        cli_args.extend([
+            "--target",
+            target,
+        ])
+
+        if select:
+            cli_args.extend(["--select", select])
+        if exclude:
+            cli_args.extend(["--exclude", exclude])
+        if state:
+            cli_args.extend(["--state", state])
+        if flag:
+            cli_args.extend([flag])
+
+        log(f"Executing dbt command: {' '.join(cli_args)}", level="debug")
 
     dbt_runner = dbtRunner()
     running_result: dbtRunnerResult = dbt_runner.invoke(cli_args)
 
-    if not os.path.exists("dbt_repository/logs/dbt.log"):
+    if command not in ("deps") and not os.path.exists("dbt_repository/logs/dbt.log"):
         send_message(
             title="❌ Erro ao executar DBT",
             message="Não foi possível encontrar o arquivo de logs.",
@@ -270,9 +272,6 @@ def upload_dbt_artifacts_to_gcs(dbt_path: str, environment: str):
     dbt_artifacts_path = os.path.join(dbt_path, "target")
 
     gcs_bucket = execute_dbt_constants.GCS_BUCKET.value[environment]
-
-    # clear_bucket(gcs_bucket)
-    # log(f"GCS bucket cleared: {gcs_bucket}", level="info")
 
     upload_to_cloud_storage(dbt_artifacts_path, gcs_bucket)
     log(f"DBT artifacts sent to GCS bucket: {gcs_bucket}", level="info")

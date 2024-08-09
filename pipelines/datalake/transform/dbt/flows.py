@@ -52,6 +52,13 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
 
     download_repository_task = download_repository()
 
+    install_dbt_packages = execute_dbt(
+        repository_path=download_repository_task,
+        target=target,
+        command="deps",
+    )
+    install_dbt_packages.set_upstream(download_repository_task)
+
     download_dbt_artifacts_task = download_dbt_artifacts_from_gcs(
         dbt_path=download_repository_task, environment=ENVIRONMENT
     )
@@ -69,7 +76,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
         exclude=EXCLUDE,
         flag=FLAG,
     )
-    running_results.set_upstream(download_dbt_artifacts_task)
+    running_results.set_upstream([install_dbt_packages, download_dbt_artifacts_task])
 
     with case(SEND_DISCORD_REPORT, True):
         create_dbt_report_task = create_dbt_report(running_results=running_results)
