@@ -108,16 +108,18 @@ def execute_dbt(
         if flag:
             cli_args.extend([flag])
 
-        log(f"Executing dbt command: {' '.join(cli_args)}", level="debug")
+        log(f"Executing dbt command: {' '.join(cli_args)}", level="info")
 
     dbt_runner = dbtRunner()
     running_result: dbtRunnerResult = dbt_runner.invoke(cli_args)
 
-    if command not in ("deps") and not os.path.exists("dbt_repository/logs/dbt.log"):
+    log_path = os.path.join(repository_path, "logs", "dbt.log")
+
+    if command not in ("deps") and not os.path.exists(log_path):
         send_message(
             title="❌ Erro ao executar DBT",
             message="Não foi possível encontrar o arquivo de logs.",
-            monitor_slug="warnings",
+            monitor_slug="dbt-runs",
         )
         raise FAIL("DBT Run seems not successful. No logs found.")
 
@@ -125,7 +127,7 @@ def execute_dbt(
 
 
 @task
-def create_dbt_report(running_results: dbtRunnerResult) -> None:
+def create_dbt_report(running_results: dbtRunnerResult, repository_path: str) -> None:
     """
     Creates a report based on the results of running dbt commands.
 
@@ -138,7 +140,8 @@ def create_dbt_report(running_results: dbtRunnerResult) -> None:
     Returns:
         None
     """
-    logs = process_dbt_logs(log_path="dbt_repository/logs/dbt.log")
+
+    logs = process_dbt_logs(log_path=os.path.join(repository_path, "logs", "dbt.log"))
     log_path = log_to_file(logs)
     summarizer = Summarizer()
 
