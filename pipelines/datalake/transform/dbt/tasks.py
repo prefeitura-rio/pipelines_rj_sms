@@ -15,16 +15,17 @@ from prefect.client import Client
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.googleutils import (
-    upload_to_cloud_storage,
-    download_from_cloud_storage,
-)
 from pipelines.datalake.transform.dbt.constants import (
     constants as execute_dbt_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.dbt import Summarizer, log_to_file, process_dbt_logs
+from pipelines.utils.googleutils import (
+    download_from_cloud_storage,
+    upload_to_cloud_storage,
+)
 from pipelines.utils.monitor import send_message
+
 
 @task
 def download_repository():
@@ -87,18 +88,16 @@ def execute_dbt(
     """
     commands = command.split(" ")
 
-    cli_args = commands + [
-            "--profiles-dir",
-            repository_path,
-            "--project-dir",
-            repository_path]
+    cli_args = commands + ["--profiles-dir", repository_path, "--project-dir", repository_path]
 
     if command in ("build", "data_test", "run", "test"):
 
-        cli_args.extend([
-            "--target",
-            target,
-        ])
+        cli_args.extend(
+            [
+                "--target",
+                target,
+            ]
+        )
 
         if select:
             cli_args.extend(["--select", select])
@@ -216,6 +215,7 @@ def rename_current_flow_run_dbt(
 
     client.set_flow_run_name(flow_run_id, flow_run_name)
     log(f"Flow run renamed to: {flow_run_name}", level="info")
+
 
 @task()
 def get_target_from_environment(environment: str):

@@ -12,14 +12,14 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.transform.dbt.schedules import dbt_schedules
 from pipelines.datalake.transform.dbt.tasks import (
+    check_if_dbt_artifacts_upload_is_needed,
     create_dbt_report,
+    download_dbt_artifacts_from_gcs,
     download_repository,
     execute_dbt,
     get_target_from_environment,
     rename_current_flow_run_dbt,
-    download_dbt_artifacts_from_gcs,
     upload_dbt_artifacts_to_gcs,
-    check_if_dbt_artifacts_upload_is_needed,
 )
 
 with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
