@@ -133,6 +133,7 @@ def create_dbt_report(running_results: dbtRunnerResult, repository_path: str) ->
 
     Args:
         running_results (dbtRunnerResult): The results of running dbt commands.
+        repository_path (str): The path to the repository.
 
     Raises:
         FAIL: If there are failures in the dbt commands.
