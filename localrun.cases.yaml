@@ -33,7 +33,8 @@ cases:
     params:
       environment: "dev"
       rename_flow: false
-      command: "test"
+      command: "build"
+      send_discord_report: false
   - case_slug: "smsrio-raw-routine"
     flow_path: "pipelines.prontuarios.raw.smsrio.flows"
     flow_name: "sms_prontuarios_raw_smsrio"

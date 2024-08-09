@@ -804,6 +804,16 @@ docs = ["ipython", "matplotlib", "numpydoc", "sphinx"]
 tests = ["pytest", "pytest-cov", "pytest-xdist"]
 
 [[package]]
+name = "daff"
+version = "1.3.46"
+description = "Diff and patch tables"
+optional = false
+python-versions = "*"
+files = [
+    {file = "daff-1.3.46.tar.gz", hash = "sha256:22d0da9fd6a3275b54c926a9c97b180f9258aad65113ea18f3fec52cbadcd818"},
+]
+
+[[package]]
 name = "dask"
 version = "2023.12.1"
 description = "Parallel PyData with Task Scheduling"
@@ -861,58 +871,106 @@ files = [
 ]
 
 [[package]]
+name = "dbt-adapters"
+version = "1.4.0"
+description = "The set of adapter protocols and base functionality that supports integration with dbt-core"
+optional = false
+python-versions = ">=3.8.0"
+files = [
+    {file = "dbt_adapters-1.4.0-py3-none-any.whl", hash = "sha256:cff7360ea3b9161d8aeb58ef641b9bf416ee68b8058e2b11e3dff811b5bf7267"},
+    {file = "dbt_adapters-1.4.0.tar.gz", hash = "sha256:9b7d8ae793a3ebe272dfd8f328f281f1633c6527407e18521c38a071946417ea"},
+]
+
+[package.dependencies]
+agate = ">=1.0,<2.0"
+dbt-common = ">=1.6,<2.0"
+mashumaro = {version = ">=3.0,<4.0", extras = ["msgpack"]}
+protobuf = ">=3.0,<5.0"
+pytz = ">=2015.7"
+typing-extensions = ">=4.0,<5.0"
+
+[[package]]
 name = "dbt-bigquery"
-version = "1.7.3"
+version = "1.8.2"
 description = "The Bigquery adapter plugin for dbt"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "dbt-bigquery-1.7.3.tar.gz", hash = "sha256:8a132b614d548ea08edd0a7d23ba1c778ab77a8cbffbe177e50a14f1acfaae7f"},
-    {file = "dbt_bigquery-1.7.3-py3-none-any.whl", hash = "sha256:c80665600bf2dc518b6d93f6e66e38f6642d7d794c7a19a290451f47a1dbd495"},
+    {file = "dbt_bigquery-1.8.2-py3-none-any.whl", hash = "sha256:b18bb2f90665a77e9588fe5939d0251325da214048a7250ffd3cfd9a8443c1d3"},
+    {file = "dbt_bigquery-1.8.2.tar.gz", hash = "sha256:beb44cce8b8dcd1c874bf1d52cbd91116c531668a7b45ff00c966b4b034872cb"},
 ]
 
 [package.dependencies]
-dbt-core = ">=1.7.0,<1.8.0"
+dbt-adapters = ">=1.1.1,<2.0"
+dbt-common = ">=1.0.4,<2.0"
+dbt-core = ">=1.8.0"
 google-api-core = ">=2.11.0"
-google-cloud-bigquery = ">=3.0,<4.0"
+google-cloud-bigquery = {version = ">=3.0,<4.0", extras = ["pandas"]}
 google-cloud-dataproc = ">=5.0,<6.0"
 google-cloud-storage = ">=2.4,<3.0"
 
 [[package]]
+name = "dbt-common"
+version = "1.7.0"
+description = "The shared common utilities that dbt-core and adapter implementations use"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "dbt_common-1.7.0-py3-none-any.whl", hash = "sha256:ade7cf908492e83f890fd2c2bbb286f685dfe55a28ee1076f5485041b9acb93e"},
+    {file = "dbt_common-1.7.0.tar.gz", hash = "sha256:bf085abd6c2d871ec802f0b78a13467ca1d8be1603b165bb80caa9309d6b292d"},
+]
+
+[package.dependencies]
+agate = ">=1.7.0,<1.10"
+colorama = ">=0.3.9,<0.5"
+deepdiff = ">=7.0,<8.0"
+isodate = ">=0.6,<0.7"
+jinja2 = ">=3.1.3,<4"
+jsonschema = ">=4.0,<5.0"
+mashumaro = {version = ">=3.9,<4.0", extras = ["msgpack"]}
+pathspec = ">=0.9,<0.13"
+protobuf = ">=4.0.0,<5.0.0"
+python-dateutil = ">=2.0,<3.0"
+requests = "<3.0.0"
+typing-extensions = ">=4.4,<5.0"
+
+[package.extras]
+build = ["check-wheel-contents", "twine", "wheel"]
+lint = ["black (>=23.3,<24.0)", "flake8", "flake8-docstrings", "flake8-pyproject", "mypy (>=1.3,<2.0)", "pytest (>=7.3,<8.0)", "types-jinja2 (>=2.11,<3.0)", "types-jsonschema (>=4.17,<5.0)", "types-protobuf (>=4.24,<5.0)", "types-python-dateutil (>=2.8,<3.0)", "types-pyyaml (>=6.0,<7.0)", "types-requests"]
+test = ["hypothesis (>=6.87,<7.0)", "pytest (>=7.3,<8.0)", "pytest-cov (>=4.1,<5.0)", "pytest-mock", "pytest-xdist (>=3.2,<4.0)"]
+
+[[package]]
 name = "dbt-core"
-version = "1.7.17"
+version = "1.8.4"
 description = "With dbt, data analysts and engineers can build analytics the way engineers build applications."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "dbt_core-1.7.17-py3-none-any.whl", hash = "sha256:91cd0ceca29d77377988bca94db02c9d6f3debdd604edbde702008380b87fc4e"},
-    {file = "dbt_core-1.7.17.tar.gz", hash = "sha256:efd341e83252c35d9dbe0d2d0bfd874125c093c125250bebc7ca741a9145db80"},
+    {file = "dbt_core-1.8.4-py3-none-any.whl", hash = "sha256:d748d51b9d38c0b93b7f047cc32bdd97a5933cb89aec33bf17a47172c12fda03"},
+    {file = "dbt_core-1.8.4.tar.gz", hash = "sha256:3eb37273f7ceaa070a8e3e42bfd806954be769f87292971829ce8e5baa9abad5"},
 ]
 
 [package.dependencies]
-agate = ">=1.7.0,<1.8.0"
-cffi = ">=1.9,<2.0.0"
-click = ">=8.0.2,<9"
-colorama = ">=0.3.9,<0.5"
-dbt-extractor = ">=0.5.0,<0.6.0"
-dbt-semantic-interfaces = ">=0.4.2,<0.5.0"
-idna = ">=2.5,<4"
-isodate = ">=0.6,<0.7"
+agate = ">=1.7.0,<1.10"
+click = ">=8.0.2,<9.0"
+daff = ">=1.3.46"
+dbt-adapters = ">=1.1.1,<2.0"
+dbt-common = ">=1.0.4,<2.0"
+dbt-extractor = ">=0.5.0,<=0.6"
+dbt-semantic-interfaces = ">=0.5.1,<0.6"
 Jinja2 = ">=3.1.3,<4"
-jsonschema = ">=3.0"
 logbook = ">=1.5,<1.6"
 mashumaro = {version = ">=3.9,<4.0", extras = ["msgpack"]}
-minimal-snowplow-tracker = ">=0.0.2,<0.1.0"
-networkx = ">=2.3,<4"
+minimal-snowplow-tracker = ">=0.0.2,<0.1"
+networkx = ">=2.3,<4.0"
 packaging = ">20.9"
-pathspec = ">=0.9,<0.12"
+pathspec = ">=0.9,<0.13"
 protobuf = ">=4.0.0,<5"
 pytz = ">=2015.7"
 pyyaml = ">=6.0"
 requests = "<3.0.0"
 sqlparse = ">=0.5.0,<0.6.0"
-typing-extensions = ">=3.7.4"
-urllib3 = ">=1.0,<2.0"
+typing-extensions = ">=4.4"
 
 [[package]]
 name = "dbt-extractor"
@@ -941,25 +999,43 @@ files = [
 
 [[package]]
 name = "dbt-semantic-interfaces"
-version = "0.4.3"
+version = "0.5.1"
 description = "The shared semantic layer definitions that dbt-core and MetricFlow use"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "dbt_semantic_interfaces-0.4.3-py3-none-any.whl", hash = "sha256:af6ab8509da81ae5f5f1d5631c9761cccaed8cd5311d4824a8d4168ecd0f2093"},
-    {file = "dbt_semantic_interfaces-0.4.3.tar.gz", hash = "sha256:9a46d07ad022a4c48783565a776ebc6f1d19e0412e70c4759bc9d7bba461ea1c"},
+    {file = "dbt_semantic_interfaces-0.5.1-py3-none-any.whl", hash = "sha256:b95ff3a6721dc30f6278cb84933d95e0ef27766e67eeb6bb41906242e77f7c9b"},
+    {file = "dbt_semantic_interfaces-0.5.1.tar.gz", hash = "sha256:3a497abef1ba8112affdf804b26bfdcd5468ed95cc924b509068e18d371c7c4d"},
 ]
 
 [package.dependencies]
 click = ">=7.0,<9.0"
-importlib-metadata = ">=6.0,<7.0"
-jinja2 = ">=3.0,<4.0"
-jsonschema = ">=4.0,<5.0"
+importlib-metadata = ">=6.0,<7"
+jinja2 = ">=3.1.3,<4"
+jsonschema = ">=4.0,<5"
 more-itertools = ">=8.0,<11.0"
 pydantic = ">=1.10,<3"
-python-dateutil = ">=2.0,<3.0"
-pyyaml = ">=6.0,<7.0"
-typing-extensions = ">=4.4,<5.0"
+python-dateutil = ">=2.0,<3"
+pyyaml = ">=6.0,<7"
+typing-extensions = ">=4.4,<5"
+
+[[package]]
+name = "deepdiff"
+version = "7.0.1"
+description = "Deep Difference and Search of any Python object/data. Recreate objects by adding adding deltas to each other."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "deepdiff-7.0.1-py3-none-any.whl", hash = "sha256:447760081918216aa4fd4ca78a4b6a848b81307b2ea94c810255334b759e1dc3"},
+    {file = "deepdiff-7.0.1.tar.gz", hash = "sha256:260c16f052d4badbf60351b4f77e8390bee03a0b516246f6839bc813fb429ddf"},
+]
+
+[package.dependencies]
+ordered-set = ">=4.1.0,<4.2.0"
+
+[package.extras]
+cli = ["click (==8.1.7)", "pyyaml (==6.0.1)"]
+optimize = ["orjson"]
 
 [[package]]
 name = "dill"
@@ -1607,10 +1683,13 @@ files = [
 ]
 
 [package.dependencies]
+db-dtypes = {version = ">=0.3.0,<2.0.0dev", optional = true, markers = "extra == \"pandas\""}
 google-api-core = ">=1.31.5,<2.0.dev0 || >2.3.0,<3.0.0dev"
 google-cloud-core = ">=1.6.0,<3.0.0dev"
 google-resumable-media = ">=0.6.0,<3.0dev"
 packaging = ">=20.0.0"
+pandas = {version = ">=1.1.0", optional = true, markers = "extra == \"pandas\""}
+pyarrow = {version = ">=3.0.0", optional = true, markers = "extra == \"pandas\""}
 python-dateutil = ">=2.7.2,<3.0dev"
 requests = ">=2.21.0,<3.0.0dev"
 
@@ -3094,6 +3173,20 @@ files = [
 et-xmlfile = "*"
 
 [[package]]
+name = "ordered-set"
+version = "4.1.0"
+description = "An OrderedSet is a custom MutableSet that remembers its order, so that every"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "ordered-set-4.1.0.tar.gz", hash = "sha256:694a8e44c87657c59292ede72891eb91d34131f6531463aab3009191c77364a8"},
+    {file = "ordered_set-4.1.0-py3-none-any.whl", hash = "sha256:046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562"},
+]
+
+[package.extras]
+dev = ["black", "mypy", "pytest"]
+
+[[package]]
 name = "outcome"
 version = "1.3.0.post0"
 description = "Capture the outcome of Python function calls."
@@ -4424,6 +4517,7 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
+    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -5582,4 +5676,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "ea994397890db1fa44d4d5359c396f979719a1b421c7713f2a0f8eb93dcb5475"
+content-hash = "78bf098b2309615f46b703c33e0411d4dd56826cf5a0c2dd19ad1a7f709e5d80"
