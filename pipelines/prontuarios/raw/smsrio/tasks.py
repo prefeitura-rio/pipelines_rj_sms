@@ -81,7 +81,7 @@ def extract_patient_data_from_db(
         query=f"""
             SELECT
                 cns,
-                JSON_ARRAY_APPEND(JSON_ARRAYAGG(cns_provisorio), '$', cns) as cns_provisorios
+                JSON_ARRAY_APPEND(JSON_ARRAYAGG(cns_provisorio), '$', cns) as cns_provisorio
             FROM tb_cns_provisorios
             WHERE
                 cns IN (
@@ -124,7 +124,7 @@ def extract_patient_data_from_db(
             cns = []
         return json.dumps(cns[::-1])
 
-    patients["cns_provisorios"] = patients["cns_provisorios"].apply(handle_cns)
+    patients["cns_provisorio"] = patients["cns_provisorio"].apply(handle_cns)
 
     def join_phones(row):
         main_phone = row["telefone"]
