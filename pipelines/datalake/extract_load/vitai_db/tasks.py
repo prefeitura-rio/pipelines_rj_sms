@@ -30,6 +30,7 @@ def list_tables_to_import():
         "profissional",
         "m_estabelecimento",
         "relato_cirurgico",
+        "resumo_alta",
     ]
 
 
