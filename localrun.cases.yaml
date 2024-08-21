@@ -137,3 +137,8 @@ cases:
       blob_file: "posicao"
       dataset_id: "brutos_estoque_central_tpc"
       table_id: "estoque_posicao"
+  - case_slug: "datalake-extract_load-vitacare_db"
+    flow_path: "pipelines.datalake.extract_load.vitacare_db.flows"
+    flow_name: "sms_dump_vitacare_db"
+    params:
+      dataset_id: "brutos_prontuario_vitacare"
