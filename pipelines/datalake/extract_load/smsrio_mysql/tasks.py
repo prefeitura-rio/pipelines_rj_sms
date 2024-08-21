@@ -38,7 +38,7 @@ def download_from_db(
     connection_string = f"{db_url}/{db_schema}"
 
     if db_table == "contatos_unidades":
-        query = f"SELECT u.cnes, c.* FROM {db_table} AS c LEFT JOIN unidades AS u ON c.unidade_id = u.id"
+        query = f"SELECT u.cnes, c.* FROM {db_table} AS c LEFT JOIN unidades AS u ON c.unidade_id = u.id"  # noqa: E501
     else:
         query = f"SELECT * FROM {db_table}"
 
