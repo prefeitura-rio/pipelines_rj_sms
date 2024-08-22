@@ -31,7 +31,7 @@ def list_tables_to_import():
         "m_estabelecimento",
         "relato_cirurgico",
         "resumo_alta",
-        "internacoes",
+        "internacao",
     ]
 
 
