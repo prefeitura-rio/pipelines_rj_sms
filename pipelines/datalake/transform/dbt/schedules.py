@@ -19,7 +19,6 @@ daily_parameters = [
 
 weekly_parameters = [
     {"command": "build", "environment": "prod", "rename_flow": True, "select": "tag:weekly"},
-    {"command": "run", "environment": "dev", "rename_flow": True},
 ]
 
 
