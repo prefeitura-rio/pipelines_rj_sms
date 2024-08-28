@@ -7,20 +7,18 @@ Tasks for Vitacare db pipeline
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.datalake.utils.data_transformations import (
-    conform_header_to_datalake,
-)
-from pipelines.utils.googleutils import download_from_cloud_storage
-from pipelines.utils.tasks import (
-    upload_to_datalake,
+from pipelines.datalake.extract_load.vitacare_db.constants import (
+    constants as vitacare_constants,
 )
 from pipelines.datalake.extract_load.vitacare_db.utils import (
     add_flow_metadata,
     fix_parquet_type,
     rename_file,
 )
-from pipelines.datalake.extract_load.vitacare_db.constants import constants as vitacare_constants
+from pipelines.datalake.utils.data_transformations import conform_header_to_datalake
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.googleutils import download_from_cloud_storage
+from pipelines.utils.tasks import upload_to_datalake
 
 
 @task
@@ -82,6 +80,7 @@ def transform_data(files_path: list[str]):
     transformed_files = [rename_file(file_path=file) for file in transformed_files]
 
     return transformed_files
+
 
 @task
 def upload_many_to_datalake(

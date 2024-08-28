@@ -77,7 +77,7 @@ def download_from_cloud_storage(path: str, bucket_name: str, blob_prefix: str = 
             blob.download_to_filename(destination_file_name)
 
             downloaded_files.append(destination_file_name)
-            
+
         except IsADirectoryError:
             pass
 
