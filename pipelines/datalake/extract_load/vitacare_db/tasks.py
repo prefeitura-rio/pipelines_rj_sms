@@ -41,6 +41,8 @@ def download_from_cloud_storage_task(path: str, bucket_name: str, blob_prefix: s
     Downloads files from Google Cloud Storage to the specified local path.
     """
 
+    blob_prefix = f"parquet/{blob_prefix}"
+
     downloaded_files = download_from_cloud_storage(
         path=path,
         bucket_name=bucket_name,
