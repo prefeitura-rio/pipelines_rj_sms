@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=C0103, C0301
+"""
+Functions to interact with Google Cloud Storage and BigQuery.
+"""
 import os
 
 import pandas as pd

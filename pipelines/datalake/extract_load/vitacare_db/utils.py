@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=C0301
 # flake8: noqa: E501
 """
 Functions for Vitacare db pipeline
