@@ -141,4 +141,4 @@ cases:
     flow_path: "pipelines.datalake.extract_load.vitacare_db.flows"
     flow_name: "sms_dump_vitacare_db"
     params:
-      dataset_id: "brutos_prontuario_vitacare"
+      environment: "dev"

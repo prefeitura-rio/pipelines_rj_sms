@@ -2,50 +2,62 @@
 # pylint: disable=C0103, R0913, C0301, W3101
 # flake8: noqa: E501
 """
-Tasks for DataSUS pipelines
+Tasks for Vitacare db pipeline
 """
-import os
-import shutil
-from pathlib import Path
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
+
+from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.datalake.utils.data_transformations import (
     conform_header_to_datalake,
 )
-from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.googleutils import download_from_cloud_storage
 from pipelines.utils.tasks import (
-    create_partitions,
     upload_to_datalake,
 )
-from pipelines.datalake.extract_load.vitacare_db.utils import add_flow_metadata, fix_parquet_type
-
-@task
-def load_local_data_to_raw(input_path: str, output_path: str):
-    """
-    Load local data to raw folder
-    """
-    output_base_path = Path(output_path)
-
-    for file in Path(input_path).glob("*.parquet"):
-
-        cnes = file.name.split("_")[2]
-        endpoint = file.name.split("_")[3].split(".")[0]
-
-        output_path = os.path.join(output_base_path, endpoint)
-
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-        shutil.copy(file, Path(output_path))
-
-    raw_files = list(Path(output_base_path).rglob("*.parquet"))
-
-    log("Files copied successfully")
-
-    return raw_files
+from pipelines.datalake.extract_load.vitacare_db.utils import (
+    add_flow_metadata,
+    fix_parquet_type,
+    rename_file,
+)
+from pipelines.datalake.extract_load.vitacare_db.constants import constants as vitacare_constants
 
 
 @task
-def transform_data(files_path: list[str], env: str):
+def get_bucket_name(env: str):
+    """
+    Get the bucket name based on the environment.
+    """
+
+    if env in ["dev", "prod"]:
+        bucket_name = vitacare_constants.GCS_BUCKET.value[env]
+    else:
+        raise FAIL("Invalid environment")
+
+    return bucket_name
+
+
+@task
+def download_from_cloud_storage_task(path: str, bucket_name: str, blob_prefix: str = None):
+    """
+    Downloads files from Google Cloud Storage to the specified local path.
+    """
+
+    downloaded_files = download_from_cloud_storage(
+        path=path,
+        bucket_name=bucket_name,
+        blob_prefix=blob_prefix,
+    )
+
+    if len(downloaded_files) == 11:
+        log("Files downloaded successfully")
+        return downloaded_files
+    else:
+        raise FAIL(f"Downloaded {len(downloaded_files)} files, expected 11")
+
+
+@task
+def transform_data(files_path: list[str]):
     """
     Transforms data from the DATASUS FTP server.
     """
@@ -54,7 +66,11 @@ def transform_data(files_path: list[str], env: str):
 
     transformed_files = [fix_parquet_type(file_path=file) for file in raw_files]
 
+    log("Parquet type fixed successfully")
+
     transformed_files = [add_flow_metadata(file_path=file) for file in transformed_files]
+
+    log("Metadata added successfully")
 
     transformed_files = [
         conform_header_to_datalake(file_path=file, file_type="parquet")
@@ -63,42 +79,9 @@ def transform_data(files_path: list[str], env: str):
 
     log("Header conformed successfully")
 
+    transformed_files = [rename_file(file_path=file) for file in transformed_files]
+
     return transformed_files
-
-
-@task
-def create_many_partitions(files_path: list[str], partition_directory: str, endpoint: str):
-    """
-    Creates partitions for different tables.
-    """
-
-    if endpoint == "cbo":
-        for file in files_path:
-            shutil.copy(file, partition_directory)
-        log("Partitions added successfully")
-
-    elif endpoint == "cnes":
-        for file in files_path:
-            # retrieve file name from path
-            file_name = Path(file).name.split(".")[0]
-
-            # remove the last 6 digits representing the date
-            table_id = file_name[:-6]
-            partition_date = f"{file_name[-6:-2]}-{file_name[-2:]}"
-
-            table_partition_folder = os.path.join(partition_directory, table_id)
-
-            create_partitions.run(
-                data_path=file,
-                partition_directory=table_partition_folder,
-                level="month",
-                partition_date=partition_date,
-            )
-            log(f"Partition {table_partition_folder} created successfully", level="debug")
-    else:
-        log(f"Endpoint {endpoint} not found", level="error")
-        raise FAIL(f"Endpoint {endpoint} not found")
-
 
 @task
 def upload_many_to_datalake(
@@ -114,15 +97,13 @@ def upload_many_to_datalake(
     Uploads different tables to data lake.
     """
 
-    tables_path = [x[0] for x in os.walk(input_path)][1:]
-
-    for table in tables_path:
-        table_name = f'{table.split("/")[-1]}_historico'
+    for table in input_path:
+        table_name = f'{table.stem.split("_")[-1]}_historico'
         upload_to_datalake.run(
             input_path=table,
             dataset_id=dataset_id,
             table_id=table_name,
-            dump_mode="overwrite",
+            dump_mode="append",
             source_format=source_format,
             if_exists=if_exists,
             if_storage_data_exists=if_storage_data_exists,

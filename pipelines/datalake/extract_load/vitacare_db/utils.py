@@ -1,6 +1,10 @@
-import os
+# -*- coding: utf-8 -*-
+# flake8: noqa: E501
+"""
+Functions for Vitacare db pipeline
+"""
 import re
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -32,8 +36,6 @@ def add_flow_metadata(
 
     """
     file_path = Path(file_path)
-    file_name = file_path.name
-    cnes = file_name.split("_")[2]
 
     tz = pytz.timezone("Brazil/East")
 
@@ -42,7 +44,6 @@ def add_flow_metadata(
     df = pd.read_parquet(file_path)
 
     df["imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-    df["cnes"] = cnes
     df.to_parquet(file_path, index=False)
 
     return file_path
@@ -71,3 +72,33 @@ def fix_parquet_type(file_path):
     df.to_parquet(file_path, index=False)
 
     return file_path
+
+
+def rename_file(file_path: str):
+    """
+    Rename files to a standard format.
+
+    Parameters:
+    file_path (str): The path to the file.
+
+    Returns:
+    str: The path to the file.
+
+    """
+    file_path = Path(file_path)
+
+    log(f"Renaming {file_path} ...", level="debug")
+
+    file_name = file_path.stem
+    file_extension = file_path.suffix
+
+    # replace staging_brutos_vitacare_historic_vitacare_historic_ for vitacare_historico
+    new_file_name = re.sub(
+        "staging_brutos_vitacare_historic_vitacare_historic_", "vitacare_historico_", file_name
+    )
+
+    new_file_path = file_path.parent / f"{new_file_name}{file_extension}"
+
+    file_path.rename(new_file_path)
+
+    return new_file_path

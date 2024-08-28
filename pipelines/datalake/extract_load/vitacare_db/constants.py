@@ -11,4 +11,4 @@ class constants(Enum):
     Constant values for the execute dbt flows
     """
 
-    GCS_BUCKET = "rj-sms"
+    GCS_BUCKET = {"dev": "vitacare_db_dump_dev", "prod": "vitacare_db_dump"}

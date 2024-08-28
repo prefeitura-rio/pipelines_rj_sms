@@ -60,17 +60,28 @@ def download_from_cloud_storage(path: str, bucket_name: str, blob_prefix: str = 
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
 
+    downloaded_files = []
+
     if not os.path.exists(path):
         os.makedirs(path)
 
     blobs = bucket.list_blobs(prefix=blob_prefix)
+
     for blob in blobs:
 
         destination_file_name = os.path.join(path, blob.name)
 
         os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
 
-        blob.download_to_filename(destination_file_name)
+        try:
+            blob.download_to_filename(destination_file_name)
+
+            downloaded_files.append(destination_file_name)
+            
+        except IsADirectoryError:
+            pass
+
+    return downloaded_files
 
 
 def upload_to_cloud_storage(path: str, bucket_name: str):
