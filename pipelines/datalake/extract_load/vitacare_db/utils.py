@@ -94,9 +94,7 @@ def rename_file(file_path: str):
     file_extension = file_path.suffix
 
     # replace staging_brutos_vitacare_historic_vitacare_historic_ for vitacare_historico
-    new_file_name = re.sub(
-        "staging_brutos_vitacare_historic_vitacare_historic_", "vitacare_historico_", file_name
-    )
+    new_file_name = f"{str(file_path.parent).split('/')[-1]}_{file_name}"
 
     new_file_path = file_path.parent / f"{new_file_name}{file_extension}"
 
