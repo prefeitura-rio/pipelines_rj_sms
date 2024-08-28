@@ -307,19 +307,33 @@ def create_parameter_list(
 
     # Construct the parameters for the flow
     vitacare_flow_parameters = []
-    for cnes, target_date in results_tuples:
-        vitacare_flow_parameters.append(
-            {
-                "cnes": cnes,
-                "endpoint": endpoint,
-                "target_date": target_date,
-                "dataset_id": dataset_id,
-                "table_id": table_id,
-                "environment": environment,
-                "rename_flow": True,
-                "is_routine": is_routine,
-            }
-        )
+    for cnes, date_target in results_tuples:
+
+        if endpoint in ["movimento", "posicao"]:
+            vitacare_flow_parameters.append(
+                {
+                    "cnes": cnes,
+                    "endpoint": endpoint,
+                    "target_date": date_target,
+                    "dataset_id": dataset_id,
+                    "table_id": table_id,
+                    "environment": environment,
+                    "rename_flow": True,
+                    "is_routine": is_routine,
+                }
+            )
+        elif endpoint == "backup_prontuario":
+            vitacare_flow_parameters.append(
+                {
+                    "cnes": cnes,
+                    "dataset_id": dataset_id,
+                    "environment": environment,
+                    "rename_flow": True,
+                }
+            )
+        else:
+            log("Invalid endpoint", level="error")
+            raise FAIL("Invalid endpoint")
 
     logger = prefect.context.get("logger")
     logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
