@@ -24,10 +24,10 @@ from pipelines.datalake.extract_load.vitacare_api.tasks import (
     create_parameter_list,
     create_partitions,
     extract_data_from_api,
+    get_flow_name,
     save_data_to_file,
     transform_data,
     write_retry_results_on_bq,
-    get_flow_name,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.prontuarios.utils.tasks import (
