@@ -183,7 +183,7 @@ with Flow(
 
     # GCP
     DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
-    TABLE_ID = Parameter("table_id", required=True)
+    TABLE_ID = Parameter("table_id", default=None)
 
     #####################################
     # Set environment
