@@ -313,7 +313,7 @@ def create_parameter_list(
         raise FAIL("No data to process")
 
     # Construct the parameters for the flow
-    
+
     vitacare_flow_parameters = []
 
     if endpoint in ["movimento", "posicao"]:
