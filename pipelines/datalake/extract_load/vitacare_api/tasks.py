@@ -445,3 +445,25 @@ def write_retry_results_on_bq(
     query_job.result()  # Wait for the job to complete
 
     log("Record updated successfully", level="info")
+
+
+@task
+def get_flow_name(endpoint: str):
+    """
+    Get the flow name based on the endpoint
+
+    Args:
+        endpoint (str): The endpoint for the API.
+
+    Returns:
+        str: The flow name.
+    """
+    if endpoint in ["movimento", "posicao"]:
+        flow_name = "DataLake - Extração e Carga de Dados - VitaCare"
+    elif endpoint == "backup_prontuario":
+        flow_name = "DataLake - Extração e Carga de Dados - VitaCare DB"
+    else:
+        err_msg = "Invalid endpoint. Expected 'movimento', 'posicao' or 'backup_prontuario'"
+        log(err_msg, level="error")
+        raise FAIL(err_msg)
+    return flow_name

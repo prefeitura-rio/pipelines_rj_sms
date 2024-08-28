@@ -27,6 +27,7 @@ from pipelines.datalake.extract_load.vitacare_api.tasks import (
     save_data_to_file,
     transform_data,
     write_retry_results_on_bq,
+    get_flow_name,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.prontuarios.utils.tasks import (
@@ -213,8 +214,10 @@ with Flow(
 
     current_flow_run_labels = get_current_flow_labels()
 
+    flow_name = get_flow_name(endpoint=ENDPOINT)
+
     created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("DataLake - Extração e Carga de Dados - VitaCare"),
+        flow_name=unmapped(flow_name),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
