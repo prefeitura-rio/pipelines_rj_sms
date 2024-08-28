@@ -284,32 +284,43 @@ def create_parameter_list(
 
     # Filter the queried table
     if is_routine:
+
         results = table_data[
             (table_data["prontuario_versao"] == "vitacare")
             & (table_data["prontuario_estoque_tem_dado"] == "sim")
         ]
-        results["data"] = convert_str_to_date(target_date)
+
+        if endpoint in ["movimento", "posicao"]:
+            results["data"] = convert_str_to_date(target_date)
+
     else:
+
         results = table_data[
             (table_data["retry_status"] == "pending")
             | (table_data["retry_status"] == "in progress")
         ]
+
         results = results[(results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date())]
+
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
+
     if area_programatica:
+
         results = results[results["area_programatica"] == area_programatica]
 
     if results.empty and is_routine:
         log("No data to process", level="error")
         raise FAIL("No data to process")
 
-    results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
-
     # Construct the parameters for the flow
+    
     vitacare_flow_parameters = []
-    for cnes, date_target in results_tuples:
 
-        if endpoint in ["movimento", "posicao"]:
+    if endpoint in ["movimento", "posicao"]:
+
+        results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
+
+        for cnes, date_target in results_tuples:
             vitacare_flow_parameters.append(
                 {
                     "cnes": cnes,
@@ -322,7 +333,9 @@ def create_parameter_list(
                     "is_routine": is_routine,
                 }
             )
-        elif endpoint == "backup_prontuario":
+    elif endpoint == "backup_prontuario":
+
+        for cnes in results["id_cnes"]:
             vitacare_flow_parameters.append(
                 {
                     "cnes": cnes,
@@ -331,9 +344,10 @@ def create_parameter_list(
                     "rename_flow": True,
                 }
             )
-        else:
-            log("Invalid endpoint", level="error")
-            raise FAIL("Invalid endpoint")
+
+    else:
+        log("Invalid endpoint", level="error")
+        raise FAIL("Invalid endpoint")
 
     logger = prefect.context.get("logger")
     logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
