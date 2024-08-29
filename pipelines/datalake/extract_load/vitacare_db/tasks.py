@@ -49,10 +49,11 @@ def download_from_cloud_storage_task(path: str, bucket_name: str, blob_prefix: s
         blob_prefix=blob_prefix,
     )
 
-    if len(downloaded_files) == 11:
+    if len(downloaded_files) == 13:
         log("Files downloaded successfully")
         return downloaded_files
     else:
+        log(f"Downloaded {len(downloaded_files)} files, expected 13", level="error")
         raise FAIL(f"Downloaded {len(downloaded_files)} files, expected 11")
 
 
