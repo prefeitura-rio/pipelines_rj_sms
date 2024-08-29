@@ -174,10 +174,10 @@ def add_flow_metadata(
         log(f"Invalid value for file_type: {file_type}", level="error")
         raise ValueError("Invalid value for file_type")
 
-    df["_data_carga"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+    df["imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
     if snapshot_date is not None:
-        df["_data_snapshot"] = snapshot_date
+        df["created_at"] = snapshot_date
     else:
         if parse_date_from == "filename":
             snapshot_date = re.findall(r"\d{6}", file_path)[0]
