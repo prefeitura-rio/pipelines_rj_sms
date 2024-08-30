@@ -44,7 +44,9 @@ def add_flow_metadata(
 
     df = pd.read_parquet(file_path)
 
+    df["id_cnes"] = str(file_path.parent).split("/")[-1]
     df["imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+
     df.to_parquet(file_path, index=False)
 
     return file_path
