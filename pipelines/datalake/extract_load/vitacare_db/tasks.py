@@ -54,7 +54,7 @@ def download_from_cloud_storage_task(path: str, bucket_name: str, blob_prefix: s
         return downloaded_files
     else:
         log(f"Downloaded {len(downloaded_files)} files, expected 13", level="error")
-        raise FAIL(f"Downloaded {len(downloaded_files)} files, expected 11")
+        raise FAIL(f"Downloaded {len(downloaded_files)} files, expected 13")
 
 
 @task
