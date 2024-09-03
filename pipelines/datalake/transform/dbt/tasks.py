@@ -5,6 +5,7 @@
 Tasks for execute_dbt
 """
 
+import json
 import os
 import shutil
 
@@ -19,7 +20,8 @@ from pipelines.datalake.transform.dbt.constants import (
     constants as execute_dbt_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.dbt import Summarizer, log_to_file, process_dbt_logs
+from pipelines.utils.dbt.dbt import Summarizer, log_to_file, process_dbt_logs
+from pipelines.utils.dbt.extensions import classify_access
 from pipelines.utils.googleutils import (
     download_from_cloud_storage,
     upload_to_cloud_storage,
@@ -70,8 +72,8 @@ def execute_dbt(
     target: str = "dev",
     select="",
     exclude="",
-    state="",
     flag="",
+    **kwargs,
 ):
     """
     Executes a dbt command with the specified parameters.
@@ -90,7 +92,7 @@ def execute_dbt(
 
     cli_args = commands + ["--profiles-dir", repository_path, "--project-dir", repository_path]
 
-    if command in ("build", "data_test", "run", "test"):
+    if command in ("build", "data_test", "run", "test", "ls"):
 
         cli_args.extend(
             [
@@ -103,10 +105,12 @@ def execute_dbt(
             cli_args.extend(["--select", select])
         if exclude:
             cli_args.extend(["--exclude", exclude])
-        if state:
-            cli_args.extend(["--state", state])
         if flag:
             cli_args.extend([flag])
+
+        for key, value in kwargs.items():
+            if value:
+                cli_args.extend([f"--{key.replace('_', '-')}", value])
 
         log(f"Executing dbt command: {' '.join(cli_args)}", level="info")
 
@@ -289,3 +293,52 @@ def check_if_dbt_artifacts_upload_is_needed(command: str):
 
     if command in ["build", "source freshness"]:
         return True
+
+
+@task
+def add_access_tag_to_bq_tables(repository_path: str, state_file_path: str):
+    """
+    Tags the modified tables.
+    """
+
+    with open(f"{state_file_path}/manifest.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    modified_tables = execute_dbt.run(
+        repository_path=repository_path,
+        command="ls",
+        state=state_file_path,
+        select="state:modified.configs",
+        resource_type= "model source",
+    )
+
+    for table in modified_tables.result:
+
+        log(f"Classifying {table}", level="debug")
+
+        if "source" in table:
+            dbt_type = "source"
+            node = "sources"
+            dbt_table_id = table.replace("source:", "source.")
+        else:
+            dbt_type = "model"
+            node = "nodes"
+            dbt_table_id = f"model.rj_sms.{table.split('.')[-1]}"
+            # print(dbt_table_id)
+            # print(bq_table_name)
+        try:
+            properties = manifest[node][dbt_table_id]
+            # print(properties["config"]["labels"])
+            # print(classify_access(properties))
+            if dbt_type == "model":
+                bq_table_name = f"{properties['database']}.{properties['schema']}.{properties['alias']}"
+            else:
+                bq_table_name = f"{properties['database']}.{properties['schema']}.{properties['name']}"
+
+            result = {"bq_table_name": bq_table_name, "access": classify_access(properties)}
+
+            log(result, level="info")
+
+        except Exception as e:
+            log(f"Excpetion: {e}", level="error")
+            continue
