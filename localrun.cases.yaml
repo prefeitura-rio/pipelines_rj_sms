@@ -44,7 +44,7 @@ cases:
       is_initial_extraction: false
       start_datetime: "2024-06-05"
       end_datetime: "2024-06-06"
-  - case_slug: "datalake-extract_load-vitacare-agendador"
+  - case_slug: "datalake-extract_load-vitacare-agendador-reprocessamento"
     flow_path: "pipelines.datalake.extract_load.vitacare_api.flows"
     flow_name: "sms_dump_vitacare_estoque_scheduler"
     params:
