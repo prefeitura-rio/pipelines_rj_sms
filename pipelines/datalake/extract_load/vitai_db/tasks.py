@@ -33,6 +33,7 @@ def list_tables_to_import():
         "resumo_alta",
         "internacao",
         "alta",
+        "error",
     ]
 
 
