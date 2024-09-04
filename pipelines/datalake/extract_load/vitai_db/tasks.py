@@ -129,9 +129,12 @@ def import_vitai_table(
         where datahora >= '{interval_start}' and datahora < '{interval_end}'
     """
     log("Built query: \n" + query)
-
-    df = pd.read_sql(query, db_url, dtype=str)
-    log(f"Query executed successfully. Found {df.shape[0]} rows.")
+    try:
+        df = pd.read_sql(query, db_url, dtype=str)
+        log(f"Query executed successfully. Found {df.shape[0]} rows.")
+    except Exception as e:
+        log(f"Error executing query: {e}", level="error")
+        return []
 
     if "id" in df.columns:
         log("Detected `id` column in dataframe. Renaming to `gid`", level="warning")
