@@ -2,10 +2,11 @@
 # pylint: disable=C0103, C0301
 # flake8: noqa: E501
 import os
-import shlex
+
 import subprocess
 import pandas as pd
 from google.cloud import bigquery, storage
+from prefeitura_rio.pipelines_utils.logging import log
 
 
 def generate_bigquery_schema(df: pd.DataFrame) -> list[bigquery.SchemaField]:
@@ -120,19 +121,34 @@ def clear_bucket(bucket_name: str):
 def tag_bigquery_table(
     project_id: str, dataset_id: str, table_id: str, tag_key: str, tag_value: str
 ):
-    """
-    Tags a BigQuery table with the specified tag.
+    '''
+    Tag a BigQuery table with a specified key-value pair.
 
     Args:
-        project_id (str): The project ID of the BigQuery table.
-        dataset_id (str): The dataset ID of the BigQuery table.
-        table_id (str): The table ID of the BigQuery table.
-        tag (str): The tag to be added to the BigQuery table.
-    """
+        project_id (str): The ID of the project containing the BigQuery table.
+        dataset_id (str): The ID of the dataset containing the BigQuery table.
+        table_id (str): The ID of the BigQuery table to tag.
+        tag_key (str): The key of the tag to add.
+        tag_value (str): The value of the tag to add.
 
-    command_line = f"bq update --add_tags={project_id}/{tag_key}:{tag_value} \\ {project_id}:{dataset_id}.{table_id}"
-    args = shlex.split(command_line)
+    Returns:
+        CompletedProcess: Result of the subprocess run.
 
-    result = subprocess.run(args, check=True, shell=True)
+    Raises:
+        CalledProcessError: If an error occurs during the subprocess run.
+    '''
 
-    return result
+    command = [
+        "bq",
+        "update",
+        f"--add_tags={project_id}/{tag_key}:{tag_value}",
+        f"{project_id}:{dataset_id}.{table_id}",
+    ]
+
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        log(f"Tag added successfully: {result.stdout}", level="info")
+        return result
+    except subprocess.CalledProcessError as e:
+        log(f"Error adding tag: {e.stderr}", level="error")
+        raise

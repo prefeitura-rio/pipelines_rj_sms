@@ -297,25 +297,31 @@ def check_if_dbt_artifacts_upload_is_needed(command: str):
 
 
 @task
-def add_access_tag_to_bq_tables(repository_path: str, state_file_path: str):
+def add_access_tag_to_bq_tables(
+    dbt_repository_path: str,
+    dbt_state_file_path: str,
+    dbt_select: str = None,
+    dbt_exclude: str = None,
+):
     """
     Tags the modified tables.
     """
 
     # retrieve which tables need to be tagged
-    modified_tables = execute_dbt.run(
-        repository_path=repository_path,
+    tables = execute_dbt.run(
+        repository_path=dbt_repository_path,
         command="ls",
-        state=state_file_path,
-        select="state:modified.configs",
+        state=dbt_state_file_path,
+        select=dbt_select,
+        exclude=dbt_exclude,
         resource_type="model source",
     )
 
     # New manifest
-    with open(f"{repository_path}/target/manifest.json", "r", encoding="utf-8") as f:
+    with open(f"{dbt_repository_path}/target/manifest.json", "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
-    for table in modified_tables.result:
+    for table in tables.result:
 
         log(f"Classifying {table}", level="debug")
 
@@ -342,10 +348,10 @@ def add_access_tag_to_bq_tables(repository_path: str, state_file_path: str):
                 project_id=project,
                 dataset_id=dataset,
                 table_id=table,
-                tag_key="classficacao",
+                tag_key="classificacao",
                 tag_value=classificacao,
             )
 
-        log(f"Table {table} classified as {classificacao}", level="info")
+            log(f"Table {table} classified as {classificacao}", level="info")
 
     return

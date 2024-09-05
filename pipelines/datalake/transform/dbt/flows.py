@@ -91,7 +91,10 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     # Classify tables
     # Tag tables
     add_access_tag_to_bq_tables_task = add_access_tag_to_bq_tables(
-        repository_path=download_repository_task, state_file_path=download_dbt_artifacts_task
+        dbt_repository_path=download_repository_task,
+        dbt_state_file_path=download_dbt_artifacts_task,
+        dbt_select=SELECT,
+        dbt_exclude=EXCLUDE,
     )
     add_access_tag_to_bq_tables_task.set_upstream(running_results)
 
@@ -105,7 +108,9 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
         upload_dbt_artifacts_to_gcs_task = upload_dbt_artifacts_to_gcs(
             dbt_path=download_repository_task, environment=ENVIRONMENT
         )
-        upload_dbt_artifacts_to_gcs_task.set_upstream(add_access_tag_to_bq_tables_task)
+        upload_dbt_artifacts_to_gcs_task.set_upstream(
+            [add_access_tag_to_bq_tables_task, running_results]
+        )
 
 
 # Storage and run configs
