@@ -25,6 +25,7 @@ from pipelines.utils.dbt.extensions import classify_access
 from pipelines.utils.googleutils import (
     download_from_cloud_storage,
     upload_to_cloud_storage,
+    tag_bigquery_table,
 )
 from pipelines.utils.monitor import send_message
 
@@ -266,7 +267,7 @@ def download_dbt_artifacts_from_gcs(dbt_path: str, environment: str):
         log(f"DBT artifacts downloaded from GCS bucket: {gcs_bucket}", level="info")
         return target_base_path
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         log(f"Error when downloading DBT artifacts from GCS: {e}", level="error")
         return None
 
@@ -301,21 +302,24 @@ def add_access_tag_to_bq_tables(repository_path: str, state_file_path: str):
     Tags the modified tables.
     """
 
-    with open(f"{state_file_path}/manifest.json", "r", encoding="utf-8") as f:
-        manifest = json.load(f)
-
+    # retrieve which tables need to be tagged
     modified_tables = execute_dbt.run(
         repository_path=repository_path,
         command="ls",
         state=state_file_path,
         select="state:modified.configs",
-        resource_type= "model source",
+        resource_type="model source",
     )
+
+    # New manifest
+    with open(f"{repository_path}/target/manifest.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
 
     for table in modified_tables.result:
 
         log(f"Classifying {table}", level="debug")
 
+        # Get the table properties
         if "source" in table:
             dbt_type = "source"
             node = "sources"
@@ -324,21 +328,24 @@ def add_access_tag_to_bq_tables(repository_path: str, state_file_path: str):
             dbt_type = "model"
             node = "nodes"
             dbt_table_id = f"model.rj_sms.{table.split('.')[-1]}"
-            # print(dbt_table_id)
-            # print(bq_table_name)
-        try:
-            properties = manifest[node][dbt_table_id]
-            # print(properties["config"]["labels"])
-            # print(classify_access(properties))
-            if dbt_type == "model":
-                bq_table_name = f"{properties['database']}.{properties['schema']}.{properties['alias']}"
-            else:
-                bq_table_name = f"{properties['database']}.{properties['schema']}.{properties['name']}"
 
-            result = {"bq_table_name": bq_table_name, "access": classify_access(properties)}
+        properties = manifest[node][dbt_table_id]
 
-            log(result, level="info")
+        # Get the BigQuery table name
+        project = properties["database"]
+        dataset = properties["schema"]
+        table = properties["alias"] if dbt_type == "model" else properties["name"]
+        classificacao = classify_access(properties)
 
-        except Exception as e:
-            log(f"Excpetion: {e}", level="error")
-            continue
+        if classificacao != "nao_definido":
+            tag_bigquery_table(
+                project_id=project,
+                dataset_id=dataset,
+                table_id=table,
+                tag_key="classficacao",
+                tag_value=classificacao,
+            )
+
+        log(f"Table {table} classified as {classificacao}", level="info")
+
+    return

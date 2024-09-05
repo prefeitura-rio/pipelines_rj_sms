@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=C0103, C0301
+# flake8: noqa: E501
 import os
-
+import shlex
+import subprocess
 import pandas as pd
 from google.cloud import bigquery, storage
 
@@ -112,3 +115,24 @@ def clear_bucket(bucket_name: str):
 
     for blob in blobs:
         blob.delete()
+
+
+def tag_bigquery_table(
+    project_id: str, dataset_id: str, table_id: str, tag_key: str, tag_value: str
+):
+    """
+    Tags a BigQuery table with the specified tag.
+
+    Args:
+        project_id (str): The project ID of the BigQuery table.
+        dataset_id (str): The dataset ID of the BigQuery table.
+        table_id (str): The table ID of the BigQuery table.
+        tag (str): The tag to be added to the BigQuery table.
+    """
+
+    command_line = f"bq update --add_tags={project_id}/{tag_key}:{tag_value} \\ {project_id}:{dataset_id}.{table_id}"
+    args = shlex.split(command_line)
+
+    result = subprocess.run(args, check=True, shell=True)
+
+    return result
