@@ -147,8 +147,8 @@ def tag_bigquery_table(
 
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True)
-        log(f"Tag added successfully: {result.stdout}", level="info")
-        return result
+        log(f"{result.stdout}Value: {project_id}/{tag_key}: {tag_value}", level="info")
+        return
     except subprocess.CalledProcessError as e:
         log(f"Error adding tag: {e.stderr}", level="error")
         raise

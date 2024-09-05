@@ -307,6 +307,7 @@ def add_access_tag_to_bq_tables(
     Tags the modified tables.
     """
 
+    log("Identifying tables for tagging", level="info")
     # retrieve which tables need to be tagged
     tables = execute_dbt.run(
         repository_path=dbt_repository_path,
@@ -317,15 +318,14 @@ def add_access_tag_to_bq_tables(
         resource_type="model source",
     )
 
-    # New manifest
+    log("Starting table tagging process", level="info")
+
     with open(f"{dbt_repository_path}/target/manifest.json", "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
     for table in tables.result:
 
-        log(f"Classifying {table}", level="debug")
-
-        # Get the table properties
+        # Retrieve table properties
         if "source" in table:
             dbt_type = "source"
             node = "sources"
@@ -337,13 +337,13 @@ def add_access_tag_to_bq_tables(
 
         properties = manifest[node][dbt_table_id]
 
-        # Get the BigQuery table name
+        # Set BigQuery table name
         project = properties["database"]
         dataset = properties["schema"]
         table = properties["alias"] if dbt_type == "model" else properties["name"]
         classificacao = classify_access(properties)
 
-        if classificacao != "nao_definido":
+        if classificacao in ["publico", "interno", "confidencial", "restrito"]:
             tag_bigquery_table(
                 project_id=project,
                 dataset_id=dataset,
@@ -351,7 +351,7 @@ def add_access_tag_to_bq_tables(
                 tag_key="classificacao",
                 tag_value=classificacao,
             )
-
-            log(f"Table {table} classified as {classificacao}", level="info")
+        else:
+            log(f"Table {project}:{dataset}.{table} not classified", level="warning")
 
     return
