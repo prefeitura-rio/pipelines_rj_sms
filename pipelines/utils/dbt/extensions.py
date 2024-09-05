@@ -17,8 +17,10 @@ def classify_access(properties: dict):
     Raises:
         None
     """
-
-    labels = properties["config"]["labels"]
+    try:
+        labels = properties["config"]["labels"]
+    except KeyError:
+        return "nao_definido"
 
     keys = ["dado_publico", "dado_sensivel_saude", "dado_pessoal", "dado_anonimizado"]
 
