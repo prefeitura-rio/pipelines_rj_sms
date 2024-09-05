@@ -14,16 +14,13 @@ RUN apt-get update && \
     pkg-config \
     chromium \
     chromium-driver \
-    && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install GDAL dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libatlas-base-dev \
     libgdal-dev \
-    gfortran
+    gfortran \
+    && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
@@ -45,4 +42,7 @@ RUN python3 -m pip install --prefer-binary --no-cache-dir -U .
 RUN apt-get install apt-transport-https ca-certificates gnupg curl -y --no-install-recommends && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    apt-get update && apt-get install google-cloud-cli -y --no-install-recommends
+    apt-get update && apt-get install google-cloud-cli -y --no-install-recommends \
+    && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
