@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=C0103, C0301
+"""
+Functions to interact with Google Cloud Storage and BigQuery.
+"""
+import os
+
 import pandas as pd
-from google.cloud import bigquery
+from google.cloud import bigquery, storage
 
 
 def generate_bigquery_schema(df: pd.DataFrame) -> list[bigquery.SchemaField]:
@@ -43,3 +49,81 @@ def generate_bigquery_schema(df: pd.DataFrame) -> list[bigquery.SchemaField]:
             )
         )
     return schema
+
+
+def download_from_cloud_storage(path: str, bucket_name: str, blob_prefix: str = None):
+    """
+    Downloads files from Google Cloud Storage to the specified local path.
+
+    Args:
+        path (str): The local path where the files will be downloaded to.
+        bucket_name (str): The name of the Google Cloud Storage bucket.
+        blob_prefix (str, optional): The prefix of the blobs to download. Defaults to None.
+    """
+
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+
+    downloaded_files = []
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    blobs = bucket.list_blobs(prefix=blob_prefix)
+
+    for blob in blobs:
+
+        destination_file_name = os.path.join(path, blob.name)
+
+        os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
+
+        try:
+            blob.download_to_filename(destination_file_name)
+
+            downloaded_files.append(destination_file_name)
+
+        except IsADirectoryError:
+            pass
+
+    return downloaded_files
+
+
+def upload_to_cloud_storage(path: str, bucket_name: str):
+    """
+    Uploads a file or a folder to Google Cloud Storage.
+
+    Args:
+        path (str): The path to the file or folder that needs to be uploaded.
+        bucket_name (str): The name of the bucket in Google Cloud Storage.
+    """
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+
+    if os.path.isfile(path):
+        # Upload a single file
+        blob = bucket.blob(os.path.basename(path))
+        blob.upload_from_filename(path)
+    elif os.path.isdir(path):
+        # Upload a folder
+        for root, _, files in os.walk(path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                blob = bucket.blob(os.path.relpath(file_path, path))
+                blob.upload_from_filename(file_path)
+    else:
+        raise ValueError("Invalid path provided.")
+
+
+def clear_bucket(bucket_name: str):
+    """
+    Clears a Google Cloud Storage bucket by deleting all the blobs.
+
+    Args:
+        bucket_name (str): The name of the bucket in Google Cloud Storage.
+    """
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blobs = bucket.list_blobs()
+
+    for blob in blobs:
+        blob.delete()

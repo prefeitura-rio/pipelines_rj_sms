@@ -43,6 +43,16 @@ flow_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1VCtUiRFxMy1KatBfw9chUppPEIPSGDup9wiwfm9-Djo",  # noqa
         "url_type": "google_sheet",
     },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "INFORMAÇÕES PARA O BI",
+        "rename_flow": True,
+        "table_id": "compras_registro_preco",
+        "url": "https://docs.google.com/spreadsheets/d/1fi7MzF0S4OfTym-fjpLR51wIvTLq-WCE706N6eEEWys",  # noqa
+        "url_type": "google_sheet",
+    },
 ]
 
 

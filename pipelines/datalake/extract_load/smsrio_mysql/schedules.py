@@ -37,6 +37,13 @@ flow_parameters = [
         "rename_flow": True,
         "schema": "subpav_cnes",
     },
+    {
+        "table_id": "contatos_unidades",
+        "dataset_id": smsrio_constants.DATASET_ID.value,
+        "environment": "prod",
+        "rename_flow": True,
+        "schema": "subpav_cnes",
+    },
 ]
 
 

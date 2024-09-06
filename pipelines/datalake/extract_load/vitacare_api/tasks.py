@@ -285,42 +285,70 @@ def create_parameter_list(
 
     # Filter the queried table
     if is_routine:
+
         results = table_data[
             (table_data["prontuario_versao"] == "vitacare")
             & (table_data["prontuario_estoque_tem_dado"] == "sim")
         ]
-        results["data"] = convert_str_to_date(target_date)
+
+        if endpoint in ["movimento", "posicao"]:
+            results["data"] = convert_str_to_date(target_date)
+
     else:
+
         results = table_data[
             (table_data["retry_status"] == "pending")
             | (table_data["retry_status"] == "in progress")
         ]
-        results = results[(results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date())]
+
+        results = results[(results["data"] >= datetime.strptime("2024-08-15", "%Y-%m-%d").date())]
+
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
+
     if area_programatica:
+
         results = results[results["area_programatica"] == area_programatica]
 
     if results.empty and is_routine:
         log("No data to process", level="error")
         raise FAIL("No data to process")
 
-    results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
-
     # Construct the parameters for the flow
+
     vitacare_flow_parameters = []
-    for cnes, target_date in results_tuples:
-        vitacare_flow_parameters.append(
-            {
-                "cnes": cnes,
-                "endpoint": endpoint,
-                "target_date": target_date,
-                "dataset_id": dataset_id,
-                "table_id": table_id,
-                "environment": environment,
-                "rename_flow": True,
-                "is_routine": is_routine,
-            }
-        )
+
+    if endpoint in ["movimento", "posicao"]:
+
+        results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
+
+        for cnes, date_target in results_tuples:
+            vitacare_flow_parameters.append(
+                {
+                    "cnes": cnes,
+                    "endpoint": endpoint,
+                    "target_date": date_target,
+                    "dataset_id": dataset_id,
+                    "table_id": table_id,
+                    "environment": environment,
+                    "rename_flow": True,
+                    "is_routine": is_routine,
+                }
+            )
+    elif endpoint == "backup_prontuario":
+
+        for cnes in results["id_cnes"]:
+            vitacare_flow_parameters.append(
+                {
+                    "cnes": cnes,
+                    "dataset_id": dataset_id,
+                    "environment": environment,
+                    "rename_flow": True,
+                }
+            )
+
+    else:
+        log("Invalid endpoint", level="error")
+        raise FAIL("Invalid endpoint")
 
     logger = prefect.context.get("logger")
     logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
@@ -446,3 +474,25 @@ def write_retry_results_on_bq(
     query_job.result()  # Wait for the job to complete
 
     log("Record updated successfully", level="info")
+
+
+@task
+def get_flow_name(endpoint: str):
+    """
+    Get the flow name based on the endpoint
+
+    Args:
+        endpoint (str): The endpoint for the API.
+
+    Returns:
+        str: The flow name.
+    """
+    if endpoint in ["movimento", "posicao"]:
+        flow_name = "DataLake - Extração e Carga de Dados - VitaCare"
+    elif endpoint == "backup_prontuario":
+        flow_name = "DataLake - Extração e Carga de Dados - VitaCare DB"
+    else:
+        err_msg = "Invalid endpoint. Expected 'movimento', 'posicao' or 'backup_prontuario'"
+        log(err_msg, level="error")
+        raise FAIL(err_msg)
+    return flow_name
