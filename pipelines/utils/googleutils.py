@@ -148,7 +148,19 @@ def tag_bigquery_table(
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True)
         log(f"{result.stdout}Value: {project_id}/{tag_key}: {tag_value}", level="info")
-        return
     except subprocess.CalledProcessError as e:
         log(f"Error adding tag: {e.stderr}", level="error")
         raise
+    
+    command = [
+        "bq",
+        "update",
+        "--set_label",
+        f"acesso:{tag_value}",
+        f"{project_id}:{dataset_id}.{table_id}",
+    ]
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        log(f"{result.stdout}Value: 'acesso': {tag_value}", level="info")
+    except subprocess.CalledProcessError as e:
+        log(f"Error adding tag: {e.stderr}", level="error")
