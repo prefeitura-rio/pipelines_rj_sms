@@ -291,7 +291,7 @@ def create_parameter_list(
             & (table_data["prontuario_estoque_tem_dado"] == "sim")
         ]
 
-        if endpoint in ["movimento", "posicao"]:
+        if endpoint in ["movimento", "posicao", "vacina"]:
             results["data"] = convert_str_to_date(target_date)
 
     else:
@@ -317,7 +317,7 @@ def create_parameter_list(
 
     vitacare_flow_parameters = []
 
-    if endpoint in ["movimento", "posicao"]:
+    if endpoint in ["movimento", "posicao", "vacina"]:
 
         results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
 
