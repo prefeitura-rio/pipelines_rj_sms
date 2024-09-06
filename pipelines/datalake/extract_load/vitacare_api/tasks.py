@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable= C0301. fixme
+# pylint: disable= C0301. C0103
 """
 Tasks for dump_api_vitacare
 """
@@ -487,12 +487,12 @@ def get_flow_name(endpoint: str):
     Returns:
         str: The flow name.
     """
-    if endpoint in ["movimento", "posicao"]:
+    if endpoint in ["movimento", "posicao", "vacina"]:
         flow_name = "DataLake - Extração e Carga de Dados - VitaCare"
     elif endpoint == "backup_prontuario":
         flow_name = "DataLake - Extração e Carga de Dados - VitaCare DB"
     else:
-        err_msg = "Invalid endpoint. Expected 'movimento', 'posicao' or 'backup_prontuario'"
+        err_msg = "Invalid endpoint. Expected 'movimento', 'posicao', 'vacina' or 'backup_prontuario'"  # noqa: E501
         log(err_msg, level="error")
         raise FAIL(err_msg)
     return flow_name
