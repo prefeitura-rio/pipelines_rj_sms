@@ -25,6 +25,15 @@ def classify_access(properties: dict):
     keys = ["dado_publico", "dado_sensivel_saude", "dado_pessoal", "dado_anonimizado"]
 
     if all(key in labels.keys() for key in keys):
+
+        # handle conflict between labels
+        if labels["dado_publico"] == "sim" and labels["dado_sensivel_saude"] == "sim":
+            if labels["dado_anonimizado"] == "sim":
+                return "confidencial"
+            else:
+                return "restrito"
+
+        # classify access level
         if labels["dado_pessoal"] == "sim":
             if labels["dado_publico"] == "sim":
                 return "publico"
