@@ -88,8 +88,6 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     # Task section #2 - Tag BigQuery Tables
     ################################
 
-    # Classify tables
-    # Tag tables
     add_access_tag_to_bq_tables_task = add_access_tag_to_bq_tables(
         dbt_repository_path=download_repository_task,
         dbt_state_file_path=download_dbt_artifacts_task,

@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103, C0301
 # flake8: noqa: E501
+"""
+Functions to interact with Google Cloud services.
+"""
+
 import os
 
 import subprocess
@@ -151,16 +155,37 @@ def tag_bigquery_table(
     except subprocess.CalledProcessError as e:
         log(f"Error adding tag: {e.stderr}", level="error")
         raise
-    
+
+
+def label_bigquery_table(
+    project_id: str, dataset_id: str, table_id: str, label_key: str, label_value: str
+):
+    """
+    Label a BigQuery table with a specified key-value pair.
+
+    Args:
+        project_id (str): The ID of the project containing the BigQuery table.
+        dataset_id (str): The ID of the dataset containing the BigQuery table.
+        table_id (str): The ID of the BigQuery table to label.
+        label_key (str): The key of the label to add.
+        label_value (str): The value of the label to add.
+
+    Returns:
+        CompletedProcess: Result of the subprocess run.
+
+    Raises:
+        CalledProcessError: If an error occurs during the subprocess run.
+    """
+
     command = [
         "bq",
         "update",
         "--set_label",
-        f"acesso:{tag_value}",
+        f"{label_key}:{label_value}",
         f"{project_id}:{dataset_id}.{table_id}",
     ]
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True)
-        log(f"{result.stdout}Value: 'acesso': {tag_value}", level="info")
+        log(f"{result.stdout}Value: {label_key}: {label_value}", level="info")
     except subprocess.CalledProcessError as e:
-        log(f"Error adding tag: {e.stderr}", level="error")
+        log(f"Error adding label: {e.stderr}", level="error")

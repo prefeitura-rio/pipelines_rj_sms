@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
-# pylint: disable= C0301
+# pylint: disable= C0301, C0116
 # flake8: noqa E501
+"""
+Functions to interact with DBT
+"""
+
 import re
 
 import pandas as pd
