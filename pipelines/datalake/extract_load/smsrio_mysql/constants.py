@@ -18,5 +18,6 @@ class constants(Enum):
         "estoque": "estoque_posicao_almoxarifado_aps_dengue",
         "itens_estoque": "materiais_almoxarifado_dengue",
         "contatos_equipes": "equipe_contato",
+        "contatos_unidades": "estabelecimento_contato",
         "Unidades_OSA": "unidade_osa",
     }

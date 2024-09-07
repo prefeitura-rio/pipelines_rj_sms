@@ -24,6 +24,7 @@ from pipelines.datalake.extract_load.vitacare_api.tasks import (
     create_parameter_list,
     create_partitions,
     extract_data_from_api,
+    get_flow_name,
     save_data_to_file,
     transform_data,
     write_retry_results_on_bq,
@@ -182,7 +183,7 @@ with Flow(
 
     # GCP
     DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
-    TABLE_ID = Parameter("table_id", required=True)
+    TABLE_ID = Parameter("table_id", default=None)
 
     #####################################
     # Set environment
@@ -213,8 +214,10 @@ with Flow(
 
     current_flow_run_labels = get_current_flow_labels()
 
+    flow_name = get_flow_name(endpoint=ENDPOINT)
+
     created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("DataLake - Extração e Carga de Dados - VitaCare"),
+        flow_name=unmapped(flow_name),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
