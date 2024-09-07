@@ -11,7 +11,10 @@ import shutil
 
 import git
 import prefect
-from dbt.cli.main import dbtRunner, dbtRunnerResult  # pylint: disable=import-error, no-name-in-module
+from dbt.cli.main import (  # pylint: disable=import-error, no-name-in-module
+    dbtRunner,
+    dbtRunnerResult,
+)
 from prefect.client import Client
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
@@ -24,9 +27,9 @@ from pipelines.utils.dbt.dbt import Summarizer, log_to_file, process_dbt_logs
 from pipelines.utils.dbt.extensions import classify_access
 from pipelines.utils.googleutils import (
     download_from_cloud_storage,
-    upload_to_cloud_storage,
-    tag_bigquery_table,
     label_bigquery_table,
+    tag_bigquery_table,
+    upload_to_cloud_storage,
 )
 from pipelines.utils.monitor import send_message
 
@@ -355,13 +358,10 @@ def add_access_tag_to_bq_tables(
 
         label_bigquery_table(
             project_id=project,
-                dataset_id=dataset,
-                table_id=table,
-                label_key="acesso",
-                label_value=classificacao,
-            )
-
-
-
+            dataset_id=dataset,
+            table_id=table,
+            label_key="acesso",
+            label_value=classificacao,
+        )
 
     return

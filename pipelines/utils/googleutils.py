@@ -6,8 +6,8 @@ Functions to interact with Google Cloud services.
 """
 
 import os
-
 import subprocess
+
 import pandas as pd
 from google.cloud import bigquery, storage
 from prefeitura_rio.pipelines_utils.logging import log
@@ -136,7 +136,7 @@ def clear_bucket(bucket_name: str):
 def tag_bigquery_table(
     project_id: str, dataset_id: str, table_id: str, tag_key: str, tag_value: str
 ):
-    '''
+    """
     Tag a BigQuery table with a specified key-value pair.
 
     Args:
@@ -151,7 +151,7 @@ def tag_bigquery_table(
 
     Raises:
         CalledProcessError: If an error occurs during the subprocess run.
-    '''
+    """
 
     command = [
         "bq",
