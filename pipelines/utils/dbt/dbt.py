@@ -8,7 +8,7 @@ Functions to interact with DBT
 import re
 
 import pandas as pd
-from dbt.contracts.results import RunResult, SourceFreshnessResult
+from dbt.contracts.results import RunResult, SourceFreshnessResult  # pylint: disable=import-error, no-name-in-module
 from prefeitura_rio.pipelines_utils.logging import log
 
 

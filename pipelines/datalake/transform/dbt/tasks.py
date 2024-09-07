@@ -355,6 +355,8 @@ def add_access_tag_to_bq_tables(
                 tag_key="classificacao",
                 tag_value=classificacao,
             )
+        else:
+            log(f"Could not classify access for table {table}", level="warning")
 
         label_bigquery_table(
             project_id=project,

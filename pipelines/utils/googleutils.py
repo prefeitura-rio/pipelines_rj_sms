@@ -162,7 +162,7 @@ def tag_bigquery_table(
 
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True)
-        log(f"{result.stdout}Value: {project_id}/{tag_key}: {tag_value}", level="info")
+        log(f"{result.stdout}Tag: {project_id}/{tag_key}: {tag_value}", level="info")
     except subprocess.CalledProcessError as e:
         log(f"Error adding tag: {e.stderr}", level="error")
         raise
@@ -197,6 +197,6 @@ def label_bigquery_table(
     ]
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True)
-        log(f"{result.stdout}Value: {label_key}: {label_value}", level="info")
+        log(f"{result.stdout}Label: {label_key}: {label_value}", level="info")
     except subprocess.CalledProcessError as e:
         log(f"Error adding label: {e.stderr}", level="error")
