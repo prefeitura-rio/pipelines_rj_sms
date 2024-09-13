@@ -7,9 +7,9 @@ Functions to interact with Google Cloud services.
 
 import os
 import subprocess
-import sh
 
 import pandas as pd
+import sh
 from google.cloud import bigquery, storage
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -159,19 +159,23 @@ def tag_bigquery_table(
             f"--add_tags={project_id}/{tag_key}:{tag_value}",
             f"{project_id}:{dataset_id}.{table_id}_",
         )
-        log(f"Tag adicionada com sucesso: {project_id}/{tag_key}:{tag_value}\nSaída: {result}", level="info")
+        log(
+            f"Tag adicionada com sucesso: {project_id}/{tag_key}:{tag_value}\nSaída: {result}",
+            level="info",
+        )
     except sh.ErrorReturnCode as e:
         error_message = f"Erro ao adicionar tag: {e.stderr.decode('utf-8')}"
         log(error_message, level="error")
         raise RuntimeError(error_message)
-    
 
-    #command = [
+    # command = [
     #    "bq",
     #    "update",
     #    f"--add_tags={project_id}/{tag_key}:{tag_value}",
     #    f"{project_id}:{dataset_id}.{table_id}",
-    #]poetr
+    # ]poetr
+
+
 #
 # try:
 #    log(f"Executing command: {' '.join(command)}", level="info")
