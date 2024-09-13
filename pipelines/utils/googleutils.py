@@ -5,8 +5,8 @@
 Functions to interact with Google Cloud services.
 """
 
+import json
 import os
-import subprocess
 
 import pandas as pd
 import sh
@@ -154,53 +154,19 @@ def tag_bigquery_table(
         CalledProcessError: If an error occurs during the subprocess run.
     """
     try:
-        log("Executando comando com sh", level="info")
+        # log("Executando comando com sh", level="info")
         result = sh.bq.update(
             f"--add_tags={project_id}/{tag_key}:{tag_value}",
             f"{project_id}:{dataset_id}.{table_id}",
         )
         log(
-            f"Tag adicionada com sucesso: {project_id}/{tag_key}:{tag_value}\nSaída: {result}",
+            f"Tag added successfully: {project_id}/{tag_key}:{tag_value}\nReturn: {result}",
             level="info",
         )
     except sh.ErrorReturnCode as e:
-        error_message = f"Erro ao adicionar tag: {e.stderr.decode('utf-8')}"
+        error_message = f"Error adding tag to table: {e.stderr.decode('utf-8')}"
         log(error_message, level="error")
-        raise RuntimeError(error_message)
-
-    # command = [
-    #    "bq",
-    #    "update",
-    #    f"--add_tags={project_id}/{tag_key}:{tag_value}",
-    #    f"{project_id}:{dataset_id}.{table_id}",
-    # ]poetr
-
-
-#
-# try:
-#    log(f"Executing command: {' '.join(command)}", level="info")
-#    result = subprocess.run(command, check=True, capture_output=True, text=True)
-#    log(f"Command output: {result.stdout}", level="info")
-#    log(f"Tag added successfully: {project_id}/{tag_key}:{tag_value}", level="info")
-#    return result
-# except subprocess.CalledProcessError as e:
-#    error_message = (
-#        f"Error adding tag to table {project_id}:{dataset_id}.{table_id}\n"
-#        f"Command: {' '.join(command)}\n"
-#        f"Exit Code: {e.returncode}\n"
-#        f"Error Output: {e.stderr}\n"
-#        f"Stack Trace: {traceback.format_exc()}"
-#    )
-#    log(error_message, level="error")
-#    raise
-# except Exception as ex:
-#    general_error = (
-#        f"Unexpected error occurred while tagging table {project_id}:{dataset_id}.{table_id}\n"
-#        f"Error: {str(ex)}\n"
-#        f"Stack Trace: {traceback.format_exc()}"
-#    )
-#    log(general_error, level="error")
-#    raise
+        raise RuntimeError(error_message) from e
 
 
 def label_bigquery_table(
@@ -223,15 +189,45 @@ def label_bigquery_table(
         CalledProcessError: If an error occurs during the subprocess run.
     """
 
-    command = [
-        "bq",
-        "update",
-        "--set_label",
-        f"{label_key}:{label_value}",
-        f"{project_id}:{dataset_id}.{table_id}",
-    ]
     try:
-        result = subprocess.run(command, check=True, capture_output=True, text=True)
-        log(f"{result.stdout}Label: {label_key}: {label_value}", level="info")
-    except subprocess.CalledProcessError as e:
-        log(f"Error adding label: {e.stderr}", level="error")
+        # log("Executando comando com sh", level="info")
+        result = sh.bq.update(
+            "--set_label",
+            f"{label_key}:{label_value}",
+            f"{project_id}:{dataset_id}.{table_id}",
+        )
+        log(
+            f"Label added successfully: {project_id}/{label_key}:{label_value}\nReturn: {result}",
+            level="info",
+        )
+    except sh.ErrorReturnCode as e:
+        error_message = f"Error adding label to table: {e.stderr.decode('utf-8')}"
+        log(error_message, level="error")
+        raise RuntimeError(error_message) from e
+
+
+def authenticate_gcloud_cli():
+    """Authentication method to invoke gcloud cli"""
+
+    key_file = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+
+    with open(key_file, "r", encoding="utf-8") as file:
+        key_content = json.load(file)
+
+    service_account = key_content["client_email"]
+    project = key_content["project_id"]
+
+    try:
+        # Run the gcloud auth command using sh
+        sh.gcloud.auth(
+            "activate-service-account",
+            service_account,
+            "--key-file=" + key_file,
+            "--project=" + project
+        )
+        log("Service account activated successfully.")
+
+    except sh.ErrorReturnCode as e:
+        error_message = f"Error activating service account: {e.stderr.decode('utf-8')}"
+        log(error_message, level="error")
+        raise RuntimeError(error_message) from e

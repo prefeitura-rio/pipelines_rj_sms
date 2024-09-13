@@ -26,6 +26,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.dbt.dbt import Summarizer, log_to_file, process_dbt_logs
 from pipelines.utils.dbt.extensions import classify_access
 from pipelines.utils.googleutils import (
+    authenticate_gcloud_cli,
     download_from_cloud_storage,
     label_bigquery_table,
     tag_bigquery_table,
@@ -310,6 +311,8 @@ def add_access_tag_to_bq_tables(
     """
     Tags the modified tables.
     """
+
+    authenticate_gcloud_cli()
 
     log("Identifying tables for tagging", level="info")
     # retrieve which tables need to be tagged
