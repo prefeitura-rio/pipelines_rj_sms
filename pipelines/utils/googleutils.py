@@ -7,6 +7,7 @@ Functions to interact with Google Cloud services.
 
 import os
 import subprocess
+import traceback
 
 import pandas as pd
 from google.cloud import bigquery, storage
@@ -161,10 +162,28 @@ def tag_bigquery_table(
     ]
 
     try:
+        log(f"Executing command: {' '.join(command)}", level="info")
         result = subprocess.run(command, check=True, capture_output=True, text=True)
-        log(f"{result.stdout}Tag: {project_id}/{tag_key}: {tag_value}", level="info")
+        log(f"Command output: {result.stdout}", level="info")
+        log(f"Tag added successfully: {project_id}/{tag_key}:{tag_value}", level="info")
+        return result
     except subprocess.CalledProcessError as e:
-        log(f"Error adding tag: {e.stderr}", level="error")
+        error_message = (
+            f"Error adding tag to table {project_id}:{dataset_id}.{table_id}\n"
+            f"Command: {' '.join(command)}\n"
+            f"Exit Code: {e.returncode}\n"
+            f"Error Output: {e.stderr}\n"
+            f"Stack Trace: {traceback.format_exc()}"
+        )
+        log(error_message, level="error")
+        raise
+    except Exception as ex:
+        general_error = (
+            f"Unexpected error occurred while tagging table {project_id}:{dataset_id}.{table_id}\n"
+            f"Error: {str(ex)}\n"
+            f"Stack Trace: {traceback.format_exc()}"
+        )
+        log(general_error, level="error")
         raise
 
 
