@@ -7,7 +7,7 @@ Functions to interact with Google Cloud services.
 
 import os
 import subprocess
-import traceback
+import sh
 
 import pandas as pd
 from google.cloud import bigquery, storage
@@ -153,38 +153,50 @@ def tag_bigquery_table(
     Raises:
         CalledProcessError: If an error occurs during the subprocess run.
     """
-
-    command = [
-        "bq",
-        "update",
-        f"--add_tags={project_id}/{tag_key}:{tag_value}",
-        f"{project_id}:{dataset_id}.{table_id}",
-    ]
-
     try:
-        log(f"Executing command: {' '.join(command)}", level="info")
-        result = subprocess.run(command, check=True, capture_output=True, text=True)
-        log(f"Command output: {result.stdout}", level="info")
-        log(f"Tag added successfully: {project_id}/{tag_key}:{tag_value}", level="info")
-        return result
-    except subprocess.CalledProcessError as e:
-        error_message = (
-            f"Error adding tag to table {project_id}:{dataset_id}.{table_id}\n"
-            f"Command: {' '.join(command)}\n"
-            f"Exit Code: {e.returncode}\n"
-            f"Error Output: {e.stderr}\n"
-            f"Stack Trace: {traceback.format_exc()}"
+        log("Executando comando com sh", level="info")
+        result = sh.bq.update(
+            f"--add_tags={project_id}/{tag_key}:{tag_value}",
+            f"{project_id}:{dataset_id}.{table_id}_",
         )
+        log(f"Tag adicionada com sucesso: {project_id}/{tag_key}:{tag_value}\nSaída: {result}", level="info")
+    except sh.ErrorReturnCode as e:
+        error_message = f"Erro ao adicionar tag: {e.stderr.decode('utf-8')}"
         log(error_message, level="error")
-        raise
-    except Exception as ex:
-        general_error = (
-            f"Unexpected error occurred while tagging table {project_id}:{dataset_id}.{table_id}\n"
-            f"Error: {str(ex)}\n"
-            f"Stack Trace: {traceback.format_exc()}"
-        )
-        log(general_error, level="error")
-        raise
+        raise RuntimeError(error_message)
+    
+
+    #command = [
+    #    "bq",
+    #    "update",
+    #    f"--add_tags={project_id}/{tag_key}:{tag_value}",
+    #    f"{project_id}:{dataset_id}.{table_id}",
+    #]poetr
+#
+# try:
+#    log(f"Executing command: {' '.join(command)}", level="info")
+#    result = subprocess.run(command, check=True, capture_output=True, text=True)
+#    log(f"Command output: {result.stdout}", level="info")
+#    log(f"Tag added successfully: {project_id}/{tag_key}:{tag_value}", level="info")
+#    return result
+# except subprocess.CalledProcessError as e:
+#    error_message = (
+#        f"Error adding tag to table {project_id}:{dataset_id}.{table_id}\n"
+#        f"Command: {' '.join(command)}\n"
+#        f"Exit Code: {e.returncode}\n"
+#        f"Error Output: {e.stderr}\n"
+#        f"Stack Trace: {traceback.format_exc()}"
+#    )
+#    log(error_message, level="error")
+#    raise
+# except Exception as ex:
+#    general_error = (
+#        f"Unexpected error occurred while tagging table {project_id}:{dataset_id}.{table_id}\n"
+#        f"Error: {str(ex)}\n"
+#        f"Stack Trace: {traceback.format_exc()}"
+#    )
+#    log(general_error, level="error")
+#    raise
 
 
 def label_bigquery_table(
