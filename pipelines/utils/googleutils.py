@@ -157,7 +157,7 @@ def tag_bigquery_table(
         log("Executando comando com sh", level="info")
         result = sh.bq.update(
             f"--add_tags={project_id}/{tag_key}:{tag_value}",
-            f"{project_id}:{dataset_id}.{table_id}_",
+            f"{project_id}:{dataset_id}.{table_id}",
         )
         log(
             f"Tag adicionada com sucesso: {project_id}/{tag_key}:{tag_value}\nSaída: {result}",
