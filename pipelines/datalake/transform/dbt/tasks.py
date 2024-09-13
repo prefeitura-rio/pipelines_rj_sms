@@ -307,6 +307,7 @@ def add_access_tag_to_bq_tables(
     dbt_state_file_path: str,
     dbt_select: str = None,
     dbt_exclude: str = None,
+    dbt_target: str = None,
 ):
     """
     Tags the modified tables.
@@ -322,6 +323,7 @@ def add_access_tag_to_bq_tables(
         state=dbt_state_file_path,
         select=dbt_select,
         exclude=dbt_exclude,
+        target=dbt_target,
         resource_type="model source",
     )
 

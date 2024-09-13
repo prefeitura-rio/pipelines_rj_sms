@@ -93,6 +93,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
         dbt_state_file_path=download_dbt_artifacts_task,
         dbt_select=SELECT,
         dbt_exclude=EXCLUDE,
+        dbt_target=target
     )
     add_access_tag_to_bq_tables_task.set_upstream(running_results)
 
