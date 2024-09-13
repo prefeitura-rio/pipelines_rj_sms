@@ -223,7 +223,7 @@ def authenticate_gcloud_cli():
             "activate-service-account",
             service_account,
             "--key-file=" + key_file,
-            "--project=" + project
+            "--project=" + project,
         )
         log("Service account activated successfully.")
 
