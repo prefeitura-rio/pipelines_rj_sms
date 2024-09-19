@@ -352,6 +352,15 @@ def add_access_tag_to_bq_tables(
         table = properties["alias"] if dbt_type == "model" else properties["name"]
         classificacao = classify_access(properties)
 
+        label_bigquery_table(
+            project_id=project,
+            dataset_id=dataset,
+            table_id=table,
+            label_key="acesso",
+            label_value=classificacao,
+        )
+
+        # add tags to table
         if classificacao in ["publico", "interno", "confidencial", "restrito"]:
             tag_bigquery_table(
                 project_id=project,
@@ -363,12 +372,14 @@ def add_access_tag_to_bq_tables(
         else:
             log(f"Could not classify access for table {table}", level="warning")
 
-        label_bigquery_table(
-            project_id=project,
-            dataset_id=dataset,
-            table_id=table,
-            label_key="acesso",
-            label_value=classificacao,
-        )
-
-    return
+        try:
+            if "dominio" in properties["config"]["labels"]:
+                tag_bigquery_table(
+                    project_id=project,
+                    dataset_id=dataset,
+                    table_id=table,
+                    tag_key="dominio",
+                    tag_value=properties["config"]["labels"]["dominio"],
+                )
+        except KeyError:
+            pass
