@@ -53,6 +53,16 @@ flow_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1fi7MzF0S4OfTym-fjpLR51wIvTLq-WCE706N6eEEWys",  # noqa
         "url_type": "google_sheet",
     },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Farmácias",
+        "rename_flow": True,
+        "table_id": "aps_farmacias",
+        "url": "https://docs.google.com/spreadsheets/d/17b4LRwQ5F5K5jCdeO0_K1NzqoQV9JqSOAuA0HZhG0uI",  # noqa
+        "url_type": "google_sheet",
+    },
 ]
 
 
