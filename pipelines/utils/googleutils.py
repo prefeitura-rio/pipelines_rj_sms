@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103, C0301
+# flake8: noqa: E501
 """
-Functions to interact with Google Cloud Storage and BigQuery.
+Functions to interact with Google Cloud services.
 """
+
+import json
 import os
 
 import pandas as pd
+import sh
 from google.cloud import bigquery, storage
+from prefeitura_rio.pipelines_utils.logging import log
 
 
 def generate_bigquery_schema(df: pd.DataFrame) -> list[bigquery.SchemaField]:
@@ -127,3 +132,102 @@ def clear_bucket(bucket_name: str):
 
     for blob in blobs:
         blob.delete()
+
+
+def tag_bigquery_table(
+    project_id: str, dataset_id: str, table_id: str, tag_key: str, tag_value: str
+):
+    """
+    Tag a BigQuery table with a specified key-value pair.
+
+    Args:
+        project_id (str): The ID of the project containing the BigQuery table.
+        dataset_id (str): The ID of the dataset containing the BigQuery table.
+        table_id (str): The ID of the BigQuery table to tag.
+        tag_key (str): The key of the tag to add.
+        tag_value (str): The value of the tag to add.
+
+    Returns:
+        CompletedProcess: Result of the subprocess run.
+
+    Raises:
+        CalledProcessError: If an error occurs during the subprocess run.
+    """
+    try:
+        # log("Executando comando com sh", level="info")
+        result = sh.bq.update(
+            f"--add_tags={project_id}/{tag_key}:{tag_value}",
+            f"{project_id}:{dataset_id}.{table_id}",
+        )
+        log(
+            f"Tag added successfully: {project_id}/{tag_key}:{tag_value}\nReturn: {result}",
+            level="info",
+        )
+    except sh.ErrorReturnCode as e:
+        error_message = f"Error adding tag to table: {e.stderr.decode('utf-8')}"
+        log(error_message, level="error")
+        raise RuntimeError(error_message) from e
+
+
+def label_bigquery_table(
+    project_id: str, dataset_id: str, table_id: str, label_key: str, label_value: str
+):
+    """
+    Label a BigQuery table with a specified key-value pair.
+
+    Args:
+        project_id (str): The ID of the project containing the BigQuery table.
+        dataset_id (str): The ID of the dataset containing the BigQuery table.
+        table_id (str): The ID of the BigQuery table to label.
+        label_key (str): The key of the label to add.
+        label_value (str): The value of the label to add.
+
+    Returns:
+        CompletedProcess: Result of the subprocess run.
+
+    Raises:
+        CalledProcessError: If an error occurs during the subprocess run.
+    """
+
+    try:
+        # log("Executando comando com sh", level="info")
+        result = sh.bq.update(
+            "--set_label",
+            f"{label_key}:{label_value}",
+            f"{project_id}:{dataset_id}.{table_id}",
+        )
+        log(
+            f"Label added successfully: {project_id}/{label_key}:{label_value}\nReturn: {result}",
+            level="info",
+        )
+    except sh.ErrorReturnCode as e:
+        error_message = f"Error adding label to table: {e.stderr.decode('utf-8')}"
+        log(error_message, level="error")
+        raise RuntimeError(error_message) from e
+
+
+def authenticate_gcloud_cli():
+    """Authentication method to invoke gcloud cli"""
+
+    key_file = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+
+    with open(key_file, "r", encoding="utf-8") as file:
+        key_content = json.load(file)
+
+    service_account = key_content["client_email"]
+    project = key_content["project_id"]
+
+    try:
+        # Run the gcloud auth command using sh
+        sh.gcloud.auth(
+            "activate-service-account",
+            service_account,
+            "--key-file=" + key_file,
+            "--project=" + project,
+        )
+        log("Service account activated successfully.")
+
+    except sh.ErrorReturnCode as e:
+        error_message = f"Error activating service account: {e.stderr.decode('utf-8')}"
+        log(error_message, level="error")
+        raise RuntimeError(error_message) from e

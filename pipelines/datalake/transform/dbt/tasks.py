@@ -5,12 +5,16 @@
 Tasks for execute_dbt
 """
 
+import json
 import os
 import shutil
 
 import git
 import prefect
-from dbt.cli.main import dbtRunner, dbtRunnerResult
+from dbt.cli.main import (  # pylint: disable=import-error, no-name-in-module
+    dbtRunner,
+    dbtRunnerResult,
+)
 from prefect.client import Client
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
@@ -19,9 +23,13 @@ from pipelines.datalake.transform.dbt.constants import (
     constants as execute_dbt_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.dbt import Summarizer, log_to_file, process_dbt_logs
+from pipelines.utils.dbt.dbt import Summarizer, log_to_file, process_dbt_logs
+from pipelines.utils.dbt.extensions import classify_access
 from pipelines.utils.googleutils import (
+    authenticate_gcloud_cli,
     download_from_cloud_storage,
+    label_bigquery_table,
+    tag_bigquery_table,
     upload_to_cloud_storage,
 )
 from pipelines.utils.monitor import send_message
@@ -70,8 +78,8 @@ def execute_dbt(
     target: str = "dev",
     select="",
     exclude="",
-    state="",
     flag="",
+    **kwargs,
 ):
     """
     Executes a dbt command with the specified parameters.
@@ -90,7 +98,7 @@ def execute_dbt(
 
     cli_args = commands + ["--profiles-dir", repository_path, "--project-dir", repository_path]
 
-    if command in ("build", "data_test", "run", "test"):
+    if command in ("build", "data_test", "run", "test", "ls"):
 
         cli_args.extend(
             [
@@ -103,10 +111,12 @@ def execute_dbt(
             cli_args.extend(["--select", select])
         if exclude:
             cli_args.extend(["--exclude", exclude])
-        if state:
-            cli_args.extend(["--state", state])
         if flag:
             cli_args.extend([flag])
+
+        for key, value in kwargs.items():
+            if value:
+                cli_args.extend([f"--{key.replace('_', '-')}", value])
 
         log(f"Executing dbt command: {' '.join(cli_args)}", level="info")
 
@@ -262,7 +272,7 @@ def download_dbt_artifacts_from_gcs(dbt_path: str, environment: str):
         log(f"DBT artifacts downloaded from GCS bucket: {gcs_bucket}", level="info")
         return target_base_path
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         log(f"Error when downloading DBT artifacts from GCS: {e}", level="error")
         return None
 
@@ -289,3 +299,87 @@ def check_if_dbt_artifacts_upload_is_needed(command: str):
 
     if command in ["build", "source freshness"]:
         return True
+
+
+@task
+def add_access_tag_to_bq_tables(
+    dbt_repository_path: str,
+    dbt_state_file_path: str,
+    dbt_select: str = None,
+    dbt_exclude: str = None,
+    dbt_target: str = None,
+):
+    """
+    Tags the modified tables.
+    """
+
+    authenticate_gcloud_cli()
+
+    log("Identifying tables for tagging", level="info")
+    # retrieve which tables need to be tagged
+    tables = execute_dbt.run(
+        repository_path=dbt_repository_path,
+        command="ls",
+        state=dbt_state_file_path,
+        select=dbt_select,
+        exclude=dbt_exclude,
+        target=dbt_target,
+        resource_type="model source",
+    )
+
+    log("Starting table tagging process", level="info")
+
+    with open(f"{dbt_repository_path}/target/manifest.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    for table in tables.result:
+
+        # Retrieve table properties
+        if "source" in table:
+            dbt_type = "source"
+            node = "sources"
+            dbt_table_id = table.replace("source:", "source.")
+        else:
+            dbt_type = "model"
+            node = "nodes"
+            dbt_table_id = f"model.rj_sms.{table.split('.')[-1]}"
+
+        properties = manifest[node][dbt_table_id]
+
+        # Set BigQuery table name
+        project = properties["database"]
+        dataset = properties["schema"]
+        table = properties["alias"] if dbt_type == "model" else properties["name"]
+        classificacao = classify_access(properties)
+
+        label_bigquery_table(
+            project_id=project,
+            dataset_id=dataset,
+            table_id=table,
+            label_key="acesso",
+            label_value=classificacao,
+        )
+
+        # add tags to table
+        if classificacao in ["publico", "interno", "confidencial", "restrito"]:
+            tag_bigquery_table(
+                project_id=project,
+                dataset_id=dataset,
+                table_id=table,
+                tag_key="classificacao",
+                tag_value=classificacao,
+            )
+        else:
+            log(f"Could not classify access for table {table}", level="warning")
+
+        try:
+            if "dominio" in properties["config"]["labels"]:
+                tag_bigquery_table(
+                    project_id=project,
+                    dataset_id=dataset,
+                    table_id=table,
+                    tag_key="dominio",
+                    tag_value=properties["config"]["labels"]["dominio"],
+                )
+        except KeyError:
+            pass

@@ -12,6 +12,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.transform.dbt.schedules import dbt_schedules
 from pipelines.datalake.transform.dbt.tasks import (
+    add_access_tag_to_bq_tables,
     check_if_dbt_artifacts_upload_is_needed,
     create_dbt_report,
     download_dbt_artifacts_from_gcs,
@@ -87,8 +88,14 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     # Task section #2 - Tag BigQuery Tables
     ################################
 
-    # Classify tables
-    # Tag tables
+    add_access_tag_to_bq_tables_task = add_access_tag_to_bq_tables(
+        dbt_repository_path=download_repository_task,
+        dbt_state_file_path=download_dbt_artifacts_task,
+        dbt_select=SELECT,
+        dbt_exclude=EXCLUDE,
+        dbt_target=target,
+    )
+    add_access_tag_to_bq_tables_task.set_upstream(running_results)
 
     ####################################
     # Tasks section #3 - Upload new artifacts to GCS
@@ -100,7 +107,9 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
         upload_dbt_artifacts_to_gcs_task = upload_dbt_artifacts_to_gcs(
             dbt_path=download_repository_task, environment=ENVIRONMENT
         )
-        upload_dbt_artifacts_to_gcs_task.set_upstream(running_results)
+        upload_dbt_artifacts_to_gcs_task.set_upstream(
+            [add_access_tag_to_bq_tables_task, running_results]
+        )
 
 
 # Storage and run configs

@@ -941,13 +941,13 @@ test = ["hypothesis (>=6.87,<7.0)", "pytest (>=7.3,<8.0)", "pytest-cov (>=4.1,<5
 
 [[package]]
 name = "dbt-core"
-version = "1.8.4"
+version = "1.8.6"
 description = "With dbt, data analysts and engineers can build analytics the way engineers build applications."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "dbt_core-1.8.4-py3-none-any.whl", hash = "sha256:d748d51b9d38c0b93b7f047cc32bdd97a5933cb89aec33bf17a47172c12fda03"},
-    {file = "dbt_core-1.8.4.tar.gz", hash = "sha256:3eb37273f7ceaa070a8e3e42bfd806954be769f87292971829ce8e5baa9abad5"},
+    {file = "dbt_core-1.8.6-py3-none-any.whl", hash = "sha256:a0d7187ff69615613f091b48909b3ab719def643e7ccb74670f76dd482b4933c"},
+    {file = "dbt_core-1.8.6.tar.gz", hash = "sha256:a155573745b62c892950b20fb8c4947844fa32ccced89d1cea4f5c81e11438b9"},
 ]
 
 [package.dependencies]
@@ -4874,6 +4874,17 @@ doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-
 test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "importlib-metadata", "ini2toml[lite] (>=0.14)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "jaraco.test", "mypy (==1.10.0)", "packaging (>=23.2)", "pip (>=19.1)", "pyproject-hooks (!=1.1)", "pytest (>=6,!=8.1.*)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-home (>=0.5)", "pytest-mypy", "pytest-perf", "pytest-ruff (>=0.3.2)", "pytest-subprocess", "pytest-timeout", "pytest-xdist (>=3)", "tomli", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel"]
 
 [[package]]
+name = "sh"
+version = "2.0.7"
+description = "Python subprocess replacement"
+optional = false
+python-versions = "<4.0,>=3.8.1"
+files = [
+    {file = "sh-2.0.7-py3-none-any.whl", hash = "sha256:2f2f79a65abd00696cf2e9ad26508cf8abb6dba5745f40255f1c0ded2876926d"},
+    {file = "sh-2.0.7.tar.gz", hash = "sha256:029d45198902bfb967391eccfd13a88d92f7cebd200411e93f99ebacc6afbb35"},
+]
+
+[[package]]
 name = "shapely"
 version = "2.0.2"
 description = "Manipulation and analysis of geometric objects"
@@ -5676,4 +5687,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "78bf098b2309615f46b703c33e0411d4dd56826cf5a0c2dd19ad1a7f709e5d80"
+content-hash = "087b4c2323c8ec06d6c12095d208cd6f40e87d6466f27c63834ffa8a7526d65e"
