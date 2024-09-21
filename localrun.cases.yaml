@@ -142,3 +142,9 @@ cases:
     flow_name: "sms_dump_vitacare_db"
     params:
       environment: "dev"
+  - case_slug: "report-farmacia-controlados"
+    flow_path: "pipelines.reports.farmacia_digital.livro_controlados.flows"
+    flow_name: "report_farmacia_digital_livro_controlados"
+    params:
+      environment: "dev"
+      data_competencia: "2024-09"
