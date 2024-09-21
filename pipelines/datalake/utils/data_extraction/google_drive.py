@@ -14,6 +14,8 @@ from pydrive2.drive import GoogleDrive
 from pipelines.utils.credential_injector import authenticated_task as task
 
 import os
+import concurrent.futures
+from functools import partial
 
 
 @task
@@ -180,7 +182,7 @@ def dowload_from_gdrive(
     return {"has_data": False}
 
 
-def upload_folder_to_gdrive(folder_path: str, parent_folder_id: str):
+def upload_folder_to_gdrive(folder_path: str, parent_folder_id: str, max_workers: int = 20):
     """
     Uploads an entire folder to Google Drive, preserving the folder structure.
     Avoids creating duplicate folders and replaces existing files.
@@ -234,18 +236,24 @@ def upload_folder_to_gdrive(folder_path: str, parent_folder_id: str):
         file.Upload()
 
     def upload_folder(local_path, parent_id):
-        for item in os.listdir(local_path):
+        items = os.listdir(local_path)
+        files_to_upload = []
+
+        for item in items:
             item_path = os.path.join(local_path, item)
             if os.path.isfile(item_path):
-                upload_or_update_file(item_path, parent_id)
+                files_to_upload.append((item_path, parent_id))
             elif os.path.isdir(item_path):
                 subfolder = get_or_create_folder(item, parent_id)
                 upload_folder(item_path, subfolder["id"])
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            list(executor.map(lambda x: upload_or_update_file(*x), files_to_upload))
 
     # Start uploading directly to the provided parent_folder_id
     upload_folder(folder_path, parent_folder_id)
 
     log(
-        f"Folder {folder_path} contents uploaded to Google Drive folder {parent_folder_id}, preserving structure and updating existing files",
+        f"Folder {folder_path} contents uploaded to Google Drive folder {parent_folder_id} in parallel, preserving structure and updating existing files",
         level="info",
     )

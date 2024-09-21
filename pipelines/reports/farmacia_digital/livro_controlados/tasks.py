@@ -42,6 +42,12 @@ def get_month_range(date_str: str) -> tuple[str, str]:
 
     return (first_day, last_date)
 
+@task
+def get_reference_date(competencia: str) -> str:
+    if competencia == "atual":
+        return datetime.now().strftime("%Y-%m")
+    else:
+        return competencia
 
 @task
 def generate_report(output_directory: str, competencia: str):
@@ -51,13 +57,13 @@ def generate_report(output_directory: str, competencia: str):
 
     data_inicio, data_fim = get_month_range(competencia)
 
-    log("Querying BigQuery")
+    log("Extracting data from BigQuery")
 
     dataset_com_movimentacao = dados_com_movimentacao(
         data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")
     )
 
-    log("Medicines with movement records extracted")
+    log("Movement records extracted")
 
 
     dataset_sem_movimentacao = dados_sem_movimentacao(

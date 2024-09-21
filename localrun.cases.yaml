@@ -147,4 +147,4 @@ cases:
     flow_name: "report_farmacia_digital_livro_controlados"
     params:
       environment: "dev"
-      data_competencia: "2024-09"
+      data_competencia: "atual"

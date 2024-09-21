@@ -13,6 +13,7 @@ from pipelines.constants import constants
 from pipelines.utils.tasks import create_folders
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.reports.farmacia_digital.livro_controlados.tasks import (
+    get_reference_date,
     generate_report,
     upload_report_to_gdrive,
 )
@@ -20,6 +21,9 @@ from pipelines.reports.farmacia_digital.livro_controlados.constants import (
     constants as report_constants,
 )
 
+from pipelines.reports.farmacia_digital.livro_controlados.livro_controlados.schedules import (
+    weekly_schedule,
+)
 
 with Flow(
     name="Report: Farmácia Digital - Livro de Medicamentos Controlados",
@@ -35,34 +39,36 @@ with Flow(
 
     # report
     DATA_COMPETENCIA = Parameter(name="data_competencia", required=True)
-    GOOGLE_DRIVE_FOLDER_ID = Parameter(name="google_drive_folder_id", required=False)
 
     #####################################
     # Set environment
     ####################################
     local_folders = create_folders()
 
+    competencia = get_reference_date(competencia=DATA_COMPETENCIA)
+
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
-            competencia=DATA_COMPETENCIA,
+            competencia=competencia,
         )
 
     ####################################
     # Tasks section #1 - Generate report
     ####################################
 
-    reports = generate_report(output_directory=local_folders["raw"], competencia=DATA_COMPETENCIA)
+    reports = generate_report(output_directory=local_folders["raw"], competencia=competencia)
     reports.set_upstream(local_folders)
 
     # Upload to Google Drive
     upload_task = upload_report_to_gdrive(
-        folder_path=local_folders["raw"], folder_id=report_constants.GOOGLE_DRIVE_FOLDER_ID.value
+        folder_path=local_folders["raw"],
+        folder_id=report_constants.GOOGLE_DRIVE_FOLDER_ID[ENVIRONMENT],
     )
     upload_task.set_upstream(reports)
 
 
-# report_farmacia_digital_livro_controlados.schedule = update_schedule
+report_farmacia_digital_livro_controlados.schedule = weekly_schedule
 report_farmacia_digital_livro_controlados.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 report_farmacia_digital_livro_controlados.executor = LocalDaskExecutor(num_workers=1)
 report_farmacia_digital_livro_controlados.run_config = KubernetesRun(
