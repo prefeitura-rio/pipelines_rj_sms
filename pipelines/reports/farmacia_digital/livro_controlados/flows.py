@@ -13,14 +13,11 @@ from pipelines.constants import constants
 from pipelines.utils.tasks import create_folders
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.reports.farmacia_digital.livro_controlados.tasks import (
+    get_google_drive_folder_id,
     get_reference_date,
     generate_report,
     upload_report_to_gdrive,
 )
-from pipelines.reports.farmacia_digital.livro_controlados.constants import (
-    constants as report_constants,
-)
-
 from pipelines.reports.farmacia_digital.livro_controlados.livro_controlados.schedules import (
     weekly_schedule,
 )
@@ -47,6 +44,8 @@ with Flow(
 
     competencia = get_reference_date(competencia=DATA_COMPETENCIA)
 
+    google_drive_folder_id = get_google_drive_folder_id(environment=ENVIRONMENT)
+
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
@@ -63,7 +62,7 @@ with Flow(
     # Upload to Google Drive
     upload_task = upload_report_to_gdrive(
         folder_path=local_folders["raw"],
-        folder_id=report_constants.GOOGLE_DRIVE_FOLDER_ID[ENVIRONMENT],
+        folder_id=google_drive_folder_id,
     )
     upload_task.set_upstream(reports)
 
