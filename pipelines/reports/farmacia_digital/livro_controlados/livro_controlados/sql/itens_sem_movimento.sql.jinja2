@@ -249,9 +249,7 @@ with
 
 select *
 from final
-where
-    id_cnes in ("2280787", "7523246", "2288370", "2280795")  -- Nilza Rosa (22), Nelio de
-    -- Oliveira (10), Pindaro de Carvalho (21)
+
 ), controlados as (
         select * from `rj-sms`.`saude_dados_mestres`.`material` where controlado_indicador = 'sim'
     ),

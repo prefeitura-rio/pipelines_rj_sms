@@ -9,7 +9,7 @@ from google.cloud import bigquery
 from jinja2 import Environment, FileSystemLoader
 
 
-def import_sql_with_date(file_path: str, data_inicio: str, data_fim: str) -> str:
+def import_sql_with_date(file_path: str, data_inicio: str = None, data_fim: str = None) -> str:
     # Set up Jinja2 environment
     env = Environment(loader=FileSystemLoader("."))
 
@@ -17,7 +17,10 @@ def import_sql_with_date(file_path: str, data_inicio: str, data_fim: str) -> str
     template = env.get_template(file_path)
 
     # Render the template with the provided date
-    rendered_sql = template.render(data_inicio=data_inicio, data_fim=data_fim)
+    if data_inicio and data_fim:
+        rendered_sql = template.render(data_inicio=data_inicio, data_fim=data_fim)
+    else:
+        rendered_sql = template.render()
 
     return rendered_sql
 
@@ -69,6 +72,11 @@ def livros_para_gerar() -> pd.DataFrame:
     query = """
     SELECT * FROM rj-sms-dev.thiago__projeto_estoque.report_medicamentos_controlados__relacao_relatorios
     """
+
+    query = import_sql_with_date(
+        "pipelines/reports/farmacia_digital/livro_controlados/livro_controlados/sql/relacao_reports.sql.jinja2",
+    )
+
     query_job = client.query(query)
     results = query_job.result()
 

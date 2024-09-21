@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103, R0913, C0301, W3101
+# pylint: disable=C0103, R0913, C0301, W3101, E1121
 # flake8: noqa: E501
 """
 Tasks for DataSUS pipelines
@@ -51,16 +51,28 @@ def generate_report(output_directory: str, competencia: str):
 
     data_inicio, data_fim = get_month_range(competencia)
 
-    # log.info("Extracting data with movement records")
+    log("Querying BigQuery")
+
     dataset_com_movimentacao = dados_com_movimentacao(
         data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")
     )
+
+    log("Medicines with movement records extracted")
+
+
     dataset_sem_movimentacao = dados_sem_movimentacao(
         data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")
     )
+
+    log("Medicines without movement records extracted")
+
     livros = livros_para_gerar()
 
+    log("Reports to be generated extracted")
+
     template = "pipelines/reports/farmacia_digital/livro_controlados/livro_controlados/template/template.docx"
+
+    log("Generating reports")
 
     gerar_relatorios(
         df_relacao=livros,
@@ -79,5 +91,7 @@ def upload_report_to_gdrive(folder_path: str, folder_id: str):
     """
     Upload a report to Google Drive
     """
+
+    log("Uploading reports to Google Drive")
 
     upload_folder_to_gdrive(folder_path, folder_id)
