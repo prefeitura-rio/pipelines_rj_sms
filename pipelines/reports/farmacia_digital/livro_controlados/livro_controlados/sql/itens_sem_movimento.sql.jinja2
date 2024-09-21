@@ -17,7 +17,7 @@ with
         where data_particao <= (select data from primeiro_dia_mes)
         group by id_cnes
     )
-    
+
 select *
 from primeira_posicao_por_estabelecimento
 ),  __dbt__cte__mart_estoque__report_medicamentos_controlados__itens_com_movimento as (

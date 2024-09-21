@@ -3,6 +3,7 @@
 Functions to generate the report
 """
 import os
+
 import pandas as pd
 from docxtpl import DocxTemplate
 

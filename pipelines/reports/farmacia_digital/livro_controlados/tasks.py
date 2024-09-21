@@ -5,15 +5,18 @@
 Tasks for DataSUS pipelines
 """
 
-from datetime import datetime, date
 import calendar
+from datetime import date, datetime
+
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
-
-from pipelines.utils.credential_injector import authenticated_task as task
-
-from pipelines.reports.farmacia_digital.livro_controlados.constants import constants as report_constants
+from pipelines.datalake.utils.data_extraction.google_drive import (
+    upload_folder_to_gdrive,
+)
+from pipelines.reports.farmacia_digital.livro_controlados.constants import (
+    constants as report_constants,
+)
 from pipelines.reports.farmacia_digital.livro_controlados.livro_controlados.extracao import (
     dados_com_movimentacao,
     dados_sem_movimentacao,
@@ -22,8 +25,8 @@ from pipelines.reports.farmacia_digital.livro_controlados.livro_controlados.extr
 from pipelines.reports.farmacia_digital.livro_controlados.livro_controlados.relatorio import (
     gerar_relatorios,
 )
+from pipelines.utils.credential_injector import authenticated_task as task
 
-from pipelines.datalake.utils.data_extraction.google_drive import upload_folder_to_gdrive
 
 def get_month_range(date_str: str) -> tuple[str, str]:
     """
@@ -50,12 +53,14 @@ def get_google_drive_folder_id(environment: str) -> str:
     """
     return report_constants.GOOGLE_DRIVE_FOLDER_ID.value[environment]
 
+
 @task
 def get_reference_date(competencia: str) -> str:
     if competencia == "atual":
         return datetime.now().strftime("%Y-%m")
     else:
         return competencia
+
 
 @task
 def generate_report(output_directory: str, competencia: str):
@@ -72,7 +77,6 @@ def generate_report(output_directory: str, competencia: str):
     )
 
     log("Movement records extracted")
-
 
     dataset_sem_movimentacao = dados_sem_movimentacao(
         data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")

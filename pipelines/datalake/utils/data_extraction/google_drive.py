@@ -4,7 +4,10 @@
 """
 Tasks to download data from Google Drive.
 """
+import concurrent.futures
+import os
 from datetime import datetime, timedelta
+from functools import partial
 
 import prefect
 from prefeitura_rio.pipelines_utils.logging import log
@@ -12,10 +15,6 @@ from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
 from pipelines.utils.credential_injector import authenticated_task as task
-
-import os
-import concurrent.futures
-from functools import partial
 
 
 @task

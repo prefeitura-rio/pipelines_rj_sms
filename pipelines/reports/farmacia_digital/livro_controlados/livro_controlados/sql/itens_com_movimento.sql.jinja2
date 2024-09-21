@@ -19,7 +19,7 @@ with
         where data_particao <= (select data from primeiro_dia_mes)
         group by id_cnes
     )
-    
+
 select *
 from primeira_posicao_por_estabelecimento
 ), posicao_inicial_por_estabelecimento as (
@@ -43,7 +43,7 @@ from primeira_posicao_por_estabelecimento
         from `rj-sms`.`saude_estoque`.`movimento` as mov
 
         inner join posicao_inicial_por_estabelecimento as pos
-        on mov.id_cnes = pos.id_cnes 
+        on mov.id_cnes = pos.id_cnes
             and mov.data_particao >= pos.data_particao
             and mov.data_particao <= '{{ data_fim }}'
         where
@@ -246,4 +246,3 @@ from primeira_posicao_por_estabelecimento
 
 select *
 from final
-    

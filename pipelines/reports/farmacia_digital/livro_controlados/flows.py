@@ -8,19 +8,19 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
-from pipelines.constants import constants
 
-from pipelines.utils.tasks import create_folders
+from pipelines.constants import constants
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.reports.farmacia_digital.livro_controlados.tasks import (
-    get_google_drive_folder_id,
-    get_reference_date,
-    generate_report,
-    upload_report_to_gdrive,
-)
 from pipelines.reports.farmacia_digital.livro_controlados.livro_controlados.schedules import (
     weekly_schedule,
 )
+from pipelines.reports.farmacia_digital.livro_controlados.tasks import (
+    generate_report,
+    get_google_drive_folder_id,
+    get_reference_date,
+    upload_report_to_gdrive,
+)
+from pipelines.utils.tasks import create_folders
 
 with Flow(
     name="Report: Farmácia Digital - Livro de Medicamentos Controlados",
