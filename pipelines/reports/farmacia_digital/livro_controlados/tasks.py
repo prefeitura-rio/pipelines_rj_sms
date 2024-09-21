@@ -40,7 +40,7 @@ def get_month_range(date_str: str) -> tuple[str, str]:
     _, last_day = calendar.monthrange(date_obj.year, date_obj.month)
     last_date = date(date_obj.year, date_obj.month, last_day)
 
-    return (first_day.strftime("%d.%m.%y"), last_date.strftime("%d.%m.%y"))
+    return (first_day, last_date)
 
 
 @task
@@ -48,30 +48,36 @@ def generate_report(output_directory: str, competencia: str):
     """
     Generate a report
     """
+
+    data_inicio, data_fim = get_month_range(competencia)
+
     # log.info("Extracting data with movement records")
-    dataset_com_movimentacao = dados_com_movimentacao()
-    dataset_sem_movimentacao = dados_sem_movimentacao()
+    dataset_com_movimentacao = dados_com_movimentacao(
+        data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")
+    )
+    dataset_sem_movimentacao = dados_sem_movimentacao(
+        data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")
+    )
     livros = livros_para_gerar()
 
-    competencia_inicio, competencia_fim = get_month_range(competencia)
-
-    template = "pipelines/reports/farmacia_digital/livro_controlados/template/template.docx"
+    template = "pipelines/reports/farmacia_digital/livro_controlados/livro_controlados/template/template.docx"
 
     gerar_relatorios(
         df_relacao=livros,
         df_com_mov=dataset_com_movimentacao,
         df_sem_mov=dataset_sem_movimentacao,
         base_directory=output_directory,
-        competencia_inicio=competencia_inicio,
-        competencia_fim=competencia_fim,
+        competencia_inicio=data_inicio.strftime("%d.%m.%y"),
+        competencia_fim=data_fim.strftime("%d.%m.%y"),
         competencia=competencia,
         template=template,
     )
+
 
 @task
 def upload_report_to_gdrive(folder_path: str, folder_id: str):
     """
     Upload a report to Google Drive
     """
-    
+
     upload_folder_to_gdrive(folder_path, folder_id)

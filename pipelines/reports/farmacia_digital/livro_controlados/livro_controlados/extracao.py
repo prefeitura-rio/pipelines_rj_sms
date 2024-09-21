@@ -6,15 +6,31 @@ Extraction functions for Farmácia Digital - Livro de Medicamentos Controlados
 """
 import pandas as pd
 from google.cloud import bigquery
+from jinja2 import Environment, FileSystemLoader
 
 
-def dados_com_movimentacao() -> pd.DataFrame:
+def import_sql_with_date(file_path: str, data_inicio: str, data_fim: str) -> str:
+    # Set up Jinja2 environment
+    env = Environment(loader=FileSystemLoader("."))
+
+    # Load the template
+    template = env.get_template(file_path)
+
+    # Render the template with the provided date
+    rendered_sql = template.render(data_inicio=data_inicio, data_fim=data_fim)
+
+    return rendered_sql
+
+
+def dados_com_movimentacao(data_inicio: str, data_fim: str) -> pd.DataFrame:
 
     client = bigquery.Client()
 
-    query = """
-    SELECT * FROM rj-sms-dev.thiago__projeto_estoque.report_medicamentos_controlados__itens_com_movimento
-    """
+    query = import_sql_with_date(
+        "pipelines/reports/farmacia_digital/livro_controlados/livro_controlados/sql/itens_com_movimento.sql.jinja2",
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+    )
 
     query_job = client.query(query)
 
@@ -28,13 +44,15 @@ def dados_com_movimentacao() -> pd.DataFrame:
     return df
 
 
-def dados_sem_movimentacao() -> pd.DataFrame:
+def dados_sem_movimentacao(data_inicio: str, data_fim: str) -> pd.DataFrame:
 
     client = bigquery.Client()
 
-    query = """
-    SELECT * FROM rj-sms-dev.thiago__projeto_estoque.report_medicamentos_controlados__itens_sem_movimento
-    """
+    query = import_sql_with_date(
+        "pipelines/reports/farmacia_digital/livro_controlados/livro_controlados/sql/itens_sem_movimento.sql.jinja2",
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+    )
 
     query_job = client.query(query)
     results = query_job.result()
