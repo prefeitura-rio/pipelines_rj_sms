@@ -4,7 +4,10 @@
 """
 Tasks to download data from Google Drive.
 """
+import concurrent.futures
+import os
 from datetime import datetime, timedelta
+from functools import partial
 
 import prefect
 from prefeitura_rio.pipelines_utils.logging import log
@@ -176,3 +179,80 @@ def dowload_from_gdrive(
         return {"has_data": True, "files": downloaded_files}
 
     return {"has_data": False}
+
+
+def upload_folder_to_gdrive(folder_path: str, parent_folder_id: str, max_workers: int = 20):
+    """
+    Uploads an entire folder to Google Drive, preserving the folder structure.
+    Avoids creating duplicate folders and replaces existing files.
+
+    Args:
+        folder_path (str): The path to the folder to be uploaded.
+        parent_folder_id (str): The ID of the Google Drive folder where the contents will be uploaded.
+
+    Returns:
+        None
+    """
+    gauth = GoogleAuth(
+        settings={
+            "client_config_backend": "service",
+            "service_config": {
+                "client_json_file_path": "/tmp/credentials.json",
+            },
+        }
+    )
+    gauth.ServiceAuth()
+
+    drive = GoogleDrive(gauth)
+
+    def get_or_create_folder(name, parent_id):
+        query = f"title='{name}' and '{parent_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        existing_folders = drive.ListFile({"q": query}).GetList()
+
+        if existing_folders:
+            return existing_folders[0]
+
+        folder_metadata = {
+            "title": name,
+            "mimeType": "application/vnd.google-apps.folder",
+            "parents": [{"id": parent_id}],
+        }
+        folder = drive.CreateFile(folder_metadata)
+        folder.Upload()
+        return folder
+
+    def upload_or_update_file(file_path, parent_id):
+        file_name = os.path.basename(file_path)
+        query = f"title='{file_name}' and '{parent_id}' in parents and trashed=false"
+        existing_files = drive.ListFile({"q": query}).GetList()
+
+        if existing_files:
+            file = existing_files[0]
+        else:
+            file = drive.CreateFile({"parents": [{"id": parent_id}]})
+
+        file.SetContentFile(file_path)
+        file.Upload()
+
+    def upload_folder(local_path, parent_id):
+        items = os.listdir(local_path)
+        files_to_upload = []
+
+        for item in items:
+            item_path = os.path.join(local_path, item)
+            if os.path.isfile(item_path):
+                files_to_upload.append((item_path, parent_id))
+            elif os.path.isdir(item_path):
+                subfolder = get_or_create_folder(item, parent_id)
+                upload_folder(item_path, subfolder["id"])
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            list(executor.map(lambda x: upload_or_update_file(*x), files_to_upload))
+
+    # Start uploading directly to the provided parent_folder_id
+    upload_folder(folder_path, parent_folder_id)
+
+    log(
+        f"Folder {folder_path} contents uploaded to Google Drive folder {parent_folder_id} in parallel, preserving structure and updating existing files",
+        level="info",
+    )
