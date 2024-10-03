@@ -4,7 +4,7 @@ ARG PYTHON_VERSION=3.10-slim
 # Start Python image
 FROM python:${PYTHON_VERSION}
 
-# Install apt dependencies
+# Install apt dependencies and npm
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     git \
@@ -14,7 +14,9 @@ RUN apt-get update && \
     pkg-config \
     chromium \
     chromium-driver \
-    && \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -32,3 +34,9 @@ RUN python3 -m pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VE
 WORKDIR /app
 COPY . .
 RUN python3 -m pip install --prefer-binary --no-cache-dir -U .
+
+# Install Puppeteer and Chrome headless shell
+RUN npx --yes puppeteer browsers install chrome-headless-shell
+
+# Install Mermaid CLI (this requires Puppeteer to be installed first)
+RUN npm install -g @mermaid-js/mermaid-cli
