@@ -10,10 +10,9 @@ from pipelines.constants import constants
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.reports.hci_transformation.tasks import (
     calculate_data,
-    get_diagram_template,
     generate_diagram,
+    get_diagram_template,
 )
-
 
 with Flow(
     name="Report: Monitoramento de Ingestão e Transformações",
@@ -29,14 +28,8 @@ with Flow(
     #####################################
     # Tasks
     #####################################
-    diagram_template = get_diagram_template(
-        entity=ENTITY,
-        environment=ENVIRONMENT
-    )
-    data = calculate_data(
-        entity=ENTITY,
-        environment=ENVIRONMENT
-    )
+    diagram_template = get_diagram_template(entity=ENTITY, environment=ENVIRONMENT)
+    data = calculate_data(entity=ENTITY, environment=ENVIRONMENT)
     generate_diagram(
         diagram_template=diagram_template,
         data=data,
