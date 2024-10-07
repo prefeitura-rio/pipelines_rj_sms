@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
     - id: check-added-large-files # prevents adding large files
     - id: detect-private-key # detects private keys
@@ -10,7 +10,7 @@ repos:
     - id: trailing-whitespace # prevents trailing whitespace
 
 -   repo: https://github.com/psf/black
-    rev: 24.4.2
+    rev: 24.8.0
     hooks:
     -   id: black
         language_version: python3.10
@@ -21,6 +21,6 @@ repos:
     - id: isort
 
 -   repo: https://github.com/PyCQA/flake8
-    rev: 7.1.0
+    rev: 7.1.1
     hooks:
     - id: flake8
