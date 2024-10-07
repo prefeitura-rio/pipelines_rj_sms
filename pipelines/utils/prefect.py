@@ -18,7 +18,7 @@ def get_prefect_token() -> str:
         status code is not 200.
     """
     response = requests.post(
-        url=f"{getenv_or_action('PREFECT_API_URL')}/auth/login/",
+        url=f"{getenv_or_action('PREFECT_API_URL')}auth/login/",
         json={
             "username": getenv_or_action("PREFECT_API_USERNAME"),
             "password": getenv_or_action("PREFECT_API_PASSWORD"),
@@ -52,7 +52,7 @@ def run_query(
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "X-Prefect-Tenant-Id": getenv_or_action("PREFECT_TENANT_ID"),
+        "X-Prefect-Tenant-Id": getenv_or_action("PREFECT_API_TENANT_ID"),
     }
     r = requests.post(
         url=f"{getenv_or_action('PREFECT_API_URL')}proxy/",
@@ -86,7 +86,7 @@ def cancel_flow_run(flow_run_id: str, token: str = None) -> bool:
     """
     variables = {"flow_run_id": flow_run_id}
     data: dict = run_query(query=mutation, variables=variables, token=token)
-    return data["data"]["cancel_flow_run"]["state"] == "Cancelled"
+    return data["data"]["cancel_flow_run"]["state"] in ["Cancelled", "Cancelling"]
 
 
 def archive_flow_run(flow_id: str, token: str = None) -> bool:
