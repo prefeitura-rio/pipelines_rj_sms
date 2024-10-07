@@ -2,8 +2,9 @@
 import requests
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 
-from pipelines.utils.logger import log
 from pipelines.constants import constants
+from pipelines.utils.logger import log
+
 
 def get_prefect_token() -> str:
     """

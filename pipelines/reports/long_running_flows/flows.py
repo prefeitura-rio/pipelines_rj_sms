@@ -6,20 +6,18 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.utils.tasks import (
-    rename_current_flow_run
-)
+from pipelines.prontuarios.utils.tasks import rename_current_flow_run
 from pipelines.reports.long_running_flows.schedules import schedule
 from pipelines.reports.long_running_flows.tasks import (
-    detect_running_flows,
-    report_flows,
     cancel_flows,
-    force_secrets_injection
+    detect_running_flows,
+    force_secrets_injection,
+    report_flows,
 )
 
 with Flow("Report: Flows de Longa Execução") as report_long_running_flows:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
-    
+
     injected = force_secrets_injection(environment=ENVIRONMENT)
 
     rename_current_flow_run(environment=ENVIRONMENT)
