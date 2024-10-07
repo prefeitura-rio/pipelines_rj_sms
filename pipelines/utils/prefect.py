@@ -121,7 +121,7 @@ def get_prefect_project_id(environment: str = "staging") -> str:
     """
     Retrieves the Prefect project ID for the given environment.
     Args:
-        environment (str, optional): The environment for which to retrieve the Prefect project ID. Defaults to "staging".
+        environment (str, optional): The environment for which to retrieve the Prefect project ID.
     Returns:
         str: The Prefect project ID for the given environment.
     """
