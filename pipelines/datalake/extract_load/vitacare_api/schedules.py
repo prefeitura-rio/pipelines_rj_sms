@@ -29,6 +29,14 @@ routine_flow_parameters = [
         "table_id": "estoque_movimento",
         "target_date": "yesterday",
     },
+    {
+        "dataset_id": "brutos_prontuario_vitacare",
+        "endpoint": "vacina",
+        "environment": "prod",
+        "rename_flow": True,
+        "table_id": "vacina",
+        "target_date": "yesterday",
+    },
 ]
 
 routine_clocks = generate_dump_api_schedules(
