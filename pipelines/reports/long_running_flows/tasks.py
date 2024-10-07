@@ -1,11 +1,11 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.prefect import run_query, cancel_flow_run
-from pipelines.utils.logger import log
-from pipelines.utils.prefect import get_prefect_project_id
 from pipelines.utils.infisical import inject_all_secrets
+from pipelines.utils.logger import log
 from pipelines.utils.monitor import send_message
+from pipelines.utils.prefect import cancel_flow_run, get_prefect_project_id, run_query
 
 
 @task
@@ -64,7 +64,7 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
     # Data processing
     result["flow_name"] = result["flow"].apply(lambda x: x["name"])
     result["flow_id"] = result["flow"].apply(lambda x: x["id"])
-    result['composed_name'] = result['flow_name'] + " -> " + result['name']
+    result["composed_name"] = result["flow_name"] + " -> " + result["name"]
     result["scheduled_start_time"] = pd.to_datetime(result["scheduled_start_time"])  # noqa
     result["scheduled_start_time"] = result["scheduled_start_time"].dt.tz_convert(
         "America/Sao_Paulo"
@@ -82,21 +82,23 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
     # Classification Type
     def classify(duration):
         if duration > 24:
-            return 'long'
+            return "long"
         elif duration > 12:
-            return 'warning'
+            return "warning"
         else:
-            return 'normal'
+            return "normal"
+
     result["classification_type"] = result["duration_minutes"].apply(classify)
 
     #  Classification Emoji
     def classify_emoji(duration):
         if duration > 24:
-            return '☠️'
+            return "☠️"
         elif duration > 12:
-            return '⚠️'
+            return "⚠️"
         else:
-            return ''
+            return ""
+
     result["classification_emoji"] = result["duration_minutes"].apply(classify_emoji)
 
     result.drop(columns="flow", inplace=True)
@@ -173,13 +175,11 @@ def cancel_flows(running_flows: pd.DataFrame):
     for _, flow_run in long_running_flows.iterrows():
         success = cancel_flow_run(flow_run["id"])
         success_emoji = "✅" if success else "❌"
-        message = f"- [**{flow_run['composed_name']}**]({flow_run['flow_run_url']}) de {flow_run['duration_minutes']:.1f} minutos :: Sucesso {success_emoji}" # noqa
+        message = f"- [**{flow_run['composed_name']}**]({flow_run['flow_run_url']}) de {flow_run['duration_minutes']:.1f} minutos :: Sucesso {success_emoji}"  # noqa
         full_message.append(message)
         log(message)
 
     send_message(
-        title="☠️ Execuções Canceladas",
-        message='\n'.join(full_message),
-        monitor_slug="warning"
+        title="☠️ Execuções Canceladas", message="\n".join(full_message), monitor_slug="warning"
     )
     return
