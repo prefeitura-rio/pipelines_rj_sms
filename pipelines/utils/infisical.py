@@ -14,6 +14,21 @@ from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, injec
 from prefeitura_rio.pipelines_utils.logging import log
 
 
+def inject_all_secrets(environment: str = "dev") -> dict:
+    """
+    Injects all secrets from Infisical as environment variables.
+
+    Args:
+        environment (str, optional): The infiscal environment for which to retrieve credentials. Defaults to 'dev'. Accepts 'dev' or 'prod'.
+
+    Returns:
+        dict: A dictionary containing all secrets.
+    """
+    client = get_infisical_client()
+    secrets = client.get_all_secrets(environment=environment, attach_to_os_environ=True)
+    return secrets
+
+
 def inject_bd_credentials(environment: str = "dev", force_injection=False) -> None:
     """
     Loads Base dos Dados credentials from Infisical into environment variables.

@@ -24,5 +24,6 @@ from pipelines.prontuarios.load_datalake.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.prontuarios.raw.vitai.flows import *
 from pipelines.reports.farmacia_digital.livro_controlados.flows import *
+from pipelines.reports.long_running_flows.flows import *
 from pipelines.tools.unschedule_old_flows.flows import *
 from pipelines.tools.vitacare_healthcheck.flows import *

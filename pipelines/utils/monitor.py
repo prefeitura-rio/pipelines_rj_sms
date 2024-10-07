@@ -47,7 +47,10 @@ async def send_discord_webhook(
             kwargs["file"] = file
 
         webhook = Webhook.from_url(webhook_url, session=session)
-        await webhook.send(**kwargs)
+        try:
+            await webhook.send(**kwargs)
+        except RuntimeError:
+            raise ValueError(f"Error sending message to Discord webhook: {webhook_url}")
 
 
 def send_message(title, message, monitor_slug, file_path=None, username=None):
