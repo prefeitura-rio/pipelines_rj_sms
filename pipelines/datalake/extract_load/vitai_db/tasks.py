@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import datetime
+from datetime import datetime, timedelta
 import os
 import shutil
 import uuid
@@ -52,7 +52,7 @@ def get_interval_start_list(interval_start: str, table_names: list[str]) -> list
     return [value for _ in table_names]
 
 
-@task(nout=2, max_retries=3, retry_delay=datetime.timedelta(seconds=120))
+@task(nout=2, max_retries=3, retry_delay=timedelta(seconds=120))
 def create_working_time_range(
     project_name: str,
     dataset_name: str,
@@ -111,7 +111,7 @@ def create_working_time_range(
     return interval_start_values, interval_end_values
 
 
-@task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
+@task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=20))
 def import_vitai_table(
     db_url: str,
     table_name: str,
