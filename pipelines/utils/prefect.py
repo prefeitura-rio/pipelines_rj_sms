@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 import requests
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
+
 from pipelines.utils.logger import log
 
 
@@ -7,7 +9,7 @@ def get_prefect_token() -> str:
     """
     Authenticates with the Prefect API and retrieves an authentication token.
     This function sends a POST request to the Prefect API's login endpoint using
-    the username and password obtained from environment variables. 
+    the username and password obtained from environment variables.
     If the authentication is successful, it returns the authentication token.
     Returns:
         str: The authentication token if the request is successful.
@@ -18,8 +20,8 @@ def get_prefect_token() -> str:
     response = requests.post(
         url=f"{getenv_or_action('PREFECT_API_URL')}/auth/login/",
         json={
-            "username": getenv_or_action('PREFECT_API_USERNAME'),
-            "password": getenv_or_action('PREFECT_API_PASSWORD')
+            "username": getenv_or_action("PREFECT_API_USERNAME"),
+            "password": getenv_or_action("PREFECT_API_PASSWORD"),
         },
         timeout=180,
     )
@@ -50,7 +52,7 @@ def run_query(
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "X-Prefect-Tenant-Id": getenv_or_action('PREFECT_TENANT_ID'),
+        "X-Prefect-Tenant-Id": getenv_or_action("PREFECT_TENANT_ID"),
     }
     r = requests.post(
         url=f"{getenv_or_action('PREFECT_API_URL')}proxy/",
@@ -64,12 +66,9 @@ def run_query(
     else:
         log(f"Failed to run query: [{r.status_code}] {r.text}")
         return None
-    
 
-def cancel_flow_run(
-    flow_run_id: str,
-    token: str = None
-) -> bool:
+
+def cancel_flow_run(flow_run_id: str, token: str = None) -> bool:
     """
     Cancels a Prefect flow run given its ID.
     Args:
@@ -90,10 +89,7 @@ def cancel_flow_run(
     return data["data"]["cancel_flow_run"]["state"] == "Cancelled"
 
 
-def archive_flow_run(
-    flow_id: str,
-    token: str = None
-) -> bool:
+def archive_flow_run(flow_id: str, token: str = None) -> bool:
     """
     Archives a flow run in the Prefect system.
     Args:
