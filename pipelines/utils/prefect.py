@@ -3,7 +3,7 @@ import requests
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 
 from pipelines.utils.logger import log
-
+from pipelines.constants import constants
 
 def get_prefect_token() -> str:
     """
@@ -114,3 +114,24 @@ def archive_flow_run(flow_id: str, token: str = None) -> bool:
     variables = {"flow_id": flow_id}
     data: dict = run_query(query=mutation, variables=variables, token=token)
     return data["data"]["archive_flow"]["success"]
+
+
+def get_prefect_project_id(environment: str = "staging") -> str:
+    """
+    Retrieves the Prefect project ID for the given environment.
+    Args:
+        environment (str, optional): The environment for which to retrieve the Prefect project ID. Defaults to "staging".
+    Returns:
+        str: The Prefect project ID for the given environment.
+    """
+    project_name = constants.PROJECT_NAME.value.get(environment, "staging")
+    query = """
+        query($project_name: String!) {
+            project(where: {name: {_eq: $project_name}}) {
+                id
+            }
+        }
+    """
+    variables = {"project_name": project_name}
+    data: dict = run_query(query=query, variables=variables)
+    return data["data"]["project"][0]["id"]
