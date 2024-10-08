@@ -133,7 +133,7 @@ def import_vitai_table(
         df = pd.read_sql(query, db_url, dtype=str)
         log(f"Query executed successfully. Found {df.shape[0]} rows.")
     except Exception as e:
-        log(f"Error executing query: {e}", level="error")
+        log(f"Error executing query: {e}", level="warning")
         return []
 
     if "id" in df.columns:
