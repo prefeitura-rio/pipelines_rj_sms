@@ -85,5 +85,5 @@ def build_gcp_table(db_table: str) -> str:
 
     if db_table not in hci_constants.TABLE_ID.value:
         return db_table
-    
+
     return hci_constants.TABLE_ID.value[db_table]
