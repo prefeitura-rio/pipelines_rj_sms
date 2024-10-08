@@ -42,7 +42,7 @@ flow_parameters = [
         "historical_mode": False,
         "environment": "prod",
         "rename_flow": True,
-    }
+    },
 ]
 
 
