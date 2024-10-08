@@ -82,4 +82,8 @@ def download_from_db(
 @task
 def build_gcp_table(db_table: str) -> str:
     """Generate the GCP table name from the database table name."""
+
+    if db_table not in hci_constants.TABLE_ID.value:
+        return db_table
+    
     return hci_constants.TABLE_ID.value[db_table]
