@@ -37,6 +37,12 @@ flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
     },
+    {
+        "table_id": "userhistory",
+        "historical_mode": False,
+        "environment": "prod",
+        "rename_flow": True,
+    }
 ]
 
 
