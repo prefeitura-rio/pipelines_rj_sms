@@ -14,8 +14,14 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "table_id": "systemusage",
+        "table_id": "userhistory",
         "historical_mode": False,
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "table_id": "userinfo",
+        "historical_mode": True,
         "environment": "prod",
         "rename_flow": True,
     },
