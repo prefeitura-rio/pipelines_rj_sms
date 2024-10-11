@@ -155,3 +155,9 @@ cases:
       environment: "dev"
       target_date: "2024-10-01"
       entity: "paciente"
+  - case_slug: "report-farmacia-monitoramento-ingestao"
+    flow_path: "pipelines.reports.farmacia_digital.ingestao_dados.flows"
+    flow_name: "report_farmacia_monitoramento_ingestao"
+    params:
+      environment: "dev"
+      target_date: "2024-10-10"

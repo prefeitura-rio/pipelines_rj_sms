@@ -35,3 +35,11 @@ class constants(Enum):
         "local-prod": "production",
         "local-staging": "staging",
     }
+
+    GOOGLE_CLOUD_PROJECT = {
+        "dev": "rj-sms-dev",
+        "staging": "rj-sms-dev",
+        "prod": "rj-sms",
+        "local-prod": "rj-sms",
+        "local-staging": "rj-sms-dev"
+    }
