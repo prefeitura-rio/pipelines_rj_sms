@@ -46,9 +46,9 @@ def send_report(data, target_date):
             units_with_data = fonte_data['quant_unidades_com_dado']
             message_lines.append(f"### **{title}**")
             message_lines.append(f"- 📊 **Unidades com dados:** {units_with_data}")
-            message_lines.append( "- 🚨 **Unidades sem dados:**")
 
-            units_without_data = sorted(fonte_data['unidades_sem_dado'], key=lambda x: x['unidade_ap'])
+            units_without_data = list(sorted(fonte_data['unidades_sem_dado'], key=lambda x: x['unidade_ap']))
+            message_lines.append(f"- 🚨 **Unidades sem dados:** {len(units_without_data)}")
             
             for unit in units_without_data:
                 ap = unit['unidade_ap']
