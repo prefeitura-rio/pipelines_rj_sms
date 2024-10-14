@@ -63,6 +63,16 @@ flow_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/17b4LRwQ5F5K5jCdeO0_K1NzqoQV9JqSOAuA0HZhG0uI",  # noqa
         "url_type": "google_sheet",
     },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Procedimentos",
+        "rename_flow": True,
+        "table_id": "sigtap_procedimentos",
+        "url": "https://docs.google.com/spreadsheets/d/1kndrUjVFpRW-LIZ1pV-LwcAmxylB4kVt944nzL_pfhU",  # noqa
+        "url_type": "google_sheet",
+    },
 ]
 
 
