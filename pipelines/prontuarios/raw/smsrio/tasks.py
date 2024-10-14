@@ -66,10 +66,7 @@ def extract_patient_data_from_db(
         """,
     )
     log(f"Extracted {patients.shape[0]} patients")
-    patients.rename(columns={
-        'id': 'source_id',
-        'cpf': 'patient_cpf'
-    }, inplace=True)
+    patients.rename(columns={"id": "source_id", "cpf": "patient_cpf"}, inplace=True)
 
     log(f"Extracting CNS data from {time_window_start} to {time_window_end}")
     cnss = load_table_from_database.run(
