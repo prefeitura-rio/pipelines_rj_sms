@@ -14,26 +14,14 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "table_id": "mrg__patient",
+        "table_id": "userhistory",
         "historical_mode": False,
         "environment": "prod",
         "rename_flow": True,
     },
     {
-        "table_id": "mrg__patientcns",
-        "historical_mode": False,
-        "environment": "prod",
-        "rename_flow": True,
-    },
-    {
-        "table_id": "mrg__patientaddress",
-        "historical_mode": False,
-        "environment": "prod",
-        "rename_flow": True,
-    },
-    {
-        "table_id": "mrg__patienttelecom",
-        "historical_mode": False,
+        "table_id": "userinfo",
+        "historical_mode": True,
         "environment": "prod",
         "rename_flow": True,
     },

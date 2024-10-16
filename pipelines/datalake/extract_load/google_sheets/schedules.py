@@ -47,9 +47,9 @@ flow_parameters = [
         "csv_delimiter": ";",
         "dataset_id": "brutos_sheets",
         "environment": "prod",
-        "gsheets_sheet_name": "INFORMAÇÕES PARA O BI",
+        "gsheets_sheet_name": "ATAS E PROCESSOS VIGENTES",
         "rename_flow": True,
-        "table_id": "compras_registro_preco",
+        "table_id": "compras_atas_processos_vigentes",
         "url": "https://docs.google.com/spreadsheets/d/1fi7MzF0S4OfTym-fjpLR51wIvTLq-WCE706N6eEEWys",  # noqa
         "url_type": "google_sheet",
     },
@@ -61,6 +61,16 @@ flow_parameters = [
         "rename_flow": True,
         "table_id": "aps_farmacias",
         "url": "https://docs.google.com/spreadsheets/d/17b4LRwQ5F5K5jCdeO0_K1NzqoQV9JqSOAuA0HZhG0uI",  # noqa
+        "url_type": "google_sheet",
+    },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Procedimentos",
+        "rename_flow": True,
+        "table_id": "sigtap_procedimentos",
+        "url": "https://docs.google.com/spreadsheets/d/1kndrUjVFpRW-LIZ1pV-LwcAmxylB4kVt944nzL_pfhU",  # noqa
         "url_type": "google_sheet",
     },
 ]

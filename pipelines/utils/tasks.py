@@ -729,7 +729,7 @@ def create_partitions(
     log("Partitions created successfully")
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
 def upload_to_datalake(
     input_path: str,
     dataset_id: str,

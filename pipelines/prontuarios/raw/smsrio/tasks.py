@@ -60,20 +60,13 @@ def extract_patient_data_from_db(
         db_url=db_url,
         query=f"""
             SELECT
-                id as source_id,
-                cpf as patient_cpf, nome,nome_mae,
-                nome_pai, dt_nasc, sexo, racaCor,
-                nacionalidade, obito, dt_obito,
-                end_tp_logrado_cod, end_logrado, end_numero,
-                end_comunidade, end_complem, end_bairro,
-                end_cep, cod_mun_res,
-                uf_res, cod_mun_nasc, uf_nasc, cod_pais_nasc, email,
-                timestamp, cns, telefone
+                *
             FROM tb_pacientes
             WHERE timestamp BETWEEN '{time_window_start}' AND '{time_window_end}';
         """,
     )
     log(f"Extracted {patients.shape[0]} patients")
+    patients.rename(columns={"id": "source_id", "cpf": "patient_cpf"}, inplace=True)
 
     log(f"Extracting CNS data from {time_window_start} to {time_window_end}")
     cnss = load_table_from_database.run(
