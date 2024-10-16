@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
-import glob
-import subprocess
-
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.monitor import send_message
-from pipelines.utils.tasks import get_secret, load_file_from_bigquery
+from pipelines.utils.tasks import load_file_from_bigquery
 from pipelines.constants import constants
 
 
