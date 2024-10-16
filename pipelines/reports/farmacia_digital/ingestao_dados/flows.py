@@ -31,7 +31,7 @@ with Flow(
     data = get_data(environment=ENVIRONMENT, target_date=TARGET_DATE)
 
     send_report(data=data, target_date=TARGET_DATE)
-    
+
 
 report_farmacia_monitoramento_ingestao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 report_farmacia_monitoramento_ingestao.executor = LocalDaskExecutor(num_workers=1)

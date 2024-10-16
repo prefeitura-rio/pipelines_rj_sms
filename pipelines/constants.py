@@ -41,5 +41,5 @@ class constants(Enum):
         "staging": "rj-sms-dev",
         "prod": "rj-sms",
         "local-prod": "rj-sms",
-        "local-staging": "rj-sms-dev"
+        "local-staging": "rj-sms-dev",
     }
