@@ -77,7 +77,7 @@ def send_report(data, target_date):
 
             if len(units_without_data) > UNIT_LINE_LIMIT:
                 add_line(
-                    f"> ... e mais {len(units_without_data) - UNIT_LINE_LIMIT} unidades sem dados. Veja no arquivo anexo.", # noqa
+                    f"> ... e mais {len(units_without_data) - UNIT_LINE_LIMIT} unidades sem dados. Veja no arquivo anexo.",  # noqa
                     "only_debug",
                 )
 
