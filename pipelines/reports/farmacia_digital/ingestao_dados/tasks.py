@@ -15,7 +15,7 @@ def get_data(environment, target_date):
     data = load_file_from_bigquery.run(
         project_name=constants.GOOGLE_CLOUD_PROJECT.value[environment],
         dataset_name='gerenciamento__monitoramento',
-        table_name='estatisticas_farmacia',
+        table_name='estatisticas_consolidadas',
         environment=environment,
     )
 
@@ -27,37 +27,63 @@ def get_data(environment, target_date):
 
 @task
 def send_report(data, target_date):
+    UNIT_LINE_LIMIT = 5
+
+    date_readable = target_date.strftime('%d/%m/%Y')
 
     if data.empty:
         log("No data to report")
         return
 
-    message_lines = []
-    for type in data['tipo'].unique():
-        message_lines.append(f"## {type.capitalize()} de Estoque")
+    for source in data['fonte'].unique():
+        title = f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable})"
 
-        data_subset = data[data['tipo'] == type]
+        data_from_source = data[data['fonte'] == source]
 
-        for fonte in data_subset['fonte'].unique():
-            fonte_data = data_subset[data_subset['fonte'] == fonte]
-            fonte_data = fonte_data.to_dict(orient='records')[0]
+        message_lines = []
+        def add_line(line, level = 'info'):
+            assert level in ['info', 'debug', 'only_debug']
+            message_lines.append((level, line))
+        
+        for type in data['tipo'].unique():
+            add_line(f"### {type.capitalize()}")
 
-            title = fonte.upper()
-            units_with_data = fonte_data['quant_unidades_com_dado']
-            message_lines.append(f"### **{title}**")
-            message_lines.append(f"- 📊 **Unidades com dados:** {units_with_data}")
+            filtered_data = data_from_source[data_from_source['tipo'] == type]
+            filtered_data = filtered_data.to_dict(orient='records')[0]
 
-            units_without_data = list(sorted(fonte_data['unidades_sem_dado'], key=lambda x: x['unidade_ap']))
-            message_lines.append(f"- 🚨 **Unidades sem dados:** {len(units_without_data)}")
-            
-            for unit in units_without_data:
+            units_with_data = filtered_data['unidades_com_dado']
+            add_line(f"- 📊 **Unidades com dados:** {len(units_with_data)}")
+
+            for i, unit in enumerate(units_with_data):
                 ap = unit['unidade_ap']
                 name = unit['unidade_nome']
                 cnes = unit['unidade_cnes']
-                message_lines.append(f"> `[AP{ap}] {name} ({cnes})`") # noqa
+                add_line(f"> `[AP{ap}] {name} ({cnes})`", 'debug')
 
-    send_message(
-        title=f"Farmácia Digital - Monitoramento de Ingestão de Dados ({target_date})",
-        message='\n'.join(message_lines),
-        monitor_slug="data-ingestion"
-    )
+            units_without_data = list(sorted(filtered_data['unidades_sem_dado'], key=lambda x: x['unidade_ap'])) # noqa
+            add_line(f"- 🚨 **Unidades sem dados:** {len(units_without_data)}")
+            
+            for i, unit in enumerate(units_without_data):
+                ap = unit['unidade_ap']
+                name = unit['unidade_nome']
+                cnes = unit['unidade_cnes']
+
+                if i > UNIT_LINE_LIMIT:
+                    add_line(f"> `[AP{ap}] {name} ({cnes})`", 'debug')
+                else:
+                    add_line(f"> `[AP{ap}] {name} ({cnes})`")
+
+            if len(units_without_data) > UNIT_LINE_LIMIT:
+                add_line(f"> ... e mais {len(units_without_data) - UNIT_LINE_LIMIT} unidades sem dados.", 'only_debug') # noqa
+        
+        txt_message = [line for level, line in message_lines if level != 'only_debug']
+        with open('report.md', 'w') as f:
+            f.write('\n'.join(txt_message))
+
+        discord_message = [line for level, line in message_lines if level != 'debug']
+        send_message(
+            title=title,
+            message='\n'.join(discord_message),
+            file_path='report.md',
+            monitor_slug="data-ingestion"
+        )
