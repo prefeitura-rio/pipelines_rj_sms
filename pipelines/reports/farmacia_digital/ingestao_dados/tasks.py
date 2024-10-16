@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import pandas as pd
+
 from pipelines.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -26,7 +28,7 @@ def get_data(environment, target_date):
 def send_report(data, target_date):
     UNIT_LINE_LIMIT = 5
 
-    date_readable = target_date.strftime("%d/%m/%Y")
+    date_readable = pd.to_datetime(target_date).strftime("%d/%m/%Y")
 
     if data.empty:
         log("No data to report")
@@ -43,7 +45,7 @@ def send_report(data, target_date):
             assert level in ["info", "debug", "only_debug"]
             message_lines.append((level, line))
 
-        for type in data["tipo"].unique():
+        for type in data_from_source["tipo"].unique():
             add_line(f"### {type.capitalize()}")
 
             filtered_data = data_from_source[data_from_source["tipo"] == type]
@@ -75,9 +77,9 @@ def send_report(data, target_date):
 
             if len(units_without_data) > UNIT_LINE_LIMIT:
                 add_line(
-                    f"> ... e mais {len(units_without_data) - UNIT_LINE_LIMIT} unidades sem dados.",
+                    f"> ... e mais {len(units_without_data) - UNIT_LINE_LIMIT} unidades sem dados. Veja no arquivo anexo.", # noqa
                     "only_debug",
-                )  # noqa
+                )
 
         txt_message = [line for level, line in message_lines if level != "only_debug"]
         with open("report.md", "w") as f:
