@@ -13,10 +13,7 @@ from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [
-    {
-        "target_date": None,
-        "environment": "prod"
-    },
+    {"target_date": None, "environment": "prod"},
 ]
 
 
