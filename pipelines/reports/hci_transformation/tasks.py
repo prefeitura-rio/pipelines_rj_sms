@@ -19,7 +19,7 @@ def get_diagram_template(
             secret_name=secret_name,
             environment=environment,
         )[secret_name]
-    except Exception as e:
+    except Exception:
         raise Exception(f"Template not found for entity '{entity}' in environment '{environment}'.")
     return template
 
