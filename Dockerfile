@@ -1,10 +1,13 @@
 # Build arguments
 ARG PYTHON_VERSION=3.10-slim
 
-# Start Python image
+# Start from the specified Python image
 FROM python:${PYTHON_VERSION}
 
-# Install apt dependencies
+# Set shell options for pipefail
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Install apt dependencies and npm
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     git \
@@ -14,7 +17,9 @@ RUN apt-get update && \
     pkg-config \
     chromium \
     chromium-driver \
-    && \
+    curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -28,7 +33,14 @@ RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN python3 -m pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION"
 
-# Install requirements
+# Install Python requirements
 WORKDIR /app
 COPY . .
-RUN python3 -m pip install --prefer-binary --no-cache-dir -U .
+RUN $VIRTUAL_ENV/bin/pip install --prefer-binary --no-cache-dir -U .
+
+# Ensure npm and npx work properly
+RUN npm install -g npm@latest && \
+    if ! npm cache clean --force; then echo "Cache clean failed, continuing..."; fi
+
+# Install Puppeteer and Mermaid CLI
+RUN npm install puppeteer@23.0.0 @mermaid-js/mermaid-cli@11.2.0

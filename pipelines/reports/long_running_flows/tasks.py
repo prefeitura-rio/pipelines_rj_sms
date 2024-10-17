@@ -35,7 +35,7 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
     query = """
         query UpcomingFlowRuns($projectId: uuid) {
         flow_run(
-            where: {flow: {project_id: {_eq: $projectId}}, state: {_in: ["Running"]}}
+            where: {flow: {project_id: {_eq: $projectId}}, state: {_in: ["Running", "Submitted"]}}
             order_by: [{scheduled_start_time: asc}, {flow: {name: asc}}]
         ) {
             id

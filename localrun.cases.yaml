@@ -148,6 +148,19 @@ cases:
     params:
       environment: "dev"
       data_competencia: "atual"
+  - case_slug: "report-hci-transformation"
+    flow_path: "pipelines.reports.hci_transformation.flows"
+    flow_name: "report_monitoramento_ingestao"
+    params:
+      environment: "dev"
+      target_date: "2024-10-01"
+      entity: "paciente"
+  - case_slug: "report-monitoramento-ingestao"
+    flow_path: "pipelines.reports.ingestao_dados.flows"
+    flow_name: "report_monitoramento_ingestao"
+    params:
+      environment: "dev"
+      target_date: "2024-10-16"
   - case_slug: "report-flows-longos"
     flow_path: "pipelines.reports.long_running_flows.flows"
     flow_name: "report_long_running_flows"
