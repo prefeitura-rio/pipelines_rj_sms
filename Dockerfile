@@ -1,7 +1,7 @@
 # Build arguments
 ARG PYTHON_VERSION=3.10-slim
 
-# Start Python image
+# Start from the specified Python image
 FROM python:${PYTHON_VERSION}
 
 # Set shell options for pipefail
@@ -25,18 +25,21 @@ RUN apt-get update && \
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
-ENV PREFECT_VERSION $PREFECT_VERSION
+ENV PREFECT_VERSION=$PREFECT_VERSION
 
-# Setup virtual environment and prefect
+# Setup virtual environment and install Prefect
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV && \
-    python3 -m pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION"
+    $VIRTUAL_ENV/bin/pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION"
 
-# Install requirements
+# Install Python requirements
 WORKDIR /app
 COPY . .
-RUN python3 -m pip install --prefer-binary --no-cache-dir -U .
+RUN $VIRTUAL_ENV/bin/pip install --prefer-binary --no-cache-dir -U .
 
-# Install Puppeteer and Chrome headless shell, and Mermaid CLI (Pin versions)
-RUN npx --yes puppeteer@19.0.0 browsers install chrome-headless-shell && \
-    npm install -g @mermaid-js/mermaid-cli@11.2.0
+# Ensure npm and npx work properly
+RUN npm install -g npm@latest && \
+    npm cache clean --force || true
+
+# Install Puppeteer and Chrome headless shell, and Mermaid CLI
+RUN npm install puppeteer@23.0.0 @mermaid-js/mermaid-cli@11.2.0
