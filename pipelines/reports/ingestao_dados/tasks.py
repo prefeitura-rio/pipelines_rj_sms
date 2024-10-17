@@ -17,6 +17,7 @@ def get_target_date(data, target_date):
         log(f"Target date provided: {target_date}")
     return target_date
 
+
 @task
 def get_data(environment):
 
@@ -74,7 +75,7 @@ def create_markdown_report_from_source(data, source, target_date):
 
     message_lines.append("")
 
-    log('\n'.join(message_lines))
+    log("\n".join(message_lines))
 
     txt_path = "./report.md"
     with open(txt_path, "w") as f:
@@ -119,7 +120,7 @@ def send_report(data, target_date):
             )
 
         log(f"Sending message with {len(message_lines)} lines")
-        log('\n'.join(message_lines))
+        log("\n".join(message_lines))
 
         send_message(
             title=title,
