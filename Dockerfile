@@ -39,7 +39,7 @@ RUN $VIRTUAL_ENV/bin/pip install --prefer-binary --no-cache-dir -U .
 
 # Ensure npm and npx work properly
 RUN npm install -g npm@latest && \
-    npm cache clean --force || true
+    if ! npm cache clean --force; then echo "Cache clean failed, continuing..."; fi
 
-# Install Puppeteer and Chrome headless shell, and Mermaid CLI
+# Install Puppeteer and Mermaid CLI
 RUN npm install puppeteer@23.0.0 @mermaid-js/mermaid-cli@11.2.0
