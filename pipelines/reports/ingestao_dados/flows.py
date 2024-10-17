@@ -7,10 +7,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.reports.ingestao_dados.tasks import (
-    get_data,
-    send_report,
-)
+from pipelines.reports.ingestao_dados.tasks import get_data, send_report
 
 with Flow(
     name="Report: Monitoramento de Ingestão de Dados",
