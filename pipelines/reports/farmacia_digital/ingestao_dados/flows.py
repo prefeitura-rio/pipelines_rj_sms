@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
-from prefect import Parameter, case
+from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.reports.farmacia_digital.ingestao_dados.tasks import (
     get_data,
     send_report,
