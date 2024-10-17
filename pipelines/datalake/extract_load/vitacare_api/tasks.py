@@ -386,6 +386,8 @@ def write_retry_results_on_bq(
     dataset_id = "gerenciamento__reprocessamento"
     if endpoint == "movimento":
         table_id = "brutos_prontuario_vitacare__estoque_movimento"
+    elif endpoint == "vacina":
+        table_id = "brutos_prontuario_vitacare__vacina"
     else:
         err_msg = "Invalid endpoint"
         log(err_msg, level="error")
