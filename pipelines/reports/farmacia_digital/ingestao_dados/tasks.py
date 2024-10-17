@@ -34,7 +34,9 @@ def create_markdown_report_from_source(data, source, target_date):
 
     data_from_source = data[data["fonte"] == source]
 
-    message_lines = [f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable})"] # noqa
+    message_lines = [
+        f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable})"
+    ]  # noqa
     for type in data_from_source["tipo"].unique():
         message_lines.append(f"### {type.capitalize()}")
 
@@ -69,6 +71,7 @@ def create_markdown_report_from_source(data, source, target_date):
 
     return txt_path
 
+
 @task
 def send_report(data, target_date):
     date_readable = pd.to_datetime(target_date).strftime("%d/%m/%Y")
@@ -83,9 +86,7 @@ def send_report(data, target_date):
         data_from_source = data[data["fonte"] == source]
 
         txt_report_path = create_markdown_report_from_source.run(
-            data=data,
-            source=source,
-            target_date=target_date
+            data=data, source=source, target_date=target_date
         )
 
         message_lines = ["Unidades sem Dado:"]
@@ -96,12 +97,14 @@ def send_report(data, target_date):
 
             units_without_data = filtered_data["unidades_sem_dado"]
             units_with_data = filtered_data["unidades_com_dado"]
-            
+
             proportion = len(units_without_data) / (len(units_without_data) + len(units_with_data))
             percent = round(proportion * 100, 1)
             emoji = "🔴" if percent > 5 else "🟢"
 
-            message_lines.append(f"- {emoji} {type.capitalize()}: {len(units_without_data)} ({percent}%)")
+            message_lines.append(
+                f"- {emoji} {type.capitalize()}: {len(units_without_data)} ({percent}%)"
+            )
 
         send_message(
             title=title,
