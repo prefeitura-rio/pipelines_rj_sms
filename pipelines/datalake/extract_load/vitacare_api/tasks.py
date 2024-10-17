@@ -273,6 +273,8 @@ def create_parameter_list(
         dataset_name = "gerenciamento__reprocessamento"
         if endpoint == "movimento":
             table_name = "brutos_prontuario_vitacare__estoque_movimento"
+        elif endpoint == "vacina":
+            table_name = "brutos_prontuario_vitacare__vacina"
         else:
             log("Invalid endpoint", level="error")
             raise FAIL("Invalid endpoint")
