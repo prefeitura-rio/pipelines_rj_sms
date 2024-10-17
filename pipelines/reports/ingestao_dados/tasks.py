@@ -9,7 +9,16 @@ from pipelines.utils.tasks import load_file_from_bigquery
 
 
 @task
-def get_data(environment, target_date):
+def get_target_date(data, target_date):
+    if not target_date:
+        target_date = data["data_atualizacao"].max()
+        log(f"Target date not provided. Using latest date available: {target_date}")
+    else:
+        log(f"Target date provided: {target_date}")
+    return target_date
+
+@task
+def get_data(environment):
 
     data = load_file_from_bigquery.run(
         project_name=constants.GOOGLE_CLOUD_PROJECT.value[environment],
@@ -18,14 +27,14 @@ def get_data(environment, target_date):
         environment=environment,
     )
 
-    if not target_date:
-        target_date = data["data_atualizacao"].max()
-
-    return data[data["data_atualizacao"] == target_date]
+    log(f"Data loaded from BigQuery: {data.shape[0]} rows")
+    return data
 
 
 @task
 def create_markdown_report_from_source(data, source, target_date):
+    data = data[data["data_atualizacao"] == target_date]
+
     date_readable = pd.to_datetime(target_date).strftime("%d/%m/%Y")
 
     if data.empty:
@@ -65,6 +74,8 @@ def create_markdown_report_from_source(data, source, target_date):
 
     message_lines.append("")
 
+    log('\n'.join(message_lines))
+
     txt_path = "./report.md"
     with open(txt_path, "w") as f:
         f.write("\n".join(message_lines))
@@ -74,6 +85,7 @@ def create_markdown_report_from_source(data, source, target_date):
 
 @task
 def send_report(data, target_date):
+    data = data[data["data_atualizacao"] == target_date]
     date_readable = pd.to_datetime(target_date).strftime("%d/%m/%Y")
 
     if data.empty:
@@ -105,6 +117,9 @@ def send_report(data, target_date):
             message_lines.append(
                 f"- {emoji} {type.capitalize()}: {len(units_without_data)} ({percent}%)"
             )
+
+        log(f"Sending message with {len(message_lines)} lines")
+        log('\n'.join(message_lines))
 
         send_message(
             title=title,

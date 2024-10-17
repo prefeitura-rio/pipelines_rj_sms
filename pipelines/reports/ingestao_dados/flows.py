@@ -7,7 +7,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.reports.ingestao_dados.tasks import get_data, send_report
+from pipelines.reports.ingestao_dados.tasks import get_data, send_report, get_target_date
 
 with Flow(
     name="Report: Monitoramento de Ingestão de Dados",
@@ -22,10 +22,11 @@ with Flow(
     #####################################
     # Tasks
     #####################################
+    data = get_data(environment=ENVIRONMENT)
+    
+    target_date = get_target_date(data=data, target_date=TARGET_DATE)
 
-    data = get_data(environment=ENVIRONMENT, target_date=TARGET_DATE)
-
-    send_report(data=data, target_date=TARGET_DATE)
+    send_report(data=data, target_date=target_date)
 
 
 report_monitoramento_ingestao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
