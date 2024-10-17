@@ -160,7 +160,7 @@ cases:
     flow_name: "report_farmacia_monitoramento_ingestao"
     params:
       environment: "dev"
-      target_date: "2024-10-10"
+      target_date: "2024-10-16"
   - case_slug: "report-flows-longos"
     flow_path: "pipelines.reports.long_running_flows.flows"
     flow_name: "report_long_running_flows"
