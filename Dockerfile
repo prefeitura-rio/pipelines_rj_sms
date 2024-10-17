@@ -25,12 +25,13 @@ RUN apt-get update && \
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
-ENV PREFECT_VERSION=$PREFECT_VERSION
+ENV PREFECT_VERSION $PREFECT_VERSION
 
-# Setup virtual environment and install Prefect
+# Setup virtual environment and prefect
 ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m venv $VIRTUAL_ENV && \
-    $VIRTUAL_ENV/bin/pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION"
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN python3 -m pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION"
 
 # Install Python requirements
 WORKDIR /app
