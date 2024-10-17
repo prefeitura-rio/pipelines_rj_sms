@@ -7,14 +7,14 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.reports.farmacia_digital.ingestao_dados.tasks import (
+from pipelines.reports.ingestao_dados.tasks import (
     get_data,
     send_report,
 )
 
 with Flow(
-    name="Report: Farmácia Digital - Monitoramento de Ingestão de Dados",
-) as report_farmacia_monitoramento_ingestao:
+    name="Report: Monitoramento de Ingestão de Dados",
+) as report_monitoramento_ingestao:
 
     #####################################
     # Parameters
@@ -25,16 +25,15 @@ with Flow(
     #####################################
     # Tasks
     #####################################
-    # rename_current_flow_run(environment=ENVIRONMENT, target_date=TARGET_DATE)
 
     data = get_data(environment=ENVIRONMENT, target_date=TARGET_DATE)
 
     send_report(data=data, target_date=TARGET_DATE)
 
 
-report_farmacia_monitoramento_ingestao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-report_farmacia_monitoramento_ingestao.executor = LocalDaskExecutor(num_workers=1)
-report_farmacia_monitoramento_ingestao.run_config = KubernetesRun(
+report_monitoramento_ingestao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+report_monitoramento_ingestao.executor = LocalDaskExecutor(num_workers=1)
+report_monitoramento_ingestao.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
