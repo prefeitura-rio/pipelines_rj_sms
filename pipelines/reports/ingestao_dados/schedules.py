@@ -27,4 +27,4 @@ clocks = generate_dump_api_schedules(
     runs_interval_minutes=0,
 )
 
-weekly_schedule = Schedule(clocks=untuple_clocks(clocks))
+schedule = Schedule(clocks=untuple_clocks(clocks))
