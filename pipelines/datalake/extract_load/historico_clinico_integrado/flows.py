@@ -37,22 +37,21 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", default=False)
     HISTORICAL_MODE = Parameter("historical_mode", default=False)
     TARGET_DATE = Parameter("target_date", default="")
+    DATASET_ID = Parameter("dataset_id", default=hci_constants.DATASET_ID.value)
+    TABLE_ID = Parameter("table_id", required=True)
+    REFERENCE_DATETIME_COLUMN = Parameter("reference_datetime_column", default="created_at")
 
     # INFISICAL
     INFISICAL_PATH = hci_constants.INFISICAL_PATH.value
     INFISICAL_DBURL = hci_constants.INFISICAL_DB_URL.value
-
-    # GCP
-    DATASET_ID = Parameter("dataset_id", default=hci_constants.DATASET_ID.value)
-    TABLE_ID = Parameter("table_id", required=True)
 
     #####################################
     # Set environment
     ####################################
     build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
     with case(RENAME_FLOW, True):
-
         rename_current_flow_run(environment=ENVIRONMENT, table=TABLE_ID)
+
     ####################################
     # Tasks section #1 - Get data
     #####################################
@@ -71,6 +70,7 @@ with Flow(
         file_folder=create_folders_task["raw"],
         file_name=TABLE_ID,
         historical_mode=HISTORICAL_MODE,
+        reference_datetime_column=REFERENCE_DATETIME_COLUMN,
     )
     #####################################
     # Tasks section #2 - Transform data and Create table

@@ -18,12 +18,14 @@ flow_parameters = [
         "historical_mode": False,
         "environment": "prod",
         "rename_flow": True,
+        "reference_datetime_column": "timestamp",
     },
     {
         "table_id": "userinfo",
         "historical_mode": True,
         "environment": "prod",
         "rename_flow": True,
+        "reference_datetime_column": "updated_at",
     },
 ]
 

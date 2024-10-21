@@ -22,6 +22,7 @@ def download_from_db(
     file_folder: str,
     file_name: str,
     historical_mode: bool,
+    reference_datetime_column: str,
 ) -> None:
     """
     Downloads data from a database table and saves it as a CSV file.
@@ -34,46 +35,27 @@ def download_from_db(
         file_folder (str): The folder where the CSV file will be saved.
         file_name (str): The name of the CSV file.
         historical_mode (bool): Boolean to historical extraction
+        reference_datetime_column (str): Name of the column that contains the reference datetime.
 
     Returns:
         str: The file path of the downloaded CSV file.
     """
 
-    connection_string = f"{db_url}"
-    if (historical_mode is False) & (target_date == ""):
-        target_date = prefect.context.get("scheduled_start_time").date()
-    window_date = pd.to_datetime(target_date).date() - timedelta(days=7)
-    time_clause = (
-        f"""
-            WHERE
-                (CAST(created_at as DATE) <= '{target_date}'
-                AND CAST(created_at as DATE) > '{window_date}')
-        """
-        if historical_mode is False
-        else ""
-    )
-    time_clause_patient = (
-        f"""
-            OR
-                (CAST(updated_at as DATE) <= '{target_date}'
-                AND CAST(updated_at as DATE) > '{window_date}')
-        """
-        if (historical_mode is False) & (db_table == "mrg__patient")
-        else ""
-    )
+    query = f"SELECT * FROM {db_table}"
 
-    query = f"SELECT * FROM {db_table}" + time_clause + time_clause_patient
+    if not historical_mode:
+        if not target_date or target_date == "":
+            target_date = prefect.context.get("scheduled_start_time").date()
+        window_date = pd.to_datetime(target_date).date() - timedelta(days=7)
+        query += f" WHERE {reference_datetime_column} BETWEEN '{window_date}' AND '{target_date}'"
 
     log(query)
 
-    table = pd.read_sql(query, connection_string)
-
+    table = pd.read_sql(query, db_url)
     log(f"{len(table)} rows downloaded")
 
     destination_file_path = f"{file_folder}/{file_name}_{target_date}.csv"
-
     table.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
-
     log(f"File {destination_file_path} downloaded from DB.")
 
     return destination_file_path

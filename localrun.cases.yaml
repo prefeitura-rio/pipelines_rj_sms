@@ -166,3 +166,12 @@ cases:
     flow_name: "report_long_running_flows"
     params:
       environment: "prod"
+  - case_slug: "dump-hci"
+    flow_path: "pipelines.datalake.extract_load.historico_clinico_integrado.flows"
+    flow_name: "dump_hci"
+    params:
+      environment: "dev"
+      table_id: "historico_clinico_integrado"
+      dataset_id: "brutos_historico_clinico_integrado"
+      historical_mode: false
+      reference_datetime_column: "timestamp"
