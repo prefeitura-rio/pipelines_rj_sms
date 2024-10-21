@@ -67,12 +67,6 @@ def create_markdown_report_from_source(data, source, target_date):
         units_with_data = filtered_data["unidades_com_dado"]
         message_lines.append(f"- 📊 **Unidades com dados:** {len(units_with_data)}")
 
-        for i, unit in enumerate(units_with_data):
-            ap = unit["unidade_ap"]
-            name = unit["unidade_nome"]
-            cnes = unit["unidade_cnes"]
-            message_lines.append(f"> `[AP{ap}] {name} ({cnes})`")
-
     message_lines.append("")
 
     log("\n".join(message_lines))
