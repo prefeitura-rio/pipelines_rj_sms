@@ -14,6 +14,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
+        "dataset_id": "gerenciamento__historico_clinico__logs",
         "table_id": "userhistory",
         "historical_mode": False,
         "environment": "prod",
@@ -21,6 +22,7 @@ flow_parameters = [
         "reference_datetime_column": "timestamp",
     },
     {
+        "dataset_id": "gerenciamento__historico_clinico__logs",
         "table_id": "userinfo",
         "historical_mode": True,
         "environment": "prod",
