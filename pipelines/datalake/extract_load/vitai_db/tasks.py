@@ -19,20 +19,24 @@ from pipelines.utils.tasks import upload_to_datalake
 @task()
 def list_tables_to_import():
     return [
-        "paciente",
-        "boletim",
-        "alergia",
-        "atendimento",
-        "cirurgia",
-        "classificacao_risco",
-        "diagnostico",
-        "exame",
-        "profissional",
-        "m_estabelecimento",
-        "relato_cirurgico",
-        "resumo_alta",
-        "internacao",
-        "alta",
+        # SCHEMA, TABLE, DATETIME_COLUMN, TARGET_NAME
+        ("basecentral", "paciente", "datahora", "paciente_eventos"),
+        ("basecentral", "boletim", "datahora", "boletim_eventos"),
+        ("basecentral", "alergia", "datahora", "alergia_eventos"),
+        ("basecentral", "atendimento", "datahora", "atendimento_eventos"),
+        ("basecentral", "cirurgia", "datahora", "cirurgia_eventos"),
+        ("basecentral", "classificacao_risco", "datahora", "classificacao_risco_eventos"),
+        ("basecentral", "diagnostico", "datahora", "diagnostico_eventos"),
+        ("basecentral", "exame", "datahora", "exame_eventos"),
+        ("basecentral", "profissional", "datahora", "profissional_eventos"),
+        ("basecentral", "m_estabelecimento", "datahora", "m_estabelecimento_eventos"),
+        ("basecentral", "relato_cirurgico", "datahora", "relato_cirurgico_eventos"),
+        ("basecentral", "resumo_alta", "datahora", "resumo_alta_eventos"),
+        ("basecentral", "internacao", "datahora", "internacao_eventos"),
+        ("basecentral", "alta", "datahora", "alta_eventos"),
+        ("dtw", "fat_boletim", "data_entrada", "dtw__fat_boletim_eventos"),
+        ("dtw", "fat_atendimento", "data_fim", "dtw__fat_atendimento_eventos"),
+        ("dtw", "fat_internacao", "data_entrada", "dtw__fat_internacao_eventos"),
     ]
 
 
@@ -56,7 +60,7 @@ def get_interval_start_list(interval_start: str, table_names: list[str]) -> list
 def create_working_time_range(
     project_name: str,
     dataset_name: str,
-    table_names: list[str],
+    table_infos: list[tuple[str,str,str,str]],
     interval_start: str = None,
     interval_end: str = None,
 ) -> list:
@@ -73,40 +77,43 @@ def create_working_time_range(
         default_max_value = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(minutes=30)
 
         interval_start_values = []
-        for table_name in table_names:
+        for table_info in table_infos:
+            _, _, _, target_name = table_info
+
             query = f"""
-            SELECT MAX(datahora) as max_value, "{table_name}" as table_name
-            FROM `{project_name}.{dataset_name}_staging.{table_name}`
+            SELECT MAX(datahora) as max_value, "{target_name}" as table_name
+            FROM `{project_name}.{dataset_name}_staging.{target_name}`
             WHERE data_particao > '{seven_days_ago}'
             """
 
             try:
                 result = client.query(query).result().to_dataframe().max_value.iloc[0]
                 if result is None:
-                    log(f"Table {table_name} is empty. Ignoring table.", level="warning")
+                    log(f"Table {target_name} is empty. Ignoring table.", level="warning")
                     max_value = default_max_value
                 else:
                     max_value = pd.to_datetime(result, format="%Y-%m-%d %H:%M:%S.%f")
             except google.api_core.exceptions.NotFound:
-                log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="warning")
+                log(f"Table {target_name} not found in BigQuery. Ignoring table.", level="warning")
                 max_value = default_max_value
 
             interval_start_values.append(max_value - pd.Timedelta(hours=3))
     else:
         interval_start_values = [
-            pd.to_datetime(interval_start, format="%Y-%m-%d %H:%M:%S") for _ in table_names
+            pd.to_datetime(interval_start, format="%Y-%m-%d %H:%M:%S") for _ in table_infos
         ]
 
     if not interval_end:
         log("Interval end not provided. Getting current timestamp.", level="warning")
-        interval_end_values = [pd.Timestamp.now(tz="America/Sao_Paulo") for _ in table_names]
+        interval_end_values = [pd.Timestamp.now(tz="America/Sao_Paulo") for _ in table_infos]
     else:
         interval_end_values = [
-            pd.to_datetime(interval_end, format="%Y-%m-%d %H:%M:%S") for _ in table_names
+            pd.to_datetime(interval_end, format="%Y-%m-%d %H:%M:%S") for _ in table_infos
         ]
 
-    for table_name, start, end in zip(table_names, interval_start_values, interval_end_values):
-        log(f"Table {table_name} will be extracted from {start} to {end}")
+    for table_info, start, end in zip(table_infos, interval_start_values, interval_end_values):
+        schema_name, table_name, _, _ = table_info
+        log(f"Table {schema_name}.{table_name} will be extracted from {start} to {end}")
 
     return interval_start_values, interval_end_values
 
@@ -114,19 +121,20 @@ def create_working_time_range(
 @task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=20))
 def import_vitai_table(
     db_url: str,
-    table_name: str,
+    table_info: tuple[str,str,str,str],
     output_file_folder: str,
     interval_start: pd.Timestamp,
     interval_end: pd.Timestamp,
 ) -> str:
+    schema_name, table_name, dt_column, target_name = table_info
 
     interval_start = interval_start.strftime("%Y-%m-%d %H:%M:%S")
     interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")
 
     query = f"""
         select *
-        from basecentral.{table_name}
-        where datahora >= '{interval_start}' and datahora < '{interval_end}'
+        from {schema_name}.{table_name}
+        where {dt_column} between '{interval_start}' and '{interval_end}'
     """
     log("Built query: \n" + query)
     try:
@@ -150,7 +158,7 @@ def import_vitai_table(
         dfs = [(str(now.date()), df)]
     else:
         log("Non Empty dataframe. Splitting Dataframe in multiple files by day", level="warning")
-        df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
+        df["partition_date"] = pd.to_datetime(df[dt_column]).dt.date
         days = df["partition_date"].unique()
         dfs = [
             (day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days
@@ -170,11 +178,6 @@ def import_vitai_table(
     return output_paths
 
 
-@task()
-def create_datalake_table_name(table_name: str) -> str:
-    return f"{table_name}_eventos"
-
-
 @task
 def get_current_flow_labels() -> list[str]:
     """
@@ -184,6 +187,10 @@ def get_current_flow_labels() -> list[str]:
     flow_run_view = FlowRunView.from_flow_run_id(flow_run_id)
     return flow_run_view.labels
 
+@task
+def get_datalake_table_name(table_info):
+    schema_name, table_name, dt_column, target_name = table_info
+    return target_name
 
 @task
 def create_folder(title="", subtitle=""):

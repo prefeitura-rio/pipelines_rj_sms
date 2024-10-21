@@ -13,7 +13,7 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
     vitai_db_extraction_schedule,
 )
 from pipelines.datalake.extract_load.vitai_db.tasks import (
-    create_datalake_table_name,
+    get_datalake_table_name,
     create_folder,
     create_working_time_range,
     get_bigquery_project_from_environment,
@@ -59,7 +59,7 @@ with Flow(
 
     tables_to_import = list_tables_to_import()
 
-    datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
+    datalake_table_names = get_datalake_table_name.map(table_info=tables_to_import)
 
     raw_folders = create_folder.map(title=unmapped("raw"), subtitle=datalake_table_names)
     partition_folders = create_folder.map(
@@ -74,7 +74,7 @@ with Flow(
     interval_start_per_table, interval_end_per_table = create_working_time_range(
         project_name=bigquery_project,
         dataset_name=vitai_constants.DATASET_NAME.value,
-        table_names=datalake_table_names,
+        table_infos=tables_to_import,
         interval_start=INTERVAL_START,
         interval_end=INTERVAL_END,
     )
@@ -84,7 +84,7 @@ with Flow(
     #####################################
     file_list_per_table = import_vitai_table.map(
         db_url=unmapped(db_url),
-        table_name=tables_to_import,
+        table_info=tables_to_import,
         output_file_folder=raw_folders,
         interval_start=interval_start_per_table,
         interval_end=interval_end_per_table,
