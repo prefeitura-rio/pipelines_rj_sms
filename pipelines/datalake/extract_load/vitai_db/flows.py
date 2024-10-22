@@ -58,10 +58,20 @@ with Flow(
     #####################################
     # Tasks section #1 - Setup Environment
     #####################################
-    rename_current_flow_run(
-        name_template="""Operário '{operator_key}'""",  # noqa
-        operator_key=OPERATOR_KEY,
-    )
+    with case(is_null_or_empty(value=OPERATOR_KEY), False):
+        rename_current_flow_run(
+            name_template="""Operário '{operator_key}' [{interval_start}, {interval_end}]""",
+            operator_key=OPERATOR_KEY,
+            interval_start=INTERVAL_START,
+            interval_end=INTERVAL_END,
+        )
+    with case(is_null_or_empty(value=OPERATOR_KEY), True):
+        rename_current_flow_run(
+            name_template="""Rotineiro '{schema_name}.{table_name} -> {target_name}'""",
+            schema_name=SCHEMA_NAME,
+            table_name=TABLE_NAME,
+            target_name=TARGET_NAME,
+        )
 
     project_name = get_project_name(environment=ENVIRONMENT)
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
@@ -158,7 +168,7 @@ with Flow(
     TARGET_NAME = Parameter("target_name", default="")
 
     rename_current_flow_run(
-        name_template="""Manager '{schema_name}.{table_name}'- Janela:{window_size} ({environment})""",  # noqa
+        name_template="""Manager '{schema_name}.{table_name}' - Janela: {window_size} ({environment})""",  # noqa
         schema_name=SCHEMA_NAME,
         table_name=TABLE_NAME,
         window_size=WINDOW_SIZE,
