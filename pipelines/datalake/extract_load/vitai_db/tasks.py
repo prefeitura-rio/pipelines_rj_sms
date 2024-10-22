@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
 import uuid
-import pandas as pd
 from datetime import datetime, timedelta
 
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.progress import calculate_operator_key
-from pipelines.utils.logger import log
+import pandas as pd
 
 from pipelines.datalake.utils.data_transformations import convert_to_parquet
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
+from pipelines.utils.progress import calculate_operator_key
 
 
 @task(nout=2)
@@ -61,12 +61,12 @@ def calculate_windows(year, window_size):
 
 @task()
 def build_param_list(
-    environment: str, 
+    environment: str,
     schema_name: str,
     table_name: str,
     target_name: str,
-    datetime_column: str, 
-    window_size: int = 7
+    datetime_column: str,
+    window_size: int = 7,
 ):
 
     params = []
@@ -105,9 +105,9 @@ def load_data_from_vitai_table(
     interval_start: pd.Timestamp,
     interval_end: pd.Timestamp,
 ) -> str:
-    schema_name = table_info['schema_name']
-    table_name = table_info['table_name']
-    dt_column = table_info['datetime_column']
+    schema_name = table_info["schema_name"]
+    table_name = table_info["table_name"]
+    dt_column = table_info["datetime_column"]
 
     interval_start = interval_start.strftime("%Y-%m-%d %H:%M:%S")
     interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")

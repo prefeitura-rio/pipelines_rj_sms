@@ -1,44 +1,44 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, unmapped, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants as global_constants
-from pipelines.utils.tasks import (
-    get_secret_key,
-    get_project_name,
-    create_folder,
-    create_partitions,
-    rename_current_flow_run,
-    upload_to_datalake,
-    get_bigquery_project_from_environment,
+from pipelines.datalake.extract_load.vitai_db.constants import (
+    constants as vitai_db_constants,
 )
-from pipelines.utils.progress import (
-    load_operators_progress,
-    save_operator_progress,
-    get_remaining_operators,
+from pipelines.datalake.extract_load.vitai_db.schedules import (
+    vitai_db_extraction_schedule,
 )
-from pipelines.utils.basics import (
-    as_dict,
-    is_null_or_empty,
-)
-from pipelines.utils.prefect import (
-    get_current_flow_labels
-)
-from pipelines.utils.credential_injector import (
-    authenticated_create_flow_run as create_flow_run,
-    authenticated_wait_for_flow_run as wait_for_flow_run,
-)
-from pipelines.datalake.extract_load.vitai_db.schedules import vitai_db_extraction_schedule
-from pipelines.datalake.extract_load.vitai_db.constants import constants as vitai_db_constants
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     build_param_list,
-    load_data_from_vitai_table,
     create_working_time_range,
+    load_data_from_vitai_table,
 )
-
+from pipelines.utils.basics import as_dict, is_null_or_empty
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
+from pipelines.utils.prefect import get_current_flow_labels
+from pipelines.utils.progress import (
+    get_remaining_operators,
+    load_operators_progress,
+    save_operator_progress,
+)
+from pipelines.utils.tasks import (
+    create_folder,
+    create_partitions,
+    get_bigquery_project_from_environment,
+    get_project_name,
+    get_secret_key,
+    rename_current_flow_run,
+    upload_to_datalake,
+)
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Operator",
@@ -69,7 +69,6 @@ with Flow(
     interval_start, interval_end = create_working_time_range(
         interval_start=INTERVAL_START,
         interval_end=INTERVAL_END,
-
     )
 
     #####################################
@@ -167,8 +166,7 @@ with Flow(
     )
 
     progress_table = load_operators_progress(
-        slug=vitai_db_constants.SLUG_NAME.value,
-        project_name=ENVIRONMENT
+        slug=vitai_db_constants.SLUG_NAME.value, project_name=ENVIRONMENT
     )
 
     params = build_param_list(
@@ -181,8 +179,7 @@ with Flow(
     )
 
     remaining_runs = get_remaining_operators(
-        progress_table=progress_table,
-        all_operators_params=params
+        progress_table=progress_table, all_operators_params=params
     )
 
     project_name = get_project_name(environment=ENVIRONMENT)

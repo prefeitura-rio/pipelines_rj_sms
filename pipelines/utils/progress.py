@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # FLOW PATTERN: Manager-Operator
 
 # Flow Operário
@@ -8,13 +9,14 @@
 # - Cria execuções de Flow Operário
 
 import datetime
-import prefect
+
 import pandas as pd
+import prefect
 from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.logger import log
 from pipelines.utils.googleutils import generate_bigquery_schema
+from pipelines.utils.logger import log
 
 
 @task
@@ -28,7 +30,7 @@ def calculate_operator_key(exclude_keys=[], **kwargs):
     str: The operator key calculated based on the given arguments.
     """
     all_args = [(key, value) for key, value in kwargs.items() if key not in exclude_keys]
-    
+
     args_sorted_by_key = sorted(all_args, key=lambda x: x[0])
 
     key_pieces = [str(value) for _, value in args_sorted_by_key]
@@ -73,12 +75,16 @@ def save_operator_progress(operator_key, slug, project_name="rj-sms-dev"):
         slug (str): The slug of the table.
         project_name (str, optional): The name of the project. Defaults to "rj-sms-dev".
     """
-    rows_to_insert = pd.DataFrame([{
-        "operator_key": operator_key,
-        "flow_run_id": prefect.context.get("flow_run_id"),
-        "moment": datetime.now().isoformat()
-    }])
-    
+    rows_to_insert = pd.DataFrame(
+        [
+            {
+                "operator_key": operator_key,
+                "flow_run_id": prefect.context.get("flow_run_id"),
+                "moment": datetime.now().isoformat(),
+            }
+        ]
+    )
+
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
 
     dataset_name = f"{project_name}.gerenciamento__progresso"
@@ -93,9 +99,7 @@ def save_operator_progress(operator_key, slug, project_name="rj-sms-dev"):
         schema=generate_bigquery_schema(rows_to_insert),
         write_disposition="WRITE_APPEND",
     )
-    job = bq_client.load_table_from_dataframe(
-        rows_to_insert, table_name, job_config=job_config
-    )
+    job = bq_client.load_table_from_dataframe(rows_to_insert, table_name, job_config=job_config)
     job.result()
 
 
@@ -113,7 +117,6 @@ def get_remaining_operators(progress_table: pd.DataFrame | None, all_operators_p
     Returns:
         list[dict]: A list of dictionaries representing the remaining operators' parameters.
     """
-
 
     candidates = pd.DataFrame(all_operators_params)
     candidates_columns = candidates.columns.tolist()

@@ -12,7 +12,6 @@ from datetime import date, timedelta
 import pandas as pd
 import prefect
 import requests
-
 from prefect.client import Client
 
 from pipelines.prontuarios.constants import constants as prontuario_constants

@@ -25,11 +25,11 @@ import google.oauth2.id_token
 import gspread
 import pandas as pd
 import prefect
-from prefect.client import Client
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
 from google.cloud import bigquery, storage
+from prefect.client import Client
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log

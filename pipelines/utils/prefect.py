@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import requests
 import prefect
+import requests
 from prefect.backend import FlowRunView
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 
@@ -39,6 +39,7 @@ def get_prefect_token() -> str:
         raise requests.exceptions.RequestException(
             f"Failed to authenticate with Prefect API. Status code: {response.status_code}"
         )
+
 
 @task
 def run_query(
@@ -92,6 +93,7 @@ def cancel_flow_run(flow_run_id: str, token: str = None) -> bool:
     variables = {"flow_run_id": flow_run_id}
     data: dict = run_query.run(query=mutation, variables=variables, token=token)
     return data["data"]["cancel_flow_run"]["state"] in ["Cancelled", "Cancelling"]
+
 
 @task
 def archive_flow_run(flow_id: str, token: str = None) -> bool:
