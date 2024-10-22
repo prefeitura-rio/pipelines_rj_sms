@@ -73,7 +73,7 @@ def build_param_list(
     for year in range(2012, 2025):
         for window in calculate_windows.run(year=year, window_size=window_size):
             start, end = window
-            operator_key = calculate_operator_key(
+            operator_key = calculate_operator_key.run(
                 schema_name=schema_name,
                 table_name=table_name,
                 target_name=target_name,
