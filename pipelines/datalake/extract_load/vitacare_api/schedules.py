@@ -15,19 +15,19 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 routine_flow_parameters = [
     {
         "dataset_id": "brutos_prontuario_vitacare",
-        "endpoint": "posicao",
-        "environment": "prod",
-        "rename_flow": True,
-        "table_id": "estoque_posicao",
-        "target_date": "today",
-    },
-    {
-        "dataset_id": "brutos_prontuario_vitacare",
         "endpoint": "movimento",
         "environment": "prod",
         "rename_flow": True,
         "table_id": "estoque_movimento",
         "target_date": "yesterday",
+    },
+    {
+        "dataset_id": "brutos_prontuario_vitacare",
+        "endpoint": "posicao",
+        "environment": "prod",
+        "rename_flow": True,
+        "table_id": "estoque_posicao",
+        "target_date": "today",
     },
     {
         "dataset_id": "brutos_prontuario_vitacare",
