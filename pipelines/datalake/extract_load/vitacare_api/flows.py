@@ -41,7 +41,7 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-from pipelines.utils.tasks import create_folders, upload_to_datalake, get_project_name
+from pipelines.utils.tasks import create_folders, get_project_name, upload_to_datalake
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",
