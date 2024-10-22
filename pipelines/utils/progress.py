@@ -46,7 +46,7 @@ def load_operators_progress(slug, project_name="rj-sms-dev"):
         project_name (str, optional): The name of the project. Defaults to "rj-sms-dev".
 
     Returns:
-        pandas.DataFrame or None: The progress data as a pandas DataFrame if the table exists, 
+        pandas.DataFrame or None: The progress data as a pandas DataFrame if the table exists,
         otherwise None.
     """
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
@@ -107,7 +107,8 @@ def get_remaining_operators(progress_table: pd.DataFrame | None, all_operators_p
     Args:
         progress_table (pd.DataFrame | None): A DataFrame representing the progress table.
             If provided, the function will merge it with the candidates DataFrame.
-        all_operators_params (list[dict]): A list of dictionaries representing the parameters of all operators.
+        all_operators_params (list[dict]): A list of dictionaries representing the parameters
+            of all operators.
 
     Returns:
         list[dict]: A list of dictionaries representing the remaining operators' parameters.

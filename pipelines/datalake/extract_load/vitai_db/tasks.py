@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import shutil
 import uuid
 import pandas as pd
 from datetime import datetime, timedelta
