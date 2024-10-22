@@ -6,7 +6,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.utils.tasks import rename_current_flow_run
+from pipelines.utils.tasks import rename_current_flow_run
 from pipelines.reports.long_running_flows.schedules import schedule
 from pipelines.reports.long_running_flows.tasks import (
     cancel_flows,
