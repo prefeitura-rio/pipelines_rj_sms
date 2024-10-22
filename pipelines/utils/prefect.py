@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import requests
+import prefect
+from prefect.backend import FlowRunView
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 
 from pipelines.constants import constants
+from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 
 
@@ -37,7 +40,7 @@ def get_prefect_token() -> str:
             f"Failed to authenticate with Prefect API. Status code: {response.status_code}"
         )
 
-
+@task
 def run_query(
     query,
     variables: dict = None,
@@ -69,6 +72,7 @@ def run_query(
         return None
 
 
+@task
 def cancel_flow_run(flow_run_id: str, token: str = None) -> bool:
     """
     Cancels a Prefect flow run given its ID.
@@ -86,10 +90,10 @@ def cancel_flow_run(flow_run_id: str, token: str = None) -> bool:
         }
     """
     variables = {"flow_run_id": flow_run_id}
-    data: dict = run_query(query=mutation, variables=variables, token=token)
+    data: dict = run_query.run(query=mutation, variables=variables, token=token)
     return data["data"]["cancel_flow_run"]["state"] in ["Cancelled", "Cancelling"]
 
-
+@task
 def archive_flow_run(flow_id: str, token: str = None) -> bool:
     """
     Archives a flow run in the Prefect system.
@@ -113,10 +117,11 @@ def archive_flow_run(flow_id: str, token: str = None) -> bool:
         }
     """
     variables = {"flow_id": flow_id}
-    data: dict = run_query(query=mutation, variables=variables, token=token)
+    data: dict = run_query.run(query=mutation, variables=variables, token=token)
     return data["data"]["archive_flow"]["success"]
 
 
+@task
 def get_prefect_project_id(environment: str = "staging") -> str:
     """
     Retrieves the Prefect project ID for the given environment.
@@ -134,5 +139,15 @@ def get_prefect_project_id(environment: str = "staging") -> str:
         }
     """
     variables = {"project_name": project_name}
-    data: dict = run_query(query=query, variables=variables)
+    data: dict = run_query.run(query=query, variables=variables)
     return data["data"]["project"][0]["id"]
+
+
+@task
+def get_current_flow_labels() -> list[str]:
+    """
+    Get the labels of the current flow.
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    flow_run_view = FlowRunView.from_flow_run_id(flow_run_id)
+    return flow_run_view.labels

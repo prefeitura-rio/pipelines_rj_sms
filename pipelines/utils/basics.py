@@ -7,9 +7,11 @@ from pipelines.utils.credential_injector import authenticated_task as task
 def to_list(element):
     return [element]
 
+
 @task()
 def as_dict(**kwargs):
     return kwargs
+
 
 @task()
 def as_datetime(date_str, format="%Y-%m-%d"):
@@ -19,3 +21,8 @@ def as_datetime(date_str, format="%Y-%m-%d"):
         return pd.Timestamp.now()
     else:
         return pd.to_datetime(date_str, format=format)
+
+
+@task()
+def is_null_or_empty(value):
+    return (value is None) or (value == "")
