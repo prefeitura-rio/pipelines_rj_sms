@@ -62,8 +62,6 @@ with Flow(
         rename_current_flow_run(
             name_template="""Operário '{operator_key}'""",
             operator_key=OPERATOR_KEY,
-            interval_start=INTERVAL_START,
-            interval_end=INTERVAL_END,
         )
     with case(is_null_or_empty(value=OPERATOR_KEY), True):
         rename_current_flow_run(

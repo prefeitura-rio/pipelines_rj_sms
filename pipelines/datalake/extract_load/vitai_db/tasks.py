@@ -119,11 +119,9 @@ def load_data_from_vitai_table(
         where {dt_column} between '{interval_start}' and '{interval_end}'
     """
     log("Built query: \n" + query)
-    try:
-        df = pd.read_sql(query, db_url, dtype=str)
-        log(f"Query executed successfully. Found {df.shape[0]} rows.")
-    except Exception as e:
-        raise FAIL(f"Error executing query: {e}")
+
+    df = pd.read_sql(query, db_url, dtype=str)
+    log(f"Query executed successfully. Found {df.shape[0]} rows.")
 
     if "id" in df.columns:
         log("Detected `id` column in dataframe. Renaming to `gid`", level="warning")
