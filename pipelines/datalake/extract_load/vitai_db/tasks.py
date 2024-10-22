@@ -2,8 +2,8 @@
 import os
 import uuid
 from datetime import datetime, timedelta
-
 import pandas as pd
+from prefect.engine.signals import FAIL
 
 from pipelines.datalake.utils.data_transformations import convert_to_parquet
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -122,8 +122,7 @@ def load_data_from_vitai_table(
         df = pd.read_sql(query, db_url, dtype=str)
         log(f"Query executed successfully. Found {df.shape[0]} rows.")
     except Exception as e:
-        log(f"Error executing query: {e}", level="warning")
-        return []
+        raise FAIL(f"Error executing query: {e}")
 
     if "id" in df.columns:
         log("Detected `id` column in dataframe. Renaming to `gid`", level="warning")

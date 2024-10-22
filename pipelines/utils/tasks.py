@@ -842,6 +842,21 @@ def upload_to_datalake(
         raise RuntimeError() from e
 
 
+@task
+def search_files_from_format(
+    folder_path: str,
+    file_format: str = "csv",
+):
+    data_path = Path(folder_path)
+    files = list(data_path.glob(f"**/*.{file_format}"))
+
+    for file in files:
+        log(f"File found: {file}")
+
+    return files
+
+
+
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv", csv_sep=","):
     """
