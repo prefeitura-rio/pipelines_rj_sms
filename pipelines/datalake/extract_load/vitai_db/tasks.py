@@ -60,7 +60,7 @@ def get_interval_start_list(interval_start: str, table_names: list[str]) -> list
 def create_working_time_range(
     project_name: str,
     dataset_name: str,
-    table_infos: list[tuple[str,str,str,str]],
+    table_infos: list[dict],
     interval_start: str = None,
     interval_end: str = None,
 ) -> list:
@@ -78,7 +78,7 @@ def create_working_time_range(
 
         interval_start_values = []
         for table_info in table_infos:
-            _, _, _, target_name = table_info
+            target_name = table_info['target_name']
 
             query = f"""
             SELECT MAX(datahora) as max_value, "{target_name}" as table_name
@@ -119,14 +119,16 @@ def create_working_time_range(
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=20))
-def import_vitai_table(
+def load_data_from_vitai_table(
     db_url: str,
-    table_info: tuple[str,str,str,str],
+    table_info: dict,
     output_file_folder: str,
     interval_start: pd.Timestamp,
     interval_end: pd.Timestamp,
 ) -> str:
-    schema_name, table_name, dt_column, target_name = table_info
+    schema_name = table_info['schema_name']
+    table_name = table_info['table_name']
+    dt_column = table_info['datetime_column']
 
     interval_start = interval_start.strftime("%Y-%m-%d %H:%M:%S")
     interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")

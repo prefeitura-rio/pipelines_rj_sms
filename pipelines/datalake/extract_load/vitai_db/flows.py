@@ -18,7 +18,7 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_working_time_range,
     get_bigquery_project_from_environment,
     get_current_flow_labels,
-    import_vitai_table,
+    load_data_from_vitai_table,
     list_tables_to_import,
     upload_folders_to_datalake,
 )
@@ -82,7 +82,7 @@ with Flow(
     #####################################
     # Tasks section #4 - Downloading Table Data
     #####################################
-    file_list_per_table = import_vitai_table.map(
+    file_list_per_table = load_data_from_vitai_table.map(
         db_url=unmapped(db_url),
         table_info=tables_to_import,
         output_file_folder=raw_folders,
