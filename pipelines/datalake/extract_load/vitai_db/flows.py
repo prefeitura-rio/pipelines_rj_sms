@@ -122,20 +122,16 @@ with Flow(
     #####################################
     # Tasks section #6 - Uploading to Datalake
     #####################################
-    files_to_upload = search_files_from_format(
-        folder_path=partition_folder,
-        file_format="parquet",
+    upload_to_datalake_task = upload_to_datalake(
+        input_path=partition_folder,
+        table_id=TARGET_NAME,
+        dataset_id=vitai_db_constants.DATASET_NAME.value,
+        if_exists="replace",
+        source_format="parquet",
+        if_storage_data_exists="replace",
+        biglake_table=True,
+        dataset_is_public=False,
         upstream_tasks=[create_partitions_task],
-    )
-    upload_to_datalake_task = upload_to_datalake.map(
-        input_path=files_to_upload,
-        table_id=unmapped(TARGET_NAME),
-        dataset_id=unmapped(vitai_db_constants.DATASET_NAME.value),
-        if_exists=unmapped("replace"),
-        source_format=unmapped("parquet"),
-        if_storage_data_exists=unmapped("replace"),
-        biglake_table=unmapped(True),
-        dataset_is_public=unmapped(False),
     )
 
     #####################################

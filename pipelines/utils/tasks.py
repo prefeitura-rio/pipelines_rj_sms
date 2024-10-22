@@ -8,6 +8,7 @@ General utilities for SMS pipelines
 import ftplib
 import json
 import os
+import glob
 import re
 import shutil
 import sys
@@ -778,8 +779,16 @@ def upload_to_datalake(
     Returns:
         None
     """
+    
     if input_path == "":
         log("Received input_path=''. No data to upload", level="warning")
+        return
+    
+    reference_path = os.path.join(input_path, f"**/*.{source_format}")
+    log(f"Reference Path: {reference_path}")
+
+    if len(glob.glob(reference_path)) == 0:
+        log(f"No files found in {input_path}", level="warning")
         return
 
     tb = bd.Table(dataset_id=dataset_id, table_id=table_id)
