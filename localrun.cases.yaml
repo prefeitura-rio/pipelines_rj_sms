@@ -110,6 +110,14 @@ cases:
     flow_name: "sms_dump_vitai_rio_saude_batch"
     params:
       environment: "dev"
+      operator_key: "101001"
+      table_name: "fat_atendimento"
+      schema_name: "dtw"
+      datetime_column: "data_inicio"
+      target_name: "brutos_vitai_rio_saude"
+      interval_start: "2024-06-01"
+      interval_end: "2024-06-04"
+
   - case_slug: "datalake-to-hci"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
     flow_name: "datalake_to_hci"
