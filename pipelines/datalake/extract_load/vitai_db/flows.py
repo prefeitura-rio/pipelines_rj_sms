@@ -73,7 +73,6 @@ with Flow(
             target_name=TARGET_NAME,
         )
 
-    project_name = get_project_name(environment=ENVIRONMENT)
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     interval_start, interval_end = create_working_time_range(
@@ -175,8 +174,10 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
+    bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
+
     progress_table = load_operators_progress(
-        slug=vitai_db_constants.SLUG_NAME.value, project_name=ENVIRONMENT
+        slug=vitai_db_constants.SLUG_NAME.value, project_name=bigquery_project
     )
 
     params = build_param_list(
