@@ -787,7 +787,7 @@ def upload_to_datalake(
     reference_path = os.path.join(input_path, f"**/*.{source_format}")
     log(f"Reference Path: {reference_path}")
 
-    if len(glob.glob(reference_path)) == 0:
+    if len(glob.glob(reference_path, recursive=True)) == 0:
         log(f"No files found in {input_path}", level="warning")
         return
 

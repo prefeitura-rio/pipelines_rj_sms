@@ -37,7 +37,6 @@ from pipelines.utils.tasks import (
     get_project_name,
     get_secret_key,
     rename_current_flow_run,
-    search_files_from_format,
     upload_to_datalake,
 )
 
@@ -61,7 +60,7 @@ with Flow(
     #####################################
     with case(is_null_or_empty(value=OPERATOR_KEY), False):
         rename_current_flow_run(
-            name_template="""Operário '{operator_key}' [{interval_start}, {interval_end}]""",
+            name_template="""Operário '{operator_key}'""",
             operator_key=OPERATOR_KEY,
             interval_start=INTERVAL_START,
             interval_end=INTERVAL_END,
