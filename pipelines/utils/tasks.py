@@ -856,7 +856,6 @@ def search_files_from_format(
     return files
 
 
-
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def load_file_from_gcs_bucket(bucket_name, file_name, file_type="csv", csv_sep=","):
     """

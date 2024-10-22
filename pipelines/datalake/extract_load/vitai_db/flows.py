@@ -122,10 +122,7 @@ with Flow(
     #####################################
     # Tasks section #6 - Uploading to Datalake
     #####################################
-    files_to_upload = search_files_from_format(
-        folder=partition_folder,
-        file_format="parquet"
-    )
+    files_to_upload = search_files_from_format(folder=partition_folder, file_format="parquet")
     upload_to_datalake_task = upload_to_datalake.map(
         input_path=files_to_upload,
         table_id=unmapped(TARGET_NAME),
