@@ -120,6 +120,7 @@ def get_remaining_operators(progress_table: pd.DataFrame | None, all_operators_p
 
     candidates = pd.DataFrame(all_operators_params)
     candidates_columns = candidates.columns.tolist()
+    log(f"Total operators: {len(candidates)}")
 
     if progress_table is not None:
         candidates = candidates.merge(
@@ -133,5 +134,7 @@ def get_remaining_operators(progress_table: pd.DataFrame | None, all_operators_p
         )
     else:
         remaining = candidates[candidates_columns].to_dict(orient="records")
+
+    log(f"Remaining operators: {len(remaining)}")
 
     return remaining
