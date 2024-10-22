@@ -5,7 +5,7 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
-from pipelines.constants import global_constants
+from pipelines.constants import constants as global_constants
 from pipelines.utils.tasks import (
     get_secret_key,
     get_project_name,
@@ -128,7 +128,7 @@ with Flow(
     #####################################
     # Tasks section #7 - Saving Progress
     #####################################
-    with case(is_null_or_empty(OPERATOR_KEY), False):
+    with case(is_null_or_empty(value=OPERATOR_KEY), False):
         save_operator_progress(
             operator_key=OPERATOR_KEY,
             slug=vitai_db_constants.SLUG_NAME.value,
