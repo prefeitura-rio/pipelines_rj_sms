@@ -80,7 +80,7 @@ def save_operator_progress(operator_key, slug, project_name="rj-sms-dev"):
             {
                 "operator_key": operator_key,
                 "flow_run_id": prefect.context.get("flow_run_id"),
-                "moment": datetime.now().isoformat(),
+                "moment": datetime.datetime.now().isoformat(),
             }
         ]
     )
