@@ -95,11 +95,21 @@ def extract_data_from_api(
 
         # check if the data was replicated today. This is exclusive to the endpoint "posicao"
         if endpoint == "posicao":
+
             replication_date = datetime.strptime(
                 requested_data[0]["dtaReplicacao"], "%Y-%m-%d %H:%M:%S.%f"
             ).date()
-            if replication_date != date.today():
-                err_msg = f"Date mismatch: replication date is {replication_date} instead of {date.today()}"  # noqa: E501
+
+            yesterday_cutoff = (date.today() - timedelta(days=1)).replace(
+                hour=22, minute=0, second=0
+            )
+
+            if replication_date < yesterday_cutoff:
+                err_msg = (
+                    f"API data is outdated. "
+                    f"Last update at API: {replication_date}, "
+                    f"Expected update after: {yesterday_cutoff}. "
+                )
                 logger.error(err_msg)
                 return {"has_data": False}
 
