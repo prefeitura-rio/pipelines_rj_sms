@@ -103,8 +103,8 @@ def extract_data_from_api(
             yesterday_cutoff = (date.today() - timedelta(days=1)).replace(
                 hour=22, minute=0, second=0
             )
-
-            if replication_date < yesterday_cutoff:
+            if replication_date != date.today():
+            # if replication_date < yesterday_cutoff:
                 err_msg = (
                     f"API data is outdated. "
                     f"Last update at API: {replication_date}, "
