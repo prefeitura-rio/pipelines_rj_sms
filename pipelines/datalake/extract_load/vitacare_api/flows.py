@@ -35,6 +35,7 @@ from pipelines.prontuarios.utils.tasks import (
     get_current_flow_labels,
     get_healthcenter_name_from_cnes,
     get_project_name,
+    get_project_name_from_flow_environment,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -208,9 +209,7 @@ with Flow(
         table_id=TABLE_ID,
     )
 
-    project_name = get_project_name(
-        environment=ENVIRONMENT,
-    )
+    project_name = get_project_name_from_flow_environment()
 
     current_flow_run_labels = get_current_flow_labels()
 
