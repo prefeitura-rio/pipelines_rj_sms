@@ -30,16 +30,16 @@ from pipelines.utils.tasks import (
 with Flow(
     name="DataLake - Extração e Carga de Dados - Clonando Tabelas do Datalake",
 ) as datalake_bigquery_clone:
-    ENVIRONMENT = Parameter("environment", default=False)
-    SOURCE_TABLE_ID = Parameter("source_table_id", default=False)
-    DESTINATION_TABLE_NAME = Parameter("destination_table_name", default=False)
-    DESTINATION_DATASET_NAME = Parameter("destination_dataset_name", default=False)
+    ENVIRONMENT = Parameter("environment", default="dev")
+    SOURCE_TABLE_ID = Parameter("source_table_id", default="")
+    DESTINATION_TABLE_NAME = Parameter("destination_table_name", default="")
+    DESTINATION_DATASET_NAME = Parameter("destination_dataset_name", default="")
     DBT_SELECT_EXP = Parameter("dbt_select_exp", default=None)
 
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     rename_current_flow_run(
-        name_template="Cloning table {source_table_id} from {bigquery_project}",
+        name_template="Cloning table {source_table_id} into {bigquery_project}",
         source_table_id=SOURCE_TABLE_ID,
         bigquery_project=bigquery_project,
     )

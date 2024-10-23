@@ -15,7 +15,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {
         "source_table_id": "rj-smfp.recursos_humanos_ergon_saude.funcionarios_ativos",
-        "destination_dataset_name": "ergon",
+        "destination_dataset_name": "brutos_ergon_staging",
         "destination_table_name": "funcionarios_ativos",
         "environment": "prod",
         "dbt_select_exp": "tag:ergon",
