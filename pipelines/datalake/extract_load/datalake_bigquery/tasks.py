@@ -14,7 +14,6 @@ def clone_bigquery_table(
 ):
     bq_client = bigquery.Client.from_service_account_json("/tmp/credentials.json")
 
-
     destination_dataset_id = f"{destination_project_name}.{destination_dataset_name}"
     destination_table_id = f"{destination_dataset_id}.{destination_table_name}"
 
@@ -33,4 +32,3 @@ def clone_bigquery_table(
         msg = f"{service_account} has not enough permition to clone table {source_table_id}: {e}"
         log(msg, level="error")
         raise FAIL(msg)
-
