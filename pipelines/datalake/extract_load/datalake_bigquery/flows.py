@@ -11,19 +11,20 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.datalake_bigquery.tasks import clone_bigquery_table
 from pipelines.utils.basics import is_null_or_empty
-from pipelines.utils.tasks import (
-    rename_current_flow_run,
-    get_bigquery_project_from_environment,
-    get_project_name,
-)
-from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-from pipelines.datalake.extract_load.datalake_bigquery.tasks import clone_bigquery_table
-
+from pipelines.utils.prefect import get_current_flow_labels
+from pipelines.utils.tasks import (
+    get_bigquery_project_from_environment,
+    get_project_name,
+    rename_current_flow_run,
+)
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Clonando Tabelas do Datalake",
@@ -32,9 +33,7 @@ with Flow(
     TABLE_ID = Parameter("table_id", default=False)
     DBT_SELECT_EXP = Parameter("dbt_select_exp", default=None)
 
-    bigquery_project = get_bigquery_project_from_environment(
-        environment=ENVIRONMENT
-    )
+    bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     rename_current_flow_run(
         name_template="Cloning table {table_id} from {bigquery_project}",
