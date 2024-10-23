@@ -30,23 +30,27 @@ with Flow(
     name="DataLake - Extração e Carga de Dados - Clonando Tabelas do Datalake",
 ) as datalake_bigquery_clone:
     ENVIRONMENT = Parameter("environment", default=False)
-    TABLE_ID = Parameter("table_id", default=False)
+    SOURCE_TABLE_ID = Parameter("source_table_id", default=False)
+    DESTINATION_TABLE_NAME = Parameter("destination_table_name", default=False)
+    DESTINATION_DATASET_NAME = Parameter("destination_dataset_name", default=False)
     DBT_SELECT_EXP = Parameter("dbt_select_exp", default=None)
 
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     rename_current_flow_run(
-        name_template="Cloning table {table_id} from {bigquery_project}",
-        table_id=TABLE_ID,
+        name_template="Cloning table {source_table_id} from {bigquery_project}",
+        source_table_id=SOURCE_TABLE_ID,
         bigquery_project=bigquery_project,
     )
 
     clone_table_task = clone_bigquery_table(
-        table_id=TABLE_ID,
-        project_name=bigquery_project,
+        source_table_id=SOURCE_TABLE_ID,
+        destination_table_name=DESTINATION_TABLE_NAME,
+        destination_dataset_name=DESTINATION_DATASET_NAME,
+        destination_project_name=bigquery_project,
     )
 
-    with case(is_null_or_empty(DBT_SELECT_EXP), False):
+    with case(is_null_or_empty(value=DBT_SELECT_EXP), False):
         current_flow_run_labels = get_current_flow_labels()
         project_name = get_project_name(environment=ENVIRONMENT)
 
