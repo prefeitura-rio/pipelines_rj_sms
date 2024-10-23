@@ -6,6 +6,7 @@ General utilities for SMS pipelines
 """
 
 import ftplib
+import glob
 import json
 import os
 import re
@@ -29,11 +30,13 @@ import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
 from google.cloud import bigquery, storage
+from prefect.client import Client
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
 from sqlalchemy.exc import InternalError
 
+from pipelines.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.infisical import get_credentials_from_env, inject_bd_credentials
@@ -136,6 +139,19 @@ def create_folders():
 
     except Exception as e:  # pylint: disable=W0703
         sys.exit(f"Failed to create folders: {e}")
+
+
+@task
+def create_folder(title="", subtitle=""):
+    folder_path = os.path.join(os.getcwd(), "data", title, subtitle)
+
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path, ignore_errors=False)
+    os.makedirs(folder_path)
+
+    log(f"Created folder: {folder_path}")
+
+    return folder_path
 
 
 @task
@@ -763,8 +779,16 @@ def upload_to_datalake(
     Returns:
         None
     """
+
     if input_path == "":
         log("Received input_path=''. No data to upload", level="warning")
+        return
+
+    reference_path = os.path.join(input_path, f"**/*.{source_format}")
+    log(f"Reference Path: {reference_path}")
+
+    if len(glob.glob(reference_path, recursive=True)) == 0:
+        log(f"No files found in {input_path}", level="warning")
         return
 
     tb = bd.Table(dataset_id=dataset_id, table_id=table_id)
@@ -825,6 +849,20 @@ def upload_to_datalake(
     except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
         raise RuntimeError() from e
+
+
+@task
+def search_files_from_format(
+    folder_path: str,
+    file_format: str = "csv",
+):
+    data_path = Path(folder_path)
+    files = list(data_path.glob(f"**/*.{file_format}"))
+
+    for file in files:
+        log(f"File found: {file}")
+
+    return files
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
@@ -918,3 +956,56 @@ def load_table_from_database(
     except InternalError as e:
         log(f"Error extracting data from database: {e}", level="error")
         raise e
+
+
+@task()
+def get_bigquery_project_from_environment(environment: str) -> str:
+    if environment in ["prod", "local-prod"]:
+        return "rj-sms"
+    elif environment in ["dev", "staging", "local-staging"]:
+        return "rj-sms-dev"
+    else:
+        raise ValueError(f"Invalid environment: {environment}")
+
+
+@task
+def rename_current_flow_run(name_template: Optional[str] = None, **kwargs) -> None:
+    """
+    Renames the current flow run using the specified environment and CNES.
+
+    Args:
+        name_template (str, optional): The template to use for the flow run name. Defaults to None.
+        **kwargs: The parameters to use for the flow run name.
+
+    Returns:
+        None
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    scheduled_date = prefect.context.get("scheduled_start_time").date()
+
+    if name_template is None:
+        params = sorted([f"{key}={value}" for key, value in kwargs.items()])
+        flow_run_name = f"{', '.join(params)} at {scheduled_date}"
+    else:
+        flow_run_name = name_template.format(**kwargs, scheduled_date=scheduled_date)
+
+    try:
+        client = Client()
+        client.set_flow_run_name(flow_run_id, flow_run_name)
+    except Exception as e:
+        log(f"Error renaming flow run: {e}", level="warning")
+        log(f"This is expected if the flow is running in a local environment")
+
+
+@task
+def get_project_name(environment: str):
+    """
+    Returns the project name based on the given environment.
+
+    Args:
+        environment (str): The environment for which to retrieve the project name.
+
+    Returns:
+        str: The project name corresponding to the given environment.
+    """
+    return constants.PROJECT_NAME.value[environment]
