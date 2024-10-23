@@ -1009,3 +1009,12 @@ def get_project_name(environment: str):
         str: The project name corresponding to the given environment.
     """
     return constants.PROJECT_NAME.value[environment]
+
+
+@task
+def get_project_name_from_prefect_environment():
+    """
+    Returns the project name from the prefect context
+    """
+    log(f"Prefect context: {prefect.context}")
+    return prefect.context.get("project_name")

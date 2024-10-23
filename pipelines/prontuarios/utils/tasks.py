@@ -376,23 +376,3 @@ def get_healthcenter_name_from_cnes(cnes: str) -> str:
     ap = unidade.iloc[0]["area_programatica"]
 
     return f"(AP{ap}) {nome_limpo}"
-
-
-@task
-def get_project_name(environment: str):
-    """
-    Returns the project name based on the given environment.
-
-    Args:
-        environment (str): The environment for which to retrieve the project name.
-
-    Returns:
-        str: The project name corresponding to the given environment.
-    """
-    return constants.PROJECT_NAME.value[environment]
-
-
-@task
-def get_project_name_from_flow_environment():
-    log(f"Prefect context: {prefect.context}")
-    return prefect.context.get("project_name")
