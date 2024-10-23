@@ -25,6 +25,8 @@ from pipelines.utils.tasks import (
     get_project_name,
     rename_current_flow_run,
 )
+from pipelines.datalake.extract_load.datalake_bigquery.schedules import schedule
+
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Clonando Tabelas do Datalake",
@@ -69,9 +71,9 @@ with Flow(
         )
         wait_for_flow_run(flow_run_id=dbt_run_flow)
 
-
+datalake_bigquery_clone.schedule = schedule
 datalake_bigquery_clone.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-datalake_bigquery_clone.executor = LocalDaskExecutor(num_workers=10)
+datalake_bigquery_clone.executor = LocalDaskExecutor(num_workers=1)
 datalake_bigquery_clone.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
