@@ -396,4 +396,3 @@ def get_project_name(environment: str):
 def get_project_name_from_flow_environment():
     log(f"Prefect context: {prefect.context}")
     return prefect.context.get("project_name")
-

@@ -36,7 +36,6 @@ from pipelines.prontuarios.utils.tasks import (
     get_healthcenter_name_from_cnes,
     get_project_name,
     get_project_name_from_flow_environment,
-
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
