@@ -23,10 +23,9 @@ from pipelines.prontuarios.raw.smsrio.tasks import (
 from pipelines.prontuarios.utils.tasks import (
     get_api_token,
     get_datetime_working_range,
-    rename_current_flow_run,
     transform_split_dataframe,
 )
-from pipelines.utils.tasks import load_file_from_gcs_bucket
+from pipelines.utils.tasks import load_file_from_gcs_bucket, rename_current_flow_run
 
 ####################################
 # Daily Routine Flow
