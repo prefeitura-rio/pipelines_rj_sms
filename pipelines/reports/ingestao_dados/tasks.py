@@ -107,7 +107,14 @@ def send_report(data, target_date):
 
             proportion = len(units_without_data) / (len(units_without_data) + len(units_with_data))
             percent = round(proportion * 100, 1)
-            emoji = "🔴" if percent > 5 else "🟢"
+
+            emoji = "?"
+            if percent > 5:
+                emoji = "🔴"
+            elif percent > 0:
+                emoji = "🟡"
+            else:
+                emoji = "🟢"
 
             message_lines.append(
                 f"- {emoji} {type.capitalize()}: {len(units_without_data)} ({percent}%)"
