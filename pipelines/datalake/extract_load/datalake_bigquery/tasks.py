@@ -25,9 +25,9 @@ def clone_bigquery_table(
 
     try:
         query_job = bq_client.query_and_wait(command)
-        result = query_job.result()
-        log(f"Query result: {result}")
-        return result
+        job = bq_client.get_job(query_job.job_id)
+        log(f"Result: {job.state}")
+        return job.state
     except google.api_core.exceptions.Forbidden as e:
         service_account = bq_client._credentials.service_account_email
         msg = f"{service_account} has not enough permition to clone table {source_table_id}: {e}"
