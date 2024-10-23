@@ -7,17 +7,13 @@ Utilities Tasks for prontuario system pipelines.
 import gc
 import hashlib
 import json
-from datetime import date, datetime, timedelta
-from typing import Optional
+from datetime import date, timedelta
 
 import pandas as pd
 import prefect
 import requests
-
-# from prefect import task
 from prefect.client import Client
 
-from pipelines.constants import constants
 from pipelines.prontuarios.constants import constants as prontuario_constants
 from pipelines.prontuarios.utils.misc import split_dataframe
 from pipelines.prontuarios.utils.validation import is_valid_cpf
@@ -210,35 +206,6 @@ def load_to_api(
         raise requests.exceptions.HTTPError(f"Error loading data: {request_response.text}")
     else:
         log(f"Data loaded successfully: [{request_response.status_code}] {request_response.text}")
-
-
-@task
-def rename_current_flow_run(name_template: Optional[str] = None, **kwargs) -> None:
-    """
-    Renames the current flow run using the specified environment and CNES.
-
-    Args:
-        name_template (str, optional): The template to use for the flow run name. Defaults to None.
-        **kwargs: The parameters to use for the flow run name.
-
-    Returns:
-        None
-    """
-    flow_run_id = prefect.context.get("flow_run_id")
-    scheduled_date = prefect.context.get("scheduled_start_time").date()
-
-    if name_template is None:
-        params = sorted([f"{key}={value}" for key, value in kwargs.items()])
-        flow_run_name = f"{', '.join(params)} at {scheduled_date}"
-    else:
-        flow_run_name = name_template.format(**kwargs, scheduled_date=scheduled_date)
-
-    try:
-        client = Client()
-        client.set_flow_run_name(flow_run_id, flow_run_name)
-    except Exception as e:
-        log(f"Error renaming flow run: {e}", level="warning")
-        log(f"This is expected if the flow is running in a local environment")
 
 
 @task

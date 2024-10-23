@@ -1,52 +1,82 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case, flatten, unmapped
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
-from pipelines.constants import constants
+from pipelines.constants import constants as global_constants
 from pipelines.datalake.extract_load.vitai_db.constants import (
-    constants as vitai_constants,
+    constants as vitai_db_constants,
 )
 from pipelines.datalake.extract_load.vitai_db.schedules import (
     vitai_db_extraction_schedule,
 )
 from pipelines.datalake.extract_load.vitai_db.tasks import (
-    create_datalake_table_name,
-    create_folder,
+    build_param_list,
     create_working_time_range,
-    get_bigquery_project_from_environment,
-    get_current_flow_labels,
-    import_vitai_table,
-    list_tables_to_import,
-    upload_folders_to_datalake,
+    load_data_from_vitai_table,
 )
-from pipelines.prontuarios.utils.tasks import get_project_name, rename_current_flow_run
+from pipelines.utils.basics import as_dict, is_null_or_empty
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-from pipelines.utils.tasks import create_partitions, get_secret_key
+from pipelines.utils.prefect import get_current_flow_labels
+from pipelines.utils.progress import (
+    get_remaining_operators,
+    load_operators_progress,
+    save_operator_progress,
+)
+from pipelines.utils.tasks import (
+    create_folder,
+    create_partitions,
+    get_bigquery_project_from_environment,
+    get_project_name,
+    get_secret_key,
+    rename_current_flow_run,
+    upload_to_datalake,
+)
 
 with Flow(
-    name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde)",
-) as sms_dump_vitai_rio_saude:
+    name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Operator",
+) as datalake_extract_vitai_db_operator:
     #####################################
-    # Tasks section #1 - Setup Environment
+    # Tasks section #0 - Params
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    INCREMENT_MODELS = Parameter("increment_models", default=True)
-    RENAME_FLOW = Parameter("rename_flow", default=False)
-
-    # In case the user want to force a interval
+    OPERATOR_KEY = Parameter("operator_key", default=None)
+    TABLE_NAME = Parameter("table_name", default="")
+    SCHEMA_NAME = Parameter("schema_name", default="basecentral")
+    DT_COLUMN = Parameter("datetime_column", default="datahora")
+    TARGET_NAME = Parameter("target_name", default="")
     INTERVAL_START = Parameter("interval_start", default=None)
     INTERVAL_END = Parameter("interval_end", default=None)
 
-    with case(RENAME_FLOW, True):
-        rename_current_flow_run(environment=ENVIRONMENT)
+    #####################################
+    # Tasks section #1 - Setup Environment
+    #####################################
+    with case(is_null_or_empty(value=OPERATOR_KEY), False):
+        rename_current_flow_run(
+            name_template="""Operário '{operator_key}'""",
+            operator_key=OPERATOR_KEY,
+        )
+    with case(is_null_or_empty(value=OPERATOR_KEY), True):
+        rename_current_flow_run(
+            name_template="""Rotineiro '{schema_name}.{table_name} -> {target_name}'""",
+            schema_name=SCHEMA_NAME,
+            table_name=TABLE_NAME,
+            target_name=TARGET_NAME,
+        )
+
+    bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
+
+    interval_start, interval_end = create_working_time_range(
+        interval_start=INTERVAL_START,
+        interval_end=INTERVAL_END,
+    )
 
     #####################################
     # Tasks section #2 - Extraction Preparation
@@ -55,59 +85,44 @@ with Flow(
         environment=ENVIRONMENT, secret_name="DB_URL", secret_path="/prontuario-vitai"
     )
 
-    project_name = get_project_name(environment=ENVIRONMENT)
+    raw_folder = create_folder(title="raw", subtitle=TARGET_NAME)
+    partition_folder = create_folder(title="partition_directory", subtitle=TARGET_NAME)
 
-    tables_to_import = list_tables_to_import()
-
-    datalake_table_names = create_datalake_table_name.map(table_name=tables_to_import)
-
-    raw_folders = create_folder.map(title=unmapped("raw"), subtitle=datalake_table_names)
-    partition_folders = create_folder.map(
-        title=unmapped("partition_directory"), subtitle=datalake_table_names
-    )
-
-    bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
-
-    ####################################
-    # Tasks section #3 - Interval Setup
-    #####################################
-    interval_start_per_table, interval_end_per_table = create_working_time_range(
-        project_name=bigquery_project,
-        dataset_name=vitai_constants.DATASET_NAME.value,
-        table_names=datalake_table_names,
-        interval_start=INTERVAL_START,
-        interval_end=INTERVAL_END,
+    table_info = as_dict(
+        schema_name=SCHEMA_NAME,
+        table_name=TABLE_NAME,
+        datetime_column=DT_COLUMN,
+        target_name=TARGET_NAME,
     )
 
     #####################################
     # Tasks section #4 - Downloading Table Data
     #####################################
-    file_list_per_table = import_vitai_table.map(
-        db_url=unmapped(db_url),
-        table_name=tables_to_import,
-        output_file_folder=raw_folders,
-        interval_start=interval_start_per_table,
-        interval_end=interval_end_per_table,
+    file_list = load_data_from_vitai_table(
+        db_url=db_url,
+        table_info=table_info,
+        output_file_folder=raw_folder,
+        interval_start=interval_start,
+        interval_end=interval_end,
     )
-    file_list = flatten(file_list_per_table)
 
     #####################################
     # Tasks section #5 - Partitioning Data
     #####################################
-    create_partitions_task = create_partitions.map(
-        data_path=raw_folders,
-        partition_directory=partition_folders,
-        upstream_tasks=[unmapped(file_list)],
-        file_type=unmapped("parquet"),
+    create_partitions_task = create_partitions(
+        data_path=raw_folder,
+        partition_directory=partition_folder,
+        upstream_tasks=[file_list],
+        file_type="parquet",
     )
 
     #####################################
     # Tasks section #6 - Uploading to Datalake
     #####################################
-    upload_to_datalake_task = upload_folders_to_datalake(
-        input_paths=partition_folders,
-        table_ids=datalake_table_names,
-        dataset_id=vitai_constants.DATASET_NAME.value,
+    upload_to_datalake_task = upload_to_datalake(
+        input_path=partition_folder,
+        table_id=TARGET_NAME,
+        dataset_id=vitai_db_constants.DATASET_NAME.value,
         if_exists="replace",
         source_format="parquet",
         if_storage_data_exists="replace",
@@ -117,34 +132,89 @@ with Flow(
     )
 
     #####################################
-    # Tasks section #7 - Running DBT Models
+    # Tasks section #7 - Saving Progress
     #####################################
-    with case(INCREMENT_MODELS, True):
-        current_flow_run_labels = get_current_flow_labels()
-
-        dbt_run_flow = create_flow_run(
-            flow_name="DataLake - Transformação - DBT",
-            project_name=project_name,
-            parameters={
-                "command": "run",
-                "select": "tag:vitai",
-                "exclude": "tag:vitai_estoque",
-                "environment": ENVIRONMENT,
-                "rename_flow": True,
-                "send_discord_report": False,
-            },
-            labels=current_flow_run_labels,
+    with case(is_null_or_empty(value=OPERATOR_KEY), False):
+        save_operator_progress(
+            operator_key=OPERATOR_KEY,
+            slug=vitai_db_constants.SLUG_NAME.value,
+            project_name=bigquery_project,
             upstream_tasks=[upload_to_datalake_task],
         )
-        wait_for_flow_run(flow_run_id=dbt_run_flow)
 
-sms_dump_vitai_rio_saude.schedule = vitai_db_extraction_schedule
-sms_dump_vitai_rio_saude.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitai_rio_saude.executor = LocalDaskExecutor(num_workers=6)
-sms_dump_vitai_rio_saude.run_config = KubernetesRun(
-    image=constants.DOCKER_IMAGE.value,
+datalake_extract_vitai_db_operator.schedule = vitai_db_extraction_schedule
+datalake_extract_vitai_db_operator.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
+datalake_extract_vitai_db_operator.executor = LocalDaskExecutor(num_workers=1)
+datalake_extract_vitai_db_operator.run_config = KubernetesRun(
+    image=global_constants.DOCKER_IMAGE.value,
     labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
+        global_constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="5Gi",
+)
+
+with Flow(
+    name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Manager",
+) as datalake_extract_vitai_db_manager:
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    WINDOW_SIZE = Parameter("window_size", default=7)
+
+    TABLE_NAME = Parameter("table_name", default="")
+    SCHEMA_NAME = Parameter("schema_name", default="basecentral")
+    DT_COLUMN = Parameter("datetime_column", default="datahora")
+    TARGET_NAME = Parameter("target_name", default="")
+
+    rename_current_flow_run(
+        name_template="""Manager '{schema_name}.{table_name}' - Janela: {window_size} ({environment})""",  # noqa
+        schema_name=SCHEMA_NAME,
+        table_name=TABLE_NAME,
+        window_size=WINDOW_SIZE,
+        environment=ENVIRONMENT,
+    )
+
+    bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
+
+    progress_table = load_operators_progress(
+        slug=vitai_db_constants.SLUG_NAME.value, project_name=bigquery_project
+    )
+
+    params = build_param_list(
+        environment=ENVIRONMENT,
+        table_name=TABLE_NAME,
+        schema_name=SCHEMA_NAME,
+        datetime_column=DT_COLUMN,
+        target_name=TARGET_NAME,
+        window_size=WINDOW_SIZE,
+    )
+
+    remaining_runs = get_remaining_operators(
+        progress_table=progress_table, all_operators_params=params
+    )
+
+    project_name = get_project_name(environment=ENVIRONMENT)
+
+    current_flow_run_labels = get_current_flow_labels()
+
+    created_flow_runs = create_flow_run.map(
+        flow_name=unmapped("Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Operator"),
+        project_name=unmapped(project_name),
+        parameters=remaining_runs,
+        labels=unmapped(current_flow_run_labels),
+    )
+
+    wait_runs_task = wait_for_flow_run.map(
+        flow_run_id=created_flow_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
+    )
+
+datalake_extract_vitai_db_manager.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
+datalake_extract_vitai_db_manager.executor = LocalDaskExecutor(num_workers=1)
+datalake_extract_vitai_db_manager.run_config = KubernetesRun(
+    image=global_constants.DOCKER_IMAGE.value,
+    labels=[
+        global_constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="5Gi",
 )
