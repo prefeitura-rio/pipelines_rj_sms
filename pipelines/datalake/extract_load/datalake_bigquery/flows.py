@@ -11,6 +11,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.datalake_bigquery.schedules import schedule
 from pipelines.datalake.extract_load.datalake_bigquery.tasks import clone_bigquery_table
 from pipelines.utils.basics import is_null_or_empty
 from pipelines.utils.credential_injector import (
@@ -25,8 +26,6 @@ from pipelines.utils.tasks import (
     get_project_name,
     rename_current_flow_run,
 )
-from pipelines.datalake.extract_load.datalake_bigquery.schedules import schedule
-
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Clonando Tabelas do Datalake",
