@@ -41,7 +41,11 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-from pipelines.utils.tasks import create_folders, get_project_name, upload_to_datalake
+from pipelines.utils.tasks import (
+    create_folders,
+    get_project_name_from_prefect_environment,
+    upload_to_datalake,
+)
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",
@@ -207,9 +211,7 @@ with Flow(
         table_id=TABLE_ID,
     )
 
-    project_name = get_project_name(
-        environment=ENVIRONMENT,
-    )
+    project_name = get_project_name_from_prefect_environment()
 
     current_flow_run_labels = get_current_flow_labels()
 
