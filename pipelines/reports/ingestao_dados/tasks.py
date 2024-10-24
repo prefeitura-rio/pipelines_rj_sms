@@ -54,7 +54,7 @@ def create_markdown_report_from_source(data, source, target_date):
     data_from_source = data[data["fonte"] == source]
 
     message_lines = [
-        f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable})"
+        f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable}"
     ]  # noqa
     for type in data_from_source["tipo"].unique():
         message_lines.append(f"### {type.capitalize()}")
@@ -97,7 +97,7 @@ def send_report(data, target_date):
         return
 
     for source in data["fonte"].unique():
-        title = f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable})"
+        title = f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable}"
 
         data_from_source = data[data["fonte"] == source]
 
