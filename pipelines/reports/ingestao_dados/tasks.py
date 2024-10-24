@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from typing import Literal, Optional
+
 import pandas as pd
 
 from pipelines.constants import constants
@@ -10,9 +11,7 @@ from pipelines.utils.tasks import load_file_from_bigquery
 
 
 @task
-def get_target_date(
-    target_date
-):
+def get_target_date(target_date):
     log("Getting target date")
     if target_date == "today":
         target_date = pd.Timestamp.now().strftime("%Y-%m-%d")
