@@ -101,7 +101,7 @@ def extract_data_from_api(
             )
 
             yesterday_cutoff = (datetime.now() - timedelta(days=1)).replace(
-                hour=22, minute=0, second=0, microsecond=0
+                hour=20, minute=0, second=0, microsecond=0
             )
 
             if replication_date < yesterday_cutoff:
