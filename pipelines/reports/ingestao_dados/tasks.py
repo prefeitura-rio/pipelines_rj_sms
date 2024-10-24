@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Literal, Optional
 import pandas as pd
 
 from pipelines.constants import constants
@@ -9,12 +10,20 @@ from pipelines.utils.tasks import load_file_from_bigquery
 
 
 @task
-def get_target_date(data, target_date):
-    if not target_date:
-        target_date = data["data_atualizacao"].max()
-        log(f"Target date not provided. Using latest date available: {target_date}")
+def get_target_date(
+    target_date
+):
+    log("Getting target date")
+    if target_date == "today":
+        target_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+        log(f"Using today's date: {target_date}")
+    elif target_date == "yesterday" or not target_date:
+        target_date = (pd.Timestamp.now() - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        log(f"Using yesterday's date: {target_date}")
     else:
-        log(f"Target date provided: {target_date}")
+        target_date = pd.Timestamp(target_date).strftime("%Y-%m-%d")
+        log(f"Using specified date: {target_date}")
+
     return target_date
 
 
