@@ -9,12 +9,18 @@ from pipelines.utils.tasks import load_file_from_bigquery
 
 
 @task
-def get_target_date(data, target_date):
-    if not target_date:
-        target_date = data["data_atualizacao"].max()
-        log(f"Target date not provided. Using latest date available: {target_date}")
+def get_target_date(target_date):
+    log("Getting target date")
+    if target_date == "today":
+        target_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+        log(f"Using today's date: {target_date}")
+    elif target_date == "yesterday" or not target_date:
+        target_date = (pd.Timestamp.now() - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        log(f"Using yesterday's date: {target_date}")
     else:
-        log(f"Target date provided: {target_date}")
+        target_date = pd.Timestamp(target_date).strftime("%Y-%m-%d")
+        log(f"Using specified date: {target_date}")
+
     return target_date
 
 
@@ -45,7 +51,7 @@ def create_markdown_report_from_source(data, source, target_date):
     data_from_source = data[data["fonte"] == source]
 
     message_lines = [
-        f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable})"
+        f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable}"
     ]  # noqa
     for type in data_from_source["tipo"].unique():
         message_lines.append(f"### {type.capitalize()}")
@@ -88,7 +94,7 @@ def send_report(data, target_date):
         return
 
     for source in data["fonte"].unique():
-        title = f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable})"
+        title = f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable}"
 
         data_from_source = data[data["fonte"] == source]
 

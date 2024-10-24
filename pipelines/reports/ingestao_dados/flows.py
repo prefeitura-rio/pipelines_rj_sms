@@ -22,14 +22,14 @@ with Flow(
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev")
-    TARGET_DATE = Parameter("target_date", default=None)
+    TARGET_DATE = Parameter("target_date", default="yesterday")
 
     #####################################
     # Tasks
     #####################################
     data = get_data(environment=ENVIRONMENT)
 
-    target_date = get_target_date(data=data, target_date=TARGET_DATE)
+    target_date = get_target_date(target_date=TARGET_DATE)
 
     send_report(data=data, target_date=target_date)
 
