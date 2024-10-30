@@ -54,6 +54,7 @@ with Flow(
     TARGET_NAME = Parameter("target_name", default="")
     INTERVAL_START = Parameter("interval_start", default=None)
     INTERVAL_END = Parameter("interval_end", default=None)
+    PARTITION_COLUMN = Parameter("partition_column", default=None)
 
     #####################################
     # Tasks section #1 - Setup Environment
@@ -93,6 +94,7 @@ with Flow(
         table_name=TABLE_NAME,
         datetime_column=DT_COLUMN,
         target_name=TARGET_NAME,
+        partition_column=PARTITION_COLUMN,
     )
 
     #####################################

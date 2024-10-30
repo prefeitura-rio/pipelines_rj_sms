@@ -19,6 +19,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__paciente_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -26,6 +27,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__boletim_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -33,6 +35,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__alergia_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -40,6 +43,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__atendimento_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -47,6 +51,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__cirurgia_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -54,6 +59,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__classificacao_risco_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -61,6 +67,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__diagnostico_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -68,6 +75,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__exame_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -75,6 +83,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__profissional_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -82,6 +91,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__m_estabelecimento_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -89,6 +99,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__relato_cirurgico_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -96,6 +107,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__resumo_alta_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -103,6 +115,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__internacao_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -110,6 +123,7 @@ flow_parameters = [
         "schema_name": "basecentral",
         "datetime_column": "created_at",
         "target_name": "basecentral__alta_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -117,6 +131,7 @@ flow_parameters = [
         "schema_name": "dtw",
         "datetime_column": "data_entrada",
         "target_name": "dtw__fat_boletim_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -124,6 +139,7 @@ flow_parameters = [
         "schema_name": "dtw",
         "datetime_column": "data_fim",
         "target_name": "dtw__fat_atendimento_eventos",
+        "partition_column": "datalake_loaded_at",
     },
     {
         "environment": "prod",
@@ -131,107 +147,7 @@ flow_parameters = [
         "schema_name": "dtw",
         "datetime_column": "data_entrada",
         "target_name": "dtw__fat_internacao_eventos",
-    },
-    # ==============================
-    # (TEMP) LÓGICA ANTIGA: Para transição
-    # ==============================
-    {
-        "environment": "prod",
-        "table_name": "paciente",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "paciente_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "boletim",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "boletim_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "alergia",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "alergia_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "atendimento",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "atendimento_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "cirurgia",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "cirurgia_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "classificacao_risco",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "classificacao_risco_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "diagnostico",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "diagnostico_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "exame",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "exame_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "profissional",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "profissional_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "m_estabelecimento",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "m_estabelecimento_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "relato_cirurgico",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "relato_cirurgico_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "resumo_alta",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "resumo_alta_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "internacao",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "internacao_eventos",
-    },
-    {
-        "environment": "prod",
-        "table_name": "alta",
-        "schema_name": "basecentral",
-        "datetime_column": "datahora",
-        "target_name": "alta_eventos",
+        "partition_column": "datalake_loaded_at",
     },
 ]
 
