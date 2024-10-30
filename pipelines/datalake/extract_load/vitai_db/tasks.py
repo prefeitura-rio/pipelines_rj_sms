@@ -66,6 +66,7 @@ def build_param_list(
     table_name: str,
     target_name: str,
     datetime_column: str,
+    partition_column: str,
     window_size: int = 7,
 ):
 
@@ -90,6 +91,7 @@ def build_param_list(
                     "datetime_column": datetime_column,
                     "target_name": target_name,
                     "environment": environment,
+                    "partition_column": partition_column,
                     "rename_flow": True,
                 }
             )

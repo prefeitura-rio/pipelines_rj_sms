@@ -165,6 +165,7 @@ with Flow(
     SCHEMA_NAME = Parameter("schema_name", default="basecentral")
     DT_COLUMN = Parameter("datetime_column", default="datahora")
     TARGET_NAME = Parameter("target_name", default="")
+    PARTITION_COLUMN = Parameter("partition_column", default="datalake_loaded_at")
 
     rename_current_flow_run(
         name_template="""Manager '{schema_name}.{table_name}' - Janela: {window_size} ({environment})""",  # noqa
@@ -187,6 +188,7 @@ with Flow(
         datetime_column=DT_COLUMN,
         target_name=TARGET_NAME,
         window_size=WINDOW_SIZE,
+        partition_column=PARTITION_COLUMN,
     )
 
     remaining_runs = get_remaining_operators(
