@@ -108,6 +108,7 @@ def load_data_from_vitai_table(
     schema_name = table_info["schema_name"]
     table_name = table_info["table_name"]
     dt_column = table_info["datetime_column"]
+    partition_column = table_info["partition_column"]
 
     interval_start = interval_start.strftime("%Y-%m-%d %H:%M:%S")
     interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")
@@ -127,8 +128,8 @@ def load_data_from_vitai_table(
         df.rename(columns={"id": "gid"}, inplace=True)
 
     now = pd.Timestamp.now(tz="America/Sao_Paulo")
-    df["datalake__imported_at"] = now
-    log(f"Added `datalake__imported_at` column to dataframe with current timestamp: {now}")
+    df["datalake_loaded_at"] = now
+    log(f"Added `datalake_loaded_at` column to dataframe with current timestamp: {now}")
 
     # Separate dataframe per day for partitioning
     if df.empty:
@@ -136,7 +137,7 @@ def load_data_from_vitai_table(
         dfs = [(str(now.date()), df)]
     else:
         log("Non Empty dataframe. Splitting Dataframe in multiple files by day", level="warning")
-        df["partition_date"] = pd.to_datetime(df[dt_column]).dt.date
+        df["partition_date"] = pd.to_datetime(df[partition_column]).dt.date
         days = df["partition_date"].unique()
         dfs = [
             (day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days
