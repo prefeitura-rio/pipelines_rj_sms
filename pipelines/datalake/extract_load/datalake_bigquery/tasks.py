@@ -2,8 +2,8 @@
 import google
 import google.api_core
 from google.cloud import bigquery
-from prefect.engine.signals import FAIL, ENDRUN
 from prefect.engine import state
+from prefect.engine.signals import ENDRUN, FAIL
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
