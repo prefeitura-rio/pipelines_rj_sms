@@ -19,21 +19,27 @@ def clone_bigquery_table(
 
     bq_client.create_dataset(destination_dataset_id, exists_ok=True)
 
-    command = f"CREATE OR REPLACE TABLE `{destination_table_id}` CLONE `{source_table_id}`"
-    log(f"Running: {command}")
-
     try:
+        command = f"CREATE OR REPLACE TABLE `{destination_table_id}` CLONE `{source_table_id}`"
+        log(f"Running: {command}")
         query_job = bq_client.query_and_wait(command)
         job = bq_client.get_job(query_job.job_id)
         log(f"Result: {job.state}")
         return job.state
-    except google.api_core.exceptions.BadRequest:
+
+    except google.api_core.exceptions.BadRequest as e:
+
+        log(f"Clone method failed: {e}", level="warning")
+
+        log("Trying to clone table by copying data from source to destination")
+
         command = f"CREATE TABLE `{destination_table_id}` AS SELECT * FROM `{source_table_id}`"
         log(f"Running: {command}")
         query_job = bq_client.query_and_wait(command)
         job = bq_client.get_job(query_job.job_id)
         log(f"Result: {job.state}")
         return job.state
+
     except google.api_core.exceptions.Forbidden as e:
         service_account = bq_client._credentials.service_account_email
         msg = f"{service_account} has not enough permition to clone table {source_table_id}: {e}"
