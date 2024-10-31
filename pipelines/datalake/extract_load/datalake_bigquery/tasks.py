@@ -2,7 +2,7 @@
 import google
 import google.api_core
 from google.cloud import bigquery
-from prefect.engine.signals import ENDRUN
+from prefect.engine.signals import FAIL
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -33,7 +33,13 @@ def clone_bigquery_table(
 
         log("Trying to clone table by copying data from source to destination")
 
-        command = f"CREATE OR REPLACE `{destination_table_id}` AS SELECT * FROM `{source_table_id}`"
+        command = f"DROP TABLE IF EXISTS `{destination_table_id}`;"
+        log(f"Running: {command}")
+        query_job = bq_client.query_and_wait(command)
+        job = bq_client.get_job(query_job.job_id)
+        log(f"Result: {job.state}")
+
+        command = f"CREATE TABLE `{destination_table_id}` AS SELECT * FROM `{source_table_id}`"
         log(f"Running: {command}")
         query_job = bq_client.query_and_wait(command)
         job = bq_client.get_job(query_job.job_id)
@@ -44,4 +50,8 @@ def clone_bigquery_table(
         service_account = bq_client._credentials.service_account_email
         msg = f"{service_account} has not enough permition to clone table {source_table_id}: {e}"
         log(msg, level="error")
-        raise ENDRUN(msg)
+        raise FAIL(msg)
+
+    except Exception as e:
+        log(f"Unexpected error: {e}", level="error")
+        raise FAIL(f"Unexpected error: {e}") from e
