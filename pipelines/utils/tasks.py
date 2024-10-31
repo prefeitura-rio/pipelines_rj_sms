@@ -757,6 +757,7 @@ def upload_to_datalake(
     if_storage_data_exists: str = "replace",
     biglake_table: bool = True,
     dataset_is_public: bool = False,
+    exception_on_missing_input_file: bool = False,
 ):
     """
     Uploads data to a Google Cloud Storage bucket and creates or appends to a BigQuery table.
@@ -782,6 +783,8 @@ def upload_to_datalake(
 
     if input_path == "":
         log("Received input_path=''. No data to upload", level="warning")
+        if exception_on_missing_input_file:
+            raise FileNotFoundError(f"No files found in {input_path}")
         return
 
     reference_path = os.path.join(input_path, f"**/*.{source_format}")
@@ -789,6 +792,8 @@ def upload_to_datalake(
 
     if len(glob.glob(reference_path, recursive=True)) == 0:
         log(f"No files found in {input_path}", level="warning")
+        if exception_on_missing_input_file:
+            raise FileNotFoundError(f"No files found in {input_path}")
         return
 
     tb = bd.Table(dataset_id=dataset_id, table_id=table_id)

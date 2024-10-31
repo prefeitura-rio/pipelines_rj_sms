@@ -51,7 +51,7 @@ def calculate_windows(year, window_size):
     # Adiciona a última janela
     if ranges[-1] < days:
         start_day = datetime(year, 1, 1) + timedelta(days=ranges[-1])
-        end_day = datetime(year, 12, 31)
+        end_day = datetime(year + 1, 1, 1)
         windows.append(
             (start_day.strftime("%Y-%m-%d 00:00:00"), end_day.strftime("%Y-%m-%d 00:00:00"))
         )
@@ -69,9 +69,10 @@ def build_param_list(
     partition_column: str,
     window_size: int = 7,
 ):
+    curr_year = pd.Timestamp.now().year
 
     params = []
-    for year in range(2012, 2025):
+    for year in range(2012, curr_year):
         for window in calculate_windows.run(year=year, window_size=window_size):
             start, end = window
             operator_key = calculate_operator_key.run(

@@ -130,6 +130,7 @@ with Flow(
         if_storage_data_exists="replace",
         biglake_table=True,
         dataset_is_public=False,
+        exception_on_missing_input_files=True,
         upstream_tasks=[create_partitions_task],
     )
 
