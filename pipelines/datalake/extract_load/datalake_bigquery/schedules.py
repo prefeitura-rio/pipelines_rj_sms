@@ -135,6 +135,12 @@ flow_parameters = [
         "environment": "prod",
     },
     {
+        "source_table_id": "rj-cvl.adm_contrato_gestao.plano_contas",
+        "destination_dataset_name": "brutos_osinfo_staging",
+        "destination_table_name": "plano_contas",
+        "environment": "prod",
+    },
+    {
         "source_table_id": "rj-cvl.adm_contrato_gestao.receita_dados",
         "destination_dataset_name": "brutos_osinfo_staging",
         "destination_table_name": "receita_dados",
