@@ -30,25 +30,30 @@ from pipelines.utils.tasks import (
 with Flow(
     name="DataLake - Extração e Carga de Dados - Clonando Tabelas do Datalake",
 ) as datalake_bigquery_clone:
+
     ENVIRONMENT = Parameter("environment", default="dev")
-    SOURCE_TABLE_ID = Parameter("source_table_id", default="")
-    DESTINATION_TABLE_NAME = Parameter("destination_table_name", default="")
+    SLUG = Parameter("slug", default="")
+    SOURCE_PROJECT_NAME = Parameter("source_project_name", default="rj-smfp")
+    SOURCE_DATASET_NAME = Parameter("source_dataset_name", default="")
+    SOURCE_TABLE_LIST = Parameter("source_table_list", default=[])
     DESTINATION_DATASET_NAME = Parameter("destination_dataset_name", default="")
     DBT_SELECT_EXP = Parameter("dbt_select_exp", default=None)
 
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     rename_current_flow_run(
-        name_template="Cloning table {source_table_id} into {bigquery_project}",
-        source_table_id=SOURCE_TABLE_ID,
+        name_template="Cloning dataset {slug} into {bigquery_project}",
+        slug=SLUG,
         bigquery_project=bigquery_project,
     )
 
     clone_table_task = clone_bigquery_table(
-        source_table_id=SOURCE_TABLE_ID,
-        destination_table_name=DESTINATION_TABLE_NAME,
-        destination_dataset_name=DESTINATION_DATASET_NAME,
+        source_project_name=SOURCE_PROJECT_NAME,
+        source_dataset_name=SOURCE_DATASET_NAME,
+        source_table_list=SOURCE_TABLE_LIST,
         destination_project_name=bigquery_project,
+        destination_dataset_name=DESTINATION_DATASET_NAME,
+        upstream_tasks=[rename_current_flow_run],
     )
 
     with case(is_null_or_empty(value=DBT_SELECT_EXP), False):
