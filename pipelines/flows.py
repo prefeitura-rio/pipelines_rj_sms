@@ -19,6 +19,7 @@ from pipelines.datalake.extract_load.vitacare_api.flows import *
 from pipelines.datalake.extract_load.vitacare_db.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
+from pipelines.datalake.extract_load.tasks_clickup.flows import *
 from pipelines.datalake.transform.dbt.flows import *
 from pipelines.prontuarios.load_datalake.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
