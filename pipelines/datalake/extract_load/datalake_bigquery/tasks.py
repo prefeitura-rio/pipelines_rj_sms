@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import List
+
 import google
 import google.api_core
 from google.cloud import bigquery
