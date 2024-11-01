@@ -315,10 +315,6 @@ def create_parameter_list(
 
         results = results[(results["data"] >= datetime.strptime("2024-08-15", "%Y-%m-%d").date())]
 
-        # TODO: remove this after 2024-10-01
-        if endpoint == "vacina":
-            results = results[results["data"] < datetime.strptime("2024-10-01", "%Y-%m-%d").date()]
-
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
 
     if area_programatica:
