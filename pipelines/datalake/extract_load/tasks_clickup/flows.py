@@ -15,6 +15,7 @@ from pipelines.utils.tasks import (
     upload_to_datalake,
 )
 from pipelines.datalake.extract_load.tasks_clickup.constants import constants as clickup_constants
+from pipelines.datalake.extract_load.tasks_clickup.schedules import schedule
 
 
 with Flow(
@@ -54,6 +55,7 @@ with Flow(
         exception_on_missing_input_file=True,
     )
 
+tasks_clickup_extraction.schedule = schedule
 tasks_clickup_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 tasks_clickup_extraction.executor = LocalDaskExecutor(num_workers=1)
 tasks_clickup_extraction.run_config = KubernetesRun(
