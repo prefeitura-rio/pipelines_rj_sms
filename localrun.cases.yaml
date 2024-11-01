@@ -188,4 +188,11 @@ cases:
       list_id: "901301305437"
       destination_table_name: "atividades_eventos"
       destination_dataset_name: "brutos_plataforma_clickup"
+  - case_slug: "monitoramento_vitacare"
+    flow_path: "pipelines.tools.vitacare_healthcheck.flows"
+    flow_name: "monitoramento"
+    params:
+      environment: "dev"
+      start_date: "2024-10-01"
+      end_date: "2024-11-01"
 

@@ -144,7 +144,8 @@ def json_records_to_dataframe(json_records):
 
 @task()
 def fix_column_typing(dataframe):
-    dataframe["interface_isVpn"] = dataframe["interface_isVpn"].astype(bool)
+    if "interface_isVpn" in dataframe.columns:
+        dataframe["interface_isVpn"] = dataframe["interface_isVpn"].astype(bool)
     return dataframe
 
 

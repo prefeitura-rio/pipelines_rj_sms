@@ -25,10 +25,15 @@ with Flow(
     name="Tool: Monitoramento de Conectividade (Vitacare)",
 ) as monitoramento:
     ENVIRONMENT = Parameter("environment", default="dev")
+    START_DATE = Parameter("start_date", default="")
+    END_DATE = Parameter("end_date", default="")
 
     file_list = get_files_from_folder(folder_id=vitacare_constants.TARGET_FOLDER_ID.value)
 
-    start_datetime, end_datetime = get_datetime_working_range()
+    start_datetime, end_datetime = get_datetime_working_range(
+        start_datetime=START_DATE,
+        end_datetime=END_DATE
+    )
 
     structured_files_metadata = get_structured_files_metadata(file_list=file_list)
 
