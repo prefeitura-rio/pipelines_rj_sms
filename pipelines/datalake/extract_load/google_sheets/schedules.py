@@ -73,6 +73,16 @@ flow_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1kndrUjVFpRW-LIZ1pV-LwcAmxylB4kVt944nzL_pfhU",  # noqa
         "url_type": "google_sheet",
     },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "sheet1",
+        "rename_flow": True,
+        "table_id": "profissionais_cns_cpf_aux",
+        "url": "https://docs.google.com/spreadsheets/d/15OhN69JH6GdRK1Ixvr9P-eTSG03lM6qD7hobcT4Ilow",  # noqa
+        "url_type": "google_sheet",
+    },
 ]
 
 
