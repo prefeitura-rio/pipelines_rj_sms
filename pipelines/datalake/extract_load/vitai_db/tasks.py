@@ -72,7 +72,7 @@ def build_param_list(
     curr_year = pd.Timestamp.now().year
 
     params = []
-    for year in range(2012, curr_year):
+    for year in range(2012, curr_year + 1):
         for window in calculate_windows.run(year=year, window_size=window_size):
             start, end = window
             operator_key = calculate_operator_key.run(
