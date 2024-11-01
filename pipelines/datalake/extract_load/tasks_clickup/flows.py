@@ -7,16 +7,19 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.tasks_clickup.tasks import extract_clickup_list_tasks
+from pipelines.datalake.extract_load.tasks_clickup.constants import (
+    constants as clickup_constants,
+)
+from pipelines.datalake.extract_load.tasks_clickup.schedules import schedule
+from pipelines.datalake.extract_load.tasks_clickup.tasks import (
+    extract_clickup_list_tasks,
+)
 from pipelines.utils.tasks import (
     get_bigquery_project_from_environment,
     get_secret_key,
     rename_current_flow_run,
     upload_to_datalake,
 )
-from pipelines.datalake.extract_load.tasks_clickup.constants import constants as clickup_constants
-from pipelines.datalake.extract_load.tasks_clickup.schedules import schedule
-
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Extração de Atividades Clickup",
@@ -35,7 +38,7 @@ with Flow(
     )
 
     rename_current_flow_run(
-        name_template="Extracting list_id={list_id} into {bigquery_project}.{destination_dataset_name}.{destination_table_name}", # noqa
+        name_template="Extracting list_id={list_id} into {bigquery_project}.{destination_dataset_name}.{destination_table_name}",  # noqa
         list_id=LIST_ID,
         bigquery_project=bigquery_project,
         destination_table_name=DESTINATION_TABLE_NAME,
