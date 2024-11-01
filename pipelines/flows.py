@@ -14,6 +14,7 @@ from pipelines.datalake.extract_load.seguir_em_frente_pipefy.flows import *
 from pipelines.datalake.extract_load.sih_gdrive.flows import *
 from pipelines.datalake.extract_load.sisreg_web.flows import *
 from pipelines.datalake.extract_load.smsrio_mysql.flows import *
+from pipelines.datalake.extract_load.tasks_clickup.flows import *
 from pipelines.datalake.extract_load.tpc_azure_blob.flows import *
 from pipelines.datalake.extract_load.vitacare_api.flows import *
 from pipelines.datalake.extract_load.vitacare_db.flows import *

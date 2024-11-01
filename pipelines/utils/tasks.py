@@ -787,14 +787,18 @@ def upload_to_datalake(
             raise FileNotFoundError(f"No files found in {input_path}")
         return
 
-    reference_path = os.path.join(input_path, f"**/*.{source_format}")
-    log(f"Reference Path: {reference_path}")
+    # If Input path is a folder
+    if os.path.isdir(input_path):
+        log(f"Input path is a folder: {input_path}")
 
-    if len(glob.glob(reference_path, recursive=True)) == 0:
-        log(f"No files found in {input_path}", level="warning")
-        if exception_on_missing_input_file:
-            raise FileNotFoundError(f"No files found in {input_path}")
-        return
+        reference_path = os.path.join(input_path, f"**/*.{source_format}")
+        log(f"Reference Path: {reference_path}")
+
+        if len(glob.glob(reference_path, recursive=True)) == 0:
+            log(f"No files found in {input_path}", level="warning")
+            if exception_on_missing_input_file:
+                raise FileNotFoundError(f"No files found in {input_path}")
+            return
 
     tb = bd.Table(dataset_id=dataset_id, table_id=table_id)
     table_staging = f"{tb.table_full_name['staging']}"
