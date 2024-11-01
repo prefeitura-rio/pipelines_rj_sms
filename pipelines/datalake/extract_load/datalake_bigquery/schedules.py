@@ -46,7 +46,6 @@ flow_parameters = [
             "fornecedor",
             "historico_alteracoes",
             "itens_nota_fiscal",
-            "nota_fiscal",
             "plano_contas",
             "receita_dados",
             "receita_item",
@@ -84,7 +83,7 @@ flow_parameters = [
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 7, 39, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 5, 00, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
