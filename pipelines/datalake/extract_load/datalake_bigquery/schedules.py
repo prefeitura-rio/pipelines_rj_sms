@@ -194,6 +194,36 @@ flow_parameters = [
         "destination_table_name": "usuario_sistema",
         "environment": "prod",
     },
+    {
+        "source_table_id": "basedosdados.br_ms_cnes.estabelecimento",
+        "destination_dataset_name": "brutos_cnes_ftp_staging",
+        "destination_table_name": "estabelecimento",
+        "environment": "prod",
+    },
+    {
+        "source_table_id": "basedosdados.br_ms_cnes.equipamento",
+        "destination_dataset_name": "brutos_cnes_ftp_staging",
+        "destination_table_name": "equipamento",
+        "environment": "prod",
+    },
+    {
+        "source_table_id": "basedosdados.br_ms_cnes.habilitacao",
+        "destination_dataset_name": "brutos_cnes_ftp_staging",
+        "destination_table_name": "habilitacao",
+        "environment": "prod",
+    },
+    {
+        "source_table_id": "basedosdados.br_ms_cnes.leito",
+        "destination_dataset_name": "brutos_cnes_ftp_staging",
+        "destination_table_name": "leito",
+        "environment": "prod",
+    },
+    {
+        "source_table_id": "basedosdados.br_ms_cnes.profissional",
+        "destination_dataset_name": "brutos_cnes_ftp_staging",
+        "destination_table_name": "profissional",
+        "environment": "prod",
+    },
 ]
 
 
