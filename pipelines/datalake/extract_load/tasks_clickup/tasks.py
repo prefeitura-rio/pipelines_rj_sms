@@ -3,7 +3,6 @@ import pandas as pd
 import requests
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from pipelines.datalake.utils.data_transformations import convert_to_parquet
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 
