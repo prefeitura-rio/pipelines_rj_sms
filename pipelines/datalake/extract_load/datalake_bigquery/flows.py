@@ -41,8 +41,8 @@ with Flow(
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     rename_current_flow_run(
-        name_template="Cloning table {source_table_id} into {bigquery_project}",
-        source_dataset=SOURCE_DATASET_NAME,
+        name_template="Cloning dataset {destination_dataset} into {bigquery_project}",
+        destination_dataset=DESTINATION_DATASET_NAME,
         bigquery_project=bigquery_project,
     )
 

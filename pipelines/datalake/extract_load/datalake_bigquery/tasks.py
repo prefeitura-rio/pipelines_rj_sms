@@ -48,7 +48,7 @@ def clone_bigquery_table(
 
         try:
             command = f"CREATE OR REPLACE TABLE `{destination_table_id}` CLONE `{source_table_id}`"
-            log(f"Running: {command}")
+            log(f"Running: {command}", level="debug")
             query_job = bq_client.query_and_wait(command)
             job = bq_client.get_job(query_job.job_id)
             log(f"Result: {job.state}")
@@ -59,13 +59,13 @@ def clone_bigquery_table(
             log("Trying to clone table by copying data from source to destination")
 
             command = f"DROP TABLE IF EXISTS `{destination_table_id}`;"
-            log(f"Running: {command}")
+            log(f"Running: {command}", level="debug")
             query_job = bq_client.query_and_wait(command)
             job = bq_client.get_job(query_job.job_id)
-            log(f"Result: {job.state}")
+            log(f"Result: {job.state}", level="debug")
 
             command = f"CREATE TABLE `{destination_table_id}` AS SELECT * FROM `{source_table_id}`"
-            log(f"Running: {command}")
+            log(f"Running: {command}", level="debug")
             query_job = bq_client.query_and_wait(command)
             job = bq_client.get_job(query_job.job_id)
             log(f"Result: {job.state}")
