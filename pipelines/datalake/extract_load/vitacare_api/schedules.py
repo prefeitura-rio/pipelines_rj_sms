@@ -15,19 +15,19 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 routine_flow_parameters = [
     {
         "dataset_id": "brutos_prontuario_vitacare",
-        "endpoint": "posicao",
-        "environment": "prod",
-        "rename_flow": True,
-        "table_id": "estoque_posicao",
-        "target_date": "today",
-    },
-    {
-        "dataset_id": "brutos_prontuario_vitacare",
         "endpoint": "movimento",
         "environment": "prod",
         "rename_flow": True,
         "table_id": "estoque_movimento",
         "target_date": "yesterday",
+    },
+    {
+        "dataset_id": "brutos_prontuario_vitacare",
+        "endpoint": "posicao",
+        "environment": "prod",
+        "rename_flow": True,
+        "table_id": "estoque_posicao",
+        "target_date": "today",
     },
     {
         "dataset_id": "brutos_prontuario_vitacare",
@@ -41,7 +41,7 @@ routine_flow_parameters = [
 
 routine_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2024, 1, 1, 2, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 1, 1, 3, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
