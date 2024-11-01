@@ -180,3 +180,12 @@ cases:
       destination_dataset_name: "brutos_ergon_staging"
       destination_table_name: "funcionarios_ativos"
       dbt_select_exp: "tag:ergon"
+  - case_slug: "tasks_clickup_extraction"
+    flow_path: "pipelines.datalake.extract_load.tasks_clickup.flows"
+    flow_name: "tasks_clickup_extraction"
+    params:
+      environment: "dev"
+      list_id: "901301305437"
+      destination_table_name: "atividades_eventos"
+      destination_dataset_name: "brutos_plataforma_clickup"
+
