@@ -3,7 +3,7 @@ import google
 import google.api_core
 from google.cloud import bigquery
 from prefect.engine import state
-from prefect.engine.signals import ENDRUN, FAIL
+from prefect.engine.signals import FAIL
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -49,4 +49,4 @@ def clone_bigquery_table(
 
     except Exception as e:
         log(f"Unexpected error: {e}", level="error")
-        raise ENDRUN(state.Failed(f"Unexpected error: {e}")) from e
+        raise FAIL(f"Unexpected error: {e}") from e
