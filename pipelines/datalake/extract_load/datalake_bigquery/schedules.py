@@ -14,6 +14,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
+        "slug": "cnes__ftp",
         "source_project_name": "basedosdados",
         "source_dataset_name": "br_ms_cnes",
         "source_table_list": [
@@ -27,6 +28,7 @@ flow_parameters = [
         "environment": "prod",
     },
     {
+        "slug": "osinfo",
         "source_project_name": "rj-cvl",
         "source_dataset_name": "adm_contrato_gestao",
         "source_table_list": [
@@ -61,6 +63,7 @@ flow_parameters = [
         "environment": "prod",
     },
     {
+        "slug": "ergon",
         "source_project_name": "rj-smfp",
         "source_dataset_name": "recursos_humanos_ergon_saude",
         "source_table_list": ["funcionarios_ativos"],
@@ -69,6 +72,7 @@ flow_parameters = [
         "dbt_select_exp": "tag:ergon",
     },
     {
+        "slug": "sigma",
         "source_project_name": "rj-smfp",
         "source_dataset_name": "compras_materiais_servicos_sigma_staging",
         "source_table_list": ["classe", "grupo", "material", "subclasse"],
@@ -80,7 +84,7 @@ flow_parameters = [
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 7, 32, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 7, 39, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

@@ -32,6 +32,7 @@ with Flow(
 ) as datalake_bigquery_clone:
 
     ENVIRONMENT = Parameter("environment", default="dev")
+    SLUG = Parameter("slug", default="")
     SOURCE_PROJECT_NAME = Parameter("source_project_name", default="rj-smfp")
     SOURCE_DATASET_NAME = Parameter("source_dataset_name", default="")
     SOURCE_TABLE_LIST = Parameter("source_table_list", default=[])
@@ -41,8 +42,8 @@ with Flow(
     bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
 
     rename_current_flow_run(
-        name_template="Cloning dataset {destination_dataset} into {bigquery_project}",
-        destination_dataset=DESTINATION_DATASET_NAME,
+        name_template="Cloning dataset {slug} into {bigquery_project}",
+        slug=SLUG,
         bigquery_project=bigquery_project,
     )
 
