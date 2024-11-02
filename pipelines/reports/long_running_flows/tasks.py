@@ -54,7 +54,7 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
     """
     data = run_query.run(
         query=query,
-        variables={"projectId": get_prefect_project_id.run(environment)},
+        variables={"projectId": get_prefect_project_id.run(environment=environment)},
     )
     if len(data["data"]["flow_run"]) == 0:
         return None
