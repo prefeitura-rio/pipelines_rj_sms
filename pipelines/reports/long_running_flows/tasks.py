@@ -94,9 +94,9 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
 
     #  Classification Emoji
     def classify_emoji(duration):
-        if duration > 24:
+        if duration > 24*60:
             return "☠️"
-        elif duration > 12:
+        elif duration > 12*60:
             return "⚠️"
         else:
             return ""
