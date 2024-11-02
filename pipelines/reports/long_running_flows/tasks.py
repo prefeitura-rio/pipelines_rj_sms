@@ -65,7 +65,7 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
     result["flow_name"] = result["flow"].apply(lambda x: x["name"])
     result["flow_id"] = result["flow"].apply(lambda x: x["id"])
     result["composed_name"] = result["flow_name"] + " -> " + result["name"]
-    result["scheduled_start_time"] = pd.to_datetime(result["scheduled_start_time"])  # noqa
+    result["scheduled_start_time"] = pd.to_datetime(result["scheduled_start_time"], format='mixed')  # noqa
     result["scheduled_start_time"] = result["scheduled_start_time"].dt.tz_convert(
         "America/Sao_Paulo"
     )
