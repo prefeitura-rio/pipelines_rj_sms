@@ -175,7 +175,7 @@ def cancel_flows(running_flows: pd.DataFrame):
     full_message = [f"São {long_running_flows.shape[0]} execuções longas em cancelamento:"]
 
     for _, flow_run in long_running_flows.iterrows():
-        success = cancel_flow_run.run(flow_run["id"])
+        success = cancel_flow_run.run(flow_run_id=flow_run["id"])
         success_emoji = "✅" if success else "❌"
         message = f"- [**{flow_run['composed_name']}**]({flow_run['flow_run_url']}) de {flow_run['duration_minutes']:.1f} minutos :: Sucesso {success_emoji}"  # noqa
         full_message.append(message)
