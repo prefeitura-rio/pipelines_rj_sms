@@ -83,9 +83,9 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
 
     # Classification Type
     def classify(duration):
-        if duration > 24*60:
+        if duration > 24 * 60:
             return "long"
-        elif duration > 12*60:
+        elif duration > 12 * 60:
             return "warning"
         else:
             return "normal"
