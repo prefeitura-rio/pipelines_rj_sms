@@ -54,7 +54,7 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
     """
     data = run_query.run(
         query=query,
-        variables={"projectId": get_prefect_project_id.run(environment)},
+        variables={"projectId": get_prefect_project_id.run(environment=environment)},
     )
     if len(data["data"]["flow_run"]) == 0:
         return None
@@ -65,7 +65,9 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
     result["flow_name"] = result["flow"].apply(lambda x: x["name"])
     result["flow_id"] = result["flow"].apply(lambda x: x["id"])
     result["composed_name"] = result["flow_name"] + " -> " + result["name"]
-    result["scheduled_start_time"] = pd.to_datetime(result["scheduled_start_time"])  # noqa
+    result["scheduled_start_time"] = pd.to_datetime(
+        result["scheduled_start_time"], format="mixed"
+    )  # noqa
     result["scheduled_start_time"] = result["scheduled_start_time"].dt.tz_convert(
         "America/Sao_Paulo"
     )
@@ -81,9 +83,9 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
 
     # Classification Type
     def classify(duration):
-        if duration > 24:
+        if duration > 24 * 60:
             return "long"
-        elif duration > 12:
+        elif duration > 12 * 60:
             return "warning"
         else:
             return "normal"
@@ -92,9 +94,9 @@ def detect_running_flows(environment: str) -> pd.DataFrame:
 
     #  Classification Emoji
     def classify_emoji(duration):
-        if duration > 24:
+        if duration > 24 * 60:
             return "☠️"
-        elif duration > 12:
+        elif duration > 12 * 60:
             return "⚠️"
         else:
             return ""
@@ -173,7 +175,7 @@ def cancel_flows(running_flows: pd.DataFrame):
     full_message = [f"São {long_running_flows.shape[0]} execuções longas em cancelamento:"]
 
     for _, flow_run in long_running_flows.iterrows():
-        success = cancel_flow_run.run(flow_run["id"])
+        success = cancel_flow_run.run(flow_run_id=flow_run["id"])
         success_emoji = "✅" if success else "❌"
         message = f"- [**{flow_run['composed_name']}**]({flow_run['flow_run_url']}) de {flow_run['duration_minutes']:.1f} minutos :: Sucesso {success_emoji}"  # noqa
         full_message.append(message)
