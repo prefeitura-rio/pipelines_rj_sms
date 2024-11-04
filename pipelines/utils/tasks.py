@@ -1027,3 +1027,14 @@ def get_project_name_from_prefect_environment():
     """
     log(f"Prefect context: {prefect.context}")
     return prefect.context.get("project_name")
+
+
+@task
+def load_files_from_gcs_bucket(bucket_name, file_prefix, file_suffix, updated_after, updated_before, environment):
+    pass
+
+
+@task
+def create_date_partitions(dataframe, partition_column):
+
+    pass

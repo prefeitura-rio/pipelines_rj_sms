@@ -17,8 +17,8 @@ from pipelines.datalake.extract_load.vitacare_conectividade_gcs.tasks import (
 from pipelines.prontuarios.utils.tasks import get_datetime_working_range
 from pipelines.utils.tasks import (
     load_files_from_gcs_bucket,
-    rename_current_flow_run,
     create_date_partitions,
+    rename_current_flow_run,
     upload_to_datalake,
 )
 
