@@ -7,14 +7,16 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.vitacare_conectividade_gcs.schedules import schedule
+from pipelines.datalake.extract_load.vitacare_conectividade_gcs.schedules import (
+    schedule,
+)
 from pipelines.datalake.extract_load.vitacare_conectividade_gcs.tasks import (
     handle_json_files_from_gcs,
 )
 from pipelines.prontuarios.utils.tasks import get_datetime_working_range
 from pipelines.utils.tasks import (
-    load_files_from_gcs_bucket,
     create_date_partitions,
+    load_files_from_gcs_bucket,
     rename_current_flow_run,
     upload_to_datalake,
 )
@@ -32,7 +34,6 @@ with Flow(
 
     START_DATETIME = Parameter("start_datetime", default="")
     END_DATETIME = Parameter("end_datetime", default="")
-
 
     rename_current_flow_run(
         name_template="Extracting {bucket_name}.{file_prefix}*{file_suffix} into {destination_dataset_name}.{destination_table_name}",  # noqa
@@ -61,8 +62,7 @@ with Flow(
     dataframe = handle_json_files_from_gcs(files=files)
 
     partition_folder = create_date_partitions(
-        dataframe=dataframe,
-        partition_column="datalake_loaded_at"
+        dataframe=dataframe, partition_column="datalake_loaded_at"
     )
 
     upload_to_datalake(
