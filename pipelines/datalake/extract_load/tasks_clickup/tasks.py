@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import json
+import os
+import uuid
 import pandas as pd
 import requests
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -40,10 +43,16 @@ def extract_clickup_list_tasks(
 
         tasks.extend(response.json()["tasks"])
 
-    task_data = pd.json_normalize(tasks, sep="_")
-    task_data["datalake_loaded_at"] = pd.Timestamp.now()
-    log(f"Extracted {len(task_data)} tasks from Clickup list {list_id}", level="info")
+    
+    for task in tasks:
+        for key in task.keys():
+            task[key] = json.dumps(task[key])
+    
+    tasks_df = pd.DataFrame.from_records(tasks)
 
-    task_data.to_csv("./task_data.csv", index=False, encoding="utf-8")
+    now = pd.Timestamp.now().tz_localize('America/Sao_Paulo').isoformat()
+    tasks_df['datalake_loaded_at'] = now
+    
+    log(f"Extracted {len(tasks_df)} tasks from Clickup list {list_id}", level="info")
 
-    return "./task_data.csv"
+    return tasks_df
