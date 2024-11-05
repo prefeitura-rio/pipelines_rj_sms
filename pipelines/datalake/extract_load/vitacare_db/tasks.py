@@ -223,7 +223,7 @@ def create_parquet_file(
     tz = pytz.timezone("Brazil/East")
 
     log(f"Making SQL query of {filename} ...")
-    df = pd.read_sql(sql, conn)
+    df = pd.read_sql(sql, conn, dtype=str)
 
     log(f"Fixing parquet type of {filename} ...", level="debug")
     for col in df.columns:
