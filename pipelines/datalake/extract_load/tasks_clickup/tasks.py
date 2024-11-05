@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+
 import pandas as pd
 import requests
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -40,11 +41,11 @@ def extract_clickup_list_tasks(
             page += 1
 
         tasks.extend(response.json()["tasks"])
-    
+
     for _task in tasks:
         for key in _task.keys():
             _task[key] = json.dumps(_task[key])
-    
+
     tasks_df = pd.DataFrame.from_records(tasks)
 
     now = pd.Timestamp.now().tz_localize("America/Sao_Paulo").isoformat()
