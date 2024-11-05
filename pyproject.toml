@@ -54,7 +54,7 @@ tqdm = "^4.66.3"
 docxtpl = "^0.18.0"
 pynpm = "^0.2.0"
 tenacity = "^9.0.0"
-pyodbc = "^5.2.0"
+pyodbc = "5.0.1"
 
 [tool.poetry.group.dev]
 optional = true
