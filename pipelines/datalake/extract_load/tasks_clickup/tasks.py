@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import json
-import os
-import uuid
 import pandas as pd
 import requests
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -44,9 +42,9 @@ def extract_clickup_list_tasks(
         tasks.extend(response.json()["tasks"])
 
     
-    for task in tasks:
-        for key in task.keys():
-            task[key] = json.dumps(task[key])
+    for _task in tasks:
+        for key in _task.keys():
+            _task[key] = json.dumps(_task[key])
     
     tasks_df = pd.DataFrame.from_records(tasks)
 
