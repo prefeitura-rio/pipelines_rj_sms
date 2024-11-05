@@ -1060,6 +1060,7 @@ def load_files_from_gcs_bucket(
             "updated": blob.updated,
             "created": blob.time_created,
         }
+
     file_metadata = [blob_to_dict(x) for x in files]
 
     output = list(zip(file_metadata, file_contents))
