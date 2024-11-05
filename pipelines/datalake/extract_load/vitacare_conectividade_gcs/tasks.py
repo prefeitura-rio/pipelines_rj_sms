@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import json
-import re
 
 import pandas as pd
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.logger import log
 
 
 @task()
