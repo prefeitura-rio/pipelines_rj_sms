@@ -7,10 +7,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-# from pipelines.datalake.extract_load.vitacare_conectividade_gcs.constants import (
-#     constants as clickup_constants,
-# )
-# from pipelines.datalake.extract_load.vitacare_conectividade_gcs.schedules import schedule
+from pipelines.datalake.extract_load.vitacare_conectividade_gcs.schedules import schedule
 from pipelines.datalake.extract_load.vitacare_conectividade_gcs.tasks import (
     handle_json_files_from_gcs,
 )
@@ -76,7 +73,7 @@ with Flow(
         exception_on_missing_input_file=True,
     )
 
-# conectividade_vitacare.schedule = schedule
+conectividade_vitacare.schedule = schedule
 conectividade_vitacare.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 conectividade_vitacare.executor = LocalDaskExecutor(num_workers=1)
 conectividade_vitacare.run_config = KubernetesRun(
