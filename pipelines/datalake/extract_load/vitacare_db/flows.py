@@ -18,6 +18,7 @@ from pipelines.datalake.extract_load.vitacare_db.tasks import (
     get_bucket_name,
     get_connection_string,
     get_database_name,
+    get_file_names,
     get_queries,
     upload_many_to_datalake,
 )
@@ -62,21 +63,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
 
     database_name = get_database_name(cnes=CNES)
 
-    filenames = [
-        "atendimentos",
-        "unidade",
-        "equipes",
-        "pacientes",
-        "profissionais",
-        "alergias",
-        "condicoes",
-        "encaminhamentos",
-        "indicadores",
-        "prescricoes",
-        "procedimentos_clinicos",
-        "solicitacao_exame",
-        "vacinas",
-    ]
+    filenames = get_file_names()
 
     ######################################
     # Tasks section #1 - Create Temp Database

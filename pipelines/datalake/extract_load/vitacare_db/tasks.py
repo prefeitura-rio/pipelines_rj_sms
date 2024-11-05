@@ -101,6 +101,25 @@ def get_database_name(cnes: str):
 
 
 @task
+def get_file_names():
+    return [
+        "atendimentos",
+        "unidade",
+        "equipes",
+        "pacientes",
+        "profissionais",
+        "alergias",
+        "condicoes",
+        "encaminhamentos",
+        "indicadores",
+        "prescricoes",
+        "procedimentos_clinicos",
+        "solicitacao_exame",
+        "vacinas",
+    ]
+
+
+@task
 def create_temp_database(
     database_host: str,
     database_port: int,
