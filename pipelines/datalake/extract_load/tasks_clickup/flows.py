@@ -15,6 +15,7 @@ from pipelines.datalake.extract_load.tasks_clickup.tasks import (
     extract_clickup_list_tasks,
 )
 from pipelines.utils.tasks import (
+    create_date_partitions,
     get_bigquery_project_from_environment,
     get_secret_key,
     rename_current_flow_run,
@@ -45,13 +46,18 @@ with Flow(
         destination_dataset_name=DESTINATION_DATASET_NAME,
     )
 
-    tasks_data_file_path = extract_clickup_list_tasks(
+    tasks_data = extract_clickup_list_tasks(
         clickup_personal_token=clickup_personal_token,
         list_id=LIST_ID,
     )
 
+    partition_path = create_date_partitions(
+        dataframe=tasks_data,
+        partition_column="datalake_loaded_at",
+    )
+
     upload_to_datalake(
-        input_path=tasks_data_file_path,
+        input_path=partition_path,
         dataset_id=DESTINATION_DATASET_NAME,
         table_id=DESTINATION_TABLE_NAME,
         csv_delimiter=",",
