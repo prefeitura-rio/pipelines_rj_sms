@@ -93,6 +93,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
         sql=queries,
         base_path=unmapped(local_folders["raw"]),
         filename=filenames,
+        upstream_tasks=[temp_db, queries],
     )
 
     ######################################
