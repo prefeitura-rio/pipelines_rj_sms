@@ -205,4 +205,6 @@ cases:
       source_file_suffix: '.json'
       destination_table_name: 'vitacare'
       destination_dataset_name: 'brutos_conectividade'
+      start_datetime: '2024-09-01'
+      end_datetime: '2024-11-06'
 

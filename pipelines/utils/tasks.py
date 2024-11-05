@@ -1050,7 +1050,7 @@ def load_files_from_gcs_bucket(
     if updated_before:
         updated_before = parser.parse(updated_before)
         updated_before = pytz.timezone("America/Sao_Paulo").localize(updated_before)
-        files = [x for x in files if x.updated > updated_before]
+        files = [x for x in files if x.updated < updated_before]
 
     file_contents = [x.download_as_string() for x in files]
 
