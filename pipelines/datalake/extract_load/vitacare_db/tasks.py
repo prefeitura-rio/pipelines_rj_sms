@@ -18,7 +18,46 @@ from pipelines.datalake.extract_load.vitacare_db.constants import (
 from pipelines.datalake.extract_load.vitacare_db.utils import create_db_connection
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
-from pipelines.utils.tasks import upload_to_datalake
+from pipelines.utils.tasks import upload_to_datalake, get_secret_key
+
+
+@task
+def get_connection_string(environment: str):
+    """
+    Get the connection string for the Vitacare database.
+    """
+
+    if environment not in ["dev", "prod"]:
+        error_message = "Invalid environment"
+        log(error_message, level="error")
+        raise FAIL(error_message)
+
+    connection_string = {
+        "host": get_secret_key.run(
+            secret_path="/prontuario-vitacare-database",
+            secret_name="DATABASE_HOST",
+            environment=environment,
+        ),
+        "port": get_secret_key.run(
+            secret_path="/prontuario-vitacare-database",
+            secret_name="DATABASE_PORT",
+            environment=environment,
+        ),
+        "user": get_secret_key.run(
+            secret_path="/prontuario-vitacare-database",
+            secret_name="DATABASE_USER",
+            environment=environment,
+        ),
+        "password": get_secret_key.run(
+            secret_path="/prontuario-vitacare-database",
+            secret_name="DATABASE_PASSWORD",
+            environment=environment,
+        ),
+    }
+
+    log("Connection string retrieved successfully", level="info")
+
+    return connection_string
 
 
 @task
@@ -30,7 +69,9 @@ def get_bucket_name(env: str):
     if env in ["dev", "prod"]:
         bucket_name = vitacare_constants.GCS_BUCKET.value[env]
     else:
-        raise FAIL("Invalid environment")
+        error_message = "Invalid environment"
+        log(error_message, level="error")
+        raise FAIL(error_message)
 
     return bucket_name
 
@@ -41,7 +82,17 @@ def get_backup_filename(bucket_name: str, cnes: str):
     bucket = client.bucket(bucket_name)
     blobs = bucket.list_blobs(prefix="backups", match_glob=f"*/vitacare_historic_{cnes}**.bak")
 
-    return list(blobs)[0].name.removeprefix("backups/")
+    try:
+        bucket_filename = list(blobs)[0].name.removeprefix("backups/")
+
+    except IndexError as error:
+        error_message = f"No backup file found for cnes {cnes}"
+        log(error_message, level="error")
+        raise FAIL(error_message) from error
+
+    log(f"Backup filename retrieved successfully: {bucket_filename}", level="info")
+
+    return bucket_filename
 
 
 @task
@@ -144,7 +195,7 @@ def create_parquet_file(
     tz = pytz.timezone("Brazil/East")
 
     log(f"Making SQL query of {filename} ...")
-    df = pd.read_sql(sql, conn)
+    df = pd.read_sql(sql, conn, dtype=str)
 
     log(f"Fixing parquet type of {filename} ...", level="debug")
     for col in df.columns:
