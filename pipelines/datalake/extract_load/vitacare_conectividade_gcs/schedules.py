@@ -16,7 +16,7 @@ flow_parameters = [
     {
         "source_bucket_name": "conectividade_aps",
         "source_file_prefix": "",
-        "source_file_suffix": "posicao",
+        "source_file_suffix": ".json",
         "destination_table_name": "vitacare",
         "destination_dataset_name": "brutos_conectividade",
         "environment": "prod",

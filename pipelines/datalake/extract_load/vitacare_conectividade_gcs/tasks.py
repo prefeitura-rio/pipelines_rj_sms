@@ -12,12 +12,12 @@ def handle_json_files_from_gcs(files):
 
     for file_metadata, file_content in files:
         row = dict()
-        row["file_name"] = file_metadata.name
-        row["gcs_created_at"] = file_metadata.time_created
-        row["gcs_updated_at"] = file_metadata.updated
+        row["file_name"] = file_metadata['name']
+        row["gcs_created_at"] = file_metadata['created']
+        row["gcs_updated_at"] = file_metadata['updated']
         row["datalake_loaded_at"] = pd.Timestamp.now().tz_localize("America/Sao_Paulo")
 
-        cnes, date = file_metadata.name.split("-", 1)
+        cnes, date = file_metadata['name'].split("-", 1)
         row["host_cnes"] = cnes
 
         naive_date = pd.to_datetime(date.replace(".json", ""), format="%Y-%m-%d-%Hh-%Mm")

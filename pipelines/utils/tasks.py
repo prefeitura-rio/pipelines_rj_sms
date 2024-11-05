@@ -1054,7 +1054,15 @@ def load_files_from_gcs_bucket(
 
     file_contents = [x.download_as_string() for x in files]
 
-    output = list(zip(files, file_contents))
+    def blob_to_dict(blob):
+        return {
+            "name": blob.name,
+            "updated": blob.updated,
+            "created": blob.time_created,
+        }
+    file_metadata = [blob_to_dict(x) for x in files]
+
+    output = list(zip(file_metadata, file_contents))
     return output
 
 
