@@ -145,7 +145,12 @@ def create_temp_database(
     """
 
     log(f"Creating database {database_name} ...")
-    conn.execute(restore_database_sql)
+    conn.autocommit = True
+    cursor = conn.cursor()
+    cursor.execute(restore_database_sql)
+    while cursor.nextset():
+        pass
+    cursor.close()
     conn.close()
 
 
@@ -169,7 +174,11 @@ def delete_temp_database(
 
     log(f"Deleting database {database_name} ...")
     conn.autocommit = True
-    conn.execute(delete_database_sql)
+    cursor = conn.cursor()
+    cursor.execute(delete_database_sql)
+    while cursor.nextset():
+        pass
+    cursor.close()
     conn.close()
 
 
