@@ -40,7 +40,6 @@ def extract_clickup_list_tasks(
             page += 1
 
         tasks.extend(response.json()["tasks"])
-
     
     for _task in tasks:
         for key in _task.keys():
@@ -48,9 +47,9 @@ def extract_clickup_list_tasks(
     
     tasks_df = pd.DataFrame.from_records(tasks)
 
-    now = pd.Timestamp.now().tz_localize('America/Sao_Paulo').isoformat()
-    tasks_df['datalake_loaded_at'] = now
-    
+    now = pd.Timestamp.now().tz_localize("America/Sao_Paulo").isoformat()
+    tasks_df["datalake_loaded_at"] = now
+
     log(f"Extracted {len(tasks_df)} tasks from Clickup list {list_id}", level="info")
 
     return tasks_df

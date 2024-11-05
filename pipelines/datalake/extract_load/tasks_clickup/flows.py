@@ -15,11 +15,11 @@ from pipelines.datalake.extract_load.tasks_clickup.tasks import (
     extract_clickup_list_tasks,
 )
 from pipelines.utils.tasks import (
+    create_date_partitions,
     get_bigquery_project_from_environment,
     get_secret_key,
     rename_current_flow_run,
     upload_to_datalake,
-    create_date_partitions,
 )
 
 with Flow(
