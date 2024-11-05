@@ -18,7 +18,7 @@ from pipelines.datalake.extract_load.vitacare_db.constants import (
 from pipelines.datalake.extract_load.vitacare_db.utils import create_db_connection
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
-from pipelines.utils.tasks import upload_to_datalake, get_secret_key
+from pipelines.utils.tasks import get_secret_key, upload_to_datalake
 
 
 @task
