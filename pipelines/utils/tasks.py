@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 import sys
+import uuid
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
@@ -29,6 +30,7 @@ import prefect
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
+from dateutil import parser
 from google.cloud import bigquery, storage
 from prefect.client import Client
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
@@ -1027,3 +1029,66 @@ def get_project_name_from_prefect_environment():
     """
     log(f"Prefect context: {prefect.context}")
     return prefect.context.get("project_name")
+
+
+@task
+def load_files_from_gcs_bucket(
+    bucket_name, file_prefix, file_suffix, updated_after, updated_before, environment
+):
+
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix=file_prefix)
+
+    files = [x for x in blobs if x.name.endswith(file_suffix)]
+
+    if updated_after:
+        updated_after = parser.parse(updated_after)
+        updated_after = pytz.timezone("America/Sao_Paulo").localize(updated_after)
+        files = [x for x in files if x.updated > updated_after]
+
+    if updated_before:
+        updated_before = parser.parse(updated_before)
+        updated_before = pytz.timezone("America/Sao_Paulo").localize(updated_before)
+        files = [x for x in files if x.updated < updated_before]
+
+    file_contents = [x.download_as_string() for x in files]
+
+    def blob_to_dict(blob):
+        return {
+            "name": blob.name,
+            "updated": blob.updated,
+            "created": blob.time_created,
+        }
+
+    file_metadata = [blob_to_dict(x) for x in files]
+
+    output = list(zip(file_metadata, file_contents))
+    return output
+
+
+@task
+def create_date_partitions(dataframe, partition_column, root_folder="./data/"):
+
+    dataframe[partition_column] = pd.to_datetime(dataframe[partition_column])
+    dataframe["data_particao"] = dataframe[partition_column].dt.strftime("%Y-%m-%d")
+
+    dates = dataframe["data_particao"].unique()
+    dataframes = [
+        (
+            date,
+            dataframe[dataframe["data_particao"] == date].drop(columns=["data_particao"]),
+        )  # noqa
+        for date in dates
+    ]
+
+    for date, dataframe in dataframes:
+        partition_folder = os.path.join(
+            root_folder, f"ano_particao={date[:4]}/mes_particao={date[5:7]}/data_particao={date}"
+        )
+        os.makedirs(partition_folder, exist_ok=True)
+
+        file_folder = os.path.join(partition_folder, f"{uuid.uuid4()}.csv")
+        dataframe.to_csv(file_folder, index=False)
+
+    return root_folder

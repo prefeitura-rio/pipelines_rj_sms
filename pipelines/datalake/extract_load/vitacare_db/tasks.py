@@ -4,21 +4,60 @@
 """
 Tasks for Vitacare db pipeline
 """
+from datetime import datetime
+
+import pandas as pd
+import pytz
+from google.cloud import storage
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.vitacare_db.constants import (
     constants as vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_db.utils import (
-    add_flow_metadata,
-    fix_parquet_type,
-    rename_file,
-)
-from pipelines.datalake.utils.data_transformations import conform_header_to_datalake
+from pipelines.datalake.extract_load.vitacare_db.utils import create_db_connection
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.googleutils import download_from_cloud_storage
-from pipelines.utils.tasks import upload_to_datalake
+from pipelines.utils.data_cleaning import remove_columns_accents
+from pipelines.utils.tasks import get_secret_key, upload_to_datalake
+
+
+@task
+def get_connection_string(environment: str):
+    """
+    Get the connection string for the Vitacare database.
+    """
+
+    if environment not in ["dev", "prod"]:
+        error_message = "Invalid environment"
+        log(error_message, level="error")
+        raise FAIL(error_message)
+
+    connection_string = {
+        "host": get_secret_key.run(
+            secret_path="/prontuario-vitacare-database",
+            secret_name="DATABASE_HOST",
+            environment=environment,
+        ),
+        "port": get_secret_key.run(
+            secret_path="/prontuario-vitacare-database",
+            secret_name="DATABASE_PORT",
+            environment=environment,
+        ),
+        "user": get_secret_key.run(
+            secret_path="/prontuario-vitacare-database",
+            secret_name="DATABASE_USER",
+            environment=environment,
+        ),
+        "password": get_secret_key.run(
+            secret_path="/prontuario-vitacare-database",
+            secret_name="DATABASE_PASSWORD",
+            environment=environment,
+        ),
+    }
+
+    log("Connection string retrieved successfully", level="info")
+
+    return connection_string
 
 
 @task
@@ -30,64 +69,185 @@ def get_bucket_name(env: str):
     if env in ["dev", "prod"]:
         bucket_name = vitacare_constants.GCS_BUCKET.value[env]
     else:
-        raise FAIL("Invalid environment")
+        error_message = "Invalid environment"
+        log(error_message, level="error")
+        raise FAIL(error_message)
 
     return bucket_name
 
 
 @task
-def download_from_cloud_storage_task(path: str, bucket_name: str, blob_prefix: str = None):
-    """
-    Downloads files from Google Cloud Storage to the specified local path.
-    """
+def get_backup_filename(bucket_name: str, cnes: str):
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix="backups", match_glob=f"*/vitacare_historic_{cnes}**.bak")
 
-    blob_prefix = f"parquet/{blob_prefix}"
+    try:
+        bucket_filename = list(blobs)[0].name.removeprefix("backups/")
 
-    downloaded_files = download_from_cloud_storage(
-        path=path,
-        bucket_name=bucket_name,
-        blob_prefix=blob_prefix,
-    )
+    except IndexError as error:
+        error_message = f"No backup file found for cnes {cnes}"
+        log(error_message, level="error")
+        raise FAIL(error_message) from error
 
-    if len(downloaded_files) == 13:
-        log("Files downloaded successfully")
-        return downloaded_files
-    else:
-        log(f"Downloaded {len(downloaded_files)} files, expected 13", level="error")
-        raise FAIL(f"Downloaded {len(downloaded_files)} files, expected 13")
+    log(f"Backup filename retrieved successfully: {bucket_filename}", level="info")
+
+    return bucket_filename
 
 
 @task
-def transform_data(files_path: list[str]):
-    """
-    Transforms data from the DATASUS FTP server.
-    """
+def get_database_name(cnes: str):
+    return f"vitacare_{cnes}"
 
-    raw_files = files_path
 
-    transformed_files = [fix_parquet_type(file_path=file) for file in raw_files]
-
-    log("Parquet type fixed successfully")
-
-    transformed_files = [add_flow_metadata(file_path=file) for file in transformed_files]
-
-    log("Metadata added successfully")
-
-    transformed_files = [
-        conform_header_to_datalake(file_path=file, file_type="parquet")
-        for file in transformed_files
+@task
+def get_file_names():
+    return [
+        "atendimentos",
+        "unidade",
+        "equipes",
+        "pacientes",
+        "profissionais",
+        "alergias",
+        "condicoes",
+        "encaminhamentos",
+        "indicadores",
+        "prescricoes",
+        "procedimentos_clinicos",
+        "solicitacao_exame",
+        "vacinas",
     ]
 
-    log("Header conformed successfully")
 
-    transformed_files = [rename_file(file_path=file) for file in transformed_files]
+@task
+def create_temp_database(
+    database_host: str,
+    database_port: int,
+    database_user: str,
+    database_password: str,
+    database_name: str,
+    backup_filename: str,
+):
+    conn = create_db_connection(
+        database_host=database_host,
+        database_port=database_port,
+        database_user=database_user,
+        database_password=database_password,
+        database_name="master",
+        autocommit=True,
+    )
 
-    return transformed_files
+    restore_database_sql = f"""
+    RESTORE DATABASE {database_name} FROM DISK = '/var/opt/mssql/backup/{backup_filename}'
+    WITH
+        MOVE 'vitacare_historic' TO '/var/opt/mssql/data/{database_name}.mdf',
+        MOVE 'vitacare_historic_log' TO '/var/opt/mssql/data/{database_name}_log.LDF'
+    """
+
+    log(f"Creating database {database_name} ...")
+    conn.autocommit = True
+    cursor = conn.cursor()
+    cursor.execute(restore_database_sql)
+    while cursor.nextset():
+        pass
+    cursor.close()
+    conn.close()
+
+
+@task
+def delete_temp_database(
+    database_host: str,
+    database_port: int,
+    database_user: str,
+    database_password: str,
+    database_name: str,
+):
+    conn = create_db_connection(
+        database_host=database_host,
+        database_port=database_port,
+        database_user=database_user,
+        database_password=database_password,
+        database_name="master",
+        autocommit=True,
+    )
+    delete_database_sql = f"DROP DATABASE {database_name}"
+
+    log(f"Deleting database {database_name} ...")
+    conn.autocommit = True
+    cursor = conn.cursor()
+    cursor.execute(delete_database_sql)
+    while cursor.nextset():
+        pass
+    cursor.close()
+    conn.close()
+
+
+@task
+def get_queries(database_name: str):
+    return [
+        f"SELECT * FROM {database_name}.dbo.ATENDIMENTOS",
+        f"SELECT * FROM {database_name}.dbo.UNIDADE",
+        f"SELECT * FROM {database_name}.dbo.EQUIPES",
+        f"SELECT * FROM {database_name}.dbo.PACIENTES",
+        f"SELECT * FROM {database_name}.dbo.PROFISSIONAIS",
+        f"SELECT B.* FROM {database_name}.dbo.ATENDIMENTOS A JOIN {database_name}.dbo.ALERGIAS B ON A.ACTO_ID = B.ACTO_ID",
+        f"SELECT B.* FROM {database_name}.dbo.ATENDIMENTOS A JOIN {database_name}.dbo.CONDICOES B ON A.ACTO_ID = B.ACTO_ID",
+        f"SELECT B.* FROM {database_name}.dbo.ATENDIMENTOS A JOIN {database_name}.dbo.ENCAMINHAMENTOS B ON A.ACTO_ID = B.ACTO_ID",
+        f"SELECT B.* FROM {database_name}.dbo.ATENDIMENTOS A JOIN {database_name}.dbo.INDICADORES B ON A.ACTO_ID = B.ACTO_ID",
+        f"SELECT B.* FROM {database_name}.dbo.ATENDIMENTOS A JOIN {database_name}.dbo.PRESCRICOES B ON A.ACTO_ID = B.ACTO_ID",
+        f"SELECT B.* FROM {database_name}.dbo.ATENDIMENTOS A JOIN {database_name}.dbo.PROCEDIMENTOS_CLINICOS B ON A.ACTO_ID = B.ACTO_ID",
+        f"SELECT B.* FROM {database_name}.dbo.ATENDIMENTOS A JOIN {database_name}.dbo.SOLICITACAO_EXAMES B ON A.ACTO_ID = B.ACTO_ID",
+        f"SELECT B.* FROM {database_name}.dbo.ATENDIMENTOS A JOIN {database_name}.dbo.VACINAS B ON A.ACTO_ID = B.ACTO_ID",
+    ]
+
+
+@task
+def create_parquet_file(
+    database_host: str,
+    database_port: int,
+    database_user: str,
+    database_password: str,
+    database_name: str,
+    sql: str,
+    base_path: str,
+    filename: str,
+):
+    log(f"Creating database connection to {filename} ...")
+    conn = create_db_connection(
+        database_host=database_host,
+        database_port=database_port,
+        database_user=database_user,
+        database_password=database_password,
+        database_name="master",
+    )
+    tz = pytz.timezone("Brazil/East")
+
+    log(f"Making SQL query of {filename} ...")
+    df = pd.read_sql(sql, conn)
+
+    log(f"Fixing parquet type of {filename} ...", level="debug")
+    for col in df.columns:
+        df[col] = df[col].astype(str)
+
+    log(f"Adding date metadata to {filename} ...", level="debug")
+    df["id_cnes"] = database_name.removeprefix("vitacare_")
+    df["imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+
+    log(f"Conforming header to datalake of {filename} ...")
+    df.columns = remove_columns_accents(df)
+
+    path = f"{base_path}/vitacare_historico_{filename}.parquet"
+
+    df.to_parquet(path, index=False)
+
+    conn.close()
+
+    return path
 
 
 @task
 def upload_many_to_datalake(
-    input_path: str,
+    input_path: list[str],
     dataset_id: str,
     source_format="parquet",
     if_exists="replace",
@@ -100,7 +260,7 @@ def upload_many_to_datalake(
     """
 
     for table in input_path:
-        table_name = f'{table.stem.split("_")[-1]}_historico'
+        table_name = f'{table.split("_")[-1].removesuffix(".parquet")}_historico'
         upload_to_datalake.run(
             input_path=table,
             dataset_id=dataset_id,
