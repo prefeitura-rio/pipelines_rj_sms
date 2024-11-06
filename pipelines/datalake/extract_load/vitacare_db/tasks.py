@@ -4,18 +4,16 @@
 """
 Tasks for Vitacare db pipeline
 """
-from datetime import datetime
 import os
-from pathlib import Path
 import shutil
-from typing import List
 import zipfile
+from datetime import datetime
+from pathlib import Path
+from typing import List
 
-
-from google.cloud import storage
 import pandas as pd
 import pytz
-
+from google.cloud import storage
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -25,7 +23,11 @@ from pipelines.datalake.extract_load.vitacare_db.constants import (
 from pipelines.datalake.extract_load.vitacare_db.utils import create_db_connection
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
-from pipelines.utils.tasks import get_secret_key, upload_to_datalake, load_file_from_bigquery
+from pipelines.utils.tasks import (
+    get_secret_key,
+    load_file_from_bigquery,
+    upload_to_datalake,
+)
 
 
 @task
@@ -416,7 +418,10 @@ def check_missing_or_extra_files(files: List[str]):
     estabelecimentos_extra = estabelecimentos_encontrados - estabelecimentos_esperados
 
     if estabelecimentos_extra:
-        log(f"Existe(m) {len(estabelecimentos_extra)} backup(s) extra(s) que não estão na lista de unidades da Vitacare com dados", level="warning")
+        log(
+            f"Existe(m) {len(estabelecimentos_extra)} backup(s) extra(s) que não estão na lista de unidades da Vitacare com dados",
+            level="warning",
+        )
         for estabelecimento in estabelecimentos_extra:
             try:
                 # Filter dataframe for current estabelecimento
@@ -425,7 +430,7 @@ def check_missing_or_extra_files(files: List[str]):
                 ]
 
                 # Get estabelecimento details
-            
+
                 nome = estabelecimento_info["nome_limpo"].values[0]
                 area_programatica = estabelecimento_info["area_programatica"].values[0]
 
@@ -434,10 +439,16 @@ def check_missing_or_extra_files(files: List[str]):
                     level="warning",
                 )
             except Exception:
-                log(f"EXTRA: {estabelecimento} - Erro ao obter informações do estabelecimento", level="warning")
+                log(
+                    f"EXTRA: {estabelecimento} - Erro ao obter informações do estabelecimento",
+                    level="warning",
+                )
 
     if estabelecimentos_esperados:
-        log(f"Existe(m) {len(estabelecimentos_esperados)} backup(s) faltante(s) que estão na lista de unidades da Vitacare com dados", level="warning")
+        log(
+            f"Existe(m) {len(estabelecimentos_esperados)} backup(s) faltante(s) que estão na lista de unidades da Vitacare com dados",
+            level="warning",
+        )
         for estabelecimento in estabelecimentos_esperados:
             estabelecimento_info = df_estabelecimentos_sms[
                 df_estabelecimentos_sms["id_cnes"] == estabelecimento
@@ -445,10 +456,8 @@ def check_missing_or_extra_files(files: List[str]):
 
             nome = estabelecimento_info["nome_limpo"].values[0]
 
-            log(
-                f"MISSING: {estabelecimento} - {nome} - AP {area_programatica}"
-                , level="warning"
-            )
+            log(f"MISSING: {estabelecimento} - {nome} - AP {area_programatica}", level="warning")
+
 
 @task
 def upload_backups_to_cloud_storage(files: List[str], staging_folder: str):

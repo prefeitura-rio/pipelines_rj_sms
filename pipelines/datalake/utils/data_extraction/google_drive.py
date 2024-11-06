@@ -144,7 +144,10 @@ def download_files(files, folder_path):
         file_path = f"{folder_path}/{file['title']}"
 
         if os.path.exists(file_path):
-            log(f"File {file['title']} already exists in {folder_path}, skipping download", level="info")
+            log(
+                f"File {file['title']} already exists in {folder_path}, skipping download",
+                level="info",
+            )
             downloaded_files.append(file_path)
             continue
 

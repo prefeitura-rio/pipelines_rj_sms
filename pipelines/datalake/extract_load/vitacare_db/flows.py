@@ -10,7 +10,9 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.vitacare_db.constants import constants as vitacare_db_constants
+from pipelines.datalake.extract_load.vitacare_db.constants import (
+    constants as vitacare_db_constants,
+)
 from pipelines.datalake.extract_load.vitacare_db.tasks import (
     check_duplicated_files,
     check_filename_format,
@@ -25,15 +27,14 @@ from pipelines.datalake.extract_load.vitacare_db.tasks import (
     get_database_name,
     get_file_names,
     get_queries,
-    upload_many_to_datalake,
-    upload_backups_to_cloud_storage,
     unzip_file,
+    upload_backups_to_cloud_storage,
+    upload_many_to_datalake,
 )
 from pipelines.datalake.utils.data_extraction.google_drive import dowload_from_gdrive
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.prontuarios.utils.tasks import get_healthcenter_name_from_cnes
 from pipelines.utils.tasks import create_folders
-
 
 with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_dump_vitacare_db:
     #####################################
@@ -161,7 +162,7 @@ with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vi
     #####################################
     # Set environment
     ####################################
-    
+
     # local_folders = create_folders()
 
     local_folders = {
@@ -196,9 +197,7 @@ with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vi
 
         valid_files = check_filename_format(files=unziped_files, upstream_tasks=[unziped_files])
 
-        deduplicated_files = check_duplicated_files(
-            files=valid_files, upstream_tasks=[valid_files]
-        )
+        deduplicated_files = check_duplicated_files(files=valid_files, upstream_tasks=[valid_files])
 
         missing_or_extra_files = check_missing_or_extra_files(
             files=deduplicated_files,
