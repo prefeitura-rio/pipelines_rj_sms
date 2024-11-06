@@ -209,4 +209,10 @@ cases:
       destination_dataset_name: 'brutos_conectividade'
       start_datetime: '2024-09-01'
       end_datetime: '2024-11-06'
-
+  - case_slug: "datalake-migrate-vitacare_db"
+    flow_path: "pipelines.datalake.extract_load.vitacare_db.flows"
+    flow_name: "sms_migrate_vitacare_db"
+    params:
+      environment: "dev"
+      last_update_start_date: "2024-10-20"
+      last_update_end_date: "2024-11-06"

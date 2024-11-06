@@ -10,10 +10,15 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.vitacare_db.constants import constants as vitacare_db_constants
 from pipelines.datalake.extract_load.vitacare_db.tasks import (
+    check_duplicated_files,
+    check_filename_format,
+    check_missing_or_extra_files,
     create_parquet_file,
     create_temp_database,
     delete_temp_database,
+    generate_filters,
     get_backup_filename,
     get_bucket_name,
     get_connection_string,
@@ -21,10 +26,14 @@ from pipelines.datalake.extract_load.vitacare_db.tasks import (
     get_file_names,
     get_queries,
     upload_many_to_datalake,
+    upload_backups_to_cloud_storage,
+    unzip_file,
 )
+from pipelines.datalake.utils.data_extraction.google_drive import dowload_from_gdrive
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.prontuarios.utils.tasks import get_healthcenter_name_from_cnes
 from pipelines.utils.tasks import create_folders
+
 
 with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_dump_vitacare_db:
     #####################################
@@ -135,3 +144,73 @@ sms_dump_vitacare_db.run_config = KubernetesRun(
     memory_limit="4Gi",
     memory_request="4Gi",
 )
+
+
+with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vitacare_db:
+    #####################################
+    # Parameters
+    #####################################
+
+    # Flow
+    ENVIRONMENT = Parameter("environment", default="dev")
+
+    # GOOGLE DRIVE
+    LAST_UPDATE_START_DATE = Parameter("last_update_start_date", default=None)
+    LAST_UPDATE_END_DATE = Parameter("last_update_end_date", default=None)
+
+    #####################################
+    # Set environment
+    ####################################
+    
+    # local_folders = create_folders()
+
+    local_folders = {
+        "raw": "./data/raw",
+        "partition_directory": "./data/partition_directory",
+    }
+
+    bucket_name = get_bucket_name(env=ENVIRONMENT)
+
+    filters = generate_filters(
+        last_update_start_date=LAST_UPDATE_START_DATE, last_update_end_date=LAST_UPDATE_END_DATE
+    )
+
+    ####################################
+    # Tasks section #1 - Extract data
+    ####################################
+
+    raw_files = dowload_from_gdrive(
+        folder_id=vitacare_db_constants.GDRIVE_FOLDER_ID.value,
+        destination_folder=local_folders["raw"],
+        file_extension="zip",
+        look_in_subfolders=True,
+        filter_type="last_updated",
+        filter_param=filters,
+    )
+
+    with case(raw_files["has_data"], True):
+        unziped_files = unzip_file(
+            folder_path=local_folders["raw"],
+            upstream_tasks=[raw_files],
+        )
+
+        valid_files = check_filename_format(files=unziped_files, upstream_tasks=[unziped_files])
+
+        deduplicated_files = check_duplicated_files(
+            files=valid_files, upstream_tasks=[valid_files]
+        )
+
+        missing_or_extra_files = check_missing_or_extra_files(
+            files=deduplicated_files,
+            upstream_tasks=[deduplicated_files],
+        )
+
+    #####################################
+    # Tasks section #2 - Load data
+    #####################################
+
+    uploaded_files = upload_backups_to_cloud_storage(
+        files=deduplicated_files,
+        staging_folder=local_folders["partition_directory"],
+        upstream_tasks=[missing_or_extra_files],
+    )
