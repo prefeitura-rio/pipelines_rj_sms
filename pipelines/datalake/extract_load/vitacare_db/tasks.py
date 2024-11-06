@@ -361,6 +361,9 @@ def check_duplicated_files(files: List[str]):
     Check if the files are duplicated in the given folder path.
     """
 
+    # sort files by date to get the latest file
+    files.sort(reverse=True)
+
     cnes_list = []
     unique_files = []
     duplicated_files = []
