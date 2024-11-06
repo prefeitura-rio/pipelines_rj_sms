@@ -361,6 +361,7 @@ def check_duplicated_files(files: List[str]):
     Check if the files are duplicated in the given folder path.
     """
 
+    cnes_list = []
     unique_files = []
     duplicated_files = []
 
@@ -369,8 +370,9 @@ def check_duplicated_files(files: List[str]):
         file_path = Path(file)
         cnes = file_path.name.split("_")[2]
 
-        if cnes not in unique_files:
+        if cnes not in cnes_list:
             unique_files.append(file)
+            cnes_list.append(cnes)
         else:
             duplicated_files.append(file)
 
@@ -409,13 +411,12 @@ def check_missing_or_extra_files(files: List[str]):
 
     estabelecimentos_esperados = set(df_estabelecimentos_vitacare["id_cnes"].unique())
 
+    estabelecimentos_baixados = set(Path(file).name.split("_")[2] for file in files)
+
     # check if files are missing or extra
+    estabelecimentos_faltando = estabelecimentos_esperados - estabelecimentos_baixados
 
-    estabelecimentos_encontrados = set(Path(file).name.split("_")[2] for file in files)
-
-    estabelecimentos_esperados = estabelecimentos_esperados - estabelecimentos_encontrados
-
-    estabelecimentos_extra = estabelecimentos_encontrados - estabelecimentos_esperados
+    estabelecimentos_extra = estabelecimentos_baixados - estabelecimentos_esperados
 
     if estabelecimentos_extra:
         log(
@@ -444,17 +445,18 @@ def check_missing_or_extra_files(files: List[str]):
                     level="warning",
                 )
 
-    if estabelecimentos_esperados:
+    if estabelecimentos_faltando:
         log(
-            f"Existe(m) {len(estabelecimentos_esperados)} backup(s) faltante(s) que estão na lista de unidades da Vitacare com dados",
+            f"Existe(m) {len(estabelecimentos_faltando)} backup(s) faltante(s) que estão na lista de unidades da Vitacare com dados",
             level="warning",
         )
-        for estabelecimento in estabelecimentos_esperados:
+        for estabelecimento in estabelecimentos_faltando:
             estabelecimento_info = df_estabelecimentos_sms[
                 df_estabelecimentos_sms["id_cnes"] == estabelecimento
             ]
 
             nome = estabelecimento_info["nome_limpo"].values[0]
+            area_programatica = estabelecimento_info["area_programatica"].values[0]
 
             log(f"MISSING: {estabelecimento} - {nome} - AP {area_programatica}", level="warning")
 
@@ -465,10 +467,14 @@ def upload_backups_to_cloud_storage(files: List[str], staging_folder: str):
     Upload backups to cloud storage.
     """
     # Move files to staging folder
+    log(f"Moving {len(files)} files to staging folder", level="info")
     for file in files:
         filename = Path(file).name
         staging_path = Path(staging_folder) / filename
         shutil.copy(file, staging_path)
-        log(f"Copied {filename} to staging folder", level="info")
+
+        log(f"Copied {filename} to staging folder", level="debug")
+
+    log("Files copied successfully", level="info")
 
     return [str(Path(staging_folder) / Path(file).name) for file in files]
