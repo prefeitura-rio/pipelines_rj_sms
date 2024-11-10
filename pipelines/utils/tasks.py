@@ -765,7 +765,7 @@ def upload_to_datalake(
     Uploads data to a Google Cloud Storage bucket and creates or appends to a BigQuery table.
 
     Args:
-        input_path (str): The path to the input data file.
+        input_path (str): The path to the input data file. It can be a folder or a file.
         dataset_id (str): The ID of the BigQuery dataset.
         table_id (str): The ID of the BigQuery table.
         dump_mode (str, optional): The dump mode for the table. Defaults to "append". Accepted values are "append" and "overwrite".
