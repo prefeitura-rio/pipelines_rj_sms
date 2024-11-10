@@ -215,4 +215,4 @@ cases:
     params:
       environment: "dev"
       last_update_start_date: "2024-10-20"
-      last_update_end_date: "2024-11-06"
+      last_update_end_date: "2024-11-30"
