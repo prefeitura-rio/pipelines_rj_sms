@@ -12,7 +12,7 @@ def authenticated_task(fn: Callable = None, **task_init_kwargs: Any) -> Union[
     Callable[[Callable], prefect.tasks.core.function.FunctionTask],
 ]:
     """
-    A function that can be used to create a Prefect task. 
+    A function that can be used to create a Prefect task.
     It injects the GCP credentials before executing the function.
 
     Mode 1: Standard Mode
