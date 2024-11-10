@@ -225,13 +225,6 @@ def rename_current_flow_run_dbt(
 def get_target_from_environment(environment: str):
     """
     Retrieves the target environment based on the given environment parameter.
-
-    Args:
-        environment (str): The environment for which to retrieve the target.
-
-    Returns:
-        str: The target environment corresponding to the given environment.
-
     """
     converter = {
         "prod": "prod",

@@ -13,6 +13,7 @@ def authenticated_task(fn: Callable = None, **task_init_kwargs: Any) -> Union[
 ]:
     """
     A function that can be used to create a Prefect task.
+    It injects the GCP credentials before executing the function.
 
     Mode 1: Standard Mode
     - If `fn` is not None, it creates a FunctionTask from `fn` and `task_init_kwargs`.
