@@ -76,7 +76,7 @@ def get_bucket_name(env: str):
     Get the bucket name based on the environment.
     """
 
-    if env in ["dev", "prod"]:
+    if env in ["dev", "local-prod", "prod"]:
         bucket_name = vitacare_constants.GCS_BUCKET.value[env]
     else:
         error_message = "Invalid environment"
