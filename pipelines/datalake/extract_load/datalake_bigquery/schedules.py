@@ -65,7 +65,10 @@ flow_parameters = [
         "slug": "ergon",
         "source_project_name": "rj-smfp",
         "source_dataset_name": "recursos_humanos_ergon_saude",
-        "source_table_list": ["funcionarios_ativos"],
+        "source_table_list": [
+            "funcionarios_ativos",
+            "funcionarios",
+        ],
         "destination_dataset_name": "brutos_ergon_staging",
         "environment": "prod",
         "dbt_select_exp": "tag:ergon",
