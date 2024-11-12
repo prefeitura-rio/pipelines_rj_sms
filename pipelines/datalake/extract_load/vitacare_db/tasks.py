@@ -478,7 +478,9 @@ def check_missing_or_extra_files(files: List[str], return_only_expected: bool = 
 
     if return_only_expected:
         # drop extra files from files
-        files = [file for file in files if Path(file).name.split("_")[2] in estabelecimentos_para_subir]
+        files = [
+            file for file in files if Path(file).name.split("_")[2] in estabelecimentos_para_subir
+        ]
 
     log(
         f"{len(files)} estabelecimentos para subir. Descartando {len(estabelecimentos_extra)} estabelecimentos extras",
