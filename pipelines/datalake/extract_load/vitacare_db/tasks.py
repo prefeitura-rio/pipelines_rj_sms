@@ -258,7 +258,7 @@ def create_parquet_file(
     df = pd.read_sql(sql, conn, dtype=str)
 
     log(f"Adding date metadata to {filename} ...", level="debug")
-    
+
     df["id_cnes"] = database_name.removeprefix("vitacare_")
 
     df["backup_created_at"] = backup_date
