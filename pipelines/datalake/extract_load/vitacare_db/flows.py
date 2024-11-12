@@ -22,6 +22,7 @@ from pipelines.datalake.extract_load.vitacare_db.tasks import (
     delete_temp_database,
     generate_filters,
     get_backup_filename,
+    get_backup_date,
     get_bucket_name,
     get_connection_string,
     get_database_name,
@@ -47,6 +48,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
 
     # VITACARE DB
     CNES = Parameter("cnes", default=None, required=True)
+    BACKUP_SUBFOLDER = Parameter("backup_subfolder", default=None, required=True)
 
     # GCP
     DATASET_ID = Parameter("dataset_id", required=True)
@@ -70,7 +72,11 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
 
     connection_string = get_connection_string(environment=ENVIRONMENT)
 
-    backup_filename = get_backup_filename(bucket_name=bucket_name, cnes=CNES)
+    backup_filename = get_backup_filename(
+        bucket_name=bucket_name, backup_subfolder=BACKUP_SUBFOLDER, cnes=CNES
+    )
+
+    backup_date = get_backup_date(file_name=backup_filename)
 
     database_name = get_database_name(cnes=CNES)
 
@@ -104,6 +110,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
         sql=queries,
         base_path=unmapped(local_folders["raw"]),
         filename=filenames,
+        backup_date=unmapped(backup_date),
         upstream_tasks=[unmapped(temp_db), unmapped(queries)],
     )
 

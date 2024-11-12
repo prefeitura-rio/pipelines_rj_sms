@@ -87,13 +87,19 @@ def get_bucket_name(env: str):
 
 
 @task
-def get_backup_filename(bucket_name: str, cnes: str):
+def get_backup_filename(bucket_name: str, backup_subfolder: str, cnes: str):
+    """
+    Get the backup filename from the bucket.
+    """
+
     client = storage.Client()
     bucket = client.bucket(bucket_name)
-    blobs = bucket.list_blobs(prefix="backups", match_glob=f"*/vitacare_historic_{cnes}**.bak")
+    blobs = bucket.list_blobs(
+        prefix=f"backups/{backup_subfolder}", match_glob=f"*/vitacare_historic_{cnes}**.bak"
+    )
 
     try:
-        bucket_filename = list(blobs)[0].name.removeprefix("backups/")
+        bucket_filename = list(blobs)[0].name.removeprefix(f"backups/{backup_subfolder}/")
 
     except IndexError as error:
         error_message = f"No backup file found for cnes {cnes}"
@@ -103,6 +109,21 @@ def get_backup_filename(bucket_name: str, cnes: str):
     log(f"Backup filename retrieved successfully: {bucket_filename}", level="info")
 
     return bucket_filename
+
+
+@task
+def get_backup_date(file_name: str):
+    """
+    Get the backup date from the file name.
+    """
+
+    date_str = file_name.split("_")[-2]
+    date_obj = datetime.strptime(date_str, "%Y%m%d")
+    date = date_obj.strftime("%Y-%m-%d")
+
+    log(f"Backup date retrieved successfully: {date}", level="info")
+
+    return date
 
 
 @task
@@ -221,6 +242,7 @@ def create_parquet_file(
     sql: str,
     base_path: str,
     filename: str,
+    backup_date: str,
 ):
     log(f"Creating database connection to {filename} ...")
     conn = create_db_connection(
@@ -235,13 +257,13 @@ def create_parquet_file(
     log(f"Making SQL query of {filename} ...")
     df = pd.read_sql(sql, conn, dtype=str)
 
-    log(f"Fixing parquet type of {filename} ...", level="debug")
-    for col in df.columns:
-        df[col] = df[col].astype(str)
-
     log(f"Adding date metadata to {filename} ...", level="debug")
+    
     df["id_cnes"] = database_name.removeprefix("vitacare_")
-    df["imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+
+    df["backup_created_at"] = backup_date
+
+    df["datalake_imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
     log(f"Conforming header to datalake of {filename} ...")
     df.columns = remove_columns_accents(df)
