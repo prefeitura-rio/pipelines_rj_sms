@@ -199,8 +199,9 @@ with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vi
 
         deduplicated_files = check_duplicated_files(files=valid_files, upstream_tasks=[valid_files])
 
-        missing_or_extra_files = check_missing_or_extra_files(
+        files_to_upload = check_missing_or_extra_files(
             files=deduplicated_files,
+            return_only_expected=True,
             upstream_tasks=[deduplicated_files],
         )
 
@@ -209,7 +210,8 @@ with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vi
     #####################################
 
     uploaded_files = upload_backups_to_cloud_storage(
-        files=deduplicated_files,
+        files=files_to_upload,
         staging_folder=local_folders["partition_directory"],
-        upstream_tasks=[missing_or_extra_files],
+        bucket_name=bucket_name,
+        upstream_tasks=[files_to_upload],
     )

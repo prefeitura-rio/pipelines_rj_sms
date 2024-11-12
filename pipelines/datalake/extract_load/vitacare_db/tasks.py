@@ -23,6 +23,7 @@ from pipelines.datalake.extract_load.vitacare_db.constants import (
 from pipelines.datalake.extract_load.vitacare_db.utils import create_db_connection
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
+from pipelines.utils.googleutils import upload_to_cloud_storage
 from pipelines.utils.tasks import (
     get_secret_key,
     load_file_from_bigquery,
@@ -350,7 +351,7 @@ def check_filename_format(files: List[str]):
             file_path = Path(file).name
             log(f"INVALIDO: {file_path}", level="warning")
     else:
-        log("Todos os arquivos têm o formato correto", level="info")
+        log("SUCESSO: Todos os arquivos têm o formato correto", level="info")
 
     return valid_files
 
@@ -385,19 +386,18 @@ def check_duplicated_files(files: List[str]):
             file_path = Path(file).name
             log(f"DUPLICADO: {file_path}", level="warning")
     else:
-        log("Nenhum arquivo duplicado encontrado", level="info")
+        log("SUCESSO: Nenhum arquivo duplicado encontrado", level="info")
 
     return unique_files
 
 
 @task
-def check_missing_or_extra_files(files: List[str]):
+def check_missing_or_extra_files(files: List[str], return_only_expected: bool = True):
     """
     Check if the files exist in the given folder path.
     """
 
     # retrieve estabelecimentos from bigquery
-
     dataset_name = "saude_dados_mestres"
     table_name = "estabelecimento"
 
@@ -421,6 +421,7 @@ def check_missing_or_extra_files(files: List[str]):
 
     estabelecimentos_extra = estabelecimentos_baixados - estabelecimentos_esperados
 
+    # log extra files
     if estabelecimentos_extra:
         log(
             f"Existe(m) {len(estabelecimentos_extra)} backup(s) extra(s) que não estão na lista de unidades da Vitacare com dados",
@@ -447,7 +448,10 @@ def check_missing_or_extra_files(files: List[str]):
                     f"EXTRA: {estabelecimento} - Erro ao obter informações do estabelecimento",
                     level="warning",
                 )
+    else:
+        log("SUCESSO: Nenhum estabelecimento extra encontrado", level="info")
 
+    # log missing files
     if estabelecimentos_faltando:
         log(
             f"Existe(m) {len(estabelecimentos_faltando)} backup(s) faltante(s) que estão na lista de unidades da Vitacare com dados",
@@ -462,10 +466,30 @@ def check_missing_or_extra_files(files: List[str]):
             area_programatica = estabelecimento_info["area_programatica"].values[0]
 
             log(f"MISSING: {estabelecimento} - {nome} - AP {area_programatica}", level="warning")
+    else:
+        log("SUCESSO: Nenhum estabelecimento faltante encontrado", level="info")
+
+    # get estabelecimentos to upload
+    estabelecimentos_para_subir = (
+        estabelecimentos_baixados - estabelecimentos_extra
+        if return_only_expected
+        else estabelecimentos_baixados
+    )
+
+    if return_only_expected:
+        # drop extra files from files
+        files = [file for file in files if Path(file).name.split("_")[2] in estabelecimentos_para_subir]
+
+    log(
+        f"{len(files)} estabelecimentos para subir. Descartando {len(estabelecimentos_extra)} estabelecimentos extras",
+        level="info",
+    )
+
+    return files
 
 
 @task
-def upload_backups_to_cloud_storage(files: List[str], staging_folder: str):
+def upload_backups_to_cloud_storage(files: List[str], staging_folder: str, bucket_name: str):
     """
     Upload backups to cloud storage.
     """
@@ -479,5 +503,16 @@ def upload_backups_to_cloud_storage(files: List[str], staging_folder: str):
         log(f"Copied {filename} to staging folder", level="debug")
 
     log("Files copied successfully", level="info")
+
+    # upload files to cloud storage
+    log("Uploading files to cloud storage", level="info")
+
+    blob_prefix = f"backups/{datetime.now().strftime('%Y-%m-%d')}"
+
+    for file in files:
+        upload_to_cloud_storage(file, bucket_name, blob_prefix)
+        log(f"Uploaded {file}", level="debug")
+
+    log("Files uploaded successfully", level="info")
 
     return [str(Path(staging_folder) / Path(file).name) for file in files]
