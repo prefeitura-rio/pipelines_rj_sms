@@ -36,6 +36,7 @@ from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.prontuarios.utils.tasks import get_healthcenter_name_from_cnes
 from pipelines.utils.tasks import create_folders
 
+
 with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_dump_vitacare_db:
     #####################################
     # Parameters
@@ -50,6 +51,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
 
     # GCP
     DATASET_ID = Parameter("dataset_id", required=True)
+    UPLOAD_ONLY_EXPECTED_FILES = Parameter("upload_only_expected_files", default=True)
 
     #####################################
     # Set environment
@@ -201,7 +203,7 @@ with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vi
 
         files_to_upload = check_missing_or_extra_files(
             files=deduplicated_files,
-            return_only_expected=True,
+            return_only_expected=UPLOAD_ONLY_EXPECTED_FILES,
             upstream_tasks=[deduplicated_files],
         )
 
