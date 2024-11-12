@@ -56,10 +56,7 @@ with Flow(
         upstream_tasks=[rename_current_flow_run],
     )
 
-    received_dbt_select = is_null_or_empty(
-        value=DBT_SELECT_EXP,
-        upstream_tasks=[clone_table_task]
-    )
+    received_dbt_select = is_null_or_empty(value=DBT_SELECT_EXP, upstream_tasks=[clone_table_task])
 
     with case(received_dbt_select, False):
         current_flow_run_labels = get_current_flow_labels()
