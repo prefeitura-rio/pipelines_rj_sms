@@ -95,7 +95,7 @@ def get_backup_filename(bucket_name: str, backup_subfolder: str, cnes: str):
     client = storage.Client()
     bucket = client.bucket(bucket_name)
     blobs = bucket.list_blobs(
-        prefix=f"backups/{backup_subfolder}", match_glob=f"*/vitacare_historic_{cnes}**.bak"
+        prefix=f"backups/{backup_subfolder}", match_glob=f"**/vitacare_historic_{cnes}**.bak"
     )
 
     try:
@@ -118,13 +118,12 @@ def get_backup_date(file_name: str):
     """
 
     date_str = file_name.split("_")[-2]
-    time_str = file_name.split("_")[-1]
+    time_str = file_name.split("_")[-1].removesuffix(".bak")
     date_obj = datetime.strptime(f"{date_str} {time_str}", "%Y%m%d %H%M%S")
-    date = date_obj.strftime("%Y-%m-%d")
 
     log(f"Backup date retrieved successfully: {date_obj}", level="info")
 
-    return date
+    return date_obj
 
 
 @task
@@ -535,8 +534,11 @@ def upload_backups_to_cloud_storage(files: List[str], staging_folder: str, bucke
     blob_prefix = f"backups/{datetime.now().strftime('%Y-%m-%d')}"
 
     for file in files:
-        upload_to_cloud_storage(file, bucket_name, blob_prefix)
-        log(f"Uploaded {file}", level="debug")
+        log(
+            f"Uploading {file} to cloud storage to {bucket_name}/{blob_prefix}",
+            level="debug",
+        )
+        upload_to_cloud_storage(file, bucket_name, blob_prefix, if_exist="skip")
 
     log("Files uploaded successfully", level="info")
 

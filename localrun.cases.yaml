@@ -138,9 +138,9 @@ cases:
     flow_name: "sms_dump_vitacare_db"
     params:
       environment: "dev"
-      cnes: "2269629"
+      cnes: "2269929"
       backup_subfolder: "2024-11-12"
-      dataset_id: "brutos_prontuario_vitacare"
+      dataset_id: "brutos_prontuario_vitacare_db"
   - case_slug: "report-farmacia-controlados"
     flow_path: "pipelines.reports.farmacia_digital.livro_controlados.flows"
     flow_name: "report_farmacia_digital_livro_controlados"
