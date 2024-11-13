@@ -115,10 +115,10 @@ def upload_to_cloud_storage(
         if blob_prefix:
             blob_name = f"{blob_prefix}/{blob_name}"
         blob = bucket.blob(blob_name)
-        
+
         if if_exist == "skip" and blob.exists():
             return
-            
+
         blob.upload_from_filename(path)
     elif os.path.isdir(path):
         # Upload a folder
@@ -129,10 +129,10 @@ def upload_to_cloud_storage(
                 if blob_prefix:
                     blob_name = f"{blob_prefix}/{blob_name}"
                 blob = bucket.blob(blob_name)
-                
+
                 if if_exist == "skip" and blob.exists():
                     continue
-                    
+
                 blob.upload_from_filename(file_path)
     else:
         raise ValueError("Invalid path provided.")
