@@ -98,8 +98,14 @@ def get_backup_file(download_path: str, bucket_name: str, backup_subfolder: str,
         prefix=f"backups/{backup_subfolder}", match_glob=f"**vitacare_historic_{cnes}*.bak"
     )
 
+    folder_path = "/var/opt/mssql/backup"
+
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path, exist_ok=True)
+
     for blob in blobs:
-        destination_file_name = os.path.join("/var/opt/mssql/backup", blob.name.split("/")[-1])
+
+        destination_file_name = os.path.join(folder_path, blob.name.split("/")[-1])
 
         try:
             blob.download_to_filename(destination_file_name)
