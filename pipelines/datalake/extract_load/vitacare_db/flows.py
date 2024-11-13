@@ -223,3 +223,15 @@ with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vi
         bucket_name=bucket_name,
         upstream_tasks=[files_to_upload],
     )
+
+
+sms_migrate_vitacare_db.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_migrate_vitacare_db.executor = LocalDaskExecutor(num_workers=10)
+sms_migrate_vitacare_db.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="4Gi",
+    memory_request="4Gi",
+)

@@ -118,10 +118,11 @@ def get_backup_date(file_name: str):
     """
 
     date_str = file_name.split("_")[-2]
-    date_obj = datetime.strptime(date_str, "%Y%m%d")
+    time_str = file_name.split("_")[-1]
+    date_obj = datetime.strptime(f"{date_str} {time_str}", "%Y%m%d %H%M%S")
     date = date_obj.strftime("%Y-%m-%d")
 
-    log(f"Backup date retrieved successfully: {date}", level="info")
+    log(f"Backup date retrieved successfully: {date_obj}", level="info")
 
     return date
 
