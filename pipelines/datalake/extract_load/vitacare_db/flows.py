@@ -22,7 +22,7 @@ from pipelines.datalake.extract_load.vitacare_db.tasks import (
     delete_temp_database,
     generate_filters,
     get_backup_date,
-    get_backup_filename,
+    get_backup_file,
     get_bucket_name,
     get_connection_string,
     get_database_name,
@@ -59,8 +59,6 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
     ####################################
     local_folders = create_folders()
 
-    bucket_name = get_bucket_name(env=ENVIRONMENT)
-
     with case(RENAME_FLOW, True):
         healthcenter_name = get_healthcenter_name_from_cnes(cnes=CNES)
 
@@ -68,23 +66,31 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
             environment=ENVIRONMENT,
             unidade=healthcenter_name,
             cnes=CNES,
+            backup_subfolder=BACKUP_SUBFOLDER,
         )
 
-    connection_string = get_connection_string(environment=ENVIRONMENT)
+    ######################################
+    # Tasks section #1 - Get Backup file
+    ######################################
 
-    backup_filename = get_backup_filename(
-        bucket_name=bucket_name, backup_subfolder=BACKUP_SUBFOLDER, cnes=CNES
+    bucket_name = get_bucket_name(env=ENVIRONMENT)
+
+    backup_file = get_backup_file(
+        download_path=local_folders["raw"],
+        bucket_name=bucket_name,
+        backup_subfolder=BACKUP_SUBFOLDER,
+        cnes=CNES,
     )
 
-    backup_date = get_backup_date(file_name=backup_filename)
-
-    database_name = get_database_name(cnes=CNES)
-
-    filenames = get_file_names()
+    backup_date = get_backup_date(file_name=backup_file)
 
     ######################################
     # Tasks section #1 - Create Temp Database
     ######################################
+
+    connection_string = get_connection_string(environment=ENVIRONMENT)
+
+    database_name = get_database_name(cnes=CNES)
 
     temp_db = create_temp_database(
         database_host=connection_string["host"],
@@ -92,11 +98,11 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
         database_user=connection_string["user"],
         database_password=connection_string["password"],
         database_name=database_name,
-        backup_filename=backup_filename,
+        backup_file=backup_file,
         upstream_tasks=[
-            backup_filename,
+            backup_file,
             backup_date,
-            filenames,
+            backup_file,
             database_name,
         ],
     )
@@ -106,6 +112,8 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
     ######################################
 
     queries = get_queries(database_name=database_name, upstream_tasks=[temp_db])
+
+    filenames = get_file_names(upstream_tasks=[temp_db])
 
     parquet_files = create_parquet_file.map(
         database_host=unmapped(connection_string["host"]),

@@ -87,28 +87,36 @@ def get_bucket_name(env: str):
 
 
 @task
-def get_backup_filename(bucket_name: str, backup_subfolder: str, cnes: str):
+def get_backup_file(download_path: str, bucket_name: str, backup_subfolder: str, cnes: str):
     """
     Get the backup filename from the bucket.
     """
 
     client = storage.Client()
-    bucket = client.bucket(bucket_name)
+    bucket = client.get_bucket(bucket_name)
     blobs = bucket.list_blobs(
-        prefix=f"backups/{backup_subfolder}", match_glob=f"**/vitacare_historic_{cnes}**.bak"
+        prefix=f"backups/{backup_subfolder}", match_glob=f"**vitacare_historic_{cnes}*.bak"
     )
 
-    try:
-        bucket_filename = list(blobs)[0].name.removeprefix(f"backups/{backup_subfolder}/")
+    for blob in blobs:
+        destination_file_name = os.path.join(download_path, blob.name.split("/")[-1])
 
-    except IndexError as error:
-        error_message = f"No backup file found for cnes {cnes}"
+        try:
+            blob.download_to_filename(destination_file_name)
+
+        except Exception as error:
+            error_message = f"Error downloading backup file for cnes {cnes}: {error}"
+            log(error_message, level="error")
+            raise FAIL(error_message) from error
+
+    if blobs.num_results != 1:
+        error_message = f"Expected 1 file, got {blobs.num_results}"
         log(error_message, level="error")
-        raise FAIL(error_message) from error
+        raise FAIL(error_message)
 
-    log(f"Backup filename retrieved successfully: {bucket_filename}", level="info")
+    log(f"Backup file retrieved successfully: {destination_file_name}", level="info")
 
-    return bucket_filename
+    return destination_file_name
 
 
 @task
@@ -157,7 +165,7 @@ def create_temp_database(
     database_user: str,
     database_password: str,
     database_name: str,
-    backup_filename: str,
+    backup_file: str,
 ):
     conn = create_db_connection(
         database_host=database_host,
@@ -169,7 +177,7 @@ def create_temp_database(
     )
 
     restore_database_sql = f"""
-    RESTORE DATABASE {database_name} FROM DISK = '/var/opt/mssql/backup/{backup_filename}'
+    RESTORE DATABASE {database_name} FROM DISK = '{backup_file}'
     WITH
         MOVE 'vitacare_historic' TO '/var/opt/mssql/data/{database_name}.mdf',
         MOVE 'vitacare_historic_log' TO '/var/opt/mssql/data/{database_name}_log.LDF'
