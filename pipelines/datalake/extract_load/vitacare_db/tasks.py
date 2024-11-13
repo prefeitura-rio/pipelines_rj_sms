@@ -99,7 +99,9 @@ def get_backup_file(download_path: str, bucket_name: str, backup_subfolder: str,
     )
 
     for blob in blobs:
-        destination_file_name = os.path.join(download_path, blob.name.split("/")[-1])
+        destination_file_name = os.path.join(
+            "/var/opt/mssql/backup", blob.name.split("/")[-1]
+        )
 
         try:
             blob.download_to_filename(destination_file_name)

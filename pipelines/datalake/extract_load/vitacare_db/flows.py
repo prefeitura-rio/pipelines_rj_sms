@@ -37,6 +37,7 @@ from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.prontuarios.utils.tasks import get_healthcenter_name_from_cnes
 from pipelines.utils.tasks import create_folders
 
+
 with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_dump_vitacare_db:
     #####################################
     # Parameters
@@ -85,7 +86,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
     backup_date = get_backup_date(file_name=backup_file)
 
     ######################################
-    # Tasks section #1 - Create Temp Database
+    # Tasks section #2 - Create Temp Database
     ######################################
 
     connection_string = get_connection_string(environment=ENVIRONMENT)
@@ -102,13 +103,12 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
         upstream_tasks=[
             backup_file,
             backup_date,
-            backup_file,
             database_name,
         ],
     )
 
     ######################################
-    # Tasks section #2 - Create Parquet Files
+    # Tasks section #3 - Create Parquet Files
     ######################################
 
     queries = get_queries(database_name=database_name, upstream_tasks=[temp_db])
@@ -129,7 +129,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
     )
 
     ######################################
-    # Tasks section #3 - Upload data to BQ
+    # Tasks section #4 - Upload data to BQ
     ######################################
 
     upload_to_datalake_task = upload_many_to_datalake(
