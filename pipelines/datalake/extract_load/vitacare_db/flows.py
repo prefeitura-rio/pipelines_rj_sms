@@ -5,7 +5,7 @@ VitaCare Prontuario Backup dump flows
 """
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
-from prefect.run_configs import KubernetesRun
+from prefect.run_configs import KubernetesRun, VertexRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
@@ -224,14 +224,17 @@ with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vi
         upstream_tasks=[files_to_upload],
     )
 
-
+# Storage and run configs
 sms_migrate_vitacare_db.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_migrate_vitacare_db.executor = LocalDaskExecutor(num_workers=10)
-sms_migrate_vitacare_db.run_config = KubernetesRun(
-    image=constants.DOCKER_IMAGE.value,
+sms_migrate_vitacare_db.run_config = VertexRun(
+    image=constants.DOCKER_VERTEX_IMAGE.value,
     labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
+        constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
     ],
-    memory_limit="4Gi",
-    memory_request="4Gi",
+    # https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+    machine_type="e2-standard-4",
+    env={
+        "INFISICAL_ADDRESS": constants.INFISICAL_ADDRESS.value,
+        "INFISICAL_TOKEN": constants.INFISICAL_TOKEN.value,
+    },
 )
