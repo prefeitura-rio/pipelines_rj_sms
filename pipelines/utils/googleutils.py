@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103, C0301
+# flake8: noqa: E501
+
 """
 Functions to interact with Google Cloud Storage and BigQuery.
 """
