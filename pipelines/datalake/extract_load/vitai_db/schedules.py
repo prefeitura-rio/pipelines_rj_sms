@@ -145,7 +145,7 @@ flow_parameters = [
         "environment": "prod",
         "table_name": "fat_internacao",
         "schema_name": "dtw",
-        "datetime_column": "data_saide",
+        "datetime_column": "data_saida",
         "target_name": "dtw__fat_internacao_eventos",
         "partition_column": "datalake_loaded_at",
     },
