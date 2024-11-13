@@ -88,7 +88,12 @@ def download_from_cloud_storage(path: str, bucket_name: str, blob_prefix: str = 
     return downloaded_files
 
 
-def upload_to_cloud_storage(path: str, bucket_name: str, blob_prefix: str = None):
+def upload_to_cloud_storage(
+    path: str,
+    bucket_name: str,
+    blob_prefix: str = None,
+    if_exist: str = "replace",
+):
     """
     Uploads a file or a folder to Google Cloud Storage.
 
@@ -96,9 +101,13 @@ def upload_to_cloud_storage(path: str, bucket_name: str, blob_prefix: str = None
         path (str): The path to the file or folder that needs to be uploaded.
         bucket_name (str): The name of the bucket in Google Cloud Storage.
         blob_prefix (str, optional): The prefix of the blob to upload. Defaults to None.
+        if_exist (str, optional): The action to take if the blob already exists. Defaults to "replace".
     """
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
+
+    if if_exist not in ["replace", "skip"]:
+        raise ValueError("Invalid if_exist value. Please use 'replace' or 'skip'.")
 
     if os.path.isfile(path):
         # Upload a single file
@@ -106,6 +115,10 @@ def upload_to_cloud_storage(path: str, bucket_name: str, blob_prefix: str = None
         if blob_prefix:
             blob_name = f"{blob_prefix}/{blob_name}"
         blob = bucket.blob(blob_name)
+        
+        if if_exist == "skip" and blob.exists():
+            return
+            
         blob.upload_from_filename(path)
     elif os.path.isdir(path):
         # Upload a folder
@@ -116,6 +129,10 @@ def upload_to_cloud_storage(path: str, bucket_name: str, blob_prefix: str = None
                 if blob_prefix:
                     blob_name = f"{blob_prefix}/{blob_name}"
                 blob = bucket.blob(blob_name)
+                
+                if if_exist == "skip" and blob.exists():
+                    continue
+                    
                 blob.upload_from_filename(file_path)
     else:
         raise ValueError("Invalid path provided.")
