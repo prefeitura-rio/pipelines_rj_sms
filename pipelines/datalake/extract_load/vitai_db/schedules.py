@@ -164,7 +164,7 @@ flow_parameters = [
         "datetime_column": "created_at",
         "target_name": "basecentral__prescricao_eventos",
         "partition_column": "datalake_loaded_at",
-    } 
+    },
 ]
 
 
