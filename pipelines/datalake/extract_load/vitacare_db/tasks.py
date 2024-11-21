@@ -87,7 +87,7 @@ def get_bucket_name(env: str):
 
 
 @task
-def get_backup_file(download_path: str, bucket_name: str, backup_subfolder: str, cnes: str):
+def get_backup_file(bucket_name: str, backup_subfolder: str, cnes: str):
     """
     Get the backup filename from the bucket.
     """
@@ -108,7 +108,7 @@ def get_backup_file(download_path: str, bucket_name: str, backup_subfolder: str,
     if not os.path.exists(folder_path):
         os.makedirs(folder_path, exist_ok=True)
 
-    destination_file_name = os.path.join(folder_path, blobs[0].name.removeprefix("backups/"))
+    destination_file_name = os.path.join(folder_path, next(blobs).name.removeprefix("backups/"))
 
     log(f"Backup file retrieved successfully: {destination_file_name}", level="info")
 

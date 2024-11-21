@@ -76,7 +76,6 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
     bucket_name = get_bucket_name(env=ENVIRONMENT)
 
     backup_file = get_backup_file(
-        download_path=local_folders["raw"],
         bucket_name=bucket_name,
         backup_subfolder=BACKUP_SUBFOLDER,
         cnes=CNES,
