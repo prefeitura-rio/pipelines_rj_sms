@@ -98,27 +98,17 @@ def get_backup_file(download_path: str, bucket_name: str, backup_subfolder: str,
         prefix=f"backups/{backup_subfolder}", match_glob=f"**vitacare_historic_{cnes}*.bak"
     )
 
+    if blobs.num_results != 1:
+        error_message = f"Expected 1 file, got {blobs.num_results}"
+        log(error_message, level="error")
+        raise FAIL(error_message)
+
     folder_path = "/var/opt/mssql/backup"
 
     if not os.path.exists(folder_path):
         os.makedirs(folder_path, exist_ok=True)
 
-    for blob in blobs:
-
-        destination_file_name = os.path.join(folder_path, blob.name.split("/")[-1])
-
-        try:
-            blob.download_to_filename(destination_file_name)
-
-        except Exception as error:
-            error_message = f"Error downloading backup file for cnes {cnes}: {error}"
-            log(error_message, level="error")
-            raise FAIL(error_message) from error
-
-    if blobs.num_results != 1:
-        error_message = f"Expected 1 file, got {blobs.num_results}"
-        log(error_message, level="error")
-        raise FAIL(error_message)
+    destination_file_name = os.path.join(folder_path, blobs[0].name.removeprefix("backups/"))
 
     log(f"Backup file retrieved successfully: {destination_file_name}", level="info")
 
