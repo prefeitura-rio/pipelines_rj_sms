@@ -219,7 +219,7 @@ datalake_extract_vitai_db_manager.executor = LocalDaskExecutor(num_workers=1)
 datalake_extract_vitai_db_manager.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[
-        global_constants.RJ_SMS_AGENT_LABEL_NEW.value,
+        global_constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="2Gi",
 )
