@@ -94,12 +94,14 @@ def get_backup_file(bucket_name: str, backup_subfolder: str, cnes: str):
 
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
-    blobs = bucket.list_blobs(
+    blobs_iter = bucket.list_blobs(
         prefix=f"backups/{backup_subfolder}", match_glob=f"**vitacare_historic_{cnes}*.bak"
     )
 
-    if blobs.num_results != 1:
-        error_message = f"Expected 1 file, got {blobs.num_results}"
+    blobs = list(blobs_iter)
+
+    if len(blobs) != 1:
+        error_message = f"Expected 1 file, got {len(blobs)}"
         log(error_message, level="error")
         raise FAIL(error_message)
 
@@ -108,7 +110,7 @@ def get_backup_file(bucket_name: str, backup_subfolder: str, cnes: str):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path, exist_ok=True)
 
-    destination_file_name = os.path.join(folder_path, next(blobs).name.removeprefix("backups/"))
+    destination_file_name = os.path.join(folder_path, blobs[0].name.removeprefix("backups/"))
 
     log(f"Backup file retrieved successfully: {destination_file_name}", level="info")
 
