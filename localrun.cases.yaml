@@ -138,8 +138,9 @@ cases:
     flow_name: "sms_dump_vitacare_db"
     params:
       environment: "dev"
-      cnes: "0189200"
-      dataset_id: "brutos_prontuario_vitacare"
+      cnes: "2269929"
+      backup_subfolder: "2024-11-12"
+      dataset_id: "brutos_prontuario_vitacare_db"
   - case_slug: "report-farmacia-controlados"
     flow_path: "pipelines.reports.farmacia_digital.livro_controlados.flows"
     flow_name: "report_farmacia_digital_livro_controlados"
@@ -209,4 +210,10 @@ cases:
       destination_dataset_name: 'brutos_conectividade'
       start_datetime: '2024-09-01'
       end_datetime: '2024-11-06'
-
+  - case_slug: "datalake-migrate-vitacare_db"
+    flow_path: "pipelines.datalake.extract_load.vitacare_db.flows"
+    flow_name: "sms_migrate_vitacare_db"
+    params:
+      environment: "dev"
+      last_update_start_date: "2024-10-20"
+      last_update_end_date: "2024-11-30"

@@ -18,12 +18,17 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_files_from_folder(folder_id, file_extension="csv"):
+def get_files_from_folder(
+    folder_id,
+    look_in_subfolders=False,
+    file_extension="csv",
+):
     """
     Retrieves a list of files from a specified Google Drive folder.
 
     Args:
         folder_id (str): The ID of the Google Drive folder.
+        look_in_subfolders (bool, optional): Whether to search in subfolders. Defaults to False.
         file_extension (str, optional): The file extension to filter the files. Defaults to "csv".
 
     Returns:
@@ -41,15 +46,19 @@ def get_files_from_folder(folder_id, file_extension="csv"):
     gauth.ServiceAuth()
 
     drive = GoogleDrive(gauth)
-
-    log("Querying root folder")
-    files = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
-
     files_list = []
 
-    for file in files:
-        if file["title"].endswith(file_extension):
-            files_list.append(file)
+    def get_files_recursive(folder_id):
+        log(f"Querying folder {folder_id}")
+        files = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
+
+        for file in files:
+            if file["title"].endswith(file_extension):
+                files_list.append(file)
+            if look_in_subfolders and file["mimeType"] == "application/vnd.google-apps.folder":
+                get_files_recursive(file["id"])
+
+    get_files_recursive(folder_id)
 
     log(f"{len(files_list)} files found in Google Drive folder.", level="info")
     log(f"Files: {files_list}", level="debug")
@@ -130,6 +139,18 @@ def download_files(files, folder_path):
     downloaded_files = []
 
     for file in files:
+
+        # Check if file already exists in destination folder
+        file_path = f"{folder_path}/{file['title']}"
+
+        if os.path.exists(file_path):
+            log(
+                f"File {file['title']} already exists in {folder_path}, skipping download",
+                level="info",
+            )
+            downloaded_files.append(file_path)
+            continue
+
         file.GetContentFile(f"{folder_path}/{file['title']}")
         downloaded_files.append(f"{folder_path}/{file['title']}")
 
@@ -143,11 +164,13 @@ def download_files(files, folder_path):
 def dowload_from_gdrive(
     folder_id: str,
     destination_folder: str,
+    file_extension: str = "dbc",
+    look_in_subfolders: bool = False,
     filter_type: str = "last_updated",
     filter_param: str | tuple = None,
 ) -> str:
     """
-    Downloads files from a Google Drive folder based on specified filters.
+    Downloads files from a Google Drive folder and its subfolders based on specified filters.
 
     Args:
         folder_id (str): The ID of the Google Drive folder.
@@ -160,7 +183,11 @@ def dowload_from_gdrive(
 
     """
 
-    files = get_files_from_folder.run(folder_id=folder_id, file_extension="dbc")
+    files = get_files_from_folder.run(
+        folder_id=folder_id,
+        file_extension=file_extension,
+        look_in_subfolders=look_in_subfolders,
+    )
 
     if filter_type == "last_updated":
         if filter_param:
