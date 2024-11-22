@@ -37,6 +37,7 @@ from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.prontuarios.utils.tasks import get_healthcenter_name_from_cnes
 from pipelines.utils.tasks import create_folders
 
+
 with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_dump_vitacare_db:
     #####################################
     # Parameters
@@ -57,39 +58,43 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
     #####################################
     # Set environment
     ####################################
-    local_folders = create_folders()
+    connection_string = get_connection_string(environment=ENVIRONMENT)
+
+    local_folders = create_folders(upstream_tasks=[connection_string])
 
     with case(RENAME_FLOW, True):
-        healthcenter_name = get_healthcenter_name_from_cnes(cnes=CNES)
+        healthcenter_name = get_healthcenter_name_from_cnes(
+            cnes=CNES, upstream_tasks=[connection_string]
+        )
 
         rename_current_flow_run(
             environment=ENVIRONMENT,
             unidade=healthcenter_name,
             cnes=CNES,
             backup_subfolder=BACKUP_SUBFOLDER,
+            upstream_tasks=[healthcenter_name],
         )
 
     ######################################
     # Tasks section #1 - Get Backup file
     ######################################
 
-    bucket_name = get_bucket_name(env=ENVIRONMENT)
+    bucket_name = get_bucket_name(env=ENVIRONMENT, upstream_tasks=[connection_string])
 
     backup_file = get_backup_file(
         bucket_name=bucket_name,
         backup_subfolder=BACKUP_SUBFOLDER,
         cnes=CNES,
+        upstream_tasks=[bucket_name],
     )
 
-    backup_date = get_backup_date(file_name=backup_file)
+    backup_date = get_backup_date(file_name=backup_file, upstream_tasks=[backup_file])
 
     ######################################
     # Tasks section #2 - Create Temp Database
     ######################################
 
-    connection_string = get_connection_string(environment=ENVIRONMENT)
-
-    database_name = get_database_name(cnes=CNES)
+    database_name = get_database_name(cnes=CNES, upstream_tasks=[connection_string])
 
     temp_db = create_temp_database(
         database_host=connection_string["host"],
