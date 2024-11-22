@@ -219,7 +219,7 @@ def delete_temp_database(
     conn.close()
 
 
-@task
+@task(max_retries=4, retry_delay=timedelta(seconds=30))
 def get_queries(database_name: str):
     return [
         f"SELECT * FROM {database_name}.dbo.ATENDIMENTOS",
@@ -238,7 +238,7 @@ def get_queries(database_name: str):
     ]
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task(max_retries=4, retry_delay=timedelta(seconds=30))
 def create_parquet_file(
     database_host: str,
     database_port: int,
