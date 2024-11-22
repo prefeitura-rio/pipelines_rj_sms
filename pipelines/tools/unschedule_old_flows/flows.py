@@ -35,6 +35,6 @@ unscheduler_flow.executor = LocalDaskExecutor(num_workers=1)
 unscheduler_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 unscheduler_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
-    labels=[constants.RJ_SMS_AGENT_LABEL.value],
+    labels=[constants.RJ_SMS_AGENT_LABEL_NEW.value],
 )
 unscheduler_flow.schedule = schedule
