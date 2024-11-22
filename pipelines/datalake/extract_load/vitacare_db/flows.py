@@ -151,7 +151,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
         database_user=connection_string["user"],
         database_password=connection_string["password"],
         database_name=database_name,
-        upstream_tasks=[parquet_files],
+        upstream_tasks=[parquet_files, upload_to_datalake_task],
     )
 
 

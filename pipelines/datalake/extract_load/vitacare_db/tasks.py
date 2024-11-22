@@ -283,7 +283,7 @@ def create_parquet_file(
     return path
 
 
-@task
+@task(max_retries=4, retry_delay=timedelta(seconds=30))
 def upload_many_to_datalake(
     input_path: list[str],
     dataset_id: str,
