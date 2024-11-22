@@ -89,7 +89,7 @@ flow_parameters = [
         "environment": "prod",
         "table_name": "m_estabelecimento",
         "schema_name": "basecentral",
-        "datetime_column": "created_at",
+        "datetime_column": "datahora",
         "target_name": "basecentral__m_estabelecimento_eventos",
         "partition_column": "datalake_loaded_at",
     },
