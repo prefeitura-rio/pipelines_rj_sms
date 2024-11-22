@@ -362,7 +362,7 @@ def create_parameter_list(
                     "environment": environment,
                     "rename_flow": True,
                     "cnes": cnes,
-                    "backup_subfolder": date_target,
+                    "backup_subfolder": target_date,
                     "dataset_id": dataset_id,
                     "upload_only_expected_files": True,
                 }
