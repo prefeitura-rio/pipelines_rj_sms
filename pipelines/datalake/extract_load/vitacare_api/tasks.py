@@ -298,16 +298,25 @@ def create_parameter_list(
     # Filter the queried table
     if is_routine:
 
-        results = table_data[
-            (table_data["prontuario_versao"] == "vitacare")
-            & (table_data["prontuario_estoque_tem_dado"] == "sim")
-        ]
+        if endpoint in ["backup_prontuario", "vacina"]:
+            results = table_data[
+                (table_data["prontuario_versao"] == "vitacare")
+                & (table_data["prontuario_episodio_tem_dado"] == "sim")
+            ]
+        elif endpoint in ["posicao", "movimento"]:
+            results = table_data[
+                (table_data["prontuario_versao"] == "vitacare")
+                & (table_data["prontuario_estoque_tem_dado"] == "sim")
+            ]
+        else:
+            log("Invalid endpoint", level="error")
+            raise FAIL("Invalid endpoint")
 
         if endpoint in ["movimento", "posicao", "vacina"]:
             results["data"] = convert_str_to_date(target_date)
 
     else:
-
+        # retrieve records with pending or in progress retry status
         results = table_data[
             (table_data["retry_status"] == "pending")
             | (table_data["retry_status"] == "in progress")
@@ -318,7 +327,6 @@ def create_parameter_list(
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
 
     if area_programatica:
-
         results = results[results["area_programatica"] == area_programatica]
 
     if results.empty and is_routine:
@@ -346,15 +354,17 @@ def create_parameter_list(
                     "is_routine": is_routine,
                 }
             )
-    elif endpoint == "backup_prontuario":
 
+    elif endpoint == "backup_prontuario":
         for cnes in results["id_cnes"]:
             vitacare_flow_parameters.append(
                 {
-                    "cnes": cnes,
-                    "dataset_id": dataset_id,
                     "environment": environment,
                     "rename_flow": True,
+                    "cnes": cnes,
+                    "backup_subfolder": date_target,
+                    "dataset_id": dataset_id,
+                    "upload_only_expected_files": True,
                 }
             )
 

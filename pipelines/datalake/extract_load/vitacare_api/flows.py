@@ -180,7 +180,7 @@ with Flow(
     IS_ROUTINE = Parameter("is_routine", default=True)
 
     # Vitacare API
-    ENDPOINT = Parameter("endpoint", required=True)
+    ENDPOINT = Parameter("endpoint", required=True)  # movimento, posicao, vacina, backup_prontuario
     TARGET_DATE = Parameter("target_date", default="today")
     AP = Parameter("ap", default=None)
 
