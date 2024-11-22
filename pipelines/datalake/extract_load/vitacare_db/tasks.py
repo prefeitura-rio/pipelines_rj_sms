@@ -7,7 +7,7 @@ Tasks for Vitacare db pipeline
 import os
 import shutil
 import zipfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List
 
@@ -238,7 +238,7 @@ def get_queries(database_name: str):
     ]
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def create_parquet_file(
     database_host: str,
     database_port: int,
