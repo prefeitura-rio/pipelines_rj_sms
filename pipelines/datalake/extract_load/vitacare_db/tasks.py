@@ -207,11 +207,20 @@ def delete_temp_database(
         database_name="master",
         autocommit=True,
     )
+
+    # Force close all existing connections to the database
+    close_connections_sql = f"""
+    ALTER DATABASE {database_name} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    """
     delete_database_sql = f"DROP DATABASE {database_name}"
 
-    log(f"Deleting database {database_name} ...")
-    conn.autocommit = True
+    log(f"Closing all connections to database {database_name} ...")
     cursor = conn.cursor()
+    cursor.execute(close_connections_sql)
+    while cursor.nextset():
+        pass
+
+    log(f"Deleting database {database_name} ...")
     cursor.execute(delete_database_sql)
     while cursor.nextset():
         pass
