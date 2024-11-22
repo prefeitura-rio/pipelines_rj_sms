@@ -191,7 +191,7 @@ def create_temp_database(
     conn.close()
 
 
-@task
+@task(max_retries=4, retry_delay=timedelta(seconds=30))
 def delete_temp_database(
     database_host: str,
     database_port: int,
