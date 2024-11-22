@@ -274,7 +274,7 @@ def create_parquet_file(
     log(f"Conforming header to datalake of {filename} ...")
     df.columns = remove_columns_accents(df)
 
-    path = f"{base_path}/vitacare_historico_{filename}.parquet"
+    path = f"{base_path}/vitacare_historico_{df['id_cnes'].values[0]}_{filename}.parquet"
 
     df.to_parquet(path, index=False)
 
