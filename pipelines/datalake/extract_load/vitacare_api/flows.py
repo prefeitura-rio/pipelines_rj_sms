@@ -233,7 +233,7 @@ with Flow(
     )
 
 sms_dump_vitacare_estoque_scheduler.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitacare_estoque_scheduler.executor = LocalDaskExecutor(num_workers=10)
+sms_dump_vitacare_estoque_scheduler.executor = LocalDaskExecutor(num_workers=1)
 sms_dump_vitacare_estoque_scheduler.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
