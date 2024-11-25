@@ -67,7 +67,7 @@ with Flow(
     upload_task.set_upstream(reports)
 
 
-report_farmacia_digital_livro_controlados.schedule = weekly_schedule
+# report_farmacia_digital_livro_controlados.schedule = weekly_schedule
 report_farmacia_digital_livro_controlados.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 report_farmacia_digital_livro_controlados.executor = LocalDaskExecutor(num_workers=1)
 report_farmacia_digital_livro_controlados.run_config = KubernetesRun(
