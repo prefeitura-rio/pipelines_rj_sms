@@ -278,7 +278,7 @@ def create_parquet_file(
 
     df["backup_created_at"] = backup_date
 
-    df["datalake_imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+    df["datalake_imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S").astype(str)
 
     log(f"Conforming header to datalake of {filename} ...")
     df.columns = remove_columns_accents(df)
