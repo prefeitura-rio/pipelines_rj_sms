@@ -307,11 +307,14 @@ def upload_many_to_datalake(
     """
 
     for table in input_path:
-        table_name = f'{table.split("_")[-1].removesuffix(".parquet")}_historico'
+
+        filename = Path(table).name
+        table_id = filename.replace('vitacare_historico_', '').split('_', 1)[1].removesuffix(".parquet")
+
         upload_to_datalake.run(
             input_path=table,
             dataset_id=dataset_id,
-            table_id=table_name,
+            table_id=table_id,
             dump_mode="append",
             source_format=source_format,
             if_exists=if_exists,
