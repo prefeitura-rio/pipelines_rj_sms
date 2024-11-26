@@ -52,7 +52,6 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
 
     # GCP
     DATASET_ID = Parameter("dataset_id", required=True)
-    UPLOAD_ONLY_EXPECTED_FILES = Parameter("upload_only_expected_files", default=True)
 
     #####################################
     # Set environment
@@ -182,6 +181,9 @@ with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vi
     # GOOGLE DRIVE
     LAST_UPDATE_START_DATE = Parameter("last_update_start_date", default=None)
     LAST_UPDATE_END_DATE = Parameter("last_update_end_date", default=None)
+
+    # CLOUD STORAGE
+    UPLOAD_ONLY_EXPECTED_FILES = Parameter("upload_only_expected_files", default=True)
 
     #####################################
     # Set environment
