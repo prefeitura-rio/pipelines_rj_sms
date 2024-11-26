@@ -210,7 +210,7 @@ with Flow(
     )
 
 datalake_extract_vitai_db_manager.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
-datalake_extract_vitai_db_manager.executor = LocalDaskExecutor(num_workers=5)
+datalake_extract_vitai_db_manager.executor = LocalDaskExecutor(num_workers=1)
 datalake_extract_vitai_db_manager.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[

@@ -35,6 +35,9 @@ def convert_str_to_date(target_date: str) -> str:
         return date.today().strftime("%Y-%m-%d")
     elif target_date == "yesterday":
         return (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+    elif target_date.startswith("d-"):
+        days = int(target_date.replace("d-", ""))
+        return (date.today() - timedelta(days=days)).strftime("%Y-%m-%d")
     else:
         try:
             return target_date

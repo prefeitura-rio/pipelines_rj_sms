@@ -89,7 +89,7 @@ flow_parameters = [
         "environment": "prod",
         "table_name": "m_estabelecimento",
         "schema_name": "basecentral",
-        "datetime_column": "created_at",
+        "datetime_column": "datahora",
         "target_name": "basecentral__m_estabelecimento_eventos",
         "partition_column": "datalake_loaded_at",
     },
@@ -145,15 +145,31 @@ flow_parameters = [
         "environment": "prod",
         "table_name": "fat_internacao",
         "schema_name": "dtw",
-        "datetime_column": "data_saide",
+        "datetime_column": "data_saida",
         "target_name": "dtw__fat_internacao_eventos",
+        "partition_column": "datalake_loaded_at",
+    },
+    {
+        "environment": "prod",
+        "table_name": "item_prescricao",
+        "schema_name": "basecentral",
+        "datetime_column": "created_at",
+        "target_name": "basecentral__item_prescricao_eventos",
+        "partition_column": "datalake_loaded_at",
+    },
+    {
+        "environment": "prod",
+        "table_name": "prescricao",
+        "schema_name": "basecentral",
+        "datetime_column": "created_at",
+        "target_name": "basecentral__prescricao_eventos",
         "partition_column": "datalake_loaded_at",
     },
 ]
 
 
 vitai_clocks = generate_dump_api_schedules(
-    interval=timedelta(days=1),
+    interval=timedelta(hours=12),
     start_date=datetime(2024, 11, 12, 1, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
