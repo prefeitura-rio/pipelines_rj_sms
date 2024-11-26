@@ -861,6 +861,7 @@ def upload_to_datalake(
         log(f"An error occurred: {e}", level="error")
         raise RuntimeError() from e
 
+
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
 def upload_df_to_datalake(
     df: pd.DataFrame,
@@ -875,7 +876,7 @@ def upload_df_to_datalake(
     biglake_table: bool = True,
     dataset_is_public: bool = False,
 ):
-    root_folder = f'./data/{uuid.uuid4()}'
+    root_folder = f"./data/{uuid.uuid4()}"
     log(f"Using as root folder: {root_folder}")
 
     log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
@@ -883,7 +884,7 @@ def upload_df_to_datalake(
         dataframe=df,
         partition_column=partition_column,
         file_format=source_format,
-        root_folder=root_folder
+        root_folder=root_folder,
     )
 
     log(f"Uploading data to partition folder: {partition_folder}")
@@ -905,6 +906,7 @@ def upload_df_to_datalake(
     log(f"Deleting partition folder: {root_folder}")
     shutil.rmtree(root_folder)
     return
+
 
 @task
 def search_files_from_format(
@@ -1110,6 +1112,7 @@ def load_files_from_gcs_bucket(
     output = list(zip(file_metadata, file_contents))
     return output
 
+
 @task
 def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
     """
@@ -1122,10 +1125,7 @@ def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
     Returns:
         str: The path to the output Parquet file.
     """
-    df.to_csv(
-        output_path.replace("parquet", "csv"),
-        index=False
-    )
+    df.to_csv(output_path.replace("parquet", "csv"), index=False)
 
     dataframe = pd.read_csv(
         output_path.replace("parquet", "csv"),
@@ -1134,10 +1134,7 @@ def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
         keep_default_na=False,
         encoding="utf-8",
     )
-    dataframe.to_parquet(
-        output_path,
-        index=False
-    )
+    dataframe.to_parquet(output_path, index=False)
     return
 
 
@@ -1145,7 +1142,7 @@ def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
 def create_date_partitions(
     dataframe,
     partition_column,
-    file_format: Literal['csv', 'parquet'],
+    file_format: Literal["csv", "parquet"],
     root_folder="./data/",
 ):
 
