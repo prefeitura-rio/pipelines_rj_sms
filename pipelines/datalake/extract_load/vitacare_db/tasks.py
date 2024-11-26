@@ -311,7 +311,7 @@ def upload_many_to_datalake(
         filename = Path(table).name
         table_id = (
             filename.replace("vitacare_historico_", "").split("_", 1)[1].removesuffix(".parquet")
-        ) + '_historico'
+        ) + "_historico"
 
         upload_to_datalake.run(
             input_path=table,
