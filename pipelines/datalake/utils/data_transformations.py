@@ -10,7 +10,10 @@ import re
 from datetime import date, datetime, timedelta
 
 import pandas as pd
-import pyreaddbc
+try:
+    import pyreaddbc
+except ModuleNotFoundError:
+    pass
 import pytz
 from prefeitura_rio.pipelines_utils.logging import log
 from simpledbf import Dbf5

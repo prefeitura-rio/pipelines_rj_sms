@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-import os
-import uuid
 from datetime import datetime, timedelta
-
 import pandas as pd
 
-from pipelines.datalake.utils.data_transformations import convert_to_parquet
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.progress import calculate_operator_key
@@ -99,29 +95,73 @@ def build_param_list(
 
     return params
 
-
 @task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=20))
-def load_data_from_vitai_table(
+def define_queries(
     db_url: str,
     table_info: dict,
-    output_file_folder: str,
     interval_start: pd.Timestamp,
     interval_end: pd.Timestamp,
+    batch_size: int,
 ) -> str:
+    """
+    Generates a list of SQL queries to fetch data from a specified table within
+        a given time interval in batches.
+    Args:
+        db_url (str): The database connection URL.
+        table_info (dict): A dictionary containing table information with keys:
+            - "schema_name": The schema name of the table.
+            - "table_name": The name of the table.
+            - "datetime_column": The name of the datetime column to filter on.
+        interval_start (pd.Timestamp): The start of the time interval.
+        interval_end (pd.Timestamp): The end of the time interval.
+        batch_size (int): The number of rows to fetch in each batch.
+    Returns:
+        str: A list of SQL queries to fetch data in batches. If no data is found,
+            returns an empty list.
+    """
     schema_name = table_info["schema_name"]
     table_name = table_info["table_name"]
     dt_column = table_info["datetime_column"]
-    partition_column = table_info["partition_column"]
 
     interval_start = interval_start.strftime("%Y-%m-%d %H:%M:%S")
     interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")
 
     query = f"""
-        select *
+        select count(*) as row_count 
         from {schema_name}.{table_name}
         where {dt_column} between '{interval_start}' and '{interval_end}'
     """
     log("Built query: \n" + query)
+
+    df = pd.read_sql(query, db_url)
+
+    row_count = df["row_count"].values[0]
+
+    if row_count == 0:
+        log("No data found for the given interval", level="warning")
+        return []
+ 
+    queries = []
+    for i in range(0, row_count, batch_size):
+        queries.append(
+            f"""
+                select *
+                from {schema_name}.{table_name}
+                where {dt_column} between '{interval_start}' and '{interval_end}'
+                limit {batch_size} offset {i}
+            """
+        )
+
+    return queries
+
+
+@task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=5))
+def run_query(
+    db_url: str,
+    query: str,
+    partition_column: str,
+) -> str:
+    log("Running query: \n" + query)
 
     df = pd.read_sql(query, db_url, dtype=str)
     log(f"Query executed successfully. Found {df.shape[0]} rows.")
@@ -132,29 +172,6 @@ def load_data_from_vitai_table(
 
     now = pd.Timestamp.now(tz="America/Sao_Paulo")
     df["datalake_loaded_at"] = now
-    log(f"Added `datalake_loaded_at` column to dataframe with current timestamp: {now}")
+    df["partition_date"] = pd.to_datetime(df[partition_column]).dt.date
 
-    # Separate dataframe per day for partitioning
-    if df.empty:
-        log("Empty dataframe. Preparing to send file with only headers", level="warning")
-        dfs = [(str(now.date()), df)]
-    else:
-        log("Non Empty dataframe. Splitting Dataframe in multiple files by day", level="warning")
-        df["partition_date"] = pd.to_datetime(df[partition_column]).dt.date
-        days = df["partition_date"].unique()
-        dfs = [
-            (day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days
-        ]  # noqa
-
-    # Save dataframes to csv files
-    output_paths = []
-    for day, df_day in dfs:
-        file_path = os.path.join(output_file_folder, f"{table_name}_{day}_{uuid.uuid4()}.csv")
-        df_day.to_csv(file_path, index=False, header=True, sep=";")
-        log(f"Saving CSV table data to {file_path}")
-
-        file_path_parquet = convert_to_parquet(file_path=file_path, file_type="csv")
-        log(f"Converted table data to parquet in {file_path_parquet}")
-        output_paths.append(file_path_parquet)
-
-    return output_paths
+    return df
