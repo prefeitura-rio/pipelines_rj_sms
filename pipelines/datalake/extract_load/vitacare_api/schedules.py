@@ -35,7 +35,7 @@ routine_flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
         "table_id": "vacina",
-        "target_date": "yesterday",
+        "target_date": "d-3",
     },
 ]
 
