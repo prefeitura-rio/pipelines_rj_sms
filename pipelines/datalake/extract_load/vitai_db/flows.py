@@ -142,13 +142,14 @@ with Flow(
 
 datalake_extract_vitai_db_operator.schedule = vitai_db_extraction_schedule
 datalake_extract_vitai_db_operator.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
-datalake_extract_vitai_db_operator.executor = LocalDaskExecutor(num_workers=1)
+datalake_extract_vitai_db_operator.executor = LocalDaskExecutor(num_workers=2)
 datalake_extract_vitai_db_operator.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[
         global_constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="3Gi",
+    memory_limit="12Gi",
+    memory_request="12Gi",
 )
 
 with Flow(
