@@ -17,15 +17,14 @@ from pipelines.prontuarios.raw.smsrio.schedules import smsrio_daily_update_sched
 from pipelines.prontuarios.raw.smsrio.tasks import (
     extract_patient_data_from_db,
     get_smsrio_database_url,
-    load_patient_data_to_api,
     transform_filter_invalid_cpf,
 )
 from pipelines.prontuarios.utils.tasks import (
-    get_api_token,
     get_datetime_working_range,
     transform_split_dataframe,
 )
 from pipelines.utils.tasks import load_file_from_gcs_bucket, rename_current_flow_run
+from pipelines.utils.datalake_hub import load_asset
 
 ####################################
 # Daily Routine Flow
@@ -45,16 +44,7 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-
     database_url = get_smsrio_database_url(environment=ENVIRONMENT)
-
-    api_token = get_api_token(
-        environment=ENVIRONMENT,
-        infisical_path=smsrio_constants.INFISICAL_PATH.value,
-        infisical_api_url=prontuarios_constants.INFISICAL_API_URL.value,
-        infisical_api_username=smsrio_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=smsrio_constants.INFISICAL_API_PASSWORD.value,
-    )
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(
@@ -93,15 +83,15 @@ with Flow(
     ####################################
     # Task Section #3 - Loading data
     ####################################
-    load_patient_data_to_api.map(
-        patient_data=patient_data_batches,
+    load_asset.map(
+        dataframe=patient_data_batches,
+        asset_id=unmapped("assets.rj-sms.smsrio.paciente"),
         environment=unmapped(ENVIRONMENT),
-        api_token=unmapped(api_token),
     )
 
 
 sms_prontuarios_raw_smsrio.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=5)
+sms_prontuarios_raw_smsrio.executor = LocalDaskExecutor(num_workers=1)
 sms_prontuarios_raw_smsrio.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
