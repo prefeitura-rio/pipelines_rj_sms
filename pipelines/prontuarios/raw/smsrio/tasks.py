@@ -140,7 +140,7 @@ def extract_patient_data_from_db(
             "source_updated_at",
         ]:
             renaming[column] = f"data__{column}"
-    
+
     patients.rename(columns=renaming, inplace=True)
 
     return patients

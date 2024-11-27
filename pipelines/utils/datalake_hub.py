@@ -1,11 +1,13 @@
-import requests
+# -*- coding: utf-8 -*-
 import json
-import pandas as pd
 from datetime import timedelta
 
+import pandas as pd
+import requests
+
+from pipelines.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import get_secret_key
-from pipelines.constants import constants
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
@@ -13,17 +15,17 @@ def authenticate(environment: str) -> str:
     api_url = get_secret_key.run(
         secret_path=constants.DATALAKE_HUB_PATH.value,
         secret_name=constants.DATALAKE_HUB_API_URL.value,
-        environment=environment
+        environment=environment,
     )
     api_username = get_secret_key.run(
         secret_path=constants.DATALAKE_HUB_PATH.value,
         secret_name=constants.DATALAKE_HUB_API_USERNAME.value,
-        environment=environment
+        environment=environment,
     )
     api_password = get_secret_key.run(
         secret_path=constants.DATALAKE_HUB_PATH.value,
         secret_name=constants.DATALAKE_HUB_API_PASSWORD.value,
-        environment=environment
+        environment=environment,
     )
     response = requests.post(
         url=f"{api_url}auth/token",
@@ -41,22 +43,16 @@ def authenticate(environment: str) -> str:
         return response.json()["access_token"]
     else:
         raise Exception(f"Error getting API token ({response.status_code}) - {response.json()}")
-    
+
 
 @task
-def load_asset(
-    dataframe: pd.DataFrame,
-    asset_id: str,
-    environment: str
-):
+def load_asset(dataframe: pd.DataFrame, asset_id: str, environment: str):
     api_url = get_secret_key.run(
         secret_path=constants.DATALAKE_HUB_PATH.value,
         secret_name=constants.DATALAKE_HUB_API_URL.value,
-        environment=environment
+        environment=environment,
     )
-    token = authenticate.run(
-        environment=environment
-    )
+    token = authenticate.run(environment=environment)
     dataframe.to_json(open("./records.json", "w+"), orient="records")
     records = json.load(open("./records.json", "r"))
 
