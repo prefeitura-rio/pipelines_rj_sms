@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
+
 import pandas as pd
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -95,6 +96,7 @@ def build_param_list(
 
     return params
 
+
 @task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=20))
 def define_queries(
     db_url: str,
@@ -127,7 +129,7 @@ def define_queries(
     interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")
 
     query = f"""
-        select count(*) as row_count 
+        select count(*) as row_count
         from {schema_name}.{table_name}
         where {dt_column} between '{interval_start}' and '{interval_end}'
     """
@@ -140,7 +142,7 @@ def define_queries(
     if row_count == 0:
         log("No data found for the given interval", level="warning")
         return []
- 
+
     queries = []
     for i in range(0, row_count, batch_size):
         queries.append(

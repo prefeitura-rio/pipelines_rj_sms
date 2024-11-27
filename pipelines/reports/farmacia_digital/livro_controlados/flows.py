@@ -11,9 +11,10 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.reports.farmacia_digital.livro_controlados.livro_controlados.schedules import (
-    weekly_schedule,
-)
+
+# from pipelines.reports.farmacia_digital.livro_controlados.livro_controlados.schedules import (
+#     weekly_schedule,
+# )
 from pipelines.reports.farmacia_digital.livro_controlados.tasks import (
     generate_report,
     get_google_drive_folder_id,
@@ -67,7 +68,7 @@ with Flow(
     upload_task.set_upstream(reports)
 
 
-report_farmacia_digital_livro_controlados.schedule = weekly_schedule
+# report_farmacia_digital_livro_controlados.schedule = weekly_schedule
 report_farmacia_digital_livro_controlados.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 report_farmacia_digital_livro_controlados.executor = LocalDaskExecutor(num_workers=1)
 report_farmacia_digital_livro_controlados.run_config = KubernetesRun(
