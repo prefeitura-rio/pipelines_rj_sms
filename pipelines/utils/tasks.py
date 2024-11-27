@@ -19,7 +19,7 @@ from ftplib import FTP
 from io import StringIO
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
-from typing import Optional
+from typing import Literal, Optional
 
 import basedosdados as bd
 import google.auth.transport.requests
@@ -862,6 +862,52 @@ def upload_to_datalake(
         raise RuntimeError() from e
 
 
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
+def upload_df_to_datalake(
+    df: pd.DataFrame,
+    partition_column: str,
+    dataset_id: str,
+    table_id: str,
+    dump_mode: str = "append",
+    source_format: str = "csv",
+    csv_delimiter: str = ";",
+    if_exists: str = "replace",
+    if_storage_data_exists: str = "replace",
+    biglake_table: bool = True,
+    dataset_is_public: bool = False,
+):
+    root_folder = f"./data/{uuid.uuid4()}"
+    log(f"Using as root folder: {root_folder}")
+
+    log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
+    partition_folder = create_date_partitions.run(
+        dataframe=df,
+        partition_column=partition_column,
+        file_format=source_format,
+        root_folder=root_folder,
+    )
+
+    log(f"Uploading data to partition folder: {partition_folder}")
+    upload_to_datalake.run(
+        input_path=partition_folder,
+        dataset_id=dataset_id,
+        table_id=table_id,
+        dump_mode=dump_mode,
+        source_format=source_format,
+        csv_delimiter=csv_delimiter,
+        if_exists=if_exists,
+        if_storage_data_exists=if_storage_data_exists,
+        biglake_table=biglake_table,
+        dataset_is_public=dataset_is_public,
+        exception_on_missing_input_file=True,
+    )
+
+    # Delete files from partition folder
+    log(f"Deleting partition folder: {root_folder}")
+    shutil.rmtree(root_folder)
+    return
+
+
 @task
 def search_files_from_format(
     folder_path: str,
@@ -1068,7 +1114,37 @@ def load_files_from_gcs_bucket(
 
 
 @task
-def create_date_partitions(dataframe, partition_column, root_folder="./data/"):
+def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
+    """
+    Safely exports a DataFrame to a Parquet file.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to export.
+        output_path (str): The path to the output Parquet file.
+
+    Returns:
+        str: The path to the output Parquet file.
+    """
+    df.to_csv(output_path.replace("parquet", "csv"), index=False)
+
+    dataframe = pd.read_csv(
+        output_path.replace("parquet", "csv"),
+        sep=",",
+        dtype=str,
+        keep_default_na=False,
+        encoding="utf-8",
+    )
+    dataframe.to_parquet(output_path, index=False)
+    return
+
+
+@task
+def create_date_partitions(
+    dataframe,
+    partition_column,
+    file_format: Literal["csv", "parquet"],
+    root_folder="./data/",
+):
 
     dataframe[partition_column] = pd.to_datetime(dataframe[partition_column])
     dataframe["data_particao"] = dataframe[partition_column].dt.strftime("%Y-%m-%d")
@@ -1082,13 +1158,17 @@ def create_date_partitions(dataframe, partition_column, root_folder="./data/"):
         for date in dates
     ]
 
-    for date, dataframe in dataframes:
+    for _date, dataframe in dataframes:
         partition_folder = os.path.join(
-            root_folder, f"ano_particao={date[:4]}/mes_particao={date[5:7]}/data_particao={date}"
+            root_folder, f"ano_particao={_date[:4]}/mes_particao={_date[5:7]}/data_particao={_date}"
         )
         os.makedirs(partition_folder, exist_ok=True)
 
-        file_folder = os.path.join(partition_folder, f"{uuid.uuid4()}.csv")
-        dataframe.to_csv(file_folder, index=False)
+        file_folder = os.path.join(partition_folder, f"{uuid.uuid4()}.{file_format}")
+
+        if file_format == "csv":
+            dataframe.to_csv(file_folder, index=False)
+        elif file_format == "parquet":
+            safe_export_df_to_parquet.run(df=dataframe, output_path=file_folder)
 
     return root_folder

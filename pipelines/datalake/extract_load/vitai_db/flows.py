@@ -15,7 +15,8 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     build_param_list,
     create_working_time_range,
-    load_data_from_vitai_table,
+    define_queries,
+    run_query,
 )
 from pipelines.utils.basics import as_dict, is_null_or_empty
 from pipelines.utils.credential_injector import (
@@ -32,12 +33,11 @@ from pipelines.utils.progress import (
 )
 from pipelines.utils.tasks import (
     create_folder,
-    create_partitions,
     get_bigquery_project_from_environment,
     get_project_name,
     get_secret_key,
     rename_current_flow_run,
-    upload_to_datalake,
+    upload_df_to_datalake,
 )
 
 with Flow(
@@ -100,38 +100,33 @@ with Flow(
     #####################################
     # Tasks section #4 - Downloading Table Data
     #####################################
-    file_list = load_data_from_vitai_table(
+    queries = define_queries(
         db_url=db_url,
         table_info=table_info,
-        output_file_folder=raw_folder,
         interval_start=interval_start,
         interval_end=interval_end,
+        batch_size=50000,
+    )
+
+    dataframes = run_query.map(
+        db_url=unmapped(db_url),
+        query=queries,
+        partition_column=unmapped(PARTITION_COLUMN),
     )
 
     #####################################
     # Tasks section #5 - Partitioning Data
     #####################################
-    create_partitions_task = create_partitions(
-        data_path=raw_folder,
-        partition_directory=partition_folder,
-        upstream_tasks=[file_list],
-        file_type="parquet",
-    )
-
-    #####################################
-    # Tasks section #6 - Uploading to Datalake
-    #####################################
-    upload_to_datalake_task = upload_to_datalake(
-        input_path=partition_folder,
-        table_id=TARGET_NAME,
-        dataset_id=vitai_db_constants.DATASET_NAME.value,
-        if_exists="replace",
-        source_format="parquet",
-        if_storage_data_exists="replace",
-        biglake_table=True,
-        dataset_is_public=False,
-        exception_on_missing_input_file=True,
-        upstream_tasks=[create_partitions_task],
+    upload_to_datalake_task = upload_df_to_datalake.map(
+        df=dataframes,
+        partition_column=unmapped(PARTITION_COLUMN),
+        table_id=unmapped(TARGET_NAME),
+        dataset_id=unmapped(vitai_db_constants.DATASET_NAME.value),
+        if_exists=unmapped("replace"),
+        source_format=unmapped("parquet"),
+        if_storage_data_exists=unmapped("replace"),
+        biglake_table=unmapped(True),
+        dataset_is_public=unmapped(False),
     )
 
     #####################################
@@ -147,13 +142,14 @@ with Flow(
 
 datalake_extract_vitai_db_operator.schedule = vitai_db_extraction_schedule
 datalake_extract_vitai_db_operator.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
-datalake_extract_vitai_db_operator.executor = LocalDaskExecutor(num_workers=1)
+datalake_extract_vitai_db_operator.executor = LocalDaskExecutor(num_workers=2)
 datalake_extract_vitai_db_operator.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[
         global_constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="3Gi",
+    memory_limit="12Gi",
+    memory_request="12Gi",
 )
 
 with Flow(
