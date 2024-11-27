@@ -23,8 +23,8 @@ from pipelines.prontuarios.utils.tasks import (
     get_datetime_working_range,
     transform_split_dataframe,
 )
-from pipelines.utils.tasks import load_file_from_gcs_bucket, rename_current_flow_run
 from pipelines.utils.datalake_hub import load_asset
+from pipelines.utils.tasks import load_file_from_gcs_bucket, rename_current_flow_run
 
 ####################################
 # Daily Routine Flow
