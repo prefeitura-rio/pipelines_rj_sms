@@ -21,7 +21,6 @@ from pipelines.datalake.extract_load.vitacare_db.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
 from pipelines.datalake.transform.dbt.flows import *
-from pipelines.prontuarios.load_datalake.flows import *
 from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.reports.farmacia_digital.livro_controlados.flows import *
 from pipelines.reports.ingestao_dados.flows import *
