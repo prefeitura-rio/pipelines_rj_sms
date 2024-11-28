@@ -1142,7 +1142,7 @@ def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
 def create_date_partitions(
     dataframe,
     partition_column,
-    file_format: Literal["csv", "parquet"],
+    file_format: Literal["csv", "parquet"] = "csv",
     root_folder="./data/",
 ):
 

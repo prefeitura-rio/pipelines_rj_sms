@@ -25,6 +25,14 @@ class constants(Enum):
     RJ_SMS_VERTEX_AGENT_LABEL = "sms-vertex"
 
     ######################################
+    # Datalake Hub
+    ######################################
+    DATALAKE_HUB_PATH = "/datalake-hub"
+    DATALAKE_HUB_API_URL = "URL"
+    DATALAKE_HUB_API_USERNAME = "USERNAME"
+    DATALAKE_HUB_API_PASSWORD = "PASSWORD"
+
+    ######################################
     # Other constants
     ######################################
     # EXAMPLE_CONSTANT = "example_constant"
