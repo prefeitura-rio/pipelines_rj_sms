@@ -11,7 +11,6 @@ from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.constants import constants as prontuarios_constants
 from pipelines.prontuarios.raw.smsrio.constants import constants as smsrio_constants
 from pipelines.prontuarios.raw.smsrio.schedules import smsrio_daily_update_schedule
 from pipelines.prontuarios.raw.smsrio.tasks import (
