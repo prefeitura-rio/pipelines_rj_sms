@@ -66,7 +66,6 @@ def extract_patient_data_from_db(
         """,
     )
     log(f"Extracted {patients.shape[0]} patients")
-    patients.rename(columns={"id": "source_id", "cpf": "patient_cpf"}, inplace=True)
 
     log(f"Extracting CNS data from {time_window_start} to {time_window_end}")
     cnss = load_table_from_database.run(
@@ -104,7 +103,6 @@ def extract_patient_data_from_db(
         """,
     )
     log(f"Extracted {telefones.shape[0]} Telefone data")
-
     patients = patients.merge(cnss, on="cns", how="left").merge(telefones, on="cns", how="left")
 
     def handle_cns(cns):
@@ -117,8 +115,6 @@ def extract_patient_data_from_db(
             cns = []
         return json.dumps(cns[::-1])
 
-    patients["cns_provisorio"] = patients["cns_provisorio"].apply(handle_cns)
-
     def join_phones(row):
         main_phone = row["telefone"]
         try:
@@ -129,7 +125,23 @@ def extract_patient_data_from_db(
             phone_list.append(main_phone)
         return json.dumps(phone_list[::-1])
 
+    # Campos Adicionais
+    patients["cns_provisorio"] = patients["cns_provisorio"].apply(handle_cns)
     patients["telefones"] = patients.apply(join_phones, axis=1)
+    patients["source_id"] = patients["id"].astype(str)
+    patients["patient_cpf"] = patients["cpf"]
+    patients["source_updated_at"] = patients["timestamp"]
+
+    renaming = {}
+    for column in patients.columns:
+        if column not in [
+            "source_id",
+            "patient_cpf",
+            "source_updated_at",
+        ]:
+            renaming[column] = f"data__{column}"
+
+    patients.rename(columns=renaming, inplace=True)
 
     return patients
 
@@ -150,38 +162,3 @@ def transform_filter_invalid_cpf(dataframe: pd.DataFrame, cpf_column: str) -> pd
     log(f"Filtered {dataframe.shape[0] - filtered_dataframe.shape[0]} invalid CPFs")
 
     return filtered_dataframe
-
-
-@task(max_retries=3, retry_delay=timedelta(minutes=3))
-def load_patient_data_to_api(patient_data: pd.DataFrame, environment: str, api_token: str):
-    """
-    Loads patient data to the API.
-
-    Args:
-        patient_data (pd.DataFrame): The patient data to be loaded.
-        environment (str): The environment to which the data will be loaded.
-        api_token (str): The API token for authentication.
-
-    Returns:
-        None
-    """
-    json_data = json.loads(patient_data.to_json(orient="records", date_format="iso"))
-
-    json_data_batches = build_additional_fields(
-        data_list=json_data,
-        cpf_get_function=lambda data: data["patient_cpf"],
-        birth_data_get_function=lambda data: data["dt_nasc"],
-        source_updated_at_get_function=lambda data: data["timestamp"],
-        source_id_get_function=lambda data: data["source_id"],
-    )
-
-    request_bodies = transform_to_raw_format.run(
-        json_data=json_data_batches, cnes=smsrio_constants.SMSRIO_CNES.value
-    )
-
-    load_to_api.run(
-        request_body=request_bodies,
-        endpoint_name="raw/patientrecords",
-        api_token=api_token,
-        environment=environment,
-    )

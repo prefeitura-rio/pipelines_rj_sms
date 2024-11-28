@@ -233,8 +233,8 @@ def main():
 
     log(f"Total archived flows with scheduled runs: {len(results)}")
 
-    # archive_flow_versions(results, prefect_client)
-    # log("Done!")
+    archive_flow_versions(results, prefect_client)
+    log("Done!")
 
 
 if __name__ == "__main__":
