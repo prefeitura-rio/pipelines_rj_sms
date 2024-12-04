@@ -160,6 +160,7 @@ sms_dump_vitacare_estoque.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="2Gi",
+    memory_request="2Gi",
 )
 
 
