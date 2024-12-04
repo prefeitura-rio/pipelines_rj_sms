@@ -26,4 +26,3 @@ from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.reports.ingestao_dados.flows import *
 from pipelines.reports.long_running_flows.flows import *
 from pipelines.tools.unschedule_old_flows.flows import *
-from pipelines.tools.vitacare_healthcheck.flows import *
