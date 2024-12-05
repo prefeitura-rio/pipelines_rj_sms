@@ -274,6 +274,7 @@ def create_parquet_file(
 
     try:
         df = pd.read_sql(sql, conn, dtype=str)
+
     except Exception as e:
         if extract_if_table_is_missing:
             log(
