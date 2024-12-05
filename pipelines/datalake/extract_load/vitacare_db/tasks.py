@@ -318,6 +318,7 @@ def upload_many_to_datalake(
     if_storage_data_exists="replace",
     biglake_table=True,
     dataset_is_public=False,
+    upload_if_table_is_missing: bool = False,
 ):
     """
     Uploads different tables to data lake.
@@ -330,17 +331,28 @@ def upload_many_to_datalake(
             filename.replace("vitacare_historico_", "").split("_", 1)[1].removesuffix(".parquet")
         ) + "_historico"
 
-        upload_to_datalake.run(
-            input_path=table,
-            dataset_id=dataset_id,
-            table_id=table_id,
-            dump_mode="append",
-            source_format=source_format,
-            if_exists=if_exists,
-            if_storage_data_exists=if_storage_data_exists,
-            biglake_table=biglake_table,
-            dataset_is_public=dataset_is_public,
-        )
+        try:
+            upload_to_datalake.run(
+                input_path=table,
+                dataset_id=dataset_id,
+                table_id=table_id,
+                dump_mode="append",
+                source_format=source_format,
+                if_exists=if_exists,
+                if_storage_data_exists=if_storage_data_exists,
+                biglake_table=biglake_table,
+                dataset_is_public=dataset_is_public,
+            )
+        except Exception as e:
+            if upload_if_table_is_missing:
+                log(
+                    f"Could not upload table {filename} because error: {e}. Skipping upload.",
+                    level="warning",
+                )
+            else:
+                message = f"Could not upload table {filename} because error: {e}"
+                log(message, level="error")
+                raise FAIL(message) from e
     log("Files uploaded successfully", level="info")
 
 

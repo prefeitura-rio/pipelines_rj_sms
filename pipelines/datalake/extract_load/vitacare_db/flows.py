@@ -143,6 +143,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
         if_storage_data_exists="replace",
         biglake_table=True,
         dataset_is_public=False,
+        upload_if_table_is_missing=UPLOAD_IF_TABLE_IS_MISSING,
         upstream_tasks=[parquet_files],
     )
 
