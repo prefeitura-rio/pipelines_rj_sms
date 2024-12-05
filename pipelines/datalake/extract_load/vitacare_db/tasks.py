@@ -292,6 +292,8 @@ def create_parquet_file(
 
         conn.close()
 
+        return path
+
     except Exception as e:
         if extract_if_table_is_missing:
             conn.close()
@@ -299,15 +301,12 @@ def create_parquet_file(
                 f"Could not extract table {filename} because error: {e}. Skipping extraction.",
                 level="warning",
             )
-            return
 
         else:
             conn.close()
             message = f"Could not extract table {filename} because error: {e}"
             log(message, level="error")
             raise FAIL(message) from e
-
-    return path
 
 
 @task(max_retries=4, retry_delay=timedelta(seconds=30))
