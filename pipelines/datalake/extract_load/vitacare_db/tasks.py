@@ -275,34 +275,36 @@ def create_parquet_file(
     try:
         df = pd.read_sql(sql, conn, dtype=str)
 
+        log(f"Adding date metadata to {filename} ...", level="debug")
+
+        df["id_cnes"] = database_name.removeprefix("vitacare_")
+
+        df["backup_created_at"] = str(backup_date)
+
+        df["datalake_imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+
+        log(f"Conforming header to datalake of {filename} ...")
+        df.columns = remove_columns_accents(df)
+
+        path = f"{base_path}/vitacare_historico_{df['id_cnes'].values[0]}_{filename}.parquet"
+
+        df.to_parquet(path, index=False)
+
+        conn.close()
+
     except Exception as e:
         if extract_if_table_is_missing:
+            conn.close()
             log(
                 f"Could not extract table {filename} because error: {e}. Skipping extraction.",
                 level="warning",
             )
             return None
         else:
+            conn.close()
             message = f"Could not extract table {filename} because error: {e}"
             log(message, level="error")
             raise FAIL(message) from e
-
-    log(f"Adding date metadata to {filename} ...", level="debug")
-
-    df["id_cnes"] = database_name.removeprefix("vitacare_")
-
-    df["backup_created_at"] = str(backup_date)
-
-    df["datalake_imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-
-    log(f"Conforming header to datalake of {filename} ...")
-    df.columns = remove_columns_accents(df)
-
-    path = f"{base_path}/vitacare_historico_{df['id_cnes'].values[0]}_{filename}.parquet"
-
-    df.to_parquet(path, index=False)
-
-    conn.close()
 
     return path
 
