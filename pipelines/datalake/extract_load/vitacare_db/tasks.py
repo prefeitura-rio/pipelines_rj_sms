@@ -299,7 +299,7 @@ def create_parquet_file(
                 f"Could not extract table {filename} because error: {e}. Skipping extraction.",
                 level="warning",
             )
-            
+
         else:
             conn.close()
             message = f"Could not extract table {filename} because error: {e}"
