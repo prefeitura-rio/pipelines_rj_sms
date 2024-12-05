@@ -49,6 +49,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
     # VITACARE DB
     CNES = Parameter("cnes", default=None, required=True)
     BACKUP_SUBFOLDER = Parameter("backup_subfolder", default=None, required=True)
+    UPLOAD_IF_TABLE_IS_MISSING = Parameter("upload_if_table_is_missing", default=False)
 
     # GCP
     DATASET_ID = Parameter("dataset_id", required=True)
@@ -126,6 +127,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
         base_path=unmapped(local_folders["raw"]),
         filename=filenames,
         backup_date=unmapped(backup_date),
+        extract_if_table_is_missing=unmapped(UPLOAD_IF_TABLE_IS_MISSING),
         upstream_tasks=[unmapped(temp_db), unmapped(queries)],
     )
 
