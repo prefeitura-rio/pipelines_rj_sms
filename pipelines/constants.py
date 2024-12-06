@@ -20,8 +20,7 @@ class constants(Enum):
     ######################################
     # Agent labels
     ######################################
-    RJ_SMS_AGENT_LABEL = "sms"
-    RJ_SMS_AGENT_LABEL_NEW = "sms-new"
+    RJ_SMS_AGENT_LABEL = "sms-new"
     RJ_SMS_VERTEX_AGENT_LABEL = "sms-vertex"
 
     ######################################
