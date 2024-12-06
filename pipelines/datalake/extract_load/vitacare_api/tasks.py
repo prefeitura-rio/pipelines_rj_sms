@@ -106,14 +106,16 @@ def extract_data_from_api(
             )
 
             if replication_datetime < yesterday_cutoff:
-                if cnes == "2708175":  # TODO: remove this condition after Newton Bethlem internet is fixed
+                if (
+                    cnes == "2708175"
+                ):  # TODO: remove this condition after Newton Bethlem internet is fixed
                     target_day = replication_datetime.strftime("%Y-%m-%d")
                 else:
                     err_msg = (
-                    f"API data is outdated. "
-                    f"Last update at API: {replication_datetime}, "
-                    f"Expected update after: {yesterday_cutoff}. "
-                )
+                        f"API data is outdated. "
+                        f"Last update at API: {replication_datetime}, "
+                        f"Expected update after: {yesterday_cutoff}. "
+                    )
                 logger.error(err_msg)
                 return {"has_data": False}
 
