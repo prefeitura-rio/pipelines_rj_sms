@@ -97,7 +97,7 @@ def extract_data_from_api(
         # check if the data was replicated today. This is exclusive to the endpoint "posicao"
         if endpoint == "posicao":
 
-            replication_date = datetime.strptime(
+            replication_datetime = datetime.strptime(
                 requested_data[0]["dtaReplicacao"], "%Y-%m-%d %H:%M:%S.%f"
             )
 
@@ -105,19 +105,24 @@ def extract_data_from_api(
                 hour=20, minute=0, second=0, microsecond=0
             )
 
-            if (
-                replication_date < yesterday_cutoff and cnes != "2708175"
-            ):  # TODO: remove this second condition after Newton Bethlem internet is fixed
+            if cnes == "2708175":  # TODO: remove this condition after Newton Bethlem internet is fixed
+                target_day = replication_datetime.strftime("%Y-%m-%d")
+
+            elif replication_datetime < yesterday_cutoff: 
                 err_msg = (
                     f"API data is outdated. "
-                    f"Last update at API: {replication_date}, "
+                    f"Last update at API: {replication_datetime}, "
                     f"Expected update after: {yesterday_cutoff}. "
                 )
                 logger.error(err_msg)
                 return {"has_data": False}
 
         logger.info(f"Successful Request: retrieved {len(requested_data)} records")
-        return {"data": requested_data, "has_data": True}
+        return {
+            "data": requested_data,
+            "has_data": True,
+            "replication_date": target_day,
+        }
 
     else:
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
