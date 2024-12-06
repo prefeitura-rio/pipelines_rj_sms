@@ -105,7 +105,7 @@ with Flow(
             ap=ap,
             cnes=CNES,
             add_load_date_to_filename=True,
-            load_date=TARGET_DATE,
+            load_date=api_data["replication_date"],
         )
 
         #####################################
