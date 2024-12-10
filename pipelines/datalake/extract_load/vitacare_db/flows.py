@@ -53,44 +53,47 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
 
     # GCP
     DATASET_ID = Parameter("dataset_id", required=True)
-    UPLOAD_ONLY_EXPECTED_FILES = Parameter("upload_only_expected_files", default=True)
 
     #####################################
     # Set environment
     ####################################
-    local_folders = create_folders()
+    connection_string = get_connection_string(environment=ENVIRONMENT)
+
+    local_folders = create_folders(upstream_tasks=[connection_string])
 
     with case(RENAME_FLOW, True):
-        healthcenter_name = get_healthcenter_name_from_cnes(cnes=CNES)
+        healthcenter_name = get_healthcenter_name_from_cnes(
+            cnes=CNES, upstream_tasks=[connection_string]
+        )
 
         rename_current_flow_run(
             environment=ENVIRONMENT,
             unidade=healthcenter_name,
             cnes=CNES,
             backup_subfolder=BACKUP_SUBFOLDER,
+            upstream_tasks=[healthcenter_name],
         )
 
     ######################################
     # Tasks section #1 - Get Backup file
     ######################################
 
-    bucket_name = get_bucket_name(env=ENVIRONMENT)
+    bucket_name = get_bucket_name(env=ENVIRONMENT, upstream_tasks=[connection_string])
 
     backup_file = get_backup_file(
         bucket_name=bucket_name,
         backup_subfolder=BACKUP_SUBFOLDER,
         cnes=CNES,
+        upstream_tasks=[bucket_name],
     )
 
-    backup_date = get_backup_date(file_name=backup_file)
+    backup_date = get_backup_date(file_name=backup_file, upstream_tasks=[backup_file])
 
     ######################################
     # Tasks section #2 - Create Temp Database
     ######################################
 
-    connection_string = get_connection_string(environment=ENVIRONMENT)
-
-    database_name = get_database_name(cnes=CNES)
+    database_name = get_database_name(cnes=CNES, upstream_tasks=[connection_string])
 
     temp_db = create_temp_database(
         database_host=connection_string["host"],
@@ -140,6 +143,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
         if_storage_data_exists="replace",
         biglake_table=True,
         dataset_is_public=False,
+        upload_if_table_is_missing=UPLOAD_IF_TABLE_IS_MISSING,
         upstream_tasks=[parquet_files],
     )
 
@@ -153,7 +157,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
         database_user=connection_string["user"],
         database_password=connection_string["password"],
         database_name=database_name,
-        upstream_tasks=[parquet_files],
+        upstream_tasks=[parquet_files, upload_to_datalake_task],
     )
 
 
@@ -164,8 +168,8 @@ sms_dump_vitacare_db.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="4Gi",
-    memory_request="4Gi",
+    memory_limit="8Gi",
+    memory_request="8Gi",
 )
 
 
@@ -180,6 +184,9 @@ with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vi
     # GOOGLE DRIVE
     LAST_UPDATE_START_DATE = Parameter("last_update_start_date", default=None)
     LAST_UPDATE_END_DATE = Parameter("last_update_end_date", default=None)
+
+    # CLOUD STORAGE
+    UPLOAD_ONLY_EXPECTED_FILES = Parameter("upload_only_expected_files", default=True)
 
     #####################################
     # Set environment
