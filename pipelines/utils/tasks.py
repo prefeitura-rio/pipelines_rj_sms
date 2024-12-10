@@ -1135,6 +1135,9 @@ def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
         encoding="utf-8",
     )
     dataframe.to_parquet(output_path, index=False)
+
+    # Delete the csv file
+    os.remove(output_path.replace("parquet", "csv"))
     return
 
 
