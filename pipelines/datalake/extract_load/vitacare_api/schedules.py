@@ -58,7 +58,15 @@ reprocess_flow_parameters = [
         "rename_flow": True,
         "is_routine": False,
         "table_id": "estoque_movimento",
-    }
+    },
+    {
+        "dataset_id": "brutos_prontuario_vitacare",
+        "endpoint": "vacina",
+        "environment": "prod",
+        "rename_flow": True,
+        "is_routine": False,
+        "table_id": "vacina",
+    },
 ]
 
 reprocess_clocks = generate_dump_api_schedules(
@@ -68,7 +76,7 @@ reprocess_clocks = generate_dump_api_schedules(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=reprocess_flow_parameters,
-    runs_interval_minutes=30,
+    runs_interval_minutes=45,
 )
 
 vitacare_clocks = routine_clocks + reprocess_clocks
