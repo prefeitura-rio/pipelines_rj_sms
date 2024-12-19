@@ -9,19 +9,19 @@ from pipelines.utils.tasks import load_file_from_bigquery
 
 
 @task
-def get_target_date(target_date):
+def get_base_date(base_date):
     log("Getting target date")
-    if target_date == "today":
-        target_date = pd.Timestamp.now().strftime("%Y-%m-%d")
-        log(f"Using today's date: {target_date}")
-    elif target_date == "yesterday" or not target_date:
-        target_date = (pd.Timestamp.now() - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
-        log(f"Using yesterday's date: {target_date}")
+    if base_date == "today" or not base_date:
+        base_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+        log(f"Using today's date: {base_date}")
+    elif base_date == "yesterday":
+        base_date = (pd.Timestamp.now() - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        log(f"Using yesterday's date: {base_date}")
     else:
-        target_date = pd.Timestamp(target_date).strftime("%Y-%m-%d")
-        log(f"Using specified date: {target_date}")
+        base_date = pd.Timestamp(base_date).strftime("%Y-%m-%d")
+        log(f"Using specified date: {base_date}")
 
-    return target_date
+    return base_date
 
 
 @task
@@ -39,73 +39,35 @@ def get_data(environment):
 
 
 @task
-def create_markdown_report_from_source(data, source, target_date):
-    data = data[data["data_atualizacao"] == target_date]
-
-    date_readable = pd.to_datetime(target_date).strftime("%d/%m/%Y")
-
-    if data.empty:
-        log("No data to report")
-        return
-
-    data_from_source = data[data["fonte"] == source]
-
-    message_lines = [
-        f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable}"
-    ]  # noqa
-    for type in data_from_source["tipo"].unique():
-        message_lines.append(f"### {type.capitalize()}")
-
-        filtered_data = data_from_source[data_from_source["tipo"] == type]
-        filtered_data = filtered_data.to_dict(orient="records")[0]
-
-        units_without_data = list(
-            sorted(filtered_data["unidades_sem_dado"], key=lambda x: x["unidade_ap"])
-        )  # noqa
-        message_lines.append(f"- 🚨 **Unidades sem dados:** {len(units_without_data)}")
-
-        for i, unit in enumerate(units_without_data):
-            ap = unit["unidade_ap"]
-            name = unit["unidade_nome"]
-            cnes = unit["unidade_cnes"]
-            message_lines.append(f"> `[AP{ap}] {name} ({cnes})`")
-
-        units_with_data = filtered_data["unidades_com_dado"]
-        message_lines.append(f"- 📊 **Unidades com dados:** {len(units_with_data)}")
-
-    message_lines.append("")
-
-    log("\n".join(message_lines))
-
-    txt_path = "./report.md"
-    with open(txt_path, "w") as f:
-        f.write("\n".join(message_lines))
-
-    return txt_path
-
-
-@task
-def send_report(data, target_date):
-    data = data[data["data_atualizacao"] == target_date]
-    date_readable = pd.to_datetime(target_date).strftime("%d/%m/%Y")
-
-    if data.empty:
-        log("No data to report")
-        return
-
+def send_report(data, base_date):
     for source in data["fonte"].unique():
-        title = f"Relatório de Ingestão de Dados - {source.upper()} no dia {date_readable}"
-
         data_from_source = data[data["fonte"] == source]
 
-        txt_report_path = create_markdown_report_from_source.run(
-            data=data, source=source, target_date=target_date
-        )
+        base_date_readable = pd.to_datetime(base_date).strftime("%d/%m/%Y")
+        title = f"Relatório de Ingestão de Dados - {source.upper()} - {base_date_readable}"
 
         message_lines = ["Unidades sem Dado:"]
         for type in data_from_source["tipo"].unique():
 
-            filtered_data = data_from_source[data_from_source["tipo"] == type]
+            if type in ['posicao']:
+                reference_code = "D-0"
+                reference_date = pd.to_datetime(base_date)
+            elif type in ['vacina']:
+                reference_code = "D-3"
+                reference_date = pd.to_datetime(base_date) - pd.Timedelta(days=3)
+            else:
+                reference_code = "D-1"
+                reference_date = pd.to_datetime(base_date) - pd.Timedelta(days=1)
+
+            filtered_data = data_from_source[
+                (data_from_source["data_ingestao"] == reference_date) &
+                (data_from_source["tipo"] == type)
+            ]
+
+            if filtered_data.empty:
+                log("No data to report")
+                return
+            
             filtered_data = filtered_data.to_dict(orient="records")[0]
 
             units_without_data = filtered_data["unidades_sem_dado"]
@@ -123,7 +85,7 @@ def send_report(data, target_date):
                 emoji = "🟢"
 
             message_lines.append(
-                f"- {emoji} {type.capitalize()}: {len(units_without_data)} ({percent}%)"
+                f"- {emoji} {type.capitalize()} ({reference_code}): {len(units_without_data)} ({percent}%)"
             )
 
         log(f"Sending message with {len(message_lines)} lines")
@@ -132,6 +94,5 @@ def send_report(data, target_date):
         send_message(
             title=title,
             message="\n".join(message_lines),
-            file_path=txt_report_path,
             monitor_slug="data-ingestion",
         )
