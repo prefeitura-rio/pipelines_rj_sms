@@ -45,7 +45,7 @@ def clone_bigquery_table(
             destination_table_id = f"{destination_dataset_id}.{table}_cloned"
         else:
             destination_table_id = f"{destination_dataset_id}.{table}"
-            
+
         bq_client.create_dataset(destination_dataset_id, exists_ok=True)
 
         log(f"Cloning table {source_table_id} to {destination_table_id}")

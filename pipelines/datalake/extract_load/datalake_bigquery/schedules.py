@@ -90,8 +90,8 @@ flow_parameters = [
             "paciente_eventos",
         ],
         "destination_dataset_name": "brutos_prontuario_vitacare_staging",
-        "environment": "prod"
-    }
+        "environment": "prod",
+    },
 ]
 
 
