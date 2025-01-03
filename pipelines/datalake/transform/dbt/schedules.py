@@ -27,6 +27,7 @@ every_30_minutes_parameters = [
         "environment": "prod",
         "rename_flow": True,
         "select": "tag:alerta_doencas",
+        "send_discord_report": False,
     },
 ]
 
