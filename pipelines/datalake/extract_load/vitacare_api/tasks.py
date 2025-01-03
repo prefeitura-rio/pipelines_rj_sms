@@ -107,7 +107,7 @@ def extract_data_from_api(
 
             if replication_datetime < yesterday_cutoff:
                 if (
-                    cnes == "2708175"
+                    cnes == "6927254"
                 ):  # TODO: remove this condition after Newton Bethlem internet is fixed
                     target_day = replication_datetime.strftime("%Y-%m-%d")
                 else:
