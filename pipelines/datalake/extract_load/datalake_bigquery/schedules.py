@@ -81,6 +81,14 @@ flow_parameters = [
         "destination_dataset_name": "brutos_sigma_staging",
         "environment": "prod",
     },
+    {
+        "slug": "atendimento_rotineiro_copy",
+        "source_project_name": "rj-sms",
+        "source_dataset_name": "brutos_prontuario_vitacare_staging",
+        "source_table_list": ["atendimento_eventos"],
+        "destination_dataset_name": "brutos_prontuario_vitacare_staging",
+        "environment": "prod"
+    } 
 ]
 
 
