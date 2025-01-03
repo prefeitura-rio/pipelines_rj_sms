@@ -8,11 +8,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.reports.ingestao_dados.schedules import schedule
-from pipelines.reports.ingestao_dados.tasks import (
-    get_data,
-    get_base_date,
-    send_report,
-)
+from pipelines.reports.ingestao_dados.tasks import get_base_date, get_data, send_report
 
 with Flow(
     name="Report: Monitoramento de Ingestão de Dados",
