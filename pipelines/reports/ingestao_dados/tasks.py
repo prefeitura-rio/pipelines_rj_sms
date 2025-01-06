@@ -49,10 +49,10 @@ def send_report(data, base_date):
         message_lines = ["Unidades sem Dado:"]
         for type in data_from_source["tipo"].unique():
 
-            if type in ['posicao']:
+            if type in ["posicao"]:
                 reference_code = "D-0"
                 reference_date = pd.to_datetime(base_date)
-            elif type in ['vacina']:
+            elif type in ["vacina"]:
                 reference_code = "D-3"
                 reference_date = pd.to_datetime(base_date) - pd.Timedelta(days=3)
             else:
@@ -60,14 +60,14 @@ def send_report(data, base_date):
                 reference_date = pd.to_datetime(base_date) - pd.Timedelta(days=1)
 
             filtered_data = data_from_source[
-                (data_from_source["data_ingestao"] == reference_date) &
-                (data_from_source["tipo"] == type)
+                (data_from_source["data_ingestao"] == reference_date)
+                & (data_from_source["tipo"] == type)
             ]
 
             if filtered_data.empty:
                 log("No data to report")
                 return
-            
+
             filtered_data = filtered_data.to_dict(orient="records")[0]
 
             units_without_data = filtered_data["unidades_sem_dado"]
@@ -85,7 +85,7 @@ def send_report(data, base_date):
                 emoji = "🟢"
 
             message_lines.append(
-                f"- {emoji} {type.capitalize()} ({reference_code}): {len(units_without_data)} ({percent}%)"
+                f"- {emoji} {type.capitalize()} ({reference_code}): {len(units_without_data)} ({percent}%)"  # noqa
             )
 
         log(f"Sending message with {len(message_lines)} lines")
