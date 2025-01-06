@@ -85,7 +85,7 @@ def send_report(data, base_date):
                 emoji = "🟢"
 
             message_lines.append(
-                f"- {emoji} {type.capitalize()} ({reference_code}): {len(units_without_data)} ({percent}%)"
+                f"- {emoji} {type.capitalize()} ({reference_code}): {len(units_without_data)} ({percent}%)" # noqa
             )
 
         log(f"Sending message with {len(message_lines)} lines")
