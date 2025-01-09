@@ -10,19 +10,23 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.std.vitai_alergias.constants import constants as vitai_alergias_constants
-from pipelines.prontuarios.std.vitai_alergias.schedules import vitai_alergias_daily_update_schedule
+from pipelines.prontuarios.std.vitai_alergias.constants import (
+    constants as vitai_alergias_constants,
+)
+from pipelines.prontuarios.std.vitai_alergias.schedules import (
+    vitai_alergias_daily_update_schedule,
+)
 from pipelines.prontuarios.std.vitai_alergias.tasks import (
     create_allergie_list,
-    get_similar_allergie_levenshtein,
     get_similar_allergie_gemini,
-    validade_medlm
+    get_similar_allergie_levenshtein,
+    validade_medlm,
 )
 from pipelines.utils.tasks import (
+    get_secret_key,
+    load_file_from_bigquery,
     rename_current_flow_run,
     upload_to_datalake,
-    load_file_from_bigquery,
-    get_secret_key
 )
 
 ####################################
@@ -44,23 +48,21 @@ with Flow(
         project_name=vitai_alergias_constants.PROJECT.value[ENVIRONMENT],
         dataset_name="intermediario_historico_clinico",
         table_name="alergias_vitai",
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
     reference_allergies = load_file_from_bigquery(
         project_name=vitai_alergias_constants.PROJECT.value[ENVIRONMENT],
         dataset_name="intermediario_historico_clinico",
         table_name="alergias_referencia",
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
     key = get_secret_key(
-        secret_name=vitai_alergias_constants.INFISICAL_API_KEY.value, 
-        secret_path=vitai_alergias_constants.INFISICAL_PATH.value, 
-        environment=ENVIRONMENT
+        secret_name=vitai_alergias_constants.INFISICAL_API_KEY.value,
+        secret_path=vitai_alergias_constants.INFISICAL_PATH.value,
+        environment=ENVIRONMENT,
     )
     with case(RENAME_FLOW, True):
-        rename_flow_task = rename_current_flow_run(
-            environment=ENVIRONMENT, unidade="VITAI"
-        )
+        rename_flow_task = rename_current_flow_run(environment=ENVIRONMENT, unidade="VITAI")
     ####################################
     # Task Section #2 - Standardization
     ####################################
@@ -68,18 +70,12 @@ with Flow(
     vitai_allergies_list = create_allergie_list(vitai_allergies)
 
     std_allergies, no_std_allergies = get_similar_allergie_levenshtein(
-        allergies_dataset_reference=reference_allergies, 
+        allergies_dataset_reference=reference_allergies,
         allergie_list=vitai_allergies_list,
-        threshold=0.85
+        threshold=0.85,
     )
-    gemini_result = get_similar_allergie_gemini(
-        allergies_list=no_std_allergies,
-        key=key
-    )
-    result = validade_medlm(
-        gemini_result=gemini_result, 
-        levenshtein_result=std_allergies
-    )
+    gemini_result = get_similar_allergie_gemini(allergies_list=no_std_allergies, key=key)
+    result = validade_medlm(gemini_result=gemini_result, levenshtein_result=std_allergies)
 
     ####################################
     # Task Section #3 - Loading data
@@ -88,7 +84,7 @@ with Flow(
         input_path=result,
         dataset_id="intermediario_...",
         table_id="vitai_padronizacao",
-        dump_mode="append"
+        dump_mode="append",
     )
 
 

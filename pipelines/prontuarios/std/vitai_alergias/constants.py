@@ -10,7 +10,4 @@ class constants(Enum):
 
     INFISICAL_PATH = "/"
     INFISICAL_API_KEY = "GEMINI_API_KEY"
-    PROJECT = {
-        'dev': 'rj-sms-dev',
-        'prod': 'rj-sms'
-    }
+    PROJECT = {"dev": "rj-sms-dev", "prod": "rj-sms"}
