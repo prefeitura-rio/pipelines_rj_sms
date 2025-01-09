@@ -15,14 +15,14 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {
         "environment": "prod",
-        "target_date": "yesterday",
+        "base_date": "today",
     },
 ]
 
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2024, 9, 23, 7, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2025, 1, 5, 2, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

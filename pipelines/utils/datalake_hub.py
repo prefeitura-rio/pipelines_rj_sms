@@ -53,6 +53,10 @@ def load_asset(dataframe: pd.DataFrame, asset_id: str, environment: str):
         environment=environment,
     )
     token = authenticate.run(environment=environment)
+
+    # Convert all columns to string
+    dataframe = dataframe.astype(str)
+
     dataframe.to_json(open("./records.json", "w+"), orient="records")
     records = json.load(open("./records.json", "r"))
 

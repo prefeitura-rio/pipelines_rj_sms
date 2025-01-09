@@ -249,6 +249,7 @@ def create_parquet_file(
     base_path: str,
     filename: str,
     backup_date: str,
+    extract_if_table_is_missing: bool = False,
 ):
     log(f"Creating database connection to {filename} ...")
     conn = create_db_connection(
@@ -261,7 +262,21 @@ def create_parquet_file(
     tz = pytz.timezone("Brazil/East")
 
     log(f"Making SQL query of {filename} ...")
-    df = pd.read_sql(sql, conn, dtype=str)
+
+    try:
+        df = pd.read_sql(sql, conn, dtype=str)
+
+    except Exception as e:
+        if extract_if_table_is_missing:
+            log(
+                f"Could not extract table {filename} because error: {e}. Skipping extraction.",
+                level="warning",
+            )
+            return None
+        else:
+            message = f"Could not extract table {filename} because error: {e}"
+            log(message, level="error")
+            raise FAIL(message) from e
 
     log(f"Adding date metadata to {filename} ...", level="debug")
 
