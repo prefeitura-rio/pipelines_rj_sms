@@ -1,0 +1,215 @@
+# -*- coding: utf-8 -*-
+import re
+
+import numpy as np
+import pandas as pd
+from unidecode import unidecode
+from weighted_levenshtein import lev
+import timedelta
+from pipelines.utils.tasks import get_secret_key
+import requests
+from prefeitura_rio.pipelines_utils.logging import log
+
+from pipelines.utils.credential_injector import authenticated_task as task
+from typing import Tuple
+
+
+@task
+def create_allergie_list(dataframe_allergies_vitai: pd.DataFrame) -> list:
+    """
+    Create a list of allergies from a dataframe
+    Args:
+        dataframe (pd.DataFrame): Dataframe with the allergies
+    """
+    def clean_allergies_field(allergies_field: str)->list:
+        log(allergies_field)
+        allergies_field_clean = re.sub(
+            r"INTOLERANCIA A{0,1}|((REFERE ){0,1}ALERGIA A{0,1})|(PACIENTE ){0,1}AL[É|E]RGIC[A|O] AO{0,1}",
+            "",
+            allergies_field,
+        )
+        allergies_field_clean = re.sub(
+            r".*N[Ã|A]O [(SABE)|(RECORDA)|(LEMBRA))].*", "", allergies_field_clean
+        )
+        allergies_field_clean = re.sub(r".*COMENTARIO.*", "", allergies_field_clean)
+        allergies_field_clean = re.sub(r".*LISTA.*", "", allergies_field_clean)
+        allergies_field_clean = re.sub(r" E |\/|\n", ",", allergies_field_clean)
+        allergies_field_clean = re.sub(r"(\\\)", ",", allergies_field_clean)
+
+        return allergies_field_clean
+    
+    allergies_unique = []
+    for i in dataframe_allergies_vitai["alergias"]:
+        allergies_unique.extend(i[0])
+        
+    allergies_unique = np.unique(allergies_unique)
+    alergias = list(map( clean_allergies_field,allergies_unique))
+    alergias_join = ",".join(alergias)
+    alergias_lista = alergias_join.split(",")
+    alergias_lista = list(set([alergia.strip() for alergia in alergias_lista]))
+    return alergias_lista
+
+
+@task(nout=2)
+def get_similar_allergie_levenshtein(
+    allergies_dataset_reference: list, allergie_list: list, threshold: float
+)-> Tuple[list,list]:
+    """
+    Get similar allergie using levenshtein distance
+    Args:
+        allergies_dataset_reference (list): List of allergies to be used as reference
+        allergie_list (list): List of allergie to be standardized
+        threshold (float): Threshold for the levenshtein distance
+    """
+
+    # Defining weighted-levenshtein function
+    def dist(c1, c2, key_positions):
+        pos1 = key_positions[c1]
+        pos2 = key_positions[c2]
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+    key_positions = {
+        "Q": (0, 0),
+        "W": (0, 1),
+        "E": (0, 2),
+        "R": (0, 3),
+        "T": (0, 4),
+        "Y": (0, 5),
+        "U": (0, 6),
+        "I": (0, 7),
+        "O": (0, 8),
+        "P": (0, 9),
+        "A": (1, 0),
+        "S": (1, 1),
+        "D": (1, 2),
+        "F": (1, 3),
+        "G": (1, 4),
+        "H": (1, 5),
+        "J": (1, 6),
+        "K": (1, 7),
+        "L": (1, 8),
+        "Z": (2, 0),
+        "X": (2, 1),
+        "C": (2, 2),
+        "V": (2, 3),
+        "B": (2, 4),
+        "N": (2, 5),
+        "M": (2, 6),
+    }
+
+    substitute_costs = np.ones((128, 128), dtype=np.float64)
+    for key_1 in key_positions.keys():
+        for key_2 in key_positions.keys():
+            if dist(key_1, key_2, key_positions) == 1:
+                substitute_costs[ord(key_1), ord(key_2)] = 0.5
+
+    # Calculating weighted-levenshtein similarity
+    standardized_list = []
+    not_standardized_list = []
+    for allergie in allergie_list:
+        candidates = []
+        similaritys = []
+        for ref in allergies_dataset_reference["descricao_clean"].values:
+            lev_result = lev(ref, allergie, substitute_costs=substitute_costs)
+            max_length = max(len(ref), len(allergie))
+            lev_weighted_similarity = 1 - (lev_result / max_length)
+
+            if lev_weighted_similarity > threshold:
+                candidates.append(ref)
+                similaritys.append(lev_weighted_similarity)
+        result = pd.DataFrame({"elemento_escolhido": candidates, "similaridade": similaritys})
+        result.sort_values(by="similaridade", ascending=False, inplace=True)
+        if result.head(1).empty:
+            not_standardized_list.append(allergie)
+        else:
+            standardized_list.append(result.head(1).to_dict(orient="records"))
+    return standardized_list, not_standardized_list
+
+@task
+def get_api_token(
+    environment: str,
+    infisical_path: str,
+    infisical_api_url: str,
+    infisical_api_username: str,
+    infisical_api_password: str,
+) -> str:
+    """
+    Retrieves the authentication token for AI Models API.
+
+    Args:
+        environment (str): The environment for which to retrieve the API token.
+        infisical_path (str): The path of infisical secrets
+        infisical_api_url (str): The secret name of API_url in infisical
+        infisical_api_username (str): The secret name of username in infisical
+        infisical_api_password (str): The secret name os password in infisical
+
+    Returns:
+        str: The API token.
+
+    Raises:
+        Exception: If there is an error getting the API token.
+    """
+    api_url = get_secret_key.run(
+        secret_path=infisical_path, secret_name=infisical_api_url, environment=environment
+    )
+    api_username = get_secret_key.run(
+        secret_path=infisical_path, secret_name=infisical_api_username, environment=environment
+    )
+    api_password = get_secret_key.run(
+        secret_path=infisical_path, secret_name=infisical_api_password, environment=environment
+    )
+    response = requests.post(
+        url=f"{api_url}login",
+        timeout=180,
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        data={
+            "username": api_username,
+            "password": api_password,
+        },
+    )
+
+    if response.status_code == 200:
+        return response.json()["access_token"]
+    else:
+        raise Exception(f"Error getting API token ({response.status_code}) - {response.json()}")
+
+@task
+def get_similar_allergie_gemini(allergies_list: list, api_url: str, api_token: str) -> list:
+    """
+    Get similar allergie using gemini agent
+    Args:
+        allergies_list (list): List of allergies to be standardized
+        key (str): Models API key
+    """
+    response = requests.post(
+        url=f"{api_url}allergy/standardize",
+        timeout=180,
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        data={
+            "allergies_list": allergies_list
+        },
+    )
+
+    if response.status_code == 200:
+        result_list = response.json()["corrections"]
+    else:
+        raise Exception(f"Error getting gemini standardization ({response.status_code}) - {response.json()}")
+    
+    return result_list
+
+
+@task
+def concatenate_results(gemini_result: list, levenshtein_result: list)-> dict:
+    """
+    Concatenate results from both gemini and levenshtein modelss
+    Args:
+        gemini_result (list): List of gemini result
+        levenshtein_result (list): List of levenshtein result
+    """
+    levenshtein_result.extend(gemini_result)
+
+    return levenshtein_result

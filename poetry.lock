@@ -5528,6 +5528,16 @@ files = [
 ]
 
 [[package]]
+name = "timedelta"
+version = "2020.12.3"
+description = "datetime.timedelta replacement"
+optional = false
+python-versions = "*"
+files = [
+    {file = "timedelta-2020.12.3.tar.gz", hash = "sha256:41c28b314de9cb6e4c95fcc9f4e3ecee435f2fc821a079cd9243be4783ac4cf4"},
+]
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -5921,4 +5931,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "c34dd794ee862f8a43b65b43f7a46066472039adc8a2c293eab5007d487da8f9"
+content-hash = "678cd3658bdd7db9240fa69b952dc1b01f10d55b1896a326347dac8d8cdb1c35"

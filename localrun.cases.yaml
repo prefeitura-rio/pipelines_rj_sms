@@ -217,3 +217,8 @@ cases:
       environment: "dev"
       last_update_start_date: "2024-10-20"
       last_update_end_date: "2024-11-30"
+  - case_slug: "standardize-allergy-vitai"
+    flow_path: "pipelines.prontuarios.std.alergias_vitai.flows"
+    flow_name: "sms_prontuarios_vitai_alergias_padronizacao"
+    params:
+      environment: "dev"
