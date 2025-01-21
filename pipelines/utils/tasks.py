@@ -6,17 +6,20 @@ General utilities for SMS pipelines
 """
 
 import ftplib
+import glob
 import json
 import os
 import re
 import shutil
 import sys
+import uuid
 import zipfile
 from datetime import date, datetime, timedelta
 from ftplib import FTP
 from io import StringIO
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
+from typing import Literal, Optional
 
 import basedosdados as bd
 import google.auth.transport.requests
@@ -27,11 +30,15 @@ import prefect
 import pytz
 import requests
 from azure.storage.blob import BlobServiceClient
+from dateutil import parser
 from google.cloud import bigquery, storage
+from prefect.client import Client
 from prefeitura_rio.pipelines_utils.env import getenv_or_action
 from prefeitura_rio.pipelines_utils.infisical import get_infisical_client, get_secret
 from prefeitura_rio.pipelines_utils.logging import log
+from sqlalchemy.exc import InternalError
 
+from pipelines.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.infisical import get_credentials_from_env, inject_bd_credentials
@@ -134,6 +141,19 @@ def create_folders():
 
     except Exception as e:  # pylint: disable=W0703
         sys.exit(f"Failed to create folders: {e}")
+
+
+@task
+def create_folder(title="", subtitle=""):
+    folder_path = os.path.join(os.getcwd(), "data", title, subtitle)
+
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path, ignore_errors=False)
+    os.makedirs(folder_path)
+
+    log(f"Created folder: {folder_path}")
+
+    return folder_path
 
 
 @task
@@ -727,7 +747,7 @@ def create_partitions(
     log("Partitions created successfully")
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
 def upload_to_datalake(
     input_path: str,
     dataset_id: str,
@@ -739,12 +759,13 @@ def upload_to_datalake(
     if_storage_data_exists: str = "replace",
     biglake_table: bool = True,
     dataset_is_public: bool = False,
+    exception_on_missing_input_file: bool = False,
 ):
     """
     Uploads data to a Google Cloud Storage bucket and creates or appends to a BigQuery table.
 
     Args:
-        input_path (str): The path to the input data file.
+        input_path (str): The path to the input data file. It can be a folder or a file.
         dataset_id (str): The ID of the BigQuery dataset.
         table_id (str): The ID of the BigQuery table.
         dump_mode (str, optional): The dump mode for the table. Defaults to "append". Accepted values are "append" and "overwrite".
@@ -761,9 +782,25 @@ def upload_to_datalake(
     Returns:
         None
     """
+
     if input_path == "":
         log("Received input_path=''. No data to upload", level="warning")
+        if exception_on_missing_input_file:
+            raise FileNotFoundError(f"No files found in {input_path}")
         return
+
+    # If Input path is a folder
+    if os.path.isdir(input_path):
+        log(f"Input path is a folder: {input_path}")
+
+        reference_path = os.path.join(input_path, f"**/*.{source_format}")
+        log(f"Reference Path: {reference_path}")
+
+        if len(glob.glob(reference_path, recursive=True)) == 0:
+            log(f"No files found in {input_path}", level="warning")
+            if exception_on_missing_input_file:
+                raise FileNotFoundError(f"No files found in {input_path}")
+            return
 
     tb = bd.Table(dataset_id=dataset_id, table_id=table_id)
     table_staging = f"{tb.table_full_name['staging']}"
@@ -823,6 +860,66 @@ def upload_to_datalake(
     except Exception as e:  # pylint: disable=W0703
         log(f"An error occurred: {e}", level="error")
         raise RuntimeError() from e
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=1))
+def upload_df_to_datalake(
+    df: pd.DataFrame,
+    partition_column: str,
+    dataset_id: str,
+    table_id: str,
+    dump_mode: str = "append",
+    source_format: str = "csv",
+    csv_delimiter: str = ";",
+    if_exists: str = "replace",
+    if_storage_data_exists: str = "replace",
+    biglake_table: bool = True,
+    dataset_is_public: bool = False,
+):
+    root_folder = f"./data/{uuid.uuid4()}"
+    log(f"Using as root folder: {root_folder}")
+
+    log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
+    partition_folder = create_date_partitions.run(
+        dataframe=df,
+        partition_column=partition_column,
+        file_format=source_format,
+        root_folder=root_folder,
+    )
+
+    log(f"Uploading data to partition folder: {partition_folder}")
+    upload_to_datalake.run(
+        input_path=partition_folder,
+        dataset_id=dataset_id,
+        table_id=table_id,
+        dump_mode=dump_mode,
+        source_format=source_format,
+        csv_delimiter=csv_delimiter,
+        if_exists=if_exists,
+        if_storage_data_exists=if_storage_data_exists,
+        biglake_table=biglake_table,
+        dataset_is_public=dataset_is_public,
+        exception_on_missing_input_file=True,
+    )
+
+    # Delete files from partition folder
+    log(f"Deleting partition folder: {root_folder}")
+    shutil.rmtree(root_folder)
+    return
+
+
+@task
+def search_files_from_format(
+    folder_path: str,
+    file_format: str = "csv",
+):
+    data_path = Path(folder_path)
+    files = list(data_path.glob(f"**/*.{file_format}"))
+
+    for file in files:
+        log(f"File found: {file}")
+
+    return files
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
@@ -888,3 +985,193 @@ def load_file_from_bigquery(
 @task()
 def is_equal(value, target):
     return value == target
+
+
+@task
+def load_table_from_database(
+    db_url: str,
+    query: str,
+    time_window_start: Optional[date] = None,
+    time_window_end: Optional[date] = None,
+) -> pd.DataFrame:
+
+    if "{WHERE_CLAUSE}" in query:
+        if time_window_start and time_window_end:
+            query = query.replace(
+                "{WHERE_CLAUSE}",
+                f"WHERE tb_pacientes.timestamp BETWEEN '{time_window_start}' AND '{time_window_end}' ",
+            )
+        else:
+            query = query.replace("{WHERE_CLAUSE}", "")
+
+    # Remove line breaks from the query and print in log
+    log(f"Query: " + " ".join(query.replace("\n", " ").split()))
+
+    try:
+        patients = pd.read_sql(query, db_url)
+        return patients
+    except InternalError as e:
+        log(f"Error extracting data from database: {e}", level="error")
+        raise e
+
+
+@task()
+def get_bigquery_project_from_environment(environment: str) -> str:
+    if environment in ["prod", "local-prod"]:
+        return "rj-sms"
+    elif environment in ["dev", "staging", "local-staging"]:
+        return "rj-sms-dev"
+    else:
+        raise ValueError(f"Invalid environment: {environment}")
+
+
+@task
+def rename_current_flow_run(name_template: Optional[str] = None, **kwargs) -> None:
+    """
+    Renames the current flow run using the specified environment and CNES.
+
+    Args:
+        name_template (str, optional): The template to use for the flow run name. Defaults to None.
+        **kwargs: The parameters to use for the flow run name.
+
+    Returns:
+        None
+    """
+    flow_run_id = prefect.context.get("flow_run_id")
+    scheduled_date = prefect.context.get("scheduled_start_time").date()
+
+    if name_template is None:
+        params = sorted([f"{key}={value}" for key, value in kwargs.items()])
+        flow_run_name = f"{', '.join(params)} at {scheduled_date}"
+    else:
+        flow_run_name = name_template.format(**kwargs, scheduled_date=scheduled_date)
+
+    try:
+        client = Client()
+        client.set_flow_run_name(flow_run_id, flow_run_name)
+    except Exception as e:
+        log(f"Error renaming flow run: {e}", level="warning")
+        log(f"This is expected if the flow is running in a local environment")
+
+
+@task
+def get_project_name(environment: str):
+    """
+    Returns the project name based on the given environment.
+
+    Args:
+        environment (str): The environment for which to retrieve the project name.
+
+    Returns:
+        str: The project name corresponding to the given environment.
+    """
+    return constants.PROJECT_NAME.value[environment]
+
+
+@task
+def get_project_name_from_prefect_environment():
+    """
+    Returns the project name from the prefect context
+    """
+    log(f"Prefect context: {prefect.context}")
+    return prefect.context.get("project_name")
+
+
+@task
+def load_files_from_gcs_bucket(
+    bucket_name, file_prefix, file_suffix, updated_after, updated_before, environment
+):
+
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix=file_prefix)
+
+    files = [x for x in blobs if x.name.endswith(file_suffix)]
+
+    if updated_after:
+        updated_after = parser.parse(updated_after)
+        updated_after = pytz.timezone("America/Sao_Paulo").localize(updated_after)
+        files = [x for x in files if x.updated > updated_after]
+
+    if updated_before:
+        updated_before = parser.parse(updated_before)
+        updated_before = pytz.timezone("America/Sao_Paulo").localize(updated_before)
+        files = [x for x in files if x.updated < updated_before]
+
+    file_contents = [x.download_as_string() for x in files]
+
+    def blob_to_dict(blob):
+        return {
+            "name": blob.name,
+            "updated": blob.updated,
+            "created": blob.time_created,
+        }
+
+    file_metadata = [blob_to_dict(x) for x in files]
+
+    output = list(zip(file_metadata, file_contents))
+    return output
+
+
+@task
+def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
+    """
+    Safely exports a DataFrame to a Parquet file.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to export.
+        output_path (str): The path to the output Parquet file.
+
+    Returns:
+        str: The path to the output Parquet file.
+    """
+    df.to_csv(output_path.replace("parquet", "csv"), index=False)
+
+    dataframe = pd.read_csv(
+        output_path.replace("parquet", "csv"),
+        sep=",",
+        dtype=str,
+        keep_default_na=False,
+        encoding="utf-8",
+    )
+    dataframe.to_parquet(output_path, index=False)
+
+    # Delete the csv file
+    os.remove(output_path.replace("parquet", "csv"))
+    return
+
+
+@task
+def create_date_partitions(
+    dataframe,
+    partition_column,
+    file_format: Literal["csv", "parquet"] = "csv",
+    root_folder="./data/",
+):
+
+    dataframe[partition_column] = pd.to_datetime(dataframe[partition_column])
+    dataframe["data_particao"] = dataframe[partition_column].dt.strftime("%Y-%m-%d")
+
+    dates = dataframe["data_particao"].unique()
+    dataframes = [
+        (
+            date,
+            dataframe[dataframe["data_particao"] == date].drop(columns=["data_particao"]),
+        )  # noqa
+        for date in dates
+    ]
+
+    for _date, dataframe in dataframes:
+        partition_folder = os.path.join(
+            root_folder, f"ano_particao={_date[:4]}/mes_particao={_date[5:7]}/data_particao={_date}"
+        )
+        os.makedirs(partition_folder, exist_ok=True)
+
+        file_folder = os.path.join(partition_folder, f"{uuid.uuid4()}.{file_format}")
+
+        if file_format == "csv":
+            dataframe.to_csv(file_folder, index=False)
+        elif file_format == "parquet":
+            safe_export_df_to_parquet.run(df=dataframe, output_path=file_folder)
+
+    return root_folder

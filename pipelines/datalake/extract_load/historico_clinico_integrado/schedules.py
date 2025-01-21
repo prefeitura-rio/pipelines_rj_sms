@@ -14,35 +14,27 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "table_id": "mrg__patient",
+        "dataset_id": "gerenciamento__historico_clinico__logs",
+        "table_id": "userhistory",
         "historical_mode": False,
         "environment": "prod",
         "rename_flow": True,
+        "reference_datetime_column": "timestamp",
     },
     {
-        "table_id": "mrg__patientcns",
-        "historical_mode": False,
+        "dataset_id": "gerenciamento__historico_clinico__logs",
+        "table_id": "userinfo",
+        "historical_mode": True,
         "environment": "prod",
         "rename_flow": True,
-    },
-    {
-        "table_id": "mrg__patientaddress",
-        "historical_mode": False,
-        "environment": "prod",
-        "rename_flow": True,
-    },
-    {
-        "table_id": "mrg__patienttelecom",
-        "historical_mode": False,
-        "environment": "prod",
-        "rename_flow": True,
+        "reference_datetime_column": "updated_at",
     },
 ]
 
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1, 7, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2023, 1, 1, 5, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

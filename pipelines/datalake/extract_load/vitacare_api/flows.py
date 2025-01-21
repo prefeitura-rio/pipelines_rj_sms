@@ -24,6 +24,7 @@ from pipelines.datalake.extract_load.vitacare_api.tasks import (
     create_parameter_list,
     create_partitions,
     extract_data_from_api,
+    get_flow_name,
     save_data_to_file,
     transform_data,
     write_retry_results_on_bq,
@@ -33,7 +34,6 @@ from pipelines.prontuarios.utils.tasks import (
     get_ap_from_cnes,
     get_current_flow_labels,
     get_healthcenter_name_from_cnes,
-    get_project_name,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -41,7 +41,11 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-from pipelines.utils.tasks import create_folders, upload_to_datalake
+from pipelines.utils.tasks import (
+    create_folders,
+    get_project_name_from_prefect_environment,
+    upload_to_datalake,
+)
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",
@@ -101,7 +105,7 @@ with Flow(
             ap=ap,
             cnes=CNES,
             add_load_date_to_filename=True,
-            load_date=TARGET_DATE,
+            load_date=api_data["replication_date"],
         )
 
         #####################################
@@ -156,6 +160,7 @@ sms_dump_vitacare_estoque.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="2Gi",
+    memory_request="2Gi",
 )
 
 
@@ -176,13 +181,13 @@ with Flow(
     IS_ROUTINE = Parameter("is_routine", default=True)
 
     # Vitacare API
-    ENDPOINT = Parameter("endpoint", required=True)
+    ENDPOINT = Parameter("endpoint", required=True)  # movimento, posicao, vacina, backup_prontuario
     TARGET_DATE = Parameter("target_date", default="today")
     AP = Parameter("ap", default=None)
 
     # GCP
     DATASET_ID = Parameter("dataset_id", default=vitacare_constants.DATASET_ID.value)
-    TABLE_ID = Parameter("table_id", required=True)
+    TABLE_ID = Parameter("table_id", default=None)
 
     #####################################
     # Set environment
@@ -207,14 +212,14 @@ with Flow(
         table_id=TABLE_ID,
     )
 
-    project_name = get_project_name(
-        environment=ENVIRONMENT,
-    )
+    project_name = get_project_name_from_prefect_environment()
 
     current_flow_run_labels = get_current_flow_labels()
 
+    flow_name = get_flow_name(endpoint=ENDPOINT)
+
     created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("DataLake - Extração e Carga de Dados - VitaCare"),
+        flow_name=unmapped(flow_name),
         project_name=unmapped(project_name),
         parameters=parameter_list,
         labels=unmapped(current_flow_run_labels),
@@ -235,5 +240,7 @@ sms_dump_vitacare_estoque_scheduler.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
+    memory_request="4Gi",
+    memory_limit="4Gi",
 )
 sms_dump_vitacare_estoque_scheduler.schedule = vitacare_daily_update_schedule

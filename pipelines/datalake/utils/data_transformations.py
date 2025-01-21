@@ -10,7 +10,11 @@ import re
 from datetime import date, datetime, timedelta
 
 import pandas as pd
-import pyreaddbc
+
+try:
+    import pyreaddbc
+except ModuleNotFoundError:
+    pass
 import pytz
 from prefeitura_rio.pipelines_utils.logging import log
 from simpledbf import Dbf5
@@ -31,8 +35,12 @@ def convert_str_to_date(target_date: str) -> str:
         return date.today().strftime("%Y-%m-%d")
     elif target_date == "yesterday":
         return (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+    elif target_date.startswith("d-"):
+        days = int(target_date.replace("d-", ""))
+        return (date.today() - timedelta(days=days)).strftime("%Y-%m-%d")
     else:
         try:
+            datetime.strptime(target_date, "%Y-%m-%d")
             return target_date
         except ValueError as e:
             raise ValueError("The target_date must be in the format YYYY-MM-DD") from e
@@ -174,10 +182,10 @@ def add_flow_metadata(
         log(f"Invalid value for file_type: {file_type}", level="error")
         raise ValueError("Invalid value for file_type")
 
-    df["_data_carga"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+    df["imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
     if snapshot_date is not None:
-        df["_data_snapshot"] = snapshot_date
+        df["created_at"] = snapshot_date
     else:
         if parse_date_from == "filename":
             snapshot_date = re.findall(r"\d{6}", file_path)[0]

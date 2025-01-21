@@ -41,7 +41,7 @@ class Sisreg:
         self._profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")
         self._options.profile = self._profile
         self.browser = webdriver.Firefox(options=self._options)
-        self.browser.set_page_load_timeout(30)
+        self.browser.set_page_load_timeout(60)
         self.user = user
         self.password = password
         self.download_path = download_path

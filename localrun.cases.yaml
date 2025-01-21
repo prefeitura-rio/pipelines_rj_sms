@@ -33,7 +33,8 @@ cases:
     params:
       environment: "dev"
       rename_flow: false
-      command: "test"
+      command: "build"
+      send_discord_report: false
   - case_slug: "smsrio-raw-routine"
     flow_path: "pipelines.prontuarios.raw.smsrio.flows"
     flow_name: "sms_prontuarios_raw_smsrio"
@@ -43,7 +44,7 @@ cases:
       is_initial_extraction: false
       start_datetime: "2024-06-05"
       end_datetime: "2024-06-06"
-  - case_slug: "datalake-extract_load-vitacare-agendador"
+  - case_slug: "datalake-extract_load-vitacare-agendador-reprocessamento"
     flow_path: "pipelines.datalake.extract_load.vitacare_api.flows"
     flow_name: "sms_dump_vitacare_estoque_scheduler"
     params:
@@ -65,12 +66,18 @@ cases:
       target_date: "2024-06-03"
       dataset_id: "brutos_prontuario_vitacare"
       table_id: "estoque_movimento"
-  - case_slug: "sms_dump_vitai_rio_saude"
+  - case_slug: "datalake_extract_vitai_db_operator"
     flow_path: "pipelines.datalake.extract_load.vitai_db.flows"
-    flow_name: "sms_dump_vitai_rio_saude"
+    flow_name: "datalake_extract_vitai_db_operator"
     params:
       environment: "dev"
-      rename_flow: false
+      schema_name: "basecentral"
+      table_name: "prescricao"
+      partition_column: "datalake_loaded_at"
+      datetime_column: "created_at"
+      target_name: "basecentral__prescricao_eventos"
+      interval_start: "2024-09-30"
+      interval_end: "2024-10-07"
   - case_slug: "load-hci-from-datake"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
     flow_name: "datalake_to_hci"
@@ -99,16 +106,6 @@ cases:
       dataset_id: "brutos_sisreg"
       table_id: "escala"
       endpoint: "escala"
-  - case_slug: "vitai_db_historical"
-    flow_path: "pipelines.misc.historical_vitai_db.flows"
-    flow_name: "vitai_db_historical"
-    params:
-      environment: "dev"
-  - case_slug: "sms_dump_vitai_rio_saude_batch"
-    flow_path: "pipelines.misc.historical_vitai_db.flows"
-    flow_name: "sms_dump_vitai_rio_saude_batch"
-    params:
-      environment: "dev"
   - case_slug: "datalake-to-hci"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
     flow_name: "datalake_to_hci"
@@ -136,3 +133,87 @@ cases:
       blob_file: "posicao"
       dataset_id: "brutos_estoque_central_tpc"
       table_id: "estoque_posicao"
+  - case_slug: "datalake-extract_load-vitacare_db"
+    flow_path: "pipelines.datalake.extract_load.vitacare_db.flows"
+    flow_name: "sms_dump_vitacare_db"
+    params:
+      environment: "dev"
+      cnes: "2269929"
+      backup_subfolder: "2024-11-12"
+      dataset_id: "brutos_prontuario_vitacare_db"
+  - case_slug: "report-farmacia-controlados"
+    flow_path: "pipelines.reports.farmacia_digital.livro_controlados.flows"
+    flow_name: "report_farmacia_digital_livro_controlados"
+    params:
+      environment: "dev"
+      data_competencia: "atual"
+  - case_slug: "report-hci-transformation"
+    flow_path: "pipelines.reports.hci_transformation.flows"
+    flow_name: "report_monitoramento_ingestao"
+    params:
+      environment: "dev"
+      target_date: "2024-10-01"
+      entity: "paciente"
+  - case_slug: "report-monitoramento-ingestao"
+    flow_path: "pipelines.reports.ingestao_dados.flows"
+    flow_name: "report_monitoramento_ingestao"
+    params:
+      environment: "dev"
+      base_date: "today"
+  - case_slug: "report-flows-longos"
+    flow_path: "pipelines.reports.long_running_flows.flows"
+    flow_name: "report_long_running_flows"
+    params:
+      environment: "prod"
+  - case_slug: "dump-hci"
+    flow_path: "pipelines.datalake.extract_load.historico_clinico_integrado.flows"
+    flow_name: "dump_hci"
+    params:
+      environment: "dev"
+      table_id: "historico_clinico_integrado"
+      dataset_id: "brutos_historico_clinico_integrado"
+      historical_mode: false
+      reference_datetime_column: "timestamp"
+  - case_slug: "datalake_clone_table"
+    flow_path: "pipelines.datalake.extract_load.datalake_bigquery.flows"
+    flow_name: "datalake_bigquery_clone"
+    params:
+      environment: "dev"
+      source_table_id: "rj-smfp.recursos_humanos_ergon_saude.funcionarios_ativos"
+      destination_dataset_name: "brutos_ergon_staging"
+      destination_table_name: "funcionarios_ativos"
+      dbt_select_exp: "tag:ergon"
+  - case_slug: "tasks_clickup_extraction"
+    flow_path: "pipelines.datalake.extract_load.tasks_clickup.flows"
+    flow_name: "tasks_clickup_extraction"
+    params:
+      environment: "dev"
+      list_id: "901301305437"
+      destination_table_name: "atividades_eventos"
+      destination_dataset_name: "brutos_plataforma_clickup"
+  - case_slug: "monitoramento_vitacare"
+    flow_path: "pipelines.tools.vitacare_healthcheck.flows"
+    flow_name: "monitoramento"
+    params:
+      environment: "dev"
+      start_date: "2024-10-01"
+      end_date: "2024-11-01"
+  - case_slug: "conectividade_vitacare"
+    flow_path: "pipelines.datalake.extract_load.vitacare_conectividade_gcs.flows"
+    flow_name: "conectividade_vitacare"
+    params:
+      environment: "dev"
+      source_bucket_name: 'conectividade_aps'
+      source_file_prefix: ''
+      source_file_suffix: '.json'
+      destination_table_name: 'vitacare'
+      destination_dataset_name: 'brutos_conectividade'
+      start_datetime: '2024-09-01'
+      end_datetime: '2024-11-06'
+  - case_slug: "datalake-migrate-vitacare_db"
+    flow_path: "pipelines.datalake.extract_load.vitacare_db.flows"
+    flow_name: "sms_migrate_vitacare_db"
+    params:
+      environment: "dev"
+      last_update_start_date: "2024-10-20"
+      last_update_end_date: "2024-11-30"

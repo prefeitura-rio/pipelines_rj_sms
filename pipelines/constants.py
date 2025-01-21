@@ -20,8 +20,16 @@ class constants(Enum):
     ######################################
     # Agent labels
     ######################################
-    RJ_SMS_AGENT_LABEL = "sms"
+    RJ_SMS_AGENT_LABEL = "sms-new"
     RJ_SMS_VERTEX_AGENT_LABEL = "sms-vertex"
+
+    ######################################
+    # Datalake Hub
+    ######################################
+    DATALAKE_HUB_PATH = "/datalake-hub"
+    DATALAKE_HUB_API_URL = "URL"
+    DATALAKE_HUB_API_USERNAME = "USERNAME"
+    DATALAKE_HUB_API_PASSWORD = "PASSWORD"
 
     ######################################
     # Other constants
@@ -34,4 +42,12 @@ class constants(Enum):
         "prod": "production",
         "local-prod": "production",
         "local-staging": "staging",
+    }
+
+    GOOGLE_CLOUD_PROJECT = {
+        "dev": "rj-sms-dev",
+        "staging": "rj-sms-dev",
+        "prod": "rj-sms",
+        "local-prod": "rj-sms",
+        "local-staging": "rj-sms-dev",
     }

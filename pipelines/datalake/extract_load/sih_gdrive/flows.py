@@ -16,7 +16,8 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.sih_gdrive.constants import (
     constants as sih_constants,
 )
-from pipelines.datalake.extract_load.sih_gdrive.schedules import daily_update_schedule
+
+# from pipelines.datalake.extract_load.sih_gdrive.schedules import daily_update_schedule
 from pipelines.datalake.extract_load.sih_gdrive.tasks import (
     generate_filters,
     transform_data,
@@ -109,4 +110,4 @@ sms_dump_sih.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
 )
-sms_dump_sih.schedule = daily_update_schedule
+# sms_dump_sih.schedule = daily_update_schedule

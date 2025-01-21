@@ -4,7 +4,10 @@
 """
 Tasks to download data from Google Drive.
 """
+import concurrent.futures
+import os
 from datetime import datetime, timedelta
+from functools import partial
 
 import prefect
 from prefeitura_rio.pipelines_utils.logging import log
@@ -15,12 +18,17 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task
-def get_files_from_folder(folder_id, file_extension="csv"):
+def get_files_from_folder(
+    folder_id,
+    look_in_subfolders=False,
+    file_extension="csv",
+):
     """
     Retrieves a list of files from a specified Google Drive folder.
 
     Args:
         folder_id (str): The ID of the Google Drive folder.
+        look_in_subfolders (bool, optional): Whether to search in subfolders. Defaults to False.
         file_extension (str, optional): The file extension to filter the files. Defaults to "csv".
 
     Returns:
@@ -38,15 +46,19 @@ def get_files_from_folder(folder_id, file_extension="csv"):
     gauth.ServiceAuth()
 
     drive = GoogleDrive(gauth)
-
-    log("Querying root folder")
-    files = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
-
     files_list = []
 
-    for file in files:
-        if file["title"].endswith(file_extension):
-            files_list.append(file)
+    def get_files_recursive(folder_id):
+        log(f"Querying folder {folder_id}")
+        files = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
+
+        for file in files:
+            if file["title"].endswith(file_extension):
+                files_list.append(file)
+            if look_in_subfolders and file["mimeType"] == "application/vnd.google-apps.folder":
+                get_files_recursive(file["id"])
+
+    get_files_recursive(folder_id)
 
     log(f"{len(files_list)} files found in Google Drive folder.", level="info")
     log(f"Files: {files_list}", level="debug")
@@ -127,6 +139,18 @@ def download_files(files, folder_path):
     downloaded_files = []
 
     for file in files:
+
+        # Check if file already exists in destination folder
+        file_path = f"{folder_path}/{file['title']}"
+
+        if os.path.exists(file_path):
+            log(
+                f"File {file['title']} already exists in {folder_path}, skipping download",
+                level="info",
+            )
+            downloaded_files.append(file_path)
+            continue
+
         file.GetContentFile(f"{folder_path}/{file['title']}")
         downloaded_files.append(f"{folder_path}/{file['title']}")
 
@@ -140,11 +164,13 @@ def download_files(files, folder_path):
 def dowload_from_gdrive(
     folder_id: str,
     destination_folder: str,
+    file_extension: str = "dbc",
+    look_in_subfolders: bool = False,
     filter_type: str = "last_updated",
     filter_param: str | tuple = None,
 ) -> str:
     """
-    Downloads files from a Google Drive folder based on specified filters.
+    Downloads files from a Google Drive folder and its subfolders based on specified filters.
 
     Args:
         folder_id (str): The ID of the Google Drive folder.
@@ -157,7 +183,11 @@ def dowload_from_gdrive(
 
     """
 
-    files = get_files_from_folder.run(folder_id=folder_id, file_extension="dbc")
+    files = get_files_from_folder.run(
+        folder_id=folder_id,
+        file_extension=file_extension,
+        look_in_subfolders=look_in_subfolders,
+    )
 
     if filter_type == "last_updated":
         if filter_param:
@@ -176,3 +206,80 @@ def dowload_from_gdrive(
         return {"has_data": True, "files": downloaded_files}
 
     return {"has_data": False}
+
+
+def upload_folder_to_gdrive(folder_path: str, parent_folder_id: str, max_workers: int = 20):
+    """
+    Uploads an entire folder to Google Drive, preserving the folder structure.
+    Avoids creating duplicate folders and replaces existing files.
+
+    Args:
+        folder_path (str): The path to the folder to be uploaded.
+        parent_folder_id (str): The ID of the Google Drive folder where the contents will be uploaded.
+
+    Returns:
+        None
+    """
+    gauth = GoogleAuth(
+        settings={
+            "client_config_backend": "service",
+            "service_config": {
+                "client_json_file_path": "/tmp/credentials.json",
+            },
+        }
+    )
+    gauth.ServiceAuth()
+
+    drive = GoogleDrive(gauth)
+
+    def get_or_create_folder(name, parent_id):
+        query = f"title='{name}' and '{parent_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        existing_folders = drive.ListFile({"q": query}).GetList()
+
+        if existing_folders:
+            return existing_folders[0]
+
+        folder_metadata = {
+            "title": name,
+            "mimeType": "application/vnd.google-apps.folder",
+            "parents": [{"id": parent_id}],
+        }
+        folder = drive.CreateFile(folder_metadata)
+        folder.Upload()
+        return folder
+
+    def upload_or_update_file(file_path, parent_id):
+        file_name = os.path.basename(file_path)
+        query = f"title='{file_name}' and '{parent_id}' in parents and trashed=false"
+        existing_files = drive.ListFile({"q": query}).GetList()
+
+        if existing_files:
+            file = existing_files[0]
+        else:
+            file = drive.CreateFile({"parents": [{"id": parent_id}]})
+
+        file.SetContentFile(file_path)
+        file.Upload()
+
+    def upload_folder(local_path, parent_id):
+        items = os.listdir(local_path)
+        files_to_upload = []
+
+        for item in items:
+            item_path = os.path.join(local_path, item)
+            if os.path.isfile(item_path):
+                files_to_upload.append((item_path, parent_id))
+            elif os.path.isdir(item_path):
+                subfolder = get_or_create_folder(item, parent_id)
+                upload_folder(item_path, subfolder["id"])
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            list(executor.map(lambda x: upload_or_update_file(*x), files_to_upload))
+
+    # Start uploading directly to the provided parent_folder_id
+    upload_folder(folder_path, parent_folder_id)
+
+    log(
+        f"Folder {folder_path} contents uploaded to Google Drive folder {parent_folder_id} in parallel, preserving structure and updating existing files",
+        level="info",
+    )

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# pylint: disable= C0301. fixme
+# pylint: disable= C0301. C0103
+# flake8: noqa: E501
 """
 Tasks for dump_api_vitacare
 """
@@ -8,7 +9,7 @@ import json
 import os
 import re
 import shutil
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List
 
@@ -35,7 +36,7 @@ from pipelines.utils.tasks import (
 )
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=4))
+@task(max_retries=2, retry_delay=timedelta(minutes=2))
 def extract_data_from_api(
     cnes: str, ap: str, target_day: str, endpoint: str, environment: str = "dev"
 ) -> dict:
@@ -85,7 +86,7 @@ def extract_data_from_api(
     )
 
     if response["status_code"] != 200:
-        raise ValueError(
+        raise FAIL(
             f"Failed to extract data from API: {response['status_code']} - {response['body']}"
         )
 
@@ -95,20 +96,39 @@ def extract_data_from_api(
 
         # check if the data was replicated today. This is exclusive to the endpoint "posicao"
         if endpoint == "posicao":
-            replication_date = datetime.strptime(
+
+            replication_datetime = datetime.strptime(
                 requested_data[0]["dtaReplicacao"], "%Y-%m-%d %H:%M:%S.%f"
-            ).date()
-            if replication_date != date.today():
-                err_msg = f"Date mismatch: replication date is {replication_date} instead of {date.today()}"  # noqa: E501
+            )
+
+            yesterday_cutoff = (datetime.now() - timedelta(days=1)).replace(
+                hour=20, minute=0, second=0, microsecond=0
+            )
+
+            if replication_datetime < yesterday_cutoff:
+                if (
+                    cnes == "6927254"
+                ):  # TODO: remove this condition after Newton Bethlem internet is fixed
+                    target_day = replication_datetime.strftime("%Y-%m-%d")
+                else:
+                    err_msg = (
+                        f"API data is outdated. "
+                        f"Last update at API: {replication_datetime}, "
+                        f"Expected update after: {yesterday_cutoff}. "
+                    )
                 logger.error(err_msg)
                 return {"has_data": False}
 
         logger.info(f"Successful Request: retrieved {len(requested_data)} records")
-        return {"data": requested_data, "has_data": True}
+        return {
+            "data": requested_data,
+            "has_data": True,
+            "replication_date": target_day,
+        }
 
     else:
         target_day = datetime.strptime(target_day, "%Y-%m-%d").date()
-        if endpoint == "movimento" and (
+        if endpoint in ("movimento", "vacina") and (
             target_day.weekday() == 6
             or prefect.context.task_run_count >= 2  # pylint: disable=no-member
         ):
@@ -116,7 +136,7 @@ def extract_data_from_api(
             return {"has_data": False}
 
         logger.error("Failed Request: no data was retrieved")
-        raise ValueError(f"Empty response for ({cnes}, {target_day}, {endpoint})")
+        raise FAIL(f"Empty response for ({cnes}, {target_day}, {endpoint})")
 
 
 @task
@@ -183,7 +203,8 @@ def transform_data(file_path: str, table_id: str) -> str:
 
     add_load_date_column.run(input_path=csv_file_path, sep=";")
 
-    fix_payload_column_order(filepath=csv_file_path, table_id=table_id)
+    if table_id in ("estoque_posicao", "estoque_movimento"):
+        fix_payload_column_order(filepath=csv_file_path, table_id=table_id)
 
     return csv_file_path
 
@@ -272,6 +293,8 @@ def create_parameter_list(
         dataset_name = "gerenciamento__reprocessamento"
         if endpoint == "movimento":
             table_name = "brutos_prontuario_vitacare__estoque_movimento"
+        elif endpoint == "vacina":
+            table_name = "brutos_prontuario_vitacare__vacina"
         else:
             log("Invalid endpoint", level="error")
             raise FAIL("Invalid endpoint")
@@ -284,42 +307,80 @@ def create_parameter_list(
 
     # Filter the queried table
     if is_routine:
-        results = table_data[
-            (table_data["prontuario_versao"] == "vitacare")
-            & (table_data["prontuario_estoque_tem_dado"] == "sim")
-        ]
-        results["data"] = convert_str_to_date(target_date)
+
+        if endpoint in ["backup_prontuario", "vacina"]:
+            results = table_data[
+                (table_data["prontuario_versao"] == "vitacare")
+                & (table_data["prontuario_episodio_tem_dado"] == "sim")
+            ]
+        elif endpoint in ["posicao", "movimento"]:
+            results = table_data[
+                (table_data["prontuario_versao"] == "vitacare")
+                & (table_data["prontuario_estoque_tem_dado"] == "sim")
+            ]
+        else:
+            log("Invalid endpoint", level="error")
+            raise FAIL("Invalid endpoint")
+
+        if endpoint in ["movimento", "posicao", "vacina"]:
+            results["data"] = convert_str_to_date(target_date)
+
     else:
+        # retrieve records with pending or in progress retry status
         results = table_data[
             (table_data["retry_status"] == "pending")
             | (table_data["retry_status"] == "in progress")
         ]
-        results = results[(results["data"] >= datetime.strptime("2024-05-01", "%Y-%m-%d").date())]
+
+        results = results[(results["data"] >= datetime.strptime("2024-08-15", "%Y-%m-%d").date())]
+
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
+
     if area_programatica:
         results = results[results["area_programatica"] == area_programatica]
 
-    if results.empty:
+    if results.empty and is_routine:
         log("No data to process", level="error")
         raise FAIL("No data to process")
 
-    results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
-
     # Construct the parameters for the flow
+
     vitacare_flow_parameters = []
-    for cnes, target_date in results_tuples:
-        vitacare_flow_parameters.append(
-            {
-                "cnes": cnes,
-                "endpoint": endpoint,
-                "target_date": target_date,
-                "dataset_id": dataset_id,
-                "table_id": table_id,
-                "environment": environment,
-                "rename_flow": True,
-                "is_routine": is_routine,
-            }
-        )
+
+    if endpoint in ["movimento", "posicao", "vacina"]:
+
+        results_tuples = results[["id_cnes", "data"]].apply(tuple, axis=1).tolist()
+
+        for cnes, date_target in results_tuples:
+            vitacare_flow_parameters.append(
+                {
+                    "cnes": cnes,
+                    "endpoint": endpoint,
+                    "target_date": date_target,
+                    "dataset_id": dataset_id,
+                    "table_id": table_id,
+                    "environment": environment,
+                    "rename_flow": True,
+                    "is_routine": is_routine,
+                }
+            )
+
+    elif endpoint == "backup_prontuario":
+        for cnes in results["id_cnes"]:
+            vitacare_flow_parameters.append(
+                {
+                    "environment": environment,
+                    "rename_flow": True,
+                    "cnes": cnes,
+                    "backup_subfolder": target_date,
+                    "dataset_id": dataset_id,
+                    "upload_only_expected_files": True,
+                }
+            )
+
+    else:
+        log("Invalid endpoint", level="error")
+        raise FAIL("Invalid endpoint")
 
     logger = prefect.context.get("logger")
     logger.info(f"Created {len(vitacare_flow_parameters)} flow run parameters")
@@ -355,6 +416,8 @@ def write_retry_results_on_bq(
     dataset_id = "gerenciamento__reprocessamento"
     if endpoint == "movimento":
         table_id = "brutos_prontuario_vitacare__estoque_movimento"
+    elif endpoint == "vacina":
+        table_id = "brutos_prontuario_vitacare__vacina"
     else:
         err_msg = "Invalid endpoint"
         log(err_msg, level="error")
@@ -445,3 +508,25 @@ def write_retry_results_on_bq(
     query_job.result()  # Wait for the job to complete
 
     log("Record updated successfully", level="info")
+
+
+@task
+def get_flow_name(endpoint: str):
+    """
+    Get the flow name based on the endpoint
+
+    Args:
+        endpoint (str): The endpoint for the API.
+
+    Returns:
+        str: The flow name.
+    """
+    if endpoint in ["movimento", "posicao", "vacina"]:
+        flow_name = "DataLake - Extração e Carga de Dados - VitaCare"
+    elif endpoint == "backup_prontuario":
+        flow_name = "DataLake - Extração e Carga de Dados - VitaCare DB"
+    else:
+        err_msg = "Invalid endpoint. Expected 'movimento', 'posicao', 'vacina' or 'backup_prontuario'"  # noqa: E501
+        log(err_msg, level="error")
+        raise FAIL(err_msg)
+    return flow_name

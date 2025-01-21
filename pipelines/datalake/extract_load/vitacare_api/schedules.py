@@ -15,6 +15,14 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 routine_flow_parameters = [
     {
         "dataset_id": "brutos_prontuario_vitacare",
+        "endpoint": "movimento",
+        "environment": "prod",
+        "rename_flow": True,
+        "table_id": "estoque_movimento",
+        "target_date": "yesterday",
+    },
+    {
+        "dataset_id": "brutos_prontuario_vitacare",
         "endpoint": "posicao",
         "environment": "prod",
         "rename_flow": True,
@@ -23,22 +31,22 @@ routine_flow_parameters = [
     },
     {
         "dataset_id": "brutos_prontuario_vitacare",
-        "endpoint": "movimento",
+        "endpoint": "vacina",
         "environment": "prod",
         "rename_flow": True,
-        "table_id": "estoque_movimento",
-        "target_date": "yesterday",
+        "table_id": "vacina",
+        "target_date": "d-3",
     },
 ]
 
 routine_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2024, 1, 1, 4, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 1, 1, 3, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=routine_flow_parameters,
-    runs_interval_minutes=30,
+    runs_interval_minutes=60,
 )
 
 
@@ -50,7 +58,15 @@ reprocess_flow_parameters = [
         "rename_flow": True,
         "is_routine": False,
         "table_id": "estoque_movimento",
-    }
+    },
+    {
+        "dataset_id": "brutos_prontuario_vitacare",
+        "endpoint": "vacina",
+        "environment": "prod",
+        "rename_flow": True,
+        "is_routine": False,
+        "table_id": "vacina",
+    },
 ]
 
 reprocess_clocks = generate_dump_api_schedules(
@@ -60,7 +76,7 @@ reprocess_clocks = generate_dump_api_schedules(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=reprocess_flow_parameters,
-    runs_interval_minutes=30,
+    runs_interval_minutes=45,
 )
 
 vitacare_clocks = routine_clocks + reprocess_clocks

@@ -1,129 +1,169 @@
 # -*- coding: utf-8 -*-
-import datetime
-import os
-import shutil
-import uuid
+from datetime import datetime, timedelta
 
-import google
 import pandas as pd
-import prefect
-from google.cloud import bigquery
-from prefect.backend import FlowRunView
 
-from pipelines.datalake.utils.data_transformations import convert_to_parquet
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import upload_to_datalake
+from pipelines.utils.progress import calculate_operator_key
 
 
-@task()
-def list_tables_to_import():
-    return [
-        "paciente",
-        "boletim",
-        "alergia",
-        "atendimento",
-        "cirurgia",
-        "classificacao_risco",
-        "diagnostico",
-        "exame",
-        "profissional",
-    ]
-
-
-@task()
-def get_bigquery_project_from_environment(environment: str) -> str:
-    if environment in ["prod", "local-prod"]:
-        return "rj-sms"
-    elif environment in ["dev", "staging", "local-staging"]:
-        return "rj-sms-dev"
-    else:
-        raise ValueError(f"Invalid environment: {environment}")
-
-
-@task()
-def get_interval_start_list(interval_start: str, table_names: list[str]) -> list:
-    value = pd.to_datetime(interval_start, format="%Y-%m-%d %H:%M:%S")
-    return [value for _ in table_names]
-
-
-@task(nout=2, max_retries=3, retry_delay=datetime.timedelta(seconds=120))
+@task(nout=2)
 def create_working_time_range(
-    project_name: str,
-    dataset_name: str,
-    table_names: list[str],
     interval_start: str = None,
     interval_end: str = None,
 ) -> list:
-    interval_start_values = []
-    interval_end_values = []
-
-    seven_days_ago = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(days=7)
-    seven_days_ago = seven_days_ago.strftime("%Y-%m-%d")
 
     if not interval_start:
-        log("Interval start not provided. Getting max value from staging tables.", level="warning")
-        client = bigquery.Client()
-
-        default_max_value = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(minutes=30)
-
-        interval_start_values = []
-        for table_name in table_names:
-            query = f"""
-            SELECT MAX(datahora) as max_value, "{table_name}" as table_name
-            FROM `{project_name}.{dataset_name}_staging.{table_name}`
-            WHERE data_particao > '{seven_days_ago}'
-            """
-
-            try:
-                result = client.query(query).result().to_dataframe().max_value.iloc[0]
-                if result is None:
-                    log(f"Table {table_name} is empty. Ignoring table.", level="warning")
-                    max_value = default_max_value
-                else:
-                    max_value = pd.to_datetime(result, format="%Y-%m-%d %H:%M:%S.%f")
-            except google.api_core.exceptions.NotFound:
-                log(f"Table {table_name} not found in BigQuery. Ignoring table.", level="warning")
-                max_value = default_max_value
-
-            interval_start_values.append(max_value)
+        start = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(days=7)
+        log(f"Interval start not provided. Using {start}.", level="warning")
     else:
-        interval_start_values = [
-            pd.to_datetime(interval_start, format="%Y-%m-%d %H:%M:%S") for _ in table_names
-        ]
+        start = pd.to_datetime(interval_start)
 
     if not interval_end:
+        end = pd.Timestamp.now(tz="America/Sao_Paulo")
         log("Interval end not provided. Getting current timestamp.", level="warning")
-        interval_end_values = [pd.Timestamp.now(tz="America/Sao_Paulo") for _ in table_names]
     else:
-        interval_end_values = [
-            pd.to_datetime(interval_end, format="%Y-%m-%d %H:%M:%S") for _ in table_names
-        ]
+        end = pd.to_datetime(interval_end)
 
-    for table_name, start, end in zip(table_names, interval_start_values, interval_end_values):
-        log(f"Table {table_name} will be extracted from {start} to {end}")
-
-    return interval_start_values, interval_end_values
+    return start, end
 
 
-@task(max_retries=3, retry_delay=datetime.timedelta(seconds=120))
-def import_vitai_table(
-    db_url: str,
+@task()
+def calculate_windows(year, window_size):
+    # Verifica se o ano é bissexto
+    days = 366 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 365
+
+    # Divide o ano em janelas
+    windows = []
+    ranges = list(range(0, days, window_size))
+
+    for i in range(len(ranges) - 1):
+        start_day = datetime(year, 1, 1) + timedelta(days=ranges[i])
+        end_day = datetime(year, 1, 1) + timedelta(days=ranges[i + 1])
+        windows.append(
+            (start_day.strftime("%Y-%m-%d 00:00:00"), end_day.strftime("%Y-%m-%d 00:00:00"))
+        )
+
+    # Adiciona a última janela
+    if ranges[-1] < days:
+        start_day = datetime(year, 1, 1) + timedelta(days=ranges[-1])
+        end_day = datetime(year + 1, 1, 1)
+        windows.append(
+            (start_day.strftime("%Y-%m-%d 00:00:00"), end_day.strftime("%Y-%m-%d 00:00:00"))
+        )
+
+    return windows
+
+
+@task()
+def build_param_list(
+    environment: str,
+    schema_name: str,
     table_name: str,
-    output_file_folder: str,
+    target_name: str,
+    datetime_column: str,
+    partition_column: str,
+    window_size: int = 7,
+):
+    curr_year = pd.Timestamp.now().year
+
+    params = []
+    for year in range(2012, curr_year + 1):
+        for window in calculate_windows.run(year=year, window_size=window_size):
+            start, end = window
+            operator_key = calculate_operator_key.run(
+                schema_name=schema_name,
+                table_name=table_name,
+                target_name=target_name,
+                interval_start=start,
+                window_size=window_size,
+            )
+            params.append(
+                {
+                    "operator_key": operator_key,
+                    "interval_start": start,
+                    "interval_end": end,
+                    "schema_name": schema_name,
+                    "table_name": table_name,
+                    "datetime_column": datetime_column,
+                    "target_name": target_name,
+                    "environment": environment,
+                    "partition_column": partition_column,
+                    "rename_flow": True,
+                }
+            )
+
+    return params
+
+
+@task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=20))
+def define_queries(
+    db_url: str,
+    table_info: dict,
     interval_start: pd.Timestamp,
     interval_end: pd.Timestamp,
+    batch_size: int,
 ) -> str:
+    """
+    Generates a list of SQL queries to fetch data from a specified table within
+        a given time interval in batches.
+    Args:
+        db_url (str): The database connection URL.
+        table_info (dict): A dictionary containing table information with keys:
+            - "schema_name": The schema name of the table.
+            - "table_name": The name of the table.
+            - "datetime_column": The name of the datetime column to filter on.
+        interval_start (pd.Timestamp): The start of the time interval.
+        interval_end (pd.Timestamp): The end of the time interval.
+        batch_size (int): The number of rows to fetch in each batch.
+    Returns:
+        str: A list of SQL queries to fetch data in batches. If no data is found,
+            returns an empty list.
+    """
+    schema_name = table_info["schema_name"]
+    table_name = table_info["table_name"]
+    dt_column = table_info["datetime_column"]
 
     interval_start = interval_start.strftime("%Y-%m-%d %H:%M:%S")
     interval_end = interval_end.strftime("%Y-%m-%d %H:%M:%S")
 
     query = f"""
-        select *
-        from basecentral.{table_name}
-        where datahora >= '{interval_start}' and datahora < '{interval_end}'
+        select count(*) as row_count
+        from {schema_name}.{table_name}
+        where {dt_column} between '{interval_start}' and '{interval_end}'
     """
     log("Built query: \n" + query)
+
+    df = pd.read_sql(query, db_url)
+
+    row_count = df["row_count"].values[0]
+
+    if row_count == 0:
+        log("No data found for the given interval", level="warning")
+        return []
+
+    queries = []
+    for i in range(0, row_count, batch_size):
+        queries.append(
+            f"""
+                select *
+                from {schema_name}.{table_name}
+                where {dt_column} between '{interval_start}' and '{interval_end}'
+                limit {batch_size} offset {i}
+            """
+        )
+
+    return queries
+
+
+@task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=5))
+def run_query(
+    db_url: str,
+    query: str,
+    partition_column: str,
+) -> str:
+    log("Running query: \n" + query)
 
     df = pd.read_sql(query, db_url, dtype=str)
     log(f"Query executed successfully. Found {df.shape[0]} rows.")
@@ -133,79 +173,7 @@ def import_vitai_table(
         df.rename(columns={"id": "gid"}, inplace=True)
 
     now = pd.Timestamp.now(tz="America/Sao_Paulo")
-    df["datalake__imported_at"] = now
-    log(f"Added `datalake__imported_at` column to dataframe with current timestamp: {now}")
+    df["datalake_loaded_at"] = now
+    df["partition_date"] = pd.to_datetime(df[partition_column]).dt.date
 
-    # Separate dataframe per day for partitioning
-    if df.empty:
-        log("Empty dataframe. Preparing to send file with only headers", level="warning")
-        dfs = [(str(now.date()), df)]
-    else:
-        log("Non Empty dataframe. Splitting Dataframe in multiple files by day", level="warning")
-        df["partition_date"] = pd.to_datetime(df["datahora"]).dt.date
-        days = df["partition_date"].unique()
-        dfs = [
-            (day, df[df["partition_date"] == day].drop(columns=["partition_date"])) for day in days
-        ]  # noqa
-
-    # Save dataframes to csv files
-    output_paths = []
-    for day, df_day in dfs:
-        file_path = os.path.join(output_file_folder, f"{table_name}_{day}_{uuid.uuid4()}.csv")
-        df_day.to_csv(file_path, index=False, header=True, sep=";")
-        log(f"Saving CSV table data to {file_path}")
-
-        file_path_parquet = convert_to_parquet(file_path=file_path, file_type="csv")
-        log(f"Converted table data to parquet in {file_path_parquet}")
-        output_paths.append(file_path_parquet)
-
-    return output_paths
-
-
-@task()
-def create_datalake_table_name(table_name: str) -> str:
-    return f"{table_name}_eventos"
-
-
-@task
-def get_current_flow_labels() -> list[str]:
-    """
-    Get the labels of the current flow.
-    """
-    flow_run_id = prefect.context.get("flow_run_id")
-    flow_run_view = FlowRunView.from_flow_run_id(flow_run_id)
-    return flow_run_view.labels
-
-
-@task
-def create_folder(title="", subtitle=""):
-    folder_path = os.path.join(os.getcwd(), "data", title, subtitle)
-
-    if os.path.exists(folder_path):
-        shutil.rmtree(folder_path, ignore_errors=False)
-    os.makedirs(folder_path)
-
-    log(f"Created folder: {folder_path}")
-
-    return folder_path
-
-
-@task()
-def upload_folders_to_datalake(
-    input_paths: list[str],
-    table_ids: list[str],
-    **kwargs,
-):
-    for input_path, table_id in zip(input_paths, table_ids):
-        try:
-            upload_to_datalake.run(
-                input_path=input_path,
-                table_id=table_id,
-                **kwargs,
-            )
-        except Exception as e:
-            log(f"Error uploading data {input_path} to datalake: {e}", level="error")
-            raise e
-        else:
-            log(f"Data {input_path} uploaded to datalake successfully")
-    return
+    return df

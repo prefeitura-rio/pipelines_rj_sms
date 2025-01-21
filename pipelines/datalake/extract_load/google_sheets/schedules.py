@@ -24,11 +24,21 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
-        "url": "https://docs.google.com/spreadsheets/d/1zbleYywgX2pGTxJ7U8WUVdq7VSNaE7wbUnmyLT1IAnc/edit#gid=1524508370",  # noqa: E501
+        "url": "https://docs.google.com/spreadsheets/d/1Y7ji6HL5a2fJGIX-olRCVdv98oQ5nWHaBYUNAF7jTKg/edit?gid=1600307210",  # noqa: E501
         "url_type": "google_sheet",
         "gsheets_sheet_name": "relacao_materiais",
         "dataset_id": "brutos_sheets",
         "table_id": "material_mestre",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1Y7ji6HL5a2fJGIX-olRCVdv98oQ5nWHaBYUNAF7jTKg/edit?gid=1600307210",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "UNIDADES POR PROGRAMA",
+        "dataset_id": "brutos_sheets",
+        "table_id": "material_cobertura_programas",
         "csv_delimiter": "|",
         "environment": "prod",
         "rename_flow": True,
@@ -41,6 +51,46 @@ flow_parameters = [
         "rename_flow": True,
         "table_id": "gerenciamento_acesso_looker_farmacia",
         "url": "https://docs.google.com/spreadsheets/d/1VCtUiRFxMy1KatBfw9chUppPEIPSGDup9wiwfm9-Djo",  # noqa
+        "url_type": "google_sheet",
+    },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "ATAS E PROCESSOS VIGENTES",
+        "rename_flow": True,
+        "table_id": "compras_atas_processos_vigentes",
+        "url": "https://docs.google.com/spreadsheets/d/1fi7MzF0S4OfTym-fjpLR51wIvTLq-WCE706N6eEEWys",  # noqa
+        "url_type": "google_sheet",
+    },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Farmácias",
+        "rename_flow": True,
+        "table_id": "aps_farmacias",
+        "url": "https://docs.google.com/spreadsheets/d/17b4LRwQ5F5K5jCdeO0_K1NzqoQV9JqSOAuA0HZhG0uI",  # noqa
+        "url_type": "google_sheet",
+    },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Procedimentos",
+        "rename_flow": True,
+        "table_id": "sigtap_procedimentos",
+        "url": "https://docs.google.com/spreadsheets/d/1kndrUjVFpRW-LIZ1pV-LwcAmxylB4kVt944nzL_pfhU",  # noqa
+        "url_type": "google_sheet",
+    },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "sheet1",
+        "rename_flow": True,
+        "table_id": "profissionais_cns_cpf_aux",
+        "url": "https://docs.google.com/spreadsheets/d/15OhN69JH6GdRK1Ixvr9P-eTSG03lM6qD7hobcT4Ilow",  # noqa
         "url_type": "google_sheet",
     },
 ]
