@@ -8,7 +8,7 @@ from enum import Enum
 
 class constants(Enum):
 
-    INFISICAL_PATH = "models-rj-sms"
+    INFISICAL_PATH = "/models-rj-sms"
     INFISICAL_API_URL = "URL"
     INFISICAL_API_USERNAME = "USERNAME"
     INFISICAL_API_PASSWORD = "PASSWORD"

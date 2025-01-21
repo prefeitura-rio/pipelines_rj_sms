@@ -21,12 +21,13 @@ from pipelines.prontuarios.std.alergias_vitai.tasks import (
     get_api_token,
     get_similar_allergie_gemini,
     get_similar_allergie_levenshtein,
-    concatenate_results,
+    saving_results,
 )
 from pipelines.utils.tasks import (
     load_file_from_bigquery,
     rename_current_flow_run,
     upload_to_datalake,
+    create_folders,
 )
 
 from pipelines.utils.tasks import get_secret_key
@@ -58,42 +59,47 @@ with Flow(
         table_name="alergias_referencia",
         environment=ENVIRONMENT,
     )
-    api_token = get_api_token(
-        environment=ENVIRONMENT,
-        infisical_path=vitai_alergias_constants.INFISICAL_PATH.value,
-        infisical_api_url=vitai_alergias_constants.INFISICAL_API_URL.value,
-        infisical_api_username=vitai_alergias_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=vitai_alergias_constants.INFISICAL_API_PASSWORD.value
-    )
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(environment=ENVIRONMENT, unidade="VITAI")
     ####################################
     # Task Section #2 - Standardization
     ####################################
 
-    # vitai_allergies_list = create_allergie_list(dataframe_allergies_vitai=vitai_allergies)
+    vitai_allergies_list = create_allergie_list(dataframe_allergies_vitai=vitai_allergies)
 
-    # std_allergies, no_std_allergies = get_similar_allergie_levenshtein(
-    #     allergies_dataset_reference=reference_allergies,
-    #     allergie_list=vitai_allergies_list,
-    #     threshold=0.85,
-    # )
-    # gemini_result = get_similar_allergie_gemini(
-    #     allergies_list=no_std_allergies,
-    #     api_url=vitai_alergias_constants.INFISICAL_API_URL.value,
-    #     api_token=api_token
-    # )
-    # result = concatenate_results(gemini_result=gemini_result, levenshtein_result=std_allergies)
+    std_allergies, no_std_allergies = get_similar_allergie_levenshtein(
+        allergies_dataset_reference=reference_allergies,
+        allergie_list=vitai_allergies_list,
+        threshold=0.85,
+    )
+    api_token, api_url = get_api_token(
+        environment=ENVIRONMENT,
+        infisical_path=vitai_alergias_constants.INFISICAL_PATH.value,
+        infisical_api_url=vitai_alergias_constants.INFISICAL_API_URL.value,
+        infisical_api_username=vitai_alergias_constants.INFISICAL_API_USERNAME.value,
+        infisical_api_password=vitai_alergias_constants.INFISICAL_API_PASSWORD.value
+    )
+    gemini_result = get_similar_allergie_gemini(
+        allergies_list=no_std_allergies,
+        api_url=api_url,
+        api_token=api_token
+    )
+    create_folders_task = create_folders()
+    path = saving_results(
+        gemini_result=gemini_result, 
+        levenshtein_result=std_allergies,
+        file_folder=create_folders_task["raw"],
+    )
 
-    # ####################################
-    # # Task Section #3 - Loading data
-    # ####################################
-    # upload_to_datalake(
-    #     input_path=result,
-    #     dataset_id="intermediario_historico_clinico",
-    #     table_id="vitai_padronizacao",
-    #     dump_mode="append",
-    # )
+    ####################################
+    # Task Section #3 - Loading data
+    ####################################
+    upload_to_datalake_task = upload_to_datalake(
+        input_path=path,
+        dataset_id="intermediario_historico_clinico",
+        table_id="vitai_padronizacao",
+        dump_mode="append",
+    )
 
 
 sms_prontuarios_vitai_alergias_padronizacao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

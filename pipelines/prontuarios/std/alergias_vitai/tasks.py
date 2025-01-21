@@ -22,7 +22,8 @@ def create_allergie_list(dataframe_allergies_vitai: pd.DataFrame) -> list:
         dataframe (pd.DataFrame): Dataframe with the allergies
     """
     def clean_allergies_field(allergies_field: str)->list:
-        log(allergies_field)
+        allergies_field = unidecode(allergies_field)
+        allergies_field = allergies_field.upper()
         allergies_field_clean = re.sub(
             r"INTOLERANCIA A{0,1}|((REFERE ){0,1}ALERGIA A{0,1})|(PACIENTE ){0,1}AL[É|E]RGIC[A|O] AO{0,1}",
             "",
@@ -34,19 +35,21 @@ def create_allergie_list(dataframe_allergies_vitai: pd.DataFrame) -> list:
         allergies_field_clean = re.sub(r".*COMENTARIO.*", "", allergies_field_clean)
         allergies_field_clean = re.sub(r".*LISTA.*", "", allergies_field_clean)
         allergies_field_clean = re.sub(r" E |\/|\n", ",", allergies_field_clean)
-        allergies_field_clean = re.sub(r"(\\\)", ",", allergies_field_clean)
+        allergies_field_clean = re.sub(r"(\\\\)", ",", allergies_field_clean)
 
         return allergies_field_clean
     
     allergies_unique = []
     for i in dataframe_allergies_vitai["alergias"]:
-        allergies_unique.extend(i[0])
+        allergies_unique.extend(i)
         
     allergies_unique = np.unique(allergies_unique)
+    log(f'Standardizing {len(allergies_unique)} allergies')
     alergias = list(map( clean_allergies_field,allergies_unique))
     alergias_join = ",".join(alergias)
     alergias_lista = alergias_join.split(",")
     alergias_lista = list(set([alergia.strip() for alergia in alergias_lista]))
+    alergias_lista = alergias_lista[0:1000] # retirar
     return alergias_lista
 
 
@@ -109,7 +112,7 @@ def get_similar_allergie_levenshtein(
     for allergie in allergie_list:
         candidates = []
         similaritys = []
-        for ref in allergies_dataset_reference["descricao_clean"].values:
+        for ref in allergies_dataset_reference["nome"].values:
             lev_result = lev(ref, allergie, substitute_costs=substitute_costs)
             max_length = max(len(ref), len(allergie))
             lev_weighted_similarity = 1 - (lev_result / max_length)
@@ -117,22 +120,24 @@ def get_similar_allergie_levenshtein(
             if lev_weighted_similarity > threshold:
                 candidates.append(ref)
                 similaritys.append(lev_weighted_similarity)
-        result = pd.DataFrame({"elemento_escolhido": candidates, "similaridade": similaritys})
+        result = pd.DataFrame({"input":[allergie]*len(candidates),"elemento_escolhido": candidates, "similaridade": similaritys})
         result.sort_values(by="similaridade", ascending=False, inplace=True)
         if result.head(1).empty:
             not_standardized_list.append(allergie)
         else:
             standardized_list.append(result.head(1).to_dict(orient="records"))
+    log(f"{len(standardized_list)} allergies standardized using Levenshein")
+    log(f"{len(not_standardized_list)} allergies remaining")
     return standardized_list, not_standardized_list
 
-@task
+@task(nout=2)
 def get_api_token(
-    environment: str,
-    infisical_path: str,
-    infisical_api_url: str,
-    infisical_api_username: str,
-    infisical_api_password: str,
-) -> str:
+        environment: str,
+        infisical_path: str,
+        infisical_api_url: str,
+        infisical_api_username: str,
+        infisical_api_password: str,
+    ) -> Tuple[str,str]:
     """
     Retrieves the authentication token for AI Models API.
 
@@ -159,37 +164,45 @@ def get_api_token(
         secret_path=infisical_path, secret_name=infisical_api_password, environment=environment
     )
     response = requests.post(
-        url=f"{api_url}login",
+        url=f"{api_url}v1/login",
         timeout=180,
         headers={
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Type": "application/json",
         },
-        data={
+        json={
             "username": api_username,
-            "password": api_password,
-        },
+            "password": api_password
+        }
     )
 
     if response.status_code == 200:
-        return response.json()["access_token"]
+        return response.json()["access_token"], api_url
     else:
-        raise Exception(f"Error getting API token ({response.status_code}) - {response.json()}")
+        raise Exception(f"Error getting API token ({response.status_code}) - {response.text}")
 
 @task
-def get_similar_allergie_gemini(allergies_list: list, api_url: str, api_token: str) -> list:
+def get_similar_allergie_gemini(
+        allergies_list: list, 
+        api_url: str, 
+        api_token: str
+    ) -> list:
     """
     Get similar allergie using gemini agent
     Args:
         allergies_list (list): List of allergies to be standardized
-        key (str): Models API key
+        api_url (str): URL used to call AI models
+        api_token (str): Models API key
     """
+    allergies_list=allergies_list[0:5]
+    log(f"{len(allergies_list)} allergies to be standardized using Gemini")
     response = requests.post(
-        url=f"{api_url}allergy/standardize",
+        url=f"{api_url}v1/allergy/standardize",
         timeout=180,
         headers={
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": "Bearer {}".format(api_token),
+            "Content-Type": "application/json"
         },
-        data={
+        json={
             "allergies_list": allergies_list
         },
     )
@@ -197,19 +210,33 @@ def get_similar_allergie_gemini(allergies_list: list, api_url: str, api_token: s
     if response.status_code == 200:
         result_list = response.json()["corrections"]
     else:
-        raise Exception(f"Error getting gemini standardization ({response.status_code}) - {response.json()}")
+        raise Exception(f"Error getting gemini standardization ({response.status_code}) - {response.text}")
     
     return result_list
 
 
 @task
-def concatenate_results(gemini_result: list, levenshtein_result: list)-> dict:
+def saving_results(
+    gemini_result: list, 
+    levenshtein_result: list,
+    file_folder: str
+)-> dict:
     """
-    Concatenate results from both gemini and levenshtein modelss
+    Concatenate results from both gemini and levenshtein models and save into a csv file
     Args:
         gemini_result (list): List of gemini result
         levenshtein_result (list): List of levenshtein result
     """
+    levenshtein_result = [{"input":i[0]['input'],
+                           "output":i[0]['elemento_escolhido'],
+                           "metodo":"levenshtein"} for i in levenshtein_result]
+    gemini_result = [{"input":i['input'],"output":i['output'],"metodo":"gemini"} for i in gemini_result]
     levenshtein_result.extend(gemini_result)
+    table = pd.DataFrame(levenshtein_result)
+    
 
-    return levenshtein_result
+    destination_file_path = f"{file_folder}/alergias_vitai_{pd.Timestamp.now()}.csv"
+    table.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
+    log(f"File {destination_file_path} downloaded.")
+
+    return destination_file_path
