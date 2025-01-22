@@ -3,7 +3,7 @@
 """
 Flow for Vitai Allergies Standardization
 """
-from prefect import Parameter, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -22,6 +22,7 @@ from pipelines.prontuarios.std.alergias_vitai.tasks import (
     get_similar_allergie_gemini,
     get_similar_allergie_levenshtein,
     saving_results,
+    load_std_dataset
 )
 from pipelines.utils.tasks import (
     load_file_from_bigquery,
@@ -43,6 +44,10 @@ with Flow(
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    IS_HISTORICAL = Parameter("is_historical", default=False)
+
+    with case(RENAME_FLOW, True):
+        rename_flow_task = rename_current_flow_run(environment=ENVIRONMENT, unidade="VITAI")
 
     #####################################
     # Set environment
@@ -59,18 +64,28 @@ with Flow(
         table_name="alergias_referencia",
         environment=ENVIRONMENT,
     )
-    with case(RENAME_FLOW, True):
-        rename_flow_task = rename_current_flow_run(environment=ENVIRONMENT, unidade="VITAI")
+
+    std_allergies = load_std_dataset(
+        project_name=vitai_alergias_constants.PROJECT.value["dev"],
+        dataset_name="intermediario_historico_clinico",
+        table_name="alergias_vitai_padronizacao",
+        environment=ENVIRONMENT,
+        is_historical=IS_HISTORICAL
+    )
+
     ####################################
     # Task Section #2 - Standardization
     ####################################
 
-    vitai_allergies_list = create_allergie_list(dataframe_allergies_vitai=vitai_allergies)
+    df_vitai_allergies,allergies_list = create_allergie_list(
+        dataframe_allergies_vitai=vitai_allergies, 
+        std_allergies=std_allergies
+    )
 
     std_allergies, no_std_allergies = get_similar_allergie_levenshtein(
         allergies_dataset_reference=reference_allergies,
-        allergie_list=vitai_allergies_list,
-        threshold=0.85,
+        allergie_list=allergies_list,
+        threshold=0.8,
     )
     api_token, api_url = get_api_token(
         environment=ENVIRONMENT,
@@ -84,20 +99,22 @@ with Flow(
         api_url=api_url,
         api_token=api_token
     )
+
     create_folders_task = create_folders()
     path = saving_results(
+        raw_allergies = df_vitai_allergies,
         gemini_result=gemini_result, 
         levenshtein_result=std_allergies,
         file_folder=create_folders_task["raw"],
     )
 
-    ####################################
-    # Task Section #3 - Loading data
-    ####################################
+    # ####################################
+    # # Task Section #3 - Loading data
+    # ####################################
     upload_to_datalake_task = upload_to_datalake(
         input_path=path,
         dataset_id="intermediario_historico_clinico",
-        table_id="vitai_padronizacao",
+        table_id="alergias_vitai_padronizacao",
         dump_mode="append",
     )
 
