@@ -9,15 +9,15 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.sisreg_web.tasks import (
+    extract_data_from_sisreg,
+    transform_data,
+)
 from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
     constants as sisreg_constants,
 )
 from pipelines.datalake.extract_load.sisreg_web_v2.schedules import (
     sisreg_daily_update_schedule,
-)
-from pipelines.datalake.extract_load.sisreg_web.tasks import (
-    extract_data_from_sisreg,
-    transform_data,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake

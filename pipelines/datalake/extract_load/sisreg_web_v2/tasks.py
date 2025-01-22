@@ -11,15 +11,19 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
     constants as sisreg_constants,
 )
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.core.sisreg_app import SisregApp
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.utils.path_utils import definir_caminho_absoluto
-
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.core.sisreg_app import (
+    SisregApp,
+)
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.utils.path_utils import (
+    definir_caminho_absoluto,
+)
 from pipelines.datalake.utils.data_transformations import (
     conform_header_to_datalake,
     convert_to_parquet,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import add_load_date_column, get_secret_key
+
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str) -> None:
@@ -66,19 +70,20 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
         log(f"File downloaded to: {caminho_download}", level="debug")
 
         if caminho_download:
-            sisreg.encerrar() # Todo: rever logica de encerramento do browser (repetindo d+)
+            sisreg.encerrar()  # Todo: rever logica de encerramento do browser (repetindo d+)
 
             return caminho_download
         else:
             sisreg.encerrar()
             log("Error downloading file", level="error")
             raise FAIL("Error downloading file")
-        
+
     else:
         sisreg.encerrar()
         log(f"Endpoint {endpoint} not found", level="error")
         raise FAIL(f"Endpoint {endpoint} not found")
     ###
+
 
 @task()
 def transform_data(file_path: str, endpoint: str) -> str:

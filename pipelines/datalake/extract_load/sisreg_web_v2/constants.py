@@ -6,6 +6,7 @@ Constants for Sisreg.
 
 from enum import Enum
 
+
 class constants(Enum):
     """
     Constant values for the dump sisreg flows

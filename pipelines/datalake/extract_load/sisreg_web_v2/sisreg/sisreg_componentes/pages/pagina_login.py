@@ -3,14 +3,14 @@
 # flake8: noqa: E501
 
 from prefeitura_rio.pipelines_utils.logging import log
-from selenium.webdriver.common.by import By
 from selenium.common.exceptions import (
-    TimeoutException,
     NoSuchElementException,
-    WebDriverException
+    TimeoutException,
+    WebDriverException,
 )
-
+from selenium.webdriver.common.by import By
 from sisreg_componentes.pages.base_page import BasePage
+
 
 class PaginaLogin(BasePage):
     """
@@ -28,9 +28,7 @@ class PaginaLogin(BasePage):
         try:
             # Abre a tela inicial (página de login) e aguarda o botão de "entrar"
             self.abrir_pagina(
-                url_complemento="",
-                seletor_espera=(By.NAME, "entrar"),
-                tempo_espera=30
+                url_complemento="", seletor_espera=(By.NAME, "entrar"), tempo_espera=30
             )
 
             # Preenche formulário
@@ -60,8 +58,10 @@ class PaginaLogin(BasePage):
             campo_usuario = self.browser.find_element(By.ID, "usuario")
             campo_senha = self.browser.find_element(By.ID, "senha")
         except NoSuchElementException as e:
-            msg = ("Não foi possível localizar os campos de usuário (ID='usuario') "
-                   "e senha (ID='senha'). Verifique se houve mudança no site.")
+            msg = (
+                "Não foi possível localizar os campos de usuário (ID='usuario') "
+                "e senha (ID='senha'). Verifique se houve mudança no site."
+            )
             log(msg)
             raise NoSuchElementException(msg) from e
 

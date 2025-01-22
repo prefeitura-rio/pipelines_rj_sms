@@ -2,13 +2,13 @@
 # pylint: disable=line-too-long, C0114
 # flake8: noqa: E501
 
-from prefeitura_rio.pipelines_utils.logging import log
 import os
 import time
 
-from selenium.common.exceptions import WebDriverException, TimeoutException
-
+from prefeitura_rio.pipelines_utils.logging import log
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from sisreg_componentes.pages.base_page import BasePage
+
 
 class PaginaOfertaProgramada(BasePage):
     """
@@ -65,12 +65,16 @@ class PaginaOfertaProgramada(BasePage):
         )
         try:
             # Passa (None, None) como seletor de espera porque não há elemento para aguardar.
-            self.abrir_pagina(url_complemento=url_oferta, seletor_espera=(None, None), tempo_espera=5)
+            self.abrir_pagina(
+                url_complemento=url_oferta, seletor_espera=(None, None), tempo_espera=5
+            )
         except TimeoutException:
             # Aqui está a “ignorância” explícita da exceção
             log("TimeoutException ignorada (download direto foi iniciado).")
 
-    def _aguardar_download_terminar(self, caminho_download: str, intervalo_checagem: int = 5) -> str:
+    def _aguardar_download_terminar(
+        self, caminho_download: str, intervalo_checagem: int = 5
+    ) -> str:
         """
         Aguarda até que não haja mais arquivos .part ou .crdownload no diretório.
         Retorna o nome do primeiro .csv encontrado.
@@ -93,7 +97,9 @@ class PaginaOfertaProgramada(BasePage):
                 # Se não há downloads em andamento, pega o nome do arquivo .csv baixado
                 filename = [arq for arq in arquivos if arq.lower().startswith("sisreg_escalas_amb")]
                 if filename:
-                    return os.path.join(caminho_download, filename[0]) # Espera-se que tenha apenas um arquivo SISREG_ESCALAS_AMB*
+                    return os.path.join(
+                        caminho_download, filename[0]
+                    )  # Espera-se que tenha apenas um arquivo SISREG_ESCALAS_AMB*
                 else:
                     return None
 

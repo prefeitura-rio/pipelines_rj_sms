@@ -3,10 +3,9 @@
 # flake8: noqa: E501
 
 from prefeitura_rio.pipelines_utils.logging import log
-
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 def abrir_pagina(browser, url: str, seletor_espera: tuple, tempo_espera: int = 30) -> None:

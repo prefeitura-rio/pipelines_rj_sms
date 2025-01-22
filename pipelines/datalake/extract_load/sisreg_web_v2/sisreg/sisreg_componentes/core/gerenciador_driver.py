@@ -3,7 +3,6 @@
 # flake8: noqa: E501
 
 from prefeitura_rio.pipelines_utils.logging import log
-
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.firefox.service import Service

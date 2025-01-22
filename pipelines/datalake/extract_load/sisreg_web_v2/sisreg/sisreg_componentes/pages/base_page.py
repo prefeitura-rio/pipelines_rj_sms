@@ -6,6 +6,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 from selenium.common.exceptions import WebDriverException
 from sisreg_componentes.utils.navegacao import abrir_pagina
 
+
 class BasePage:
     """
     Classe base para todas as páginas. Fornece operações comuns, como:
@@ -25,7 +26,9 @@ class BasePage:
         self.browser = browser
         self.url_base = url_base
 
-    def abrir_pagina(self, url_complemento: str, seletor_espera: tuple, tempo_espera: int = 30) -> None:
+    def abrir_pagina(
+        self, url_complemento: str, seletor_espera: tuple, tempo_espera: int = 30
+    ) -> None:
         """
         Abre página usando a função utilitária e aguarda o seletor_espera ficar disponível.
 
@@ -50,9 +53,9 @@ class BasePage:
         """
         Aguarda até o frame estar disponível e muda para ele.
         """
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
         from selenium.common.exceptions import TimeoutException
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.support.ui import WebDriverWait
 
         try:
             WebDriverWait(self.browser, tempo_espera).until(
