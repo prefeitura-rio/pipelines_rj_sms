@@ -64,7 +64,7 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
 
     sisreg.fazer_login()
 
-    ### Todo: Abstrair / encapsular a logica a seguir (transformar em função)
+    # Todo: Abstrair / encapsular a logica a seguir (transformar em função)
     if endpoint == "oferta_programada":
         sisreg.extrair_oferta_programada(caminho_download=caminho_download)
         log(f"File downloaded to: {caminho_download}", level="debug")
@@ -82,7 +82,6 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
         sisreg.encerrar()
         log(f"Endpoint {endpoint} not found", level="error")
         raise FAIL(f"Endpoint {endpoint} not found")
-    ###
 
 
 @task()
