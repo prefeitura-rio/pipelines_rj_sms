@@ -11,10 +11,12 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
     constants as sisreg_constants,
 )
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.core.sisreg_app import (
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.core.sisreg_app \
+import (
     SisregApp,
 )
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.utils.path_utils import (
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.utils.path_utils \
+import (
     definir_caminho_absoluto,
 )
 from pipelines.datalake.utils.data_transformations import (
