@@ -7,6 +7,7 @@ import time
 
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium.common.exceptions import TimeoutException, WebDriverException
+
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.pages.base_page import (
     BasePage,
 )
