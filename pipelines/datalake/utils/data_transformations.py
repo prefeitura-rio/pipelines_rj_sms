@@ -40,6 +40,7 @@ def convert_str_to_date(target_date: str) -> str:
         return (date.today() - timedelta(days=days)).strftime("%Y-%m-%d")
     else:
         try:
+            datetime.strptime(target_date, "%Y-%m-%d")
             return target_date
         except ValueError as e:
             raise ValueError("The target_date must be in the format YYYY-MM-DD") from e
