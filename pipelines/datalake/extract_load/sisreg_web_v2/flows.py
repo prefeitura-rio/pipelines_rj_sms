@@ -9,7 +9,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.sisreg_web.tasks import (
+from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
     extract_data_from_sisreg,
     transform_data,
 )
