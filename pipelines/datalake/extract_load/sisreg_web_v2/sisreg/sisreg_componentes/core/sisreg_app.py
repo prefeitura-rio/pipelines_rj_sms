@@ -3,9 +3,15 @@
 # flake8: noqa: E501
 
 from prefeitura_rio.pipelines_utils.logging import log
-from sisreg_componentes.core.gerenciador_driver import GerenciadorDriver
-from sisreg_componentes.pages.pagina_login import PaginaLogin
-from sisreg_componentes.pages.pagina_oferta_programada import PaginaOfertaProgramada
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.core.gerenciador_driver import (
+    GerenciadorDriver,
+)
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.pages.pagina_login import (
+    PaginaLogin,
+)
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.pages.pagina_oferta_programada import (
+    PaginaOfertaProgramada,
+)
 
 
 class SisregApp:
