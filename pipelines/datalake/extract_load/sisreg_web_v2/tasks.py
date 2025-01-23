@@ -65,8 +65,8 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
     sisreg.fazer_login()
 
     # Todo: Abstrair / encapsular a logica a seguir (transformar em função)
-    log(f"Endpoint: {endpoint} == String: {string_debug}: {endpoint == string_debug}", level="debug") #Apenas depurando o codigo
     string_debug = "oferta_programada"
+    log(f"Endpoint: {endpoint} == String: {string_debug}: {endpoint == string_debug}", level="debug") #Apenas depurando o codigo
     if endpoint == string_debug :
         log(f"Starting download - {endpoint} - To: {caminho_download}", level="debug")
         sisreg.extrair_oferta_programada(caminho_download=caminho_download)
