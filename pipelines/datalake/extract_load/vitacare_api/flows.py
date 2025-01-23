@@ -160,6 +160,7 @@ sms_dump_vitacare_estoque.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="2Gi",
+    memory_request="2Gi",
 )
 
 
@@ -180,7 +181,7 @@ with Flow(
     IS_ROUTINE = Parameter("is_routine", default=True)
 
     # Vitacare API
-    ENDPOINT = Parameter("endpoint", required=True)
+    ENDPOINT = Parameter("endpoint", required=True)  # movimento, posicao, vacina, backup_prontuario
     TARGET_DATE = Parameter("target_date", default="today")
     AP = Parameter("ap", default=None)
 
@@ -229,7 +230,7 @@ with Flow(
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
-        max_duration=unmapped(timedelta(minutes=10)),
+        max_duration=unmapped(timedelta(minutes=20)),
     )
 
 sms_dump_vitacare_estoque_scheduler.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
@@ -239,5 +240,7 @@ sms_dump_vitacare_estoque_scheduler.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
+    memory_request="4Gi",
+    memory_limit="4Gi",
 )
 sms_dump_vitacare_estoque_scheduler.schedule = vitacare_daily_update_schedule

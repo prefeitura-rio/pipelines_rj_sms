@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103, R0913, C0301, W3101
+# pylint: disable=C0103, R0913, C0301, W3101, W0718
 # flake8: noqa: E501
 """
 Tasks for Vitacare db pipeline
@@ -7,7 +7,7 @@ Tasks for Vitacare db pipeline
 import os
 import shutil
 import zipfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List
 
@@ -191,7 +191,7 @@ def create_temp_database(
     conn.close()
 
 
-@task
+@task(max_retries=4, retry_delay=timedelta(seconds=30))
 def delete_temp_database(
     database_host: str,
     database_port: int,
@@ -207,11 +207,20 @@ def delete_temp_database(
         database_name="master",
         autocommit=True,
     )
+
+    # Force close all existing connections to the database
+    close_connections_sql = f"""
+    ALTER DATABASE {database_name} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    """
     delete_database_sql = f"DROP DATABASE {database_name}"
 
-    log(f"Deleting database {database_name} ...")
-    conn.autocommit = True
+    log(f"Closing all connections to database {database_name} ...")
     cursor = conn.cursor()
+    cursor.execute(close_connections_sql)
+    while cursor.nextset():
+        pass
+
+    log(f"Deleting database {database_name} ...")
     cursor.execute(delete_database_sql)
     while cursor.nextset():
         pass
@@ -219,7 +228,7 @@ def delete_temp_database(
     conn.close()
 
 
-@task
+@task(max_retries=4, retry_delay=timedelta(seconds=30))
 def get_queries(database_name: str):
     return [
         f"SELECT * FROM {database_name}.dbo.ATENDIMENTOS",
@@ -238,7 +247,7 @@ def get_queries(database_name: str):
     ]
 
 
-@task
+@task(max_retries=4, retry_delay=timedelta(seconds=30))
 def create_parquet_file(
     database_host: str,
     database_port: int,
@@ -266,39 +275,41 @@ def create_parquet_file(
     try:
         df = pd.read_sql(sql, conn, dtype=str)
 
+        log(f"Adding date metadata to {filename} ...", level="debug")
+
+        df["id_cnes"] = database_name.removeprefix("vitacare_")
+
+        df["backup_created_at"] = str(backup_date)
+
+        df["datalake_imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+
+        log(f"Conforming header to datalake of {filename} ...")
+        df.columns = remove_columns_accents(df)
+
+        path = f"{base_path}/vitacare_historico_{df['id_cnes'].values[0]}_{filename}.parquet"
+
+        df.to_parquet(path, index=False)
+
+        conn.close()
+
+        return path
+
     except Exception as e:
         if extract_if_table_is_missing:
+            conn.close()
             log(
                 f"Could not extract table {filename} because error: {e}. Skipping extraction.",
                 level="warning",
             )
-            return None
+
         else:
+            conn.close()
             message = f"Could not extract table {filename} because error: {e}"
             log(message, level="error")
             raise FAIL(message) from e
 
-    log(f"Adding date metadata to {filename} ...", level="debug")
 
-    df["id_cnes"] = database_name.removeprefix("vitacare_")
-
-    df["backup_created_at"] = backup_date
-
-    df["datalake_imported_at"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-
-    log(f"Conforming header to datalake of {filename} ...")
-    df.columns = remove_columns_accents(df)
-
-    path = f"{base_path}/vitacare_historico_{filename}.parquet"
-
-    df.to_parquet(path, index=False)
-
-    conn.close()
-
-    return path
-
-
-@task
+@task(max_retries=4, retry_delay=timedelta(seconds=30))
 def upload_many_to_datalake(
     input_path: list[str],
     dataset_id: str,
@@ -307,24 +318,41 @@ def upload_many_to_datalake(
     if_storage_data_exists="replace",
     biglake_table=True,
     dataset_is_public=False,
+    upload_if_table_is_missing: bool = False,
 ):
     """
     Uploads different tables to data lake.
     """
 
     for table in input_path:
-        table_name = f'{table.split("_")[-1].removesuffix(".parquet")}_historico'
-        upload_to_datalake.run(
-            input_path=table,
-            dataset_id=dataset_id,
-            table_id=table_name,
-            dump_mode="append",
-            source_format=source_format,
-            if_exists=if_exists,
-            if_storage_data_exists=if_storage_data_exists,
-            biglake_table=biglake_table,
-            dataset_is_public=dataset_is_public,
-        )
+
+        filename = Path(table).name
+        table_id = (
+            filename.replace("vitacare_historico_", "").split("_", 1)[1].removesuffix(".parquet")
+        ) + "_historico"
+
+        try:
+            upload_to_datalake.run(
+                input_path=table,
+                dataset_id=dataset_id,
+                table_id=table_id,
+                dump_mode="append",
+                source_format=source_format,
+                if_exists=if_exists,
+                if_storage_data_exists=if_storage_data_exists,
+                biglake_table=biglake_table,
+                dataset_is_public=dataset_is_public,
+            )
+        except Exception as e:
+            if upload_if_table_is_missing:
+                log(
+                    f"Could not upload table {filename} because error: {e}. Skipping upload.",
+                    level="warning",
+                )
+            else:
+                message = f"Could not upload table {filename} because error: {e}"
+                log(message, level="error")
+                raise FAIL(message) from e
     log("Files uploaded successfully", level="info")
 
 
