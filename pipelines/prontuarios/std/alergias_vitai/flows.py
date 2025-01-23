@@ -3,7 +3,7 @@
 """
 Flow for Vitai Allergies Standardization
 """
-from prefect import Parameter, case, unmapped
+from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -13,9 +13,9 @@ from pipelines.constants import constants
 from pipelines.prontuarios.std.alergias_vitai.constants import (
     constants as vitai_alergias_constants,
 )
-from pipelines.prontuarios.std.alergias_vitai.schedules import (
-    vitai_alergias_daily_update_schedule,
-)
+# from pipelines.prontuarios.std.alergias_vitai.schedules import (
+#     vitai_alergias_daily_update_schedule,
+# )
 from pipelines.prontuarios.std.alergias_vitai.tasks import (
     create_allergie_list,
     get_api_token,
@@ -31,7 +31,6 @@ from pipelines.utils.tasks import (
     create_folders,
 )
 
-from pipelines.utils.tasks import get_secret_key
 
 ####################################
 # Daily Routine Flow
@@ -77,8 +76,8 @@ with Flow(
     # Task Section #2 - Standardization
     ####################################
 
-    df_vitai_allergies,allergies_list = create_allergie_list(
-        dataframe_allergies_vitai=vitai_allergies, 
+    df_vitai_allergies, allergies_list = create_allergie_list(
+        dataframe_allergies_vitai=vitai_allergies,
         std_allergies=std_allergies
     )
 
@@ -102,8 +101,8 @@ with Flow(
 
     create_folders_task = create_folders()
     path = saving_results(
-        raw_allergies = df_vitai_allergies,
-        gemini_result=gemini_result, 
+        raw_allergies=df_vitai_allergies,
+        gemini_result=gemini_result,
         levenshtein_result=std_allergies,
         file_folder=create_folders_task["raw"],
     )
