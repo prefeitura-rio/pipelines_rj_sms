@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from unidecode import unidecode
 from weighted_levenshtein import lev
-import timedelta
+from tqdm import tqdm
 from pipelines.utils.tasks import get_secret_key
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
@@ -48,7 +48,7 @@ def create_allergie_list(
         allergies_field = unidecode(allergies_field)
         allergies_field = allergies_field.upper()
         allergies_field_clean = re.sub(
-            r"INTOLERANCIA A{0,1}|((REFERE )|(RELATA ){0,1}ALERGIA A{0,1})|(PACIENTE ){0,1}AL[É|E]RGIC[A|O] AO{0,1}",
+            r"INTOLERANCIA A{0,1}|((REFERE )|(RELATA ){0,1}ALERGIA A{0,1})|(PACIENTE ){0,1}AL[É|E]RGIC[A|O] AO{0,1} ",
             "",
             allergies_field,
         )
@@ -58,10 +58,15 @@ def create_allergie_list(
         allergies_field_clean = re.sub(
             r"^A ", "", allergies_field_clean
         )
+        allergies_field_clean = re.sub(
+            r"ALERGIC[A|O]", "", allergies_field_clean
+        )
         allergies_field_clean = re.sub(r".*COMENTARIO.*", "", allergies_field_clean)
         allergies_field_clean = re.sub(r".*LISTA.*", "", allergies_field_clean)
         allergies_field_clean = re.sub(r" E |\/|\n", ",", allergies_field_clean)
         allergies_field_clean = re.sub(r"(\\\\)", ",", allergies_field_clean)
+        allergies_field_clean = re.sub(r"\(\)", ",", allergies_field_clean)
+        allergies_field_clean = allergies_field_clean.strip()
 
         return allergies_field_clean
     
@@ -79,6 +84,7 @@ def create_allergie_list(
 
 
     df_allergies['alergias_limpo'] = df_allergies['alergias_raw'].apply(clean_allergies_field)
+    # df_allergies = df_allergies[0:2000]
     alergias_join = ",".join(df_allergies['alergias_limpo'].values)
     alergias_lista = alergias_join.split(",")
     alergias_lista = list(set([alergia.strip() for alergia in alergias_lista]))
@@ -236,26 +242,31 @@ def get_similar_allergie_gemini(
         api_url (str): URL used to call AI models
         api_token (str): Models API key
     """
-    allergies_list=allergies_list[0:5]
+    # allergies_list = allergies_list[0:50]
     log(f"{len(allergies_list)} allergies to be standardized using Gemini")
-    response = requests.post(
-        url=f"{api_url}v1/allergy/standardize",
-        timeout=180,
-        headers={
-            "Authorization": "Bearer {}".format(api_token),
-            "Content-Type": "application/json"
-        },
-        json={
-            "allergies_list": allergies_list
-        },
-    )
+    batch_size = 20
+    result_list=[]
+    for i in tqdm(range(0,len(allergies_list),batch_size)):
+        allergies_batch=allergies_list[i:i+batch_size]
+        response = requests.post(
+            url=f"{api_url}v1/allergy/standardize",
+            timeout=500,
+            headers={
+                "Authorization": "Bearer {}".format(api_token),
+                "Content-Type": "application/json"
+            },
+            json={
+                "allergies_list": allergies_batch
+            },
+        )
 
-    if response.status_code == 200:
-        result_list = response.json()["corrections"]
-        result_list = [{'input':i['input'],'output':i['output'],'metodo':'gemini'}for i in result_list]
-    else:
-        raise Exception(f"Error getting gemini standardization ({response.status_code}) - {response.text}")
-    
+        if response.status_code == 200:
+            result_batch = response.json()["corrections"]
+            result_batch = [{'input':i['input'],'output':i['output'],'metodo':'gemini'}for i in result_list]
+            result_list.extend(result_batch)
+        else:
+            raise Exception(f"Error getting gemini standardization ({response.status_code}) - {response.text}")
+        
     return result_list
 
 
@@ -282,7 +293,6 @@ def saving_results(
     levenshtein_result.extend(gemini_result)
     table = pd.DataFrame(levenshtein_result)
     from_to_dict = dict(zip(table['input'],table['output']))
-    table.to_csv('output.csv')
     raw_allergies['alergias_padronizado'] = raw_allergies['alergias_limpo'].apply(lambda x: find_std(x,from_to_dict))
 
     
