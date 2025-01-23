@@ -1,50 +1,48 @@
 # -*- coding: utf-8 -*-
 import re
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from unidecode import unidecode
-from weighted_levenshtein import lev
-from tqdm import tqdm
-from pipelines.utils.tasks import get_secret_key
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
+from tqdm import tqdm
+from unidecode import unidecode
+from weighted_levenshtein import lev
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from typing import Tuple
-from pipelines.utils.tasks import  load_file_from_bigquery
+from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery
 
-@task 
+
+@task
 def load_std_dataset(
-        project_name:str,
-        dataset_name:str,
-        table_name:str,
-        environment:str,
-        is_historical:bool
-    )-> pd.DataFrame:
+    project_name: str, dataset_name: str, table_name: str, environment: str, is_historical: bool
+) -> pd.DataFrame:
 
     if is_historical is False:
-        std_dataframe = load_file_from_bigquery.run(    
+        std_dataframe = load_file_from_bigquery.run(
             project_name=project_name,
             dataset_name=dataset_name,
             table_name=table_name,
-            environment=environment
+            environment=environment,
         )
     else:
         std_dataframe = pd.DataFrame()
 
     return std_dataframe
 
+
 @task(nout=2)
 def create_allergie_list(
-        dataframe_allergies_vitai: pd.DataFrame, 
-        std_allergies: pd.DataFrame) -> Tuple[pd.DataFrame,list]:
+    dataframe_allergies_vitai: pd.DataFrame, std_allergies: pd.DataFrame
+) -> Tuple[pd.DataFrame, list]:
     """
     Create a list of allergies from a dataframe
     Args:
         dataframe (pd.DataFrame): Dataframe with the allergies
     """
-    def clean_allergies_field(allergies_field: str)->str:
+
+    def clean_allergies_field(allergies_field: str) -> str:
         allergies_field = unidecode(allergies_field)
         allergies_field = allergies_field.upper()
         allergies_field_clean = re.sub(
@@ -55,12 +53,8 @@ def create_allergie_list(
         allergies_field_clean = re.sub(
             r".*N[Ã|A]O [(SABE)|(RECORDA)|(LEMBRA))].*", "", allergies_field_clean
         )
-        allergies_field_clean = re.sub(
-            r"^A ", "", allergies_field_clean
-        )
-        allergies_field_clean = re.sub(
-            r"ALERGIC[A|O]", "", allergies_field_clean
-        )
+        allergies_field_clean = re.sub(r"^A ", "", allergies_field_clean)
+        allergies_field_clean = re.sub(r"ALERGIC[A|O]", "", allergies_field_clean)
         allergies_field_clean = re.sub(r".*COMENTARIO.*", "", allergies_field_clean)
         allergies_field_clean = re.sub(r".*LISTA.*", "", allergies_field_clean)
         allergies_field_clean = re.sub(r" E |\/|\n", ",", allergies_field_clean)
@@ -69,32 +63,33 @@ def create_allergie_list(
         allergies_field_clean = allergies_field_clean.strip()
 
         return allergies_field_clean
-    
+
     allergies_unique = []
     for i in dataframe_allergies_vitai["alergias"]:
         allergies_unique.extend(i)
     allergies_unique = np.unique(allergies_unique)
-    log(f'Loading {len(allergies_unique)} allergies')
+    log(f"Loading {len(allergies_unique)} allergies")
 
     if not std_allergies.empty:
-        allergies_unique = [i for i in allergies_unique if i not in std_allergies['alergias_raw'].values]
+        allergies_unique = [
+            i for i in allergies_unique if i not in std_allergies["alergias_raw"].values
+        ]
 
-    df_allergies = pd.DataFrame(data=allergies_unique,columns=['alergias_raw'])
-    log(f'Standardizing {len(allergies_unique)} allergies')
+    df_allergies = pd.DataFrame(data=allergies_unique, columns=["alergias_raw"])
+    log(f"Standardizing {len(allergies_unique)} allergies")
 
-
-    df_allergies['alergias_limpo'] = df_allergies['alergias_raw'].apply(clean_allergies_field)
+    df_allergies["alergias_limpo"] = df_allergies["alergias_raw"].apply(clean_allergies_field)
     # df_allergies = df_allergies[0:2000]
-    alergias_join = ",".join(df_allergies['alergias_limpo'].values)
+    alergias_join = ",".join(df_allergies["alergias_limpo"].values)
     alergias_lista = alergias_join.split(",")
     alergias_lista = list(set([alergia.strip() for alergia in alergias_lista]))
-    return df_allergies,alergias_lista
+    return df_allergies, alergias_lista
 
 
 @task(nout=2)
 def get_similar_allergie_levenshtein(
     allergies_dataset_reference: list, allergie_list: str, threshold: float
-)-> Tuple[list,list]:
+) -> Tuple[list, list]:
     """
     Get similar allergie using levenshtein distance
     Args:
@@ -144,11 +139,10 @@ def get_similar_allergie_levenshtein(
             if dist(key_1, key_2, key_positions) == 1:
                 substitute_costs[ord(key_1), ord(key_2)] = 0.5
 
-
     # Calculating weighted-levenshtein similarity
-    
-    standardized=[]
-    not_standardized=[]
+
+    standardized = []
+    not_standardized = []
     for allergie in allergie_list:
         candidates = []
         similaritys = []
@@ -162,31 +156,34 @@ def get_similar_allergie_levenshtein(
                 similaritys.append(lev_weighted_similarity)
         result = pd.DataFrame(
             {
-                "input":[allergie]*len(candidates),
-                "output": candidates, 
-                "similaridade": similaritys, 
-                "metodo":"levenshetein"
+                "input": [allergie] * len(candidates),
+                "output": candidates,
+                "similaridade": similaritys,
+                "metodo": "levenshetein",
             }
         )
         result.sort_values(by="similaridade", ascending=False, inplace=True)
         if result.head(1).empty:
             not_standardized.append(allergie)
         else:
-            standardized.append(result[['input','output','metodo']].head(1).to_dict(orient="records")[0])
+            standardized.append(
+                result[["input", "output", "metodo"]].head(1).to_dict(orient="records")[0]
+            )
 
     log(f"{len(standardized)} allergies standardized using Levenshtein")
     log(f"{len(not_standardized)} allergies remaining")
-    
+
     return standardized, not_standardized
+
 
 @task(nout=2)
 def get_api_token(
-        environment: str,
-        infisical_path: str,
-        infisical_api_url: str,
-        infisical_api_username: str,
-        infisical_api_password: str,
-    ) -> Tuple[str,str]:
+    environment: str,
+    infisical_path: str,
+    infisical_api_url: str,
+    infisical_api_username: str,
+    infisical_api_password: str,
+) -> Tuple[str, str]:
     """
     Retrieves the authentication token for AI Models API.
 
@@ -218,10 +215,7 @@ def get_api_token(
         headers={
             "Content-Type": "application/json",
         },
-        json={
-            "username": api_username,
-            "password": api_password
-        }
+        json={"username": api_username, "password": api_password},
     )
 
     if response.status_code == 200:
@@ -229,12 +223,9 @@ def get_api_token(
     else:
         raise Exception(f"Error getting API token ({response.status_code}) - {response.text}")
 
+
 @task
-def get_similar_allergie_gemini(
-        allergies_list: list, 
-        api_url: str, 
-        api_token: str
-    ) -> list:
+def get_similar_allergie_gemini(allergies_list: list, api_url: str, api_token: str) -> list:
     """
     Get similar allergie using gemini agent
     Args:
@@ -245,57 +236,58 @@ def get_similar_allergie_gemini(
     # allergies_list = allergies_list[0:50]
     log(f"{len(allergies_list)} allergies to be standardized using Gemini")
     batch_size = 20
-    result_list=[]
-    for i in tqdm(range(0,len(allergies_list),batch_size)):
-        allergies_batch=allergies_list[i:i+batch_size]
+    result_list = []
+    for i in tqdm(range(0, len(allergies_list), batch_size)):
+        allergies_batch = allergies_list[i : i + batch_size]
         response = requests.post(
             url=f"{api_url}v1/allergy/standardize",
             timeout=500,
             headers={
                 "Authorization": "Bearer {}".format(api_token),
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
-            json={
-                "allergies_list": allergies_batch
-            },
+            json={"allergies_list": allergies_batch},
         )
 
         if response.status_code == 200:
             result_batch = response.json()["corrections"]
-            result_batch = [{'input':i['input'],'output':i['output'],'metodo':'gemini'}for i in result_list]
+            result_batch = [
+                {"input": i["input"], "output": i["output"], "metodo": "gemini"}
+                for i in result_list
+            ]
             result_list.extend(result_batch)
         else:
-            raise Exception(f"Error getting gemini standardization ({response.status_code}) - {response.text}")
-        
+            raise Exception(
+                f"Error getting gemini standardization ({response.status_code}) - {response.text}"
+            )
+
     return result_list
 
 
 @task
 def saving_results(
-    raw_allergies: pd.DataFrame,
-    gemini_result: list, 
-    levenshtein_result: list,
-    file_folder: str
-)-> dict:
+    raw_allergies: pd.DataFrame, gemini_result: list, levenshtein_result: list, file_folder: str
+) -> dict:
     """
     Concatenate results from both gemini and levenshtein models and save into a csv file
     Args:
         gemini_result (list): List of gemini result
         levenshtein_result (list): List of levenshtein result
     """
-    def find_std(allergie_raw,from_to_dict):
-        allergie_raw_list=allergie_raw.split(',')
+
+    def find_std(allergie_raw, from_to_dict):
+        allergie_raw_list = allergie_raw.split(",")
         allergie_std_list = [from_to_dict.get(i.strip()) for i in allergie_raw_list]
         allergie_std_list = [i for i in allergie_std_list if i is not None]
-        allergie_std = ','.join(allergie_std_list)
+        allergie_std = ",".join(allergie_std_list)
         return allergie_std
-    
+
     levenshtein_result.extend(gemini_result)
     table = pd.DataFrame(levenshtein_result)
-    from_to_dict = dict(zip(table['input'],table['output']))
-    raw_allergies['alergias_padronizado'] = raw_allergies['alergias_limpo'].apply(lambda x: find_std(x,from_to_dict))
-
-    
+    from_to_dict = dict(zip(table["input"], table["output"]))
+    raw_allergies["alergias_padronizado"] = raw_allergies["alergias_limpo"].apply(
+        lambda x: find_std(x, from_to_dict)
+    )
 
     destination_file_path = f"{file_folder}/alergias_vitai_{pd.Timestamp.now()}.csv"
     raw_allergies.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")

@@ -21,17 +21,16 @@ from pipelines.prontuarios.std.alergias_vitai.tasks import (
     get_api_token,
     get_similar_allergie_gemini,
     get_similar_allergie_levenshtein,
+    load_std_dataset,
     saving_results,
-    load_std_dataset
 )
 from pipelines.utils.tasks import (
+    create_folders,
+    get_secret_key,
     load_file_from_bigquery,
     rename_current_flow_run,
     upload_to_datalake,
-    create_folders,
 )
-
-from pipelines.utils.tasks import get_secret_key
 
 ####################################
 # Daily Routine Flow
@@ -70,16 +69,15 @@ with Flow(
         dataset_name="intermediario_historico_clinico",
         table_name="alergias_vitai_padronizacao",
         environment=ENVIRONMENT,
-        is_historical=IS_HISTORICAL
+        is_historical=IS_HISTORICAL,
     )
 
     ####################################
     # Task Section #2 - Standardization
     ####################################
 
-    df_vitai_allergies,allergies_list = create_allergie_list(
-        dataframe_allergies_vitai=vitai_allergies, 
-        std_allergies=std_allergies
+    df_vitai_allergies, allergies_list = create_allergie_list(
+        dataframe_allergies_vitai=vitai_allergies, std_allergies=std_allergies
     )
 
     std_allergies, no_std_allergies = get_similar_allergie_levenshtein(
@@ -92,18 +90,16 @@ with Flow(
         infisical_path=vitai_alergias_constants.INFISICAL_PATH.value,
         infisical_api_url=vitai_alergias_constants.INFISICAL_API_URL.value,
         infisical_api_username=vitai_alergias_constants.INFISICAL_API_USERNAME.value,
-        infisical_api_password=vitai_alergias_constants.INFISICAL_API_PASSWORD.value
+        infisical_api_password=vitai_alergias_constants.INFISICAL_API_PASSWORD.value,
     )
     gemini_result = get_similar_allergie_gemini(
-        allergies_list=no_std_allergies,
-        api_url=api_url,
-        api_token=api_token
+        allergies_list=no_std_allergies, api_url=api_url, api_token=api_token
     )
 
     create_folders_task = create_folders()
     path = saving_results(
-        raw_allergies = df_vitai_allergies,
-        gemini_result=gemini_result, 
+        raw_allergies=df_vitai_allergies,
+        gemini_result=gemini_result,
         levenshtein_result=std_allergies,
         file_folder=create_folders_task["raw"],
     )
