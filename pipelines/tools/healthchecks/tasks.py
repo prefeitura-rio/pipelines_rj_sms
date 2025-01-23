@@ -1,26 +1,26 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
 from datetime import datetime, timedelta
 
+import pandas as pd
+
+from pipelines.datalake.extract_load.vitacare_api.constants import (
+    constants as vitacare_constants,
+)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.monitor import send_message
 from pipelines.utils.tasks import (
-    get_secret_key,
     cloud_function_request,
+    get_secret_key,
     upload_df_to_datalake,
 )
-from pipelines.datalake.extract_load.vitacare_api.constants import (
-    constants as vitacare_constants,
-)
+
 
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
-def vitai_db_health_check(enviroment:str):
+def vitai_db_health_check(enviroment: str):
 
     db_url = get_secret_key.run(
-        environment=enviroment,
-        secret_name="DB_URL",
-        secret_path="/prontuario-vitai"
+        environment=enviroment, secret_name="DB_URL", secret_path="/prontuario-vitai"
     )
 
     try:
@@ -50,8 +50,9 @@ def vitai_db_health_check(enviroment:str):
             }
         ]
 
+
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
-def smsrio_db_health_check(enviroment:str):
+def smsrio_db_health_check(enviroment: str):
 
     db_url = get_secret_key.run(
         environment=enviroment,
@@ -86,10 +87,11 @@ def smsrio_db_health_check(enviroment:str):
             }
         ]
 
-@task(max_retries=3, retry_delay=timedelta(seconds=10))
-def vitacare_api_health_check(enviroment:str):
 
-    endpoint_url = vitacare_constants.ENDPOINT.value['posicao']
+@task(max_retries=3, retry_delay=timedelta(seconds=10))
+def vitacare_api_health_check(enviroment: str):
+
+    endpoint_url = vitacare_constants.ENDPOINT.value["posicao"]
 
     username = get_secret_key.run(
         secret_path=vitacare_constants.INFISICAL_PATH.value,
@@ -140,11 +142,13 @@ def vitacare_api_health_check(enviroment:str):
 
     return results
 
+
 @task
 def print_result(results: list, enviroment: str):
-    results_as_str = '\n'.join(results)
+    results_as_str = "\n".join(results)
     log(f"Health Check Results: {results_as_str}")
     return
+
 
 @task
 def transform_to_df(results: list):
