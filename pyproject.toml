@@ -55,6 +55,7 @@ docxtpl = "^0.18.0"
 pynpm = "^0.2.0"
 tenacity = "^9.0.0"
 timedelta = "^2020.12.3"
+weighted-levenshtein = "^0.2.2"
 
 [tool.poetry.group.dev]
 optional = true
