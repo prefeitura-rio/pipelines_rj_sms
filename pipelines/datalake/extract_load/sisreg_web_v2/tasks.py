@@ -65,18 +65,18 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
     sisreg.fazer_login()
 
     # Debug log for endpoint
-    log(f"Received endpoint: {endpoint}", level="debug")
+    log(f"Received endpoint: {endpoint}")
     # Todo: Abstrair / encapsular a logica a seguir (transformar em função)
     endpoint = endpoint.strip().lower()
     string_debug = "oferta_programada"
     log(
-        f"Endpoint: {endpoint} == String: {string_debug}: {endpoint == string_debug}", level="debug"
+        f"Endpoint: {endpoint} == String: {string_debug}: {endpoint == string_debug}"
     )
     # Apenas depurando o codigo
     if endpoint == string_debug:
-        log(f"Starting download - {endpoint} - To: {caminho_download}", level="debug")
+        log(f"Starting download - {endpoint} - To: {caminho_download}")
         sisreg.extrair_oferta_programada(caminho_download=caminho_download)
-        log(f"File downloaded to: {caminho_download}", level="debug")
+        log(f"File downloaded to: {caminho_download}")
 
         if caminho_download:
             sisreg.encerrar()  # Todo: rever logica de encerramento do browser (repetindo d+)
