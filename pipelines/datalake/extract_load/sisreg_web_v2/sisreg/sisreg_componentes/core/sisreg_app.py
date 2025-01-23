@@ -3,6 +3,7 @@
 # flake8: noqa: E501
 
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.core.gerenciador_driver import (
     GerenciadorDriver,
 )

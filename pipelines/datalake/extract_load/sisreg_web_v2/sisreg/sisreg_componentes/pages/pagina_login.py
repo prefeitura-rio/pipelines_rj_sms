@@ -9,6 +9,7 @@ from selenium.common.exceptions import (
     WebDriverException,
 )
 from selenium.webdriver.common.by import By
+
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.pages.base_page import (
     BasePage,
 )

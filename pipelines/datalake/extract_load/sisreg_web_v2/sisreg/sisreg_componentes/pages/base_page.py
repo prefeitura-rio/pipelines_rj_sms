@@ -4,6 +4,7 @@
 
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium.common.exceptions import WebDriverException
+
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.utils.navegacao import (
     abrir_pagina,
 )
