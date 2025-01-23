@@ -8,11 +8,9 @@ from pipelines.datalake.extract_load.vitacare_api.constants import (
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.monitor import send_message
 from pipelines.utils.tasks import (
     cloud_function_request,
     get_secret_key,
-    upload_df_to_datalake,
 )
 
 
@@ -89,7 +87,7 @@ def smsrio_db_health_check(enviroment: str):
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
-def vitacare_api_health_check(enviroment: str):
+def vitacare_api_health_check(enviroment: str, ap: str):
 
     endpoint_url = vitacare_constants.ENDPOINT.value["posicao"]
 
@@ -104,41 +102,39 @@ def vitacare_api_health_check(enviroment: str):
         environment=enviroment,
     )
 
-    results = []
-    for ap in vitacare_constants.BASE_URL.value.keys():
-        api_url = vitacare_constants.BASE_URL.value[ap]
+    api_url = vitacare_constants.BASE_URL.value[ap]
 
-        try:
-            start_time = datetime.now()
-            cloud_function_request.run(
-                url=f"{api_url}{endpoint_url}",
-                request_type="GET",
-                query_params={"date": str(datetime.now().date()), "cnes": None},
-                credential={"username": username, "password": password},
-                env=enviroment,
-            )
-            final_time = datetime.now()
-        except Exception as e:
-            log(f"Vitacare API Health Check failed: {e}")
-            results.append(
-                {
-                    "is_healthy": False,
-                    "slug": f"vitacare_api_{ap.lower()}",
-                    "message": f"Vitacare API Health Check failed: {e}",
-                    "duration": None,
-                    "created_at": datetime.now(),
-                }
-            )
-        else:
-            results.append(
-                {
-                    "is_healthy": True,
-                    "slug": f"vitacare_api_{ap.lower()}",
-                    "message": "Vitacare API Health Check succeeded.",
-                    "duration": (final_time - start_time).total_seconds(),
-                    "created_at": datetime.now(),
-                }
-            )
+    try:
+        start_time = datetime.now()
+        cloud_function_request.run(
+            url=f"{api_url}{endpoint_url}",
+            request_type="GET",
+            query_params={"date": str(datetime.now().date()), "cnes": None},
+            credential={"username": username, "password": password},
+            env=enviroment,
+        )
+        final_time = datetime.now()
+    except Exception as e:
+        log(f"Vitacare API Health Check failed: {e}")
+        return [
+            {
+                "is_healthy": False,
+                "slug": f"vitacare_api_{ap.lower()}",
+                "message": f"Vitacare API Health Check failed: {e}",
+                "duration": None,
+                "created_at": datetime.now(),
+            }
+        ]
+    else:
+        return [
+            {
+                "is_healthy": True,
+                "slug": f"vitacare_api_{ap.lower()}",
+                "message": "Vitacare API Health Check succeeded.",
+                "duration": (final_time - start_time).total_seconds(),
+                "created_at": datetime.now(),
+            }
+        ]
 
     return results
 

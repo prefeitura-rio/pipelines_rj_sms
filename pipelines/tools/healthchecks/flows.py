@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case, unmapped
+from prefect import Parameter, case, unmapped, flatten
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -15,6 +15,9 @@ from pipelines.tools.healthchecks.tasks import (
     vitacare_api_health_check,
     vitai_db_health_check,
 )
+from pipelines.datalake.extract_load.vitacare_api.constants import (
+    constants as vitacare_constants,
+)
 from pipelines.utils.tasks import upload_df_to_datalake
 
 with Flow("Tool: Health Check") as flow:
@@ -23,9 +26,15 @@ with Flow("Tool: Health Check") as flow:
 
     result_vitai_db = vitai_db_health_check(enviroment=ENVIRONMENT)
     result_smsrio_db = smsrio_db_health_check(enviroment=ENVIRONMENT)
-    result_vitacare_api = vitacare_api_health_check(enviroment=ENVIRONMENT)
 
-    results = merge(result_smsrio_db, result_vitacare_api, result_vitai_db)
+    results_vitacare_api = vitacare_api_health_check.map(
+        enviroment=unmapped(ENVIRONMENT),
+        ap=vitacare_constants.BASE_URL.value.keys(),
+    )
+
+    results_vitacare_api_flattened = flatten(results_vitacare_api)
+
+    results = merge(result_smsrio_db, results_vitacare_api_flattened, result_vitai_db)
 
     print_result(results=results, enviroment=ENVIRONMENT)
 
