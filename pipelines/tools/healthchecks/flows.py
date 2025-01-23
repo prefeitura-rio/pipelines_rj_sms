@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, case, unmapped, flatten
+from prefect import Parameter, case, flatten, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -7,6 +7,9 @@ from prefect.tasks.control_flow import merge
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.vitacare_api.constants import (
+    constants as vitacare_constants,
+)
 from pipelines.tools.healthchecks.schedules import schedule
 from pipelines.tools.healthchecks.tasks import (
     print_result,
@@ -14,9 +17,6 @@ from pipelines.tools.healthchecks.tasks import (
     transform_to_df,
     vitacare_api_health_check,
     vitai_db_health_check,
-)
-from pipelines.datalake.extract_load.vitacare_api.constants import (
-    constants as vitacare_constants,
 )
 from pipelines.utils.tasks import upload_df_to_datalake
 

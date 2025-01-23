@@ -8,10 +8,7 @@ from pipelines.datalake.extract_load.vitacare_api.constants import (
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import (
-    cloud_function_request,
-    get_secret_key,
-)
+from pipelines.utils.tasks import cloud_function_request, get_secret_key
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
