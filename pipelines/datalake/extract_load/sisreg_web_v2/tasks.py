@@ -65,7 +65,10 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
     sisreg.fazer_login()
 
     # Todo: Abstrair / encapsular a logica a seguir (transformar em função)
-    if endpoint == "oferta_programada":
+    log(f"Endpoint: {endpoint} == String: {string_debug}: {endpoint == string_debug}", level="debug") #Apenas depurando o codigo
+    string_debug = "oferta_programada"
+    if endpoint == string_debug :
+        log(f"Starting download - {endpoint} - To: {caminho_download}", level="debug")
         sisreg.extrair_oferta_programada(caminho_download=caminho_download)
         log(f"File downloaded to: {caminho_download}", level="debug")
 
@@ -103,7 +106,7 @@ def transform_data(file_path: str, endpoint: str) -> str:
 
     parquet_file_path = convert_to_parquet(file_path=file_path, csv_sep=";", encoding="utf-8")
 
-    if endpoint == "escala":
+    if endpoint == "oferta_programada":
         # remove timestamp from file name
         os.rename(parquet_file_path, parquet_file_path[:-17] + ".parquet")
         parquet_file_path = parquet_file_path[:-17] + ".parquet"
