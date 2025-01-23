@@ -59,8 +59,8 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg V. 2") as sms_du
     #####################################
     # Tasks section #2 - Transform data
     #####################################
-
-    transformed_file = transform_data(file_path=raw_file, endpoint=ENDPOINT)
+    oferta_programada_path = f"{raw_file}/oferta_programada.csv"
+    transformed_file = transform_data(file_path=oferta_programada_path, endpoint=ENDPOINT)
 
     #####################################
     # Tasks section #3 - Load data
