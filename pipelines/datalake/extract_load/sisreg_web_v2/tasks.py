@@ -104,6 +104,10 @@ def transform_data(file_path: str, endpoint: str) -> str:
         str: The path of the transformed file.
     """
 
+    if not os.path.exists(file_path):
+        log(f"File not found: {file_path}", level="error")
+        raise FAIL(f"File not found: {file_path}")
+    
     file_path = add_load_date_column.run(input_path=file_path, sep=";")
 
     file_path = conform_header_to_datalake(file_path=file_path, file_type="csv", csv_sep=";")

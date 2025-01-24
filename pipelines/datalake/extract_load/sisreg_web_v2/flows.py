@@ -5,6 +5,8 @@ SISREG dumping flows
 """
 import os
 
+from prefeitura_rio.pipelines_utils.logging import log
+
 from prefect import Parameter, case
 from prefect.run_configs import VertexRun
 from prefect.storage import GCS
@@ -60,8 +62,9 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg V. 2") as sms_du
 
     #####################################
     # Tasks section #2 - Transform data
-    #####################################
-    oferta_programada_path = raw_file.map(lambda x: os.path.join(x, "oferta_programada.csv"))
+    log(f"Raw file directory: {raw_file}")
+    oferta_programada_path = os.path.join(raw_file, "oferta_programada.csv")
+    log(f"Oferta Programada Path: {oferta_programada_path}")
     transformed_file = transform_data(file_path=oferta_programada_path, endpoint=ENDPOINT)
 
     #####################################
