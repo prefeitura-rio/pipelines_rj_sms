@@ -77,9 +77,10 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
         log(f"File downloaded to: {caminho_download}")
 
         if caminho_download:
+            oferta_programada_file_path = os.path.join(caminho_download, "oferta_programada.csv")
             sisreg.encerrar()  # Todo: rever logica de encerramento do browser (repetindo d+)
 
-            return caminho_download
+            return oferta_programada_file_path
         else:
             sisreg.encerrar()
             log("Error downloading file", level="error")
