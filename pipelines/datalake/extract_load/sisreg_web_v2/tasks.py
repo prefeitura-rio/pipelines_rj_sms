@@ -3,7 +3,7 @@
 SISREG dumping tasks
 """
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
@@ -23,7 +23,6 @@ from pipelines.datalake.utils.data_transformations import (
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import add_load_date_column, get_secret_key
-from datetime import datetime
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
@@ -84,9 +83,9 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
 
             date_suffix = datetime.now().strftime("%Y-%m-%d")
             oferta_programada_file_path_with_date = os.path.join(
-            caminho_download, f"oferta_programada_{date_suffix}.csv"
+                caminho_download, f"oferta_programada_{date_suffix}.csv"
             )
-            
+
             os.rename(oferta_programada_file_path, oferta_programada_file_path_with_date)
 
             return oferta_programada_file_path_with_date
