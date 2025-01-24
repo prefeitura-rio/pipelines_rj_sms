@@ -124,11 +124,15 @@ def transform_data(file_path: str, endpoint: str) -> str:
 
     parquet_file_path = convert_to_parquet(file_path=file_path, csv_sep=";", encoding="utf-8")
 
-    if endpoint == "oferta_programada":
+    #if endpoint == "oferta_programada":
         # remove timestamp from file name
-        os.rename(parquet_file_path, parquet_file_path[:-17] + ".parquet")
-        parquet_file_path = parquet_file_path[:-17] + ".parquet"
+   #     os.rename(parquet_file_path, parquet_file_path[:-17] + ".parquet")
+    #    parquet_file_path = parquet_file_path[:-17] + ".parquet"
 
-        log(f"File renamed to: {os.path.basename(parquet_file_path)}")
+     #   log(f"File renamed to: {os.path.basename(parquet_file_path)}")
+
+
+    log(f"Parquet file path: {parquet_file_path}")
+    log(f"Type Parquet file path: {type(parquet_file_path)}")
 
     return parquet_file_path
