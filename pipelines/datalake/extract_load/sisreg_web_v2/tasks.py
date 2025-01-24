@@ -63,7 +63,7 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
     )
 
     sisreg.fazer_login()
-
+    
     # Debug log for endpoint
     log(f"Received endpoint: {endpoint}")
     # Todo: Abstrair / encapsular a logica a seguir (transformar em função)

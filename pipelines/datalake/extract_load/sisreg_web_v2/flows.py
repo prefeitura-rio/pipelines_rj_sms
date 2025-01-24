@@ -25,7 +25,7 @@ from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
-with Flow(name="DataLake - Extração e Carga de Dados - Sisreg V. 2") as sms_dump_sisreg:
+with Flow(name="DataLake - Extração e Carga de Dados - Sisreg V. 2") as sms_dump_sisreg_v2:
     #####################################
     # Parameters
     #####################################
@@ -92,9 +92,9 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg V. 2") as sms_du
 
 
 # Storage and run configs
-sms_dump_sisreg.schedule = sisreg_daily_update_schedule
-sms_dump_sisreg.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_sisreg.run_config = VertexRun(
+sms_dump_sisreg_v2.schedule = sisreg_daily_update_schedule
+sms_dump_sisreg_v2.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_dump_sisreg_v2.run_config = VertexRun(
     image=constants.DOCKER_VERTEX_IMAGE.value,
     labels=[
         constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
