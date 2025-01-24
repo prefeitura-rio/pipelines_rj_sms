@@ -61,7 +61,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg V. 2") as sms_du
     #####################################
     # Tasks section #2 - Transform data
     #####################################
-    oferta_programada_path = os.path.join(raw_file, "oferta_programada.csv")
+    oferta_programada_path = raw_file.map(lambda x: os.path.join(x, "oferta_programada.csv"))
     transformed_file = transform_data(file_path=oferta_programada_path, endpoint=ENDPOINT)
 
     #####################################
