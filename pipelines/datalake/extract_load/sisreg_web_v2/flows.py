@@ -5,12 +5,11 @@ SISREG dumping flows
 """
 import os
 
-from prefeitura_rio.pipelines_utils.logging import log
-
 from prefect import Parameter, case
 from prefect.run_configs import VertexRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
