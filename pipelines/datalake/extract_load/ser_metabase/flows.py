@@ -8,12 +8,15 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.utils.tasks import (
     get_secret_key,
+    upload_df_to_datalake,
 )
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
     query_database,
+    convert_metabase_json_to_df,
     save_data,
 )
+from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 
 
 with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
@@ -49,8 +52,14 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     # ------------------------------
     # Section 3 - Save Data
     # ------------------------------
-    save_data(
-        json_res=json_res,
+    df = convert_metabase_json_to_df(json_res=json_res)
+
+    upload_df_to_datalake(
+        df=df,
+        table_id='ser_metabase',
+        dataset_id='brutos_plataforma_ser',
+        partition_column='data_extracao',
+        source_format="parquet",
     )
 
 ser_metabase_flow.executor = LocalDaskExecutor(num_workers=1)
@@ -59,3 +68,4 @@ ser_metabase_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
+ser_metabase_flow.schedule = schedule
