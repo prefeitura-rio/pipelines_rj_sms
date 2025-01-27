@@ -117,8 +117,8 @@ def extract_data_from_api(
                         f"Last update at API: {replication_datetime}, "
                         f"Expected update after: {yesterday_cutoff}. "
                     )
-                logger.error(err_msg)
-                return {"has_data": False}
+                    logger.error(err_msg)
+                    return {"has_data": False}
 
         logger.info(f"Successful Request: retrieved {len(requested_data)} records")
         return {
