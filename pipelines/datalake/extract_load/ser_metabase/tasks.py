@@ -1,3 +1,4 @@
+import os
 import requests
 import json
 from datetime import datetime
@@ -42,6 +43,8 @@ def query_database(token, database_id, table_id):
 @task
 def save_data(json_res):
     EXTRACTION_DIR = "./extraction/"
+
+    os.makedirs(EXTRACTION_DIR, exist_ok=True)
 
     with open(f"{EXTRACTION_DIR}{datetime.now().strftime('%y-%m-%d %H_%M_%S')}.json", mode="w") as f:
         f.write(json_res)

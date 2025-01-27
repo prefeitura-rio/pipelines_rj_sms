@@ -26,10 +26,10 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     # Section 1 - Authenticate in Metabase
     # ------------------------------
     user = get_secret_key(
-        environment=ENVIRONMENT, secret_name="USER", secret_path="metabase"
+        environment=ENVIRONMENT, secret_name="USER", secret_path="/metabase"
     )
     password = get_secret_key(
-        environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="metabase"
+        environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/metabase"
     )
 
     token = authenticate_in_metabase(
