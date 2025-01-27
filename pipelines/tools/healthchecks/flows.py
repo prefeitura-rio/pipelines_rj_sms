@@ -15,6 +15,7 @@ from pipelines.tools.healthchecks.tasks import (
     print_result,
     smsrio_db_health_check,
     transform_to_df,
+    get_ap_list,
     vitacare_api_health_check,
     vitai_db_health_check,
 )
