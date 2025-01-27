@@ -217,3 +217,11 @@ cases:
       environment: "dev"
       last_update_start_date: "2024-10-20"
       last_update_end_date: "2024-11-30"
+  - case_slug: "123"
+    flow_path: "pipelines.datalake.extract_load.ser_metabase.flows"
+    flow_name: "ser_metabase_flow"
+    params:
+      environment: "dev"
+      database_id: 178
+      table_id: 3477
+
