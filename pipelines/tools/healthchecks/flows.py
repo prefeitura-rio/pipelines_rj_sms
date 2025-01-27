@@ -12,10 +12,10 @@ from pipelines.datalake.extract_load.vitacare_api.constants import (
 )
 from pipelines.tools.healthchecks.schedules import schedule
 from pipelines.tools.healthchecks.tasks import (
+    get_ap_list,
     print_result,
     smsrio_db_health_check,
     transform_to_df,
-    get_ap_list,
     vitacare_api_health_check,
     vitai_db_health_check,
 )
