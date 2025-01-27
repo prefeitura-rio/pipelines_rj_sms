@@ -106,8 +106,9 @@ def extract_data_from_api(
             )
 
             if replication_datetime < yesterday_cutoff:
-                if (
-                    cnes == "6927254"
+                if cnes in (
+                    "6927254",
+                    "7873565",
                 ):  # TODO: remove this condition after Newton Bethlem internet is fixed
                     target_day = replication_datetime.strftime("%Y-%m-%d")
                 else:
@@ -116,8 +117,8 @@ def extract_data_from_api(
                         f"Last update at API: {replication_datetime}, "
                         f"Expected update after: {yesterday_cutoff}. "
                     )
-                logger.error(err_msg)
-                return {"has_data": False}
+                    logger.error(err_msg)
+                    return {"has_data": False}
 
         logger.info(f"Successful Request: retrieved {len(requested_data)} records")
         return {
