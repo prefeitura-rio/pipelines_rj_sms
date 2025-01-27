@@ -27,9 +27,11 @@ with Flow("Tool: Health Check") as flow:
     result_vitai_db = vitai_db_health_check(enviroment=ENVIRONMENT)
     result_smsrio_db = smsrio_db_health_check(enviroment=ENVIRONMENT)
 
+    ap_list = get_ap_list()
+
     results_vitacare_api = vitacare_api_health_check.map(
         enviroment=unmapped(ENVIRONMENT),
-        ap=vitacare_constants.BASE_URL.value.keys(),
+        ap=ap_list,
     )
 
     results_vitacare_api_flattened = flatten(results_vitacare_api)
