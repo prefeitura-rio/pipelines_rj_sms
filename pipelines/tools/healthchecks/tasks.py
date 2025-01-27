@@ -95,7 +95,6 @@ def smsrio_db_health_check(enviroment: str):
 def vitacare_api_health_check(enviroment: str, ap: str):
     log(f"Checking Vitacare API health for AP: {ap}")
 
-
     username = get_secret_key.run(
         secret_path=vitacare_constants.INFISICAL_PATH.value,
         secret_name=vitacare_constants.INFISICAL_VITACARE_USERNAME.value,
@@ -109,7 +108,7 @@ def vitacare_api_health_check(enviroment: str, ap: str):
 
     api_url = vitacare_constants.BASE_URL.value[ap]
     log(f"API URL: {api_url}")
-    
+
     endpoint_url = vitacare_constants.ENDPOINT.value["posicao"]
     log(f"Endpoint URL: {endpoint_url}")
 
