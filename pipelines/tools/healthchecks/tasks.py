@@ -15,6 +15,7 @@ from pipelines.utils.tasks import cloud_function_request, get_secret_key
 def get_ap_list():
     return vitacare_constants.BASE_URL.value.keys()
 
+
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
 def vitai_db_health_check(enviroment: str):
 
