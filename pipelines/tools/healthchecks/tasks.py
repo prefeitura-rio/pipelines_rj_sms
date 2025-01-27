@@ -13,7 +13,10 @@ from pipelines.utils.tasks import cloud_function_request, get_secret_key
 
 @task
 def get_ap_list():
-    return vitacare_constants.BASE_URL.value.keys()
+    log("Getting AP list...")
+    ap_list = vitacare_constants.BASE_URL.value.keys()
+    log(f"AP list: {ap_list}")
+    return ap_list
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
@@ -90,8 +93,8 @@ def smsrio_db_health_check(enviroment: str):
 
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
 def vitacare_api_health_check(enviroment: str, ap: str):
+    log(f"Checking Vitacare API health for AP: {ap}")
 
-    endpoint_url = vitacare_constants.ENDPOINT.value["posicao"]
 
     username = get_secret_key.run(
         secret_path=vitacare_constants.INFISICAL_PATH.value,
@@ -105,6 +108,10 @@ def vitacare_api_health_check(enviroment: str, ap: str):
     )
 
     api_url = vitacare_constants.BASE_URL.value[ap]
+    log(f"API URL: {api_url}")
+    
+    endpoint_url = vitacare_constants.ENDPOINT.value["posicao"]
+    log(f"Endpoint URL: {endpoint_url}")
 
     try:
         start_time = datetime.now()
