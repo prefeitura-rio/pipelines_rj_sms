@@ -6,31 +6,25 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.utils.tasks import (
-    get_secret_key,
-    upload_df_to_datalake,
-)
+from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
-    query_database,
     convert_metabase_json_to_df,
+    query_database,
     save_data,
 )
-from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
-
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
-    
+
     DATABASE_ID = Parameter("database_id", default=178, required=True)
     TABLE_ID = Parameter("table_id", default=3477, required=True)
 
     # ------------------------------
     # Section 1 - Authenticate in Metabase
     # ------------------------------
-    user = get_secret_key(
-        environment=ENVIRONMENT, secret_name="USER", secret_path="/metabase"
-    )
+    user = get_secret_key(environment=ENVIRONMENT, secret_name="USER", secret_path="/metabase")
     password = get_secret_key(
         environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/metabase"
     )
@@ -56,9 +50,9 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
 
     upload_df_to_datalake(
         df=df,
-        table_id='ser_metabase',
-        dataset_id='brutos_plataforma_ser',
-        partition_column='data_extracao',
+        table_id="ser_metabase",
+        dataset_id="brutos_plataforma_ser",
+        partition_column="data_extracao",
         source_format="parquet",
     )
 
