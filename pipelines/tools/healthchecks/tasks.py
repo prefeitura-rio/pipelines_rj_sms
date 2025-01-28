@@ -14,7 +14,7 @@ from pipelines.utils.tasks import cloud_function_request, get_secret_key
 @task
 def get_ap_list():
     log("Getting AP list...")
-    ap_list = vitacare_constants.BASE_URL.value.keys()
+    ap_list = list(vitacare_constants.BASE_URL.value.keys())
     log(f"AP list: {ap_list}")
     return ap_list
 
