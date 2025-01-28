@@ -54,7 +54,7 @@ with Flow("Tool: Health Check") as flow:
     )
 
 
-flow.executor = LocalDaskExecutor(num_workers=3)
+flow.executor = LocalDaskExecutor(num_workers=8)
 flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
