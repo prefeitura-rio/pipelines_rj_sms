@@ -153,7 +153,10 @@ def print_result(results: list, enviroment: str):
     log(f"Health Check Results: {results_as_str}")
     return
 
-
 @task
-def transform_to_df(results: list):
+def transform_to_df(results_smsrio: list, results_vitai: list, results_vitacare: list):
+    results = []
+    results.extend(results_smsrio)
+    results.extend(results_vitai)
+    results.extend(results_vitacare)
     return pd.DataFrame(results)

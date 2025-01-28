@@ -37,12 +37,10 @@ with Flow("Tool: Health Check") as flow:
 
     results_vitacare_api_flattened = flatten(results_vitacare_api)
 
-    results = merge(result_smsrio_db, results_vitacare_api_flattened, result_vitai_db)
-
-    print_result(results=results, enviroment=ENVIRONMENT)
-
     results_as_df = transform_to_df(
-        results=results,
+        results_smsrio=result_smsrio_db,
+        results_vitai=result_vitai_db,
+        results_vitacare=results_vitacare_api_flattened,
     )
 
     upload_df_to_datalake(
