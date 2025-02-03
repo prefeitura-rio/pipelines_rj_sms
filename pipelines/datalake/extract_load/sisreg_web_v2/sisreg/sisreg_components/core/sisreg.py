@@ -8,11 +8,9 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.core.gerenciador_driver import (
     GerenciadorDriver,
 )
-
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.pages.base_page import ( 
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.pages.base_page import (
     BasePage,
 )
-
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.pages.pagina_login import (
     PaginaLogin,
 )
@@ -29,8 +27,14 @@ class Sisreg(BasePage, PaginaLogin, PaginaOfertaProgramada):
 
     URL_BASE = "https://sisregiii.saude.gov.br/"
 
-    def __init__(self, usuario: str, senha: str, caminho_download: str,
-                 modo_headless: bool = True, tempo_carregamento: int = 60):
+    def __init__(
+        self,
+        usuario: str,
+        senha: str,
+        caminho_download: str,
+        modo_headless: bool = True,
+        tempo_carregamento: int = 60,
+    ):
         """
         Construtor que prepara a aplicação SISREG.
 
@@ -54,7 +58,6 @@ class Sisreg(BasePage, PaginaLogin, PaginaOfertaProgramada):
         self.browser = self._gerenciador.iniciar_driver()
 
         self.url_base = self.URL_BASE
-
 
     def encerrar(self) -> None:
         """

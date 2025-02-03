@@ -4,7 +4,10 @@
 
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium.common.exceptions import WebDriverException
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.navegacao import abrir_pagina
+
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.navegacao import (
+    abrir_pagina,
+)
 
 
 class BasePage:
@@ -16,7 +19,7 @@ class BasePage:
     - Lidar com frames
     - Tratamento de exceções
     """
-    
+
     def abrir_pagina(
         self, url_complemento: str, seletor_espera: tuple, tempo_espera: int = 30
     ) -> None:
@@ -56,4 +59,3 @@ class BasePage:
             msg = f"Timeout ao esperar pelo frame {seletor_frame}. Verifique se o site mudou."
             log(msg)
             raise TimeoutException(msg) from e
-

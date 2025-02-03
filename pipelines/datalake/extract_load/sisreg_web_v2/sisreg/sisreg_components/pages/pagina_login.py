@@ -2,9 +2,13 @@
 # pylint: disable=line-too-long, C0114
 # flake8: noqa: E501
 
-from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
-from selenium.webdriver.common.by import By
 from prefeitura_rio.pipelines_utils.logging import log
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    TimeoutException,
+    WebDriverException,
+)
+from selenium.webdriver.common.by import By
 
 
 class PaginaLogin:

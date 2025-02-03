@@ -13,17 +13,20 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.sisreg_web_v2.constants import constants as sisreg_constants
-from pipelines.datalake.extract_load.sisreg_web_v2.schedules import sisreg_daily_update_schedule
+from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
+    constants as sisreg_constants,
+)
+from pipelines.datalake.extract_load.sisreg_web_v2.schedules import (
+    sisreg_daily_update_schedule,
+)
 from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
-    login_sisreg,
     extrair_oferta_programada,
+    login_sisreg,
     nome_arquivo_adicionar_data,
     sisreg_encerrar,
     transform_data,
 )
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
-
 
 with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sisreg:
     ########################################
@@ -38,7 +41,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sis
     TABLE_ID = Parameter("table_id", default="oferta_programada")
 
     # tasks
-    RELATIVE_PATH = Parameter("relative_path", default = "downloaded_data/")
+    RELATIVE_PATH = Parameter("relative_path", default="downloaded_data/")
 
     ########################################
     # configurando o ambiente
@@ -53,12 +56,16 @@ with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sis
     ########################################
     # tarefa 2: oferta programada
     ########################################
-    oferta_programada_arquivo = extrair_oferta_programada(sisreg=sisreg, caminho_download=caminho_download)
+    oferta_programada_arquivo = extrair_oferta_programada(
+        sisreg=sisreg, caminho_download=caminho_download
+    )
 
     ########################################
     # tarefa 3: renomear o arquivo para incluir a data atual
     ########################################
-    oferta_programada_arquivo_data = nome_arquivo_adicionar_data(arquivo_original=oferta_programada_arquivo)
+    oferta_programada_arquivo_data = nome_arquivo_adicionar_data(
+        arquivo_original=oferta_programada_arquivo
+    )
 
     ########################################
     # tarefa 4: encerrar a sessão do sisreg

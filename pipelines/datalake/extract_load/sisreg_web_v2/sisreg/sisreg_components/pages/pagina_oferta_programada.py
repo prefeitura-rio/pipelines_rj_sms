@@ -4,8 +4,10 @@
 
 import os
 import time
+
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium.common.exceptions import TimeoutException, WebDriverException
+
 
 class PaginaOfertaProgramada:
     """
@@ -27,13 +29,17 @@ class PaginaOfertaProgramada:
             self._iniciar_download_oferta_programada()
 
             # Aguarda até que o download seja concluído
-            arquivo_baixado = self._aguardar_download_terminar_oferta_programada(self.caminho_download)
+            arquivo_baixado = self._aguardar_download_terminar_oferta_programada(
+                self.caminho_download
+            )
             if not arquivo_baixado:
                 log("Nenhum arquivo CSV encontrado após o download.")
                 return
 
             # Renomeia o arquivo baixado
-            caminho_renomeado = self._renomear_arquivo_oferta_programada(arquivo_baixado, self.caminho_download)
+            caminho_renomeado = self._renomear_arquivo_oferta_programada(
+                arquivo_baixado, self.caminho_download
+            )
             log(f"Oferta programada baixada e renomeada para: {caminho_renomeado}")
 
         except TimeoutException:
@@ -100,7 +106,9 @@ class PaginaOfertaProgramada:
                 else:
                     return None
 
-    def _renomear_arquivo_oferta_programada(self, caminho_arquivo: str, caminho_download: str) -> str:
+    def _renomear_arquivo_oferta_programada(
+        self, caminho_arquivo: str, caminho_download: str
+    ) -> str:
         """
         Renomeia o arquivo baixado para 'oferta_programada.csv'.
 

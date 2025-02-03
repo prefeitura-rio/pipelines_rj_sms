@@ -6,6 +6,7 @@ Agendamentos para extração e carga do SISREG.
 
 # bibliotecas padrão
 from datetime import datetime, timedelta
+
 import pytz
 
 # bibliotecas do prefect
@@ -14,7 +15,6 @@ from prefect.schedules import Schedule
 # módulos internos
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
-
 
 flow_parameters = [
     {
