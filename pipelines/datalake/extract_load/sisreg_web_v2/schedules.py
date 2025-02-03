@@ -1,26 +1,29 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 """
-Schedules for SISREG Raw Data Extraction
+Agendamentos para extração e carga do SISREG.
 """
 
+# bibliotecas padrão
 from datetime import datetime, timedelta
-
 import pytz
+
+# bibliotecas do prefect
 from prefect.schedules import Schedule
 
+# módulos internos
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
+
 
 flow_parameters = [
     {
         "dataset_id": "brutos_sisreg_v2",
-        "endpoint": "oferta_programada",
         "environment": "prod",
-        "rename_flow": True,
         "table_id": "oferta_programada",
     },
 ]
+
 
 sisreg_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),

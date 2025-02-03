@@ -108,13 +108,12 @@ cases:
       endpoint: "escala"
   - case_slug: "datalake-extract_load-sisreg_v2"
     flow_path: "pipelines.datalake.extract_load.sisreg_web_v2.flows"
-    flow_name: "sms_dump_sisreg_v2"
+    flow_name: "sms_sisreg"
     params:
       environment: "dev"
-      rename_flow: false
       dataset_id: "brutos_sisreg_v2"
       table_id: "oferta_programada"
-      endpoint: "oferta_programada"
+      relative_path: "downloaded_data/"
   - case_slug: "datalake-to-hci"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
     flow_name: "datalake_to_hci"

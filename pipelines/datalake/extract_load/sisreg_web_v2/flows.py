@@ -1,73 +1,78 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103, E1123
 """
-SISREG dumping flows
+Fluxo para extração e carga de dados do SISREG.
 """
-import os
 
-from prefect import Parameter, case
+
+# bibliotecas do prefect
+from prefect import Parameter
 from prefect.run_configs import VertexRun
 from prefect.storage import GCS
+
+# módulos internos
 from prefeitura_rio.pipelines_utils.custom import Flow
-from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
-    constants as sisreg_constants,
-)
-from pipelines.datalake.extract_load.sisreg_web_v2.schedules import (
-    sisreg_daily_update_schedule,
-)
+from pipelines.datalake.extract_load.sisreg_web_v2.constants import constants as sisreg_constants
+from pipelines.datalake.extract_load.sisreg_web_v2.schedules import sisreg_daily_update_schedule
 from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
-    extract_data_from_sisreg,
+    login_sisreg,
+    extrair_oferta_programada,
+    nome_arquivo_adicionar_data,
+    sisreg_encerrar,
     transform_data,
 )
-from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
-with Flow(name="DataLake - Extração e Carga de Dados - Sisreg V. 2") as sms_dump_sisreg_v2:
-    #####################################
-    # Parameters
-    #####################################
 
-    # Flow
+with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sisreg:
+    ########################################
+    # definição de parâmetros
+    ########################################
+
+    # flow
     ENVIRONMENT = Parameter("environment", default="dev")
-    RENAME_FLOW = Parameter("rename_flow", default=False)
 
-    # Sisreg
-    ENDPOINT = Parameter("endpoint", default="oferta_programada")
-
-    # GCP
+    # gcp
     DATASET_ID = Parameter("dataset_id", default=sisreg_constants.DATASET_ID.value)
     TABLE_ID = Parameter("table_id", default="oferta_programada")
 
-    ####################################
-    # Set environment
-    ####################################
+    # tasks
+    RELATIVE_PATH = Parameter("relative_path", default = "downloaded_data/")
+
+    ########################################
+    # configurando o ambiente
+    ########################################
     local_folders = create_folders()
 
-    with case(RENAME_FLOW, True):
-        rename_current_flow_run(
-            environment=ENVIRONMENT,
-            endpoint=ENDPOINT,
-        )
+    ########################################
+    # tarefa 1: login
+    ########################################
+    sisreg, caminho_download = login_sisreg(environment=ENVIRONMENT, caminho_relativo=RELATIVE_PATH)
 
-    ####################################
-    # Tasks section #1 - Extract data
-    ####################################
-    raw_file = extract_data_from_sisreg(
-        environment=ENVIRONMENT, endpoint=ENDPOINT, download_path=local_folders["raw"]
-    )
+    ########################################
+    # tarefa 2: oferta programada
+    ########################################
+    oferta_programada_arquivo = extrair_oferta_programada(sisreg=sisreg, caminho_download=caminho_download)
 
-    #####################################
-    # Tasks section #2 - Transform data
-    log(f"Raw file directory: {raw_file}")
-    transformed_file = transform_data(file_path=raw_file, endpoint=ENDPOINT)
+    ########################################
+    # tarefa 3: renomear o arquivo para incluir a data atual
+    ########################################
+    oferta_programada_arquivo_data = nome_arquivo_adicionar_data(arquivo_original=oferta_programada_arquivo)
 
-    #####################################
-    # Tasks section #3 - Load data
-    #####################################
+    ########################################
+    # tarefa 4: encerrar a sessão do sisreg
+    ########################################
+    sisreg_encerrar(sisreg=sisreg, upstream_tasks=[oferta_programada_arquivo])
 
+    ########################################
+    # tarefa 5: transformar os dados e converter para parquet
+    ########################################
+    transformed_file = transform_data(file_path=oferta_programada_arquivo_data)
+
+    ########################################
+    # tarefas 6 e 7: criar partições e subir o arquivo para o datalake
+    ########################################
     create_partitions_task = create_partitions(
         data_path=transformed_file,
         partition_directory=local_folders["partition_directory"],
@@ -88,15 +93,14 @@ with Flow(name="DataLake - Extração e Carga de Dados - Sisreg V. 2") as sms_du
     )
 
 
-# Storage and run configs
-sms_dump_sisreg_v2.schedule = sisreg_daily_update_schedule
-sms_dump_sisreg_v2.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_sisreg_v2.run_config = VertexRun(
+########################################
+# configurações padrão do fluxo
+########################################
+sms_sisreg.schedule = sisreg_daily_update_schedule
+sms_sisreg.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_sisreg.run_config = VertexRun(
     image=constants.DOCKER_VERTEX_IMAGE.value,
-    labels=[
-        constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
-    ],
-    # https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+    labels=[constants.RJ_SMS_VERTEX_AGENT_LABEL.value],
     machine_type="e2-standard-4",
     env={
         "INFISICAL_ADDRESS": constants.INFISICAL_ADDRESS.value,

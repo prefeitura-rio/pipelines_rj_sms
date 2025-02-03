@@ -4,48 +4,42 @@
 
 import os
 import time
-
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium.common.exceptions import TimeoutException, WebDriverException
 
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.pages.base_page import (
-    BasePage,
-)
-
-
-class PaginaOfertaProgramada(BasePage):
+class PaginaOfertaProgramada:
     """
     Página responsável por baixar dados de Oferta Programada pelos profissionais no SISREG.
     """
 
-    def baixar_oferta_programada(self, caminho_download: str) -> None:
+    def baixar_oferta_programada(self) -> None:
         """
         Realiza o download da oferta programada e renomeia o arquivo baixado para 'oferta_programada.csv'.
 
         Args:
             caminho_download (str): Caminho onde o arquivo CSV será baixado.
         """
-        if not os.path.exists(caminho_download):
-            os.makedirs(caminho_download, exist_ok=True)
+        if not os.path.exists(self.caminho_download):
+            os.makedirs(self.caminho_download, exist_ok=True)
 
         try:
             # Inicia o download da oferta
-            self._iniciar_download()
+            self._iniciar_download_oferta_programada()
 
             # Aguarda até que o download seja concluído
-            arquivo_baixado = self._aguardar_download_terminar(caminho_download)
+            arquivo_baixado = self._aguardar_download_terminar_oferta_programada(self.caminho_download)
             if not arquivo_baixado:
                 log("Nenhum arquivo CSV encontrado após o download.")
                 return
 
             # Renomeia o arquivo baixado
-            caminho_renomeado = self._renomear_arquivo(arquivo_baixado, caminho_download)
+            caminho_renomeado = self._renomear_arquivo_oferta_programada(arquivo_baixado, self.caminho_download)
             log(f"Oferta programada baixada e renomeada para: {caminho_renomeado}")
 
         except TimeoutException:
             # Se ainda assim ocorrer o TimeoutException fora do try interno,
             # não vamos abortar o processo — o polling de download continua.
-            log("TimeoutException ignorada (download direto pode ter sido iniciado).")
+            log("TimeoutException ignorada: Aguardando o download ser concluído.")
 
         except WebDriverException as e:
             log(f"Erro ao acessar a página de oferta programada: {e}")
@@ -54,7 +48,7 @@ class PaginaOfertaProgramada(BasePage):
         finally:
             self.voltar_contexto_padrao()
 
-    def _iniciar_download(self) -> None:
+    def _iniciar_download_oferta_programada(self) -> None:
         """
         Acessa a URL específica que inicia o download do arquivo CSV.
         Ignora TimeoutException para permitir que o download continue em segundo plano.
@@ -67,15 +61,15 @@ class PaginaOfertaProgramada(BasePage):
             "&etapa=EXPORTAR_ESCALAS&coluna="
         )
         try:
-            # Passa (None, None) como seletor de espera porque não há elemento para aguardar.
+            # Passa (None, None) como seletor de espera porque não há elemento para aguardar (o link é um download direto).
             self.abrir_pagina(
                 url_complemento=url_oferta, seletor_espera=(None, None), tempo_espera=5
             )
         except TimeoutException:
-            # Aqui está a “ignorância” explícita da exceção
-            log("TimeoutException ignorada (download direto foi iniciado).")
+            # Ignorando exceção explicitamente
+            log("TimeoutException ignorada: Aguardando o download ser concluído.")
 
-    def _aguardar_download_terminar(
+    def _aguardar_download_terminar_oferta_programada(
         self, caminho_download: str, intervalo_checagem: int = 5
     ) -> str:
         """
@@ -106,7 +100,7 @@ class PaginaOfertaProgramada(BasePage):
                 else:
                     return None
 
-    def _renomear_arquivo(self, caminho_arquivo: str, caminho_download: str) -> str:
+    def _renomear_arquivo_oferta_programada(self, caminho_arquivo: str, caminho_download: str) -> str:
         """
         Renomeia o arquivo baixado para 'oferta_programada.csv'.
 

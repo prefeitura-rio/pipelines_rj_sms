@@ -4,31 +4,19 @@
 
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium.common.exceptions import WebDriverException
-
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.utils.navegacao import (
-    abrir_pagina,
-)
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.navegacao import abrir_pagina
 
 
 class BasePage:
     """
-    Classe base para todas as páginas. Fornece operações comuns, como:
+    Classe base para todas as páginas.
+    Assume que `self.browser` e `self.url_base` foram definidos.
+    Fornece operações comuns, como:
     - Abrir URL e aguardar elemento
     - Lidar com frames
     - Tratamento de exceções
     """
-
-    def __init__(self, browser, url_base: str):
-        """
-        Construtor base.
-
-        Args:
-            browser (webdriver): Instância do WebDriver do Selenium.
-            url_base (str): URL base do SISREG.
-        """
-        self.browser = browser
-        self.url_base = url_base
-
+    
     def abrir_pagina(
         self, url_complemento: str, seletor_espera: tuple, tempo_espera: int = 30
     ) -> None:
@@ -68,3 +56,4 @@ class BasePage:
             msg = f"Timeout ao esperar pelo frame {seletor_frame}. Verifique se o site mudou."
             log(msg)
             raise TimeoutException(msg) from e
+

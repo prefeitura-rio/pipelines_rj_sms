@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-SISREG dumping tasks
+Tarefas para o Web Scraping do SISREG.
 """
-import os
-from datetime import datetime, timedelta
 
+# bibliotecas padrão
+from datetime import datetime, timedelta
+from typing import Tuple
+import os
+
+# bibliotecas do prefect e outros
 from prefect.engine.signals import FAIL
+
+# módulos internos
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
-    constants as sisreg_constants,
-)
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.core.sisreg_app import (
-    SisregApp,
-)
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.utils.path_utils import (
-    definir_caminho_absoluto,
-)
+from pipelines.datalake.extract_load.sisreg_web_v2.constants import constants as sisreg_constants
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.core.sisreg import Sisreg
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.path_utils import definir_caminho_absoluto
+
 from pipelines.datalake.utils.data_transformations import (
     conform_header_to_datalake,
     convert_to_parquet,
@@ -25,22 +26,19 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import add_load_date_column, get_secret_key
 
 
-@task(max_retries=5, retry_delay=timedelta(minutes=3))
-def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str) -> None:
+########################################
+# tarefas do sisreg
+########################################
+@task(max_retries=5, retry_delay=timedelta(minutes=3), nout=2)
+def login_sisreg(environment: str, caminho_relativo) -> Tuple[Sisreg, str]:
     """
-    Extracts data from SISREG website.
-
-    Args:
-        environment (str): The environment to use for accessing the SISREG website.
-        endpoint (str): The endpoint to extract data from.
-        download_path (str): The path to download the extracted data.
-
-    Returns:
-        None: It either returns the file path of the downloaded data or raises an exception.
-
-    Raises:
-        FAIL: If the specified endpoint is not found.
-
+    Realiza o login no site do SISREG.
+    
+    args:
+        environment (str): Ambiente de execução.
+    
+    returns:
+        tuple: Instância do SISREG e caminho do diretório de download.
     """
     username = get_secret_key.run(
         secret_path=sisreg_constants.INFISICAL_PATH.value,
@@ -53,77 +51,116 @@ def extract_data_from_sisreg(environment: str, endpoint: str, download_path: str
         environment=environment,
     )
 
-    log("Acessing SISREG website")
+    log("Fazendo login no site do SISREG.")
 
-    caminho_download = definir_caminho_absoluto("downloaded_data/")
-    sisreg = SisregApp(
+    caminho_download = definir_caminho_absoluto(caminho_relativo)
+
+    sisreg = Sisreg(
         usuario=username,
         senha=password,
         caminho_download=caminho_download,
     )
 
     sisreg.fazer_login()
+    return sisreg, caminho_download
 
-    # Debug log for endpoint
-    log(f"Received endpoint: {endpoint}")
-    # Todo: Abstrair / encapsular a logica a seguir (transformar em função)
-    endpoint = endpoint.strip().lower()
-    string_debug = "oferta_programada"
-    log(f"Endpoint: {endpoint} == String: {string_debug}: {endpoint == string_debug}")
-    # Apenas depurando o codigo
-    if endpoint == string_debug:
-        log(f"Starting download - {endpoint} - To: {caminho_download}")
-        sisreg.extrair_oferta_programada(caminho_download=caminho_download)
-        log(f"File downloaded to: {caminho_download}")
 
-        if caminho_download:
-            sisreg.encerrar()  # Todo: rever logica de encerramento do browser (repetindo d+)
+@task(max_retries=5, retry_delay=timedelta(minutes=3))
+def extrair_oferta_programada(sisreg: Sisreg, caminho_download: str) -> str:
+    """
+    Executa a extração da oferta programada do SISREG.
+    
+    args:
+        sisreg (Sisreg): Instância do SISREG.
+        caminho_download (str): Diretório absoluto onde os dados serão baixados.
+    
+    returns:
+        str: Caminho do arquivo extraído (oferta_programada.csv).
+    """
+    sisreg.baixar_oferta_programada()
+    caminho_arquivo_oferta_prog = os.path.join(caminho_download, "oferta_programada.csv")
 
-            oferta_programada_file_path = os.path.join(caminho_download, "oferta_programada.csv")
+    return caminho_arquivo_oferta_prog
 
-            date_suffix = datetime.now().strftime("%Y-%m-%d")
-            oferta_programada_file_path_with_date = os.path.join(
-                caminho_download, f"oferta_programada_{date_suffix}.csv"
-            )
 
-            os.rename(oferta_programada_file_path, oferta_programada_file_path_with_date)
+@task(max_retries=5, retry_delay=timedelta(minutes=3))
+def sisreg_encerrar(sisreg: Sisreg) -> None:
+    """
+    Encerra a sessão no SISREG.
+    
+    args:
+        sisreg (SisregApp): Instância do sisreg.
+    """
+    sisreg.encerrar()
 
-            return oferta_programada_file_path_with_date
-        else:
-            sisreg.encerrar()
-            log("Error downloading file", level="error")
-            raise FAIL("Error downloading file")
 
-    else:
-        sisreg.encerrar()
-        log(f"Endpoint {endpoint} not found", level="error")
-        raise FAIL(f"Endpoint {endpoint} not found")
+########################################
+# tarefas de gestão e transformação de arquivos
+########################################
+@task()
+def nome_arquivo_adicionar_data(arquivo_original: str, diretorio_destino: str = None) -> str:
+    """
+    Renomeia o arquivo informado para incluir a data atual no nome.
+    A nova nomenclatura segue o padrão: {nome_base}_{data}.{extensao}
+    
+    args:
+        arquivo_original (str): Caminho completo do arquivo original.
+        diretorio_destino (str, opcional): Diretório onde o arquivo renomeado será salvo.
+    
+    returns:
+        str: Caminho do arquivo renomeado.
+    """
+    if not os.path.exists(arquivo_original):
+        msg = f"Arquivo original não encontrado: {arquivo_original}"
+        log(msg, level="error")
+        raise FAIL(msg)
+    
+    # define o diretório de destino: se informado, usa-o; caso contrário, mantém o diretório original
+    novo_diretorio = diretorio_destino if diretorio_destino else os.path.dirname(arquivo_original)
+    
+    data_sufixo = datetime.now().strftime("%Y-%m-%d")
+    nome_base, extensao = os.path.splitext(os.path.basename(arquivo_original))
+    novo_nome = f"{nome_base}_{data_sufixo}{extensao}"
+    novo_caminho = os.path.join(novo_diretorio, novo_nome)
+
+    try:
+        os.rename(arquivo_original, novo_caminho)
+        log(f"Arquivo renomeado para: {novo_caminho}")
+
+    except Exception as e:
+        msg = f"Erro ao renomear o arquivo: {e}"
+        log(msg, level="error")
+        raise FAIL(msg)
+    
+    return novo_caminho
 
 
 @task()
-def transform_data(file_path: str, endpoint: str) -> str:
+def transform_data(file_path: str) -> str:
     """
-    Transforms the data in the given file path and returns the path of the transformed file.
-
-    Args:
-        file_path (str): The path of the input file.
-        endpoint (str): The endpoint to determine the transformation logic.
-
-    Returns:
-        str: The path of the transformed file.
+    Transforma os dados do arquivo informado e converte para parquet.
+    
+    args:
+        file_path (str): Caminho do arquivo de entrada.
+    
+    returns:
+        str: Caminho do arquivo convertido para parquet.
     """
-
+    
     if not os.path.exists(file_path):
         log(f"File not found: {file_path}", level="error")
         raise FAIL(f"File not found: {file_path}")
 
+    # adiciona a coluna de data de carga
     file_path = add_load_date_column.run(input_path=file_path, sep=";")
 
+    # ajusta o cabeçalho para o formato do datalake
     file_path = conform_header_to_datalake(file_path=file_path, file_type="csv", csv_sep=";")
 
+    # converte dados para formato parquet
     parquet_file_path = convert_to_parquet(file_path=file_path, csv_sep=";", encoding="utf-8")
 
-    log(f"Parquet file path: {parquet_file_path}")
-    log(f"Type Parquet file path: {type(parquet_file_path)}")
+    log(f"Caminho do arquivo parquet: {parquet_file_path}")
+    log(f"Tipo caminho do arquivo parquet: {type(parquet_file_path)}")
 
     return parquet_file_path

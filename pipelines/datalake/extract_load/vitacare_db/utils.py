@@ -5,7 +5,6 @@
 Functions for Vitacare db pipeline
 """
 import pyodbc
-
 from prefeitura_rio.pipelines_utils.logging import log
 
 

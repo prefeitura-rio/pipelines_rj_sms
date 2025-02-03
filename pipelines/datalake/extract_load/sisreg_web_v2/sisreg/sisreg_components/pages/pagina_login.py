@@ -2,25 +2,17 @@
 # pylint: disable=line-too-long, C0114
 # flake8: noqa: E501
 
-from prefeitura_rio.pipelines_utils.logging import log
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    TimeoutException,
-    WebDriverException,
-)
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
-
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_componentes.pages.base_page import (
-    BasePage,
-)
+from prefeitura_rio.pipelines_utils.logging import log
 
 
-class PaginaLogin(BasePage):
+class PaginaLogin:
     """
     Página de Login no SISREG.
     """
 
-    def fazer_login(self, usuario: str, senha: str) -> None:
+    def fazer_login(self) -> None:
         """
         Faz login no SISREG usando as credenciais fornecidas.
 
@@ -35,13 +27,15 @@ class PaginaLogin(BasePage):
             )
 
             # Preenche formulário
-            self._preencher_formulario_login(usuario, senha)
+            self._preencher_formulario_login(self.usuario, self.senha)
 
             # Clica no botão "entrar"
-            self._submeter_formulario()
+            self._submeter_formulario_login()
 
             # Aguarda frame principal e muda para ele
             self.mudar_para_frame((By.NAME, "f_principal"), tempo_espera=30)
+
+            log("Login realizado com sucesso.")
 
         except (TimeoutException, NoSuchElementException) as e:
             log(f"Erro durante o processo de login: {str(e)}")
@@ -71,7 +65,7 @@ class PaginaLogin(BasePage):
         campo_usuario.send_keys(usuario)
         campo_senha.send_keys(senha)
 
-    def _submeter_formulario(self) -> None:
+    def _submeter_formulario_login(self) -> None:
         """
         Clica no botão "entrar" para submeter o formulário.
         """
