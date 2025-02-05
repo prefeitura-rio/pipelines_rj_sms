@@ -4,11 +4,11 @@
 
 O intuito deste projeto é automatizar a Extração e Carga dos diversos dados disponíveis no website do SISREG (Sistema Nacional de Regulação). O projeto é construído utilizando bibliotecas Python:
 - **Prefect** para orquestração
-- **Selenium** para interação com as páginas  
-  
-Os dados extraídos são carregados no nosso Data Lake (**Google Big Query**).  
+- **Selenium** para interação com as páginas
 
-A modelagem do projeto é inspirada em **Page Object Models** (POM), onde cada página do website é representada por uma classe. As interações com a página são definidas como métodos dessas classes. Por fim, existe uma classe central que herda todas as páginas individuais e portanto serve de interface, por onde é possível interagir com o website de maneira simplificada. O objetivo desta modularização é ganhar eficiência e produtividade.    
+Os dados extraídos são carregados no nosso Data Lake (**Google Big Query**).
+
+A modelagem do projeto é inspirada em **Page Object Models** (POM), onde cada página do website é representada por uma classe. As interações com a página são definidas como métodos dessas classes. Por fim, existe uma classe central que herda todas as páginas individuais e portanto serve de interface, por onde é possível interagir com o website de maneira simplificada. O objetivo desta modularização é ganhar eficiência e produtividade.
 
 ## Estrutura do Projeto
 
@@ -40,7 +40,7 @@ A modelagem do projeto é inspirada em **Page Object Models** (POM), onde cada p
 - **base_page.py**: Classe base para todas as páginas. Nesta classe são definidas operações/interações que podem se repetir nas diferentes páginas.
 - **pagina_login.py**: Interage com a página de login do  SISREG.
 - **pagina_oferta_programada.py**: Interage com a página responsável por baixar dados de ofertas programadas pelos profissionais de saúde.
-- **navegacao.py**: Funções utilitárias para navegação em páginas web usando Selenium (podem ser usadas em diferentes etapas do projeto). 
+- **navegacao.py**: Funções utilitárias para navegação em páginas web usando Selenium (podem ser usadas em diferentes etapas do projeto).
 - **path_utils.py**: Funções utilitárias para manipulação de caminhos de arquivos (podem ser usadas em diferentes etapas do projeto).
 - **constants.py**: Define os valores constantes que serão utilizados no projeto.
 - **flows.py**: Define o fluxo Prefect para extração e carga de dados do SISREG.
@@ -79,5 +79,5 @@ Para contribuir com este projeto você pode adicionar novas páginas ou métodos
     - Evite o *hardcoded*!
 
 Seguindo esses passos você pode estender a funcionalidade do projeto para extrairmos mais dados do SISREG! s2
-  
+
 Qualquer dúvida, entre em contato!
