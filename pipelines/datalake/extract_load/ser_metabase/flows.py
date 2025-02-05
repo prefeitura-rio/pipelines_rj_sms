@@ -12,6 +12,7 @@ from pipelines.datalake.extract_load.ser_metabase.tasks import (
     convert_metabase_json_to_df,
     query_database,
     save_data,
+    list_all_tables_and_columns,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
@@ -55,6 +56,11 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
         partition_column="data_extracao",
         source_format="parquet",
     )
+
+    # ------------------------------
+    # Section 4 - Print tables
+    # ------------------------------
+    tables_columns = list_all_tables_and_columns(token=token, database_id=DATABASE_ID, upstream_tasks=[json_res])
 
 ser_metabase_flow.executor = LocalDaskExecutor(num_workers=1)
 ser_metabase_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

@@ -7,7 +7,6 @@ import pandas as pd
 import requests
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from prefeitura_rio.pipelines_utils.logging import log
 
 
 @task(max_retries=3, retry_delay=5)
@@ -17,6 +16,7 @@ def authenticate_in_metabase(user, password):
     auth_response = requests.post(auth_url, json=auth_payload, verify=False)
 
     token = auth_response.json()["id"]
+
     return token
 
 
@@ -32,12 +32,14 @@ def query_database(token, database_id, table_id):
     }
     query_response = requests.post(query_url, headers=headers, json=query_payload, verify=False)
     json_res = json.dumps(query_response.json())
+
     return json_res
 
 
 @task
 def save_data(json_res):
     EXTRACTION_DIR = "./extraction/"
+
     os.makedirs(EXTRACTION_DIR, exist_ok=True)
 
     with open(
@@ -49,40 +51,12 @@ def save_data(json_res):
 @task
 def convert_metabase_json_to_df(json_res):
     data_as_dict = json.loads(json_res)
+
     rows = data_as_dict["data"]["rows"]
     cols_names = [col["name"] for col in data_as_dict["data"]["cols"]]
 
     df = pd.DataFrame(rows, columns=cols_names)
+
     df["data_extracao"] = datetime.now()
+
     return df
-
-
-@task
-def list_all_tables_and_columns(token, database_id):
-    """
-    Lists all tables and their columns from a given Metabase database.
-    Prints out the table name and each column found in that table.
-    """
-    base_url = "https://metabase.saude.rj.gov.br/api"
-    metadata_endpoint = f"{base_url}/database/{database_id}/metadata"
-
-    headers = {
-        "Content-Type": "application/json",
-        "X-Metabase-Session": token
-    }
-
-    response = requests.get(metadata_endpoint, headers=headers, verify=False)
-    response.raise_for_status()
-    data = response.json()
-
-    # 'tables' contains info about each table in the database
-    for table in data.get("tables", []):
-        table_name = table.get("name")
-        log(f"!!! METABASE --------------------------- Table: {table_name}")
-
-        # 'fields' in each table contains information about columns
-        for field in table.get("fields", []):
-            col_name = field.get("name")
-            log(f"    Column: {col_name}")
-
-    return None
