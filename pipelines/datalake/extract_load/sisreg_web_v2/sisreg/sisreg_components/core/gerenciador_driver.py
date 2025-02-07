@@ -2,6 +2,7 @@
 # pylint: disable=line-too-long, C0114
 # flake8: noqa: E501
 
+import selenium
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
@@ -38,6 +39,10 @@ class GerenciadorDriver:
         servico = Service()
         self.browser = webdriver.Firefox(service=servico, options=opcoes)
         self.browser.set_page_load_timeout(self.tempo_carregamento)
+
+        log(f"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ VERSÃO WEB DRIVER: driver.capabilities['moz:geckodriverVersion']")
+        log(f"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ VERSÃO SELENIUM: {selenium.__version__}")
+
         return self.browser
 
     def _configurar_opcoes(self) -> FirefoxOptions:
