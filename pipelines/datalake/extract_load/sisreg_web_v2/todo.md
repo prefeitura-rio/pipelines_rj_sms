@@ -1,5 +1,5 @@
 ### Objetivo das alterações
-Generalizar ainda mais o projeto para promover a contribuição facilitada de novos componentes 
+Generalizar ainda mais o projeto para promover a contribuição facilitada de novos componentes
 
 ### O fluxo será sempre:
 - task 1: login sisreg (opcional?)
@@ -37,7 +37,7 @@ ___
         - etc
 
     - Parâmetro passado **TAMBÉM** para a task de construção de tabela no _BQ_
-  
+
 
 ___
 

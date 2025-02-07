@@ -40,7 +40,9 @@ class GerenciadorDriver:
         self.browser = webdriver.Firefox(service=servico, options=opcoes)
         self.browser.set_page_load_timeout(self.tempo_carregamento)
 
-        log(f"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ VERSÃO WEB DRIVER: driver.capabilities['moz:geckodriverVersion']")
+        log(
+            f"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ VERSÃO WEB DRIVER: driver.capabilities['moz:geckodriverVersion']"
+        )
         log(f"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ VERSÃO SELENIUM: {selenium.__version__}")
 
         return self.browser
