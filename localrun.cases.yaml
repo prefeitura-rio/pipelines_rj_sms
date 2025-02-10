@@ -227,3 +227,8 @@ cases:
       bq_dataset_id: "ser_metabase"
       bq_table_id: "FATO_AMBULATORIO"
 
+  - case_slug: "healthchecks"
+    flow_path: "pipelines.tools.healthchecks.flows"
+    flow_name: "flow"
+    params:
+      environment: "dev"

@@ -275,9 +275,11 @@ def create_parquet_file(
     try:
         df = pd.read_sql(sql, conn, dtype=str)
 
+        id_cnes = database_name.removeprefix("vitacare_")
+
         log(f"Adding date metadata to {filename} ...", level="debug")
 
-        df["id_cnes"] = database_name.removeprefix("vitacare_")
+        df["id_cnes"] = id_cnes
 
         df["backup_created_at"] = str(backup_date)
 
@@ -286,7 +288,7 @@ def create_parquet_file(
         log(f"Conforming header to datalake of {filename} ...")
         df.columns = remove_columns_accents(df)
 
-        path = f"{base_path}/vitacare_historico_{df['id_cnes'].values[0]}_{filename}.parquet"
+        path = f"{base_path}/vitacare_historico_{id_cnes}_{filename}.parquet"
 
         df.to_parquet(path, index=False)
 
