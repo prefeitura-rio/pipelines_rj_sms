@@ -5,9 +5,9 @@ from datetime import datetime
 
 import pandas as pd
 import requests
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from prefeitura_rio.pipelines_utils.logging import log
 
 
 @task(max_retries=3, retry_delay=5)

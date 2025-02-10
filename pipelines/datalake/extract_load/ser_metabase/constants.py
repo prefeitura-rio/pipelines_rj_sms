@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 DATABASE_IDS = {
     "DWH": {
         "id": 178,  # Banco novo: Novas tabelas com diversos schemas que apresentam aparentes melhoras nos dados disponibilizados.
