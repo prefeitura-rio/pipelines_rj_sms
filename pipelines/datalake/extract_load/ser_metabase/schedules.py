@@ -1,25 +1,30 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103
 """
 Schedules
 """
 
 from datetime import datetime, timedelta
-
 import pytz
-from prefect.schedules import Schedule
 
+from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-flow_parameters = [
-    {
-        "environment": "prod",
-        "database_id": 178,
-        "table_id": 3477,
-    }
-]
+from pipelines.datalake.extract_load.ser_metabase.constants import DATABASE_IDS
 
+flow_parameters = []
+for dataset_name, dataset_config in DATABASE_IDS.items():
+    db_id = dataset_config["id"]
+    for table_name, table_id in dataset_config["tables"].items():
+        flow_parameters.append(
+            {
+                "environment": "prod",
+                "database_id": db_id,
+                "table_id": table_id,
+                "bq_dataset_id": "ser_metabase",
+                "bq_table_id": table_name,
+            }
+        )
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),

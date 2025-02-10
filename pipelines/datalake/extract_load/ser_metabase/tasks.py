@@ -55,34 +55,3 @@ def convert_metabase_json_to_df(json_res):
     df = pd.DataFrame(rows, columns=cols_names)
     df["data_extracao"] = datetime.now()
     return df
-
-
-@task
-def list_all_tables_and_columns(token, database_id):
-    """
-    Lists all tables and their columns from a given Metabase database.
-    Prints out the table name and each column found in that table.
-    """
-    base_url = "https://metabase.saude.rj.gov.br/api"
-    metadata_endpoint = f"{base_url}/database/{database_id}/metadata"
-
-    headers = {
-        "Content-Type": "application/json",
-        "X-Metabase-Session": token
-    }
-
-    response = requests.get(metadata_endpoint, headers=headers, verify=False)
-    response.raise_for_status()
-    data = response.json()
-
-    # 'tables' contains info about each table in the database
-    for table in data.get("tables", []):
-        table_name = table.get("name")
-        log(f"!!! METABASE --------------------------- Table: {table_name}")
-
-        # 'fields' in each table contains information about columns
-        for field in table.get("fields", []):
-            col_name = field.get("name")
-            log(f"    Column: {col_name}")
-
-    return None

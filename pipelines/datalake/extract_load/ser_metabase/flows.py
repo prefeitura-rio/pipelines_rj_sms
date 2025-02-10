@@ -11,16 +11,19 @@ from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
     convert_metabase_json_to_df,
     query_database,
-    save_data,
-    list_all_tables_and_columns,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
+    # METABASE ------------------------------
     DATABASE_ID = Parameter("database_id", default=178, required=True)
-    TABLE_ID = Parameter("table_id", default=3477, required=True)
+    TABLE_ID = Parameter("table_id", default=3255, required=True)
+
+    # BIGQUERY ------------------------------
+    BQ_DATASET_ID = Parameter("bq_dataset_id", default="ser_metabase", required=True)
+    BQ_TABLE_ID = Parameter("bq_table_id", default="FATO_AMBULATORIO", required=True)
 
     # ------------------------------
     # Section 1 - Authenticate in Metabase
@@ -51,16 +54,11 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
 
     upload_df_to_datalake(
         df=df,
-        table_id="ser_metabase",
-        dataset_id="brutos_plataforma_ser",
+        table_id=BQ_TABLE_ID,
+        dataset_id=BQ_DATASET_ID,
         partition_column="data_extracao",
         source_format="parquet",
     )
-
-    # ------------------------------
-    # Section 4 - Print tables
-    # ------------------------------
-    tables_columns = list_all_tables_and_columns(token=token, database_id=DATABASE_ID, upstream_tasks=[json_res])
 
 ser_metabase_flow.executor = LocalDaskExecutor(num_workers=1)
 ser_metabase_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
