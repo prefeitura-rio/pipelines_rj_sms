@@ -6,7 +6,6 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
     convert_metabase_json_to_df,
@@ -66,4 +65,3 @@ ser_metabase_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
-# ser_metabase_flow.schedule = schedule
