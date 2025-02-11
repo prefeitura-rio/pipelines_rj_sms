@@ -21,7 +21,7 @@ for dataset_name, dataset_config in DATABASE_IDS.items():
                 "environment": "prod",
                 "database_id": db_id,
                 "table_id": table_id,
-                "bq_dataset_id": "ser_metabase",
+                "bq_dataset_id": "brutos_ser_metabase",
                 "bq_table_id": table_name,
             }
         )
