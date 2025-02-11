@@ -54,6 +54,7 @@ tqdm = "^4.66.3"
 docxtpl = "^0.18.0"
 pynpm = "^0.2.0"
 tenacity = "^9.0.0"
+webdriver-manager = "^4.0.2"
 
 [tool.poetry.group.dev]
 optional = true
