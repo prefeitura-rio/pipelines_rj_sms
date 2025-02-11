@@ -2,7 +2,7 @@
 DATABASE_IDS = {
     "DWH": {
         "id": 178,  # Banco novo: Novas tabelas com diversos schemas que apresentam aparentes
-                    # melhoras nos dados disponibilizados.
+        # melhoras nos dados disponibilizados.
         "tables": {
             "DIM_RECURSO": 3476,  # Lista dos recursos cadastrados
             "DIM_UNIDADE": 3477,  # Lista das unidades cadastradas
@@ -18,7 +18,7 @@ DATABASE_IDS = {
     },
     "REGULACAO_METRO1_CAPITAL": {
         "id": 173,  # Banco com tabelas que estavam sendo utilizadas, mas apresentam
-                    # diversos problemas como inconsistência e falta de informações.
+        # diversos problemas como inconsistência e falta de informações.
         "tables": {
             "TB_HISTORICO_SOLICITACAO_METRO1_CAPITAL": 3262,
             "TB_QUANTIDADE_SOLICITACOES": 3261,
