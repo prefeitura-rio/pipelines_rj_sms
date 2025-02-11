@@ -49,7 +49,7 @@ class Sisreg:
             options=self._options,
         )
         self.browser.set_page_load_timeout(60)
-        
+
         self.user = user
         self.password = password
         self.download_path = download_path
