@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 import requests
@@ -10,7 +10,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
-@task(max_retries=3, retry_delay=5)
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
 def authenticate_in_metabase(user, password):
     auth_url = "https://metabase.saude.rj.gov.br/api/session"
     auth_payload = {"username": user, "password": password}
@@ -20,7 +20,7 @@ def authenticate_in_metabase(user, password):
     return token
 
 
-@task(max_retries=3, retry_delay=5)
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
 def query_database(token, database_id, table_id):
     query_url = "https://metabase.saude.rj.gov.br/api/dataset"
     headers = {"Content-Type": "application/json", "X-Metabase-Session": token}
