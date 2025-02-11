@@ -22,7 +22,7 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     TABLE_ID = Parameter("table_id", default=3255, required=True)
 
     # BIGQUERY ------------------------------
-    BQ_DATASET_ID = Parameter("bq_dataset_id", default="ser_metabase", required=True)
+    BQ_DATASET_ID = Parameter("bq_dataset_id", default="brutos_ser_metabase", required=True)
     BQ_TABLE_ID = Parameter("bq_table_id", default="FATO_AMBULATORIO", required=True)
 
     # ------------------------------
