@@ -24,7 +24,11 @@ def authenticate_in_metabase(user, password):
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def query_database(token, database_id, table_id):
-    log("Iniciando consulta ao banco de dados. Database ID: {}, Table ID: {}".format(database_id, table_id))
+    log(
+        "Iniciando consulta ao banco de dados. Database ID: {}, Table ID: {}".format(
+            database_id, table_id
+        )
+    )
     query_url = "https://metabase.saude.rj.gov.br/api/dataset"
     headers = {"Content-Type": "application/json", "X-Metabase-Session": token}
     query_payload = {
