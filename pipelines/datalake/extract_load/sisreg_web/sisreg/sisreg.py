@@ -10,6 +10,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from webdriver_manager.firefox import GeckoDriverManager
 
 from pipelines.datalake.extract_load.sisreg_web.sisreg.utils import get_first_csv
 
@@ -32,6 +34,7 @@ class Sisreg:
     """
 
     def __init__(self, user, password, download_path):
+
         self._options = FirefoxOptions()
         self._options.add_argument("--headless")
         self._profile = FirefoxProfile()
@@ -40,8 +43,13 @@ class Sisreg:
         self._profile.set_preference("browser.download.dir", download_path)
         self._profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")
         self._options.profile = self._profile
-        self.browser = webdriver.Firefox(options=self._options)
+
+        self.browser = webdriver.Firefox(
+            service=FirefoxService(GeckoDriverManager().install()),
+            options=self._options,
+        )
         self.browser.set_page_load_timeout(60)
+
         self.user = user
         self.password = password
         self.download_path = download_path
