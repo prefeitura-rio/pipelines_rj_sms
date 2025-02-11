@@ -144,8 +144,6 @@ def vitacare_api_health_check(enviroment: str, ap: str):
             }
         ]
 
-    return results
-
 
 @task
 def print_result(results: list, enviroment: str):
