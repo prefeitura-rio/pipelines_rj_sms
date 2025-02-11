@@ -11,6 +11,7 @@ from pipelines.datalake.extract_load.ser_metabase.tasks import (
     convert_metabase_json_to_df,
     query_database,
 )
+from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
@@ -65,3 +66,4 @@ ser_metabase_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
+ser_metabase_flow.schedule = schedule
