@@ -6,12 +6,12 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
     convert_metabase_json_to_df,
     query_database,
 )
-from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
