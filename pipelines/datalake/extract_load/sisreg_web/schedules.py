@@ -19,7 +19,7 @@ flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
         "table_id": "escala",
-    },
+    }
 ]
 
 sisreg_clocks = generate_dump_api_schedules(
