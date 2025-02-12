@@ -25,7 +25,7 @@ from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow("Extract Load: Minha Saúde Rio - MongoDB") as minhasaude_mongodb_flow:
-    ###### Parâmetros ############################
+    # Parâmetros -------------------------------------------------
     # Geral ------------------------------
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
@@ -50,7 +50,7 @@ with Flow("Extract Load: Minha Saúde Rio - MongoDB") as minhasaude_mongodb_flow
         environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/minhasaude_mongodb"
     )
 
-    ###### Tarefas ############################
+    # Tarefas -------------------------------------------------
     # Tarefa 1 - Cria conexão com o MongoDB
     client, db = create_mongodb_connection(
         host=MONGO_HOST,

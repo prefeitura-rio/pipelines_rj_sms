@@ -163,7 +163,7 @@ def close_mongodb_connection(client: MongoClient) -> None:
     log("Conexão com o MongoDB encerrada com sucesso.")
 
 
-##################################################################################################
+# -------------------------------------------------
 # OPCIONAL: Tarefas adicionais para inspeção de coleções e campos
 @task
 def list_collections(db: Database) -> List[str]:
