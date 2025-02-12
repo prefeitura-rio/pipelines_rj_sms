@@ -135,7 +135,7 @@ def to_pandas(data: List[Dict[str, Any]]) -> pd.DataFrame:
     df["data_extracao"] = datetime.now()
 
     log(
-        f"Conversão concluída. O DataFrame resultante tem {df.shape[0]} linhas
+        f"Conversão concluída. O DataFrame resultante tem {df.shape[0]} linhas \
         e {df.shape[1]} colunas."
     )
 
