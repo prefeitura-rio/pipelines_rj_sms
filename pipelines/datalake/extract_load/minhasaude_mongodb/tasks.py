@@ -5,12 +5,8 @@ Tarefas
 
 # Geral
 from datetime import datetime, timedelta
-<<<<<<< HEAD
 from typing import List, Dict, Any, Set, Tuple
-=======
-from typing import Any, Dict, List, Set, Tuple, Union
 
->>>>>>> 9eaaee3bb4adfb450ab08a6c10b8be866aa20f86
 import pandas as pd
 
 # Internas
