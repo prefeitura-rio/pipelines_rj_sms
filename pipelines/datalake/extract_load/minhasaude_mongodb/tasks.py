@@ -5,13 +5,15 @@ Tarefas
 
 # Geral
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Union, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple, Union
+
 import pandas as pd
-from pymongo import MongoClient
-from pymongo.database import Database
 
 # Internas
 from prefeitura_rio.pipelines_utils.logging import log
+from pymongo import MongoClient
+from pymongo.database import Database
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 

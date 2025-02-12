@@ -5,6 +5,7 @@ Agendamentos
 
 # Geral
 from datetime import datetime, timedelta
+
 import pytz
 
 # Prefect

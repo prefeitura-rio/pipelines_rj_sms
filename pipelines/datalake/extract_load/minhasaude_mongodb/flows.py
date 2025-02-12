@@ -11,18 +11,18 @@ from prefect.storage import GCS
 
 # Internas
 from prefeitura_rio.pipelines_utils.custom import Flow
+
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.minhasaude_mongodb.schedules import schedule
 
 # Tarefas
 from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
+    close_mongodb_connection,
     create_mongodb_connection,
     get_collection_data,
     to_pandas,
-    close_mongodb_connection,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
-
 
 with Flow("Extract Load: Minha Saúde Rio - MongoDB") as minhasaude_mongodb_flow:
     ###### Parâmetros ############################
