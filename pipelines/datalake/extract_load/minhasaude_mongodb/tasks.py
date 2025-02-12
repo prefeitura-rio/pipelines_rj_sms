@@ -5,8 +5,10 @@ Tarefas
 
 # Geral
 from datetime import datetime, timedelta
+
 <<<<<<< HEAD
-from typing import List, Dict, Any, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
+
 =======
 from typing import Any, Dict, List, Set, Tuple, Union
 
