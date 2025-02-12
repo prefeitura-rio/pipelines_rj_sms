@@ -5,7 +5,7 @@ Tarefas
 
 # Geral
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Union, Set, Tuple
+from typing import List, Dict, Any, Set, Tuple
 import pandas as pd
 from pymongo import MongoClient
 from pymongo.database import Database
