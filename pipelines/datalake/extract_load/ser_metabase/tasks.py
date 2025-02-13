@@ -2,15 +2,18 @@
 """
 Tasks
 """
+import io
+
 # Geral
 import json
 from datetime import datetime, timedelta
-import io
+
 import pandas as pd
 import requests
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
@@ -34,23 +37,16 @@ def query_database(token, database_id, table_id):
         )
     )
     url = "https://metabase.saude.rj.gov.br/api/dataset/csv"
-    headers = {
-        "X-Metabase-Session": token,
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
+    headers = {"X-Metabase-Session": token, "Content-Type": "application/x-www-form-urlencoded"}
 
     dataset_query = {
         "type": "query",
         "database": database_id,
-        "query": {
-            "source-table": table_id
-        },
-        "parameters": []
+        "query": {"source-table": table_id},
+        "parameters": [],
     }
 
-    form_data = {
-        "query": json.dumps(dataset_query, ensure_ascii=False)
-    }
+    form_data = {"query": json.dumps(dataset_query, ensure_ascii=False)}
 
     response = requests.post(url, headers=headers, data=form_data, verify=False)
     csv_file = io.StringIO(response.content.decode("utf-8"))
@@ -60,6 +56,7 @@ def query_database(token, database_id, table_id):
 
     log("Consulta ao banco de dados concluída.")
     return df
+
 
 @task
 def convert_metabase_json_to_df(json_res):
