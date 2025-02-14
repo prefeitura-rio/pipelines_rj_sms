@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
+import urllib.parse
 from datetime import timedelta
-from pipelines.utils.credential_injector import authenticated_task as task
-from prefeitura_rio.pipelines_utils.logging import log
-
-from google.cloud import bigquery
 
 import pandas as pd
 import requests
-import urllib.parse
+from google.cloud import bigquery
+from prefeitura_rio.pipelines_utils.logging import log
+
+from pipelines.utils.credential_injector import authenticated_task as task
+
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def get_estabelecimentos_sem_coordenadas(env):
@@ -93,10 +94,10 @@ def get_coordinates_from_address(df: pd.DataFrame) -> pd.DataFrame:
     log(f"[get_coordinates_from_address] START | rows={len(df)}")
 
     LOGRADOURO_URL_TEMPLATE = (
-"https://pgeo3.rio.rj.gov.br/arcgis/rest/services/Geocode/Geocode_Logradouros/GeocodeServer/"
-"findAddressCandidates?SingleLine={single_line}"
-"&outFields=Match_addr,Addr_type,SingleLine,City,Region"
-"&matchOutOfRange=true&langCode=pt&f=pjson"
+        "https://pgeo3.rio.rj.gov.br/arcgis/rest/services/Geocode/Geocode_Logradouros/GeocodeServer/"
+        "findAddressCandidates?SingleLine={single_line}"
+        "&outFields=Match_addr,Addr_type,SingleLine,City,Region"
+        "&matchOutOfRange=true&langCode=pt&f=pjson"
     )
 
     df_addr = df.copy()
