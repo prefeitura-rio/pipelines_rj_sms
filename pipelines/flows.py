@@ -6,9 +6,9 @@
 Imports all flows for every project so we can register all of them.
 """
 
+from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows import *
 from pipelines.datalake.extract_load.datalake_bigquery.flows import *
 from pipelines.datalake.extract_load.datasus_ftp.flows import *
-from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows import *
 from pipelines.datalake.extract_load.google_sheets.flows import *
 from pipelines.datalake.extract_load.historico_clinico_integrado.flows import *
 from pipelines.datalake.extract_load.ser_metabase.flows import *
