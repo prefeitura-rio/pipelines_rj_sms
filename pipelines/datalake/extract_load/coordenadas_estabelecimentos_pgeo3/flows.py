@@ -6,7 +6,9 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.schedules import schedule
+from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.schedules import (
+    schedule,
+)
 from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.tasks import (
     enrich_coordinates,
     get_coordinates_from_address,
