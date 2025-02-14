@@ -94,7 +94,8 @@ def get_coordinates_from_address(df: pd.DataFrame) -> pd.DataFrame:
     log(f"[get_coordinates_from_address] START | rows={len(df)}")
 
     LOGRADOURO_URL_TEMPLATE = (
-        "https://pgeo3.rio.rj.gov.br/arcgis/rest/services/Geocode/Geocode_Logradouros/GeocodeServer/"
+        "https://pgeo3.rio.rj.gov.br"
+        "/arcgis/rest/services/Geocode/Geocode_Logradouros/GeocodeServer/"
         "findAddressCandidates?SingleLine={single_line}"
         "&outFields=Match_addr,Addr_type,SingleLine,City,Region"
         "&matchOutOfRange=true&langCode=pt&f=pjson"
