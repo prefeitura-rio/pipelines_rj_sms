@@ -6,15 +6,14 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.enderecos_pgeo3.schedules import schedule
 from pipelines.datalake.extract_load.enderecos_pgeo3.tasks import (
-    get_estabelecimentos_sem_coordenadas,
-    get_coordinates_from_cep,
-    get_coordinates_from_address,
     enrich_coordinates,
+    get_coordinates_from_address,
+    get_coordinates_from_cep,
+    get_estabelecimentos_sem_coordenadas,
     transform_coordinates_api,
 )
-from pipelines.datalake.extract_load.enderecos_pgeo3.schedules import schedule
-
 
 with Flow(
     "Extract Load: Coordenadas (lat,long) dos estabelecimentos de saúde"
