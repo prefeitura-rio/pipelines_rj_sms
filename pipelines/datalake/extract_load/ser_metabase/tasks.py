@@ -58,11 +58,13 @@ def query_database(token, database_id, table_id):
 
     return df
 
+
 @task
 def interrupt_if_empty(df):
     if df.empty:
         raise Exception("Data Frame eh Vazio")
     return df
+
 
 @task
 def convert_metabase_json_to_df(json_res):

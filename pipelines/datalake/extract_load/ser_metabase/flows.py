@@ -15,8 +15,8 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
-    query_database,
     interrupt_if_empty,
+    query_database,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
@@ -57,9 +57,7 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     # ------------------------------
     # Section 3 - Verify Database length
     # ------------------------------
-    df_verified = interrupt_if_empty(
-        df=df
-    )
+    df_verified = interrupt_if_empty(df=df)
 
     # ------------------------------
     # Section 4 - Upload to Big Query
