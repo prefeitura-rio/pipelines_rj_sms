@@ -17,54 +17,15 @@ from pymongo.database import Database
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
-@task(max_retries=5, retry_delay=timedelta(minutes=3), nout=2)
-def create_mongodb_connection(
-    host: str, port: int, user: str, password: str, authsource: str, db_name: str
-) -> Tuple[MongoClient, Database]:
-    """
-    Cria uma conexão com o MongoDB e retorna tanto o cliente quanto o objeto de banco de dados.
-
-    Parâmetros
-    ----------
-    host : str
-        Endereço (host) do servidor MongoDB.
-    port : int
-        Porta do servidor MongoDB.
-    user : str
-        Usuário de autenticação no MongoDB.
-    password : str
-        Senha de autenticação no MongoDB.
-    authsource : str
-        Base de autenticação do MongoDB (geralmente o próprio nome do banco ou 'admin').
-    db_name : str
-        Nome do banco de dados ao qual queremos nos conectar.
-
-    Retorna
-    -------
-    Tuple[MongoClient, Database]
-        Retorna uma tupla contendo o cliente (MongoClient) e o banco de dados (Database).
-    """
-
-    log("Iniciando criação de conexão com o MongoDB...")
-    log(f"Parâmetros recebidos: host={host}, port={port}, user={user}, db_name={db_name}")
-
-    # Monta a string de conexão de forma genérica
-    # Exemplo: "mongodb://usuario:senha@host:porta/?authSource=db_auth"
-    connection_string = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
-
-    # Cria o cliente
-    client = MongoClient(connection_string)
-
-    # Obtem o objeto de banco de dados
-    db = client[db_name]
-
-    log("Conexão com MongoDB criada com sucesso.")
-    return client, db
-
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def get_collection_data(
-    db: Database,
+def get_collection_data_from_mongodb(
+    host: str, 
+    port: int, 
+    user: str,
+    password: str,
+    authsource: str,
+    db_name: str,
     collection_name: str,
     query: Dict[str, Any] = None,
     sample_size: int = 0,
@@ -90,6 +51,18 @@ def get_collection_data(
     List[Dict[str, Any]]
         Retorna uma lista de dicionários, onde cada dicionário representa um documento.
     """
+    log("Iniciando criação de conexão com o MongoDB...")
+    log(f"Parâmetros recebidos: host={host}, port={port}, user={user}, db_name={db_name}")
+
+    # Monta a string de conexão de forma genérica
+    # Exemplo: "mongodb://usuario:senha@host:porta/?authSource=db_auth"
+    connection_string = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
+
+    # Cria o cliente
+    client = MongoClient(connection_string)
+
+    # Obtem o objeto de banco de dados
+    db = client[db_name]
 
     log(f"Iniciando busca de dados na coleção '{collection_name}'.")
     log(f"Parâmetros: query={query}, sample_size={sample_size}")
@@ -106,6 +79,9 @@ def get_collection_data(
     data = list(cursor)
 
     log(f"Busca finalizada. Foram retornados {len(data)} documentos.")
+
+    # Encerra conexão
+    client.close()
     return data
 
 
@@ -142,26 +118,6 @@ def to_pandas(data: List[Dict[str, Any]]) -> pd.DataFrame:
     )
 
     return df
-
-
-@task
-def close_mongodb_connection(client: MongoClient) -> None:
-    """
-    Encerra a conexão com o MongoDB.
-
-    Parâmetros
-    ----------
-    client : MongoClient
-        Objeto cliente do MongoDB a ser fechado.
-
-    Retorna
-    -------
-    None
-    """
-
-    log("Iniciando fechamento da conexão com o MongoDB...")
-    client.close()
-    log("Conexão com o MongoDB encerrada com sucesso.")
 
 
 # -------------------------------------------------

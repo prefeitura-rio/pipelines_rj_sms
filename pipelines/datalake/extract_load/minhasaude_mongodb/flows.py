@@ -17,9 +17,7 @@ from pipelines.datalake.extract_load.minhasaude_mongodb.schedules import schedul
 
 # Tarefas
 from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
-    close_mongodb_connection,
-    create_mongodb_connection,
-    get_collection_data,
+    get_collection_data_from_mongodb,
     to_pandas,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
@@ -51,25 +49,24 @@ with Flow("Extract Load: Minha Saúde Rio - MongoDB") as minhasaude_mongodb_flow
     )
 
     # Tarefas -------------------------------------------------
-    # Tarefa 1 - Cria conexão com o MongoDB
-    client, db = create_mongodb_connection(
+    
+    # Tarefa 1 - Obtem dados da coleção
+    data = get_collection_data_from_mongodb(
         host=MONGO_HOST,
         port=MONGO_PORT,
         user=user,
         password=password,
         authsource=MONGO_AUTHSOURCE,
         db_name=MONGO_DATABASE,
+        collection_name=MONGO_COLLECTION,
+        query=MONGO_QUERY,
+        sample_size=MONGO_SAMPLE_SIZE
     )
 
-    # Tarefa 2 - Obtem dados da coleção
-    data = get_collection_data(
-        db=db, collection_name=MONGO_COLLECTION, query=MONGO_QUERY, sample_size=MONGO_SAMPLE_SIZE
-    )
-
-    # Tarefa 3 - Transforma os dados em um DataFrame
+    # Tarefa 2 - Transforma os dados em um DataFrame
     df = to_pandas(data=data)
 
-    # Tarefa 4 - Upload do DataFrame para o Data Lake
+    # Tarefa 3 - Upload do DataFrame para o Data Lake
     upload_df_to_datalake(
         df=df,
         table_id=BQ_TABLE_ID,
@@ -77,9 +74,6 @@ with Flow("Extract Load: Minha Saúde Rio - MongoDB") as minhasaude_mongodb_flow
         partition_column="data_extracao",
         source_format="parquet",
     )
-
-    # Tarefa 5 - Fecha a conexão com o MongoDB
-    close_mongodb_connection(client=client, upstream_tasks=[data])
 
 minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=1)
 minhasaude_mongodb_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
