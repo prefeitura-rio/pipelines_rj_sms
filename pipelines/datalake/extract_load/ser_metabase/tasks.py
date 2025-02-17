@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
+"""
+Tasks
+"""
+import io
+
+# Geral
 import json
-import os
 from datetime import datetime, timedelta
 
 import pandas as pd
 import requests
+
+# Internos
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -29,30 +36,26 @@ def query_database(token, database_id, table_id):
             database_id, table_id
         )
     )
-    query_url = "https://metabase.saude.rj.gov.br/api/dataset"
-    headers = {"Content-Type": "application/json", "X-Metabase-Session": token}
-    query_payload = {
-        "database": database_id,
+    url = "https://metabase.saude.rj.gov.br/api/dataset/csv"
+    headers = {"X-Metabase-Session": token, "Content-Type": "application/x-www-form-urlencoded"}
+
+    dataset_query = {
         "type": "query",
-        "parameters": [],
+        "database": database_id,
         "query": {"source-table": table_id},
+        "parameters": [],
     }
-    query_response = requests.post(query_url, headers=headers, json=query_payload, verify=False)
-    json_res = json.dumps(query_response.json())
+
+    form_data = {"query": json.dumps(dataset_query, ensure_ascii=False)}
+
+    response = requests.post(url, headers=headers, data=form_data, verify=False)
+    csv_file = io.StringIO(response.content.decode("utf-8"))
+
+    df = pd.read_csv(csv_file)
+    df["data_extracao"] = datetime.now()
+
     log("Consulta ao banco de dados concluída.")
-    return json_res
-
-
-@task
-def save_data(json_res):
-    log("Iniciando salvamento dos dados.")
-    EXTRACTION_DIR = "./extraction/"
-    os.makedirs(EXTRACTION_DIR, exist_ok=True)
-
-    file_path = f"{EXTRACTION_DIR}{datetime.now().strftime('%y-%m-%d %H_%M_%S')}.json"
-    with open(file_path, mode="w") as f:
-        f.write(json_res)
-    log("Dados salvos em: {}".format(file_path))
+    return df
 
 
 @task

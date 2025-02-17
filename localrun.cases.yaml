@@ -223,7 +223,7 @@ cases:
     params:
       environment: "dev"
       database_id: 178
-      table_id: 3477
+      table_id: 3255
       bq_dataset_id: "ser_metabase"
       bq_table_id: "FATO_AMBULATORIO"
 

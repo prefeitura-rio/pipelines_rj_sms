@@ -2,12 +2,15 @@
 """
 Schedules
 """
-
+# Geral
 from datetime import datetime, timedelta
 
 import pytz
+
+# Prefect
 from prefect.schedules import Schedule
 
+# Internos
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.ser_metabase.constants import DATABASE_IDS
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
