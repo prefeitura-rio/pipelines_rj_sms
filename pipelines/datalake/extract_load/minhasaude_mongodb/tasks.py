@@ -17,11 +17,10 @@ from pymongo.database import Database
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
-
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def get_collection_data_from_mongodb(
-    host: str, 
-    port: int, 
+    host: str,
+    port: int,
     user: str,
     password: str,
     authsource: str,

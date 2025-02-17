@@ -49,7 +49,7 @@ with Flow("Extract Load: Minha Saúde Rio - MongoDB") as minhasaude_mongodb_flow
     )
 
     # Tarefas -------------------------------------------------
-    
+
     # Tarefa 1 - Obtem dados da coleção
     data = get_collection_data_from_mongodb(
         host=MONGO_HOST,
@@ -60,7 +60,7 @@ with Flow("Extract Load: Minha Saúde Rio - MongoDB") as minhasaude_mongodb_flow
         db_name=MONGO_DATABASE,
         collection_name=MONGO_COLLECTION,
         query=MONGO_QUERY,
-        sample_size=MONGO_SAMPLE_SIZE
+        sample_size=MONGO_SAMPLE_SIZE,
     )
 
     # Tarefa 2 - Transforma os dados em um DataFrame
