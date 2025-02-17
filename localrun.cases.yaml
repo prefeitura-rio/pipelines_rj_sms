@@ -240,3 +240,17 @@ cases:
     flow_name: "flow"
     params:
       environment: "dev"
+  - case_slug: "datalake_minhasaude_mongodb_perfilacessos_100"
+    flow_path: "pipelines.datalake.extract_load.minhasaude_mongodb.flows"
+    flow_name: "minhasaude_mongodb_flow"
+    params:
+      environment: "dev"
+      host: "db.smsrio.org"
+      port: 27017
+      authsource: "minhasauderio"
+      database: "minhasauderio"
+      collection: "perfil_acessos"
+      query: {}
+      sample_size: 100
+      bq_dataset_id: "brutos_minhasaude_mongodb"
+      bq_table_id: "perfil_acessos"
