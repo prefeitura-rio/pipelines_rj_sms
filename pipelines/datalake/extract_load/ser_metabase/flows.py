@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
+"""
+Flow
+"""
+# Prefect
 from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+
+# Internos
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
-    convert_metabase_json_to_df,
     query_database,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
@@ -25,14 +30,15 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     BQ_DATASET_ID = Parameter("bq_dataset_id", default="brutos_ser_metabase", required=True)
     BQ_TABLE_ID = Parameter("bq_table_id", default="FATO_AMBULATORIO", required=True)
 
-    # ------------------------------
-    # Section 1 - Authenticate in Metabase
-    # ------------------------------
+    # CREDENTIALS ------------------------------
     user = get_secret_key(environment=ENVIRONMENT, secret_name="USER", secret_path="/metabase")
     password = get_secret_key(
         environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/metabase"
     )
 
+    # ------------------------------
+    # Section 1 - Authenticate in Metabase
+    # ------------------------------
     token = authenticate_in_metabase(
         user=user,
         password=password,
@@ -41,17 +47,15 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     # ------------------------------
     # Section 2 - Query Database
     # ------------------------------
-    json_res = query_database(
+    df = query_database(
         token=token,
         database_id=DATABASE_ID,
         table_id=TABLE_ID,
     )
 
     # ------------------------------
-    # Section 3 - Save Data
+    # Section 3 - Upload to Big Query
     # ------------------------------
-    df = convert_metabase_json_to_df(json_res=json_res)
-
     upload_df_to_datalake(
         df=df,
         table_id=BQ_TABLE_ID,
