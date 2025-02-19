@@ -232,6 +232,11 @@ cases:
     flow_name: "flow"
     params:
       environment: "dev"
+  - case_slug: "enderecos_pgeo3"
+    flow_path: "pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows"
+    flow_name: "sms_estabelecimentos_coordenadas"
+    params:
+      environment: "dev"
   - case_slug: "datalake_minhasaude_mongodb_perfilacessos_100"
     flow_path: "pipelines.datalake.extract_load.minhasaude_mongodb.flows"
     flow_name: "minhasaude_mongodb_flow"
