@@ -2,15 +2,14 @@
 import urllib.parse
 from datetime import timedelta
 
+import geopandas as gpd
 import pandas as pd
 import requests
 from google.cloud import bigquery
 from prefeitura_rio.pipelines_utils.logging import log
+from shapely.geometry import Point
 
 from pipelines.utils.credential_injector import authenticated_task as task
-
-import geopandas as gpd
-from shapely.geometry import Point
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
@@ -193,20 +192,20 @@ def transform_coordinates_geopandas(df: pd.DataFrame) -> pd.DataFrame:
 
     log("[transform_coordinates_geopandas] START")
 
-    valid_mask = df['longitude_api'].notnull() & df['latitude_api'].notnull()
+    valid_mask = df["longitude_api"].notnull() & df["latitude_api"].notnull()
     if valid_mask.any():
         sub_df = df.loc[valid_mask].copy()
 
-        sub_df['geometry'] = [
-            Point(xy) for xy in zip(sub_df['longitude_api'], sub_df['latitude_api'])
+        sub_df["geometry"] = [
+            Point(xy) for xy in zip(sub_df["longitude_api"], sub_df["latitude_api"])
         ]
 
-        gdf = gpd.GeoDataFrame(sub_df, geometry='geometry', crs="EPSG:31983")
+        gdf = gpd.GeoDataFrame(sub_df, geometry="geometry", crs="EPSG:31983")
 
         gdf = gdf.to_crs("EPSG:4326")
 
-        df.loc[valid_mask, 'longitude_api'] = gdf.geometry.x
-        df.loc[valid_mask, 'latitude_api'] = gdf.geometry.y
+        df.loc[valid_mask, "longitude_api"] = gdf.geometry.x
+        df.loc[valid_mask, "latitude_api"] = gdf.geometry.y
 
     log("[transform_coordinates_geopandas] DONE")
     log(f"{df.sample(5)}")
