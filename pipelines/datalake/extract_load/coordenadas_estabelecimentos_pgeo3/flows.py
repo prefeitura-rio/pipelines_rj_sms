@@ -14,7 +14,7 @@ from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.tasks im
     get_coordinates_from_address,
     get_coordinates_from_cep,
     get_estabelecimentos_sem_coordenadas,
-    transform_coordinates_api,
+    transform_coordinates_geopandas,
 )
 
 with Flow(
@@ -35,7 +35,7 @@ with Flow(
     df_enriched = enrich_coordinates(df_cep=df_with_cep, df_addr=df_with_address)
 
     # Task 5 - Converter formato
-    df_transformed = transform_coordinates_api(df=df_enriched)
+    df_transformed = transform_coordinates_geopandas(df=df_enriched)
 
 sms_estabelecimentos_coordenadas.executor = LocalDaskExecutor(num_workers=1)
 sms_estabelecimentos_coordenadas.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

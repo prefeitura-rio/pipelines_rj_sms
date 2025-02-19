@@ -233,7 +233,7 @@ cases:
     params:
       environment: "dev"
   - case_slug: "enderecos_pgeo3"
-    flow_path: "pipelines.datalake.extract_load.enderecos_pgeo3.flows"
+    flow_path: "pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows"
     flow_name: "sms_estabelecimentos_coordenadas"
     params:
       environment: "dev"

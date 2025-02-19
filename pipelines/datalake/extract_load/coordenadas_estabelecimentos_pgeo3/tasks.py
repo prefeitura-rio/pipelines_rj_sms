@@ -9,6 +9,9 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
+import geopandas as gpd
+from shapely.geometry import Point
+
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def get_estabelecimentos_sem_coordenadas(env):
@@ -31,7 +34,6 @@ def get_estabelecimentos_sem_coordenadas(env):
                 endereco_latitude IS NULL
                 OR endereco_longitude IS NULL
             )
-        LIMIT 100
     """
 
     log("Executando query")
@@ -182,35 +184,30 @@ def enrich_coordinates(df_cep: pd.DataFrame, df_addr: pd.DataFrame) -> pd.DataFr
     return df_final
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=2))
-def transform_coordinates_api(df: pd.DataFrame) -> pd.DataFrame:
+@task
+def transform_coordinates_geopandas(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Transforma as coordenadas de 'latitude_api' (x) e 'longitude_api' (y)
-    utilizando a API do EPSG.io para converter de SRS 31983 para 4326.
-
-    Exemplo de chamada:
-    https://epsg.io/trans?x=677059.5409000&y=7473083.3592000&s_srs=31983&t_srs=4326
+    Transforma as coordenadas de 'latitude_api' (y) e 'longitude_api' (x)
+    utilizando GeoPandas para converter de SRS 31983 para 4326.
     """
-    log("[transform_coordinates_api] START")
-    TRANSFORM_URL_TEMPLATE = "https://epsg.io/trans?x={x}&y={y}&s_srs=31983&t_srs=4326"
 
-    for idx in df.index:
-        x_val = df.at[idx, "longitude_api"]
-        y_val = df.at[idx, "latitude_api"]
+    log("[transform_coordinates_geopandas] START")
 
-        if x_val and y_val:
-            try:
-                url = TRANSFORM_URL_TEMPLATE.format(x=x_val, y=y_val)
-                resp = requests.get(url, timeout=10)
-                data = resp.json()
-                new_x = data.get("x")
-                new_y = data.get("y")
-                if new_x and new_y:
-                    df.at[idx, "longitude_api"] = new_x
-                    df.at[idx, "latitude_api"] = new_y
-            except Exception as e:
-                log(f"[transform_coordinates_api] ERROR | index={idx} | {e}")
+    valid_mask = df['longitude_api'].notnull() & df['latitude_api'].notnull()
+    if valid_mask.any():
+        sub_df = df.loc[valid_mask].copy()
 
-    log("[transform_coordinates_api] DONE")
+        sub_df['geometry'] = [
+            Point(xy) for xy in zip(sub_df['longitude_api'], sub_df['latitude_api'])
+        ]
+
+        gdf = gpd.GeoDataFrame(sub_df, geometry='geometry', crs="EPSG:31983")
+
+        gdf = gdf.to_crs("EPSG:4326")
+
+        df.loc[valid_mask, 'longitude_api'] = gdf.geometry.x
+        df.loc[valid_mask, 'latitude_api'] = gdf.geometry.y
+
+    log("[transform_coordinates_geopandas] DONE")
     log(f"{df.sample(5)}")
     return df
