@@ -14,7 +14,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [{"environment": "prod"}]
 
 clocks = generate_dump_api_schedules(
-    interval=timedelta(days=1),
+    interval=timedelta(days=7),
     start_date=datetime(2023, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
