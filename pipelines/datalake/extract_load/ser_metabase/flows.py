@@ -70,6 +70,6 @@ ser_metabase_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
     memory_request="10Gi",
-    memory_limit="10Gi"
+    memory_limit="10Gi",
 )
 ser_metabase_flow.schedule = schedule
