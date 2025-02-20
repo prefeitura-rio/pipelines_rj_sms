@@ -62,7 +62,7 @@ def query_database(token, database_id, table_id):
 @task
 def interrupt_if_empty(df):
     if df.empty:
-        raise Exception("Data Frame eh Vazio")
+        raise Exception("Data Frame vazio")
     return df
 
 
