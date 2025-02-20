@@ -6,7 +6,6 @@ Agendamentos para extração e carga do SISREG.
 
 # bibliotecas padrão
 from datetime import datetime, timedelta
-
 import pytz
 
 # bibliotecas do prefect
@@ -15,13 +14,20 @@ from prefect.schedules import Schedule
 # módulos internos
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
+from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
+    constants as sisreg_constants
+)
+
 
 flow_parameters = [
     {
-        "dataset_id": "brutos_sisreg_v2",
         "environment": "prod",
-        "table_id": "oferta_programada",
-    },
+        "relative_path": "downloaded_data/",
+        "sisreg_method": metodo,           
+        "dataset_id": "brutos_sisreg_v2",
+        "table_id": tabela            
+    }
+    for metodo, tabela in sisreg_constants.METODO_TABELA.items()
 ]
 
 
@@ -34,5 +40,6 @@ sisreg_clocks = generate_dump_api_schedules(
     flow_run_parameters=flow_parameters,
     runs_interval_minutes=30,
 )
+
 
 sisreg_daily_update_schedule = Schedule(clocks=untuple_clocks(sisreg_clocks))

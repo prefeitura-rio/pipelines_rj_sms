@@ -58,6 +58,8 @@ Para contribuir com este projeto você pode adicionar novas páginas ou métodos
    - Crie um novo arquivo *.py* no diretório [`pages`](pipelines/datalake/extract_load/sisreg_web_v2/sisreg/sisreg_components/pages), definindo uma nova classe. Cada classe deve representar uma página ou conjunto de dados do SISREG.
    - Implemente métodos para interagir com a nova página ou conjunto de dados.
    - Utilize nomes de métodos descritivos, de maneira à garantir que sejam únicos, e não ocorram conflitos com métodos definidos em outras páginas.
+    - Seu método de extração deve receber a instância do Sisreg e o caminho para a pasta de download.
+    - Seu método de extração deve retornar o caminho absoluto para o arquivo .csv que for baixado por ele!
 
 2. **Atualize a classe [`Sisreg`](pipelines/datalake/extract_load/sisreg_web_v2/sisreg/sisreg_components/core/sisreg.py)**:
    - Importe sua nova classe de página em [`pipelines/datalake/extract_load/sisreg_web_v2/sisreg/sisreg_components/core/sisreg.py`](pipelines/datalake/extract_load/sisreg_web_v2/sisreg/sisreg_components/core/sisreg.py).
@@ -69,14 +71,9 @@ Para contribuir com este projeto você pode adicionar novas páginas ou métodos
 
 ### Transformando suas interações em tarefas no Prefect
 
-1. **Atualize o arquivo [`pipelines/datalake/extract_load/sisreg_web_v2/tasks.py`](pipelines/datalake/extract_load/sisreg_web_v2/tasks.py)**:
-   - Defina as novas tarefas, que usem os novos métodos das suas novas classes, chamando-as pela classe principal [`Sisreg`](pipelines/datalake/extract_load/sisreg_web_v2/sisreg/sisreg_components/core/sisreg.py).
+1. **Atualize o arquivo [`pipelines/datalake/extract_load/sisreg_web_v2/tasks.py`](pipelines/datalake/extract_load/sisreg_web_v2/constants.py)**:
+   - Apenas adicione à [METODO_TABELA](pipelines/datalake/extract_load/sisreg_web_v2/constants.py) o novo método principal de extração de dados que você criou, e que agora existe na classe [`Sisreg`](pipelines/datalake/extract_load/sisreg_web_v2/sisreg/sisreg_components/core/sisreg.py).
 
-2. **Atualize o arquivo [`pipelines/datalake/extract_load/sisreg_web_v2/flows.py`](pipelines/datalake/extract_load/sisreg_web_v2/flows.py)**:
-   - Garanta que as tarefas que você criou sejam integradas corretamente ao fluxo do Prefect.
-
-3. **Se necessário, atualize o arquivo [`pipelines/datalake/extract_load/sisreg_web_v2/constants.py`](pipelines/datalake/extract_load/sisreg_web_v2/constants.py)**:
-    - Evite o *hardcoded*!
 
 Seguindo esses passos você pode estender a funcionalidade do projeto para extrairmos mais dados do SISREG! s2
 

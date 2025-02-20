@@ -3,13 +3,13 @@
 Tarefas para o Web Scraping do SISREG.
 """
 
-import os
 
 # bibliotecas padrão
 from datetime import datetime, timedelta
 from typing import Tuple
+import os
 
-# bibliotecas do prefect e outros
+# bibliotecas prefect
 from prefect.engine.signals import FAIL
 
 # módulos internos
@@ -32,9 +32,8 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import add_load_date_column, get_secret_key
 
 
-########################################
-# tarefas do sisreg
-########################################
+# TAREFAS SISREG --------------------------
+# tarefa 1: login
 @task(max_retries=5, retry_delay=timedelta(minutes=3), nout=2)
 def login_sisreg(environment: str, caminho_relativo) -> Tuple[Sisreg, str]:
     """
@@ -70,25 +69,44 @@ def login_sisreg(environment: str, caminho_relativo) -> Tuple[Sisreg, str]:
     sisreg.fazer_login()
     return sisreg, caminho_download
 
-
+# tarefa 2: obter dados
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def extrair_oferta_programada(sisreg: Sisreg, caminho_download: str) -> str:
+def raspar_pagina(sisreg: Sisreg, caminho_download: str, metodo: str) -> str:
     """
-    Executa a extração da oferta programada do SISREG.
+    Esta tarefa recebe o nome de um método (ex: 'baixar_oferta_programada') e o executa 
+    dinamicamente na instância do Sisreg. Em seguida, retorna o caminho do arquivo baixado.
 
-    args:
+    Exemplo de uso:
+        extrair_pagina(sisreg, "/caminho/para/download", "baixar_oferta_programada")
+        
+    Args:
         sisreg (Sisreg): Instância do SISREG.
         caminho_download (str): Diretório absoluto onde os dados serão baixados.
+        metodo (str): Nome do método na classe Sisreg a ser chamado (ex: 'baixar_oferta_programada').
 
-    returns:
-        str: Caminho do arquivo extraído (oferta_programada.csv).
+    Returns:
+        str: Caminho do arquivo CSV gerado (ex: oferta_programada.csv).
     """
-    sisreg.baixar_oferta_programada()
-    caminho_arquivo_oferta_prog = os.path.join(caminho_download, "oferta_programada.csv")
+    # Garante que a classe Sisreg tenha o método solicitado
+    if not hasattr(sisreg, metodo):
+        raise AttributeError(f"O método '{metodo}' não existe na classe Sisreg.")
 
-    return caminho_arquivo_oferta_prog
+    # Chama dinamicamente o método de download (ex: sisreg.baixar_oferta_programada())
+    funcao_download = getattr(sisreg, metodo)
+    funcao_download()
 
+    # Se o método começar com 'baixar_', extraímos o resto do nome para gerar o CSV
+    if metodo.startswith("baixar_"):
+        nome_base = metodo.replace("baixar_", "")
+    else:
+        nome_base = metodo
 
+    # Nomeia o arquivo gerado (algo como: oferta_programada.csv)
+    novo_caminho_arquivo = os.path.join(caminho_download, f"{nome_base}.csv")
+
+    return novo_caminho_arquivo
+
+# tarefa 3: encerrar webdriver
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def sisreg_encerrar(sisreg: Sisreg) -> None:
     """
@@ -100,9 +118,8 @@ def sisreg_encerrar(sisreg: Sisreg) -> None:
     sisreg.encerrar()
 
 
-########################################
-# tarefas de gestão e transformação de arquivos
-########################################
+# TAREFAS GESTÃO E TRANSFORMAÇÃO ARQUIVOS --------------------------
+#tarefa 1 - renomear arquivo
 @task()
 def nome_arquivo_adicionar_data(arquivo_original: str, diretorio_destino: str = None) -> str:
     """
@@ -141,6 +158,7 @@ def nome_arquivo_adicionar_data(arquivo_original: str, diretorio_destino: str = 
     return novo_caminho
 
 
+# tarefa 2 - ajustar dados para upload no lake
 @task()
 def transform_data(file_path: str) -> str:
     """

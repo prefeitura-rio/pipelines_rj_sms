@@ -3,7 +3,6 @@
 Fluxo para extração e carga de dados do SISREG.
 """
 
-
 # bibliotecas do prefect
 from prefect import Parameter
 from prefect.run_configs import VertexRun
@@ -14,13 +13,13 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
-    constants as sisreg_constants,
+    constants as sisreg_constants
 )
 from pipelines.datalake.extract_load.sisreg_web_v2.schedules import (
     sisreg_daily_update_schedule,
 )
 from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
-    extrair_oferta_programada,
+    raspar_pagina,
     login_sisreg,
     nome_arquivo_adicionar_data,
     sisreg_encerrar,
@@ -28,64 +27,51 @@ from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
 )
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
-with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sisreg:
-    ########################################
-    # definição de parâmetros
-    ########################################
 
-    # flow
+with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sisreg:
+    # ambiente
     ENVIRONMENT = Parameter("environment", default="dev")
 
-    # gcp
-    DATASET_ID = Parameter("dataset_id", default=sisreg_constants.DATASET_ID.value)
-    TABLE_ID = Parameter("table_id", default="oferta_programada")
-
-    # tasks
+    # tarefas sisreg
     RELATIVE_PATH = Parameter("relative_path", default="downloaded_data/")
+    SISREG_METHOD = Parameter("sisreg_method", default="baixar_oferta_programada")
 
-    ########################################
+    # big query
+    DATASET_ID = Parameter("dataset_id", default=sisreg_constants.DATASET_ID.value)
+    TABLE_ID = Parameter("table_id", default=sisreg_constants.METODO_TABELA[SISREG_METHOD])
+
+    # --------------------------------------
+
     # configurando o ambiente
-    ########################################
     local_folders = create_folders()
 
-    ########################################
     # tarefa 1: login
-    ########################################
     sisreg, caminho_download = login_sisreg(environment=ENVIRONMENT, caminho_relativo=RELATIVE_PATH)
 
-    ########################################
-    # tarefa 2: oferta programada
-    ########################################
-    oferta_programada_arquivo = extrair_oferta_programada(
-        sisreg=sisreg, caminho_download=caminho_download
+    # tarefa 2: obter dados
+    arquivo_baixado = raspar_pagina(
+        sisreg=sisreg, caminho_download=caminho_download, metodo=SISREG_METHOD
     )
 
-    ########################################
-    # tarefa 3: renomear o arquivo para incluir a data atual
-    ########################################
-    oferta_programada_arquivo_data = nome_arquivo_adicionar_data(
-        arquivo_original=oferta_programada_arquivo
+    # tarefa 3: adicionar data atual no nome do arquivo
+    arquivo_baixado_data = nome_arquivo_adicionar_data(
+        arquivo_original=arquivo_baixado
     )
 
-    ########################################
-    # tarefa 4: encerrar a sessão do sisreg
-    ########################################
-    sisreg_encerrar(sisreg=sisreg, upstream_tasks=[oferta_programada_arquivo])
+    # tarefa 4: encerrar sessão do sisreg
+    sisreg_encerrar(sisreg=sisreg, upstream_tasks=[arquivo_baixado])
 
-    ########################################
     # tarefa 5: transformar os dados e converter para parquet
-    ########################################
-    transformed_file = transform_data(file_path=oferta_programada_arquivo_data)
+    arquivo_parquet = transform_data(file_path=arquivo_baixado_data)
 
-    ########################################
-    # tarefas 6 e 7: criar partições e subir o arquivo para o datalake
-    ########################################
-    create_partitions_task = create_partitions(
-        data_path=transformed_file,
+    # tarefa 6: criar partições
+    particoes_tarefa = create_partitions(
+        data_path=arquivo_parquet,
         partition_directory=local_folders["partition_directory"],
-        upstream_tasks=[transformed_file],
+        upstream_tasks=[arquivo_parquet],
     )
 
+    #tarefa 7: subir o arquivo para o datalake
     upload_to_datalake_task = upload_to_datalake(
         input_path=local_folders["partition_directory"],
         dataset_id=DATASET_ID,
@@ -96,13 +82,13 @@ with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sis
         if_storage_data_exists="replace",
         biglake_table=True,
         dataset_is_public=False,
-        upstream_tasks=[create_partitions_task],
+        upstream_tasks=[particoes_tarefa],
     )
 
 
-########################################
+# --------------------------------------
+
 # configurações padrão do fluxo
-########################################
 sms_sisreg.schedule = sisreg_daily_update_schedule
 sms_sisreg.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_sisreg.run_config = VertexRun(
