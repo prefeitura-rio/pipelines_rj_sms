@@ -4,10 +4,11 @@ Tarefas para o Web Scraping do SISREG.
 """
 
 
+import os
+
 # bibliotecas padrão
 from datetime import datetime, timedelta
 from typing import Tuple
-import os
 
 # bibliotecas prefect
 from prefect.engine.signals import FAIL
@@ -69,16 +70,17 @@ def login_sisreg(environment: str, caminho_relativo) -> Tuple[Sisreg, str]:
     sisreg.fazer_login()
     return sisreg, caminho_download
 
+
 # tarefa 2: obter dados
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def raspar_pagina(sisreg: Sisreg, caminho_download: str, metodo: str) -> str:
     """
-    Esta tarefa recebe o nome de um método (ex: 'baixar_oferta_programada') e o executa 
+    Esta tarefa recebe o nome de um método (ex: 'baixar_oferta_programada') e o executa
     dinamicamente na instância do Sisreg. Em seguida, retorna o caminho do arquivo baixado.
 
     Exemplo de uso:
         extrair_pagina(sisreg, "/caminho/para/download", "baixar_oferta_programada")
-        
+
     Args:
         sisreg (Sisreg): Instância do SISREG.
         caminho_download (str): Diretório absoluto onde os dados serão baixados.
@@ -106,6 +108,7 @@ def raspar_pagina(sisreg: Sisreg, caminho_download: str, metodo: str) -> str:
 
     return novo_caminho_arquivo
 
+
 # tarefa 3: encerrar webdriver
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def sisreg_encerrar(sisreg: Sisreg) -> None:
@@ -119,7 +122,7 @@ def sisreg_encerrar(sisreg: Sisreg) -> None:
 
 
 # TAREFAS GESTÃO E TRANSFORMAÇÃO ARQUIVOS --------------------------
-#tarefa 1 - renomear arquivo
+# tarefa 1 - renomear arquivo
 @task()
 def nome_arquivo_adicionar_data(arquivo_original: str, diretorio_destino: str = None) -> str:
     """
