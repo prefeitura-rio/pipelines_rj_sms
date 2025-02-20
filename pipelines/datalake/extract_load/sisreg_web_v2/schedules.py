@@ -14,9 +14,7 @@ from prefect.schedules import Schedule
 
 # módulos internos
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
-    constants as sisreg_constants,
-)
+from pipelines.datalake.extract_load.sisreg_web_v2.constants import METODO_TABELA
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [
@@ -27,7 +25,7 @@ flow_parameters = [
         "dataset_id": "brutos_sisreg_v2",
         "table_id": tabela,
     }
-    for metodo, tabela in sisreg_constants.METODO_TABELA.items()
+    for metodo, tabela in METODO_TABELA.items()
 ]
 
 

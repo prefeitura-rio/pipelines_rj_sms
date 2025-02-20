@@ -12,9 +12,6 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
-    constants as sisreg_constants,
-)
 from pipelines.datalake.extract_load.sisreg_web_v2.schedules import (
     sisreg_daily_update_schedule,
 )
@@ -28,6 +25,7 @@ from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
 with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sisreg:
+
     # ambiente
     ENVIRONMENT = Parameter("environment", default="dev")
 
@@ -36,13 +34,14 @@ with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sis
     SISREG_METHOD = Parameter("sisreg_method", default="baixar_oferta_programada")
 
     # big query
-    DATASET_ID = Parameter("dataset_id", default=sisreg_constants.DATASET_ID.value)
-    TABLE_ID = Parameter("table_id", default=sisreg_constants.METODO_TABELA[SISREG_METHOD])
+    DATASET_ID = Parameter("dataset_id", default="brutos_sisreg_v2")
+    TABLE_ID = Parameter("table_id", default="oferta_programada")
 
     # --------------------------------------
 
     # configurando o ambiente
     local_folders = create_folders()
+
 
     # tarefa 1: login
     sisreg, caminho_download = login_sisreg(environment=ENVIRONMENT, caminho_relativo=RELATIVE_PATH)

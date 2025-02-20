@@ -114,7 +114,7 @@ cases:
       dataset_id: "brutos_sisreg_v2"
       table_id: "oferta_programada"
       relative_path: "downloaded_data/"
-      sisreg_method: "baixar_oferta_Programada"
+      sisreg_method: "baixar_oferta_programada"
 
   - case_slug: "datalake-to-hci"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
