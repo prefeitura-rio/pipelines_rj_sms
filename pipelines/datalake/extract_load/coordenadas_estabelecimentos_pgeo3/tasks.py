@@ -206,7 +206,7 @@ def transform_coordinates_geopandas(df: pd.DataFrame) -> pd.DataFrame:
 
         df.loc[valid_mask, "longitude_api"] = gdf.geometry.x
         df.loc[valid_mask, "latitude_api"] = gdf.geometry.y
-        
+
     df["data_extracao"] = datetime.now()
 
     log("[transform_coordinates_geopandas] DONE")

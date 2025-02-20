@@ -16,14 +16,13 @@ from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.tasks im
     get_estabelecimentos_sem_coordenadas,
     transform_coordinates_geopandas,
 )
-
 from pipelines.utils.tasks import upload_df_to_datalake
 
 with Flow(
     "Extract Load: Coordenadas (lat,long) dos estabelecimentos de saúde"
 ) as sms_estabelecimentos_coordenadas:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
-    
+
     # BIGQUERY ------------------------------
     BQ_DATASET_ID = Parameter("bq_dataset_id", default="brutos_geo_pgeo3", required=True)
     BQ_TABLE_ID = Parameter("bq_table_id", default="estabelecimentos_coordenadas", required=True)
@@ -45,11 +44,11 @@ with Flow(
 
     # Task 6 - Subir os dados para o Data Lake
     final = upload_df_to_datalake(
-    df=df_transformed,
-    table_id=BQ_TABLE_ID,
-    dataset_id=BQ_DATASET_ID,
-    partition_column="data_extracao",
-    source_format="parquet",
+        df=df_transformed,
+        table_id=BQ_TABLE_ID,
+        dataset_id=BQ_DATASET_ID,
+        partition_column="data_extracao",
+        source_format="parquet",
     )
 
 sms_estabelecimentos_coordenadas.executor = LocalDaskExecutor(num_workers=1)
