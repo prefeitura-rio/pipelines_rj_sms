@@ -42,7 +42,6 @@ with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sis
     # configurando o ambiente
     local_folders = create_folders()
 
-
     # tarefa 1: login
     sisreg, caminho_download = login_sisreg(environment=ENVIRONMENT, caminho_relativo=RELATIVE_PATH)
 
