@@ -13,20 +13,19 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
-    constants as sisreg_constants
+    constants as sisreg_constants,
 )
 from pipelines.datalake.extract_load.sisreg_web_v2.schedules import (
     sisreg_daily_update_schedule,
 )
 from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
-    raspar_pagina,
     login_sisreg,
     nome_arquivo_adicionar_data,
+    raspar_pagina,
     sisreg_encerrar,
     transform_data,
 )
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
-
 
 with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sisreg:
     # ambiente
@@ -54,9 +53,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sis
     )
 
     # tarefa 3: adicionar data atual no nome do arquivo
-    arquivo_baixado_data = nome_arquivo_adicionar_data(
-        arquivo_original=arquivo_baixado
-    )
+    arquivo_baixado_data = nome_arquivo_adicionar_data(arquivo_original=arquivo_baixado)
 
     # tarefa 4: encerrar sessão do sisreg
     sisreg_encerrar(sisreg=sisreg, upstream_tasks=[arquivo_baixado])
@@ -71,7 +68,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sis
         upstream_tasks=[arquivo_parquet],
     )
 
-    #tarefa 7: subir o arquivo para o datalake
+    # tarefa 7: subir o arquivo para o datalake
     upload_to_datalake_task = upload_to_datalake(
         input_path=local_folders["partition_directory"],
         dataset_id=DATASET_ID,
