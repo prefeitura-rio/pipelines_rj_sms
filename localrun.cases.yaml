@@ -60,12 +60,12 @@ cases:
     params:
       environment: "dev"
       rename_flow: false
-      endpoint: "movimento"
+      endpoint: "posicao"
       is_routine: true
-      cnes: "2269953"
+      cnes: "6927254"
       target_date: "2024-06-03"
       dataset_id: "brutos_prontuario_vitacare"
-      table_id: "estoque_movimento"
+      table_id: "estoque_posicao"
   - case_slug: "datalake_extract_vitai_db_operator"
     flow_path: "pipelines.datalake.extract_load.vitai_db.flows"
     flow_name: "datalake_extract_vitai_db_operator"
@@ -217,3 +217,39 @@ cases:
       environment: "dev"
       last_update_start_date: "2024-10-20"
       last_update_end_date: "2024-11-30"
+  - case_slug: "datalake-extract_load-metabase"
+    flow_path: "pipelines.datalake.extract_load.ser_metabase.flows"
+    flow_name: "ser_metabase_flow"
+    params:
+      environment: "dev"
+      database_id: 178
+      table_id: 3255
+      bq_dataset_id: "ser_metabase"
+      bq_table_id: "FATO_AMBULATORIO"
+
+  - case_slug: "healthchecks"
+    flow_path: "pipelines.tools.healthchecks.flows"
+    flow_name: "flow"
+    params:
+      environment: "dev"
+  - case_slug: "enderecos_pgeo3"
+    flow_path: "pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows"
+    flow_name: "sms_estabelecimentos_coordenadas"
+    params:
+      environment: "dev"
+      bq_dataset_id: "brutos_geo_pgeo3"
+      bq_table_id: "estabelecimentos_coordenadas"
+  - case_slug: "datalake_minhasaude_mongodb_perfilacessos_100"
+    flow_path: "pipelines.datalake.extract_load.minhasaude_mongodb.flows"
+    flow_name: "minhasaude_mongodb_flow"
+    params:
+      environment: "dev"
+      host: "db.smsrio.org"
+      port: 27017
+      authsource: "minhasauderio"
+      database: "minhasauderio"
+      collection: "perfil_acessos"
+      query: {}
+      sample_size: 100
+      bq_dataset_id: "brutos_minhasaude_mongodb"
+      bq_table_id: "perfil_acessos"
