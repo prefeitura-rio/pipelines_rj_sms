@@ -11,7 +11,13 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-flow_parameters = [{"environment": "prod"}]
+flow_parameters = [
+    {
+        "environment": "prod",
+        "bq_dataset_id": "brutos_geo_pgeo3",
+        "bq_table_id": "estabelecimentos_coordenadas",
+    }
+]
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=7),

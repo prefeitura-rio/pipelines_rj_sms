@@ -55,6 +55,14 @@ def query_database(token, database_id, table_id):
     df["data_extracao"] = datetime.now()
 
     log("Consulta ao banco de dados concluída.")
+
+    return df
+
+
+@task
+def interrupt_if_empty(df):
+    if df.empty:
+        raise Exception("Data Frame vazio")
     return df
 
 

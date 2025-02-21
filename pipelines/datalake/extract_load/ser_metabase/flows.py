@@ -15,6 +15,7 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
+    interrupt_if_empty,
     query_database,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
@@ -54,10 +55,15 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     )
 
     # ------------------------------
-    # Section 3 - Upload to Big Query
+    # Section 3 - Verify Database length
+    # ------------------------------
+    df_verified = interrupt_if_empty(df=df)
+
+    # ------------------------------
+    # Section 4 - Upload to Big Query
     # ------------------------------
     upload_df_to_datalake(
-        df=df,
+        df=df_verified,
         table_id=BQ_TABLE_ID,
         dataset_id=BQ_DATASET_ID,
         partition_column="data_extracao",
@@ -69,5 +75,7 @@ ser_metabase_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 ser_metabase_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
+    memory_request="10Gi",
+    memory_limit="10Gi",
 )
 ser_metabase_flow.schedule = schedule
