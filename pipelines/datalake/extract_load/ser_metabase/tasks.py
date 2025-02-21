@@ -16,6 +16,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
+from pipelines.utils.data_cleaning import remove_columns_accents
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def authenticate_in_metabase(user, password):

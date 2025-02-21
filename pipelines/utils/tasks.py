@@ -1175,3 +1175,10 @@ def create_date_partitions(
             safe_export_df_to_parquet.run(df=dataframe, output_path=file_folder)
 
     return root_folder
+
+@task 
+def handle_columns_to_bq(df):
+    log("Transformando colunas para adequação ao Big Query.")
+    df.columns = remove_columns_accents(df)
+    log("Colunas transformadas para adequação ao Big Query.")
+    return df

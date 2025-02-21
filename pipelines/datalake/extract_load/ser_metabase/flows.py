@@ -17,8 +17,9 @@ from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
     interrupt_if_empty,
     query_database,
+    handle_columns_to_bq
 )
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake, handle_columns_to_bq
 
 with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
@@ -37,38 +38,35 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
         environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/metabase"
     )
 
-    # ------------------------------
-    # Section 1 - Authenticate in Metabase
-    # ------------------------------
+    # Task 1 - Authenticate in Metabase
     token = authenticate_in_metabase(
         user=user,
         password=password,
     )
 
-    # ------------------------------
-    # Section 2 - Query Database
-    # ------------------------------
+    # Task 2 - Query Database
     df = query_database(
         token=token,
         database_id=DATABASE_ID,
         table_id=TABLE_ID,
     )
 
-    # ------------------------------
-    # Section 3 - Verify Database length
-    # ------------------------------
+    # Task 3 - Verify Database length
     df_verified = interrupt_if_empty(df=df)
 
-    # ------------------------------
-    # Section 4 - Upload to Big Query
-    # ------------------------------
+    # Task 4 - Transform Data Frame columns
+    df_columns_ok = handle_columns_to_bq(df_verified)
+
+    # Task 5 - Upload to Big Query
     upload_df_to_datalake(
-        df=df_verified,
+        df=df_columns_ok,
         table_id=BQ_TABLE_ID,
         dataset_id=BQ_DATASET_ID,
         partition_column="data_extracao",
         source_format="parquet",
     )
+
+# ------------------------------------
 
 ser_metabase_flow.executor = LocalDaskExecutor(num_workers=1)
 ser_metabase_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
