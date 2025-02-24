@@ -15,7 +15,6 @@ import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
-
 from pipelines.utils.monitor import send_message
 
 

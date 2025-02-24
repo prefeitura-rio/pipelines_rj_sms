@@ -1175,4 +1175,3 @@ def create_date_partitions(
             safe_export_df_to_parquet.run(df=dataframe, output_path=file_folder)
 
     return root_folder
-

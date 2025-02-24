@@ -58,7 +58,8 @@ def rename_current_flow_run(environment: str, is_routine: bool = True, **kwargs)
 
     log(f"Flow run {flow_run_id} renamed to {flow_run_name}")
 
-@task 
+
+@task
 def handle_columns_to_bq(df):
     log("Transformando colunas para adequação ao Big Query.")
     df.columns = remove_columns_accents(df)
