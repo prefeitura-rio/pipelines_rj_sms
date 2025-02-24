@@ -16,10 +16,10 @@ from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
     interrupt_if_empty,
-    query_database,
-    handle_columns_to_bq
+    query_database
 )
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake, handle_columns_to_bq
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.datalake.utils.tasks import handle_columns_to_bq
 
 with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
@@ -55,7 +55,7 @@ with Flow("Extract Load: Ser Metabase") as ser_metabase_flow:
     df_verified = interrupt_if_empty(df=df)
 
     # Task 4 - Transform Data Frame columns
-    df_columns_ok = handle_columns_to_bq(df_verified)
+    df_columns_ok = handle_columns_to_bq(df=df_verified)
 
     # Task 5 - Upload to Big Query
     upload_df_to_datalake(

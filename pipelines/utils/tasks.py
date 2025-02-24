@@ -57,6 +57,7 @@ def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
         str: The secret key.
 
     """
+    print(secret_path, secret_name, environment)
     secret = get_secret(secret_name=secret_name, path=secret_path, environment=environment)
     return secret[secret_name]
 
@@ -1176,9 +1177,3 @@ def create_date_partitions(
 
     return root_folder
 
-@task 
-def handle_columns_to_bq(df):
-    log("Transformando colunas para adequação ao Big Query.")
-    df.columns = remove_columns_accents(df)
-    log("Colunas transformadas para adequação ao Big Query.")
-    return df
