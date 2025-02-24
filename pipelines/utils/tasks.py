@@ -57,7 +57,6 @@ def get_secret_key(secret_path: str, secret_name: str, environment: str) -> str:
         str: The secret key.
 
     """
-    print(secret_path, secret_name, environment)
     secret = get_secret(secret_name=secret_name, path=secret_path, environment=environment)
     return secret[secret_name]
 
