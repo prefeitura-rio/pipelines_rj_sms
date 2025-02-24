@@ -223,7 +223,7 @@ cases:
     params:
       environment: "dev"
       database_id: 173
-      table_id: 5261
+      table_id: 5783
       bq_dataset_id: "ser_metabase"
       bq_table_id: "tb_solicitacoes"
 
