@@ -253,3 +253,13 @@ cases:
       sample_size: 100
       bq_dataset_id: "brutos_minhasaude_mongodb"
       bq_table_id: "perfil_acessos"
+  - case_slug: "cr_mysql_flow"
+    flow_path: "pipelines.datalake.extract_load.centralregulacao_mysql.flows"
+    flow_name: "sms_cr_mysql"
+    params:
+      environment: "dev"
+      database: "monitoramento"
+      host: "db.smsrio.org"
+      port: null
+      table: "vw_MS_CadastrosAtivacoesGov"
+      query: "SELECT * FROM vw_MS_CadastrosAtivacoesGov"
