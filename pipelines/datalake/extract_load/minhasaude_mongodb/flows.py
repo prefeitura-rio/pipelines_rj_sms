@@ -22,7 +22,7 @@ from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
-with Flow("Extract Load: Minha Saúde Rio - MongoDB") as minhasaude_mongodb_flow:
+with Flow("SUBGERAL - Extract & Load - MinhaSaude.rio MongoDB") as minhasaude_mongodb_flow:
     # Parâmetros -------------------------------------------------
     # Geral ------------------------------
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
