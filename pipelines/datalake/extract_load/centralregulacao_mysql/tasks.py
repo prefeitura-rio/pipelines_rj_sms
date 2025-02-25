@@ -3,56 +3,45 @@
 Tarefas
 """
 
+from datetime import datetime, timedelta
+
 # Geral
 import mysql.connector
-from mysql.connector import Error
 import pandas as pd
-from datetime import datetime, timedelta
+from mysql.connector import Error
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def connect_mysql(
-    host: str,
-    database: str,
-    user: str,
-    password: str,
-    port: str = None
-):
+def connect_mysql(host: str, database: str, user: str, password: str, port: str = None):
     """
     Esta tarefa estabelece uma conexão com o banco MySQL usando os parâmetros fornecidos.
-    
+
     Parâmetros:
         host (str): Endereço do servidor MySQL.
         database (str): Nome do banco de dados para conectar.
         user (str): Usuário do banco de dados.
         password (str): Senha do banco de dados.
         port (str, opcional): Porta do servidor MySQL. Padrão é None.
-        
+
     Retorna:
         connection (mysql.connector.connection.MySQLConnection): Objeto de conexão estabelecida.
     """
     # Registrando parâmetros em português
     log(f"Conectando ao MySQL com os parâmetros: host={host}, database={database}, port={port}")
-    
+
     try:
         if port:
             connection = mysql.connector.connect(
-                host=host,
-                database=database,
-                user=user,
-                password=password,
-                port=port
+                host=host, database=database, user=user, password=password, port=port
             )
         else:
             connection = mysql.connector.connect(
-                host=host,
-                database=database,
-                user=user,
-                password=password
+                host=host, database=database, user=user, password=password
             )
 
         if connection.is_connected():
@@ -67,24 +56,21 @@ def connect_mysql(
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def query_mysql(
-    connection,
-    query: str
-):
+def query_mysql(connection, query: str):
     """
     Esta tarefa recebe uma conexão MySQL ativa e uma query SQL,
     executando a consulta e retornando um DataFrame com os resultados.
-    
+
     Parâmetros:
         connection (mysql.connector.connection.MySQLConnection): Objeto de conexão ativa com o MySQL.
         query (str): Comando SQL a ser executado.
-    
+
     Retorna:
         df (pd.DataFrame): DataFrame com os resultados da consulta.
     """
     # Registrando parâmetros em português
     log(f"Executando query no MySQL: {query}")
-    
+
     try:
         cursor = connection.cursor()
         cursor.execute(query)
@@ -107,10 +93,10 @@ def query_mysql(
 def close_mysql(connection):
     """
     Esta tarefa fecha a conexão com o banco MySQL, caso esteja aberta.
-    
+
     Parâmetros:
         connection (mysql.connector.connection.MySQLConnection): Objeto de conexão ativa com o MySQL.
-        
+
     Retorna:
         Nenhum.
     """

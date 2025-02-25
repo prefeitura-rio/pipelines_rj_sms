@@ -11,16 +11,16 @@ from prefect.storage import GCS
 
 # internos
 from prefeitura_rio.pipelines_utils.custom import Flow
+
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.centralregulacao_mysql.constants import SCHEMAS
 from pipelines.datalake.extract_load.centralregulacao_mysql.schedules import schedule
 from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
+    close_mysql,
     connect_mysql,
     query_mysql,
-    close_mysql
 )
-from pipelines.utils.tasks import  get_secret_key, upload_df_to_datalake
-
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sms_cr_mysql:
     # PARAMETROS #
@@ -36,23 +36,23 @@ with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sm
 
     # CREDENTIALS ---------------------------
     user = get_secret_key(environment=ENVIRONMENT, secret_name="USER", secret_path="/cr_mysql")
-    password = get_secret_key(environment=ENVIRONMENT,
-                              secret_name="PASSWORD",
-                              secret_path="/cr_mysql")
-
+    password = get_secret_key(
+        environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/cr_mysql"
+    )
 
     # -----------------------------------------
 
-
     # TAREFAS #
     # 1 - conectar ao My SQL
-    connection = connect_mysql(host=HOST,database=DATABASE,user=user,password=password,port=PORT)
+    connection = connect_mysql(
+        host=HOST, database=DATABASE, user=user, password=password, port=PORT
+    )
 
     # 2 - obter dados
     df = query_mysql(connection=connection, query=QUERY)
 
     # 3 - encerrar conexão com MySQL
-    close_connection = close_mysql(connection=connection, upstream_tasks = [df])
+    close_connection = close_mysql(connection=connection, upstream_tasks=[df])
 
     # 4 - carregar no BQ
     upload = upload_df_to_datalake(

@@ -5,6 +5,7 @@ Agendamentos
 
 # Geral
 from datetime import datetime, timedelta
+
 import pytz
 
 # Prefect
@@ -12,9 +13,8 @@ from prefect.schedules import Schedule
 
 # Internos
 from pipelines.constants import constants
-from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 from pipelines.datalake.extract_load.centralregulacao_mysql.constants import SCHEMAS
-
+from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [
     {
@@ -27,7 +27,7 @@ flow_parameters = [
     }
     for schema in SCHEMAS
     for table in SCHEMAS[schema]["tables"]
-    if schema != "dw" #desativando dw temporariamente
+    if schema != "dw"  # desativando dw temporariamente
 ]
 
 clocks = generate_dump_api_schedules(
