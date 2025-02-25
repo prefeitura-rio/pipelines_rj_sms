@@ -15,14 +15,10 @@ SCHEMAS = {
         ],
     },
     "dw": {
-        "host": "dev.smsrio.org",
+        "host": "db.smsrio.org",
         "port": None,
         "tables": [
-            "tb_execucao",
-            "tb_execucao_agrupado",
-            "tb_lista_autorizados",
-            "tb_lista_solicitacoes_1vez",
-            "tb_solicitacoes_1vez_agrupado",
+            "vw_minhasauderio_pesquisa_satisfacao"
         ],
     },
 }

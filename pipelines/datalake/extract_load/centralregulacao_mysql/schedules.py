@@ -27,7 +27,6 @@ flow_parameters = [
     }
     for schema in SCHEMAS
     for table in SCHEMAS[schema]["tables"]
-    if schema != "dw"  # desativando dw temporariamente
 ]
 
 clocks = generate_dump_api_schedules(
