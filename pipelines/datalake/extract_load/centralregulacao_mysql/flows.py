@@ -13,7 +13,6 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.centralregulacao_mysql.constants import SCHEMAS
 from pipelines.datalake.extract_load.centralregulacao_mysql.schedules import schedule
 from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
     close_mysql,

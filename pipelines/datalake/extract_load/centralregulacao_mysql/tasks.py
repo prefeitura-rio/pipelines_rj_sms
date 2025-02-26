@@ -29,7 +29,8 @@ def connect_mysql(host: str, database: str, user: str, password: str, port: str 
         port (str, opcional): Porta do servidor MySQL. Padrão é None.
 
     Retorna:
-        connection (mysql.connector.connection.MySQLConnection): Objeto de conexão estabelecida.
+        connection (mysql.connector.connection.MySQLConnection):
+        Objeto de conexão estabelecida.
     """
     # Registrando parâmetros em português
     log(f"Conectando ao MySQL com os parâmetros: host={host}, database={database}, port={port}")
@@ -62,7 +63,8 @@ def query_mysql(connection, query: str):
     executando a consulta e retornando um DataFrame com os resultados.
 
     Parâmetros:
-        connection (mysql.connector.connection.MySQLConnection): Objeto de conexão ativa com o MySQL.
+        connection (mysql.connector.connection.MySQLConnection):
+        Objeto de conexão ativa com o MySQL.
         query (str): Comando SQL a ser executado.
 
     Retorna:
@@ -94,7 +96,8 @@ def get_col_names(connection, df, table):
     retornando uma lista com os nomes das colunas da tabela.
 
     Parâmetros:
-        connection (mysql.connector.connection.MySQLConnection): Objeto de conexão ativa com o MySQL.
+        connection (mysql.connector.connection.MySQLConnection):
+        Objeto de conexão ativa com o MySQL.
         df (pd.DataFrame): DataFrame com os resultados da consulta.
         table (str): Nome da tabela do banco de dados.
 
@@ -131,7 +134,8 @@ def close_mysql(connection):
     Esta tarefa fecha a conexão com o banco MySQL, caso esteja aberta.
 
     Parâmetros:
-        connection (mysql.connector.connection.MySQLConnection): Objeto de conexão ativa com o MySQL.
+        connection (mysql.connector.connection.MySQLConnection):
+        Objeto de conexão ativa com o MySQL.
 
     Retorna:
         Nenhum.
