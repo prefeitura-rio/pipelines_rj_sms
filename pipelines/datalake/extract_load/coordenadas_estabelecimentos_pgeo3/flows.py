@@ -19,7 +19,7 @@ from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.tasks im
 from pipelines.utils.tasks import upload_df_to_datalake
 
 with Flow(
-    "Extract Load: Coordenadas (lat,long) dos estabelecimentos de saúde"
+    "SUBGERAL - Extract & Load - Coordenadas Estabs. de Saúde API IPP"
 ) as sms_estabelecimentos_coordenadas:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
