@@ -66,7 +66,7 @@ def interrupt_if_empty(df):
         send_message(
             title="❌ Erro no Flow SER - METABASE",
             message="O Data Frame está vazio. @matheusmiloski",
-            monitor_slug="warning",
+            monitor_slug="error",
         )
         raise Exception("O Data Frame está vazio.")
     return df
