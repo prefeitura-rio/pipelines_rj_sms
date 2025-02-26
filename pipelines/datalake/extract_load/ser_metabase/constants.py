@@ -15,7 +15,7 @@ DATABASE_IDS = {
             "FATO_MAPA_LEITOS": 3258,  # (Descrição ausente)
             "FATO_FILA_MENSAL": 5872,  # (Descrição ausente)
             "FATO_FILA_MENSAL_DATALAKE": 5873,  # (Descrição ausente)
-            "TB_RELATORIO_MEDICAMENTOS": 3778,  # (Descrição ausente)
+            "TB_RELATORIO_MEDICAMENTOS": 3478,  # (Descrição ausente)
             "TB_RELATORIO_DISPENSACAO_NOVO": 3479,  # (Descrição ausente)
         },
     },
@@ -25,7 +25,7 @@ DATABASE_IDS = {
         "tables": {
             "TB_HISTORICO_SOLICITACAO_METRO1_CAPITAL": 3262,
             "TB_QUANTIDADE_SOLICITACOES": 3261,
-            "TB_SOLICITACOES": 5261,
+            "TB_SOLICITACOES": 5783,
         },
     },
 }
