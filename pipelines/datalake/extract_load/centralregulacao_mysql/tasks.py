@@ -80,12 +80,48 @@ def query_mysql(connection, query: str):
         log(f"Número total de linhas retornadas pela consulta: {cursor.rowcount}")
         cursor.close()
 
+        return df
+
+    except Error as e:
+        log(f"Erro ao executar a query no MySQL: {e}")
+        raise
+
+
+@task
+def get_col_names(connection, df, table):
+    """
+    Esta tarefa recebe uma conexão MySQL ativa, um DataFrame e o nome da tabela,
+    retornando uma lista com os nomes das colunas da tabela.
+
+    Parâmetros:
+        connection (mysql.connector.connection.MySQLConnection): Objeto de conexão ativa com o MySQL.
+        df (pd.DataFrame): DataFrame com os resultados da consulta.
+        table (str): Nome da tabela do banco de dados.
+
+    Retorna:
+        col_names (list): Lista com os nomes das colunas da tabela.
+    """
+    # Registrando parâmetros em português
+    log(f"Iniciando a tarefa para obter nomes das colunas da tabela: {table}")
+
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"show columns from {table}")
+        records = cursor.fetchall()
+        col_names = [record[0] for record in records]
+
+        cursor.close()
+
+        df.columns = col_names
+
+        log(f"Nomes das colunas obtidos com sucesso para a tabela: {table}")
+
         df["data_extracao"] = datetime.now()
 
         return df
 
     except Error as e:
-        log(f"Erro ao executar a query no MySQL: {e}")
+        log(f"Erro ao obter os nomes das colunas da tabela: {e}")
         raise
 
 

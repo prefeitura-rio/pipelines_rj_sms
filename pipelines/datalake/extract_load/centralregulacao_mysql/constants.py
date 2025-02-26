@@ -17,8 +17,6 @@ SCHEMAS = {
     "dw": {
         "host": "db.smsrio.org",
         "port": None,
-        "tables": [
-            "vw_minhasauderio_pesquisa_satisfacao"
-        ],
+        "tables": ["vw_minhasauderio_pesquisa_satisfacao"],
     },
 }

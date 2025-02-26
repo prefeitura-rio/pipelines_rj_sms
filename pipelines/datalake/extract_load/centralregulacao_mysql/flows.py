@@ -19,6 +19,7 @@ from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
     close_mysql,
     connect_mysql,
     query_mysql,
+    get_col_names,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
@@ -30,9 +31,12 @@ with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sm
     # MySQL ---------------------------------
     HOST = Parameter("host", default="db.smsrio.org", required=True)
     DATABASE = Parameter("database", default="monitoramento", required=True)
-    PORT = Parameter("port", default=None, required=True)
+    PORT = Parameter("port", default=None, required=False)
     TABLE = Parameter("table", default="vw_MS_CadastrosAtivacoesGov")
-    QUERY = Parameter("port", default="SELECT * FROM vw_MS_CadastrosAtivacoesGov")
+    QUERY = Parameter("query", default="SELECT * FROM vw_MS_CadastrosAtivacoesGov")
+
+    # BQ ------------------------------------
+    BQ_DATASET = Parameter("bq_dataset", default="brutos_centralderegulacao_mysql", required=True)
 
     # CREDENTIALS ---------------------------
     user = get_secret_key(environment=ENVIRONMENT, secret_name="USER", secret_path="/cr_mysql")
@@ -51,14 +55,17 @@ with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sm
     # 2 - obter dados
     df = query_mysql(connection=connection, query=QUERY)
 
-    # 3 - encerrar conexão com MySQL
-    close_connection = close_mysql(connection=connection, upstream_tasks=[df])
+    # 3 - nomear colunas
+    df_column_names = get_col_names(connection=connection, df=df, table=TABLE)
 
-    # 4 - carregar no BQ
+    # 4 - encerrar conexão com MySQL
+    close_connection = close_mysql(connection=connection, upstream_tasks=[df_column_names])
+
+    # 5 - carregar no BQ
     upload = upload_df_to_datalake(
-        df=df,
+        df=df_column_names,
         table_id=TABLE,
-        dataset_id=DATABASE,
+        dataset_id=BQ_DATASET,
         partition_column="data_extracao",
         source_format="parquet",
     )

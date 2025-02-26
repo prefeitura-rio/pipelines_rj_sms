@@ -260,6 +260,6 @@ cases:
       environment: "dev"
       database: "monitoramento"
       host: "db.smsrio.org"
-      port: null
       table: "vw_MS_CadastrosAtivacoesGov"
       query: "SELECT * FROM vw_MS_CadastrosAtivacoesGov"
+      bq_dataset: "brutos_centralderegulacao_mysql"
