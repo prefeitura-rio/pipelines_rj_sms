@@ -17,8 +17,8 @@ from pipelines.datalake.extract_load.centralregulacao_mysql.schedules import sch
 from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
     close_mysql,
     connect_mysql,
-    query_mysql,
     get_col_names,
+    query_mysql,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
