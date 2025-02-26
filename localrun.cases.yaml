@@ -222,10 +222,10 @@ cases:
     flow_name: "ser_metabase_flow"
     params:
       environment: "dev"
-      database_id: 178
-      table_id: 3255
+      database_id: 173
+      table_id: 5783
       bq_dataset_id: "ser_metabase"
-      bq_table_id: "FATO_AMBULATORIO"
+      bq_table_id: "tb_solicitacoes"
 
   - case_slug: "healthchecks"
     flow_path: "pipelines.tools.healthchecks.flows"

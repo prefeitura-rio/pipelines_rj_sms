@@ -15,6 +15,7 @@ import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.monitor import send_message
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
@@ -62,7 +63,12 @@ def query_database(token, database_id, table_id):
 @task
 def interrupt_if_empty(df):
     if df.empty:
-        raise Exception("Data Frame vazio")
+        send_message(
+            title="❌ Erro no Flow SER - METABASE",
+            message="O Data Frame está vazio. @matheusmiloski",
+            monitor_slug="error",
+        )
+        raise Exception("O Data Frame está vazio.")
     return df
 
 
