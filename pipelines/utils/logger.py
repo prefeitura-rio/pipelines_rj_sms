@@ -43,4 +43,5 @@ def log(
     if LEVELS_CONFIG[level]["discord_forwarding"] or force_discord_forwarding:
         icon = LEVELS_CONFIG[level]["icon"]
         title = f"{icon} Log {level.capitalize()}"
-        send_message(title=title, message=msg, monitor_slug="warning")
+        monitor_slug = "error" if level in ["error", "critical"] else "warning"
+        send_message(title=title, message=msg, monitor_slug=monitor_slug)
