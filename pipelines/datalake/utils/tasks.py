@@ -11,6 +11,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.utils.data_transformations import convert_str_to_date
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.data_cleaning import remove_columns_accents
 
 
 @task
@@ -56,3 +57,11 @@ def rename_current_flow_run(environment: str, is_routine: bool = True, **kwargs)
     client.set_flow_run_name(flow_run_id, flow_run_name)
 
     log(f"Flow run {flow_run_id} renamed to {flow_run_name}")
+
+
+@task
+def handle_columns_to_bq(df):
+    log("Transformando colunas para adequação ao Big Query.")
+    df.columns = remove_columns_accents(df)
+    log("Colunas transformadas para adequação ao Big Query.")
+    return df
