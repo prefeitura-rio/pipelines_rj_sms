@@ -149,9 +149,16 @@ def close_mysql(connection):
         raise
 
 @task
-def query_mysql_all_in_one(host: str, database: str, user: str, password: str, query: str, table: str, port: str = None):
+def query_mysql_all_in_one(host: str,
+                           database: str,
+                           user: str,
+                           password: str,
+                           query: str,
+                           table: str,
+                           port: str = None):
     """
-    Esta tarefa conecta ao banco MySQL, executa uma consulta SQL, obtém os nomes das colunas e retorna os resultados em um DataFrame.
+    Esta tarefa conecta ao banco MySQL, executa uma consulta SQL, obtém os nomes das colunas
+    e retorna os resultados em um DataFrame.
 
     Parâmetros:
         host (str): Endereço do servidor MySQL.
