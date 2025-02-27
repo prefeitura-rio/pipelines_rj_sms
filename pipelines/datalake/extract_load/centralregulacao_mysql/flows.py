@@ -17,6 +17,7 @@ from pipelines.datalake.extract_load.centralregulacao_mysql.schedules import sch
 from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
     query_mysql_all_in_one,
 )
+from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sms_cr_mysql:
@@ -54,9 +55,12 @@ with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sm
         query=QUERY,
     )
 
-    # 2 - carregar no BQ
+    # 2 - transforma colunas para adequação ao Big Query
+    df_columns_ok = handle_columns_to_bq(df=df)
+
+    # 3 - carregar no BQ
     upload = upload_df_to_datalake(
-        df=df,
+        df=df_columns_ok,
         table_id=TABLE,
         dataset_id=BQ_DATASET,
         partition_column="data_extracao",
