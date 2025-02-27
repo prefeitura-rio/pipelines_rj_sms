@@ -93,6 +93,16 @@ flow_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/15OhN69JH6GdRK1Ixvr9P-eTSG03lM6qD7hobcT4Ilow",  # noqa
         "url_type": "google_sheet",
     },
+    {       
+        "url": "https://docs.google.com/spreadsheets/d/1P4JbgfSpaTyE7Qh3fzSeHIxlxcHclbJWOTFcRE-DwgE/edit",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Procedimentos",
+        "table_id": "assistencial_procedimentos",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    }
 ]
 
 
