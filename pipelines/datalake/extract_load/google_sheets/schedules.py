@@ -97,7 +97,7 @@ flow_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1P4JbgfSpaTyE7Qh3fzSeHIxlxcHclbJWOTFcRE-DwgE/edit",  # noqa: E501
         "url_type": "google_sheet",
         "gsheets_sheet_name": "Procedimentos",
-        "table_id": "assistencial_procedimentos",
+        "table_id": "assistencial_procedimento",
         "dataset_id": "brutos_sheets",
         "csv_delimiter": "|",
         "environment": "prod",
