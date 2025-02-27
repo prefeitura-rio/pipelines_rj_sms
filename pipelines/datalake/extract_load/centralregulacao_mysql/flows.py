@@ -14,12 +14,9 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.centralregulacao_mysql.schedules import schedule
-from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
-    close_mysql,
-    connect_mysql,
-    get_col_names,
-    query_mysql,
-)
+from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import query_mysql_all_in_one
+
+
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sms_cr_mysql:
@@ -46,23 +43,12 @@ with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sm
     # -----------------------------------------
 
     # TAREFAS #
-    # 1 - conectar ao My SQL
-    connection = connect_mysql(
-        host=HOST, database=DATABASE, user=user, password=password, port=PORT
-    )
+    # 1 - obter os dados do MySQL
+    df = query_mysql_all_in_one(host=HOST, database=DATABASE, user=user, password=password, port=PORT, table=TABLE, query=QUERY)
 
-    # 2 - obter dados
-    df = query_mysql(connection=connection, query=QUERY)
-
-    # 3 - nomear colunas
-    df_column_names = get_col_names(connection=connection, df=df, table=TABLE)
-
-    # 4 - encerrar conexão com MySQL
-    close_connection = close_mysql(connection=connection, upstream_tasks=[df_column_names])
-
-    # 5 - carregar no BQ
+    # 2 - carregar no BQ
     upload = upload_df_to_datalake(
-        df=df_column_names,
+        df=df,
         table_id=TABLE,
         dataset_id=BQ_DATASET,
         partition_column="data_extracao",
