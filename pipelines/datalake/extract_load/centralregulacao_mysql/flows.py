@@ -14,9 +14,9 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.centralregulacao_mysql.schedules import schedule
-from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import query_mysql_all_in_one
-
-
+from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
+    query_mysql_all_in_one,
+)
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sms_cr_mysql:
@@ -44,7 +44,15 @@ with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sm
 
     # TAREFAS #
     # 1 - obter os dados do MySQL
-    df = query_mysql_all_in_one(host=HOST, database=DATABASE, user=user, password=password, port=PORT, table=TABLE, query=QUERY)
+    df = query_mysql_all_in_one(
+        host=HOST,
+        database=DATABASE,
+        user=user,
+        password=password,
+        port=PORT,
+        table=TABLE,
+        query=QUERY,
+    )
 
     # 2 - carregar no BQ
     upload = upload_df_to_datalake(
