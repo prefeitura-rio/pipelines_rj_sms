@@ -150,13 +150,9 @@ def close_mysql(connection):
 
 
 @task
-def query_mysql_all_in_one(host: str,
-                           database: str,
-                           user: str,
-                           password: str,
-                           query: str,
-                           table: str,
-                           port: str = None):
+def query_mysql_all_in_one(
+    host: str, database: str, user: str, password: str, query: str, table: str, port: str = None
+):
     """
     Esta tarefa conecta ao banco MySQL, executa uma consulta SQL, obtém os nomes das colunas
     e retorna os resultados em um DataFrame.
@@ -183,10 +179,7 @@ def query_mysql_all_in_one(host: str,
                 host=host, database=database, user=user, password=password, port=port
             )
             if port
-            else mysql.connector.connect(host=host,
-                                         database=database,
-                                         user=user,
-                                         password=password)
+            else mysql.connector.connect(host=host, database=database, user=user, password=password)
         )
 
         if connection.is_connected():
