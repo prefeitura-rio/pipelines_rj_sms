@@ -148,6 +148,7 @@ def close_mysql(connection):
         log(f"Erro ao tentar fechar a conexão com o MySQL: {e}")
         raise
 
+
 @task
 def query_mysql_all_in_one(host: str,
                            database: str,
@@ -177,15 +178,20 @@ def query_mysql_all_in_one(host: str,
     connection = None
     try:
         # Estabelecendo conexão com o MySQL
-        connection = mysql.connector.connect(
-            host=host, database=database, user=user, password=password, port=port
-        ) if port else mysql.connector.connect(
-            host=host, database=database, user=user, password=password
+        connection = (
+            mysql.connector.connect(
+                host=host, database=database, user=user, password=password, port=port
+            )
+            if port
+            else mysql.connector.connect(host=host,
+                                         database=database,
+                                         user=user,
+                                         password=password)
         )
 
         if connection.is_connected():
             log("Conexão com MySQL estabelecida com sucesso.")
-            
+
             # Executando a consulta SQL
             log(f"Executando query no MySQL: {query}")
             cursor = connection.cursor()
