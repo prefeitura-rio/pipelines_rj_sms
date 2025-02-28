@@ -24,6 +24,7 @@ flow_parameters = [
         "port": SCHEMAS[schema]["port"],
         "table": table,
         "query": f"SELECT * FROM {table}",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
     }
     for schema in SCHEMAS
     for table in SCHEMAS[schema]["tables"]
