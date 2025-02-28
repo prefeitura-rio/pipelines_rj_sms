@@ -29,8 +29,9 @@ flow_parameters = [
     for schema in SCHEMAS
     for table in SCHEMAS[schema]["tables"]
 ]
-
-print(f"# of flow params: {len(flow_parameters)}")
+print(f"Flow params:")
+for param in flow_parameters:
+    print(param)
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
