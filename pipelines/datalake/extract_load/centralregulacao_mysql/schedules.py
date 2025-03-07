@@ -29,7 +29,7 @@ flow_parameters = [
     for schema in SCHEMAS
     for table in SCHEMAS[schema]["tables"]
 ]
-print(f"Flow params:")
+print("Flow params:")
 for param in flow_parameters:
     print(param)
 
