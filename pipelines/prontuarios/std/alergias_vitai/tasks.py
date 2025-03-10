@@ -80,10 +80,9 @@ def create_allergie_list(
     log(f"Standardizing {len(allergies_unique)} allergies")
 
     df_allergies["alergias_limpo"] = df_allergies["alergias_raw"].apply(clean_allergies_field)
-    # df_allergies = df_allergies[0:2000]
     alergias_join = ",".join(df_allergies["alergias_limpo"].values)
     alergias_lista = alergias_join.split(",")
-    alergias_lista = list(set([alergia.strip() for alergia in alergias_lista]))
+    alergias_lista = list(set([alergia.strip() for alergia in alergias_lista if alergia.strip() != '']))
     return df_allergies, alergias_lista
 
 
@@ -234,7 +233,6 @@ def get_similar_allergie_gemini(allergies_list: list, api_url: str, api_token: s
         api_url (str): URL used to call AI models
         api_token (str): Models API key
     """
-    # allergies_list = allergies_list[0:50]
     log(f"{len(allergies_list)} allergies to be standardized using Gemini")
     batch_size = 20
     result_list = []
@@ -285,13 +283,17 @@ def saving_results(
 
     levenshtein_result.extend(gemini_result)
     table = pd.DataFrame(levenshtein_result)
-    from_to_dict = dict(zip(table["input"], table["output"]))
-    raw_allergies["alergias_padronizado"] = raw_allergies["alergias_limpo"].apply(
-        lambda x: find_std(x, from_to_dict)
-    )
+    if table.empty:
+        log("No allergies were standardized")
+        destination_file_path = ""
+    else:
+        from_to_dict = dict(zip(table["input"], table["output"]))
+        raw_allergies["alergias_padronizado"] = raw_allergies["alergias_limpo"].apply(
+            lambda x: find_std(x, from_to_dict)
+        )
 
-    destination_file_path = f"{file_folder}/alergias_vitai_{pd.Timestamp.now()}.csv"
-    raw_allergies.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
-    log(f"File {destination_file_path} downloaded.")
+        destination_file_path = f"{file_folder}/alergias_vitai_{pd.Timestamp.now()}.csv"
+        raw_allergies.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
+        log(f"File {destination_file_path} downloaded.")
 
     return destination_file_path

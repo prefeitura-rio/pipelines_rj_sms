@@ -14,9 +14,9 @@ from pipelines.prontuarios.std.alergias_vitai.constants import (
     constants as vitai_alergias_constants,
 )
 
-# from pipelines.prontuarios.std.alergias_vitai.schedules import (
-#     vitai_alergias_daily_update_schedule,
-# )
+from pipelines.prontuarios.std.alergias_vitai.schedules import (
+    vitai_alergias_daily_update_schedule,
+)
 from pipelines.prontuarios.std.alergias_vitai.tasks import (
     create_allergie_list,
     get_api_token,
@@ -126,4 +126,4 @@ sms_prontuarios_vitai_alergias_padronizacao.run_config = KubernetesRun(
     memory_limit="5Gi",
 )
 
-# sms_prontuarios_vitai_alergias_padronizacao.schedule = smsrio_daily_update_schedule
+sms_prontuarios_vitai_alergias_padronizacao.schedule = vitai_alergias_daily_update_schedule
