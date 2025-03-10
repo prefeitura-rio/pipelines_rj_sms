@@ -166,7 +166,7 @@ sms_dump_vitacare_db.executor = LocalDaskExecutor(num_workers=10)
 sms_dump_vitacare_db.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
+        constants.RJ_SMS_AGENT_LABEL__DADOSRIO_CLUSTER.value,
     ],
     memory_limit="8Gi",
     memory_request="8Gi",

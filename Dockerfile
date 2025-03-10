@@ -15,6 +15,7 @@ RUN apt-get update && \
     default-libmysqlclient-dev \
     build-essential \
     pkg-config \
+    firefox-esr \
     chromium \
     chromium-driver \
     curl && \

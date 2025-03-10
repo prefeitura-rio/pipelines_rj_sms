@@ -5,6 +5,7 @@
 Functions for Vitacare db pipeline
 """
 import pyodbc
+from prefeitura_rio.pipelines_utils.logging import log
 
 
 def create_db_connection(
@@ -24,4 +25,8 @@ def create_db_connection(
         "Encrypt=no;"
         "TrustServerCertificate=yes;"
     )
+
+    redacted = conn_str.replace(database_password, "[REDACTED]")
+    log(f"Connection String: {redacted}")
+
     return pyodbc.connect(conn_str, autocommit=autocommit)
