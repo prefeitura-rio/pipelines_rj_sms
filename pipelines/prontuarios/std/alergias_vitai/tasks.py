@@ -82,7 +82,9 @@ def create_allergie_list(
     df_allergies["alergias_limpo"] = df_allergies["alergias_raw"].apply(clean_allergies_field)
     alergias_join = ",".join(df_allergies["alergias_limpo"].values)
     alergias_lista = alergias_join.split(",")
-    alergias_lista = list(set([alergia.strip() for alergia in alergias_lista if alergia.strip() != '']))
+    alergias_lista = list(
+        set([alergia.strip() for alergia in alergias_lista if alergia.strip() != ""])
+    )
     return df_allergies, alergias_lista
 
 

@@ -13,7 +13,6 @@ from pipelines.constants import constants
 from pipelines.prontuarios.std.alergias_vitai.constants import (
     constants as vitai_alergias_constants,
 )
-
 from pipelines.prontuarios.std.alergias_vitai.schedules import (
     vitai_alergias_daily_update_schedule,
 )
