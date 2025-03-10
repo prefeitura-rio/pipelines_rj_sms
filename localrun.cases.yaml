@@ -60,12 +60,12 @@ cases:
     params:
       environment: "dev"
       rename_flow: false
-      endpoint: "movimento"
+      endpoint: "posicao"
       is_routine: true
-      cnes: "2269953"
+      cnes: "6927254"
       target_date: "2024-06-03"
       dataset_id: "brutos_prontuario_vitacare"
-      table_id: "estoque_movimento"
+      table_id: "estoque_posicao"
   - case_slug: "datalake_extract_vitai_db_operator"
     flow_path: "pipelines.datalake.extract_load.vitai_db.flows"
     flow_name: "datalake_extract_vitai_db_operator"
