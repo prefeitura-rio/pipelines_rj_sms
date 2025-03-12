@@ -103,6 +103,16 @@ flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
     },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Contas",
+        "rename_flow": True,
+        "table_id": "usuarios_permitidos_hci",
+        "url": "https://docs.google.com/spreadsheets/d/1jwp5rV3Rwr2NGQy60YQgF47PSFuTcVpE8uKhcrODnRs/edit",
+        "url_type": "google_sheet",
+    },
 ]
 
 
