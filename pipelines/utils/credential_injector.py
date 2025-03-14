@@ -20,7 +20,7 @@ def authenticated_task(fn: Callable = None, **task_init_kwargs: Any) -> Union[
 
     Mode 2: Decorator Mode
     - If `fn` is None, it returns a decorator that can be used to create a Prefect task.
-    - This case is used when we want to create a Prefect task from a function using @task()
+    - This case is used when we want to create a Prefect task from a function using @task().
     """
 
     def inject_credential_setting_in_function(function):
