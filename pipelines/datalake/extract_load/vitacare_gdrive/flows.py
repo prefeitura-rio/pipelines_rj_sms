@@ -20,7 +20,7 @@ from pipelines.utils.basics import from_relative_date
 from pipelines.utils.tasks import rename_current_flow_run
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - Vitacare Reports GDrive",
+    name="DataLake - Migração de Dados - Vitacare GDrive",
 ) as sms_dump_vitacare_gdrive:
     #####################################
     # Parameters
@@ -54,7 +54,7 @@ with Flow(
 
 # Storage and run configs
 sms_dump_vitacare_gdrive.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitacare_gdrive.executor = LocalDaskExecutor(num_workers=1)
+sms_dump_vitacare_gdrive.executor = LocalDaskExecutor(num_workers=10)
 sms_dump_vitacare_gdrive.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[

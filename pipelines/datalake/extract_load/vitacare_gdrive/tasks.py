@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-
+import zipfile
 from google.cloud import storage
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import (
@@ -22,6 +22,16 @@ def download_to_gcs(file_info: dict, ap: str, environment: str):
     os.makedirs(os.path.dirname(file_info["path"]), exist_ok=True)
     file.GetContentFile(file_info["path"])
     log(f"Downloaded file {file_info['path']} from Google Drive", level="info")
+    
+    # If the file is a zip, unzip it
+    if file_info["path"].endswith(".zip"):
+        with zipfile.ZipFile(file_info["path"], "r") as zip_ref:
+            zip_ref.extractall(os.path.dirname(file_info["path"]))
+
+        # Remove the zip file
+        os.remove(file_info["path"])
+        log(f"Removed zip file {file_info['path']}", level="info")
+        file_info["path"] = file_info["path"].replace(".zip", ".csv")
 
     # Upload to GCS
     bucket_name = gdrive_constants.GCS_BUCKET.value[environment]
