@@ -11,16 +11,13 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.utils.data_extraction.google_drive import (
-    explore_folder,
-)
-from pipelines.utils.tasks import rename_current_flow_run
-from pipelines.utils.basics import from_relative_date
 from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
-    get_folder_id,
     download_to_gcs,
+    get_folder_id,
 )
-
+from pipelines.datalake.utils.data_extraction.google_drive import explore_folder
+from pipelines.utils.basics import from_relative_date
+from pipelines.utils.tasks import rename_current_flow_run
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Vitacare Reports GDrive",
@@ -44,23 +41,16 @@ with Flow(
             name_template="Migrando informes da {ap} | {start} | {environment}",
             ap=AP,
             start=LAST_MODIFIED_DATE,
-            environment=ENVIRONMENT
+            environment=ENVIRONMENT,
         )
 
     folder_id = get_folder_id(ap=AP)
 
     date_filter = from_relative_date(relative_date=LAST_MODIFIED_DATE)
 
-    files = explore_folder(
-        folder_id=folder_id,
-        last_modified_date=date_filter
-    )
+    files = explore_folder(folder_id=folder_id, last_modified_date=date_filter)
 
-    download_to_gcs.map(
-        file_info=files,
-        ap=unmapped(AP),
-        environment=unmapped(ENVIRONMENT)
-    )
+    download_to_gcs.map(file_info=files, ap=unmapped(AP), environment=unmapped(ENVIRONMENT))
 
 # Storage and run configs
 sms_dump_vitacare_gdrive.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

@@ -67,10 +67,11 @@ def get_files_from_folder(
 
     return files_list
 
+
 @task
 def explore_folder(
     folder_id: str,
-    last_modified_date = None,
+    last_modified_date=None,
 ) -> list[dict]:
     log("Authenticating with Google Drive")
     gauth = GoogleAuth(
@@ -97,11 +98,16 @@ def explore_folder(
             if last_modified_date:
                 modified_date = datetime.strptime(file["modifiedDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
                 if modified_date < last_modified_date:
-                    log(f"File {file['title']} was last modified before {last_modified_date}, skipping", level="info")
+                    log(
+                        f"File {file['title']} was last modified before {last_modified_date}, skipping",
+                        level="info",
+                    )
                     continue
 
             if file["mimeType"] == "application/vnd.google-apps.folder":
-                get_files_recursive(file["id"], last_modified_date, f"{accumulated_path}/{file['title']}")
+                get_files_recursive(
+                    file["id"], last_modified_date, f"{accumulated_path}/{file['title']}"
+                )
             else:
                 files_list.append(
                     {

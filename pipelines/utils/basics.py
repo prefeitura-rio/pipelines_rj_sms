@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
 from typing import Optional
+
+import pandas as pd
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
+
 
 @task()
 def to_list(element):
@@ -30,7 +32,7 @@ def from_relative_date(relative_date: Optional[str] = None):
     if relative_date is None:
         log(f"Relative date is None, returning None", level="info")
         return None
-    
+
     result = None
     if relative_date.startswith("D-"):
         days = int(relative_date.split("-")[1])
@@ -44,10 +46,10 @@ def from_relative_date(relative_date: Optional[str] = None):
     else:
         log(f"The input dated is not a relative date, converting to datetime", level="info")
         result = pd.to_datetime(relative_date)
-    
+
     log(f"Relative date is {relative_date}, returning {result}", level="info")
     return result
-        
+
 
 @task()
 def is_null_or_empty(value):
