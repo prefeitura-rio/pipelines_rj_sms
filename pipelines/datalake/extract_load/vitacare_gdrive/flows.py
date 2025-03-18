@@ -13,12 +13,9 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.utils.data_extraction.google_drive import (
     explore_folder,
-    dowload_from_gdrive,
 )
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.utils.tasks import rename_current_flow_run
 from pipelines.utils.basics import from_relative_date
-from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants as gdrive_constants
 from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
     get_folder_id,
     download_to_gcs,
@@ -36,10 +33,20 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     AP = Parameter("ap", default="AP10", required=True)
     LAST_MODIFIED_DATE = Parameter("last_modified_date", default="M-1", required=False)
+    RENAME_FLOW_RUN = Parameter("rename_flow_run", default=False, required=False)
 
     #####################################
     # Tasks
     #####################################
+
+    with case(RENAME_FLOW_RUN, True):
+        rename_current_flow_run(
+            name_template="Migrando informes da {ap} | {start} | {environment}",
+            ap=AP,
+            start=LAST_MODIFIED_DATE,
+            environment=ENVIRONMENT
+        )
+
     folder_id = get_folder_id(ap=AP)
 
     date_filter = from_relative_date(relative_date=LAST_MODIFIED_DATE)
