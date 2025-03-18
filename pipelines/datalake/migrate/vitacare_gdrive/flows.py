@@ -18,7 +18,7 @@ from pipelines.utils.tasks import rename_current_flow_run
 
 with Flow(
     name="DataLake - Migração de Dados - Vitacare GDrive",
-) as sms_dump_vitacare_gdrive:
+) as sms_migrate_vitacare_gdrive:
     #####################################
     # Parameters
     #####################################
@@ -50,9 +50,9 @@ with Flow(
     download_to_gcs.map(file_info=files, ap=unmapped(AP), environment=unmapped(ENVIRONMENT))
 
 # Storage and run configs
-sms_dump_vitacare_gdrive.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitacare_gdrive.executor = LocalDaskExecutor(num_workers=10)
-sms_dump_vitacare_gdrive.run_config = KubernetesRun(
+sms_migrate_vitacare_gdrive.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_migrate_vitacare_gdrive.executor = LocalDaskExecutor(num_workers=10)
+sms_migrate_vitacare_gdrive.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
