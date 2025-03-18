@@ -21,10 +21,11 @@ from pipelines.datalake.extract_load.tpc_azure_blob.flows import *
 from pipelines.datalake.extract_load.vitacare_api.flows import *
 from pipelines.datalake.extract_load.vitacare_conectividade_gcs.flows import *
 from pipelines.datalake.extract_load.vitacare_db.flows import *
-from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
+from pipelines.datalake.migrate.vitacare_gdrive.flows import *
 from pipelines.datalake.transform.dbt.flows import *
+
 from pipelines.prontuarios.raw.smsrio.flows import *
 from pipelines.reports.ingestao_dados.flows import *
 from pipelines.reports.long_running_flows.flows import *
