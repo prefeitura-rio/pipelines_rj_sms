@@ -10,7 +10,6 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.cgcca_gdb.tasks import extract_cgcca_gdb
 
-
 with Flow(
     name="DataLake - Extração e Carga de Dados - CGCCA GDB",
 ) as sms_dump_cgcca_gdb:
