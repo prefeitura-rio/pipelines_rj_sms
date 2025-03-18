@@ -53,6 +53,7 @@ def get_files_from_folder(
         files = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
 
         for file in files:
+            print(file)
             if file["title"].endswith(file_extension):
                 files_list.append(file)
             if look_in_subfolders and file["mimeType"] == "application/vnd.google-apps.folder":

@@ -263,3 +263,8 @@ cases:
       table: "vw_MS_CadastrosAtivacoesGov"
       query: "SELECT * FROM vw_MS_CadastrosAtivacoesGov"
       bq_dataset: "brutos_centralderegulacao_mysql"
+  - case_slug: "datalake-extract_load-vitacare_gdrive"
+    flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
+    flow_name: "sms_dump_vitacare_gdrive"
+    params:
+      environment: "dev"
