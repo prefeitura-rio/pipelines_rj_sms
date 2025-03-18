@@ -30,7 +30,7 @@ def as_datetime(date_str, format="%Y-%m-%d"):
 @task()
 def from_relative_date(relative_date: Optional[str] = None):
     if relative_date is None:
-        log(f"Relative date is None, returning None", level="info")
+        log("Relative date is None, returning None", level="info")
         return None
 
     result = None
@@ -44,7 +44,7 @@ def from_relative_date(relative_date: Optional[str] = None):
         years = int(relative_date.split("-")[1])
         result = pd.Timestamp.now().replace(day=1, month=1).date() - pd.DateOffset(years=years)
     else:
-        log(f"The input dated is not a relative date, converting to datetime", level="info")
+        log("The input dated is not a relative date, converting to datetime", level="info")
         result = pd.to_datetime(relative_date)
 
     log(f"Relative date is {relative_date}, returning {result}", level="info")
