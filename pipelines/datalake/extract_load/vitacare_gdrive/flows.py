@@ -9,7 +9,6 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 
-
 with Flow(
     name="DataLake - Extração e Carga de Dados - Vitacare GDrive",
 ) as sms_dump_vitacare_reports:
@@ -21,7 +20,6 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW_RUN = Parameter("rename_flow_run", default=False, required=False)
 
-    
 
 # Storage and run configs
 sms_dump_vitacare_reports.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
