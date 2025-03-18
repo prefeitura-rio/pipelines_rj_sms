@@ -2,6 +2,7 @@
 import os
 import zipfile
 from google.cloud import storage
+from pydrive2 import drive
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import (
     constants as gdrive_constants,
@@ -18,8 +19,9 @@ def get_folder_id(ap: str):
 @task
 def download_to_gcs(file_info: dict, ap: str, environment: str):
     # Download file from Google Drive
-    file = file_info["file"]
     os.makedirs(os.path.dirname(file_info["path"]), exist_ok=True)
+
+    file = drive.CreateFile({"id": file_info["id"]})
     file.GetContentFile(file_info["path"])
     log(f"Downloaded file {file_info['path']} from Google Drive", level="info")
     

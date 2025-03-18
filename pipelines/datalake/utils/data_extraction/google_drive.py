@@ -113,7 +113,6 @@ def explore_folder(
                     {
                         "path": f"{accumulated_path}/{file['title']}",
                         "id": file["id"],
-                        "file": file,
                     }
                 )
 
