@@ -269,4 +269,4 @@ cases:
     params:
       environment: "dev"
       ap: "AP10"
-      last_modified_date: "2025-03-01"
+      last_modified_date: "M-0"

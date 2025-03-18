@@ -70,7 +70,7 @@ def get_files_from_folder(
 @task
 def explore_folder(
     folder_id: str,
-    last_modified_date: str = None,
+    last_modified_date = None,
 ) -> list[dict]:
     log("Authenticating with Google Drive")
     gauth = GoogleAuth(
@@ -85,9 +85,6 @@ def explore_folder(
     drive = GoogleDrive(gauth)
 
     files_list = []
-
-    if last_modified_date:
-        last_modified_date = datetime.strptime(last_modified_date, "%Y-%m-%d")
 
     def get_files_recursive(folder_id, last_modified_date, accumulated_path="."):
         log(f"FOLDER: {accumulated_path}")

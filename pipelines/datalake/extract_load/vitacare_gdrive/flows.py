@@ -17,6 +17,7 @@ from pipelines.datalake.utils.data_extraction.google_drive import (
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.utils.basics import from_relative_date
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants as gdrive_constants
 from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
     get_folder_id,
@@ -41,9 +42,11 @@ with Flow(
     #####################################
     folder_id = get_folder_id(ap=AP)
 
+    date_filter = from_relative_date(relative_date=LAST_MODIFIED_DATE)
+
     files = explore_folder(
         folder_id=folder_id,
-        last_modified_date=LAST_MODIFIED_DATE
+        last_modified_date=date_filter
     )
 
     download_to_gcs.map(
