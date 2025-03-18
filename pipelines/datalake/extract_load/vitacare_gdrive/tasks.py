@@ -2,7 +2,8 @@
 import os
 import zipfile
 from google.cloud import storage
-from pydrive2 import drive
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import (
     constants as gdrive_constants,
@@ -18,6 +19,17 @@ def get_folder_id(ap: str):
 
 @task
 def download_to_gcs(file_info: dict, ap: str, environment: str):
+    gauth = GoogleAuth(
+        settings={
+            "client_config_backend": "service",
+            "service_config": {
+                "client_json_file_path": "/tmp/credentials.json",
+            },
+        }
+    )
+    gauth.ServiceAuth()
+    drive = GoogleDrive(gauth)
+
     # Download file from Google Drive
     os.makedirs(os.path.dirname(file_info["path"]), exist_ok=True)
 
