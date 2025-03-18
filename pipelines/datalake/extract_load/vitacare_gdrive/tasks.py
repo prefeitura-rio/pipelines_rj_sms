@@ -43,4 +43,7 @@ def download_to_gcs(file_info: dict, ap: str, environment: str):
     blob.upload_from_filename(file_info["path"])
     log(f"Uploaded file {file_info['path']} to GCS", level="info")
 
+    # Remove the file from the local directory
+    os.remove(file_info["path"])
+    log(f"Removed file {file_info['path']} from local directory", level="info")
     return blob.public_url
