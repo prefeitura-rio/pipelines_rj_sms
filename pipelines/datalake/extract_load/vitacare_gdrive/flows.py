@@ -4,7 +4,7 @@
 """
 SIH dumping flows
 """
-from prefect import Parameter, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -12,13 +12,16 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.utils.data_extraction.google_drive import (
-    get_files_from_folder,
+    explore_folder,
     dowload_from_gdrive,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import upload_df_to_datalake
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants as gdrive_constants
-from pipelines.datalake.extract_load.vitacare_gdrive.tasks import log_folder_structure
+from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
+    get_folder_id,
+    download_to_gcs,
+)
 
 
 with Flow(
@@ -30,18 +33,23 @@ with Flow(
 
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    REFERENCE_MONTH = Parameter("reference_month", default="2025-02", required=True)
+    AP = Parameter("ap", default="AP10", required=True)
+    LAST_MODIFIED_DATE = Parameter("last_modified_date", default=None, required=False)
 
     #####################################
     # Tasks
     #####################################
-    files = get_files_from_folder(
-        folder_id=gdrive_constants.GDRIVE_FOLDER_ID.value,
-        look_in_subfolders=True,
-        file_extension=".csv",
+    folder_id = get_folder_id(ap=AP)
+
+    files = explore_folder(
+        folder_id=folder_id,
+        last_modified_date=LAST_MODIFIED_DATE
     )
 
-    log_folder_structure(files=files, environment=ENVIRONMENT)
+    download_to_gcs.map(
+        files=files,
+        environment=unmapped(ENVIRONMENT)
+    )
 
 # Storage and run configs
 sms_dump_vitacare_gdrive.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
