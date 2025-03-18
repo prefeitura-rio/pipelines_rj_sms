@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import zipfile
+
 from google.cloud import storage
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
@@ -36,7 +37,7 @@ def download_to_gcs(file_info: dict, ap: str, environment: str):
     file = drive.CreateFile({"id": file_info["id"]})
     file.GetContentFile(file_info["path"])
     log(f"Downloaded file {file_info['path']} from Google Drive", level="info")
-    
+
     # If the file is a zip, unzip it
     if file_info["path"].endswith(".zip"):
         with zipfile.ZipFile(file_info["path"], "r") as zip_ref:
