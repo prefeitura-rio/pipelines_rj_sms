@@ -8,7 +8,8 @@ FROM python:${PYTHON_VERSION}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install apt dependencies and npm
-RUN apt-get update && \
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
     git \
     python3-dev \
@@ -18,10 +19,11 @@ RUN apt-get update && \
     firefox-esr \
     chromium \
     chromium-driver \
-    curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y --no-install-recommends nodejs && \
-    apt-get clean && \
+    curl \
+    libstdc++5:i386 \
+    libncurses5:i386 \
+    xinetd \
+    && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Setting environment with prefect version
@@ -54,3 +56,13 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Firebird 1.5.6
+WORKDIR /opt
+RUN curl -L -o firebird.tar.gz "http://downloads.sourceforge.net/projects/firebird/files/firebird-linux-i386/1.5.6-Release/FirebirdSS-1.5.6.5026-0.nptl.i686.tar.gz" && \
+    tar -zxvf firebird.tar.gz && \
+    cd FirebirdSS-1.5.6.5026-0.i686 && \
+    ./install.sh && \
+    rm -rf /opt/firebird.tar.gz /opt/FirebirdSS-1.5.6.5026-0.i686
+
+# Ensure Firebird starts when container runs
+CMD ["/etc/init.d/firebird", "start"]
