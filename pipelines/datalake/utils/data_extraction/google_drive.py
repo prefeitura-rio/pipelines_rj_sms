@@ -48,20 +48,77 @@ def get_files_from_folder(
     drive = GoogleDrive(gauth)
     files_list = []
 
-    def get_files_recursive(folder_id):
-        log(f"Querying folder {folder_id}")
+    def get_files_recursive(folder_id, accumulated_path="drive://"):
+        log(f"FOLDER: {accumulated_path}")
+
         files = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
 
         for file in files:
+            print(f"{accumulated_path}/{file['title']}")
             if file["title"].endswith(file_extension):
                 files_list.append(file)
             if look_in_subfolders and file["mimeType"] == "application/vnd.google-apps.folder":
-                get_files_recursive(file["id"])
+                get_files_recursive(file["id"], f"{accumulated_path}/{file['title']}")
 
     get_files_recursive(folder_id)
 
     log(f"{len(files_list)} files found in Google Drive folder.", level="info")
     log(f"Files: {files_list}", level="debug")
+
+    return files_list
+
+
+@task
+def explore_folder(
+    folder_id: str,
+    last_modified_date=None,
+) -> list[dict]:
+    log("Authenticating with Google Drive")
+    gauth = GoogleAuth(
+        settings={
+            "client_config_backend": "service",
+            "service_config": {
+                "client_json_file_path": "/tmp/credentials.json",
+            },
+        }
+    )
+    gauth.ServiceAuth()
+    drive = GoogleDrive(gauth)
+
+    files_list = []
+
+    def get_files_recursive(folder_id, last_modified_date, accumulated_path="."):
+        log(f"FOLDER: {accumulated_path}")
+
+        files = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
+
+        for file in files:
+            log(f"Looking at {accumulated_path}/{file['title']}")
+
+            if last_modified_date:
+                modified_date = datetime.strptime(file["modifiedDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                if modified_date < last_modified_date:
+                    log(
+                        f"File {file['title']} was last modified before {last_modified_date}, skipping",
+                        level="info",
+                    )
+                    continue
+
+            if file["mimeType"] == "application/vnd.google-apps.folder":
+                get_files_recursive(
+                    file["id"], last_modified_date, f"{accumulated_path}/{file['title']}"
+                )
+            else:
+                files_list.append(
+                    {
+                        "path": f"{accumulated_path}/{file['title']}",
+                        "id": file["id"],
+                    }
+                )
+
+    get_files_recursive(folder_id, last_modified_date)
+
+    log(f"{len(files_list)} files found in Google Drive folder.", level="info")
 
     return files_list
 
