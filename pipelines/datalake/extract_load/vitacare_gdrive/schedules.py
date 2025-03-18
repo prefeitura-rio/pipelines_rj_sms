@@ -62,7 +62,7 @@ flow_parameters = [
         "ap": "AP10",
         "environment": "prod",
         "last_modified_date": "M-0",
-    }
+    },
     {
         "ap": "PRISIONAL",
         "environment": "prod",
