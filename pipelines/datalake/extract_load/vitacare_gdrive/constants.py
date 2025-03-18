@@ -10,11 +10,10 @@ class constants(Enum):
     """
 
     GCS_BUCKET = {
-        "dev": "vitacare_reports_gdrive_dev",
-        "local-prod": "vitacare_reports_gdrive",
-        "prod": "vitacare_reports_gdrive",
+        "dev": "vitacare_informes_mensais",
+        "local-prod": "vitacare_informes_mensais",
+        "prod": "vitacare_informes_mensais",
     }
-    GDRIVE_FOLDER_ID = "1H_49fLhbT0bWYk8gBKLOdYHgT_xODpg7"
 
     GDRIVE_FOLDER_STRUCTURE = {
         "PRISIONAL":"1MQccwkVqtvaHP2kwRux8WSQguB-i1X_8",

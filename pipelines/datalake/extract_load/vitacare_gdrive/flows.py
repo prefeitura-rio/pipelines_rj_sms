@@ -34,7 +34,7 @@ with Flow(
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     AP = Parameter("ap", default="AP10", required=True)
-    LAST_MODIFIED_DATE = Parameter("last_modified_date", default=None, required=False)
+    LAST_MODIFIED_DATE = Parameter("last_modified_date", default="M-1", required=False)
 
     #####################################
     # Tasks
@@ -47,7 +47,7 @@ with Flow(
     )
 
     download_to_gcs.map(
-        files=files,
+        file_info=files,
         environment=unmapped(ENVIRONMENT)
     )
 

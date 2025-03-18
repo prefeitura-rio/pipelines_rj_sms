@@ -10,7 +10,7 @@ def get_folder_id(ap: str):
     return gdrive_constants.GDRIVE_FOLDER_STRUCTURE.value[ap]
 
 @task
-def download_to_gcs(file_info: dict, environment: str):
+def download_to_gcs(file_info: dict, ap: str, environment: str):
     # Download file from Google Drive
     file = file_info["file"]
     os.makedirs(os.path.dirname(file_info["path"]), exist_ok=True)
@@ -21,7 +21,9 @@ def download_to_gcs(file_info: dict, environment: str):
     bucket_name = gdrive_constants.GCS_BUCKET.value[environment]
     bucket = storage.Client().bucket(bucket_name)
 
-    blob = bucket.blob(f"{file_info['path']}")
+    blob_name = file_info['path'].replace("./", f"{ap}/")
+    blob = bucket.blob(blob_name)
+    
     blob.upload_from_filename(file_info["path"])
     log(f"Uploaded file {file_info['path']} to GCS", level="info")
 
