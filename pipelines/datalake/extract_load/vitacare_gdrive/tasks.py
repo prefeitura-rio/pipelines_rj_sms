@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import zipfile
-
+from datetime import timedelta
 from google.cloud import storage
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
@@ -18,7 +18,7 @@ def get_folder_id(ap: str):
     return gdrive_constants.GDRIVE_FOLDER_STRUCTURE.value[ap]
 
 
-@task
+@task(retries=3, retry_delay=timedelta(minutes=5))
 def download_to_gcs(file_info: dict, ap: str, environment: str):
     gauth = GoogleAuth(
         settings={
