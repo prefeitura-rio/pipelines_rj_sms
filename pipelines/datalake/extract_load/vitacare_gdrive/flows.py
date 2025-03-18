@@ -48,6 +48,7 @@ with Flow(
 
     download_to_gcs.map(
         file_info=files,
+        ap=unmapped(AP),
         environment=unmapped(ENVIRONMENT)
     )
 
