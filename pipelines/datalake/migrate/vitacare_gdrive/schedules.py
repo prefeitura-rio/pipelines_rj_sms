@@ -17,56 +17,67 @@ flow_parameters = [
         "ap": "AP53",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "AP52",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "AP51",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "AP40",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "AP33",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "AP32",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "AP31",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "AP22",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "AP21",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "AP10",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
     {
         "ap": "PRISIONAL",
         "environment": "prod",
         "last_modified_date": "M-0",
+        "rename_flow": True,
     },
 ]
 
