@@ -7,7 +7,7 @@ FROM python:${PYTHON_VERSION}
 # Set shell options for pipefail
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Install apt dependencies and npm
+# Install apt dependencies
 RUN dpkg --add-architecture i386 && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -20,6 +20,7 @@ RUN dpkg --add-architecture i386 && \
     chromium \
     chromium-driver \
     curl \
+    gnupg \
     libstdc++5:i386 \
     libncurses5:i386 \
     xinetd \
@@ -42,10 +43,17 @@ COPY . .
 RUN $VIRTUAL_ENV/bin/pip install --prefer-binary --no-cache-dir -U .
 
 # Install MSSQL dependencies
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
-    echo "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list && \
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | tee /etc/apt/keyrings/microsoft.asc > /dev/null && \
+    echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/microsoft.asc] https://packages.microsoft.com/debian/12/prod bookworm main" | tee /etc/apt/sources.list.d/mssql-release.list > /dev/null && \
     apt-get update && \
-    ACCEPT_EULA=Y apt-get install --no-install-recommends -y ffmpeg libsm6 libxext6 msodbcsql17 openssl unixodbc-dev && \
+    ACCEPT_EULA=Y apt-get install --no-install-recommends -y \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    msodbcsql17 \
+    openssl \
+    unixodbc-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
