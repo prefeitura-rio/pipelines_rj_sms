@@ -41,13 +41,6 @@ WORKDIR /app
 COPY . .
 RUN $VIRTUAL_ENV/bin/pip install --prefer-binary --no-cache-dir -U .
 
-# Ensure npm and npx work properly
-RUN npm install -g npm@latest && \
-    if ! npm cache clean --force; then echo "Cache clean failed, continuing..."; fi
-
-# Install Puppeteer and Mermaid CLI
-RUN npm install puppeteer@23.0.0 @mermaid-js/mermaid-cli@11.2.0
-
 # Install MSSQL dependencies
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
     echo "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list && \
