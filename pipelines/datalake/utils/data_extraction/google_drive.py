@@ -6,8 +6,8 @@ Tasks to download data from Google Drive.
 """
 import concurrent.futures
 import os
+from tenacity import retry, stop_after_attempt, wait_fixed
 from datetime import datetime, timedelta
-from functools import partial
 
 import prefect
 from prefeitura_rio.pipelines_utils.logging import log
@@ -68,7 +68,7 @@ def get_files_from_folder(
     return files_list
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
 def explore_folder(
     folder_id: str,
     last_modified_date=None,
@@ -87,6 +87,7 @@ def explore_folder(
 
     files_list = []
 
+    @retry(stop=stop_after_attempt(7), wait=wait_fixed(2))
     def get_files_recursive(folder_id, last_modified_date, accumulated_path="."):
         log(f"FOLDER: {accumulated_path}")
 
