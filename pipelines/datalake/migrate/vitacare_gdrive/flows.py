@@ -13,6 +13,7 @@ from pipelines.datalake.migrate.vitacare_gdrive.tasks import (
     get_folder_id,
 )
 from pipelines.datalake.utils.data_extraction.google_drive import explore_folder
+from pipelines.datalake.migrate.vitacare_gdrive import schedules
 from pipelines.utils.basics import from_relative_date
 from pipelines.utils.tasks import rename_current_flow_run
 
@@ -50,6 +51,7 @@ with Flow(
     download_to_gcs.map(file_info=files, ap=unmapped(AP), environment=unmapped(ENVIRONMENT))
 
 # Storage and run configs
+sms_migrate_vitacare_gdrive.schedule = schedules
 sms_migrate_vitacare_gdrive.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_migrate_vitacare_gdrive.executor = LocalDaskExecutor(num_workers=10)
 sms_migrate_vitacare_gdrive.run_config = KubernetesRun(
