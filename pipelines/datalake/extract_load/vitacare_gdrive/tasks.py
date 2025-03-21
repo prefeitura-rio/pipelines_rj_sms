@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+import asyncio
+import csv
 import datetime
 import fnmatch
 import io
-import csv
 
 import pandas as pd
 import pytz
@@ -59,7 +60,7 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
             sep = dialect.delimiter
             log(f"Inferred separator: '{sep}'")
         except Exception as e:
-            sep = ','
+            sep = ","
             log(f"Could not infer separator, defaulting to ','. Error: {e}")
 
         df = pd.read_csv(csv_file, sep=sep, dtype=str)
