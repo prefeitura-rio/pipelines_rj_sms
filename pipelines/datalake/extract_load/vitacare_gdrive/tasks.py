@@ -84,4 +84,6 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
 
     df_final = pd.concat(dataframes, ignore_index=True)
 
+    log(df_final.head())
+
     return df_final
