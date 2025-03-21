@@ -31,8 +31,6 @@ def find_all_file_names_from_pattern(file_pattern: str, environment: str):
 
 @task
 def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
-    file_names = file_names[:2]
-
     client = storage.Client()
     bucket_name = constants.GCS_BUCKET.value[environment]
     bucket = client.bucket(bucket_name)
