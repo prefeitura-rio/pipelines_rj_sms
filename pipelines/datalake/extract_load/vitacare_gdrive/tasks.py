@@ -49,6 +49,9 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
         csv = io.StringIO(blob.download_as_text())
         df = pd.read_csv(csv, dtype=str)
 
+        # Remove prohibited symbols in columns in the BigQuery table
+        df.columns = df.columns.str.replace(r'[^\x00-\x7F]+', '', regex=True)
+
         df["_source_file"] = file_name
         df["_extracted_at"] = blob.updated.astimezone(tz=pytz.timezone("America/Sao_Paulo"))
         df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
