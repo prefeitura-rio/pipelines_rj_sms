@@ -12,8 +12,8 @@ class constants(Enum):
 
     GCS_BUCKET = {
         "dev": "vitacare_informes_mensais",
-        "local-prod": "vitacare_informes_mensais",
-        "prod": "vitacare_informes_mensais",
+        "local-prod": "vitacare_informes_mensais_gdrive",
+        "prod": "vitacare_informes_mensais_gdrive",
     }
 
     GDRIVE_FOLDER_STRUCTURE = {
