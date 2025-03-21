@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import csv
 import datetime
 import fnmatch
