@@ -1,14 +1,16 @@
-import fnmatch
-import pandas as pd
+# -*- coding: utf-8 -*-
 import asyncio
 import datetime
-import pytz
+import fnmatch
 import io
+
+import pandas as pd
+import pytz
 from google.cloud import storage
 
+from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
 
 
 @task
@@ -28,6 +30,7 @@ def find_all_file_names_from_pattern(file_pattern: str, environment: str):
 
     log(f"{len(files)} files were found. Their names:\n - " + "\n - ".join(files))
     return files
+
 
 @task
 def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
