@@ -14,7 +14,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "file_pattern": "AP*/*/REPORT_PLANILHA_ACOMPANHAMENTO_GESTANTES/*/*_SUBPAV_PLAN_ACOMP_MENSAL_GESTANTES.csv",
+        "file_pattern": "AP*/*/REPORT_PLANILHA_ACOMPANHAMENTO_GESTANTES/*/*_SUBPAV_PLAN_ACOMP_MENSAL_GESTANTES.csv", # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "acompanhamento_mensal_gestantes",
         "environment": "prod",
@@ -28,7 +28,7 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
-        "file_pattern": "AP*/*/REPORT_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL/*/*_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL_*.csv",
+        "file_pattern": "AP*/*/REPORT_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL/*/*_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL_*.csv", # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "acompanhamento_mulheres_idade_fertil",
         "environment": "prod",
