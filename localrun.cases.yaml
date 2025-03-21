@@ -270,3 +270,11 @@ cases:
       environment: "dev"
       ap: "AP22"
       last_modified_date: "M-0"
+  - case_slug: "datalake-extract-vitacare_gdrive"
+    flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
+    flow_name: "sms_dump_vitacare_reports"
+    params:
+      environment: "dev"
+      file_pattern: "AP*/*/REPORT_SUB_PAV_FICHA_A_V2/*/*+SUB_PAV_FICHA_A_V2+*.csv"
+      desired_table_name: "informe_ficha_a"
+      desired_dataset_name: "brutos_prontuario_vitacare"

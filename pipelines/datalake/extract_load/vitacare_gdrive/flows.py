@@ -8,6 +8,11 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
+    find_all_file_names_from_pattern,
+    join_csv_files,
+)
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Vitacare GDrive",
@@ -19,6 +24,29 @@ with Flow(
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     RENAME_FLOW_RUN = Parameter("rename_flow_run", default=False, required=False)
+    FILE_PATTERN = Parameter("file_pattern", default=False, required=False)
+    DESIRED_DATASET_NAME = Parameter("desired_dataset_name", default="brutos_prontuario_vitacare")
+    DESIRED_TABLE_NAME = Parameter("desired_table_name", default=None)
+
+
+    file_names = find_all_file_names_from_pattern(
+        file_pattern=FILE_PATTERN,
+        environment=ENVIRONMENT,
+    )
+
+    dataframe = join_csv_files(
+        file_names=file_names,
+        environment=ENVIRONMENT,
+    )
+
+    upload_df_to_datalake(
+        df=dataframe,
+        partition_column="_loaded_at",
+        dataset_id=DESIRED_DATASET_NAME,
+        table_id=DESIRED_TABLE_NAME,
+        dump_mode="replace",
+        if_exists="replace",
+    )
 
 
 # Storage and run configs
