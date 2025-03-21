@@ -21,7 +21,7 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
-        "file_pattern": "AP*/*/REPORT_DISPENSAS_APARELHO_PRESSAO/*/*_DISPENSAS_APARELHO_PRESSAO_*.csv",
+        "file_pattern": "AP*/*/REPORT_DISPENSAS_APARELHO_PRESSAO/*/*_DISPENSAS_APARELHO_PRESSAO_*.csv", # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "dispensas_aparelho_pressao",
         "environment": "prod",
