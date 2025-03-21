@@ -8,12 +8,12 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.datalake.extract_load.vitacare_gdrive.schedules import schedule
 from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
     find_all_file_names_from_pattern,
     join_csv_files,
 )
-from pipelines.datalake.extract_load.vitacare_gdrive.schedules import schedule
+from pipelines.utils.tasks import upload_df_to_datalake
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Vitacare GDrive",
