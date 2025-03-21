@@ -47,7 +47,7 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
 
         log(f"Beginning Download of {file_name} with {size_in_mb:.1f} MB")
         csv = io.StringIO(blob.download_as_text())
-        df = pd.read_csv(csv, sep=";", dtype=str)
+        df = pd.read_csv(csv, dtype=str)
 
         df["_source_file"] = file_name
         df["_extracted_at"] = blob.updated.astimezone(tz=pytz.timezone("America/Sao_Paulo"))
