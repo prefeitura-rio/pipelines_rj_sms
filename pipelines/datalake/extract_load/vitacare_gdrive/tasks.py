@@ -8,7 +8,6 @@ import pytz
 from google.cloud import storage
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
 from pipelines.datalake.extract_load.vitacare_gdrive.utils import (
     assert_csv_has_columns_defined,
