@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import csv
 import datetime
 import fnmatch
 import io
@@ -7,6 +6,7 @@ import io
 import pandas as pd
 import pytz
 from google.cloud import storage
+from unidecode import unidecode
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
@@ -64,6 +64,7 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
         cleaned_columns = []
         for column in df.columns:
             cleaned_column = column.replace("(", "").replace(")", "").replace(" ", "_").lower()
+            cleaned_column = unidecode(cleaned_column)
             cleaned_columns.append(cleaned_column)
         df.columns = cleaned_columns
 
