@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
+import pytz
+import io
+import pandas as pd
+import datetime
+
 from unidecode import unidecode
+from tenacity import retry, stop_after_attempt, wait_fixed
+
+from pipelines.utils.logger import log
 
 
 def fix_csv(csv_text: str, sep: str) -> str:
@@ -52,3 +60,35 @@ def detect_separator(csv_text: str) -> str:
         return ","
     else:
         return ";"
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
+def download_file(bucket, file_name):
+    blob = bucket.get_blob(file_name)
+    size_in_bytes = blob.size
+    size_in_mb = size_in_bytes / (1024 * 1024)
+
+    log(f"Beginning Download of {file_name} with {size_in_mb:.1f} MB")
+    csv_text = blob.download_as_text(encoding="utf-8")
+
+    sep = detect_separator(csv_text)
+
+    # Fix CSV
+    csv_text = fix_csv(csv_text, sep)
+    csv_file = io.StringIO(csv_text)
+
+    # Read CSV
+    try:
+        df = pd.read_csv(csv_file, sep=sep, dtype=str, encoding="utf-8")
+    except pd.errors.ParserError:
+        log("Error reading CSV file")
+        return pd.DataFrame()
+
+    df.columns = [fix_column_name(column) for column in df.columns]
+
+    df["_source_file"] = file_name
+    df["_extracted_at"] = blob.updated.astimezone(tz=pytz.timezone("America/Sao_Paulo"))
+    df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+
+    log(f"Finishing Download of {file_name}")
+    return df

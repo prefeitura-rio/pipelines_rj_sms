@@ -1,21 +1,13 @@
 # -*- coding: utf-8 -*-
-import datetime
 import fnmatch
-import io
-
 import pandas as pd
-import pytz
+
 from google.cloud import storage
-from tenacity import retry, stop_after_attempt, wait_fixed
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
-from pipelines.datalake.extract_load.vitacare_gdrive.utils import (
-    detect_separator,
-    fix_column_name,
-    fix_csv,
-)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
+from pipelines.datalake.extract_load.vitacare_gdrive.utils import download_file
 
 
 @task
@@ -45,40 +37,9 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
 
     log(f"Downloading {len(file_names)} files")
 
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
-    def download_file(file_name):
-        blob = bucket.get_blob(file_name)
-        size_in_bytes = blob.size
-        size_in_mb = size_in_bytes / (1024 * 1024)
-
-        log(f"Beginning Download of {file_name} with {size_in_mb:.1f} MB")
-        csv_text = blob.download_as_text(encoding="utf-8")
-
-        sep = detect_separator(csv_text)
-
-        # Fix CSV
-        csv_text = fix_csv(csv_text, sep)
-        csv_file = io.StringIO(csv_text)
-
-        # Read CSV
-        try:
-            df = pd.read_csv(csv_file, sep=sep, dtype=str, encoding="utf-8")
-        except pd.errors.ParserError:
-            log("Error reading CSV file")
-            return pd.DataFrame()
-
-        df.columns = [fix_column_name(column) for column in df.columns]
-
-        df["_source_file"] = file_name
-        df["_extracted_at"] = blob.updated.astimezone(tz=pytz.timezone("America/Sao_Paulo"))
-        df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-
-        log(f"Finishing Download of {file_name}")
-        return df
-
     dataframes = []
     for file_name in file_names:
-        df = download_file(file_name)
+        df = download_file(bucket, file_name)
         df.reset_index(inplace=True)
         dataframes.append(df)
 
