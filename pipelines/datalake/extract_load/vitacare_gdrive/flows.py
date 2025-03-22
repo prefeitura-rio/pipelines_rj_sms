@@ -44,6 +44,7 @@ with Flow(
         partition_column="_loaded_at",
         dataset_id=DESIRED_DATASET_NAME,
         table_id=DESIRED_TABLE_NAME,
+        source_format="parquet",
         dump_mode="replace",
         if_exists="replace",
     )
