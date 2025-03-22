@@ -45,6 +45,8 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
 
     df_final = pd.concat(dataframes, ignore_index=True)
 
-    log(df_final.head())
+    log("Columns:")
+    for column in df_final.columns:
+        log(column)
 
     return df_final
