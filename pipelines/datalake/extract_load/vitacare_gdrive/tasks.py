@@ -10,6 +10,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 from unidecode import unidecode
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
+from pipelines.datalake.extract_load.vitacare_gdrive.utils import fix_csv
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 
@@ -49,22 +50,40 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
 
         log(f"Beginning Download of {file_name} with {size_in_mb:.1f} MB")
         csv_text = blob.download_as_text(encoding="utf-8")
-        csv_file = io.StringIO(csv_text)
 
+        # Detect separator
         first_line = csv_text.splitlines()[0]
-
         if len(first_line.split(",")) > len(first_line.split(";")):
             sep = ","
         else:
             sep = ";"
 
-        df = pd.read_csv(csv_file, sep=sep, dtype=str)
+        # Fix CSV
+        csv_text = fix_csv(csv_text, sep)
+        csv_file = io.StringIO(csv_text)
+
+        # Read CSV
+        try:
+            df = pd.read_csv(csv_file, sep=sep, dtype=str, encoding="utf-8")
+        except pd.errors.ParserError:
+            log(f"Error reading CSV file")
+            return pd.DataFrame()
 
         # Remove prohibited symbols in columns in the BigQuery table
         cleaned_columns = []
         for column in df.columns:
             cleaned_column = (
-                column.replace("(", "").replace(")", "").replace(" ", "_").replace("-", "_").lower()
+                column
+                    .replace("(", "")
+                    .replace(")", "")
+                    .replace(" ", "_")
+                    .replace("-", "_")
+                    .replace(".", "_")
+                    .replace("/", "_")
+                    .replace(",", "_")
+                    .replace("[", "_")
+                    .replace("]", "_")
+                    .lower()
             )
             cleaned_column = unidecode(cleaned_column)
             cleaned_columns.append(cleaned_column)
