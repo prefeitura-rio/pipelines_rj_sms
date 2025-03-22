@@ -6,8 +6,8 @@ import io
 import pandas as pd
 import pytz
 from google.cloud import storage
-from unidecode import unidecode
 from tenacity import retry, stop_after_attempt, wait_fixed
+from unidecode import unidecode
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
