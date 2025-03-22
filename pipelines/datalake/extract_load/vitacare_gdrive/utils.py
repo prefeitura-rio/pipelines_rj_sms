@@ -3,6 +3,8 @@ from unidecode import unidecode
 
 
 def fix_csv(csv_text: str, sep: str) -> str:
+    csv_text = csv_text.replace("\r\n", "\n")
+
     first_line = csv_text.splitlines()[0]
 
     columns = first_line.split(sep)
@@ -22,7 +24,7 @@ def fix_csv(csv_text: str, sep: str) -> str:
         columns.append(f"complemento_{i}")
 
     new_first_line = sep.join(columns)
-    new_csv_text = new_first_line + "\n".join(other_lines)
+    new_csv_text = new_first_line + "\n" + "\n".join(other_lines)
 
     return new_csv_text
 

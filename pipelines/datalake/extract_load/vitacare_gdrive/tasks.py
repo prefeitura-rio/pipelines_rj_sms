@@ -2,7 +2,7 @@
 import datetime
 import fnmatch
 import io
-
+import uuid
 import pandas as pd
 import pytz
 from google.cloud import storage
@@ -58,6 +58,10 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
 
         # Fix CSV
         csv_text = fix_csv(csv_text, sep)
+
+        with open(f"{uuid.uuid4()}.csv", "w+") as f:
+            f.write(csv_text)
+
         csv_file = io.StringIO(csv_text)
 
         # Read CSV
@@ -78,7 +82,9 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
 
     dataframes = []
     for file_name in file_names:
-        dataframes.append(download_file(file_name))
+        df = download_file(file_name)
+        df.reset_index(inplace=True)
+        dataframes.append(df)
 
     df_final = pd.concat(dataframes, ignore_index=True)
 
