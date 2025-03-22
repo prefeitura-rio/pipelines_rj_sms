@@ -6,13 +6,13 @@ Tasks to download data from Google Drive.
 """
 import concurrent.futures
 import os
-from tenacity import retry, stop_after_attempt, wait_fixed
 from datetime import datetime, timedelta
 
 import prefect
 from prefeitura_rio.pipelines_utils.logging import log
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
