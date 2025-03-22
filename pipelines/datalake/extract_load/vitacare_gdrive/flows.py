@@ -45,7 +45,7 @@ with Flow(
         dataset_id=DESIRED_DATASET_NAME,
         table_id=DESIRED_TABLE_NAME,
         source_format="parquet",
-        dump_mode="replace",
+        dump_mode="overwrite",
         if_exists="replace",
     )
 
