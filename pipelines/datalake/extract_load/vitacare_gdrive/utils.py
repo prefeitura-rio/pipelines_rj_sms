@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from unidecode import unidecode
+
+
 def fix_csv(csv_text: str, sep: str) -> str:
     first_line = csv_text.splitlines()[0]
 
