@@ -1,4 +1,7 @@
-def fix_csv(csv_text: str, sep: str) -> str:
+from unidecode import unidecode
+
+
+def assert_csv_has_columns_defined(csv_text: str, sep: str) -> str:
     first_line = csv_text.splitlines()[0]
 
     columns = first_line.split(sep)
@@ -21,3 +24,25 @@ def fix_csv(csv_text: str, sep: str) -> str:
     new_csv_text = new_first_line + "\n".join(other_lines)
 
     return new_csv_text
+
+def fix_column_name(column_name: str) -> str:
+    c = column_name \
+        .replace("(", "") \
+        .replace(")", "") \
+        .replace(" ", "_") \
+        .replace("-", "_") \
+        .replace(".", "_") \
+        .replace("/", "_") \
+        .replace(",", "_") \
+        .replace("[", "_") \
+        .replace("]", "_") \
+        .lower()
+
+    return unidecode(c)
+
+def detect_separator(csv_text: str) -> str:
+    first_line = csv_text.splitlines()[0]
+    if len(first_line.split(",")) > len(first_line.split(";")):
+        return ","
+    else:
+        return ";"
