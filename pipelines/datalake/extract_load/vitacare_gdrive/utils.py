@@ -1,7 +1,5 @@
-from unidecode import unidecode
-
-
-def assert_csv_has_columns_defined(csv_text: str, sep: str) -> str:
+# -*- coding: utf-8 -*-
+def fix_csv(csv_text: str, sep: str) -> str:
     first_line = csv_text.splitlines()[0]
 
     columns = first_line.split(sep)
