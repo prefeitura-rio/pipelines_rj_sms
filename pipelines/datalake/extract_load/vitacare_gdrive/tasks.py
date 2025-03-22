@@ -10,9 +10,9 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
 from pipelines.datalake.extract_load.vitacare_gdrive.utils import (
-    fix_csv,
     detect_separator,
     fix_column_name,
+    fix_csv,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
