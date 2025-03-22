@@ -73,17 +73,16 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
         cleaned_columns = []
         for column in df.columns:
             cleaned_column = (
-                column
-                    .replace("(", "")
-                    .replace(")", "")
-                    .replace(" ", "_")
-                    .replace("-", "_")
-                    .replace(".", "_")
-                    .replace("/", "_")
-                    .replace(",", "_")
-                    .replace("[", "_")
-                    .replace("]", "_")
-                    .lower()
+                column.replace("(", "")
+                .replace(")", "")
+                .replace(" ", "_")
+                .replace("-", "_")
+                .replace(".", "_")
+                .replace("/", "_")
+                .replace(",", "_")
+                .replace("[", "_")
+                .replace("]", "_")
+                .lower()
             )
             cleaned_column = unidecode(cleaned_column)
             cleaned_columns.append(cleaned_column)
