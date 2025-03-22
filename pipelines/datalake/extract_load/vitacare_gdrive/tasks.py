@@ -10,7 +10,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
 from pipelines.datalake.extract_load.vitacare_gdrive.utils import (
-    assert_csv_has_columns_defined,
+    fix_csv,
     detect_separator,
     fix_column_name,
 )
@@ -57,7 +57,7 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
         sep = detect_separator(csv_text)
 
         # Fix CSV
-        csv_text = assert_csv_has_columns_defined(csv_text, sep)
+        csv_text = fix_csv(csv_text, sep)
         csv_file = io.StringIO(csv_text)
 
         # Read CSV
