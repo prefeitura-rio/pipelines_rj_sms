@@ -64,7 +64,7 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
         try:
             df = pd.read_csv(csv_file, sep=sep, dtype=str, encoding="utf-8")
         except pd.errors.ParserError:
-            log(f"Error reading CSV file")
+            log("Error reading CSV file")
             return pd.DataFrame()
 
         df.columns = [fix_column_name(column) for column in df.columns]
