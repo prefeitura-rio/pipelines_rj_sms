@@ -280,3 +280,11 @@ cases:
       environment: "dev"
       ap: "AP22"
       last_modified_date: "M-0"
+  - case_slug: "datalake-extract-vitacare_gdrive"
+    flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
+    flow_name: "sms_dump_vitacare_reports"
+    params:
+      environment: "dev"
+      file_pattern: "AP*/*/REPORT_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL/*/*_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL_*.csv"
+      desired_table_name: "acompanhamento_mulheres_idade_fertil"
+      desired_dataset_name: "brutos_informes_vitacare"
