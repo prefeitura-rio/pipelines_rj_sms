@@ -39,8 +39,6 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
     bucket_name = constants.GCS_BUCKET.value[environment]
     bucket = client.bucket(bucket_name)
 
-    file_names = file_names[:2]
-
     log(f"Downloading {len(file_names)} files")
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
@@ -50,17 +48,15 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
         size_in_mb = size_in_bytes / (1024 * 1024)
 
         log(f"Beginning Download of {file_name} with {size_in_mb:.1f} MB")
-        csv_text = blob.download_as_text()
+        csv_text = blob.download_as_text(encoding="utf-8")
         csv_file = io.StringIO(csv_text)
 
-        try:
-            sample = csv_text
-            dialect = csv.Sniffer().sniff(sample, delimiters=";,")
-            sep = dialect.delimiter
-            log(f"Inferred separator: '{sep}'")
-        except Exception as e:
+        first_line = csv_text.splitlines()[0]
+
+        if len(first_line.split(",")) > len(first_line.split(";")):
             sep = ","
-            log(f"Could not infer separator, defaulting to ','. Error: {e}")
+        else:
+            sep = ";"
 
         df = pd.read_csv(csv_file, sep=sep, dtype=str)
 
