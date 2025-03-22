@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-import pytz
-import io
-import pandas as pd
 import datetime
+import io
 
-from unidecode import unidecode
+import pandas as pd
+import pytz
 from tenacity import retry, stop_after_attempt, wait_fixed
+from unidecode import unidecode
 
 from pipelines.utils.logger import log
 
