@@ -26,20 +26,23 @@ def fix_csv(csv_text: str, sep: str) -> str:
 
     return new_csv_text
 
+
 def fix_column_name(column_name: str) -> str:
-    c = column_name \
-        .replace("(", "") \
-        .replace(")", "") \
-        .replace(" ", "_") \
-        .replace("-", "_") \
-        .replace(".", "_") \
-        .replace("/", "_") \
-        .replace(",", "_") \
-        .replace("[", "_") \
-        .replace("]", "_") \
+    c = (
+        column_name.replace("(", "")
+        .replace(")", "")
+        .replace(" ", "_")
+        .replace("-", "_")
+        .replace(".", "_")
+        .replace("/", "_")
+        .replace(",", "_")
+        .replace("[", "_")
+        .replace("]", "_")
         .lower()
+    )
 
     return unidecode(c)
+
 
 def detect_separator(csv_text: str) -> str:
     first_line = csv_text.splitlines()[0]
