@@ -2,7 +2,6 @@
 import datetime
 import fnmatch
 import io
-import uuid
 
 import pandas as pd
 import pytz
