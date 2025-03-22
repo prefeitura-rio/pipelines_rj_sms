@@ -59,10 +59,6 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
 
         # Fix CSV
         csv_text = fix_csv(csv_text, sep)
-
-        with open(f"{uuid.uuid4()}.csv", "w+") as f:
-            f.write(csv_text)
-
         csv_file = io.StringIO(csv_text)
 
         # Read CSV
