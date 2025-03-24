@@ -383,9 +383,7 @@ def unzip_file(folder_path: str):
     """
     for file in os.listdir(folder_path):
         if file.endswith(".zip"):
-            with zipfile.ZipFile(os.path.join(folder_path, file), "r") as zip_ref:
-                zip_ref.extractall(os.path.join(folder_path, file.removesuffix(".zip")))
-            # os.remove(os.path.join(folder_path, file))
+            shutil.unpack_archive(os.path.join(folder_path, file), folder_path)
 
     bak_files = []
 
