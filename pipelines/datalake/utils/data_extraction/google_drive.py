@@ -209,6 +209,9 @@ def download_files(files, folder_path):
             downloaded_files.append(file_path)
             continue
 
+        # Guarantee that the folder exists
+        os.makedirs(folder_path, exist_ok=True)
+
         file.GetContentFile(f"{folder_path}/{file['title']}")
         downloaded_files.append(f"{folder_path}/{file['title']}")
 
