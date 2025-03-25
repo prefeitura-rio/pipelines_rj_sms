@@ -381,9 +381,19 @@ def unzip_file(folder_path: str):
     """
     Unzip files in the given folder path.
     """
+    errors = []
     for file in os.listdir(folder_path):
         if file.endswith(".zip"):
-            shutil.unpack_archive(os.path.join(folder_path, file), folder_path)
+            try:
+                shutil.unpack_archive(os.path.join(folder_path, file), folder_path)
+            except Exception as e:
+                log(f"Error unpacking file {file}: {e}", level="error")
+                errors.append(file)
+
+    if len(errors) > 0:
+        log(f"Error unpacking {len(errors)} files", level="error")
+        for error in errors:
+            log(f"Error unpacking file {error}", level="error")
 
     bak_files = []
 
