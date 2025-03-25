@@ -23,6 +23,7 @@ from pipelines.prontuarios.utils.tasks import (
     transform_split_dataframe,
 )
 from pipelines.utils.datalake_hub import load_asset
+from pipelines.utils.tasks import upload_df_to_datalake
 from pipelines.utils.tasks import load_file_from_gcs_bucket, rename_current_flow_run
 
 ####################################
@@ -38,7 +39,6 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", default=False)
     START_DATETIME = Parameter("start_datetime", default="")
     END_DATETIME = Parameter("end_datetime", default="")
-    IS_INITIAL_EXTRACTION = Parameter("is_initial_extraction", default=False)
 
     #####################################
     # Set environment
@@ -47,45 +47,31 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(
-            environment=ENVIRONMENT, unidade="SMSRIO", is_initial_extraction=IS_INITIAL_EXTRACTION
+            environment=ENVIRONMENT, 
+            unidade="SMSRIO",
         )
 
     ####################################
     # Task Section #1 - Get data
     ####################################
-    with case(IS_INITIAL_EXTRACTION, True):
-        patient_data_gcs = load_file_from_gcs_bucket(
-            bucket_name=smsrio_constants.SMSRIO_BUCKET.value,
-            file_name=smsrio_constants.SMSRIO_FILE_NAME.value,
-        )
+    start_datetime, end_datetime = get_datetime_working_range(
+        start_datetime=START_DATETIME, end_datetime=END_DATETIME
+    )
 
-    with case(IS_INITIAL_EXTRACTION, False):
-        start_datetime, end_datetime = get_datetime_working_range(
-            start_datetime=START_DATETIME, end_datetime=END_DATETIME
-        )
-
-        patient_data_db = extract_patient_data_from_db(
-            db_url=database_url, time_window_start=start_datetime, time_window_end=end_datetime
-        )
-
-    patient_data = merge(patient_data_gcs, patient_data_db)
+    patient_data = extract_patient_data_from_db(
+        db_url=database_url,
+        time_window_start=start_datetime,
+        time_window_end=end_datetime
+    )
 
     ####################################
     # Task Section #2 - Prepare data to load
     ####################################
-    patient_valid_data = transform_filter_invalid_cpf(
-        dataframe=patient_data, cpf_column="patient_cpf"
-    )
-
-    patient_data_batches = transform_split_dataframe(dataframe=patient_valid_data, batch_size=500)
-
-    ####################################
-    # Task Section #3 - Loading data
-    ####################################
-    load_asset.map(
-        dataframe=patient_data_batches,
-        asset_id=unmapped("assets.rj-sms.smsrio.paciente"),
-        environment=unmapped(ENVIRONMENT),
+    upload_df_to_datalake(
+        dataframe=patient_data,
+        partition_column="datalake_loaded_at",
+        table_id=smsrio_constants.TABLE_ID.value,
+        dataset_id=smsrio_constants.DATASET_ID.value,
     )
 
 

@@ -128,20 +128,7 @@ def extract_patient_data_from_db(
     # Campos Adicionais
     patients["cns_provisorio"] = patients["cns_provisorio"].apply(handle_cns)
     patients["telefones"] = patients.apply(join_phones, axis=1)
-    patients["source_id"] = patients["id"].astype(str)
-    patients["patient_cpf"] = patients["cpf"]
-    patients["source_updated_at"] = patients["timestamp"]
-
-    renaming = {}
-    for column in patients.columns:
-        if column not in [
-            "source_id",
-            "patient_cpf",
-            "source_updated_at",
-        ]:
-            renaming[column] = f"data__{column}"
-
-    patients.rename(columns=renaming, inplace=True)
+    patients["datalake_loaded_at"] = pd.Timestamp.now(tz="America/Sao_Paulo")
 
     return patients
 
