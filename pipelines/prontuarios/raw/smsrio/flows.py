@@ -23,8 +23,11 @@ from pipelines.prontuarios.utils.tasks import (
     transform_split_dataframe,
 )
 from pipelines.utils.datalake_hub import load_asset
-from pipelines.utils.tasks import upload_df_to_datalake
-from pipelines.utils.tasks import load_file_from_gcs_bucket, rename_current_flow_run
+from pipelines.utils.tasks import (
+    load_file_from_gcs_bucket,
+    rename_current_flow_run,
+    upload_df_to_datalake,
+)
 
 ####################################
 # Daily Routine Flow
@@ -47,7 +50,7 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run(
-            environment=ENVIRONMENT, 
+            environment=ENVIRONMENT,
             unidade="SMSRIO",
         )
 
@@ -59,9 +62,7 @@ with Flow(
     )
 
     patient_data = extract_patient_data_from_db(
-        db_url=database_url,
-        time_window_start=start_datetime,
-        time_window_end=end_datetime
+        db_url=database_url, time_window_start=start_datetime, time_window_end=end_datetime
     )
 
     ####################################
