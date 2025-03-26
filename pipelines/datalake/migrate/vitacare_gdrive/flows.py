@@ -13,11 +13,8 @@ from pipelines.datalake.migrate.vitacare_gdrive.tasks import (
     download_to_gcs,
     get_folder_id,
 )
-from pipelines.utils.google_drive import (
-    explore_folder,
-    get_folder_name,
-)
 from pipelines.utils.basics import from_relative_date
+from pipelines.utils.google_drive import explore_folder, get_folder_name
 from pipelines.utils.tasks import rename_current_flow_run
 
 with Flow(
@@ -41,7 +38,7 @@ with Flow(
 
     with case(RENAME_FLOW_RUN, True):
         rename_current_flow_run(
-            name_template="Migrando drive://{folder_name}/ -> gs://{bucket_name}/{folder_name}/ | >={start} | {environment}", # noqa: E501
+            name_template="Migrando drive://{folder_name}/ -> gs://{bucket_name}/{folder_name}/ | >={start} | {environment}",  # noqa: E501
             folder_name=folder_name,
             bucket_name=BUCKET_NAME,
             start=LAST_MODIFIED_DATE,

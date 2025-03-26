@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from datetime import timedelta
 
 from pipelines.utils.credential_injector import authenticated_task as task

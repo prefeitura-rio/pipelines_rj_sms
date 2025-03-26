@@ -1,11 +1,12 @@
+# -*- coding: utf-8 -*-
 from datetime import date, timedelta
 from typing import Optional
 
 import pandas as pd
 import prefect
 
-from pipelines.utils.logger import log
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
 
 
 @task()
@@ -67,6 +68,7 @@ def get_datetime_working_range(
         )
 
     return start_datetime, end_datetime
+
 
 @task
 def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> list[date]:

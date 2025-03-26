@@ -281,7 +281,7 @@ def dowload_from_gdrive(
         raise ValueError(f"Invalid filter type: {filter_type}")
 
     if filtered_files:
-        filtered_files = filtered_files[:3] #TMP
+        filtered_files = filtered_files[:3]  # TMP
         downloaded_files = download_files.run(files=filtered_files, folder_path=destination_folder)
         return {"has_data": True, "files": downloaded_files}
 

@@ -11,9 +11,6 @@ from datetime import date, datetime
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.google_drive import (
-    upload_folder_to_gdrive,
-)
 from pipelines.reports.farmacia_digital.livro_controlados.constants import (
     constants as report_constants,
 )
@@ -26,6 +23,7 @@ from pipelines.reports.farmacia_digital.livro_controlados.livro_controlados.rela
     gerar_relatorios,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.google_drive import upload_folder_to_gdrive
 
 
 def get_month_range(date_str: str) -> tuple[str, str]:

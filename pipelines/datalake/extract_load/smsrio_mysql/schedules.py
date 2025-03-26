@@ -21,7 +21,7 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode":"replace",
+        "mode": "replace",
         "schema": "subpav_arboviroses",
     },
     {
@@ -29,7 +29,7 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode":"replace",
+        "mode": "replace",
         "schema": "subpav_arboviroses",
     },
     {
@@ -37,7 +37,7 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode":"replace",
+        "mode": "replace",
         "schema": "subpav_cnes",
     },
     {
@@ -45,7 +45,7 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode":"replace",
+        "mode": "replace",
         "schema": "subpav_cnes",
     },
     {
@@ -53,7 +53,7 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode":"append",
+        "mode": "append",
         "schema": "sms_pacientes",
     },
     {
@@ -61,7 +61,7 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode":"replace",
+        "mode": "replace",
         "schema": "sms_pacientes",
     },
     {
@@ -69,9 +69,9 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode":"replace",
+        "mode": "replace",
         "schema": "sms_pacientes",
-    }
+    },
 ]
 
 

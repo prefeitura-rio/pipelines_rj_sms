@@ -19,13 +19,12 @@ from pipelines.datalake.extract_load.smsrio_mysql.schedules import (
 )
 from pipelines.datalake.extract_load.smsrio_mysql.tasks import (
     build_gcp_table,
-    download_from_db,
     create_extraction_batches,
+    download_from_db,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import from_relative_date
-
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - SMS Rio Plataforma",

@@ -4,6 +4,7 @@ Tasks for SMSRio Dump
 """
 from datetime import datetime, timedelta
 from typing import Optional
+
 import pandas as pd
 
 from pipelines.datalake.extract_load.smsrio_mysql.constants import (
@@ -21,12 +22,14 @@ def create_extraction_batches(
     batch_size: int = 1000000,
     date_filter: Optional[datetime] = None,
 ) -> list[str]:
-    
+
     sql_filter = ""
     if date_filter:
         sql_filter = f"WHERE timestamp >= '{date_filter.strftime('%Y-%m-%d')}'"
 
-    total_rows = pd.read_sql(f"SELECT COUNT(*) FROM {db_schema}.{db_table} {sql_filter}", db_url) # noqa: E501
+    total_rows = pd.read_sql(
+        f"SELECT COUNT(*) FROM {db_schema}.{db_table} {sql_filter}", db_url
+    )  # noqa: E501
     log(f"Total rows to download: {total_rows}")
 
     num_batches = total_rows // batch_size
@@ -43,7 +46,6 @@ def create_extraction_batches(
         queries.append(query)
 
     return queries
-    
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
