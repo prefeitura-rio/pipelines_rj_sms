@@ -49,7 +49,7 @@ with Flow(
     DATASET_ID = Parameter("dataset_id", default=smsrio_constants.DATASET_ID.value)
 
     # Storage Configuration
-    RELATIVE_DATE_FILTER = Parameter("relative_date_filter", default="D-1")
+    RELATIVE_DATE_FILTER = Parameter("relative_date_filter", default=None)
     PARTITION_COLUMN = Parameter("partition_column", default=None)
 
     #####################################
