@@ -78,7 +78,7 @@ def inject_bd_credentials(environment: str = "dev", force_injection=False) -> No
     if not os.path.exists("/tmp"):
         os.makedirs("/tmp")
 
-    with open("/tmp/credentials.json", "wb") as credentials_file:
+    with open("/tmp/credentials.json", "wb", encoding="utf-8") as credentials_file:
         credentials_file.write(credentials)
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/tmp/credentials.json"
 
