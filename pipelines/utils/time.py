@@ -39,7 +39,7 @@ def get_datetime_working_range(
 ):
     logger = prefect.context.get("logger")
 
-    logger.info(f"Calculating datetime range...")
+    logger.info("Calculating datetime range...")
     if start_datetime == "" and end_datetime == "":
         logger.info(
             f"No start/end provided. Using {interval} as day interval and scheduled date as end"
