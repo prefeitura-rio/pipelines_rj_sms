@@ -7,6 +7,7 @@ from typing import Optional
 
 import pandas as pd
 from dateutil.tz import gettz
+
 from pipelines.datalake.extract_load.smsrio_mysql.constants import (
     constants as smsrio_constants,
 )
