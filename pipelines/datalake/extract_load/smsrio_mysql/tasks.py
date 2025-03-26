@@ -2,58 +2,66 @@
 """
 Tasks for SMSRio Dump
 """
-from datetime import timedelta
-
+from datetime import datetime, timedelta
+from typing import Optional
 import pandas as pd
-from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.smsrio_mysql.constants import (
     constants as smsrio_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
+
+
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
+def create_extraction_batches(
+    db_url: str,
+    db_schema: str,
+    db_table: str,
+    batch_size: int = 1000000,
+    date_filter: Optional[datetime] = None,
+) -> list[str]:
+    
+    sql_filter = ""
+    if date_filter:
+        sql_filter = f"WHERE timestamp >= '{date_filter.strftime('%Y-%m-%d')}'"
+
+    total_rows = pd.read_sql(f"SELECT COUNT(*) FROM {db_schema}.{db_table} {sql_filter}", db_url) # noqa: E501
+    log(f"Total rows to download: {total_rows}")
+
+    num_batches = total_rows // batch_size
+    log(f"Number of batches to download: {num_batches}")
+
+    queries = []
+    for i in range(num_batches):
+        query = f"""
+            SELECT * FROM {db_schema}.{db_table} {sql_filter}
+            ORDER BY id ASC
+            LIMIT {batch_size} OFFSET {i * batch_size}
+        """
+        log(f"Query {i+1}: {query}")
+        queries.append(query)
+
+    return queries
+    
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def download_from_db(
     db_url: str,
-    db_schema: str,
-    db_table: str,
-    file_folder: str,
-    file_name: str,
-) -> None:
-    """
-    Downloads data from a database table and saves it as a CSV file.
+    query: str,
+) -> pd.DataFrame:
 
-    Args:
-        db_url (str): The URL of the database.
-        db_schema (str): The schema of the database.
-        db_table (str): The name of the table to download data from.
-        file_folder (str): The folder where the CSV file will be saved.
-        file_name (str): The name of the CSV file.
+    table = pd.read_sql(query, db_url)
+    log(f"Downloaded {len(table)} rows from Table")
 
-    Returns:
-        str: The file path of the downloaded CSV file.
-    """
-
-    connection_string = f"{db_url}/{db_schema}"
-
-    if db_table == "contatos_unidades":
-        query = f"SELECT u.cnes, c.* FROM {db_table} AS c LEFT JOIN unidades AS u ON c.unidade_id = u.id"  # noqa: E501
-    else:
-        query = f"SELECT * FROM {db_table}"
-
-    table = pd.read_sql(query, connection_string)
-
-    destination_file_path = f"{file_folder}/{file_name}.csv"
-
-    table.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
-
-    log(f"File {destination_file_path} downloaded from DB.")
-
-    return destination_file_path
+    return table
 
 
 @task
 def build_gcp_table(db_table: str) -> str:
-    """Generate the GCP table name from the database table name."""
-    return smsrio_constants.TABLE_ID.value[db_table]
+    if db_table in smsrio_constants.TABLE_ID.value:
+        return smsrio_constants.TABLE_ID.value[db_table]
+    else:
+        log(f"Table {db_table} not found in constants, returning original table name")
+        return db_table

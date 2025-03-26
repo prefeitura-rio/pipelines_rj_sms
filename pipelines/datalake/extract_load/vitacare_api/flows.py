@@ -30,15 +30,15 @@ from pipelines.datalake.extract_load.vitacare_api.tasks import (
     write_retry_results_on_bq,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.prontuarios.utils.tasks import (
+from pipelines.utils.sms import (
     get_ap_from_cnes,
-    get_current_flow_labels,
     get_healthcenter_name_from_cnes,
+)
+from pipelines.utils.prefect import (
+    get_current_flow_labels,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
-)
-from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
 from pipelines.utils.tasks import (
@@ -46,6 +46,7 @@ from pipelines.utils.tasks import (
     get_project_name_from_prefect_environment,
     upload_to_datalake,
 )
+
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",

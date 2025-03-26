@@ -13,7 +13,7 @@ from pipelines.datalake.extract_load.vitacare_conectividade_gcs.schedules import
 from pipelines.datalake.extract_load.vitacare_conectividade_gcs.tasks import (
     handle_json_files_from_gcs,
 )
-from pipelines.prontuarios.utils.tasks import get_datetime_working_range
+from pipelines.utils.time import get_datetime_working_range
 from pipelines.utils.tasks import (
     create_date_partitions,
     load_files_from_gcs_bucket,

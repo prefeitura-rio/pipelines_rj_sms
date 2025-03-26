@@ -12,69 +12,25 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
+
+
 flow_parameters = [
+    # ===============================
+    # VITACARE DATABASE BACKUPS
+    # ===============================
     {
-        "ap": "AP53",
+        "folder_id": "1VUdm8fixnUs_dJrcflsNvzXIGPX6e-2r",
+        "bucket_name": "vitacare_db_dump",
         "environment": "prod",
         "last_modified_date": "M-0",
         "rename_flow": True,
     },
+    # ===============================
+    # VITACARE INFORMES MENSAL
+    # ===============================
     {
-        "ap": "AP52",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
-    {
-        "ap": "AP51",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
-    {
-        "ap": "AP40",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
-    {
-        "ap": "AP33",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
-    {
-        "ap": "AP32",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
-    {
-        "ap": "AP31",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
-    {
-        "ap": "AP22",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
-    {
-        "ap": "AP21",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
-    {
-        "ap": "AP10",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
-    {
-        "ap": "PRISIONAL",
+        "folder_id": "1H_49fLhbT0bWYk8gBKLOdYHgT_xODpg7",
+        "bucket_name": "vitacare_informes_mensais_gdrive",
         "environment": "prod",
         "last_modified_date": "M-0",
         "rename_flow": True,

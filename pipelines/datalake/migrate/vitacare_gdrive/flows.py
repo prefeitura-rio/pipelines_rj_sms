@@ -13,48 +13,56 @@ from pipelines.datalake.migrate.vitacare_gdrive.tasks import (
     download_to_gcs,
     get_folder_id,
 )
-from pipelines.datalake.utils.data_extraction.google_drive import explore_folder
+from pipelines.utils.google_drive import (
+    explore_folder,
+    get_folder_name,
+)
 from pipelines.utils.basics import from_relative_date
 from pipelines.utils.tasks import rename_current_flow_run
 
 with Flow(
-    name="DataLake - Migração de Dados - Vitacare GDrive",
-) as sms_migrate_vitacare_gdrive:
+    name="DataLake - Migração de Dados - GDrive to GCS",
+) as migrate_gdrive_to_gcs:
     #####################################
     # Parameters
     #####################################
 
     # Flow
+    BUCKET_NAME = Parameter("bucket_name", default=None, required=True)
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    AP = Parameter("ap", default="AP10", required=True)
+    FOLDER_ID = Parameter("folder_id", default=None, required=True)
     LAST_MODIFIED_DATE = Parameter("last_modified_date", default="M-1", required=False)
     RENAME_FLOW_RUN = Parameter("rename_flow_run", default=False, required=False)
 
     #####################################
     # Tasks
     #####################################
+    folder_name = get_folder_name(folder_id=FOLDER_ID)
 
     with case(RENAME_FLOW_RUN, True):
         rename_current_flow_run(
-            name_template="Migrando informes da {ap} | {start} | {environment}",
-            ap=AP,
+            name_template="Migrando drive://{folder_name}/ -> gs://{bucket_name}/{folder_name}/ | >={start} | {environment}", # noqa: E501
+            folder_name=folder_name,
+            bucket_name=BUCKET_NAME,
             start=LAST_MODIFIED_DATE,
             environment=ENVIRONMENT,
         )
 
-    folder_id = get_folder_id(ap=AP)
-
     date_filter = from_relative_date(relative_date=LAST_MODIFIED_DATE)
 
-    files = explore_folder(folder_id=folder_id, last_modified_date=date_filter)
+    files = explore_folder(folder_id=FOLDER_ID, last_modified_date=date_filter)
 
-    download_to_gcs.map(file_info=files, ap=unmapped(AP), environment=unmapped(ENVIRONMENT))
+    download_to_gcs.map(
+        file_info=files,
+        bucket_name=unmapped(BUCKET_NAME),
+        folder_name=unmapped(folder_name),
+    )
 
 # Storage and run configs
-sms_migrate_vitacare_gdrive.schedule = schedules
-sms_migrate_vitacare_gdrive.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_migrate_vitacare_gdrive.executor = LocalDaskExecutor(num_workers=10)
-sms_migrate_vitacare_gdrive.run_config = KubernetesRun(
+migrate_gdrive_to_gcs.schedule = schedules
+migrate_gdrive_to_gcs.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+migrate_gdrive_to_gcs.executor = LocalDaskExecutor(num_workers=10)
+migrate_gdrive_to_gcs.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,

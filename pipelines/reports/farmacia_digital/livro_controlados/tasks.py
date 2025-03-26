@@ -11,7 +11,7 @@ from datetime import date, datetime
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.datalake.utils.data_extraction.google_drive import (
+from pipelines.utils.google_drive import (
     upload_folder_to_gdrive,
 )
 from pipelines.reports.farmacia_digital.livro_controlados.constants import (

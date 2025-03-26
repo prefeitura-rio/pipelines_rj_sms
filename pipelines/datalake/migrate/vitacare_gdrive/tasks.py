@@ -20,7 +20,7 @@ def get_folder_id(ap: str):
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def download_to_gcs(file_info: dict, ap: str, environment: str):
+def download_to_gcs(file_info: dict, bucket_name: str, folder_name: str):
     gauth = GoogleAuth(
         settings={
             "client_config_backend": "service",
@@ -50,10 +50,9 @@ def download_to_gcs(file_info: dict, ap: str, environment: str):
         file_info["path"] = file_info["path"].replace(".zip", ".csv")
 
     # Upload to GCS
-    bucket_name = gdrive_constants.GCS_BUCKET.value[environment]
     bucket = storage.Client().bucket(bucket_name)
 
-    blob_name = file_info["path"].replace("./", f"{ap}/")
+    blob_name = file_info["path"].replace("./", f"{folder_name}/")
     blob = bucket.blob(blob_name)
 
     blob.upload_from_filename(file_info["path"])

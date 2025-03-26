@@ -21,6 +21,7 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
+        "mode":"replace",
         "schema": "subpav_arboviroses",
     },
     {
@@ -28,6 +29,7 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
+        "mode":"replace",
         "schema": "subpav_arboviroses",
     },
     {
@@ -35,6 +37,7 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
+        "mode":"replace",
         "schema": "subpav_cnes",
     },
     {
@@ -42,8 +45,33 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
+        "mode":"replace",
         "schema": "subpav_cnes",
     },
+    {
+        "table_id": "tb_pacientes",
+        "dataset_id": smsrio_constants.DATASET_ID.value,
+        "environment": "prod",
+        "rename_flow": True,
+        "mode":"append",
+        "schema": "sms_pacientes",
+    },
+    {
+        "table_id": "tb_pacientes_telefones",
+        "dataset_id": smsrio_constants.DATASET_ID.value,
+        "environment": "prod",
+        "rename_flow": True,
+        "mode":"replace",
+        "schema": "sms_pacientes",
+    },
+    {
+        "table_id": "tb_cns_provisorios",
+        "dataset_id": smsrio_constants.DATASET_ID.value,
+        "environment": "prod",
+        "rename_flow": True,
+        "mode":"replace",
+        "schema": "sms_pacientes",
+    }
 ]
 
 

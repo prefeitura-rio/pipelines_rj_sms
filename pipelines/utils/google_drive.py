@@ -69,6 +69,24 @@ def get_files_from_folder(
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
+def get_folder_name(folder_id: str) -> str:
+    log("Authenticating with Google Drive")
+    gauth = GoogleAuth(
+        settings={
+            "client_config_backend": "service",
+            "service_config": {
+                "client_json_file_path": "/tmp/credentials.json",
+            },
+        }
+    )
+    gauth.ServiceAuth()
+    drive = GoogleDrive(gauth)
+
+    folder = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
+    return folder[0]["title"]
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
 def explore_folder(
     folder_id: str,
     last_modified_date=None,
@@ -263,6 +281,7 @@ def dowload_from_gdrive(
         raise ValueError(f"Invalid filter type: {filter_type}")
 
     if filtered_files:
+        filtered_files = filtered_files[:3] #TMP
         downloaded_files = download_files.run(files=filtered_files, folder_path=destination_folder)
         return {"has_data": True, "files": downloaded_files}
 
