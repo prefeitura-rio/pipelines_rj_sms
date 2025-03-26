@@ -37,8 +37,7 @@ with Flow(
     folder_name = get_folder_name(folder_id=FOLDER_ID)
 
     fully_qualified_bucket_name = get_fully_qualified_bucket_name(
-        bucket_name=BUCKET_NAME, 
-        environment=ENVIRONMENT
+        bucket_name=BUCKET_NAME, environment=ENVIRONMENT
     )
 
     with case(RENAME_FLOW_RUN, True):
