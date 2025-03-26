@@ -8,8 +8,8 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.migrate.vitacare_gdrive import schedules
-from pipelines.datalake.migrate.vitacare_gdrive.tasks import (
+from pipelines.datalake.migrate.gdrive_to_gcs import schedules
+from pipelines.datalake.migrate.gdrive_to_gcs.tasks import (
     download_to_gcs,
     get_folder_id,
 )

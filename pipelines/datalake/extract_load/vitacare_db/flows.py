@@ -5,22 +5,16 @@ VitaCare Prontuario Backup dump flows
 """
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
-from prefect.run_configs import KubernetesRun, VertexRun
+from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.vitacare_db.constants import (
-    constants as vitacare_db_constants,
-)
+
 from pipelines.datalake.extract_load.vitacare_db.tasks import (
-    check_duplicated_files,
-    check_filename_format,
-    check_missing_or_extra_files,
     create_parquet_file,
     create_temp_database,
     delete_temp_database,
-    generate_filters,
     get_backup_date,
     get_backup_file,
     get_bucket_name,
@@ -28,12 +22,9 @@ from pipelines.datalake.extract_load.vitacare_db.tasks import (
     get_database_name,
     get_file_names,
     get_queries,
-    unzip_file,
-    upload_backups_to_cloud_storage,
     upload_many_to_datalake,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.google_drive import dowload_from_gdrive
 from pipelines.utils.sms import get_healthcenter_name_from_cnes
 from pipelines.utils.tasks import create_folders
 
@@ -170,92 +161,4 @@ sms_dump_vitacare_db.run_config = KubernetesRun(
     ],
     memory_limit="8Gi",
     memory_request="8Gi",
-)
-
-
-with Flow(name="DataLake - Migração de Dados - VitaCare DB") as sms_migrate_vitacare_db:
-    #####################################
-    # Parameters
-    #####################################
-
-    # Flow
-    ENVIRONMENT = Parameter("environment", default="dev")
-
-    # GOOGLE DRIVE
-    LAST_UPDATE_START_DATE = Parameter("last_update_start_date", default=None)
-    LAST_UPDATE_END_DATE = Parameter("last_update_end_date", default=None)
-
-    # CLOUD STORAGE
-    UPLOAD_ONLY_EXPECTED_FILES = Parameter("upload_only_expected_files", default=True)
-
-    #####################################
-    # Set environment
-    ####################################
-
-    # local_folders = create_folders()
-
-    local_folders = {
-        "raw": "./data/raw",
-        "partition_directory": "./data/partition_directory",
-    }
-
-    bucket_name = get_bucket_name(env=ENVIRONMENT)
-
-    filters = generate_filters(
-        last_update_start_date=LAST_UPDATE_START_DATE, last_update_end_date=LAST_UPDATE_END_DATE
-    )
-
-    ####################################
-    # Tasks section #1 - Extract data
-    ####################################
-
-    raw_files = dowload_from_gdrive(
-        folder_id=vitacare_db_constants.GDRIVE_FOLDER_ID.value,
-        destination_folder=local_folders["raw"],
-        file_extension="zip",
-        look_in_subfolders=True,
-        filter_type="last_updated",
-        filter_param=filters,
-    )
-
-    with case(raw_files["has_data"], True):
-        unziped_files = unzip_file(
-            folder_path=local_folders["raw"],
-            upstream_tasks=[raw_files],
-        )
-
-        valid_files = check_filename_format(files=unziped_files, upstream_tasks=[unziped_files])
-
-        deduplicated_files = check_duplicated_files(files=valid_files, upstream_tasks=[valid_files])
-
-        files_to_upload = check_missing_or_extra_files(
-            files=deduplicated_files,
-            return_only_expected=UPLOAD_ONLY_EXPECTED_FILES,
-            upstream_tasks=[deduplicated_files],
-        )
-
-    #####################################
-    # Tasks section #2 - Load data
-    #####################################
-
-    uploaded_files = upload_backups_to_cloud_storage(
-        files=files_to_upload,
-        staging_folder=local_folders["partition_directory"],
-        bucket_name=bucket_name,
-        upstream_tasks=[files_to_upload],
-    )
-
-# Storage and run configs
-sms_migrate_vitacare_db.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_migrate_vitacare_db.run_config = VertexRun(
-    image=constants.DOCKER_VERTEX_IMAGE.value,
-    labels=[
-        constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
-    ],
-    # https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
-    machine_type="e2-standard-4",
-    env={
-        "INFISICAL_ADDRESS": constants.INFISICAL_ADDRESS.value,
-        "INFISICAL_TOKEN": constants.INFISICAL_TOKEN.value,
-    },
 )

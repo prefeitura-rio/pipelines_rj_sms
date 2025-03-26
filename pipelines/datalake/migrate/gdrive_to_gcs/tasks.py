@@ -7,7 +7,7 @@ from google.cloud import storage
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
-from pipelines.datalake.migrate.vitacare_gdrive.constants import (
+from pipelines.datalake.migrate.gdrive_to_gcs.constants import (
     constants as gdrive_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
