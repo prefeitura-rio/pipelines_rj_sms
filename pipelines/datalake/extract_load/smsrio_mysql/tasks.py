@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import pandas as pd
-
+from dateutil.tz import gettz
 from pipelines.datalake.extract_load.smsrio_mysql.constants import (
     constants as smsrio_constants,
 )
@@ -28,9 +28,12 @@ def create_extraction_batches(
         sql_filter = f"WHERE timestamp >= '{date_filter.strftime('%Y-%m-%d')}'"
 
     total_rows = pd.read_sql(
-        f"SELECT COUNT(*) FROM {db_schema}.{db_table} {sql_filter}", db_url
-    )  # noqa: E501
+        f"SELECT COUNT(*) as quant FROM {db_schema}.{db_table} {sql_filter}", db_url
+    )["quant"].values[0]
     log(f"Total rows to download: {total_rows}")
+
+    if total_rows <= batch_size:
+        return [f"SELECT * FROM {db_schema}.{db_table} {sql_filter}"]
 
     num_batches = total_rows // batch_size
     log(f"Number of batches to download: {num_batches}")
@@ -57,6 +60,7 @@ def download_from_db(
     table = pd.read_sql(query, db_url)
     log(f"Downloaded {len(table)} rows from Table")
 
+    table["datalake_loaded_at"] = datetime.now(tz=gettz("America/Sao_Paulo"))
     return table
 
 

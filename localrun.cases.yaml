@@ -283,7 +283,8 @@ cases:
     flow_name: "sms_dump_smsrio"
     params:
       environment: "dev"
-      mode: "replace"
-      dataset_id: "brutos_smsrio"
-      table_id: "tb_pacientes_telefones"
+      dataset_id: "brutos_plataforma_smsrio"
+      table_id: "tb_pacientes"
       schema: "sms_pacientes"
+      partition_column: "datalake_loaded_at"
+      relative_date_filter: "D-1"

@@ -48,8 +48,9 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     DATASET_ID = Parameter("dataset_id", default=smsrio_constants.DATASET_ID.value)
 
-    # Other
+    # Storage Configuration
     RELATIVE_DATE_FILTER = Parameter("relative_date_filter", default="D-1")
+    PARTITION_COLUMN = Parameter("partition_column", default=None)
 
     #####################################
     # Set environment
@@ -87,11 +88,11 @@ with Flow(
     #####################################
     upload_df_to_datalake.map(
         df=dataframes,
-        dataset_id=DATASET_ID,
-        table_id=build_gcp_table_task,
-        partition_column="datalake_loaded_at",
-        if_exists="append",
-        if_storage_data_exists="append",
+        dataset_id=unmapped(DATASET_ID),
+        table_id=unmapped(build_gcp_table_task),
+        partition_column=unmapped(PARTITION_COLUMN),
+        if_exists=unmapped("append"),
+        if_storage_data_exists=unmapped("append"),
     )
 
 

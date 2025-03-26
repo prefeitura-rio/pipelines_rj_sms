@@ -53,7 +53,8 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode": "append",
+        "relative_date_filter": "D-7",
+        "partition_column": "datalake_loaded_at",
         "schema": "sms_pacientes",
     },
     {
@@ -61,7 +62,8 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode": "replace",
+        "relative_date_filter": "D-7",
+        "partition_column": "datalake_loaded_at",
         "schema": "sms_pacientes",
     },
     {
@@ -69,7 +71,8 @@ flow_parameters = [
         "dataset_id": smsrio_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode": "replace",
+        "relative_date_filter": "D-7",
+        "partition_column": "datalake_loaded_at",
         "schema": "sms_pacientes",
     },
 ]
