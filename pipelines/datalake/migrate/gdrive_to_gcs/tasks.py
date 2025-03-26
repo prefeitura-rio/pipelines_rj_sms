@@ -19,6 +19,19 @@ def get_folder_id(ap: str):
     return gdrive_constants.GDRIVE_FOLDER_STRUCTURE.value[ap]
 
 
+@task
+def get_fully_qualified_bucket_name(bucket_name: str, environment: str):
+    log(f"Getting fully qualified bucket name for {bucket_name} in {environment}", level="info")
+
+    if environment in ["prod", "local-prod"]:
+        fq_bucket_name = bucket_name
+    else:
+        fq_bucket_name = f"{bucket_name}_{environment}"
+    log(f"Fully qualified bucket name: {fq_bucket_name}", level="info")
+
+    return fq_bucket_name
+
+
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def download_to_gcs(file_info: dict, bucket_name: str, folder_name: str):
     gauth = GoogleAuth(

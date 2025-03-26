@@ -11,7 +11,7 @@ from pipelines.constants import constants
 from pipelines.datalake.migrate.gdrive_to_gcs import schedules
 from pipelines.datalake.migrate.gdrive_to_gcs.tasks import (
     download_to_gcs,
-    get_folder_id,
+    get_fully_qualified_bucket_name,
 )
 from pipelines.utils.basics import from_relative_date
 from pipelines.utils.google_drive import explore_folder, get_folder_name
@@ -36,11 +36,16 @@ with Flow(
     #####################################
     folder_name = get_folder_name(folder_id=FOLDER_ID)
 
+    fully_qualified_bucket_name = get_fully_qualified_bucket_name(
+        bucket_name=BUCKET_NAME, 
+        environment=ENVIRONMENT
+    )
+
     with case(RENAME_FLOW_RUN, True):
         rename_current_flow_run(
             name_template="Migrando drive://{folder_name}/ -> gs://{bucket_name}/{folder_name}/ | >={start} | {environment}",  # noqa: E501
             folder_name=folder_name,
-            bucket_name=BUCKET_NAME,
+            bucket_name=fully_qualified_bucket_name,
             start=LAST_MODIFIED_DATE,
             environment=ENVIRONMENT,
         )
@@ -51,7 +56,7 @@ with Flow(
 
     download_to_gcs.map(
         file_info=files,
-        bucket_name=unmapped(BUCKET_NAME),
+        bucket_name=unmapped(fully_qualified_bucket_name),
         folder_name=unmapped(folder_name),
     )
 
