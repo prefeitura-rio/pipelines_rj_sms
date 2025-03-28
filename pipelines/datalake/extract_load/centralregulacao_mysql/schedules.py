@@ -16,7 +16,6 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.centralregulacao_mysql.constants import SCHEMAS
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-
 flow_parameters = [
     {
         "environment": "prod",
