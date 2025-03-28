@@ -4,7 +4,10 @@
 """
 Functions for Vitacare db pipeline
 """
-import pyodbc
+try:
+    import pyodbc
+except ImportError:
+    pass
 from prefeitura_rio.pipelines_utils.logging import log
 
 

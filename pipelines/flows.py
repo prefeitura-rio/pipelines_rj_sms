@@ -6,6 +6,9 @@
 Imports all flows for every project so we can register all of them.
 """
 
+# ===============================
+# EXTRACT AND LOAD
+# ===============================
 from pipelines.datalake.extract_load.centralregulacao_mysql.flows import *
 from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows import *
 from pipelines.datalake.extract_load.datalake_bigquery.flows import *
@@ -25,10 +28,25 @@ from pipelines.datalake.extract_load.vitacare_db.flows import *
 from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
-from pipelines.datalake.migrate.vitacare_gdrive.flows import *
+
+# ===============================
+# MIGRATE
+# ===============================
+from pipelines.datalake.migrate.gdrive_to_gcs.flows import *
+
+# ===============================
+# TRANSFORM
+# ===============================
 from pipelines.datalake.transform.dbt.flows import *
-from pipelines.prontuarios.raw.smsrio.flows import *
+
+# ===============================
+# REPORTS
+# ===============================
 from pipelines.reports.ingestao_dados.flows import *
 from pipelines.reports.long_running_flows.flows import *
+
+# ===============================
+# TOOLS
+# ===============================
 from pipelines.tools.healthchecks.flows import *
 from pipelines.tools.unschedule_old_flows.flows import *

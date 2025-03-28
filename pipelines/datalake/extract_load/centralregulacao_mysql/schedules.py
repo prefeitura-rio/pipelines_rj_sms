@@ -29,13 +29,10 @@ flow_parameters = [
     for schema in SCHEMAS
     for table in SCHEMAS[schema]["tables"]
 ]
-print("Flow params:")
-for param in flow_parameters:
-    print(param)
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2025, 2, 27, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2025, 3, 28, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

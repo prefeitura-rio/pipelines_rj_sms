@@ -871,12 +871,12 @@ def upload_to_datalake(
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
 def upload_df_to_datalake(
     df: pd.DataFrame,
-    partition_column: str,
     dataset_id: str,
     table_id: str,
     dump_mode: str = "append",
     source_format: str = "csv",
     csv_delimiter: str = ";",
+    partition_column: Optional[str] = None,
     if_exists: str = "replace",
     if_storage_data_exists: str = "replace",
     biglake_table: bool = True,
@@ -885,13 +885,21 @@ def upload_df_to_datalake(
     root_folder = f"./data/{uuid.uuid4()}"
     log(f"Using as root folder: {root_folder}")
 
-    log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
-    partition_folder = create_date_partitions.run(
-        dataframe=df,
-        partition_column=partition_column,
-        file_format=source_format,
-        root_folder=root_folder,
-    )
+    # All columns as strings
+    df = df.astype(str)
+    log("Converted all columns to strings")
+
+    if partition_column:
+        log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
+        partition_folder = create_date_partitions.run(
+            dataframe=df,
+            partition_column=partition_column,
+            file_format=source_format,
+            root_folder=root_folder,
+        )
+    else:
+        log(f"Creating a single partition for a {df.shape[0]} rows dataframe")
+        partition_folder = root_folder
 
     log(f"Uploading data to partition folder: {partition_folder}")
     upload_to_datalake.run(
