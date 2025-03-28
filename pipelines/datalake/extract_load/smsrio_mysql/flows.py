@@ -4,7 +4,7 @@
 SMSRio dumping flows
 """
 
-from prefect import Parameter, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -19,10 +19,12 @@ from pipelines.datalake.extract_load.smsrio_mysql.schedules import (
 )
 from pipelines.datalake.extract_load.smsrio_mysql.tasks import (
     build_gcp_table,
+    create_extraction_batches,
     download_from_db,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.tasks import create_folders, get_secret_key, upload_to_datalake
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.utils.time import from_relative_date
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - SMS Rio Plataforma",
@@ -31,12 +33,12 @@ with Flow(
     # Parameters
     #####################################
 
-    # Flow
-    RENAME_FLOW = Parameter("rename_flow", default=False)
-
     # INFISICAL
     INFISICAL_PATH = smsrio_constants.INFISICAL_PATH.value
     INFISICAL_DBURL = smsrio_constants.INFISICAL_DB_URL.value
+
+    # Flow
+    RENAME_FLOW = Parameter("rename_flow", default=False)
 
     # SMSRio DB
     TABLE_ID = Parameter("table_id", required=True)
@@ -44,12 +46,18 @@ with Flow(
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
-    DATASET_ID = Parameter("dataset_id", default=smsrio_constants.DATASET_ID.value)
+    DATASET_ID = Parameter("dataset_id", default="brutos_plataforma_smsrio")
+
+    # Storage Configuration
+    RELATIVE_DATE_FILTER = Parameter("relative_date_filter", default=None)
+    PARTITION_COLUMN = Parameter("partition_column", default=None)
 
     #####################################
     # Set environment
     ####################################
     build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
+
+    date_filter = from_relative_date(relative_date=RELATIVE_DATE_FILTER)
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
@@ -59,33 +67,33 @@ with Flow(
     ####################################
     # Tasks section #1 - Get data
     #####################################
-    get_secret_task = get_secret_key(
-        secret_path=INFISICAL_PATH, secret_name=INFISICAL_DBURL, environment="prod"
+    DB_URL = get_secret_key(
+        secret_path=INFISICAL_PATH, secret_name=INFISICAL_DBURL, environment=ENVIRONMENT
     )
 
-    create_folders_task = create_folders()
-
-    download_task = download_from_db(
-        db_url=get_secret_task,
+    queries = create_extraction_batches(
+        db_url=DB_URL,
         db_schema=SCHEMA,
         db_table=TABLE_ID,
-        file_folder=create_folders_task["raw"],
-        file_name=TABLE_ID,
+        date_filter=date_filter,
+    )
+
+    dataframes = download_from_db.map(
+        db_url=unmapped(DB_URL),
+        query=queries,
     )
 
     #####################################
     # Tasks section #2 - Transform data and Create table
     #####################################
-
-    upload_to_datalake_task = upload_to_datalake(
-        input_path=download_task,
-        dataset_id=DATASET_ID,
-        table_id=build_gcp_table_task,
-        if_exists="replace",
-        csv_delimiter=";",
-        if_storage_data_exists="replace",
-        biglake_table=True,
-        dataset_is_public=False,
+    upload_df_to_datalake.map(
+        df=dataframes,
+        dataset_id=unmapped(DATASET_ID),
+        table_id=unmapped(build_gcp_table_task),
+        partition_column=unmapped(PARTITION_COLUMN),
+        source_format=unmapped("parquet"),
+        if_exists=unmapped("append"),
+        if_storage_data_exists=unmapped("append"),
     )
 
 
