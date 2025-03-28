@@ -46,7 +46,7 @@ with Flow(
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
-    DATASET_ID = Parameter("dataset_id", default=smsrio_constants.DATASET_ID.value)
+    DATASET_ID = Parameter("dataset_id", default="brutos_plataforma_smsrio")
 
     # Storage Configuration
     RELATIVE_DATE_FILTER = Parameter("relative_date_filter", default=None)

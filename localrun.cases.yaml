@@ -284,7 +284,7 @@ cases:
     params:
       environment: "dev"
       dataset_id: "brutos_plataforma_smsrio"
-      table_id: "tb_pacientes"
+      table_id: "tb_pacientes_telefones"
       schema: "sms_pacientes"
       partition_column: "datalake_loaded_at"
       relative_date_filter: "D-1"
