@@ -30,7 +30,7 @@ def create_extraction_batches(
 
     total_rows = pd.read_sql(
         f"SELECT COUNT(*) as quant FROM {db_schema}.{db_table} {sql_filter}", db_url
-    )["quant"].values[0]
+    ).iloc[0]["quant"]
     log(f"Total rows to download: {total_rows}")
 
     if total_rows <= batch_size:
