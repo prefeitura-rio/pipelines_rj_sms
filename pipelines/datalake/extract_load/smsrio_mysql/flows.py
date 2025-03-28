@@ -33,12 +33,12 @@ with Flow(
     # Parameters
     #####################################
 
-    # Flow
-    RENAME_FLOW = Parameter("rename_flow", default=False)
-
     # INFISICAL
     INFISICAL_PATH = smsrio_constants.INFISICAL_PATH.value
     INFISICAL_DBURL = smsrio_constants.INFISICAL_DB_URL.value
+
+    # Flow
+    RENAME_FLOW = Parameter("rename_flow", default=False)
 
     # SMSRio DB
     TABLE_ID = Parameter("table_id", required=True)

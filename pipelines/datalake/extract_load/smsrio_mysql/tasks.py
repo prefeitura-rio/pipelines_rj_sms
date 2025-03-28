@@ -3,8 +3,6 @@
 Tasks for SMSRio Dump
 """
 from datetime import datetime, timedelta
-from typing import Optional
-
 import pandas as pd
 from dateutil.tz import gettz
 
@@ -21,7 +19,7 @@ def create_extraction_batches(
     db_schema: str,
     db_table: str,
     batch_size: int = 1000000,
-    date_filter: Optional[datetime] = None,
+    date_filter: datetime = None,
 ) -> list[str]:
 
     sql_filter = ""
