@@ -91,6 +91,7 @@ with Flow(
         dataset_id=unmapped(DATASET_ID),
         table_id=unmapped(build_gcp_table_task),
         partition_column=unmapped(PARTITION_COLUMN),
+        source_format=unmapped("parquet"),
         if_exists=unmapped("append"),
         if_storage_data_exists=unmapped("append"),
     )
