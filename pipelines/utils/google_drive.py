@@ -114,25 +114,26 @@ def explore_folder(
         for file in files:
             log(f"Looking at {accumulated_path}/{file['title']}")
 
-            if last_modified_date:
+            # File
+            if file["mimeType"] != "application/vnd.google-apps.folder":
                 modified_date = datetime.strptime(file["modifiedDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
-                if modified_date < last_modified_date:
+                if last_modified_date and modified_date < last_modified_date:
                     log(
                         f"File {file['title']} was last modified before {last_modified_date}, skipping",
                         level="info",
                     )
                     continue
-
-            if file["mimeType"] == "application/vnd.google-apps.folder":
+                else:
+                    files_list.append(
+                        {
+                            "path": f"{accumulated_path}/{file['title']}",
+                            "id": file["id"],
+                        }
+                    )
+            # Folder
+            else:
                 get_files_recursive(
                     file["id"], last_modified_date, f"{accumulated_path}/{file['title']}"
-                )
-            else:
-                files_list.append(
-                    {
-                        "path": f"{accumulated_path}/{file['title']}",
-                        "id": file["id"],
-                    }
                 )
 
     get_files_recursive(folder_id, last_modified_date)
