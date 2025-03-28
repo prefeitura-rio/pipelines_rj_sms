@@ -10,7 +10,7 @@ from pipelines.utils.logger import log
 
 
 @task()
-def from_relative_date(relative_date: str = None):
+def from_relative_date(relative_date: Optional[str] = None) -> Optional[pd.Timestamp]:
     if relative_date is None:
         log("Relative date is None, returning None", level="info")
         return None

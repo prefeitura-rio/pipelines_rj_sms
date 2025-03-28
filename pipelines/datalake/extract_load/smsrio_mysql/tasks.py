@@ -2,9 +2,9 @@
 """
 Tasks for SMSRio Dump
 """
-from datetime import datetime, timedelta
-
+import pytz
 import pandas as pd
+from datetime import datetime, timedelta
 
 from pipelines.datalake.extract_load.smsrio_mysql.constants import (
     constants as smsrio_constants,
@@ -59,7 +59,7 @@ def download_from_db(
     table = pd.read_sql(query, db_url)
     log(f"Downloaded {len(table)} rows from Table")
 
-    table["datalake_loaded_at"] = datetime.now()
+    table["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
     return table
 
 
