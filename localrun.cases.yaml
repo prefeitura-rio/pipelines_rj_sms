@@ -265,7 +265,7 @@ cases:
       bq_dataset: "brutos_centralderegulacao_mysql"
   - case_slug: "datalake-migrate-gdrive_to_gcs"
     flow_path: "pipelines.datalake.migrate.gdrive_to_gcs.flows"
-    flow_name: "sms_migrate_gdrive_to_gcs"
+    flow_name: "migrate_gdrive_to_gcs"
     params:
       environment: "dev"
       bucket_name: "vitacare_db_dump_dev"

@@ -52,26 +52,38 @@ def download_to_gcs(file_info: dict, bucket_name: str, folder_name: str):
     file.GetContentFile(file_info["path"])
     log(f"Downloaded file {file_info['path']} from Google Drive", level="info")
 
+    files = []
     # If the file is a zip, unzip it
     if file_info["path"].endswith(".zip"):
         with zipfile.ZipFile(file_info["path"], "r") as zip_ref:
-            zip_ref.extractall(os.path.dirname(file_info["path"]))
+            current_dir = os.path.dirname(file_info["path"])
+            zip_ref.extractall(current_dir)
 
-        # Remove the zip file
-        os.remove(file_info["path"])
-        log(f"Removed zip file {file_info['path']}", level="info")
-        file_info["path"] = file_info["path"].replace(".zip", ".csv")
+            # Remove the zip file
+            os.remove(file_info["path"])
+            log(f"Removed zip file {file_info['path']}", level="info")
+
+            # Discover the files from the zip
+            files = zip_ref.namelist()
+            files = [os.path.join(current_dir, file) for file in files]
+            log(f"Extracted files: {files}", level="info")
+    else:
+        files = [file_info["path"]]
 
     # Upload to GCS
     bucket = storage.Client().bucket(bucket_name)
 
-    blob_name = file_info["path"].replace("./", f"{folder_name}/")
-    blob = bucket.blob(blob_name)
+    blob_urls = []
+    for file_path in files:
+        blob_name = file_path.replace("./", f"{folder_name}/")
+        blob = bucket.blob(blob_name)
 
-    blob.upload_from_filename(file_info["path"])
-    log(f"Uploaded file {file_info['path']} to GCS", level="info")
+        blob.upload_from_filename(file_path)
+        log(f"Uploaded file {file_path} to GCS", level="info")
 
-    # Remove the file from the local directory
-    os.remove(file_info["path"])
-    log(f"Removed file {file_info['path']} from local directory", level="info")
-    return blob.public_url
+        # Remove the file from the local directory
+        os.remove(file_path)
+        log(f"Removed file {file_path} from local directory", level="info")
+        blob_urls.append(blob.public_url)
+
+    return blob_urls
