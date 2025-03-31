@@ -20,7 +20,7 @@ from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
-with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sms_cr_mysql:
+with Flow(name="SUBGERAL - Extract & Load - Central de Regulação (MySQL)") as sms_cr_mysql:
     # PARAMETROS #
     # AMBIENTE ------------------------------
     ENVIRONMENT = Parameter("environment", default="dev")
