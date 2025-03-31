@@ -37,12 +37,30 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
 
     log(f"Downloading {len(file_names)} files")
 
+    def verify_columns_consistency(df_columns: list, found_columns: list) -> bool:
+        consistency = len(set(found_columns).intersection(set(df_columns))) / len(df_columns)
+        log(f"Consistency: {consistency}")
+        return consistency >= 0.8
+
     dataframes = []
     for file_name in file_names:
         df = download_file(bucket, file_name)
-        df.reset_index(inplace=True)
-        dataframes.append(df)
 
+        if df.empty:
+            log(f"File {file_name} is empty. Skipping...")
+            continue
+
+        if len(dataframes) == 0:
+            df.reset_index(inplace=True)
+            dataframes.append(df)
+            continue
+
+        if verify_columns_consistency(df.columns.tolist(), dataframes[-1].columns.tolist()):
+            df.reset_index(inplace=True)
+            dataframes.append(df)
+        else:
+            log(f"One of the files {file_name} has columns that are not consistent with the previous files", level="error")
+            raise ValueError(f"One of the files {file_name} has columns that are not consistent with the previous files")
     df_final = pd.concat(dataframes, ignore_index=True)
 
     return df_final
