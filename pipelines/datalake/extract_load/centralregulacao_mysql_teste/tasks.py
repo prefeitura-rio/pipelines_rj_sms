@@ -1,4 +1,4 @@
-from pipelines.utils.tasks import authenticated_task as task
+from pipelines.utils.credential_injector import authenticated_task as task
 
 @task
 def dummy(
