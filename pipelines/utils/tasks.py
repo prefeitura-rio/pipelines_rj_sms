@@ -883,6 +883,7 @@ def upload_df_to_datalake(
     dataset_is_public: bool = False,
 ):
     root_folder = f"./data/{uuid.uuid4()}"
+    os.makedirs(root_folder, exist_ok=True)
     log(f"Using as root folder: {root_folder}")
 
     # All columns as strings
@@ -899,6 +900,11 @@ def upload_df_to_datalake(
         )
     else:
         log(f"Creating a single partition for a {df.shape[0]} rows dataframe")
+        file_path = os.path.join(root_folder, f"{uuid.uuid4()}.{source_format}")
+        if source_format == "csv":
+            df.to_csv(file_path, index=False)
+        elif source_format == "parquet":
+            safe_export_df_to_parquet.run(df=df, output_path=file_path)
         partition_folder = root_folder
 
     log(f"Uploading data to partition folder: {partition_folder}")
@@ -1152,7 +1158,7 @@ def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
 
     # Delete the csv file
     os.remove(output_path.replace("parquet", "csv"))
-    return
+    return output_path
 
 
 @task
