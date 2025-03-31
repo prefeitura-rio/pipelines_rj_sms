@@ -14,7 +14,7 @@ from pipelines.datalake.extract_load.centralregulacao_mysql.schedules import sch
 
 from pipelines.datalake.extract_load.centralregulacao_mysql_teste.tasks import dummy
 
-with Flow(name="SUBGERAL - Extract & Load - Central de Regulação (MySQL)") as test_flow:
+with Flow(name="SUBGERAL - Teste") as test_flow:
     ENVIRONMENT = Parameter("environment", default="dev")
     HOST = Parameter("host", default="db.smsrio.org")
     DATABASE = Parameter("database", default="monitoramento")
