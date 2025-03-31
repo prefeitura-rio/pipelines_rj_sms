@@ -59,8 +59,13 @@ def join_csv_files(file_names: list[str], environment: str) -> pd.DataFrame:
             df.reset_index(inplace=True)
             dataframes.append(df)
         else:
-            log(f"One of the files {file_name} has columns that are not consistent with the previous files", level="error")
-            raise ValueError(f"One of the files {file_name} has columns that are not consistent with the previous files")
+            log(
+                f"One of the files {file_name} has columns that are not consistent with the previous files",
+                level="error",
+            )
+            raise ValueError(
+                f"One of the files {file_name} has columns that are not consistent with the previous files"
+            )
     df_final = pd.concat(dataframes, ignore_index=True)
 
     return df_final
