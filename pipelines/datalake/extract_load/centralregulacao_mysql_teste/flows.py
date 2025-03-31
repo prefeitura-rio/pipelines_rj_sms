@@ -15,13 +15,13 @@ from pipelines.datalake.extract_load.centralregulacao_mysql.schedules import sch
 from pipelines.datalake.extract_load.centralregulacao_mysql_teste.tasks import dummy
 
 with Flow(name="SUBGERAL - Teste") as test_flow:
-    ENVIRONMENT = Parameter("environment", default="dev")
-    HOST = Parameter("host", default="db.smsrio.org")
-    DATABASE = Parameter("database", default="monitoramento")
-    PORT = Parameter("port", default=None)
-    TABLE = Parameter("table", default="vw_MS_CadastrosAtivacoesGov")
-    QUERY = Parameter("query", default="SELECT * FROM vw_MS_CadastrosAtivacoesGov")
-    BQ_DATASET = Parameter("bq_dataset", default="brutos_centralderegulacao_mysql")
+    ENVIRONMENT = Parameter("environment")
+    HOST = Parameter("host")
+    DATABASE = Parameter("database")
+    PORT = Parameter("port")
+    TABLE = Parameter("table")
+    QUERY = Parameter("query")
+    BQ_DATASET = Parameter("bq_dataset")
 
     dummy(
         environment=ENVIRONMENT,
