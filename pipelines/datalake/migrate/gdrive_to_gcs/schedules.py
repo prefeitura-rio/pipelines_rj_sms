@@ -18,7 +18,7 @@ flow_parameters = [
     # ===============================
     {
         "folder_id": "1VUdm8fixnUs_dJrcflsNvzXIGPX6e-2r",
-        "bucket_name": "vitacare_db_dump",
+        "bucket_name": "vitacare_backups_gdrive",
         "environment": "prod",
         "last_modified_date": "M-0",
         "rename_flow": True,

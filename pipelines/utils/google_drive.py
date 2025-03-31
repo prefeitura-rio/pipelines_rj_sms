@@ -82,8 +82,10 @@ def get_folder_name(folder_id: str) -> str:
     gauth.ServiceAuth()
     drive = GoogleDrive(gauth)
 
-    folder = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
-    return folder[0]["title"]
+    # Query only the folder of the given folder_id
+    folder = drive.CreateFile({"id": folder_id})
+    folder.FetchMetadata()
+    return folder["title"]
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
