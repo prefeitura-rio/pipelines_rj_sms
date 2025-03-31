@@ -7,16 +7,8 @@ from google.cloud import storage
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
-from pipelines.datalake.migrate.gdrive_to_gcs.constants import (
-    constants as gdrive_constants,
-)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-
-
-@task
-def get_folder_id(ap: str):
-    return gdrive_constants.GDRIVE_FOLDER_STRUCTURE.value[ap]
 
 
 @task
@@ -55,18 +47,22 @@ def download_to_gcs(file_info: dict, bucket_name: str, folder_name: str):
     files = []
     # If the file is a zip, unzip it
     if file_info["path"].endswith(".zip"):
-        with zipfile.ZipFile(file_info["path"], "r") as zip_ref:
-            current_dir = os.path.dirname(file_info["path"])
-            zip_ref.extractall(current_dir)
+        try:
+            with zipfile.ZipFile(file_info["path"], "r") as zip_ref:
+                current_dir = os.path.dirname(file_info["path"])
+                zip_ref.extractall(current_dir)
 
-            # Remove the zip file
-            os.remove(file_info["path"])
-            log(f"Removed zip file {file_info['path']}", level="info")
+                # Remove the zip file
+                os.remove(file_info["path"])
+                log(f"Removed zip file {file_info['path']}", level="info")
 
-            # Discover the files from the zip
-            files = zip_ref.namelist()
-            files = [os.path.join(current_dir, file) for file in files]
-            log(f"Extracted files: {files}", level="info")
+                # Discover the files from the zip
+                files = zip_ref.namelist()
+                files = [os.path.join(current_dir, file) for file in files]
+                log(f"Extracted files: {files}", level="info")
+        except Exception as e:
+            log(f"Error extracting zip file {file_info['path']}: {e}", level="error")
+            raise e
     else:
         files = [file_info["path"]]
 
@@ -76,6 +72,7 @@ def download_to_gcs(file_info: dict, bucket_name: str, folder_name: str):
     blob_urls = []
     for file_path in files:
         blob_name = file_path.replace("./", f"{folder_name}/")
+        log(f"Uploading file {file_path} to GCS as {blob_name}", level="info")
         blob = bucket.blob(blob_name)
 
         blob.upload_from_filename(file_path)
