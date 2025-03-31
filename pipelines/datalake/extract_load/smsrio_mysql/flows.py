@@ -18,7 +18,7 @@ from pipelines.datalake.extract_load.smsrio_mysql.schedules import (
     smsrio_daily_update_schedule,
 )
 from pipelines.datalake.extract_load.smsrio_mysql.tasks import (
-    build_gcp_table,
+    build_bq_table_name,
     create_extraction_batches,
     download_from_db,
 )
@@ -55,13 +55,13 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
+    bq_table_name = build_bq_table_name(db_table=TABLE_ID, schema=SCHEMA)
 
     date_filter = from_relative_date(relative_date=RELATIVE_DATE_FILTER)
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
-            environment=ENVIRONMENT, dataset=DATASET_ID, table=build_gcp_table_task
+            environment=ENVIRONMENT, dataset=DATASET_ID, table=bq_table_name
         )
 
     ####################################
@@ -89,7 +89,7 @@ with Flow(
     upload_df_to_datalake.map(
         df=dataframes,
         dataset_id=unmapped(DATASET_ID),
-        table_id=unmapped(build_gcp_table_task),
+        table_id=unmapped(bq_table_name),
         partition_column=unmapped(PARTITION_COLUMN),
         source_format=unmapped("parquet"),
         if_exists=unmapped("append"),

@@ -65,9 +65,5 @@ def download_from_db(
 
 
 @task
-def build_gcp_table(db_table: str) -> str:
-    if db_table in smsrio_constants.TABLE_ID.value:
-        return smsrio_constants.TABLE_ID.value[db_table]
-    else:
-        log(f"Table {db_table} not found in constants, returning original table name")
-        return db_table
+def build_bq_table_name(db_table: str, schema: str) -> str:
+    return f"{schema}__{db_table}"
