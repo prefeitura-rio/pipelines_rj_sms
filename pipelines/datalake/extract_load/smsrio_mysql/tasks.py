@@ -7,9 +7,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytz
 
-from pipelines.datalake.extract_load.smsrio_mysql.constants import (
-    constants as smsrio_constants,
-)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 
