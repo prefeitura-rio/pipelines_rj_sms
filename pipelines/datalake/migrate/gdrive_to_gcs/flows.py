@@ -17,7 +17,6 @@ from pipelines.utils.basics import from_relative_date
 from pipelines.utils.google_drive import get_files_from_folder, get_folder_name
 from pipelines.utils.tasks import rename_current_flow_run
 
-
 with Flow(
     name="DataLake - Migração de Dados - GDrive to GCS",
 ) as migrate_gdrive_to_gcs:

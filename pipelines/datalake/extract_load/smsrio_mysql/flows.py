@@ -60,9 +60,7 @@ with Flow(
     date_filter = from_relative_date(relative_date=RELATIVE_DATE_FILTER)
 
     with case(RENAME_FLOW, True):
-        rename_current_flow_run(
-            environment=ENVIRONMENT, dataset=DATASET_ID, table=bq_table_name
-        )
+        rename_current_flow_run(environment=ENVIRONMENT, dataset=DATASET_ID, table=bq_table_name)
 
     ####################################
     # Tasks section #1 - Get data

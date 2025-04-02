@@ -15,52 +15,51 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-
 flow_parameters = [
     {
-        'environment': 'prod', 
-        'database': 'monitoramento',
-        'host': 'db.smsrio.org', 
-        'port': None, 
-        'table': 'vw_MS_CadastrosAtivacoesGov', 
-        'query': 'SELECT * FROM vw_MS_CadastrosAtivacoesGov', 
-        'bq_dataset': 'brutos_centralderegulacao_mysql'
+        "environment": "prod",
+        "database": "monitoramento",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_MS_CadastrosAtivacoesGov",
+        "query": "SELECT * FROM vw_MS_CadastrosAtivacoesGov",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
     },
     {
-        'environment': 'prod', 
-        'database': 'monitoramento', 
-        'host': 'db.smsrio.org', 
-        'port': None,
-        'table': 'vw_fibromialgia_relatorio', 
-        'query': 'SELECT * FROM vw_fibromialgia_relatorio', 
-        'bq_dataset': 'brutos_centralderegulacao_mysql'
+        "environment": "prod",
+        "database": "monitoramento",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_fibromialgia_relatorio",
+        "query": "SELECT * FROM vw_fibromialgia_relatorio",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
     },
     {
-        'environment': 'prod',
-        'database': 'monitoramento',
-        'host': 'db.smsrio.org',
-        'port': None,
-        'table': 'vw_minhaSaude_listaUsuario',
-        'query': 'SELECT * FROM vw_minhaSaude_listaUsuario',
-        'bq_dataset': 'brutos_centralderegulacao_mysql'
+        "environment": "prod",
+        "database": "monitoramento",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_minhaSaude_listaUsuario",
+        "query": "SELECT * FROM vw_minhaSaude_listaUsuario",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
     },
     {
-        'environment': 'prod',
-        'database': 'monitoramento',
-        'host': 'db.smsrio.org',
-        'port': None,
-        'table': 'vw_tea_relatorio',
-        'query': 'SELECT * FROM vw_tea_relatorio',
-        'bq_dataset': 'brutos_centralderegulacao_mysql'
+        "environment": "prod",
+        "database": "monitoramento",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_tea_relatorio",
+        "query": "SELECT * FROM vw_tea_relatorio",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
     },
     {
-        'environment': 'prod',
-        'database': 'dw',
-        'host': 'db.smsrio.org',
-        'port': None,
-        'table': 'vw_minhasauderio_pesquisa_satisfacao',
-        'query': 'SELECT * FROM vw_minhasauderio_pesquisa_satisfacao',
-        'bq_dataset': 'brutos_centralderegulacao_mysql'
+        "environment": "prod",
+        "database": "dw",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_minhasauderio_pesquisa_satisfacao",
+        "query": "SELECT * FROM vw_minhasauderio_pesquisa_satisfacao",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
     },
 ]
 

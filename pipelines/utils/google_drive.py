@@ -6,10 +6,10 @@ Tasks to download data from Google Drive.
 """
 from datetime import datetime, timedelta
 
+from anytree import Node
 from prefeitura_rio.pipelines_utils.logging import log
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
-from anytree import Node
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -153,7 +153,7 @@ def retrieve_files_from_gdrive_by_owner(
     # ===============================
     # Searching
     # ===============================
-    folders = drive.ListFile({"q": " and ".join(folder_filters) }).GetList()
+    folders = drive.ListFile({"q": " and ".join(folder_filters)}).GetList()
     files = drive.ListFile({"q": " and ".join(file_filters)}).GetList()
 
     # ===============================
@@ -165,17 +165,16 @@ def retrieve_files_from_gdrive_by_owner(
         parent_id = folder["parents"][0]["id"] if folder["parents"] else None
         folders_by_parent_id[parent_id] = folders_by_parent_id.get(parent_id, []) + [folder]
 
-    nodes_by_id = {
-        folder["id"]: Node(folder["title"], id=folder["id"])
-        for folder in folders
-    }
+    nodes_by_id = {folder["id"]: Node(folder["title"], id=folder["id"]) for folder in folders}
 
     # ===============================
     # Creating folder tree
     # ===============================
     log(f"Creating folder tree")
     for id, folder_node in nodes_by_id.items():
-        folder_parent = folders_by_id[id]["parents"][0] if len(folders_by_id[id]["parents"]) > 0 else None
+        folder_parent = (
+            folders_by_id[id]["parents"][0] if len(folders_by_id[id]["parents"]) > 0 else None
+        )
         if folder_parent:
             parent_node = nodes_by_id.get(folder_parent["id"])
             if parent_node:
@@ -197,7 +196,7 @@ def retrieve_files_from_gdrive_by_owner(
     for file in files:
         file_id = file["id"]
         file_folder_node = nodes_by_id.get(file["parents"][0]["id"])
-        
+
         if file_folder_node and file_folder_node in subtree:
             file_path = file_folder_node.path + "/" + file["title"]
             _files.append(
