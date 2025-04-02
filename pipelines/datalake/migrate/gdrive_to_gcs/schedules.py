@@ -30,7 +30,18 @@ flow_parameters = [
         "folder_id": "1H_49fLhbT0bWYk8gBKLOdYHgT_xODpg7",
         "bucket_name": "vitacare_informes_mensais_gdrive",
         "environment": "prod",
+        "owner_email": "storage02healthbr@gmail.com",
         "last_modified_date": "M-0",
+        "rename_flow": True,
+    },
+    # ===============================
+    # CNES
+    # ===============================
+    {
+        "folder_id": "1M8XFWibqQhP9pO2fVu3zEQpexAzZ9S4X",
+        "bucket_name": "cnes_gdrive",
+        "environment": "prod",
+        "last_modified_date": "M-1",
         "rename_flow": True,
     },
     # ===============================

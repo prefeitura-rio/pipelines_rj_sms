@@ -14,8 +14,9 @@ from pipelines.datalake.migrate.gdrive_to_gcs.tasks import (
     get_fully_qualified_bucket_name,
 )
 from pipelines.utils.basics import from_relative_date
-from pipelines.utils.google_drive import explore_folder, get_folder_name
+from pipelines.utils.google_drive import get_files_from_folder, get_folder_name
 from pipelines.utils.tasks import rename_current_flow_run
+
 
 with Flow(
     name="DataLake - Migração de Dados - GDrive to GCS",
@@ -28,6 +29,7 @@ with Flow(
     BUCKET_NAME = Parameter("bucket_name", default=None, required=True)
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     FOLDER_ID = Parameter("folder_id", default=None, required=True)
+    OWNER_EMAIL = Parameter("owner_email", default=None, required=False)
     LAST_MODIFIED_DATE = Parameter("last_modified_date", default="M-1", required=False)
     RENAME_FLOW_RUN = Parameter("rename_flow_run", default=False, required=False)
 
@@ -51,7 +53,11 @@ with Flow(
 
     date_filter = from_relative_date(relative_date=LAST_MODIFIED_DATE)
 
-    files = explore_folder(folder_id=FOLDER_ID, last_modified_date=date_filter)
+    files = get_files_from_folder(
+        folder_id=FOLDER_ID,
+        last_modified_date=date_filter,
+        owner_email=OWNER_EMAIL,
+    )
 
     download_to_gcs.map(
         file_info=files,
