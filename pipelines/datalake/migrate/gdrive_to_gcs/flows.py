@@ -30,7 +30,7 @@ with Flow(
     FOLDER_ID = Parameter("folder_id", default=None, required=True)
     OWNER_EMAIL = Parameter("owner_email", default=None, required=False)
     LAST_MODIFIED_DATE = Parameter("last_modified_date", default="M-1", required=False)
-    RENAME_FLOW_RUN = Parameter("rename_flow_run", default=False, required=False)
+    RENAME_FLOW = Parameter("rename_flow", default=False, required=False)
 
     #####################################
     # Tasks
@@ -41,7 +41,7 @@ with Flow(
         bucket_name=BUCKET_NAME, environment=ENVIRONMENT
     )
 
-    with case(RENAME_FLOW_RUN, True):
+    with case(RENAME_FLOW, True):
         rename_current_flow_run(
             name_template="Migrando drive://{folder_name}/ -> gs://{bucket_name}/{folder_name}/ | >={start} | {environment}",  # noqa: E501
             folder_name=folder_name,

@@ -137,16 +137,16 @@ def retrieve_files_from_gdrive_by_owner(
     # File filters
     file_filters = ["mimeType != 'application/vnd.google-apps.folder'", "trashed = false"]
     if last_modified_date:
-        file_filters.append(f"modifiedDate >= '{last_modified_date}'")
+        file_filters.append(f"modifiedDate >= '{last_modified_date.strftime('%Y-%m-%d')}'")
     if owner_email:
-        file_filters.append(f"owner = '{owner_email}'")
+        file_filters.append(f"'{owner_email}' in owners")
     if folder_id:
         file_filters.append(f"'{folder_id}' in parents")
 
     # Folder filters
     folder_filters = ["mimeType = 'application/vnd.google-apps.folder'", "trashed = false"]
     if owner_email:
-        folder_filters.append(f"owner = '{owner_email}'")
+        folder_filters.append(f"'{owner_email}' in owners")
     if folder_id:
         folder_filters.append(f"'{folder_id}' in parents")
 
