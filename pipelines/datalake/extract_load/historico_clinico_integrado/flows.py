@@ -26,7 +26,7 @@ from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - Histórico Clínico Integrado",
+    name="DataLake - Extração e Carga de Dados - HCI Aplicação",
 ) as dump_hci:
     #####################################
     # Parameters
