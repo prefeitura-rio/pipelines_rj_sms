@@ -13,20 +13,17 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-
-from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
-
+from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
 from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
 from pipelines.datalake.extract_load.sisreg_api.tasks import (
     connect_elasticsearch,
-    iniciar_consulta,
-    processar_lote_inicial,
     continuar_scroll_e_processar,
+    iniciar_consulta,
     limpar_scroll,
+    processar_lote_inicial,
 )
-
-from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
+from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 # ------------------------------------------
 
@@ -36,14 +33,10 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
 
     # PARAMETROS CREDENCIAIS ------------------------
     user = get_secret_key(
-        environment=ENVIRONMENT,
-        secret_name="ES_USERNAME",
-        secret_path="/sisreg_api"
+        environment=ENVIRONMENT, secret_name="ES_USERNAME", secret_path="/sisreg_api"
     )
     password = get_secret_key(
-        environment=ENVIRONMENT,
-        secret_name="ES_PASSWORD",
-        secret_path="/sisreg_api"
+        environment=ENVIRONMENT, secret_name="ES_PASSWORD", secret_path="/sisreg_api"
     )
 
     # PARAMETROS CONSULTA ----------------------------
@@ -66,7 +59,7 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
         port=CONFIG["port"],
         scheme=CONFIG["scheme"],
         user=user,
-        password=password
+        password=password,
     )
 
     # TAREFA 2. Inicia consulta
@@ -82,8 +75,7 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
 
     # TAREFA 3. Processa lote inicial
     dados_processados = processar_lote_inicial(
-        hits_iniciais=hits_iniciais,
-        total_registros=total_registros
+        hits_iniciais=hits_iniciais, total_registros=total_registros
     )
 
     # TAREFA 4. Continua consulta (com paginação)
@@ -96,14 +88,11 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
     )
 
     # TAREFA 5. Limpa resíduos da paginação
-    limpar_scroll(client=es_client,
-                  scroll_ids=scroll_ids_usados)
+    limpar_scroll(client=es_client, scroll_ids=scroll_ids_usados)
 
     # TAREFA 6. Prepara o DataFrame para upload
     df_final = prepare_dataframe_for_upload(
-        df=df,
-        flow_name=CONFIG["flow_name"],
-        flow_owner=CONFIG["flow_owner"]
+        df=df, flow_name=CONFIG["flow_name"], flow_owner=CONFIG["flow_owner"]
     )
 
     # TAREFA 7. Sobe os dados para o Big Query

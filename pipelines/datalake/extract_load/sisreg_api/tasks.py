@@ -3,15 +3,18 @@
 Tarefas
 """
 
-# Geral
-from elasticsearch import Elasticsearch, exceptions
 import sys
 from datetime import timedelta
-from typing import Dict, Any
+from typing import Any, Dict
+
 import pandas as pd
+
+# Geral
+from elasticsearch import Elasticsearch, exceptions
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 

@@ -310,4 +310,3 @@ cases:
       data_final: 'now'
       bq_dataset: 'brutos_sisreg_api'
       bq_table: 'marcacoes'
-      

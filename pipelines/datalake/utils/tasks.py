@@ -79,7 +79,7 @@ def prepare_dataframe_for_upload(df, flow_name, flow_owner):
     flow_name: Nome do fluxo.
     flow_owner: Usuário que deve ser alertado no Discord em caso de erros.
     """
-    
+
     # Verifica se o DataFrame está vazio
     if df.empty:
         mensagem_erro = f" @{flow_owner}. O DataFrame está vazio."
