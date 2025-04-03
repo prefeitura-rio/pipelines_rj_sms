@@ -36,6 +36,7 @@ with Flow(
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    SCHEMA = Parameter("schema", default="postgres")
     HISTORICAL_MODE = Parameter("historical_mode", default=False)
     START_TARGET_DATE = Parameter("start_target_date", default="")
     END_TARGET_DATE = Parameter("end_target_date", default="")
@@ -50,7 +51,7 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
+    build_gcp_table_task = build_gcp_table(db_table=TABLE_ID, schema=SCHEMA)
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT, table=TABLE_ID)
 
@@ -66,14 +67,15 @@ with Flow(
     get_secret_task = get_secret_key(
         secret_path=INFISICAL_PATH,
         secret_name=INFISICAL_DBURL,
-        environment="prod",
+        environment=ENVIRONMENT,
     )
 
     table = download_from_db(
         db_url=get_secret_task,
         db_table=TABLE_ID,
-        start_target_date=START_TARGET_DATE,
-        end_target_date=END_TARGET_DATE,
+        db_schema=SCHEMA,
+        start_target_date=interval_start,
+        end_target_date=interval_end,
         historical_mode=HISTORICAL_MODE,
         reference_datetime_column=REFERENCE_DATETIME_COLUMN,
     )

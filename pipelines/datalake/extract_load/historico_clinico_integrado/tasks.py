@@ -5,7 +5,6 @@ Tasks for SMSRio Dump
 from datetime import timedelta
 
 import pandas as pd
-import prefect
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.historico_clinico_integrado.constants import (
@@ -17,6 +16,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def download_from_db(
     db_url: str,
+    db_schema: str,
     db_table: str,
     start_target_date: str,
     end_target_date: str,
@@ -39,10 +39,10 @@ def download_from_db(
         str: The file path of the downloaded CSV file.
     """
 
-    query = f"SELECT * FROM {db_table}"
+    query = f"SELECT * FROM {db_schema}.{db_table}"
 
     if not historical_mode:
-        query += f" WHERE {reference_datetime_column} BETWEEN '{start_target_date}' AND '{end_target_date}'"
+        query += f" WHERE {reference_datetime_column} BETWEEN '{start_target_date}' AND '{end_target_date}'" # noqa
 
     log(query)
 
@@ -54,10 +54,7 @@ def download_from_db(
 
 
 @task
-def build_gcp_table(db_table: str) -> str:
+def build_gcp_table(db_table: str, schema: str) -> str:
     """Generate the GCP table name from the database table name."""
 
-    if db_table not in hci_constants.TABLE_ID.value:
-        return db_table
-
-    return hci_constants.TABLE_ID.value[db_table]
+    return f"{schema}__{db_table}"
