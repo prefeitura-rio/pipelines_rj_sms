@@ -42,7 +42,7 @@ def download_from_db(
     query = f"SELECT * FROM {db_schema}.{db_table}"
 
     if not historical_mode:
-        query += f" WHERE {reference_datetime_column} BETWEEN '{start_target_date}' AND '{end_target_date}'" # noqa
+        query += f" WHERE {reference_datetime_column} BETWEEN '{start_target_date}' AND '{end_target_date}'"  # noqa
 
     log(query)
 
