@@ -24,6 +24,7 @@ from pipelines.datalake.extract_load.historico_clinico_integrado.tasks import (
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.utils.time import get_datetime_working_range
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - HCI Aplicação",
@@ -52,6 +53,13 @@ with Flow(
     build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT, table=TABLE_ID)
+
+    
+    interval_start, interval_end = get_datetime_working_range(
+        start_datetime=START_TARGET_DATE,
+        end_datetime=END_TARGET_DATE,
+        return_as_str=True,
+    )
 
     ####################################
     # Tasks section #1 - Get data
