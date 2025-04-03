@@ -54,7 +54,6 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT, table=TABLE_ID)
 
-    
     interval_start, interval_end = get_datetime_working_range(
         start_datetime=START_TARGET_DATE,
         end_datetime=END_TARGET_DATE,
