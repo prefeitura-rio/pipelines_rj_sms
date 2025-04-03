@@ -180,10 +180,11 @@ cases:
     flow_name: "dump_hci"
     params:
       environment: "dev"
-      table_id: "historico_clinico_integrado"
-      dataset_id: "brutos_historico_clinico_integrado"
+      table_id: "user"
+      dataset_id: "brutos_hci_app"
+      schema: "postgres"
       historical_mode: false
-      reference_datetime_column: "timestamp"
+      reference_datetime_column: "updated_at"
   - case_slug: "datalake_clone_table"
     flow_path: "pipelines.datalake.extract_load.datalake_bigquery.flows"
     flow_name: "datalake_bigquery_clone"
