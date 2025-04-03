@@ -6,6 +6,7 @@ from datetime import timedelta
 
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
