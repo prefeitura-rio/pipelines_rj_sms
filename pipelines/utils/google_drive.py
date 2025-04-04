@@ -140,15 +140,11 @@ def retrieve_files_from_gdrive_by_owner(
         file_filters.append(f"modifiedDate >= '{last_modified_date.strftime('%Y-%m-%d')}'")
     if owner_email:
         file_filters.append(f"'{owner_email}' in owners")
-    if folder_id:
-        file_filters.append(f"'{folder_id}' in parents")
 
     # Folder filters
     folder_filters = ["mimeType = 'application/vnd.google-apps.folder'", "trashed = false"]
     if owner_email:
         folder_filters.append(f"'{owner_email}' in owners")
-    if folder_id:
-        folder_filters.append(f"'{folder_id}' in parents")
 
     # ===============================
     # Searching
@@ -186,7 +182,7 @@ def retrieve_files_from_gdrive_by_owner(
 
     folder_node = nodes_by_id.get(folder_id)
     if folder_node:
-        subtree = folder_node.subtree
+        subtree = folder_node.descendants
         log(f"Subtree created for folder {folder_id}")
     else:
         log(f"Folder {folder_id} not found", level="error")
@@ -198,7 +194,8 @@ def retrieve_files_from_gdrive_by_owner(
         file_folder_node = nodes_by_id.get(file["parents"][0]["id"])
 
         if file_folder_node and file_folder_node in subtree:
-            file_path = file_folder_node.path + "/" + file["title"]
+            folder_path = "/".join([node.name for node in file_folder_node.path])
+            file_path = folder_path + "/" + file["title"]
             _files.append(
                 {
                     "path": file_path,
