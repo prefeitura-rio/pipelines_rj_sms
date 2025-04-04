@@ -4,11 +4,9 @@
 """
 Tasks to download data from Google Drive.
 """
-import concurrent.futures
-import os
 from datetime import datetime, timedelta
 
-import prefect
+from anytree import Node
 from prefeitura_rio.pipelines_utils.logging import log
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
@@ -19,53 +17,23 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 @task
 def get_files_from_folder(
-    folder_id,
-    look_in_subfolders=False,
-    file_extension="csv",
+    folder_id: str,
+    last_modified_date: str = None,
+    owner_email: str = None,
 ):
-    """
-    Retrieves a list of files from a specified Google Drive folder.
-
-    Args:
-        folder_id (str): The ID of the Google Drive folder.
-        look_in_subfolders (bool, optional): Whether to search in subfolders. Defaults to False.
-        file_extension (str, optional): The file extension to filter the files. Defaults to "csv".
-
-    Returns:
-        list: A list of files in the specified folder with the given file extension.
-    """
-    log("Authenticating with Google Drive")
-    gauth = GoogleAuth(
-        settings={
-            "client_config_backend": "service",
-            "service_config": {
-                "client_json_file_path": "/tmp/credentials.json",
-            },
-        }
-    )
-    gauth.ServiceAuth()
-
-    drive = GoogleDrive(gauth)
-    files_list = []
-
-    def get_files_recursive(folder_id, accumulated_path="drive://"):
-        log(f"FOLDER: {accumulated_path}")
-
-        files = drive.ListFile({"q": f"'{folder_id}' in parents and trashed=false"}).GetList()
-
-        for file in files:
-            print(f"{accumulated_path}/{file['title']}")
-            if file["title"].endswith(file_extension):
-                files_list.append(file)
-            if look_in_subfolders and file["mimeType"] == "application/vnd.google-apps.folder":
-                get_files_recursive(file["id"], f"{accumulated_path}/{file['title']}")
-
-    get_files_recursive(folder_id)
-
-    log(f"{len(files_list)} files found in Google Drive folder.", level="info")
-    log(f"Files: {files_list}", level="debug")
-
-    return files_list
+    if owner_email:
+        log(f"Retrieving files from Google Drive folder {folder_id} by owner {owner_email}")
+        return retrieve_files_from_gdrive_by_owner.run(
+            folder_id=folder_id,
+            last_modified_date=last_modified_date,
+            owner_email=owner_email,
+        )
+    else:
+        log(f"Retrieving files from Google Drive folder {folder_id} by root folder")
+        return retrieve_files_from_gdrive_by_root_folder.run(
+            folder_id=folder_id,
+            last_modified_date=last_modified_date,
+        )
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
@@ -89,7 +57,7 @@ def get_folder_name(folder_id: str) -> str:
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def explore_folder(
+def retrieve_files_from_gdrive_by_root_folder(
     folder_id: str,
     last_modified_date=None,
 ) -> list[dict]:
@@ -145,164 +113,13 @@ def explore_folder(
     return files_list
 
 
-@task
-def filter_files_by_date(files, start_date=None, end_date=None):
-    """
-    Filters a list of files based on their modified or created date.
-
-    Args:
-        files (list): A list of files to filter.
-        start_date (str, optional): The start date for filtering. Defaults to None.
-        end_date (str, optional): The end date for filtering. Defaults to None.
-
-    Returns:
-        list: A list of filtered files.
-
-    Raises:
-        ValueError: If the start_date or end_date has an invalid format.
-
-    """
-
-    if start_date:
-        try:
-            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-        except ValueError as exc:
-            raise ValueError(
-                "Invalid start_datetime format. Must be in the format %Y-%m-%d"
-            ) from exc
-    else:
-        start_date = (prefect.context.get("scheduled_start_time") - timedelta(days=1)).date()
-
-    if end_date:
-        try:
-            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-        except ValueError as exc:
-            raise ValueError("Invalid end_datetime format. Must be in the format %Y-%m-%d") from exc
-    else:
-        end_date = prefect.context.get("scheduled_start_time").date()
-
-    filtered_files = []
-
-    for file in files:
-        modified_date = datetime.strptime(file["modifiedDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
-        created_date = datetime.strptime(file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
-
-        last_update = modified_date if modified_date > created_date else created_date
-        last_update = last_update.date()
-
-        if start_date <= last_update <= end_date:
-            filtered_files.append(file)
-
-    log(
-        f"{len(filtered_files)} files updated between {start_date} and {end_date}",
-        level="info",
-    )
-
-    return filtered_files
-
-
-@task
-def download_files(files, folder_path):
-    """
-    Downloads a list of files from Google Drive to a specified folder.
-
-    Args:
-        files (list): A list of files to be downloaded.
-        folder_path (str): The path to save the downloaded files.
-
-    Returns:
-        list: A list of paths of the downloaded files.
-    """
-    log(f"Downloading {len(files)} files to {folder_path}")
-
-    downloaded_files = []
-
-    for file in files:
-
-        # Check if file already exists in destination folder
-        file_path = f"{folder_path}/{file['title']}"
-
-        if os.path.exists(file_path):
-            log(
-                f"File {file['title']} already exists in {folder_path}, skipping download",
-                level="info",
-            )
-            downloaded_files.append(file_path)
-            continue
-
-        # Guarantee that the folder exists
-        os.makedirs(folder_path, exist_ok=True)
-
-        file.GetContentFile(f"{folder_path}/{file['title']}")
-        downloaded_files.append(f"{folder_path}/{file['title']}")
-
-    log(f"{len(downloaded_files)} files downloaded to {folder_path}", level="info")
-    log(f"Files downloaded: {downloaded_files}", level="debug")
-
-    return downloaded_files
-
-
-@task
-def dowload_from_gdrive(
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
+def retrieve_files_from_gdrive_by_owner(
     folder_id: str,
-    destination_folder: str,
-    file_extension: str = "dbc",
-    look_in_subfolders: bool = False,
-    filter_type: str = "last_updated",
-    filter_param: str | tuple = None,
-) -> str:
-    """
-    Downloads files from a Google Drive folder and its subfolders based on specified filters.
-
-    Args:
-        folder_id (str): The ID of the Google Drive folder.
-        destination_folder (str): The path to the destination folder where the downloaded files will be saved.
-        filter_type (str, optional): The type of filter to apply. Defaults to "last_updated".
-        filter_param (str | tuple, optional): The parameter(s) to use for filtering the files. Defaults to None.
-
-    Returns:
-        str: A dictionary indicating whether data was found and the downloaded files.
-
-    """
-
-    files = get_files_from_folder.run(
-        folder_id=folder_id,
-        file_extension=file_extension,
-        look_in_subfolders=look_in_subfolders,
-    )
-
-    if filter_type == "last_updated":
-        if filter_param:
-            filtered_files = filter_files_by_date.run(
-                files=files,
-                start_date=filter_param[0],
-                end_date=filter_param[1],
-            )
-        else:
-            filtered_files = filter_files_by_date.run(files=files)
-    else:
-        raise ValueError(f"Invalid filter type: {filter_type}")
-
-    if filtered_files:
-        filtered_files = filtered_files[:3]  # TMP
-        downloaded_files = download_files.run(files=filtered_files, folder_path=destination_folder)
-        return {"has_data": True, "files": downloaded_files}
-
-    return {"has_data": False}
-
-
-def upload_folder_to_gdrive(folder_path: str, parent_folder_id: str, max_workers: int = 20):
-    """
-    Uploads an entire folder to Google Drive, preserving the folder structure.
-    Avoids creating duplicate folders and replaces existing files.
-
-    Args:
-        folder_path (str): The path to the folder to be uploaded.
-        parent_folder_id (str): The ID of the Google Drive folder where the contents will be uploaded.
-
-    Returns:
-        None
-    """
+    last_modified_date: str = None,
+    owner_email: str = None,
+) -> list[dict]:
+    log("Authenticating with Google Drive")
     gauth = GoogleAuth(
         settings={
             "client_config_backend": "service",
@@ -312,57 +129,80 @@ def upload_folder_to_gdrive(folder_path: str, parent_folder_id: str, max_workers
         }
     )
     gauth.ServiceAuth()
-
     drive = GoogleDrive(gauth)
 
-    def get_or_create_folder(name, parent_id):
-        query = f"title='{name}' and '{parent_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
-        existing_folders = drive.ListFile({"q": query}).GetList()
+    # ===============================
+    # Creating Filters
+    # ===============================
+    # File filters
+    file_filters = ["mimeType != 'application/vnd.google-apps.folder'", "trashed = false"]
+    if last_modified_date:
+        file_filters.append(f"modifiedDate >= '{last_modified_date.strftime('%Y-%m-%d')}'")
+    if owner_email:
+        file_filters.append(f"'{owner_email}' in owners")
 
-        if existing_folders:
-            return existing_folders[0]
+    # Folder filters
+    folder_filters = ["mimeType = 'application/vnd.google-apps.folder'", "trashed = false"]
+    if owner_email:
+        folder_filters.append(f"'{owner_email}' in owners")
 
-        folder_metadata = {
-            "title": name,
-            "mimeType": "application/vnd.google-apps.folder",
-            "parents": [{"id": parent_id}],
-        }
-        folder = drive.CreateFile(folder_metadata)
-        folder.Upload()
-        return folder
+    # ===============================
+    # Searching
+    # ===============================
+    folders = drive.ListFile({"q": " and ".join(folder_filters)}).GetList()
+    files = drive.ListFile({"q": " and ".join(file_filters)}).GetList()
 
-    def upload_or_update_file(file_path, parent_id):
-        file_name = os.path.basename(file_path)
-        query = f"title='{file_name}' and '{parent_id}' in parents and trashed=false"
-        existing_files = drive.ListFile({"q": query}).GetList()
+    # ===============================
+    # Indexing
+    # ===============================
+    folders_by_id = {folder["id"]: folder for folder in folders}
+    folders_by_parent_id = {}
+    for folder in folders:
+        parent_id = folder["parents"][0]["id"] if folder["parents"] else None
+        folders_by_parent_id[parent_id] = folders_by_parent_id.get(parent_id, []) + [folder]
 
-        if existing_files:
-            file = existing_files[0]
-        else:
-            file = drive.CreateFile({"parents": [{"id": parent_id}]})
+    nodes_by_id = {folder["id"]: Node(folder["title"], id=folder["id"]) for folder in folders}
 
-        file.SetContentFile(file_path)
-        file.Upload()
+    # ===============================
+    # Creating folder tree
+    # ===============================
+    log(f"Creating folder tree")
+    for id, folder_node in nodes_by_id.items():
+        folder_parent = (
+            folders_by_id[id]["parents"][0] if len(folders_by_id[id]["parents"]) > 0 else None
+        )
+        if folder_parent:
+            parent_node = nodes_by_id.get(folder_parent["id"])
+            if parent_node:
+                folder_node.parent = parent_node
 
-    def upload_folder(local_path, parent_id):
-        items = os.listdir(local_path)
-        files_to_upload = []
+    # take the subtree from folder_id
 
-        for item in items:
-            item_path = os.path.join(local_path, item)
-            if os.path.isfile(item_path):
-                files_to_upload.append((item_path, parent_id))
-            elif os.path.isdir(item_path):
-                subfolder = get_or_create_folder(item, parent_id)
-                upload_folder(item_path, subfolder["id"])
+    log(f"Folder tree created")
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            list(executor.map(lambda x: upload_or_update_file(*x), files_to_upload))
+    folder_node = nodes_by_id.get(folder_id)
+    if folder_node:
+        subtree = folder_node.descendants
+        log(f"Subtree created for folder {folder_id}")
+    else:
+        log(f"Folder {folder_id} not found", level="error")
+        return []
 
-    # Start uploading directly to the provided parent_folder_id
-    upload_folder(folder_path, parent_folder_id)
+    _files = []
+    for file in files:
+        file_id = file["id"]
+        file_folder_node = nodes_by_id.get(file["parents"][0]["id"])
 
-    log(
-        f"Folder {folder_path} contents uploaded to Google Drive folder {parent_folder_id} in parallel, preserving structure and updating existing files",
-        level="info",
-    )
+        if file_folder_node and file_folder_node in subtree:
+            folder_path = "/".join([node.name for node in file_folder_node.path])
+            file_path = folder_path + "/" + file["title"]
+            _files.append(
+                {
+                    "path": file_path,
+                    "id": file_id,
+                }
+            )
+
+    log(f"{len(_files)} files found in Google Drive folder.", level="info")
+
+    return _files

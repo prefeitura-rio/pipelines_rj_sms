@@ -156,6 +156,20 @@ test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypo
 trio = ["trio (>=0.23)"]
 
 [[package]]
+name = "anytree"
+version = "2.12.1"
+description = "Powerful and Lightweight Python Tree Data Structure with various plugins"
+optional = false
+python-versions = ">=3.7.2,<4"
+files = [
+    {file = "anytree-2.12.1-py3-none-any.whl", hash = "sha256:5ea9e61caf96db1e5b3d0a914378d2cd83c269dfce1fb8242ce96589fa3382f0"},
+    {file = "anytree-2.12.1.tar.gz", hash = "sha256:244def434ccf31b668ed282954e5d315b4e066c4940b94aff4a7962d85947830"},
+]
+
+[package.dependencies]
+six = "*"
+
+[[package]]
 name = "async-timeout"
 version = "4.0.3"
 description = "Timeout context manager for asyncio programs"
@@ -5996,4 +6010,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "bd09c03a481c553e18285996aaafc0ed07ead0a321b44c392aa87e8f762e2155"
+content-hash = "73e1107cd814acf9fc2e1a1d840719aae27dd2eb04cd936ad816a6091c4cd6e6"
