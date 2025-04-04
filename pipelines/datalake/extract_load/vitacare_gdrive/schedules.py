@@ -47,7 +47,7 @@ flow_parameters = [
         "desired_table_name": "ficha_a_v2",
         "environment": "prod",
         "rename_flow": True,
-    }
+    },
 ]
 
 
