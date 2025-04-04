@@ -73,5 +73,5 @@ migrate_gdrive_to_gcs.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi",
+    memory_limit="10Gi",
 )
