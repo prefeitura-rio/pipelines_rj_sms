@@ -17,6 +17,7 @@ from pipelines.datalake.extract_load.google_sheets.flows import *
 from pipelines.datalake.extract_load.historico_clinico_integrado.flows import *
 from pipelines.datalake.extract_load.minhasaude_mongodb.flows import *
 from pipelines.datalake.extract_load.ser_metabase.flows import *
+from pipelines.datalake.extract_load.sisreg_api.flows import *
 from pipelines.datalake.extract_load.sisreg_web.flows import *
 from pipelines.datalake.extract_load.sisreg_web_v2.flows import *
 from pipelines.datalake.extract_load.smsrio_mysql.flows import *

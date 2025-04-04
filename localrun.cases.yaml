@@ -311,3 +311,16 @@ cases:
       table_id: "compras_atas_processos_vigentes"
       url: "https://docs.google.com/spreadsheets/d/1fi7MzF0S4OfTym-fjpLR51wIvTLq-WCE706N6eEEWys"
       url_type: "google_sheet"
+  - case_slug: "sisreg_api"
+    flow_path: "pipelines.datalake.extract_load.sisreg_api.flows"
+    flow_name: "sms_sisreg_api"
+    params:
+      environment: 'dev'
+      es_index: 'marcacao-ambulatorial-rj'
+      page_size: 10_000
+      scroll_timeout: '2m'
+      filters: {"codigo_central_reguladora": "330455"}
+      data_inicial: '2025-04-02'
+      data_final: 'now'
+      bq_dataset: 'brutos_sisreg_api'
+      bq_table: 'marcacoes'
