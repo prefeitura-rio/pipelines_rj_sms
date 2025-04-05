@@ -59,5 +59,5 @@ sms_dump_vitacare_reports.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi",
+    memory_limit="13Gi",
 )
