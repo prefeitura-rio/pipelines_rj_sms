@@ -279,8 +279,8 @@ cases:
     flow_name: "sms_dump_vitacare_reports"
     params:
       environment: "dev"
-      file_pattern: "AP*/*/REPORT_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL/*/*_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL_*.csv"
-      desired_table_name: "acompanhamento_mulheres_idade_fertil"
+      file_pattern: "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_LISTAGEM_VACINA_V2/*/*_LISTAGEM_VACINA_V2_*.csv"
+      desired_table_name: "listagem_vacina_v2"
       desired_dataset_name: "brutos_informes_vitacare"
   - case_slug: "datalake-extract-smsrio"
     flow_path: "pipelines.datalake.extract_load.smsrio_mysql.flows"
