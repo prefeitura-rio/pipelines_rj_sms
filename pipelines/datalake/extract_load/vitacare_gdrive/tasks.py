@@ -27,7 +27,7 @@ def find_all_file_names_from_pattern(file_pattern: str, environment: str):
             files.append(blob.name)
 
     log(f"{len(files)} files were found. Their names:\n - " + "\n - ".join(files))
-    return files[:5]
+    return files
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
