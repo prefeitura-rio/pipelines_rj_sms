@@ -16,7 +16,7 @@ def create_extraction_batches(
     db_url: str,
     db_schema: str,
     db_table: str,
-    batch_size: int = 1000000,
+    batch_size: int = 50000,
     date_filter: datetime = None,
 ) -> list[str]:
 
