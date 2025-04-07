@@ -42,7 +42,7 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
-        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_SUB_PAV_FICHA_A_V2/*/*_SUB_PAV_FICHA_A_V2_*.csv",  # noqa: E501
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_SUB_PAV_FICHA_A_V2/*/*SUB_PAV_FICHA_A_V2*.csv",  # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "ficha_a_v2",
         "environment": "prod",
