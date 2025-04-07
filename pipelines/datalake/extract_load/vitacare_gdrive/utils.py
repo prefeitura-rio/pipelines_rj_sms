@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import io
+import chardet
 
 import pandas as pd
 import pytz
@@ -69,7 +70,9 @@ def download_file(bucket, file_name):
     size_in_mb = size_in_bytes / (1024 * 1024)
 
     log(f"Beginning Download of {file_name} with {size_in_mb:.1f} MB")
-    csv_text = blob.download_as_text(encoding="utf-8")
+    data = blob.download_as_bytes()
+    detected_encoding = chardet.detect(data)['encoding']
+    csv_text = data.decode(detected_encoding)
 
     sep = detect_separator(csv_text)
 
