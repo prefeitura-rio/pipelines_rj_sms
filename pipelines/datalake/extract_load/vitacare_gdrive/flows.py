@@ -56,11 +56,12 @@ with Flow(
 # Storage and run configs
 sms_dump_vitacare_reports.schedule = schedule
 sms_dump_vitacare_reports.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitacare_reports.executor = LocalDaskExecutor(num_workers=3)
+sms_dump_vitacare_reports.executor = LocalDaskExecutor(num_workers=1)
 sms_dump_vitacare_reports.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="13Gi",
+    memory_request="13Gi",
 )
