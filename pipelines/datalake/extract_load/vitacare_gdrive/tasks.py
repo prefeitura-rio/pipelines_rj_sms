@@ -65,10 +65,20 @@ def upload_consistent_files(
     bucket = client.bucket(bucket_name)
     
     # Download file
-    if use_safe_download_file:
-        df = safe_download_file(bucket, file_name)
-    else:
-        df = download_file(bucket, file_name)
+    try:
+        if use_safe_download_file:
+            df = safe_download_file(bucket, file_name)
+        else:
+            df = download_file(bucket, file_name)
+    except Exception as e:
+        log(f"Error downloading file {file_name}: {e}", level="error")
+        return {
+            "file_name": file_name,
+            "inadequency_index": 1,
+            "missing_columns": [],
+            "extra_columns": [],
+            "loaded": False,
+        }
 
     # Check if the file is empty
     if df is None or df.empty:
