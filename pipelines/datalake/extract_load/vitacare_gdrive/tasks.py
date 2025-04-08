@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 import fnmatch
 from datetime import timedelta
+
 import pandas as pd
 from google.cloud import storage
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
-from pipelines.datalake.extract_load.vitacare_gdrive.utils import safe_download_file, download_file
+from pipelines.datalake.extract_load.vitacare_gdrive.utils import (
+    download_file,
+    safe_download_file,
+)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
@@ -28,6 +32,7 @@ def find_all_file_names_from_pattern(file_pattern: str, environment: str):
 
     log(f"{len(files)} files were found. Their names:\n - " + "\n - ".join(files))
     return files
+
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
@@ -63,7 +68,7 @@ def upload_consistent_files(
     client = storage.Client()
     bucket_name = constants.GCS_BUCKET.value[environment]
     bucket = client.bucket(bucket_name)
-    
+
     # Download file
     try:
         if use_safe_download_file:
@@ -120,6 +125,7 @@ def upload_consistent_files(
         "extra_columns": extra_columns,
         "loaded": inadequency_index < inadequency_threshold,
     }
+
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def report_inadequency(file_pattern: str, reports: list[dict]):

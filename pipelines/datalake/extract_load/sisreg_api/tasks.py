@@ -17,9 +17,11 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
+
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     fonte = registro.get("_source", {})
     return {**fonte}
+
 
 @task(max_retries=5, retry_delay=timedelta(seconds=30))
 def full_extract_process(
@@ -33,7 +35,7 @@ def full_extract_process(
     scroll_timeout,
     filters,
     data_inicial,
-    data_final
+    data_final,
 ):
     """
     Extrai dados do SISREG via Elasticsearch API
@@ -84,7 +86,7 @@ def full_extract_process(
     if total_registros == 0:
         log("Nenhum registro encontrado. Processo encerrado.")
         return pd.DataFrame()
-    
+
     log(f"Total de registros encontrados: {total_registros}")
 
     # Processa batch inicial
@@ -119,5 +121,5 @@ def full_extract_process(
 
     # Prepare DataFrame
     df = pd.DataFrame(dados_processados)
-    
+
     return df

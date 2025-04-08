@@ -47,7 +47,6 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
 
     # ------------------------------------------
 
-
     # TAREFA 1. Extrai os dados
     df = full_extract_process(
         host=CONFIG["host"],
@@ -60,7 +59,7 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
         scroll_timeout=SCROLL_TIMEOUT,
         filters=FILTERS,
         data_inicial=DATA_INICIAL,
-        data_final=DATA_FINAL
+        data_final=DATA_FINAL,
     )
 
     # TAREFA 2. Prepara o DataFrame para upload
