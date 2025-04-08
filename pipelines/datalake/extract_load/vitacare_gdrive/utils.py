@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import datetime
 import io
-import chardet
 
+import chardet
 import pandas as pd
 import pytz
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -71,7 +71,7 @@ def safe_download_file(bucket, file_name):
 
     log(f"Beginning Download of {file_name} with {size_in_mb:.1f} MB")
     data = blob.download_as_bytes()
-    detected_encoding = chardet.detect(data)['encoding']
+    detected_encoding = chardet.detect(data)["encoding"]
     csv_text = data.decode(detected_encoding)
 
     sep = detect_separator(csv_text)

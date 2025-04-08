@@ -15,13 +15,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
 from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
-from pipelines.datalake.extract_load.sisreg_api.tasks import (
-    connect_elasticsearch,
-    continuar_scroll_e_processar,
-    iniciar_consulta,
-    limpar_scroll,
-    processar_lote_inicial,
-)
+from pipelines.datalake.extract_load.sisreg_api.tasks import full_extract_process
 from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
@@ -53,18 +47,13 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
 
     # ------------------------------------------
 
-    # TAREFA 1. Conecta a API do SISREG (Elasticsearch)
-    es_client = connect_elasticsearch(
+    # TAREFA 1. Extrai os dados
+    df = full_extract_process(
         host=CONFIG["host"],
         port=CONFIG["port"],
         scheme=CONFIG["scheme"],
         user=user,
         password=password,
-    )
-
-    # TAREFA 2. Inicia consulta
-    scroll_id, total_registros, hits_iniciais = iniciar_consulta(
-        client=es_client,
         index_name=ES_INDEX,
         page_size=PAGE_SIZE,
         scroll_timeout=SCROLL_TIMEOUT,
@@ -73,29 +62,12 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
         data_final=DATA_FINAL,
     )
 
-    # TAREFA 3. Processa lote inicial
-    dados_processados = processar_lote_inicial(
-        hits_iniciais=hits_iniciais, total_registros=total_registros
-    )
-
-    # TAREFA 4. Continua consulta (com paginação)
-    df, scroll_ids_usados = continuar_scroll_e_processar(
-        client=es_client,
-        scroll_id=scroll_id,
-        scroll_timeout=SCROLL_TIMEOUT,
-        total_registros=total_registros,
-        ja_processados=dados_processados,
-    )
-
-    # TAREFA 5. Limpa resíduos da paginação
-    limpar_scroll(client=es_client, scroll_ids=scroll_ids_usados)
-
-    # TAREFA 6. Prepara o DataFrame para upload
+    # TAREFA 2. Prepara o DataFrame para upload
     df_final = prepare_dataframe_for_upload(
         df=df, flow_name=CONFIG["flow_name"], flow_owner=CONFIG["flow_owner"]
     )
 
-    # TAREFA 7. Sobe os dados para o Big Query
+    # TAREFA 3. Sobe os dados para o Big Query
     upload = upload_df_to_datalake(
         df=df,
         table_id=BQ_TABLE,
