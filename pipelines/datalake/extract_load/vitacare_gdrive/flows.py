@@ -46,6 +46,7 @@ with Flow(
         environment=unmapped(ENVIRONMENT),
         dataset_id=unmapped(DESIRED_DATASET_NAME),
         table_id=unmapped(DESIRED_TABLE_NAME),
+        use_safe_download_file=unmapped(False),
     )
 
     report_inadequency(

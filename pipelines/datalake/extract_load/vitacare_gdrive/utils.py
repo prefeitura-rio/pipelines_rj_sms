@@ -64,7 +64,7 @@ def detect_separator(csv_text: str) -> str:
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
-def download_file(bucket, file_name):
+def safe_download_file(bucket, file_name):
     blob = bucket.get_blob(file_name)
     size_in_bytes = blob.size
     size_in_mb = size_in_bytes / (1024 * 1024)
@@ -94,4 +94,27 @@ def download_file(bucket, file_name):
     df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
     log(f"Finishing Download of {file_name}")
+    return df
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
+def download_file(bucket, file_name):
+    log(f"Streaming download of {file_name}")
+    blob = bucket.blob(file_name)
+    stream = io.BytesIO()
+    blob.download_to_file(stream)
+    stream.seek(0)
+
+    # Se você conhece o separador, use diretamente. Senão, leia só o cabeçalho para detectar
+    sample = stream.read(1024).decode("utf-8", errors="ignore")
+    sep = detect_separator(sample)
+    stream.seek(0)
+
+    df = pd.read_csv(stream, sep=sep, dtype=str, encoding="utf-8")
+
+    df.columns = [fix_column_name(col) for col in df.columns]
+    df["_source_file"] = file_name
+    df["_extracted_at"] = blob.updated.astimezone(pytz.timezone("America/Sao_Paulo"))
+    df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+
     return df

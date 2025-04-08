@@ -5,7 +5,7 @@ import pandas as pd
 from google.cloud import storage
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
-from pipelines.datalake.extract_load.vitacare_gdrive.utils import download_file
+from pipelines.datalake.extract_load.vitacare_gdrive.utils import safe_download_file, download_file
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
@@ -46,7 +46,7 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
     most_recent_file = files[-1].name
     log(f"Most recent file: {most_recent_file}")
 
-    df = download_file(bucket, most_recent_file)
+    df = safe_download_file(bucket, most_recent_file)
     return df.columns.tolist()
 
 
@@ -58,13 +58,17 @@ def upload_consistent_files(
     dataset_id: str,
     table_id: str,
     inadequency_threshold: float = 0.2,
+    use_safe_download_file: bool = True,
 ) -> pd.DataFrame:
     client = storage.Client()
     bucket_name = constants.GCS_BUCKET.value[environment]
     bucket = client.bucket(bucket_name)
     
     # Download file
-    df = download_file(bucket, file_name)
+    if use_safe_download_file:
+        df = safe_download_file(bucket, file_name)
+    else:
+        df = download_file(bucket, file_name)
 
     # Check if the file is empty
     if df is None or df.empty:
