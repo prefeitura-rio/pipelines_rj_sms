@@ -5,10 +5,10 @@ Tarefas
 
 import sys
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Tuple
+
+from typing import Any, Dict, Tuple
 
 import pandas as pd
-from dateutil import rrule
 
 # Geral
 from elasticsearch import Elasticsearch, exceptions
@@ -134,7 +134,6 @@ def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int
     As datas podem ser passadas no formato 'YYYY-MM-DD' ou como datetime.
     Se data_final for a string "now", será convertido para o datetime atual.
     """
-    from datetime import datetime, timedelta
 
     # Verifica e converte data_inicial
     if isinstance(data_inicial, datetime):
