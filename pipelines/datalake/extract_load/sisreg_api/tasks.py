@@ -5,7 +5,6 @@ Tarefas
 
 import sys
 from datetime import datetime, timedelta
-
 from typing import Any, Dict, Tuple
 
 import pandas as pd
