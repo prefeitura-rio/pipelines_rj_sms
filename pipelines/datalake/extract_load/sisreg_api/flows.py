@@ -41,7 +41,7 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
     SCROLL_TIMEOUT = Parameter("scroll_timeout", default="2m")
     FILTERS = Parameter("filters", default={"codigo_central_reguladora": "330455"})
     DATA_INICIAL = Parameter("data_inicial", default="2025-01-01")
-    DATA_FINAL = Parameter("data_final", default="2025-01-31") 
+    DATA_FINAL = Parameter("data_final", default="2025-01-31")
 
     # PARAMETROS PARA DEFINIR TAMANHO DOS LOTES ------
     DIAS_POR_FAIXA = Parameter("dias_por_faixa", default=1)
@@ -51,7 +51,9 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
     BQ_TABLE = Parameter("bq_table", default="solicitacoes")
 
     # 1) Gera faixas de data
-    faixas = gerar_faixas_de_data(data_inicial=DATA_INICIAL,data_final=DATA_FINAL,dias_por_faixa=DIAS_POR_FAIXA)
+    faixas = gerar_faixas_de_data(
+        data_inicial=DATA_INICIAL, data_final=DATA_FINAL, dias_por_faixa=DIAS_POR_FAIXA
+    )
 
     # 2) Extrai, para cada faixa, o início e o fim do intervalo utilizando tarefas auxiliares
     inicio_faixas = extrair_inicio.map(faixa=faixas)
