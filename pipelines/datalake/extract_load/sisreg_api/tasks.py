@@ -4,19 +4,18 @@ Tarefas
 """
 
 import sys
-from datetime import timedelta
-from typing import Any, Dict
+from datetime import timedelta, datetime
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
+from dateutil import rrule
 
 # Geral
 from elasticsearch import Elasticsearch, exceptions
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
-
 from pipelines.utils.credential_injector import authenticated_task as task
-
 
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     fonte = registro.get("_source", {})
@@ -38,8 +37,10 @@ def full_extract_process(
     data_final,
 ):
     """
-    Extrai dados do SISREG via Elasticsearch API
+    Extrai dados do SISREG via Elasticsearch API,
+    considerando apenas o intervalo [data_inicial, data_final].
     """
+
     # Conecta ao Elasticsearch
     es = Elasticsearch(
         hosts=[{"host": host, "port": port, "scheme": scheme}],
@@ -84,10 +85,10 @@ def full_extract_process(
     hits = resposta["hits"]["hits"]
 
     if total_registros == 0:
-        log("Nenhum registro encontrado. Processo encerrado.")
+        log(f"Nenhum registro encontrado no intervalo {data_inicial} a {data_final}.")
         return pd.DataFrame()
 
-    log(f"Total de registros encontrados: {total_registros}")
+    log(f"Total de registros encontrados ({data_inicial} a {data_final}): {total_registros}")
 
     # Processa batch inicial
     dados_processados = [processar_registro(reg) for reg in hits]
@@ -111,7 +112,6 @@ def full_extract_process(
     es.options(ignore_status=(404,)).clear_scroll(scroll_id=scroll_ids)
     log("Scroll encerrado com sucesso.")
 
-    # Verifica se todos os registros foram processados
     if len(dados_processados) != total_registros:
         log(
             f"Advertência: Divergência na contagem de registros processados. "
@@ -119,7 +119,62 @@ def full_extract_process(
         )
         return pd.DataFrame()
 
-    # Prepare DataFrame
     df = pd.DataFrame(dados_processados)
-
     return df
+
+
+@task
+def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int = 1) -> List[Tuple[str, str]]:
+    """
+    Gera uma lista de tuplas (inicio, fim) dividindo o intervalo
+    entre data_inicial e data_final em blocos de tamanho 'dias_por_faixa'.
+
+    As datas podem ser passadas no formato 'YYYY-MM-DD' ou como datetime.
+    Se data_final for a string "now", será convertido para o datetime atual.
+    """
+    from datetime import datetime, timedelta
+    # Verifica e converte data_inicial
+    if isinstance(data_inicial, datetime):
+        dt_inicial = data_inicial
+    else:
+        dt_inicial = datetime.fromisoformat(data_inicial[:10])
+    
+    # Verifica e converte data_final
+    if isinstance(data_final, datetime):
+        dt_final = data_final
+    else:
+        if data_final.lower() == "now":
+            dt_final = datetime.now()
+        else:
+            dt_final = datetime.fromisoformat(data_final[:10])
+            
+    faixas = []
+    # Cria faixas de datas usando intervalos de 'dias_por_faixa'
+    dt_atual = dt_inicial
+    while dt_atual <= dt_final:
+        dt_chunk_inicio = dt_atual
+        dt_chunk_fim = dt_chunk_inicio + timedelta(days=dias_por_faixa - 1)
+        if dt_chunk_fim > dt_final:
+            dt_chunk_fim = dt_final
+        faixa_inicio_str = dt_chunk_inicio.strftime("%Y-%m-%d")
+        faixa_fim_str = dt_chunk_fim.strftime("%Y-%m-%d")
+        faixas.append((faixa_inicio_str, faixa_fim_str))
+        dt_atual = dt_chunk_fim + timedelta(days=1)
+    return faixas
+
+
+
+@task
+def extrair_inicio(faixa: Tuple[str, str]) -> str:
+    """
+    Extrai o início do intervalo da tupla.
+    """
+    return faixa[0]
+
+
+@task
+def extrair_fim(faixa: Tuple[str, str]) -> str:
+    """
+    Extrai o fim do intervalo da tupla.
+    """
+    return faixa[1]
