@@ -15,10 +15,10 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
 from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
 from pipelines.datalake.extract_load.sisreg_api.tasks import (
+    extrair_fim,
+    extrair_inicio,
     full_extract_process,
     gerar_faixas_de_data,
-    extrair_inicio,
-    extrair_fim,
 )
 from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake

@@ -4,7 +4,7 @@ Tarefas
 """
 
 import sys
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
@@ -15,6 +15,7 @@ from elasticsearch import Elasticsearch, exceptions
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 

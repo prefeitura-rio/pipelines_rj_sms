@@ -14,7 +14,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "dataset_id": "brutos_hci_app",
+        "dataset_id": "brutos_aplicacao_hci",
         "schema": "public",
         "table_id": "userhistory",
         "historical_mode": True,
@@ -23,7 +23,7 @@ flow_parameters = [
         "reference_datetime_column": "timestamp",
     },
     {
-        "dataset_id": "brutos_hci_app",
+        "dataset_id": "brutos_aplicacao_hci",
         "schema": "public",
         "table_id": "user",
         "historical_mode": True,
