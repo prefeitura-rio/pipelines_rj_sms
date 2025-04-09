@@ -4,7 +4,7 @@ Tarefas
 """
 
 import sys
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
@@ -15,7 +15,9 @@ from elasticsearch import Elasticsearch, exceptions
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.utils.credential_injector import authenticated_task as task
+
 
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     fonte = registro.get("_source", {})
@@ -124,7 +126,9 @@ def full_extract_process(
 
 
 @task
-def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int = 1) -> List[Tuple[str, str]]:
+def gerar_faixas_de_data(
+    data_inicial: str, data_final: str, dias_por_faixa: int = 1
+) -> List[Tuple[str, str]]:
     """
     Gera uma lista de tuplas (inicio, fim) dividindo o intervalo
     entre data_inicial e data_final em blocos de tamanho 'dias_por_faixa'.
@@ -133,12 +137,13 @@ def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int
     Se data_final for a string "now", será convertido para o datetime atual.
     """
     from datetime import datetime, timedelta
+
     # Verifica e converte data_inicial
     if isinstance(data_inicial, datetime):
         dt_inicial = data_inicial
     else:
         dt_inicial = datetime.fromisoformat(data_inicial[:10])
-    
+
     # Verifica e converte data_final
     if isinstance(data_final, datetime):
         dt_final = data_final
@@ -147,7 +152,7 @@ def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int
             dt_final = datetime.now()
         else:
             dt_final = datetime.fromisoformat(data_final[:10])
-            
+
     faixas = []
     # Cria faixas de datas usando intervalos de 'dias_por_faixa'
     dt_atual = dt_inicial
@@ -161,7 +166,6 @@ def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int
         faixas.append((faixa_inicio_str, faixa_fim_str))
         dt_atual = dt_chunk_fim + timedelta(days=1)
     return faixas
-
 
 
 @task
