@@ -159,7 +159,7 @@ def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int
         else:
             dt_final = datetime.fromisoformat(data_final[:10])
 
-    log(f"Gerando faixas de datas para processamento em lotes.")
+    log("Gerando faixas de datas para processamento em lotes.")
     faixas = []
     # Cria faixas de datas usando intervalos de 'dias_por_faixa'
     dt_atual = dt_inicial
