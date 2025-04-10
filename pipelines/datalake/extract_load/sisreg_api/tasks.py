@@ -15,8 +15,9 @@ from elasticsearch import Elasticsearch, exceptions
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.utils.credential_injector import authenticated_task as task
+
 from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
+from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import upload_df_to_datalake
 
 
@@ -132,6 +133,7 @@ def full_extract_process(
 
     return file_path
 
+
 @task
 def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int = 1):
     """
@@ -190,6 +192,7 @@ def extrair_fim(faixa: Tuple[str, str]) -> str:
     """
     return faixa[1]
 
+
 @task
 def prepare_df_from_disk(file_path: str, flow_name: str, flow_owner: str) -> str:
     """
@@ -201,16 +204,15 @@ def prepare_df_from_disk(file_path: str, flow_name: str, flow_owner: str) -> str
 
     # Executa a preparação (chamando a task existente)
     df_prepared = prepare_dataframe_for_upload.run(
-        df=df,
-        flow_name=flow_name,
-        flow_owner=flow_owner
+        df=df, flow_name=flow_name, flow_owner=flow_owner
     )
 
-    # Salva como outro arquivo Parquet 
+    # Salva como outro arquivo Parquet
     prepared_path = file_path.replace(".parquet", "_prepared.parquet")
     df_prepared.to_parquet(prepared_path, index=False)
 
     return prepared_path
+
 
 @task
 def upload_from_disk(
@@ -233,7 +235,7 @@ def upload_from_disk(
         table_id=table_id,
         dataset_id=dataset_id,
         partition_column=partition_column,
-        source_format=source_format
+        source_format=source_format,
     )
 
 
@@ -245,4 +247,3 @@ def delete_file(file_path: str):
     # Comentário em português: removendo o arquivo do disco
     if os.path.exists(file_path):
         os.remove(file_path)
-

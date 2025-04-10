@@ -15,14 +15,13 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
 from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
 from pipelines.datalake.extract_load.sisreg_api.tasks import (
+    delete_file,
     extrair_fim,
     extrair_inicio,
     full_extract_process,
     gerar_faixas_de_data,
     prepare_df_from_disk,
     upload_from_disk,
-    delete_file,
-
 )
 from pipelines.utils.tasks import get_secret_key
 
@@ -54,9 +53,7 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
     BQ_TABLE = Parameter("bq_table", default="solicitacoes")
 
     faixas = gerar_faixas_de_data(
-        data_inicial=DATA_INICIAL,
-        data_final=DATA_FINAL,
-        dias_por_faixa=DIAS_POR_FAIXA
+        data_inicial=DATA_INICIAL, data_final=DATA_FINAL, dias_por_faixa=DIAS_POR_FAIXA
     )
 
     inicio_faixas = extrair_inicio.map(faixa=faixas)
@@ -81,7 +78,7 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
     prepared_files = prepare_df_from_disk.map(
         file_path=raw_files,
         flow_name=unmapped(CONFIG["flow_name"]),
-        flow_owner=unmapped(CONFIG["flow_owner"])
+        flow_owner=unmapped(CONFIG["flow_owner"]),
     )
 
     # 3) Faz o upload lendo cada arquivo preparado do disco
