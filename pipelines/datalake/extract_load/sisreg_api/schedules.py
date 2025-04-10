@@ -26,7 +26,7 @@ flow_parameters = [
         "data_final": "now",
         "bq_dataset": "brutos_sisreg_api",
         "bq_table": "solicitacoes",
-        "dias_por_faixa": 30,
+        "dias_por_faixa": 15,
     },
     {
         "environment": "dev",
@@ -38,7 +38,7 @@ flow_parameters = [
         "data_final": "now",
         "bq_dataset": "brutos_sisreg_api",
         "bq_table": "marcacoes",
-        "dias_por_faixa": 30,
+        "dias_por_faixa": 15,
     },
 ]
 
