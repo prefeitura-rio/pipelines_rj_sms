@@ -8,6 +8,7 @@ import pandas as pd
 import pytz
 
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 
 
@@ -58,6 +59,8 @@ def download_from_db(
     log(f"Downloaded {len(table)} rows from Table")
 
     table["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+
+    table.columns = remove_columns_accents(table)
     return table
 
 
