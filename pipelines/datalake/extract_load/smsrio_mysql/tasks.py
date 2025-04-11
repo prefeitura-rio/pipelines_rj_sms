@@ -8,8 +8,9 @@ import pandas as pd
 import pytz
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.logger import log
 from pipelines.utils.data_cleaning import remove_columns_accents
+from pipelines.utils.logger import log
+
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def create_extraction_batches(
