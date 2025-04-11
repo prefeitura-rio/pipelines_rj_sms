@@ -17,7 +17,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "environment": "dev",
+        "environment": "prod",
         "es_index": "solicitacao-ambulatorial-rj",
         "page_size": 10_000,
         "scroll_timeout": "2m",
@@ -29,7 +29,7 @@ flow_parameters = [
         "dias_por_faixa": 15,
     },
     {
-        "environment": "dev",
+        "environment": "prod",
         "es_index": "marcacao-ambulatorial-rj",
         "page_size": 10_000,
         "scroll_timeout": "2m",
@@ -50,7 +50,7 @@ clocks = generate_dump_api_schedules(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=flow_parameters,
-    runs_interval_minutes=3,
+    runs_interval_minutes=180,
 )
 
 schedule = Schedule(clocks=untuple_clocks(clocks))
