@@ -34,8 +34,7 @@ with Flow(
     #####################################
 
     # INFISICAL
-    INFISICAL_PATH = smsrio_constants.INFISICAL_PATH.value
-    INFISICAL_DBURL = smsrio_constants.INFISICAL_DB_URL.value
+    INFISICAL_PATH = Parameter("infisical_path", default="/smsrio")
 
     # Flow
     RENAME_FLOW = Parameter("rename_flow", default=False)
@@ -66,7 +65,7 @@ with Flow(
     # Tasks section #1 - Get data
     #####################################
     DB_URL = get_secret_key(
-        secret_path=INFISICAL_PATH, secret_name=INFISICAL_DBURL, environment=ENVIRONMENT
+        secret_path=INFISICAL_PATH, secret_name="DB_URL", environment=ENVIRONMENT
     )
 
     queries = create_extraction_batches(

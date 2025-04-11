@@ -83,6 +83,16 @@ flow_parameters = [
         "partition_column": "datalake_loaded_at",
         "schema": "sms_pacientes",
     },
+    {
+        "environment": "prod",
+        "schema": "monitoramento",
+        "table_id": "vw_MS_CadastrosAtivacoesGov",
+        "rename_flow": True,
+        "dataset_id": "brutos_centralderegulacao_mysql",
+        "infisical_path": "/cr_mysql",
+        "relative_date_filter": "Y-10",
+        "partition_column": "datalake_loaded_at",
+    },
 ]
 
 
