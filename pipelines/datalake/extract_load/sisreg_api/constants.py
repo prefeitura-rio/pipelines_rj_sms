@@ -11,7 +11,7 @@ CONFIG = {
     "flow_owner": "matheusmiloski",
     "partition_column": "data_extracao",
     "source_format": "parquet",
-    "memory_request": "10Gi",
-    "memory_limit": "10Gi",
+    "memory_request": "12Gi",
+    "memory_limit": "12Gi",
     "num_workers": 3,
 }
