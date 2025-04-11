@@ -9,7 +9,7 @@ import pytz
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-
+from pipelines.utils.data_cleaning import remove_columns_accents
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def create_extraction_batches(
@@ -58,6 +58,8 @@ def download_from_db(
     log(f"Downloaded {len(table)} rows from Table")
 
     table["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+
+    table.columns = remove_columns_accents(table)
     return table
 
 
