@@ -3,6 +3,7 @@
 Tarefas
 """
 
+import os
 import sys
 from datetime import datetime, timedelta
 from typing import Any, Dict, Tuple
@@ -15,7 +16,9 @@ from elasticsearch import Elasticsearch, exceptions
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.tasks import upload_df_to_datalake
 
 
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
@@ -40,6 +43,9 @@ def full_extract_process(
     """
     Extrai dados do SISREG via Elasticsearch API,
     considerando apenas o intervalo [data_inicial, data_final].
+
+    Ao final, escreve em disco em formato Parquet e
+    retorna apenas o caminho do arquivo.
     """
 
     # Conecta ao Elasticsearch
@@ -121,7 +127,11 @@ def full_extract_process(
         return pd.DataFrame()
 
     df = pd.DataFrame(dados_processados)
-    return df
+
+    file_path = f"sisreg_extraction_{data_inicial}_{data_final}.parquet"
+    df.to_parquet(file_path, index=False)
+
+    return file_path
 
 
 @task
@@ -149,6 +159,7 @@ def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int
         else:
             dt_final = datetime.fromisoformat(data_final[:10])
 
+    log("Gerando faixas de datas para processamento em lotes.")
     faixas = []
     # Cria faixas de datas usando intervalos de 'dias_por_faixa'
     dt_atual = dt_inicial
@@ -161,6 +172,8 @@ def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int
         faixa_fim_str = dt_chunk_fim.strftime("%Y-%m-%d")
         faixas.append((faixa_inicio_str, faixa_fim_str))
         dt_atual = dt_chunk_fim + timedelta(days=1)
+
+    log(f"{len(faixas)} Faixas de datas geradas com sucesso.")
     return faixas
 
 
@@ -178,3 +191,59 @@ def extrair_fim(faixa: Tuple[str, str]) -> str:
     Extrai o fim do intervalo da tupla.
     """
     return faixa[1]
+
+
+@task
+def prepare_df_from_disk(file_path: str, flow_name: str, flow_owner: str) -> str:
+    """
+    Lê um arquivo Parquet do disco, chama a tarefa de preparação
+    e salva em outro arquivo. Retorna o caminho do arquivo pronto.
+    """
+    # Lendo do disco
+    df = pd.read_parquet(file_path)
+
+    # Executa a preparação (chamando a task existente)
+    df_prepared = prepare_dataframe_for_upload.run(
+        df=df, flow_name=flow_name, flow_owner=flow_owner
+    )
+
+    # Salva como outro arquivo Parquet
+    prepared_path = file_path.replace(".parquet", "_prepared.parquet")
+    df_prepared.to_parquet(prepared_path, index=False)
+
+    return prepared_path
+
+
+@task
+def upload_from_disk(
+    file_path: str,
+    table_id: str,
+    dataset_id: str,
+    partition_column: str,
+    source_format: str,
+):
+    """
+    Lê o arquivo Parquet já preparado e faz o upload usando a função/task
+    existente 'upload_df_to_datalake', que requer DataFrame em memória.
+    """
+    # Leitura do parquet
+    df = pd.read_parquet(file_path)
+
+    # Chamando a task de upload
+    upload_df_to_datalake.run(
+        df=df,
+        table_id=table_id,
+        dataset_id=dataset_id,
+        partition_column=partition_column,
+        source_format=source_format,
+    )
+
+
+@task
+def delete_file(file_path: str):
+    """
+    Deleta o arquivo local para liberar espaço em disco.
+    """
+    # Comentário em português: removendo o arquivo do disco
+    if os.path.exists(file_path):
+        os.remove(file_path)
