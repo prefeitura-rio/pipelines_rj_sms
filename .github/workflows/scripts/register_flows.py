@@ -342,6 +342,7 @@ def register_serialized_flow(
         variables=dict(input=inputs),
         retry_on_api_error=False,
     )
+    logger.info(f"Full Response: {res.data}")
 
     new_id = res.data.create_flow_from_compressed_string.id
 
