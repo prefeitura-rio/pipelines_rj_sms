@@ -91,7 +91,7 @@ flow_parameters = [
         "relative_date_filter": None,
         "rename_flow": True,
         "schema": "monitoramento",
-        "table_id": "vw_MS_CadastrosAtivacoesGov"
+        "table_id": "vw_MS_CadastrosAtivacoesGov",
     },
     {
         "dataset_id": "brutos_centralderegulacao_mysql",
@@ -101,7 +101,7 @@ flow_parameters = [
         "relative_date_filter": None,
         "rename_flow": True,
         "schema": "monitoramento",
-        "table_id": "vw_fibromialgia_relatorio"
+        "table_id": "vw_fibromialgia_relatorio",
     },
     {
         "dataset_id": "brutos_centralderegulacao_mysql",
@@ -111,7 +111,7 @@ flow_parameters = [
         "relative_date_filter": None,
         "rename_flow": True,
         "schema": "monitoramento",
-        "table_id": "vw_minhaSaude_listaUsuario"
+        "table_id": "vw_minhaSaude_listaUsuario",
     },
     {
         "dataset_id": "brutos_centralderegulacao_mysql",
@@ -121,7 +121,7 @@ flow_parameters = [
         "relative_date_filter": None,
         "rename_flow": True,
         "schema": "monitoramento",
-        "table_id": "vw_tea_relatorio"
+        "table_id": "vw_tea_relatorio",
     },
     {
         "dataset_id": "brutos_centralderegulacao_mysql",
@@ -131,8 +131,8 @@ flow_parameters = [
         "relative_date_filter": None,
         "rename_flow": True,
         "schema": "dw",
-        "table_id": "vw_minhasauderio_pesquisa_satisfacao"
-    }
+        "table_id": "vw_minhasauderio_pesquisa_satisfacao",
+    },
 ]
 
 
