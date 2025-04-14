@@ -88,7 +88,6 @@ flow_parameters = [
         "environment": "prod",
         "infisical_path": "/cr_mysql",
         "partition_column": "datalake_loaded_at",
-        "relative_date_filter": None,
         "rename_flow": True,
         "schema": "monitoramento",
         "table_id": "vw_MS_CadastrosAtivacoesGov",
