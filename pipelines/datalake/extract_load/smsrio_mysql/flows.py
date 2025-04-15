@@ -42,6 +42,8 @@ with Flow(
     # SMSRio DB
     TABLE_ID = Parameter("table_id", required=True)
     SCHEMA = Parameter("schema", required=True)
+    DATETIME_COLUMN = Parameter("datetime_column", default="timestamp")
+    ID_COLUMN = Parameter("id_column", default="id")
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -73,6 +75,8 @@ with Flow(
         db_schema=SCHEMA,
         db_table=TABLE_ID,
         date_filter=date_filter,
+        datetime_column=DATETIME_COLUMN,
+        id_column=ID_COLUMN,
     )
 
     dataframes = download_from_db.map(

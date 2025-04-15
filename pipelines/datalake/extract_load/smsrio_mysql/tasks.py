@@ -17,13 +17,15 @@ def create_extraction_batches(
     db_url: str,
     db_schema: str,
     db_table: str,
+    datetime_column: str,
+    id_column: str,
     batch_size: int = 50000,
     date_filter: datetime = None,
 ) -> list[str]:
 
     sql_filter = ""
     if date_filter:
-        sql_filter = f"WHERE timestamp >= '{date_filter.strftime('%Y-%m-%d')}'"
+        sql_filter = f"WHERE {datetime_column} >= '{date_filter.strftime('%Y-%m-%d')}'"
 
     total_rows = pd.read_sql(
         f"SELECT COUNT(*) as quant FROM {db_schema}.{db_table} {sql_filter}", db_url
@@ -40,7 +42,7 @@ def create_extraction_batches(
     for i in range(num_batches):
         query = f"""
             SELECT * FROM {db_schema}.{db_table} {sql_filter}
-            ORDER BY id ASC
+            ORDER BY {id_column} ASC
             LIMIT {batch_size} OFFSET {i * batch_size}
         """
         log(f"Query {i+1}: {query}")
