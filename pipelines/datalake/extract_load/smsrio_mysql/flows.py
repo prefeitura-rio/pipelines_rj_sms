@@ -105,7 +105,7 @@ sms_dump_smsrio.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi",
+    memory_limit="5Gi",
 )
 
 sms_dump_smsrio.schedule = smsrio_daily_update_schedule
