@@ -127,6 +127,7 @@ flow_parameters = [
         "partition_column": "datalake_loaded_at",
         "rename_flow": True,
         "schema": "dw",
+        "id_column": "cpf",
         "table_id": "vw_minhasauderio_pesquisa_satisfacao",
     },
 ]
