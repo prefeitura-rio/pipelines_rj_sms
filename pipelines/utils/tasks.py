@@ -671,6 +671,12 @@ def create_partitions(
         None
     """
 
+    log(f"Data path: {data_path}")
+    log(f"Partition directory: {partition_directory}")
+    log(f"Partition level: {level}")
+    log(f"Partition date: {partition_date}")
+    log(f"File type: {file_type}")
+
     # check if data_path is a directory or a file
     if isinstance(data_path, str):
         if os.path.isdir(data_path):
