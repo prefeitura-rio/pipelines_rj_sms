@@ -109,6 +109,7 @@ flow_parameters = [
         "rename_flow": True,
         "schema": "monitoramento",
         "table_id": "vw_minhaSaude_listaUsuario",
+        "id_column": "idUsuario",
     },
     {
         "dataset_id": "brutos_centralderegulacao_mysql",

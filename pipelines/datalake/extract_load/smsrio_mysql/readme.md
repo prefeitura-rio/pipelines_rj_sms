@@ -8,3 +8,5 @@
 - relative_date_filter (date): representa a data em que o dado da fonte será filtrado.
 - schema* (str): representa o nome do schema MySQL em que a tabela fonte se encontra.
 - partition_column (str): nome da coluna que será utilizada para criar as partições do dataframe.
+- id_column (str): especifica o id da coluna que será utilizada para ordenamento dos dados. Padrão `id`
+- datetime_column(str): especifica o nome da coluna temporal que será utilizada para filtro. Padrão `timestamp`
