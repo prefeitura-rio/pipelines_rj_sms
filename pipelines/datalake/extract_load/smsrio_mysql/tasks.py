@@ -51,7 +51,7 @@ def create_extraction_batches(
     return queries
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task(max_retries=3, retry_delay=timedelta(seconds=90))
 def download_from_db(
     db_url: str,
     query: str,
