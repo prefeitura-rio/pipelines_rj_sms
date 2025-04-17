@@ -65,9 +65,9 @@ with Flow(
         upstream_tasks=[exames_upload_task],
     )
 
-flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow.executor = LocalDaskExecutor(num_workers=3)
-flow.run_config = KubernetesRun(
+flow_cientificalab.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_cientificalab.executor = LocalDaskExecutor(num_workers=3)
+flow_cientificalab.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
