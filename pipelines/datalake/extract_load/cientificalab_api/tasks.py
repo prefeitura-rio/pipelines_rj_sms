@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pandas as pd
+import pytz
 import requests
 from bs4 import BeautifulSoup
-import uuid
-import pytz
-import pandas as pd
-from datetime import timedelta, datetime
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
@@ -32,8 +30,8 @@ def authenticate_and_fetch(
     res.raise_for_status()
     result = res.json()
 
-    if result.get('status') != 200:
-      raise Exception(result.get('mensagem'))
+    if result.get("status") != 200:
+        raise Exception(result.get("mensagem"))
 
     token = result.get("token")
 
@@ -106,12 +104,12 @@ def transform(resultado_xml: str):
                 resultados_rows.append(resultado_row)
 
     resultados_df = pd.DataFrame(resultados_rows)
-    resultados_df['datalake_loaded_at'] = datetime.now(tz=pytz.timezone('America/Sao_Paulo'))
+    resultados_df["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
     exames_df = pd.DataFrame(exames_rows)
-    exames_df['datalake_loaded_at'] = datetime.now(tz=pytz.timezone('America/Sao_Paulo'))
+    exames_df["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
     solicitacoes_df = pd.DataFrame(solicitacoes_rows)
-    solicitacoes_df['datalake_loaded_at'] = datetime.now(tz=pytz.timezone('America/Sao_Paulo'))
+    solicitacoes_df["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
     return solicitacoes_df, exames_df, resultados_df

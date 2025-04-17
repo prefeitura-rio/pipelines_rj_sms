@@ -10,6 +10,7 @@ Imports all flows for every project so we can register all of them.
 # EXTRACT AND LOAD
 # ===============================
 from pipelines.datalake.extract_load.centralregulacao_mysql.flows import *
+from pipelines.datalake.extract_load.cientificalab_api.flows import *
 from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows import *
 from pipelines.datalake.extract_load.datalake_bigquery.flows import *
 from pipelines.datalake.extract_load.datasus_ftp.flows import *
@@ -28,7 +29,6 @@ from pipelines.datalake.extract_load.vitacare_db.flows import *
 from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
-from pipelines.datalake.extract_load.cientificalab_api.flows import *
 
 # ===============================
 # MIGRATE
