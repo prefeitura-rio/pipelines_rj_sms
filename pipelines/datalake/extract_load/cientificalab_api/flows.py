@@ -35,7 +35,6 @@ with Flow(
         apccodigo=apccodigo_secret,
         dt_inicio=DT_INICIO,
         dt_fim=DT_FIM,
-        dt_fim=DT_FIM,
     )
 
     solicitacoes_df, exames_df, resultados_df = transform(resultado_xml=resultado_xml)
