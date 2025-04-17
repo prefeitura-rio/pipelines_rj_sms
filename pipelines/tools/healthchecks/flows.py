@@ -47,10 +47,10 @@ with Flow("Tool: Health Check") as flow_healthcheck:
     )
 
 
-flow.executor = LocalDaskExecutor(num_workers=8)
-flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow.run_config = KubernetesRun(
+flow_healthcheck.executor = LocalDaskExecutor(num_workers=8)
+flow_healthcheck.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_healthcheck.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
-flow.schedule = schedule
+flow_healthcheck.schedule = schedule
