@@ -14,7 +14,7 @@ from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - CientíficaLab",
-) as flow:
+) as flow_cientificalab:
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", required=True)
     DT_FIM = Parameter("dt_fim", required=True)
@@ -37,7 +37,9 @@ with Flow(
         dt_fim=DT_FIM,
     )
 
-    solicitacoes_df, exames_df, resultados_df = transform(resultado_xml=resultado_xml)
+    solicitacoes_df, exames_df, resultados_df = transform(
+        resultado_xml=resultado_xml
+    )
 
     solicitacoes_upload_task = upload_df_to_datalake(
         df=solicitacoes_df,

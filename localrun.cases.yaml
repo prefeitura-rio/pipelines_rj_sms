@@ -317,7 +317,7 @@ cases:
       dias_por_faixa: 30
   - case_slug: "cientificalab_api"
     flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
-    flow_name: "flow"
+    flow_name: "flow_cientificalab"
     params:
       environment: 'dev'
       dt_inicio: '2025-01-21T10:00:00-0300'
