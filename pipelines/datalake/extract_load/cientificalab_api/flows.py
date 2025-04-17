@@ -6,14 +6,13 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
 from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     transform,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import get_datetime_working_range
-from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
-
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - CientificaLab",
