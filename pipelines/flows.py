@@ -28,6 +28,7 @@ from pipelines.datalake.extract_load.vitacare_db.flows import *
 from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
+from pipelines.datalake.extract_load.cientificalab_api.flows import *
 
 # ===============================
 # MIGRATE
