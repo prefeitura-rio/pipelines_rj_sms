@@ -13,7 +13,7 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - CientíficaLab",
+    name="DataLake - Extração e Carga de Dados - CientificaLab",
 ) as flow_cientificalab:
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", required=True)
