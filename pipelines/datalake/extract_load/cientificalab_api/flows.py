@@ -18,7 +18,6 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
 with Flow(
     name="DataLake - Extração e Carga de Dados - CientíficaLab",
 ) as flow:
-
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", required=True)
     DT_FIM = Parameter("dt_fim", required=True)
@@ -44,17 +43,35 @@ with Flow(
         password=password_secret,
         apccodigo=apccodigo_secret,
         dt_inicio=DT_INICIO,
-        dt_fim=DT_FIM
+        dt_fim=DT_FIM,
     )
-
+    
     solicitacoes_df, exames_df, resultados_df = transform(resultado_xml)
 
-    upload_df_to_datalake(solicitacoes_df, 'solicitacoes')
-    upload_df_to_datalake(exames_df, 'exames')
-    upload_df_to_datalake(resultados_df, 'resultados')
+    upload_df_to_datalake(
+        df=solicitacoes_df,
+        dataset_id="brutos_cientificalab",
+        table_id="solicitacoes",
+        source_format="parquet",
+        partition_column="datalake_loaded_at",
+    )
+    upload_df_to_datalake(
+        df=exames_df,
+        dataset_id="brutos_cientificalab",
+        table_id="exames",
+        source_format="parquet",
+        partition_column="datalake_loaded_at",
+    )
+    upload_df_to_datalake(
+        df=resultados_df,
+        dataset_id="brutos_cientificalab",
+        table_id="resultados",
+        source_format="parquet",
+        partition_column="datalake_loaded_at",
+    )
 
 flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow.executor = LocalDaskExecutor(num_workers=10)
+flow.executor = LocalDaskExecutor(num_workers=3)
 flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
