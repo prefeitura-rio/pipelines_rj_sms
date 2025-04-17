@@ -37,9 +37,7 @@ with Flow(
         dt_fim=DT_FIM,
     )
 
-    solicitacoes_df, exames_df, resultados_df = transform(
-        resultado_xml=resultado_xml
-    )
+    solicitacoes_df, exames_df, resultados_df = transform(resultado_xml=resultado_xml)
 
     solicitacoes_upload_task = upload_df_to_datalake(
         df=solicitacoes_df,
