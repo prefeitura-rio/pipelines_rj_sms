@@ -11,13 +11,16 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     transform,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.utils.time import get_datetime_working_range
+from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
+
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - CientificaLab",
 ) as flow_cientificalab:
     ENVIRONMENT = Parameter("environment", default="dev")
-    DT_INICIO = Parameter("dt_inicio", required=True)
-    DT_FIM = Parameter("dt_fim", required=True)
+    DT_INICIO = Parameter("dt_inicio", default="")
+    DT_FIM = Parameter("dt_fim", default="")
 
     username_secret = get_secret_key(
         secret_path="/cientificalab", secret_name="USERNAME", environment=ENVIRONMENT
@@ -29,12 +32,19 @@ with Flow(
         secret_path="/cientificalab", secret_name="APCCODIGO", environment=ENVIRONMENT
     )
 
+    start_datetime, end_datetime = get_datetime_working_range(
+        start_datetime=DT_INICIO,
+        end_datetime=DT_FIM,
+        interval=1,
+        return_as_str=True,
+    )
+
     resultado_xml = authenticate_and_fetch(
         username=username_secret,
         password=password_secret,
         apccodigo=apccodigo_secret,
-        dt_inicio=DT_INICIO,
-        dt_fim=DT_FIM,
+        dt_inicio=start_datetime,
+        dt_fim=end_datetime,
     )
 
     solicitacoes_df, exames_df, resultados_df = transform(resultado_xml=resultado_xml)
@@ -63,6 +73,7 @@ with Flow(
         upstream_tasks=[exames_upload_task],
     )
 
+flow_cientificalab.schedule = schedule
 flow_cientificalab.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 flow_cientificalab.executor = LocalDaskExecutor(num_workers=3)
 flow_cientificalab.run_config = KubernetesRun(

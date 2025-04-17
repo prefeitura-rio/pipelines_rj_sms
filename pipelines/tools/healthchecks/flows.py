@@ -16,7 +16,7 @@ from pipelines.tools.healthchecks.tasks import (
 )
 from pipelines.utils.tasks import upload_df_to_datalake
 
-with Flow("Tool: Health Check") as flow:
+with Flow("Tool: Health Check") as flow_healthcheck:
 
     ENVIRONMENT = Parameter("environment", default="dev")
 
