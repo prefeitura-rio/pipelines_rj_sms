@@ -27,7 +27,7 @@ def authenticate_and_fetch(
   res.raise_for_status()
   result = res.json()
 
-  if res.get('status') != 200:
+  if result.get('status') != 200:
     raise Exception(result.get('mensagem'))
 
   token = result.get('token')

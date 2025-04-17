@@ -46,28 +46,32 @@ with Flow(
         dt_fim=DT_FIM,
     )
     
-    solicitacoes_df, exames_df, resultados_df = transform(resultado_xml)
+    solicitacoes_df, exames_df, resultados_df = transform(
+        resultado_xml=resultado_xml
+    )
 
-    upload_df_to_datalake(
+    solicitacoes_upload_task = upload_df_to_datalake(
         df=solicitacoes_df,
         dataset_id="brutos_cientificalab",
         table_id="solicitacoes",
         source_format="parquet",
         partition_column="datalake_loaded_at",
     )
-    upload_df_to_datalake(
+    exames_upload_task = upload_df_to_datalake(
         df=exames_df,
         dataset_id="brutos_cientificalab",
         table_id="exames",
         source_format="parquet",
         partition_column="datalake_loaded_at",
+        upstream_tasks=[solicitacoes_upload_task],
     )
-    upload_df_to_datalake(
+    resultados_upload_task = upload_df_to_datalake(
         df=resultados_df,
         dataset_id="brutos_cientificalab",
         table_id="resultados",
         source_format="parquet",
         partition_column="datalake_loaded_at",
+        upstream_tasks=[exames_upload_task],
     )
 
 flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
