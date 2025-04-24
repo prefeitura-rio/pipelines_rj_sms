@@ -71,23 +71,40 @@ def transform(resultado_xml: str):
     lote = soup.find("lote")
 
     for solicitacao in lote.find_all("solicitacao"):
-        solicitacao_id = str(uuid.uuid4())
         solicitacoes_row = solicitacao.attrs
-        solicitacoes_row["id"] = solicitacao_id
 
+        # Atributos de suporte
         for entidade_suporte in ["responsaveltecnico", "paciente"]:
             for key, value in solicitacao.find(entidade_suporte).attrs.items():
                 solicitacoes_row[f"{entidade_suporte}_{key}"] = value
 
-        lote_attrs = lote.attrs
-        for key, value in lote_attrs.items():
+        for key, value in lote.attrs.items():
             solicitacoes_row[f"lote_{key}"] = value
 
+        # Gerando ID determinístico para a solicitação
+        solicitacao_id = str(uuid.uuid5(
+            uuid.NAMESPACE_DNS,
+            f"{solicitacoes_row.get('codigoLis', '')}|"
+            f"{solicitacoes_row.get('codigoApoio', '')}|"
+            f"{solicitacoes_row.get('dataPedido', '')}|"
+            f"{solicitacoes_row.get('paciente_nome', '')}|"
+            f"{solicitacoes_row.get('paciente_cpf', '')}"
+        ))
+        solicitacoes_row["id"] = solicitacao_id
         solicitacoes_rows.append(solicitacoes_row)
 
         for exame in solicitacao.find_all("exame"):
-            exame_id = str(uuid.uuid4())
             exames_row = exame.attrs
+
+            # Gerando ID determinístico para o exame
+            exame_id = str(uuid.uuid5(
+                uuid.NAMESPACE_DNS,
+                f"{solicitacao_id}|"
+                f"{exames_row.get('codigoExame', '')}|"
+                f"{exames_row.get('codApoio', '')}|"
+                f"{exames_row.get('dataAssinatura', '')}"
+            ))
+
             exames_row["id"] = exame_id
             exames_row["solicitacao_id"] = solicitacao_id
 
@@ -99,17 +116,27 @@ def transform(resultado_xml: str):
 
             for resultado in exame.find_all("resultado"):
                 resultado_row = resultado.attrs
-                resultado_row["exame_id"] = exame_id
 
+                # Gerando ID determinístico para o resultado
+                resultado_id = str(uuid.uuid5(
+                    uuid.NAMESPACE_DNS,
+                    f"{resultado_row.get('codigoApoio', '')}|"
+                    f"{resultado_row.get('descricaoApoio', '')}|"
+                    f"{exame_id}"
+                ))
+
+                resultado_row["id"] = resultado_id
+                resultado_row["exame_id"] = exame_id
                 resultados_rows.append(resultado_row)
 
-    resultados_df = pd.DataFrame(resultados_rows)
-    resultados_df["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-
-    exames_df = pd.DataFrame(exames_rows)
-    exames_df["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+    # Convertendo para DataFrames
+    now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
     solicitacoes_df = pd.DataFrame(solicitacoes_rows)
-    solicitacoes_df["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+    exames_df = pd.DataFrame(exames_rows)
+    resultados_df = pd.DataFrame(resultados_rows)
+
+    for df in [solicitacoes_df, exames_df, resultados_df]:
+        df["datalake_loaded_at"] = now
 
     return solicitacoes_df, exames_df, resultados_df
