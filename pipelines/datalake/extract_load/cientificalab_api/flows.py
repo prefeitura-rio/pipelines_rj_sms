@@ -31,6 +31,9 @@ with Flow(
         secret_path="/cientificalab", secret_name="APCCODIGO", environment=ENVIRONMENT
     )
 
+    # BIG QUERY
+    DATASET_ID = Parameter("dataset_id", default="brutos_cientificalab", required=True)
+
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=DT_INICIO,
         end_datetime=DT_FIM,
@@ -50,14 +53,14 @@ with Flow(
 
     solicitacoes_upload_task = upload_df_to_datalake(
         df=solicitacoes_df,
-        dataset_id="brutos_cientificalab",
+        dataset_id=DATASET_ID,
         table_id="solicitacoes",
         source_format="parquet",
         partition_column="datalake_loaded_at",
     )
     exames_upload_task = upload_df_to_datalake(
         df=exames_df,
-        dataset_id="brutos_cientificalab",
+        dataset_id=DATASET_ID,
         table_id="exames",
         source_format="parquet",
         partition_column="datalake_loaded_at",
@@ -65,7 +68,7 @@ with Flow(
     )
     resultados_upload_task = upload_df_to_datalake(
         df=resultados_df,
-        dataset_id="brutos_cientificalab",
+        dataset_id=DATASET_ID,
         table_id="resultados",
         source_format="parquet",
         partition_column="datalake_loaded_at",
