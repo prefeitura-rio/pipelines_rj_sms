@@ -48,6 +48,7 @@ with Flow(
         end_datetime=DT_FIM,
         interval=1,
         return_as_str=True,
+        timezone="America/Sao_Paulo",
     )
 
     resultado_xml = authenticate_and_fetch(
