@@ -11,6 +11,9 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     transform,
 )
+from pipelines.datalake.extract_load.cientificalab_api.constants import (
+    constants as cientificalab_constants,
+)
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import get_datetime_working_range
 
@@ -21,18 +24,24 @@ with Flow(
     DT_INICIO = Parameter("dt_inicio", default="")
     DT_FIM = Parameter("dt_fim", default="")
 
+    # INFISICAL
+    INFISICAL_PATH = cientificalab_constants.INFISICAL_PATH.value
+    INFISICAL_USERNAME = cientificalab_constants.INFISICAL_USERNAME.value
+    INFISICAL_PASSOWRD = cientificalab_constants.INFISICAL_PASSOWRD.value
+    INFISICAL_APCCODIGO = cientificalab_constants.INFISICAL_APCCODIGO.value
+
     username_secret = get_secret_key(
-        secret_path="/cientificalab", secret_name="USERNAME", environment=ENVIRONMENT
+        secret_path=INFISICAL_PATH, secret_name=INFISICAL_USERNAME, environment=ENVIRONMENT
     )
     password_secret = get_secret_key(
-        secret_path="/cientificalab", secret_name="PASSWORD", environment=ENVIRONMENT
+        secret_path=INFISICAL_USERNAME, secret_name=INFISICAL_PASSOWRD, environment=ENVIRONMENT
     )
     apccodigo_secret = get_secret_key(
-        secret_path="/cientificalab", secret_name="APCCODIGO", environment=ENVIRONMENT
+        secret_path=INFISICAL_USERNAME, secret_name=INFISICAL_APCCODIGO, environment=ENVIRONMENT
     )
 
     # BIG QUERY
-    DATASET_ID = Parameter("dataset_id", default="brutos_cientificalab", required=True)
+    DATASET_ID = Parameter("dataset_id", default=cientificalab_constants.DATASET_ID.value, required=True)
 
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=DT_INICIO,
