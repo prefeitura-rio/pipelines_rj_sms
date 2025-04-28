@@ -22,7 +22,7 @@ def fix_csv(csv_text: str, sep: str) -> str:
 
     max_cols = len(columns)
     for line in other_lines:
-        line_columns = line.split(",") # FIXME: `sep` ao invés de ","? -Avellar
+        line_columns = line.split(",")  # FIXME: `sep` ao invés de ","? -Avellar
 
         if len(line_columns) > max_cols:
             max_cols = len(line_columns)
@@ -75,14 +75,14 @@ def download_file(bucket, file_name, extra_safe=True):
     # Arquivos muito grandes estouram a memória do processo (OOMKilled)
     # Então precisamos quebrar esse arquivo em partes
     # [Ref] https://pipelines.dados.rio/sms/flow-run/1b988b6c-44d6-419c-b11f-2feabbb11ce2?logs
-    
+
     csv_file = None
     sep = None
     # Caso o arquivo tenha >500 MB
     if size_in_mb > 500:
         # Gera nome do arquivo temporário
         timestamp = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat()
-        file_name_no_slash = file_name.replace('/','-').replace('\\','-')
+        file_name_no_slash = file_name.replace("/", "-").replace("\\", "-")
         tmp_file_name = f"{timestamp}--{file_name_no_slash}"
 
         try:
@@ -92,10 +92,11 @@ def download_file(bucket, file_name, extra_safe=True):
         except Exception as e:
             log("error")
             log(e)
-        
+
         log("[download_file] Saved to local file: '/tmp/{tmp_file_name}'")
-        
-        from os import listdir #FIXME
+
+        from os import listdir  # FIXME
+
         log(listdir("/tmp"))
         # TODO: Está lidando corretamente com não-UTF-8? Precisa?
         csv_file = open(f"/tmp/{tmp_file_name}", "r")
@@ -104,9 +105,9 @@ def download_file(bucket, file_name, extra_safe=True):
         csv_file.seek(0)
         sep = detect_separator(first_line)
 
-        if extra_safe: 
-            #csv_text = fix_csv(csv_text, sep)
-            log("[!] 'Fix CSV' for big files is not implemented yet", level="warning") #FIXME
+        if extra_safe:
+            # csv_text = fix_csv(csv_text, sep)
+            log("[!] 'Fix CSV' for big files is not implemented yet", level="warning")  # FIXME
 
     # Caso o arquivo tenha <= 500 MB
     else:
