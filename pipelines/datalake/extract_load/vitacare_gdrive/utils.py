@@ -22,7 +22,7 @@ def fix_csv(csv_text: str, sep: str) -> str:
 
     max_cols = len(columns)
     for line in other_lines:
-        line_columns = line.split(",")
+        line_columns = line.split(",") # FIXME: `sep` ao invés de ","? -Avellar
 
         if len(line_columns) > max_cols:
             max_cols = len(line_columns)
@@ -57,60 +57,78 @@ def fix_column_name(column_name: str) -> str:
 
 def detect_separator(csv_text: str) -> str:
     first_line = csv_text.splitlines()[0]
-    if len(first_line.split(",")) > len(first_line.split(";")):
+    # Problema em potencial: presume que, se há mais ',' que ';',
+    # o delimitador é ',', e vice-versa. Não necessariamente verdade
+    if first_line.count(",") > first_line.count(";"):
         return ","
     else:
         return ";"
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
-def safe_download_file(bucket, file_name):
+def download_file(bucket, file_name, extra_safe=True):
     blob = bucket.get_blob(file_name)
     size_in_bytes = blob.size
     size_in_mb = size_in_bytes / (1024 * 1024)
+    log(f"[download_file] Beginning download of '{file_name}' ({size_in_mb:.1f} MB)")
 
-    log(f"Beginning Download of {file_name} with {size_in_mb:.1f} MB")
-    data = blob.download_as_bytes()
-    detected_encoding = chardet.detect(data)["encoding"]
-    csv_text = data.decode(detected_encoding)
+    # Arquivos muito grandes estouram a memória do processo (OOMKilled)
+    # Então precisamos quebrar esse arquivo em partes
+    # [Ref] https://pipelines.dados.rio/sms/flow-run/1b988b6c-44d6-419c-b11f-2feabbb11ce2?logs
+    
+    csv_file = None
+    sep = None
+    # Caso o arquivo tenha >500 MB
+    if size_in_mb > 500:
+        # Gera nome do arquivo temporário
+        timestamp = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat()
+        file_name_no_slash = file_name.replace('/','-').replace('\\','-')
+        tmp_file_name = f"{timestamp}--{file_name_no_slash}"
 
-    sep = detect_separator(csv_text)
+        try:
+            # Download do arquivo direto para disco
+            with open(f"/tmp/{tmp_file_name}", "wb+") as file_obj:
+                blob.download_to_file(file_obj)
+        except Exception as e:
+            log("error")
+            log(e)
+        
+        log("[download_file] Saved to local file: '/tmp/{tmp_file_name}'")
+        
+        from os import listdir #FIXME
+        log(listdir("/tmp"))
+        # TODO: Está lidando corretamente com não-UTF-8? Precisa?
+        csv_file = open(f"/tmp/{tmp_file_name}", "r")
+        # Pega primeira linha para detectar separador
+        first_line = csv_file.readline()
+        csv_file.seek(0)
+        sep = detect_separator(first_line)
 
-    # Fix CSV
-    csv_text = fix_csv(csv_text, sep)
-    csv_file = io.StringIO(csv_text)
+        if extra_safe: 
+            #csv_text = fix_csv(csv_text, sep)
+            log("[!] 'Fix CSV' for big files is not implemented yet", level="warning") #FIXME
 
-    # Read CSV
-    try:
-        df = pd.read_csv(csv_file, sep=sep, dtype=str, encoding="utf-8")
-    except pd.errors.ParserError:
-        log("Error reading CSV file")
-        return pd.DataFrame()
+    # Caso o arquivo tenha <= 500 MB
+    else:
+        # Download do arquivo em memória
+        data = blob.download_as_bytes()
+        detected_encoding = chardet.detect(data)["encoding"]
+        csv_text = data.decode(detected_encoding)
+        sep = detect_separator(csv_text)
+        # Fix CSV
+        if extra_safe:
+            csv_text = fix_csv(csv_text, sep)
+        csv_file = io.StringIO(csv_text)
 
-    df.columns = [fix_column_name(column) for column in df.columns]
-
-    df["_source_file"] = file_name
-    df["_extracted_at"] = blob.updated.astimezone(tz=pytz.timezone("America/Sao_Paulo"))
-    df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-
-    log(f"Finishing Download of {file_name}")
-    return df
-
-
-@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
-def download_file(bucket, file_name):
-    log(f"Streaming download of {file_name}")
-    blob = bucket.blob(file_name)
-    stream = io.BytesIO()
-    blob.download_to_file(stream)
-    stream.seek(0)
-
-    # Se você conhece o separador, use diretamente. Senão, leia só o cabeçalho para detectar
-    sample = stream.read(1024).decode("utf-8", errors="ignore")
-    sep = detect_separator(sample)
-    stream.seek(0)
-
-    df = pd.read_csv(stream, sep=sep, dtype=str, encoding="utf-8")
+    df = None
+    # 'with' garante que o buffer é fechado depois do uso
+    with csv_file:
+        try:
+            # TODO: Acho que read_csv() coloca o arquivo todo em memória; se sim, temos um problema enorme
+            df = pd.read_csv(csv_file, sep=sep, dtype=str, encoding="utf-8")
+        except pd.errors.ParserError:
+            log("Error reading CSV file")
+            return pd.DataFrame()
 
     df.columns = [fix_column_name(col) for col in df.columns]
     df["_source_file"] = file_name

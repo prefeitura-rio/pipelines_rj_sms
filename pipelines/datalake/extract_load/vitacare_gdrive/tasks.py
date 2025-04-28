@@ -6,10 +6,7 @@ import pandas as pd
 from google.cloud import storage
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
-from pipelines.datalake.extract_load.vitacare_gdrive.utils import (
-    download_file,
-    safe_download_file,
-)
+from pipelines.datalake.extract_load.vitacare_gdrive.utils import download_file
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
@@ -51,7 +48,7 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
     most_recent_file = files[-1].name
     log(f"Most recent file: {most_recent_file}")
 
-    df = safe_download_file(bucket, most_recent_file)
+    df = download_file(bucket, most_recent_file, extra_safe=True)
     return df.columns.tolist()
 
 
@@ -71,10 +68,7 @@ def upload_consistent_files(
 
     # Download file
     try:
-        if use_safe_download_file:
-            df = safe_download_file(bucket, file_name)
-        else:
-            df = download_file(bucket, file_name)
+        df = download_file(bucket, file_name, extra_safe=use_safe_download_file)
     except Exception as e:
         log(f"Error downloading file {file_name}: {e}", level="error")
         return {
