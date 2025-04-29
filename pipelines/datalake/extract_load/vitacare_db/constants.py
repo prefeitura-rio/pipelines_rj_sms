@@ -12,8 +12,9 @@ class constants(Enum):
     """
 
     GCS_BUCKET = {
-        "dev": "vitacare_db_dump_dev",
-        "local-prod": "vitacare_db_dump",
-        "prod": "vitacare_db_dump",
+        "dev": "vitacare_backups_gdrive",
+        "local-prod": "vitacare_backups_gdrive",
+        "prod": "vitacare_backups_gdrive",
     }
     GDRIVE_FOLDER_ID = "1VUdm8fixnUs_dJrcflsNvzXIGPX6e-2r"
+    BACKUP_SUBFOLDER = "vitacare_historic"

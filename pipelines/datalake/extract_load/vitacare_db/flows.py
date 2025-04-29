@@ -37,8 +37,8 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
     # VITACARE DB
+    AP = Parameter("ap", default=None, required=True)
     CNES = Parameter("cnes", default=None, required=True)
-    BACKUP_SUBFOLDER = Parameter("backup_subfolder", default=None, required=True)
     UPLOAD_IF_TABLE_IS_MISSING = Parameter("upload_if_table_is_missing", default=False)
 
     # GCP
@@ -60,7 +60,6 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
             environment=ENVIRONMENT,
             unidade=healthcenter_name,
             cnes=CNES,
-            backup_subfolder=BACKUP_SUBFOLDER,
             upstream_tasks=[healthcenter_name],
         )
 
@@ -72,7 +71,7 @@ with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_du
 
     backup_file = get_backup_file(
         bucket_name=bucket_name,
-        backup_subfolder=BACKUP_SUBFOLDER,
+        ap=AP,
         cnes=CNES,
         upstream_tasks=[bucket_name],
     )

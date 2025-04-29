@@ -87,30 +87,40 @@ def get_bucket_name(env: str):
 
 
 @task
-def get_backup_file(bucket_name: str, backup_subfolder: str, cnes: str):
+def get_backup_file(bucket_name: str, cnes: str, ap: str):
     """
     Get the backup filename from the bucket.
     """
 
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
+
+    file_prefix = f"{vitacare_constants.BACKUP_SUBFOLDER.value}/AP{ap}/"
     blobs_iter = bucket.list_blobs(
-        prefix=f"backups/{backup_subfolder}", match_glob=f"**vitacare_historic_{cnes}*.bak"
+        prefix=file_prefix,
+        match_glob=f"vitacare_historic_{cnes}_*.bak"
     )
 
     blobs = list(blobs_iter)
+    log(f"Found {len(blobs)} backup files for AP{ap} and CNES{cnes}:", level="info")
+    for blob in blobs:
+        log(f"- {blob.name}", level="info")
 
-    if len(blobs) != 1:
-        error_message = f"Expected 1 file, got {len(blobs)}"
+    # Check if there are any blobs
+    if len(blobs) == 0:
+        error_message = f"No backup files found for AP{ap} and CNES{cnes}"
         log(error_message, level="error")
         raise FAIL(error_message)
+    
+    # Sort Blobs by Name
+    blobs.sort(key=lambda x: x.name, reverse=True)
 
     folder_path = "/var/opt/mssql/backup"
 
     if not os.path.exists(folder_path):
         os.makedirs(folder_path, exist_ok=True)
 
-    destination_file_name = os.path.join(folder_path, blobs[0].name.removeprefix("backups/"))
+    destination_file_name = os.path.join(folder_path, blobs[0].name.removeprefix(file_prefix))
 
     log(f"Backup file retrieved successfully: {destination_file_name}", level="info")
 
