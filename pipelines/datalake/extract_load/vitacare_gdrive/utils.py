@@ -39,20 +39,19 @@ def fix_csv(csv_text: str, sep: str) -> str:
 
 
 def fix_column_name(column_name: str) -> str:
-    c = (
-        column_name.replace("(", "")
-        .replace(")", "")
-        .replace(" ", "_")
-        .replace("-", "_")
-        .replace(".", "_")
-        .replace("/", "_")
-        .replace(",", "_")
-        .replace("[", "_")
-        .replace("]", "_")
-        .lower()
-    )
+    replace_from = [
+        [ "(", ")" ],
+        [ " ", "[", "]", "-", ".", ",", "/", "\\", "'", "\"" ]
+    ]
+    replace_to = [
+        "",
+        "_"
+    ]
+    for from_list, to_char in zip(replace_from, replace_to):
+        for from_char in from_list:
+            column_name = column_name.replace(from_char, to_char)
 
-    return unidecode(c)
+    return unidecode(column_name).lower()
 
 
 def detect_separator(csv_text: str) -> str:
@@ -93,11 +92,8 @@ def download_file(bucket, file_name, extra_safe=True):
             log("error")
             log(e)
 
-        log("[download_file] Saved to local file: '/tmp/{tmp_file_name}'")
+        log(f"[download_file] Saved to local file: '/tmp/{tmp_file_name}'")
 
-        from os import listdir  # FIXME
-
-        log(listdir("/tmp"))
         # TODO: Está lidando corretamente com não-UTF-8? Precisa?
         csv_file = open(f"/tmp/{tmp_file_name}", "r")
         # Pega primeira linha para detectar separador
@@ -121,19 +117,14 @@ def download_file(bucket, file_name, extra_safe=True):
             csv_text = fix_csv(csv_text, sep)
         csv_file = io.StringIO(csv_text)
 
-    df = None
-    # 'with' garante que o buffer é fechado depois do uso
-    with csv_file:
-        try:
-            # TODO: Acho que read_csv() coloca o arquivo todo em memória; se sim, temos um problema enorme
-            df = pd.read_csv(csv_file, sep=sep, dtype=str, encoding="utf-8")
-        except pd.errors.ParserError:
-            log("Error reading CSV file")
-            return pd.DataFrame()
-
-    df.columns = [fix_column_name(col) for col in df.columns]
-    df["_source_file"] = file_name
-    df["_extracted_at"] = blob.updated.astimezone(pytz.timezone("America/Sao_Paulo"))
-    df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-
-    return df
+    # Retorna tupla com handle do buffer aberto do CSV (arquivo real ou StringIO, a depender do tamanho)
+    # separador detectado, e metadado a ser adicionado ao dataframe final
+    return (
+        csv_file,
+        sep,
+        {
+            "_source_file": file_name,
+            "_extracted_at": blob.updated.astimezone(pytz.timezone("America/Sao_Paulo")),
+            "_loaded_at": datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+        }
+    )

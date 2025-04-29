@@ -6,7 +6,7 @@ import pandas as pd
 from google.cloud import storage
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
-from pipelines.datalake.extract_load.vitacare_gdrive.utils import download_file
+from pipelines.datalake.extract_load.vitacare_gdrive.utils import download_file, fix_column_name
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
@@ -48,8 +48,27 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
     most_recent_file = files[-1].name
     log(f"Most recent file: {most_recent_file}")
 
-    df = download_file(bucket, most_recent_file, extra_safe=True)
-    return df.columns.tolist()
+    # Baixa o arquivo mais recente
+    (csv_file, detected_separator, _) = download_file(bucket, most_recent_file, extra_safe=True)
+    # Só queremos o cabeçalho
+    lines_per_chunk = 2
+    try:
+        # Cria um leitor do arquivo CSV
+        csv_reader = pd.read_csv(csv_file, sep=detected_separator, dtype=str, encoding="utf-8", chunksize=lines_per_chunk)
+    except pd.errors.ParserError:
+        log("Error reading CSV file", level="error")
+        return []
+
+    # Lê o primeiro chunk (1 linha) para imediatamente retornar as colunas
+    # TODO: Temos como substituir esse `for` desnecessário com um get_chunk(0) ou algo parecido?
+    try:
+        for chunk in csv_reader:
+            df = pd.DataFrame(chunk)
+            return [fix_column_name(col) for col in df.columns]
+    finally:
+        # Garante que o file handle está fechado
+        csv_file.close()
+
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
@@ -68,7 +87,7 @@ def upload_consistent_files(
 
     # Download file
     try:
-        df = download_file(bucket, file_name, extra_safe=use_safe_download_file)
+        (csv_file, detected_separator, metadata_columns) = download_file(bucket, file_name, extra_safe=use_safe_download_file)
     except Exception as e:
         log(f"Error downloading file {file_name}: {e}", level="error")
         return {
@@ -79,38 +98,91 @@ def upload_consistent_files(
             "loaded": False,
         }
 
-    # Check if the file is empty
-    if df is None or df.empty:
-        log(f"File {file_name} is empty. Skipping...", level="error")
+    # Calcula o tamanho do arquivo aberto movendo o ponteiro para o último byte
+    SEEK_END = 2
+    file_size_bytes = csv_file.seek(0, SEEK_END)
+    # Se o arquivo está vazio
+    if file_size_bytes <= 0:
+        log(f"Downloaded file '{file_name}' is empty. Skipping...", level="error")
         return None
+    else:
+        file_size_mb = file_size_bytes / (1024 * 1024)
+        log(f"Downloaded file '{file_name}' has size {file_size_mb:.1f} MB")
+    # Volta o ponteiro para o início
+    csv_file.seek(0)
 
-    # Calculate missing columns
-    missing_columns = set(expected_schema) - set(df.columns.tolist())
-    log(f"Missing columns: {missing_columns}. Filling with None.")
+    # Quantidade de linhas do CSV a serem lidas a cada iteração
+    # Isso é importante porque alguns arquivos pesam >1GB e estouram a memória
+    # Experimentalmente:
+    # - Arquivo de ~910 MB = 23 chunks de 100k linhas, ou 12 chunks de 200k linhas
+    lines_per_chunk = 200_000
+    try:
+        # Cria um leitor pedaço a pedaço do arquivo CSV, mas ainda não carrega nada
+        csv_reader = pd.read_csv(csv_file, sep=detected_separator, dtype=str, encoding="utf-8", chunksize=lines_per_chunk)
+    except pd.errors.ParserError:
+        log("Error reading CSV file", level="error")
+        return pd.DataFrame()
 
-    # Fill missing columns with None
-    for column in missing_columns:
-        df[column] = None
+    # Colunas inesperadas que serão modificadas abaixo
+    missing_columns = None
+    extra_columns = None
+    inadequency_index = None
 
-    # Calculate extra columns
-    extra_columns = set(df.columns.tolist()) - set(expected_schema)
-    log(f"Extra columns: {extra_columns}. Dropping them.")
+    # Iteramos por cada pedaço do CSV
+    for i, chunk in enumerate(csv_reader):
+        # Cria um dataframe a partir do chunk
+        df = pd.DataFrame(chunk)
+        log(f"Reading chunk #{i+1} (at most {lines_per_chunk} lines)")
 
-    # Drop extra columns
-    df = df.drop(columns=extra_columns)
+        # Padroniza as colunas
+        df.columns = [fix_column_name(col) for col in df.columns]
 
-    inadequency_index = (len(missing_columns) + len(extra_columns)) / len(expected_schema)
+        if missing_columns is None:
+            # Detecta colunas faltantes
+            missing_columns = set(expected_schema) - set(df.columns.tolist())
+            log(f"Missing columns ({len(missing_columns)}): {list(missing_columns)}")
+        log(f"Filling {len(missing_columns)} missing column(s) with None.")
+        # Preenche colunas faltantes com None
+        for column in missing_columns:
+            df[column] = None
 
-    if inadequency_index < inadequency_threshold:
-        upload_df_to_datalake.run(
-            df=df,
-            partition_column="_loaded_at",
-            dataset_id=dataset_id,
-            table_id=table_id,
-            source_format="parquet",
-            dump_mode="append",
-            if_exists="append",
-        )
+        if extra_columns is None:
+            # Detecta colunas extras
+            extra_columns = set(df.columns.tolist()) - set(expected_schema)
+            log(f"Extra columns ({len(extra_columns)}): {list(extra_columns)}.")
+        log(f"Dropping {len(extra_columns)} extra column(s).")
+        # Remove colunas extras
+        df = df.drop(columns=extra_columns)
+
+        # Adiciona metadados
+        for column, value in metadata_columns.items():
+            df[column] = value
+
+        if inadequency_index is None:
+            # Calcula o quão inesperado é o formato recebido
+            inadequency_index = (len(missing_columns) + len(extra_columns)) / len(expected_schema)
+        # Se suficientemente adequado, faz upload
+        if inadequency_index < inadequency_threshold:
+            log("Uploading chunk to datalake.")
+            upload_df_to_datalake.run(
+                df=df,
+                partition_column="_loaded_at",
+                dataset_id=dataset_id,
+                table_id=table_id,
+                source_format="parquet",
+                dump_mode="append",
+                if_exists="append",
+            )
+        else:
+            # Não precisamos continuar iterando por todos os pedaços se
+            # sabemos que o schema está inadequado
+            log(f"Inadequacy index ({inadequency_index:.2f}) over threshold ({inadequency_threshold:.2f}); aborting")
+            break
+
+    log("Finished reading all chunks.")
+
+    # Garante que o file handle foi devidamente fechado
+    csv_file.close()
 
     return {
         "file_name": file_name,
