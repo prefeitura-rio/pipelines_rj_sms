@@ -27,21 +27,21 @@ with Flow(
     # INFISICAL
     INFISICAL_PATH = cientificalab_constants.INFISICAL_PATH.value
     INFISICAL_USERNAME = cientificalab_constants.INFISICAL_USERNAME.value
-    INFISICAL_PASSOWRD = cientificalab_constants.INFISICAL_PASSOWRD.value
+    INFISICAL_PASSWORD = cientificalab_constants.INFISICAL_PASSWORD.value
     INFISICAL_APCCODIGO = cientificalab_constants.INFISICAL_APCCODIGO.value
 
     username_secret = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_USERNAME, environment=ENVIRONMENT
     )
     password_secret = get_secret_key(
-        secret_path=INFISICAL_USERNAME, secret_name=INFISICAL_PASSOWRD, environment=ENVIRONMENT
+        secret_path=INFISICAL_USERNAME, secret_name=INFISICAL_PASSWORD, environment=ENVIRONMENT
     )
     apccodigo_secret = get_secret_key(
         secret_path=INFISICAL_USERNAME, secret_name=INFISICAL_APCCODIGO, environment=ENVIRONMENT
     )
 
     # BIG QUERY
-    DATASET_ID = Parameter("dataset_id", default=cientificalab_constants.DATASET_ID.value, required=True)
+    DATASET_ID = Parameter("dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False)
 
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=DT_INICIO,

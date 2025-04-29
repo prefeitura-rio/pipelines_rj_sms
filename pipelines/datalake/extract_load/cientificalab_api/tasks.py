@@ -32,7 +32,7 @@ def authenticate_and_fetch(
 
     if result.get("status") != 200:
         raise Exception(result.get("mensagem"))
-
+    
     token = result.get("token")
 
     res = requests.get(
@@ -73,7 +73,7 @@ def transform(resultado_xml: str):
     for solicitacao in lote.find_all("solicitacao"):
         solicitacoes_row = solicitacao.attrs
 
-        # Atributos de suporte
+        
         for entidade_suporte in ["responsaveltecnico", "paciente"]:
             for key, value in solicitacao.find(entidade_suporte).attrs.items():
                 solicitacoes_row[f"{entidade_suporte}_{key}"] = value
@@ -81,7 +81,7 @@ def transform(resultado_xml: str):
         for key, value in lote.attrs.items():
             solicitacoes_row[f"lote_{key}"] = value
 
-        # Gerando ID determinístico para a solicitação
+        
         solicitacao_id = str(uuid.uuid5(
             uuid.NAMESPACE_DNS,
             f"{solicitacoes_row.get('codigoLis', '')}|"
@@ -96,7 +96,7 @@ def transform(resultado_xml: str):
         for exame in solicitacao.find_all("exame"):
             exames_row = exame.attrs
 
-            # Gerando ID determinístico para o exame
+
             exame_id = str(uuid.uuid5(
                 uuid.NAMESPACE_DNS,
                 f"{solicitacao_id}|"
