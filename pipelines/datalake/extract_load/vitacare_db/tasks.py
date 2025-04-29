@@ -194,6 +194,13 @@ def create_temp_database(
         MOVE 'vitacare_historic_log' TO '/var/opt/mssql/data/{database_name}_log.LDF'
     """
 
+    log(f"Command to restore database: {restore_database_sql}", level="info")
+
+    if not os.path.exists(backup_file):
+        error_message = f"Backup file {backup_file} does not exist"
+        log(error_message, level="error")
+        raise FAIL(error_message)
+
     log(f"Creating database {database_name} ...")
     conn.autocommit = True
     cursor = conn.cursor()
