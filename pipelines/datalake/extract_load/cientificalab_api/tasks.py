@@ -32,7 +32,7 @@ def authenticate_and_fetch(
 
     if result.get("status") != 200:
         raise Exception(result.get("mensagem"))
-    
+
     token = result.get("token")
 
     res = requests.get(
@@ -73,7 +73,6 @@ def transform(resultado_xml: str):
     for solicitacao in lote.find_all("solicitacao"):
         solicitacoes_row = solicitacao.attrs
 
-        
         for entidade_suporte in ["responsaveltecnico", "paciente"]:
             for key, value in solicitacao.find(entidade_suporte).attrs.items():
                 solicitacoes_row[f"{entidade_suporte}_{key}"] = value
@@ -81,29 +80,31 @@ def transform(resultado_xml: str):
         for key, value in lote.attrs.items():
             solicitacoes_row[f"lote_{key}"] = value
 
-        
-        solicitacao_id = str(uuid.uuid5(
-            uuid.NAMESPACE_DNS,
-            f"{solicitacoes_row.get('codigoLis', '')}|"
-            f"{solicitacoes_row.get('codigoApoio', '')}|"
-            f"{solicitacoes_row.get('dataPedido', '')}|"
-            f"{solicitacoes_row.get('paciente_nome', '')}|"
-            f"{solicitacoes_row.get('paciente_cpf', '')}"
-        ))
+        solicitacao_id = str(
+            uuid.uuid5(
+                uuid.NAMESPACE_DNS,
+                f"{solicitacoes_row.get('codigoLis', '')}|"
+                f"{solicitacoes_row.get('codigoApoio', '')}|"
+                f"{solicitacoes_row.get('dataPedido', '')}|"
+                f"{solicitacoes_row.get('paciente_nome', '')}|"
+                f"{solicitacoes_row.get('paciente_cpf', '')}",
+            )
+        )
         solicitacoes_row["id"] = solicitacao_id
         solicitacoes_rows.append(solicitacoes_row)
 
         for exame in solicitacao.find_all("exame"):
             exames_row = exame.attrs
 
-
-            exame_id = str(uuid.uuid5(
-                uuid.NAMESPACE_DNS,
-                f"{solicitacao_id}|"
-                f"{exames_row.get('codigoExame', '')}|"
-                f"{exames_row.get('codApoio', '')}|"
-                f"{exames_row.get('dataAssinatura', '')}"
-            ))
+            exame_id = str(
+                uuid.uuid5(
+                    uuid.NAMESPACE_DNS,
+                    f"{solicitacao_id}|"
+                    f"{exames_row.get('codigoExame', '')}|"
+                    f"{exames_row.get('codApoio', '')}|"
+                    f"{exames_row.get('dataAssinatura', '')}",
+                )
+            )
 
             exames_row["id"] = exame_id
             exames_row["solicitacao_id"] = solicitacao_id
@@ -118,12 +119,14 @@ def transform(resultado_xml: str):
                 resultado_row = resultado.attrs
 
                 # Gerando ID determinístico para o resultado
-                resultado_id = str(uuid.uuid5(
-                    uuid.NAMESPACE_DNS,
-                    f"{resultado_row.get('codigoApoio', '')}|"
-                    f"{resultado_row.get('descricaoApoio', '')}|"
-                    f"{exame_id}"
-                ))
+                resultado_id = str(
+                    uuid.uuid5(
+                        uuid.NAMESPACE_DNS,
+                        f"{resultado_row.get('codigoApoio', '')}|"
+                        f"{resultado_row.get('descricaoApoio', '')}|"
+                        f"{exame_id}",
+                    )
+                )
 
                 resultado_row["id"] = resultado_id
                 resultado_row["exame_id"] = exame_id

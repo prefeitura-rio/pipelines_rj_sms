@@ -6,13 +6,13 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.cientificalab_api.constants import (
+    constants as cientificalab_constants,
+)
 from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
 from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     transform,
-)
-from pipelines.datalake.extract_load.cientificalab_api.constants import (
-    constants as cientificalab_constants,
 )
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import get_datetime_working_range
@@ -41,7 +41,9 @@ with Flow(
     )
 
     # BIG QUERY
-    DATASET_ID = Parameter("dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False)
+    DATASET_ID = Parameter(
+        "dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False
+    )
 
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=DT_INICIO,

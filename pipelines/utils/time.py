@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from datetime import date, timedelta
 from typing import Optional
-import pytz
+
 import pandas as pd
 import prefect
+import pytz
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -35,7 +36,11 @@ def from_relative_date(relative_date: Optional[str] = None) -> Optional[pd.Times
 
 @task(nout=2)
 def get_datetime_working_range(
-    start_datetime: str = "", end_datetime: str = "", interval: int = 1, return_as_str: bool = False, timezone: str = None
+    start_datetime: str = "",
+    end_datetime: str = "",
+    interval: int = 1,
+    return_as_str: bool = False,
+    timezone: str = None,
 ):
     logger = prefect.context.get("logger")
 
@@ -66,7 +71,7 @@ def get_datetime_working_range(
         return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime(
             "%Y-%m-%d %H:%M:%S"
         )
-    
+
     if timezone:
         tz = pytz.timezone(timezone)
         if start_datetime.tzinfo is None:
