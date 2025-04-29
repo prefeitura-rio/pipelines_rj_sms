@@ -3,7 +3,6 @@ import datetime
 import io
 
 import chardet
-import pandas as pd
 import pytz
 from tenacity import retry, stop_after_attempt, wait_fixed
 from unidecode import unidecode
@@ -111,8 +110,10 @@ def download_file(bucket, file_name, extra_safe=True):
             csv_text = fix_csv(csv_text, sep)
         csv_file = io.StringIO(csv_text)
 
-    # Retorna tupla com handle do buffer aberto do CSV (arquivo real ou StringIO, a depender do tamanho)
-    # separador detectado, e metadado a ser adicionado ao dataframe final
+    # Retorna tupla com:
+    # - Handle do buffer aberto do CSV (arquivo real ou StringIO, a depender do tamanho)
+    # - Separador detectado
+    # - Metadado a ser adicionado ao dataframe final
     return (
         csv_file,
         sep,

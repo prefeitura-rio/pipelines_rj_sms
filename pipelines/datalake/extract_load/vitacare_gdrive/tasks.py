@@ -185,7 +185,8 @@ def upload_consistent_files(
             # Não precisamos continuar iterando por todos os pedaços se
             # sabemos que o schema está inadequado
             log(
-                f"Inadequacy index ({inadequency_index:.2f}) over threshold ({inadequency_threshold:.2f}); aborting"
+                f"Inadequacy index ({inadequency_index:.2f}) "
+                +"over threshold ({inadequency_threshold:.2f}); aborting"
             )
             break
 
