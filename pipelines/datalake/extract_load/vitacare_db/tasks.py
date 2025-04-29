@@ -119,7 +119,7 @@ def get_backup_file(bucket_name: str, cnes: str):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path, exist_ok=True)
 
-    file_name = most_recent_backup.name.replace("/", "_")
+    file_name = most_recent_backup.name.replace("HISTÓRICO_PEPVITA_RJ/", "").replace("/", "_")
     destination_file_name = os.path.join(folder_path, file_name)
 
     # Save file to local folder
