@@ -95,7 +95,9 @@ def get_backup_file(bucket_name: str, cnes: str):
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
 
-    blobs_iter = bucket.list_blobs(match_glob=f"HISTÓRICO_PEPVITA_RJ/**/vitacare_historic_{cnes}_*.bak")
+    blobs_iter = bucket.list_blobs(
+        match_glob=f"HISTÓRICO_PEPVITA_RJ/**/vitacare_historic_{cnes}_*.bak"
+    )
 
     blobs = list(blobs_iter)
     log(f"Found {len(blobs)} backup files for CNES{cnes}:", level="info")
