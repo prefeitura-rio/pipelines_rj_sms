@@ -96,10 +96,7 @@ def get_backup_file(bucket_name: str, cnes: str, ap: str):
     bucket = client.get_bucket(bucket_name)
 
     file_prefix = f"{vitacare_constants.BACKUP_SUBFOLDER.value}/AP{ap}/"
-    blobs_iter = bucket.list_blobs(
-        prefix=file_prefix,
-        match_glob=f"vitacare_historic_{cnes}_*.bak"
-    )
+    blobs_iter = bucket.list_blobs(prefix=file_prefix, match_glob=f"vitacare_historic_{cnes}_*.bak")
 
     blobs = list(blobs_iter)
     log(f"Found {len(blobs)} backup files for AP{ap} and CNES{cnes}:", level="info")
@@ -111,7 +108,7 @@ def get_backup_file(bucket_name: str, cnes: str, ap: str):
         error_message = f"No backup files found for AP{ap} and CNES{cnes}"
         log(error_message, level="error")
         raise FAIL(error_message)
-    
+
     # Sort Blobs by Name
     blobs.sort(key=lambda x: x.name, reverse=True)
 
