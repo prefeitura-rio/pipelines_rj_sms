@@ -34,10 +34,10 @@ with Flow(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_USERNAME, environment=ENVIRONMENT
     )
     password_secret = get_secret_key(
-        secret_path=INFISICAL_USERNAME, secret_name=INFISICAL_PASSWORD, environment=ENVIRONMENT
+        secret_path=INFISICAL_PATH, secret_name=INFISICAL_PASSWORD, environment=ENVIRONMENT
     )
     apccodigo_secret = get_secret_key(
-        secret_path=INFISICAL_USERNAME, secret_name=INFISICAL_APCCODIGO, environment=ENVIRONMENT
+        secret_path=INFISICAL_PATH, secret_name=INFISICAL_APCCODIGO, environment=ENVIRONMENT
     )
 
     # BIG QUERY
