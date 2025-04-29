@@ -39,14 +39,8 @@ def fix_csv(csv_text: str, sep: str) -> str:
 
 
 def fix_column_name(column_name: str) -> str:
-    replace_from = [
-        [ "(", ")" ],
-        [ " ", "[", "]", "-", ".", ",", "/", "\\", "'", "\"" ]
-    ]
-    replace_to = [
-        "",
-        "_"
-    ]
+    replace_from = [["(", ")"], [" ", "[", "]", "-", ".", ",", "/", "\\", "'", '"']]
+    replace_to = ["", "_"]
     for from_list, to_char in zip(replace_from, replace_to):
         for from_char in from_list:
             column_name = column_name.replace(from_char, to_char)
@@ -125,6 +119,6 @@ def download_file(bucket, file_name, extra_safe=True):
         {
             "_source_file": file_name,
             "_extracted_at": blob.updated.astimezone(pytz.timezone("America/Sao_Paulo")),
-            "_loaded_at": datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-        }
+            "_loaded_at": datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo")),
+        },
     )

@@ -6,7 +6,10 @@ import pandas as pd
 from google.cloud import storage
 
 from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
-from pipelines.datalake.extract_load.vitacare_gdrive.utils import download_file, fix_column_name
+from pipelines.datalake.extract_load.vitacare_gdrive.utils import (
+    download_file,
+    fix_column_name,
+)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
@@ -54,7 +57,9 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
     lines_per_chunk = 2
     try:
         # Cria um leitor do arquivo CSV
-        csv_reader = pd.read_csv(csv_file, sep=detected_separator, dtype=str, encoding="utf-8", chunksize=lines_per_chunk)
+        csv_reader = pd.read_csv(
+            csv_file, sep=detected_separator, dtype=str, encoding="utf-8", chunksize=lines_per_chunk
+        )
     except pd.errors.ParserError:
         log("Error reading CSV file", level="error")
         return []
@@ -68,7 +73,6 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
     finally:
         # Garante que o file handle está fechado
         csv_file.close()
-
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
@@ -87,7 +91,9 @@ def upload_consistent_files(
 
     # Download file
     try:
-        (csv_file, detected_separator, metadata_columns) = download_file(bucket, file_name, extra_safe=use_safe_download_file)
+        (csv_file, detected_separator, metadata_columns) = download_file(
+            bucket, file_name, extra_safe=use_safe_download_file
+        )
     except Exception as e:
         log(f"Error downloading file {file_name}: {e}", level="error")
         return {
@@ -118,7 +124,9 @@ def upload_consistent_files(
     lines_per_chunk = 200_000
     try:
         # Cria um leitor pedaço a pedaço do arquivo CSV, mas ainda não carrega nada
-        csv_reader = pd.read_csv(csv_file, sep=detected_separator, dtype=str, encoding="utf-8", chunksize=lines_per_chunk)
+        csv_reader = pd.read_csv(
+            csv_file, sep=detected_separator, dtype=str, encoding="utf-8", chunksize=lines_per_chunk
+        )
     except pd.errors.ParserError:
         log("Error reading CSV file", level="error")
         return pd.DataFrame()
@@ -176,7 +184,9 @@ def upload_consistent_files(
         else:
             # Não precisamos continuar iterando por todos os pedaços se
             # sabemos que o schema está inadequado
-            log(f"Inadequacy index ({inadequency_index:.2f}) over threshold ({inadequency_threshold:.2f}); aborting")
+            log(
+                f"Inadequacy index ({inadequency_index:.2f}) over threshold ({inadequency_threshold:.2f}); aborting"
+            )
             break
 
     log("Finished reading all chunks.")
