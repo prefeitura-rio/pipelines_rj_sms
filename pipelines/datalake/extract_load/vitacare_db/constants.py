@@ -17,4 +17,4 @@ class constants(Enum):
         "prod": "vitacare_backups_gdrive",
     }
     GDRIVE_FOLDER_ID = "1VUdm8fixnUs_dJrcflsNvzXIGPX6e-2r"
-    BACKUP_SUBFOLDER = "vitacare_historic"
+    BACKUP_SUBFOLDER = "HISTÓRICO_PEPVITA_RJ"
