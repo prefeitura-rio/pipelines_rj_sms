@@ -122,6 +122,9 @@ def get_backup_file(bucket_name: str, cnes: str):
     file_name = most_recent_backup.name.replace("/", "_")
     destination_file_name = os.path.join(folder_path, file_name)
 
+    # Save file to local folder
+    most_recent_backup.download_to_filename(destination_file_name)
+
     log(f"Backup file retrieved successfully: {destination_file_name}", level="info")
 
     return destination_file_name
