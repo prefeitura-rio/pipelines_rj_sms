@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import datetime
 import io
+import tempfile
 
 import chardet
 import pytz
-import tempfile
 from tenacity import retry, stop_after_attempt, wait_fixed
 from unidecode import unidecode
 
@@ -99,7 +99,10 @@ def download_file(bucket, file_name, extra_safe=True):
         if extra_safe:
             # FIXME
             # csv_text = fix_csv(csv_text, sep)
-            log("[!] 'Safe download' (fix_csv) for large (>500 MB) files is not implemented yet", level="warning")
+            log(
+                "[!] 'Safe download' (fix_csv) for large (>500 MB) files is not implemented yet",
+                level="warning",
+            )
 
     # Caso o arquivo tenha <= 500 MB
     else:
