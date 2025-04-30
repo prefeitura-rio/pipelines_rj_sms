@@ -67,6 +67,7 @@ def get_datetime_working_range(
 
     logger.info(f"Target date range: {start_datetime} -> {end_datetime}")
 
+<<<<<<< HEAD
     if return_as_str:
         return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime(
             "%Y-%m-%d %H:%M:%S"
@@ -78,9 +79,22 @@ def get_datetime_working_range(
             start_datetime = start_datetime.tz_localize("UTC")
         if end_datetime.tzinfo is None:
             end_datetime = end_datetime.tz_localize("UTC")
+=======
+    if timezone is None:
+        timezone = "America/Sao_Paulo"
+    tz = pytz.timezone(timezone)
+>>>>>>> 995ec35f (feat(datetime): add default america/sao paulo timezone and formatted string output with timezone)
 
-        start_datetime = start_datetime.astimezone(tz)
-        end_datetime = end_datetime.astimezone(tz)
+    if start_datetime.tzinfo is None:
+        start_datetime = start_datetime.tz_localize("UTC")
+    if end_datetime.tzinfo is None:
+        end_datetime = end_datetime.tz_localize("UTC")
+
+    start_datetime = start_datetime.astimezone(tz)
+    end_datetime = end_datetime.astimezone(tz)
+
+    if return_as_str:
+        return start_datetime.isoformat(), end_datetime.isoformat()
 
     return start_datetime, end_datetime
 
