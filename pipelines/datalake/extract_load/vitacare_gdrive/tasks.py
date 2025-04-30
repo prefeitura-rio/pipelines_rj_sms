@@ -53,7 +53,7 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
 
     # Baixa o arquivo mais recente
     (csv_file, detected_separator, _) = download_file(bucket, most_recent_file, extra_safe=True)
-    # Só queremos o cabeçalho
+    # Aqui só importa o cabeçalho, então não precisamos de muitas linhas
     lines_per_chunk = 2
     try:
         # Cria um leitor do arquivo CSV
@@ -64,14 +64,16 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
         log("Error reading CSV file", level="error")
         return []
 
-    # Lê o primeiro chunk (1 linha) para imediatamente retornar as colunas
-    # TODO: Temos como substituir esse `for` desnecessário com um get_chunk(0) ou algo parecido?
+    # Lê o primeiro chunk e retorna colunas
     try:
-        for chunk in csv_reader:
-            df = pd.DataFrame(chunk)
-            return [fix_column_name(col) for col in df.columns]
+        chunk = csv_reader.get_chunk()
+        df = pd.DataFrame(chunk)
+        columns = [fix_column_name(col) for col in df.columns]
+        log(f"Found {len(columns)} column(s): {columns}")
+        return columns
     finally:
         # Garante que o file handle está fechado
+        # Como é um TemporaryFile, ele também apaga o arquivo automaticamente
         csv_file.close()
 
 
@@ -144,11 +146,13 @@ def upload_consistent_files(
 
         # Padroniza as colunas
         df.columns = [fix_column_name(col) for col in df.columns]
+        if inadequency_index is None:
+            log(f"Found {len(df.columns)} column(s).")
 
         if missing_columns is None:
             # Detecta colunas faltantes
             missing_columns = set(expected_schema) - set(df.columns.tolist())
-            log(f"Missing columns ({len(missing_columns)}): {list(missing_columns)}")
+            log(f"Missing column(s) ({len(missing_columns)}): {list(missing_columns)}")
         log(f"Filling {len(missing_columns)} missing column(s) with None.")
         # Preenche colunas faltantes com None
         for column in missing_columns:
@@ -157,7 +161,7 @@ def upload_consistent_files(
         if extra_columns is None:
             # Detecta colunas extras
             extra_columns = set(df.columns.tolist()) - set(expected_schema)
-            log(f"Extra columns ({len(extra_columns)}): {list(extra_columns)}.")
+            log(f"Extra column(s) ({len(extra_columns)}): {list(extra_columns)}.")
         log(f"Dropping {len(extra_columns)} extra column(s).")
         # Remove colunas extras
         df = df.drop(columns=extra_columns)
@@ -193,6 +197,7 @@ def upload_consistent_files(
     log("Finished reading all chunks.")
 
     # Garante que o file handle foi devidamente fechado
+    # Como é um TemporaryFile, ele também apaga o arquivo automaticamente
     csv_file.close()
 
     return {

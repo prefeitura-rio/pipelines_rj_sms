@@ -4,6 +4,7 @@ import io
 
 import chardet
 import pytz
+import tempfile
 from tenacity import retry, stop_after_attempt, wait_fixed
 from unidecode import unidecode
 
@@ -11,17 +12,19 @@ from pipelines.utils.logger import log
 
 
 def fix_csv(csv_text: str, sep: str) -> str:
+    if not sep or len(sep) <= 0:
+        sep = ","
+
     csv_text = csv_text.replace("\r\n", "\n")
 
     first_line = csv_text.splitlines()[0]
-
     columns = first_line.split(sep)
 
     other_lines = csv_text.splitlines()[1:]
 
     max_cols = len(columns)
     for line in other_lines:
-        line_columns = line.split(",")  # FIXME: `sep` ao invés de ","? -Avellar
+        line_columns = line.split(sep)
 
         if len(line_columns) > max_cols:
             max_cols = len(line_columns)
@@ -72,31 +75,31 @@ def download_file(bucket, file_name, extra_safe=True):
     sep = None
     # Caso o arquivo tenha >500 MB
     if size_in_mb > 500:
-        # Gera nome do arquivo temporário
-        timestamp = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat()
-        file_name_no_slash = file_name.replace("/", "-").replace("\\", "-")
-        tmp_file_name = f"{timestamp}--{file_name_no_slash}"
-
         try:
             # Download do arquivo direto para disco
-            with open(f"/tmp/{tmp_file_name}", "wb+") as file_obj:
-                blob.download_to_file(file_obj)
+            csv_file = tempfile.TemporaryFile()
+            blob.download_to_file(csv_file)
         except Exception as e:
-            log("error")
+            log("error")  # FIXME: erro descritivo
             log(e)
 
-        log(f"[download_file] Saved to local file: '/tmp/{tmp_file_name}'")
+        log(f"[download_file] Saved to temporary file.")
 
-        # TODO: Está lidando corretamente com não-UTF-8? Precisa?
-        csv_file = open(f"/tmp/{tmp_file_name}", "r")
         # Pega primeira linha para detectar separador
-        first_line = csv_file.readline()
         csv_file.seek(0)
+        data = csv_file.readline()
+        detected_encoding = chardet.detect(data)["encoding"]
+        first_line = data.decode(detected_encoding)
+
+        if len(first_line) <= 0:
+            log(f"[download_file] First line is empty; error likely")
         sep = detect_separator(first_line)
+        log(f"[download_file] Detected separator: '{sep}'")
 
         if extra_safe:
+            # FIXME
             # csv_text = fix_csv(csv_text, sep)
-            log("[!] 'Fix CSV' for big files is not implemented yet", level="warning")  # FIXME
+            log("[!] 'Safe download' (fix_csv) for large (>500 MB) files is not implemented yet", level="warning")
 
     # Caso o arquivo tenha <= 500 MB
     else:
