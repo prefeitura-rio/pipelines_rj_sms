@@ -72,9 +72,9 @@ def get_datetime_working_range(
     tz = pytz.timezone(timezone)
 
     if start_datetime.tzinfo is None:
-        start_datetime = start_datetime.tz_localize("UTC")
+        start_datetime = tz.localize(start_datetime)
     if end_datetime.tzinfo is None:
-        end_datetime = end_datetime.tz_localize("UTC")
+        end_datetime = tz.localize(end_datetime)
 
     start_datetime = start_datetime.astimezone(tz)
     end_datetime = end_datetime.astimezone(tz)
