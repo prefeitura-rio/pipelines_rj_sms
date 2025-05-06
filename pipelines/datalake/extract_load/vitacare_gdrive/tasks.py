@@ -2,6 +2,7 @@
 import fnmatch
 from datetime import timedelta
 
+import chardet
 import pandas as pd
 from google.cloud import storage
 
@@ -9,6 +10,8 @@ from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
 from pipelines.datalake.extract_load.vitacare_gdrive.utils import (
     download_file,
     fix_column_name,
+    get_file_size,
+    format_bytes
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -53,22 +56,15 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
 
     # Baixa o arquivo mais recente
     (csv_file, detected_separator, _) = download_file(bucket, most_recent_file, extra_safe=True)
-    # Aqui só importa o cabeçalho, então não precisamos de muitas linhas
-    lines_per_chunk = 2
-    try:
-        # Cria um leitor do arquivo CSV
-        csv_reader = pd.read_csv(
-            csv_file, sep=detected_separator, dtype=str, encoding="utf-8", chunksize=lines_per_chunk
-        )
-    except pd.errors.ParserError:
-        log("Error reading CSV file", level="error")
-        return []
 
-    # Lê o primeiro chunk e retorna colunas
     try:
-        chunk = csv_reader.get_chunk()
-        df = pd.DataFrame(chunk)
-        columns = [fix_column_name(col) for col in df.columns]
+        # Pega a primeira linha
+        data = csv_file.readline()
+        detected_encoding = chardet.detect(data)["encoding"]
+        first_line = data.decode(detected_encoding).strip()
+        raw_columns = first_line.split(detected_separator)
+        # Padroniza colunas
+        columns = [fix_column_name(col) for col in raw_columns]
         log(f"Found {len(columns)} column(s): {columns}")
         return columns
     finally:
@@ -106,24 +102,13 @@ def upload_consistent_files(
             "loaded": False,
         }
 
-    # Calcula o tamanho do arquivo aberto movendo o ponteiro para o último byte
-    SEEK_END = 2
-    file_size_bytes = csv_file.seek(0, SEEK_END)
+    file_size_bytes = get_file_size(csv_file)
     # Se o arquivo está vazio
     if file_size_bytes <= 0:
         log(f"Downloaded file '{file_name}' is empty. Skipping...", level="error")
         return None
     else:
-        file_size_mb = file_size_bytes / (1024 * 1024)
-        file_size_kb = file_size_bytes / 1024
-        if file_size_mb >= 0.1:
-            log(f"Downloaded file '{file_name}' has size {file_size_mb:.1f} MB")
-        elif file_size_kb >= 0.1:
-            log(f"Downloaded file '{file_name}' has size {file_size_kb:.1f} KB")
-        else:
-            log(f"Downloaded file '{file_name}' has size {file_size_bytes} bytes")
-    # Volta o ponteiro para o início
-    csv_file.seek(0)
+        log(f"Downloaded file '{file_name}' has size {format_bytes(file_size_bytes)}")
 
     # Quantidade de linhas do CSV a serem lidas a cada iteração
     # Isso é importante porque alguns arquivos pesam >1GB e estouram a memória

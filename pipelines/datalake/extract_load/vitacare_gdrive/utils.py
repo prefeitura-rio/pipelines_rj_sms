@@ -102,7 +102,7 @@ def fix_column_name(column_name: str) -> str:
     replace_from = [None] * 2
     replace_to = [None] * 2
 
-    replace_from[0] = ["(", ")"]
+    replace_from[0] = ["(", ")", "\r", "\n"]
     replace_to[0] = ""
 
     replace_from[1] = [" ", "[", "]", "-", ".", ",", "/", "\\", "'", '"']
@@ -121,16 +121,38 @@ def detect_separator(csv_text: str) -> str:
     # o delimitador é ',', e vice-versa. Não necessariamente verdade
     if first_line.count(",") > first_line.count(";"):
         return ","
-    else:
+    if first_line.count(";") > first_line.count(","):
         return ";"
+    log("[detect_separator] Ambiguous separator! Using ';'", level="warning")
+    return ";"
+
+
+def get_file_size(file_handle, seek_back_to=0) -> int:
+    # Calcula o tamanho do arquivo aberto movendo o ponteiro para o último byte
+    SEEK_END = 2
+    file_size_bytes = file_handle.seek(0, SEEK_END)
+    file_handle.seek(seek_back_to)
+    return file_size_bytes
+
+
+def format_bytes(bytes: int) -> str:
+    gb = bytes / float(1024 * 1024 * 1024)
+    if gb > 0.1:
+        return f"{gb:.1f} GB"
+    mb = bytes / float(1024 * 1024)
+    if mb > 0.1:
+        return f"{mb:.1f} MB"
+    kb = bytes / float(1024)
+    if kb > 0.1:
+        return f"{kb:.1f} kB"
+    return f"{bytes:.1f} bytes"
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
 def download_file(bucket, file_name, extra_safe=True):
     blob = bucket.get_blob(file_name)
     size_in_bytes = blob.size
-    size_in_mb = size_in_bytes / (1024 * 1024)
-    log(f"[download_file] Beginning download of '{file_name}' ({size_in_mb:.1f} MB)")
+    log(f"[download_file] Beginning download of '{file_name}' ({format_bytes(size_in_bytes)})")
 
     # Arquivos muito grandes estouram a memória do processo (OOMKilled)
     # Então precisamos quebrar esse arquivo em partes
@@ -138,6 +160,7 @@ def download_file(bucket, file_name, extra_safe=True):
 
     csv_file = None
     sep = None
+    size_in_mb = size_in_bytes / (1024 * 1024)
     MAX_SIZE_LOAD_TO_MEMORY_IN_MB = 250
     # Caso o arquivo seja grande demais
     if size_in_mb > MAX_SIZE_LOAD_TO_MEMORY_IN_MB:
@@ -149,21 +172,22 @@ def download_file(bucket, file_name, extra_safe=True):
             log("[download_file] Error downloading file to disk")
             raise e
 
-        log(f"[download_file] Saved to temporary file.")
+        downloaded_file_size = get_file_size(csv_file)
+        log(f"[download_file] Saved to temporary file ({format_bytes(downloaded_file_size)}).")
 
         # Pega primeira linha para detectar separador
-        csv_file.seek(0)
         data = csv_file.readline()
         detected_encoding = chardet.detect(data)["encoding"]
         first_line = data.decode(detected_encoding)
 
         if len(first_line) <= 0:
-            log(f"[download_file] First line is empty; error likely")
+            log(f"[download_file] First line is empty; error likely", level="warning")
         sep = detect_separator(first_line)
         log(f"[download_file] Detected separator: '{sep}'")
 
         if extra_safe:
             csv_file = fix_csv_file(csv_file, sep)
+        csv_file.seek(0)
 
     # Caso o arquivo seja pequeno o suficiente
     else:
