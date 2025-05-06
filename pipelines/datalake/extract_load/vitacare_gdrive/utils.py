@@ -138,8 +138,9 @@ def download_file(bucket, file_name, extra_safe=True):
 
     csv_file = None
     sep = None
-    # Caso o arquivo tenha >500 MB
-    if size_in_mb > 500:
+    MAX_SIZE_LOAD_TO_MEMORY_IN_MB = 250
+    # Caso o arquivo seja grande demais
+    if size_in_mb > MAX_SIZE_LOAD_TO_MEMORY_IN_MB:
         try:
             # Download do arquivo direto para disco
             csv_file = tempfile.TemporaryFile()
@@ -164,16 +165,15 @@ def download_file(bucket, file_name, extra_safe=True):
         if extra_safe:
             csv_file = fix_csv_file(csv_file, sep)
 
-    # Caso o arquivo tenha <= 500 MB
+    # Caso o arquivo seja pequeno o suficiente
     else:
         # Download do arquivo em memória
         data = blob.download_as_bytes()
         detected_encoding = chardet.detect(data)["encoding"]
         csv_text = data.decode(detected_encoding)
         sep = detect_separator(csv_text)
-        # Fix CSV
-        if extra_safe:
-            csv_text = fix_csv(csv_text, sep)
+        # Evita erros independentemente da flag se o arquivo for pequeno o suficiente
+        csv_text = fix_csv(csv_text, sep)
         csv_file = io.StringIO(csv_text)
 
     # Retorna tupla com:

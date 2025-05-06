@@ -115,7 +115,13 @@ def upload_consistent_files(
         return None
     else:
         file_size_mb = file_size_bytes / (1024 * 1024)
-        log(f"Downloaded file '{file_name}' has size {file_size_mb:.1f} MB")
+        file_size_kb = file_size_bytes / 1024
+        if file_size_mb >= 0.1:
+            log(f"Downloaded file '{file_name}' has size {file_size_mb:.1f} MB")
+        elif file_size_kb >= 0.1:
+            log(f"Downloaded file '{file_name}' has size {file_size_kb:.1f} KB")
+        else:
+            log(f"Downloaded file '{file_name}' has size {file_size_bytes} bytes")
     # Volta o ponteiro para o início
     csv_file.seek(0)
 
