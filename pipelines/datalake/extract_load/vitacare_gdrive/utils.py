@@ -12,12 +12,11 @@ from pipelines.utils.logger import log
 
 
 def fix_csv(csv_text: str, sep: str) -> str:
+    log("Safe mode is on; fixing CSV text...")
     if not sep or len(sep) <= 0:
         sep = ","
 
-    csv_text = csv_text.replace("\r\n", "\n")
-
-    first_line = csv_text.splitlines()[0]
+    first_line = csv_text.splitlines()[0].strip()
     columns = first_line.split(sep)
 
     other_lines = csv_text.splitlines()[1:]
@@ -25,24 +24,90 @@ def fix_csv(csv_text: str, sep: str) -> str:
     max_cols = len(columns)
     for line in other_lines:
         line_columns = line.split(sep)
-
-        if len(line_columns) > max_cols:
-            max_cols = len(line_columns)
+        max_cols = max(max_cols, len(line_columns))
 
     diff = max_cols - len(columns)
-
     for i in range(diff):
         columns.append(f"complemento_{i}")
 
-    new_first_line = sep.join(columns)
-    new_csv_text = new_first_line + "\n" + "\n".join(other_lines)
+    for i, line in enumerate(other_lines):
+        new_line = line.strip()
+        diff = max_cols - (new_line.count(sep) + 1)
+        new_line += sep * diff
+        other_lines[i] = new_line
+
+    new_first_line = sep.join(columns) + "\n"
+    new_csv_text = new_first_line + "\n".join(other_lines)
 
     return new_csv_text
 
 
+def fix_csv_file(csv_file, sep: str):
+    if csv_file.closed:
+        log("Called `fix_csv_file` on closed file handle")
+        return
+
+    log("Safe mode is on; fixing CSV file...")
+    if not sep or len(sep) <= 0:
+        sep = ","
+
+    # Como o arquivo é grande demais para carregar em memória,
+    # criamos um segundo arquivo e fazemos transplante das
+    # linhas uma a uma, padronizando no caminho
+    new_csv_file = tempfile.TemporaryFile()
+
+    # Lê primeira linha, separa em colunas
+    csv_file.seek(0)
+    data = csv_file.readline()
+    detected_encoding = chardet.detect(data)["encoding"]
+    first_line = data.decode(detected_encoding).strip()
+
+    # Primeiro, queremos saber se todas as linhas possuem as mesmas colunas
+    columns = first_line.split(sep)
+    max_cols = len(columns)
+    # Em teoria um `for` não vai carregar o arquivo inteiro em memória
+    # [Ref] https://stackoverflow.com/a/6475407/4824627
+    for data in csv_file:
+        line = data.decode(detected_encoding)
+        line_columns = line.split(sep)
+        max_cols = max(max_cols, len(line_columns))
+
+    # Se encontramos alguma linha com mais colunas que esperado,
+    # adicionamos nomes de coluna dummy para facilitar o parsing
+    diff = max_cols - len(columns)
+    for i in range(diff):
+        columns.append(f"complemento_{i}")
+
+    new_first_line = sep.join(columns) + '\n'
+    new_csv_file.write(new_first_line.encode("utf-8")) # Melhor salvar como UTF-8
+
+    csv_file.seek(0)
+    csv_file.readline()
+    # Para cada linha, removemos \r e garantimos que há o mesmo
+    # número de valores que de colunas
+    for data in csv_file:
+        line = data.decode(detected_encoding)
+        new_line = line.strip()
+        # Padroniza número de campos por linha
+        diff = max_cols - (new_line.count(sep) + 1)
+        new_line += (sep * diff) + '\n'
+        new_csv_file.write(new_line.encode("utf-8"))
+
+    # .close() mata o arquivo temporário inicial
+    csv_file.close()
+    return new_csv_file
+
+
 def fix_column_name(column_name: str) -> str:
-    replace_from = [["(", ")"], [" ", "[", "]", "-", ".", ",", "/", "\\", "'", '"']]
-    replace_to = ["", "_"]
+    replace_from = [None] * 2
+    replace_to = [None] * 2
+
+    replace_from[0] = ["(", ")"]
+    replace_to[0] = ""
+
+    replace_from[1] = [" ", "[", "]", "-", ".", ",", "/", "\\", "'", '"']
+    replace_to[1] = "_"
+
     for from_list, to_char in zip(replace_from, replace_to):
         for from_char in from_list:
             column_name = column_name.replace(from_char, to_char)
@@ -80,8 +145,8 @@ def download_file(bucket, file_name, extra_safe=True):
             csv_file = tempfile.TemporaryFile()
             blob.download_to_file(csv_file)
         except Exception as e:
-            log("error")  # FIXME: erro descritivo
-            log(e)
+            log("[download_file] Error downloading file to disk")
+            raise e
 
         log(f"[download_file] Saved to temporary file.")
 
@@ -97,12 +162,7 @@ def download_file(bucket, file_name, extra_safe=True):
         log(f"[download_file] Detected separator: '{sep}'")
 
         if extra_safe:
-            # FIXME
-            # csv_text = fix_csv(csv_text, sep)
-            log(
-                "[!] 'Safe download' (fix_csv) for large (>500 MB) files is not implemented yet",
-                level="warning",
-            )
+            csv_file = fix_csv_file(csv_file, sep)
 
     # Caso o arquivo tenha <= 500 MB
     else:
