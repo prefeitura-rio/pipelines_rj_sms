@@ -84,7 +84,7 @@ def upload_consistent_files(
     environment: str,
     dataset_id: str,
     table_id: str,
-    inadequency_threshold: float = 0.2,
+    inadequacy_threshold: float = 0.2,
     use_safe_download_file: bool = True,
 ) -> pd.DataFrame:
     client = storage.Client()
@@ -100,7 +100,7 @@ def upload_consistent_files(
         log(f"Error downloading file {file_name}: {e}", level="error")
         return {
             "file_name": file_name,
-            "inadequency_index": 1,
+            "inadequacy_index": 1,
             "missing_columns": [],
             "extra_columns": [],
             "loaded": False,
@@ -142,7 +142,7 @@ def upload_consistent_files(
     # Colunas inesperadas que serão modificadas abaixo
     missing_columns = None
     extra_columns = None
-    inadequency_index = None
+    inadequacy_index = None
 
     # Iteramos por cada pedaço do CSV
     for i, chunk in enumerate(csv_reader):
@@ -152,7 +152,7 @@ def upload_consistent_files(
 
         # Padroniza as colunas
         df.columns = [fix_column_name(col) for col in df.columns]
-        if inadequency_index is None:
+        if inadequacy_index is None:
             log(f"Found {len(df.columns)} column(s).")
 
         if missing_columns is None:
@@ -176,11 +176,11 @@ def upload_consistent_files(
         for column, value in metadata_columns.items():
             df[column] = value
 
-        if inadequency_index is None:
+        if inadequacy_index is None:
             # Calcula o quão inesperado é o formato recebido
-            inadequency_index = (len(missing_columns) + len(extra_columns)) / len(expected_schema)
+            inadequacy_index = (len(missing_columns) + len(extra_columns)) / len(expected_schema)
         # Se suficientemente adequado, faz upload
-        if inadequency_index < inadequency_threshold:
+        if inadequacy_index < inadequacy_threshold:
             log("Uploading chunk to datalake.")
             upload_df_to_datalake.run(
                 df=df,
@@ -195,8 +195,8 @@ def upload_consistent_files(
             # Não precisamos continuar iterando por todos os pedaços se
             # sabemos que o schema está inadequado
             log(
-                f"Inadequacy index ({inadequency_index:.2f}) "
-                + "over threshold ({inadequency_threshold:.2f}); aborting"
+                f"Inadequacy index ({inadequacy_index:.2f}) "
+                + f"over threshold ({inadequacy_threshold:.2f}); aborting"
             )
             break
 
@@ -208,15 +208,15 @@ def upload_consistent_files(
 
     return {
         "file_name": file_name,
-        "inadequency_index": inadequency_index,
+        "inadequacy_index": inadequacy_index,
         "missing_columns": missing_columns,
         "extra_columns": extra_columns,
-        "loaded": inadequency_index < inadequency_threshold,
+        "loaded": inadequacy_index < inadequacy_threshold,
     }
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def report_inadequency(file_pattern: str, reports: list[dict]):
+def report_inadequacy(file_pattern: str, reports: list[dict]):
     loaded_reports = [report for report in reports if report["loaded"]]
     not_loaded_reports = [report for report in reports if not report["loaded"]]
 
@@ -229,7 +229,7 @@ def report_inadequency(file_pattern: str, reports: list[dict]):
 
     for report in not_loaded_reports:
         message.append(f"- Arquivo: {report['file_name']}")
-        message.append(f"  - Inadequência: {report['inadequency_index']}")
+        message.append(f"  - Inadequência: {report['inadequacy_index']:.2f}")
         message.append(f"  - Colunas ausentes: {report['missing_columns']}")
         message.append(f"  - Colunas extras: {report['extra_columns']}")
 
