@@ -78,8 +78,8 @@ def fix_csv_file(csv_file, sep: str):
     for i in range(diff):
         columns.append(f"complemento_{i}")
 
-    new_first_line = sep.join(columns) + '\n'
-    new_csv_file.write(new_first_line.encode("utf-8")) # Melhor salvar como UTF-8
+    new_first_line = sep.join(columns) + "\n"
+    new_csv_file.write(new_first_line.encode("utf-8"))  # Melhor salvar como UTF-8
 
     csv_file.seek(0)
     csv_file.readline()
@@ -90,7 +90,7 @@ def fix_csv_file(csv_file, sep: str):
         new_line = line.strip()
         # Padroniza número de campos por linha
         diff = max_cols - (new_line.count(sep) + 1)
-        new_line += (sep * diff) + '\n'
+        new_line += (sep * diff) + "\n"
         new_csv_file.write(new_line.encode("utf-8"))
 
     # .close() mata o arquivo temporário inicial
