@@ -38,7 +38,7 @@ def find_all_file_names_from_pattern(file_pattern: str, environment: str):
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
+def get_most_recent_schema(file_pattern: str, environment: str) -> list:
     client = storage.Client()
     bucket_name = constants.GCS_BUCKET.value[environment]
     bucket = client.bucket(bucket_name)
@@ -59,9 +59,7 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> pd.DataFrame:
 
     try:
         # Pega a primeira linha
-        data = csv_file.readline()
-        detected_encoding = chardet.detect(data)["encoding"]
-        first_line = data.decode(detected_encoding).strip()
+        first_line = csv_file.readline()
         raw_columns = first_line.split(detected_separator)
         # Padroniza colunas
         columns = [fix_column_name(col) for col in raw_columns]
