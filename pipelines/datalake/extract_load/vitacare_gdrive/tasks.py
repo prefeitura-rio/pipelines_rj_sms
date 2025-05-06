@@ -10,8 +10,8 @@ from pipelines.datalake.extract_load.vitacare_gdrive.constants import constants
 from pipelines.datalake.extract_load.vitacare_gdrive.utils import (
     download_file,
     fix_column_name,
+    format_bytes,
     get_file_size,
-    format_bytes
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
