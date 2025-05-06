@@ -59,7 +59,11 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> list:
 
     try:
         # Pega a primeira linha
-        first_line = csv_file.readline()
+        data = csv_file.readline()
+        first_line = data
+        if not type(data) == str:
+            detected_encoding = chardet.detect(data)["encoding"]
+            first_line = data.decode(detected_encoding)
         raw_columns = first_line.split(detected_separator)
         # Padroniza colunas
         columns = [fix_column_name(col) for col in raw_columns]

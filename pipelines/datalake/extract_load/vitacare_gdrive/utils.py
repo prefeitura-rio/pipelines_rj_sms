@@ -137,13 +137,13 @@ def get_file_size(file_handle, seek_back_to=0) -> int:
 
 def format_bytes(bytes: int) -> str:
     gb = bytes / float(1024 * 1024 * 1024)
-    if gb > 0.1:
+    if gb > 0.5:
         return f"{gb:.1f} GB"
     mb = bytes / float(1024 * 1024)
-    if mb > 0.1:
+    if mb > 0.5:
         return f"{mb:.1f} MB"
     kb = bytes / float(1024)
-    if kb > 0.1:
+    if kb > 0.5:
         return f"{kb:.1f} kB"
     return f"{bytes:.1f} bytes"
 
