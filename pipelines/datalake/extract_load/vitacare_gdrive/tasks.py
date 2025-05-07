@@ -117,6 +117,7 @@ def upload_consistent_files(
     # Experimentalmente:
     # - Arquivo de ~910 MB = 23 chunks de 100k linhas, ou 12 chunks de 200k linhas
     lines_per_chunk = 200_000
+    csv_reader = None
     try:
         # Cria um leitor pedaço a pedaço do arquivo CSV, mas ainda não carrega nada
         csv_reader = pd.read_csv(
@@ -125,6 +126,12 @@ def upload_consistent_files(
     except pd.errors.ParserError:
         log("Error reading CSV file", level="error")
         return pd.DataFrame()
+    except UnicodeDecodeError:
+        # Se tivemos erro de decoding, o arquivo não está em UTF-8;
+        # tenta com CP-1252, superset de ISO-8859-1/Latin-1
+        csv_reader = pd.read_csv(
+            csv_file, sep=detected_separator, dtype=str, encoding="cp1252", chunksize=lines_per_chunk
+        )
 
     # Colunas inesperadas que serão modificadas abaixo
     missing_columns = None

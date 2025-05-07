@@ -42,7 +42,7 @@ def fix_csv(csv_text: str, sep: str) -> str:
     return new_csv_text
 
 
-def fix_csv_file(csv_file, sep: str):
+def fix_csv_file(csv_file, sep: str, detected_encoding: str):
     if csv_file.closed:
         log("Called `fix_csv_file` on closed file handle")
         return
@@ -59,7 +59,6 @@ def fix_csv_file(csv_file, sep: str):
     # Lê primeira linha, separa em colunas
     csv_file.seek(0)
     data = csv_file.readline()
-    detected_encoding = chardet.detect(data)["encoding"]
     first_line = data.decode(detected_encoding).strip()
 
     # Primeiro, queremos saber se todas as linhas possuem as mesmas colunas
@@ -98,6 +97,21 @@ def fix_csv_file(csv_file, sep: str):
     return new_csv_file
 
 
+def fix_AP22_LISTAGEM_VACINA_V2_202408(csv_file):
+    new_csv_file = tempfile.TemporaryFile()
+    csv_file.seek(0)
+    data = csv_file.readline()
+    first_line = data.decode("cp850").strip() + "\n"
+    new_csv_file.write(first_line.encode("utf-8"))
+    for data in csv_file:
+        line = data.decode("cp1252")
+        new_line = line.strip() + "\n"
+        new_csv_file.write(new_line.encode("utf-8"))
+    csv_file.close()
+    new_csv_file.seek(0)
+    return new_csv_file
+
+
 def fix_column_name(column_name: str) -> str:
     replace_from = [None] * 2
     replace_to = [None] * 2
@@ -105,14 +119,15 @@ def fix_column_name(column_name: str) -> str:
     replace_from[0] = ["(", ")", "\r", "\n"]
     replace_to[0] = ""
 
-    replace_from[1] = [" ", "[", "]", "-", ".", ",", "/", "\\", "'", '"']
+    replace_from[1] = [" ", "[", "]", "<", ">", "-", ".", ",", "/", "\\", "'", '"']
     replace_to[1] = "_"
 
+    column_name = unidecode(column_name).lower()
     for from_list, to_char in zip(replace_from, replace_to):
         for from_char in from_list:
             column_name = column_name.replace(from_char, to_char)
 
-    return unidecode(column_name).lower()
+    return column_name
 
 
 def detect_separator(csv_text: str) -> str:
@@ -175,10 +190,16 @@ def download_file(bucket, file_name, extra_safe=True):
         downloaded_file_size = get_file_size(csv_file)
         log(f"[download_file] Saved to temporary file ({format_bytes(downloaded_file_size)}).")
 
+        if file_name.endswith("AP22_LISTAGEM_VACINA_V2_2024-08.csv"):
+            # Arquivo extremamente bizarro: a primeira linha é codificada em CP-850, e
+            # o resto em CP-1252 (????). Será que é só esse? Zero sentido. --Avellar
+            csv_file = fix_AP22_LISTAGEM_VACINA_V2_202408(csv_file)
+
         # Pega primeira linha para detectar separador
         data = csv_file.readline()
         detected_encoding = chardet.detect(data)["encoding"]
         first_line = data.decode(detected_encoding)
+        log(f"[download_file] Detected encoding of '{detected_encoding}'")
 
         if len(first_line) <= 0:
             log(f"[download_file] First line is empty; error likely", level="warning")
@@ -186,7 +207,7 @@ def download_file(bucket, file_name, extra_safe=True):
         log(f"[download_file] Detected separator: '{sep}'")
 
         if extra_safe:
-            csv_file = fix_csv_file(csv_file, sep)
+            csv_file = fix_csv_file(csv_file, sep, detected_encoding)
         csv_file.seek(0)
 
     # Caso o arquivo seja pequeno o suficiente
