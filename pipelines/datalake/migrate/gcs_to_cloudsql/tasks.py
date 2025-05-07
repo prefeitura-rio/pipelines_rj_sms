@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 import fnmatch
+import random
 from datetime import timedelta
 
-import random
 import requests
-
-from google.cloud import storage
 from google.auth import jwt
 from google.auth.transport import requests as google_requests
+from google.cloud import storage
 from google.oauth2 import service_account
 
 from pipelines.datalake.migrate.gcs_to_cloudsql.constants import constants
-
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 
@@ -43,8 +41,7 @@ def send_api_request(bucket_name: str, most_recent_file: str, instance_name: str
     SCOPES = ["https://www.googleapis.com/auth/sqlservice.admin"]
     SERVICE_ACCOUNT_FILE = constants.SERVICE_ACCOUNT_FILE.value
     credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE,
-        scopes=SCOPES
+        SERVICE_ACCOUNT_FILE, scopes=SCOPES
     )
     credentials.refresh(google_requests.Request())
     ACCESS_TOKEN = credentials.token
@@ -62,13 +59,10 @@ def send_api_request(bucket_name: str, most_recent_file: str, instance_name: str
             "fileType": "BAK",
             "uri": full_file_uri,
             "database": f"_test_database_{rnd_seed}",
-            "sqlServerImportOptions": {}
+            "sqlServerImportOptions": {},
         }
     }
-    headers = {
-        "Authorization": f"Bearer {ACCESS_TOKEN}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
     response = requests.post(API_FULL_URL, json=data, headers=headers)
 
     log(response.status_code)

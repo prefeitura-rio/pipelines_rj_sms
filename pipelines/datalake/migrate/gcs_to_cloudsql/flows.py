@@ -8,7 +8,8 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-#from pipelines.datalake.migrate.gcs_to_cloudsql.schedules import schedule
+
+# from pipelines.datalake.migrate.gcs_to_cloudsql.schedules import schedule
 from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
     get_most_recent_file_from_pattern,
     send_api_request,
@@ -36,15 +37,12 @@ with Flow(
     )
 
     send_api_request(
-        bucket_name=BUCKET_NAME,
-        most_recent_file=most_recent_file_name,
-        instance_name=INSTANCE_NAME
+        bucket_name=BUCKET_NAME, most_recent_file=most_recent_file_name, instance_name=INSTANCE_NAME
     )
 
 
-
 # Storage and run configs
-#migrate_gcs_to_cloudsql.schedule = schedule  # FIXME
+# migrate_gcs_to_cloudsql.schedule = schedule  # FIXME
 migrate_gcs_to_cloudsql.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 migrate_gcs_to_cloudsql.executor = LocalDaskExecutor(num_workers=10)
 migrate_gcs_to_cloudsql.run_config = KubernetesRun(
