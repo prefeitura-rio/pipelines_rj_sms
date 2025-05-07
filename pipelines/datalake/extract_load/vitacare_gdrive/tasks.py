@@ -130,7 +130,11 @@ def upload_consistent_files(
         # Se tivemos erro de decoding, o arquivo não está em UTF-8;
         # tenta com CP-1252, superset de ISO-8859-1/Latin-1
         csv_reader = pd.read_csv(
-            csv_file, sep=detected_separator, dtype=str, encoding="cp1252", chunksize=lines_per_chunk
+            csv_file,
+            sep=detected_separator,
+            dtype=str,
+            encoding="cp1252",
+            chunksize=lines_per_chunk,
         )
 
     # Colunas inesperadas que serão modificadas abaixo
