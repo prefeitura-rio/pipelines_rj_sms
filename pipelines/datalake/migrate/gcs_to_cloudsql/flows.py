@@ -11,8 +11,10 @@ from pipelines.constants import constants
 
 # from pipelines.datalake.migrate.gcs_to_cloudsql.schedules import schedule
 from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
-    get_most_recent_file_from_pattern,
+    find_all_files_from_pattern,
+    get_most_recent_filenames,
     send_api_request,
+    poll_operations_status,
 )
 from pipelines.utils.logger import log
 
@@ -30,14 +32,24 @@ with Flow(
     FILE_PATTERN = Parameter("file_pattern", default=None, required=True)
     # Testando com "HISTÓRICO_PEPVITA_RJ/AP10/vitacare_historic_*_*_*.bak"
 
-    most_recent_file_name = get_most_recent_file_from_pattern(
+    files = find_all_files_from_pattern(
         file_pattern=FILE_PATTERN,
         environment=ENVIRONMENT,
         bucket_name=BUCKET_NAME,
     )
 
-    send_api_request(
-        bucket_name=BUCKET_NAME, most_recent_file=most_recent_file_name, instance_name=INSTANCE_NAME
+    most_recent_filenames = get_most_recent_filenames(
+        files=files
+    )
+
+    responses = send_api_request.map(
+        most_recent_file=most_recent_filenames,
+        bucket_name=unmapped(BUCKET_NAME),
+        instance_name=unmapped(INSTANCE_NAME),
+    )
+
+    poll_operations_status(
+        operation_names=responses
     )
 
 
