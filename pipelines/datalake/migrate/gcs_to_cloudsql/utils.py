@@ -6,7 +6,7 @@ from pipelines.datalake.migrate.gcs_to_cloudsql.constants import constants
 from pipelines.utils.logger import log
 
 
-def get_access_token(scopes: list=None):
+def get_access_token(scopes: list = None):
     if scopes is None:
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 
@@ -16,4 +16,3 @@ def get_access_token(scopes: list=None):
     )
     credentials.refresh(google_requests.Request())
     return credentials.token
-

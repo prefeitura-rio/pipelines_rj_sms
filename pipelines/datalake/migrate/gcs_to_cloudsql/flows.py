@@ -13,8 +13,8 @@ from pipelines.constants import constants
 from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
     find_all_files_from_pattern,
     get_most_recent_filenames,
-    send_api_request,
     poll_operations_status,
+    send_api_request,
 )
 from pipelines.utils.logger import log
 
@@ -38,9 +38,7 @@ with Flow(
         bucket_name=BUCKET_NAME,
     )
 
-    most_recent_filenames = get_most_recent_filenames(
-        files=files
-    )
+    most_recent_filenames = get_most_recent_filenames(files=files)
 
     responses = send_api_request.map(
         most_recent_file=most_recent_filenames,
@@ -48,9 +46,7 @@ with Flow(
         instance_name=unmapped(INSTANCE_NAME),
     )
 
-    poll_operations_status(
-        operation_names=responses
-    )
+    poll_operations_status(operation_names=responses)
 
 
 # Storage and run configs

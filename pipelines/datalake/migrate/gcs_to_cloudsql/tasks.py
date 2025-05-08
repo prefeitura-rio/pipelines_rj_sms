@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import fnmatch
 import re
-from time import sleep
 from datetime import timedelta
+from time import sleep
 
 import requests
 from google.cloud import storage
@@ -44,16 +44,15 @@ def get_most_recent_filenames(files):
         m = regex.match(file.name)
         date = m.group("date")
         cnes = m.group("cnes")
-        if cnes not in most_recent_dict \
-        or date > most_recent_dict[cnes][0]:
+        if cnes not in most_recent_dict or date > most_recent_dict[cnes][0]:
             most_recent_dict[cnes] = (date, file.name)
 
     log(f"Found {len(most_recent_dict.keys())} distinct CNES")
-    most_recent_filenames = [ filename for _, filename in list(most_recent_dict.values()) ]
+    most_recent_filenames = [filename for _, filename in list(most_recent_dict.values())]
 
     log("Sample of 10 files:\n" + "\n".join(most_recent_filenames[:10]))
     # FIXME: coloquei [:5] pra testar com poucos
-    return most_recent_filenames[:5] 
+    return most_recent_filenames[:5]
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
@@ -61,7 +60,10 @@ def send_api_request(most_recent_file: str, bucket_name: str, instance_name: str
     full_file_uri = f"gs://{bucket_name}/{most_recent_file}"
 
     # FIXME: coloquei pra testar só com 1
-    if most_recent_file != "HISTÓRICO_PEPVITA_RJ/AP10/vitacare_historic_2270250_20250401_050209.bak":
+    if (
+        most_recent_file
+        != "HISTÓRICO_PEPVITA_RJ/AP10/vitacare_historic_2270250_20250401_050209.bak"
+    ):
         return
     log(f"Attempting to import '{full_file_uri}'")
 
@@ -142,7 +144,10 @@ def poll_operations_status(operation_names: list):
             # Constrói a URL da API para essa operação
             API_OPERATION = f"/operations/{name}"
             API_FULL_URL = f"{API_BASE}{API_PROJECT}{API_OPERATION}"
-            headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            }
             response = requests.get(API_FULL_URL, headers=headers)
             json = response.json()
             if "status" in json:
