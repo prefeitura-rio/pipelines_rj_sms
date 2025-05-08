@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 import pandas as pd
@@ -70,6 +70,12 @@ def get_datetime_working_range(
     if timezone is None:
         timezone = "America/Sao_Paulo"
     tz = pytz.timezone(timezone)
+
+    if isinstance(start_datetime, date) and not isinstance(start_datetime, datetime):
+        start_datetime = datetime.combine(start_datetime, datetime.min.time())
+
+    if isinstance(end_datetime, date) and not isinstance(end_datetime, datetime):
+        end_datetime = datetime.combine(end_datetime, datetime.min.time())
 
     if start_datetime.tzinfo is None:
         start_datetime = tz.localize(start_datetime)
