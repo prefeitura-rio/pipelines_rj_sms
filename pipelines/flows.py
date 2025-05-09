@@ -29,12 +29,12 @@ from pipelines.datalake.extract_load.vitacare_db.flows import *
 from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
+from pipelines.datalake.migrate.gcs_to_cloudsql.flows import *
 
 # ===============================
 # MIGRATE
 # ===============================
 from pipelines.datalake.migrate.gdrive_to_gcs.flows import *
-from pipelines.datalake.migrate.gcs_to_cloudsql.flows import *
 
 # ===============================
 # TRANSFORM
