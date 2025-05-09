@@ -15,7 +15,7 @@ from pipelines.utils.logger import log
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def find_all_files_from_pattern(file_pattern: str, environment: str, bucket_name: str):
+def find_all_files_from_pattern(environment: str, file_pattern: str, bucket_name: str):
     client = storage.Client()
     bucket = client.bucket(bucket_name)
 
@@ -57,6 +57,7 @@ def get_most_recent_filenames(files):
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def send_sequential_api_requests(most_recent_files: list, bucket_name: str, instance_name: str):
+    most_recent_files = most_recent_files[:5] # FIXME
     file_count = len(most_recent_files)
     log(f"[send_sequential_api_requests] Received {file_count} filename(s)")
 
@@ -102,7 +103,6 @@ def send_sequential_api_requests(most_recent_files: list, bucket_name: str, inst
         # Faz a requisição para a API
         response = requests.post(API_IMPORT, json=data, headers=headers)
 
-        # FIXME: Problema em potencial: a database pode já existir, e acredito que isso daria erro
         status = response.status_code
         if status >= 500:
             raise ConnectionError(
@@ -152,6 +152,11 @@ def send_sequential_api_requests(most_recent_files: list, bucket_name: str, inst
             # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations/get
             response = requests.get(API_POLL, headers=headers)
             poll_json = response.json()
+            if "error" in poll_json and "errors" in poll_json["error"] and len(poll_json["error"]["errors"]) > 0:
+                error_count = len(poll_json["error"]["errors"])
+                log(f"[send_sequential_api_requests] API reported {error_count} error(s)", level="warning")
+                for err in poll_json["error"]["errors"]:
+                    log(f"{err['code']}: {err['message']}", level="warning")
             # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations#sqloperationstatus
             status = "MISSING"
             if "status" in poll_json:
