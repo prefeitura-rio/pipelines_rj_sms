@@ -36,7 +36,7 @@ with Flow(
 
     most_recent_filenames = get_most_recent_filenames(files=files)
 
-    responses = send_sequential_api_requests(
+    send_sequential_api_requests(
         most_recent_files=most_recent_filenames,
         bucket_name=BUCKET_NAME,
         instance_name=INSTANCE_NAME,
