@@ -35,16 +35,6 @@ flow_parameters = [
         "rename_flow": True,
     },
     # ===============================
-    # CNES
-    # ===============================
-    {
-        "folder_id": "1M8XFWibqQhP9pO2fVu3zEQpexAzZ9S4X",
-        "bucket_name": "cnes_gdrive",
-        "environment": "prod",
-        "last_modified_date": "M-1",
-        "rename_flow": True,
-    },
-    # ===============================
     # SIH
     # ===============================
     {
