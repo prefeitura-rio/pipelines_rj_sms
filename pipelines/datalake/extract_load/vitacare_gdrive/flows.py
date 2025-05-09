@@ -12,7 +12,7 @@ from pipelines.datalake.extract_load.vitacare_gdrive.schedules import schedule
 from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
     find_all_file_names_from_pattern,
     get_most_recent_schema,
-    report_inadequency,
+    report_inadequacy,
     upload_consistent_files,
 )
 
@@ -49,7 +49,7 @@ with Flow(
         use_safe_download_file=unmapped(False),
     )
 
-    report_inadequency(
+    report_inadequacy(
         file_pattern=FILE_PATTERN,
         reports=reports,
     )
