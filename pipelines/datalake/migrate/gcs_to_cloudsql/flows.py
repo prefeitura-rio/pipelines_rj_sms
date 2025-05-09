@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 # flake8: noqa E501
-from prefect import Parameter, unmapped
+from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -13,10 +13,8 @@ from pipelines.constants import constants
 from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
     find_all_files_from_pattern,
     get_most_recent_filenames,
-    poll_operations_status,
-    send_api_request,
+    send_sequential_api_requests,
 )
-from pipelines.utils.logger import log
 
 with Flow(
     name="DataLake - Migração de Dados - GCS to Cloud SQL",
@@ -40,13 +38,11 @@ with Flow(
 
     most_recent_filenames = get_most_recent_filenames(files=files)
 
-    responses = send_api_request.map(
-        most_recent_file=most_recent_filenames,
-        bucket_name=unmapped(BUCKET_NAME),
-        instance_name=unmapped(INSTANCE_NAME),
+    responses = send_sequential_api_requests(
+        most_recent_files=most_recent_filenames,
+        bucket_name=BUCKET_NAME,
+        instance_name=INSTANCE_NAME,
     )
-
-    poll_operations_status(operation_names=responses)
 
 
 # Storage and run configs
