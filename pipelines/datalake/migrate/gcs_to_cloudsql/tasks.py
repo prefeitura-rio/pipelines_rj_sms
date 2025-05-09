@@ -51,7 +51,7 @@ def get_most_recent_filenames(files):
     log(f"Found {len(most_recent_dict.keys())} distinct CNES")
     most_recent_filenames = [filename for _, filename in list(most_recent_dict.values())]
 
-    log("Sample of 10 files:\n" + "\n".join(most_recent_filenames[:2]))
+    log("Sample of 5 files:\n" + "\n".join(most_recent_filenames[:5]))
     return most_recent_filenames
 
 
