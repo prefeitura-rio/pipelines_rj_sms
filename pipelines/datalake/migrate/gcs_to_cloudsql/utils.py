@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 import re
-import requests
 from time import sleep
 
+import requests
 from google.auth.transport import requests as google_requests
 from google.oauth2 import service_account
 
-from pipelines.utils.logger import log
-
 from pipelines.datalake.migrate.gcs_to_cloudsql.constants import constants
+from pipelines.utils.logger import log
 
 
 def get_access_token(scopes: list = None):
@@ -145,4 +144,3 @@ def call_and_wait(method: str, url_path: str, json=None):
             + "Possible HTTP 409 'Conflict' error coming.",
             level="warning",
         )
-
