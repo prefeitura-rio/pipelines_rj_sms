@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import io
+import re
 import tempfile
 
 import chardet
@@ -16,7 +17,7 @@ def fix_csv(csv_text: str, sep: str) -> str:
     if not sep or len(sep) <= 0:
         sep = ","
 
-    first_line = csv_text.splitlines()[0].strip()
+    first_line = filter_bad_chars(csv_text.splitlines()[0])
     columns = first_line.split(sep)
 
     other_lines = csv_text.splitlines()[1:]
@@ -31,7 +32,7 @@ def fix_csv(csv_text: str, sep: str) -> str:
         columns.append(f"complemento_{i}")
 
     for i, line in enumerate(other_lines):
-        new_line = line.strip()
+        new_line = filter_bad_chars(line)
         diff = max_cols - (new_line.count(sep) + 1)
         new_line += sep * diff
         other_lines[i] = new_line
@@ -59,7 +60,7 @@ def fix_csv_file(csv_file, sep: str, detected_encoding: str):
     # Lê primeira linha, separa em colunas
     csv_file.seek(0)
     data = csv_file.readline()
-    first_line = data.decode(detected_encoding).strip()
+    first_line = filter_bad_chars(data.decode(detected_encoding))
 
     # Primeiro, queremos saber se todas as linhas possuem as mesmas colunas
     columns = first_line.split(sep)
@@ -82,11 +83,11 @@ def fix_csv_file(csv_file, sep: str, detected_encoding: str):
 
     csv_file.seek(0)
     csv_file.readline()
-    # Para cada linha, removemos \r e garantimos que há o mesmo
-    # número de valores que de colunas
+    # Para cada linha, removemos caracteres inesperados
+    # e garantimos que há o mesmo número de valores que de colunas
     for data in csv_file:
         line = data.decode(detected_encoding)
-        new_line = line.strip()
+        new_line = filter_bad_chars(line)
         # Padroniza número de campos por linha
         diff = max_cols - (new_line.count(sep) + 1)
         new_line += (sep * diff) + "\n"
@@ -101,25 +102,52 @@ def fix_AP22_LISTAGEM_VACINA_V2_202408(csv_file):
     new_csv_file = tempfile.TemporaryFile()
     csv_file.seek(0)
     data = csv_file.readline()
-    first_line = data.decode("cp850").strip() + "\n"
+    first_line = filter_bad_chars(data.decode("cp850")) + "\n"
     new_csv_file.write(first_line.encode("utf-8"))
     for data in csv_file:
         line = data.decode("cp1252")
-        new_line = line.strip() + "\n"
+        new_line = filter_bad_chars(line) + "\n"
         new_csv_file.write(new_line.encode("utf-8"))
     csv_file.close()
     new_csv_file.seek(0)
     return new_csv_file
 
 
+def filter_bad_chars(row: str) -> str:
+    EMPTY = ""
+    SPACE = " "
+    replace_pairs = [
+        ("\u00AD", EMPTY),  # Soft Hyphen
+        ("\u200C", EMPTY),  # Zero Width Non-Joiner
+        ("\t", SPACE),  # Tab
+        ("\n", SPACE),  # Line feed
+        ("\u00A0", SPACE),  # No-Break Space
+    ]
+    for pair in replace_pairs:
+        row = row.replace(pair[0], pair[1])
+
+    # NULL, \r, etc
+    row = re.sub(r"[\u0000-\u001F]", EMPTY, row)
+    # DEL, outros de controle
+    row = re.sub(r"[\u007F-\u009F]", EMPTY, row)
+    # Espaços de tamanhos diferentes
+    row = re.sub(r"[\u2000-\u200B\u202F\u205F]", SPACE, row)
+    # LTR/RTL marks, overrides
+    row = re.sub(r"[\u200E-\u202E]", EMPTY, row)
+
+    return row.strip()
+
+
 def fix_column_name(column_name: str) -> str:
+    column_name = filter_bad_chars(column_name)
+
     replace_from = [None] * 2
     replace_to = [None] * 2
 
     replace_from[0] = ["(", ")", "\r", "\n"]
     replace_to[0] = ""
 
-    replace_from[1] = [" ", "[", "]", "<", ">", "-", ".", ",", "/", "\\", "'", '"']
+    replace_from[1] = [" ", "[", "]", "<", ">", "-", ".", ",", ";", "/", "\\", "'", '"']
     replace_to[1] = "_"
 
     column_name = unidecode(column_name).lower()
@@ -206,8 +234,7 @@ def download_file(bucket, file_name, extra_safe=True):
         sep = detect_separator(first_line)
         log(f"[download_file] Detected separator: '{sep}'")
 
-        if extra_safe:
-            csv_file = fix_csv_file(csv_file, sep, detected_encoding)
+        csv_file = fix_csv_file(csv_file, sep, detected_encoding)
         csv_file.seek(0)
 
     # Caso o arquivo seja pequeno o suficiente
