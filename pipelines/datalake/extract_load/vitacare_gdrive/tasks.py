@@ -174,6 +174,13 @@ def upload_consistent_files(
         for column, value in metadata_columns.items():
             df[column] = value
 
+        # Cria um índice de 0 a [tamanho do dataframe]
+        # Se já processamos algum chunk anteriormente, então o índice vai de
+        # `lines_per_chunk` até `lines_per_chunk`+[tamanho]
+        # range(a, b) inclui `a` mas exclui `b`, então não precisamos de len()-1
+        start_index = i * lines_per_chunk
+        df["indice"] = range(start_index, start_index + len(df))
+
         if inadequacy_index is None:
             # Calcula o quão inesperado é o formato recebido
             inadequacy_index = (len(missing_columns) + len(extra_columns)) / len(expected_schema)
