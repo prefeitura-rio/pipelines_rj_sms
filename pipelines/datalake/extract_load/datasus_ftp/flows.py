@@ -96,9 +96,7 @@ sms_dump_datasus.schedule = datasus_weekly_update_schedule
 sms_dump_datasus.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_dump_datasus.run_config = VertexRun(
     image=constants.DOCKER_VERTEX_IMAGE.value,
-    labels=[
-        constants.RJ_SMS_VERTEX_AGENT_LABEL.value
-    ],
+    labels=[constants.RJ_SMS_VERTEX_AGENT_LABEL.value],
     # https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
     machine_type="e2-standard-4",
     env={
