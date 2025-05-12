@@ -18,6 +18,7 @@ flow_parameters = [
         "bucket_name": "vitacare_backups_gdrive",
         "instance_name": "vitacare",
         "file_pattern": "HISTÓRICO_PEPVITA_RJ/AP*/vitacare_historic_*_*_*.bak",
+        "limit_files": -1,
     },
 ]
 

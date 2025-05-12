@@ -27,6 +27,7 @@ with Flow(
     BUCKET_NAME = Parameter("bucket_name", default="vitacare_backups_gdrive")
     INSTANCE_NAME = Parameter("instance_name", default="vitacare")
     FILE_PATTERN = Parameter("file_pattern", default=None, required=True)
+    LIMIT_FILES = Parameter("limit_files", default=None)
 
     filenames = find_all_filenames_from_pattern(
         environment=ENVIRONMENT,
@@ -40,6 +41,7 @@ with Flow(
         most_recent_files=most_recent_filenames,
         bucket_name=BUCKET_NAME,
         instance_name=INSTANCE_NAME,
+        limit_files=LIMIT_FILES,
     )
 
 
