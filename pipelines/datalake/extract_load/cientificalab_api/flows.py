@@ -92,7 +92,9 @@ flow_cientificalab.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 flow_cientificalab.executor = LocalDaskExecutor(num_workers=3)
 flow_cientificalab.run_config = VertexRun(
     image=constants.DOCKER_VERTEX_IMAGE.value,
-    labels=[constants.RJ_SMS_VERTEX_AGENT_LABEL.value,],
+    labels=[
+        constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
+    ],
     machine_type="e2-standard-4",  # ou outro tipo necessário
     env={
         "INFISICAL_ADDRESS": constants.INFISICAL_ADDRESS.value,
