@@ -12,7 +12,7 @@ from pipelines.utils.logger import log
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def find_all_files_from_pattern(environment: str, file_pattern: str, bucket_name: str):
+def find_all_filenames_from_pattern(environment: str, file_pattern: str, bucket_name: str):
     client = storage.Client()
     bucket = client.bucket(bucket_name)
 
@@ -22,7 +22,7 @@ def find_all_files_from_pattern(environment: str, file_pattern: str, bucket_name
     files = []
     for blob in blobs:
         if fnmatch.fnmatch(blob.name, file_pattern):
-            files.append(blob)
+            files.append(blob.name)
 
     log(f"{len(files)} files were found")
     return files
@@ -37,11 +37,11 @@ def get_most_recent_filenames(files):
     #                                              CNES   YYYYMMDD
     most_recent_dict = {}
     for file in files:
-        info = utils.get_info_from_filename(filename=file.name)
+        info = utils.get_info_from_filename(filename=file)
         date = info["date"]
         cnes = info["cnes"]
         if cnes not in most_recent_dict or date > most_recent_dict[cnes][0]:
-            most_recent_dict[cnes] = (date, file.name)
+            most_recent_dict[cnes] = (date, file)
 
     log(f"Found {len(most_recent_dict.keys())} distinct CNES")
     most_recent_filenames = [filename for _, filename in list(most_recent_dict.values())]

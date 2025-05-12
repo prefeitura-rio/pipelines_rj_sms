@@ -10,7 +10,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.migrate.gcs_to_cloudsql.schedules import schedule
 from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
-    find_all_files_from_pattern,
+    find_all_filenames_from_pattern,
     get_most_recent_filenames,
     send_sequential_api_requests,
 )
@@ -28,13 +28,13 @@ with Flow(
     INSTANCE_NAME = Parameter("instance_name", default="vitacare")
     FILE_PATTERN = Parameter("file_pattern", default=None, required=True)
 
-    files = find_all_files_from_pattern(
+    filenames = find_all_filenames_from_pattern(
         environment=ENVIRONMENT,
         file_pattern=FILE_PATTERN,
         bucket_name=BUCKET_NAME,
     )
 
-    most_recent_filenames = get_most_recent_filenames(files=files)
+    most_recent_filenames = get_most_recent_filenames(files=filenames)
 
     send_sequential_api_requests(
         most_recent_files=most_recent_filenames,
