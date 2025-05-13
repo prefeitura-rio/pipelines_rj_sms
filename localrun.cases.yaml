@@ -284,6 +284,15 @@ cases:
       owner_email: "storage02healthbr@gmail.com"
       last_modified_date: "M-1"
       rename_flow: True
+  - case_slug: "datalake-migrate-gcs_to_cloudsql"
+    flow_path: "pipelines.datalake.migrate.gcs_to_cloudsql.flows"
+    flow_name: "migrate_gcs_to_cloudsql"
+    params:
+      environment: "dev"
+      bucket_name: "vitacare_backups_gdrive"
+      instance_name: "vitacare"
+      file_pattern: "HISTÓRICO_PEPVITA_RJ/AP*/vitacare_historic_*_*_*.bak"
+      limit_files: -1
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
@@ -325,3 +334,10 @@ cases:
       bq_dataset: 'brutos_sisreg_api'
       bq_table: 'marcacoes'
       dias_por_faixa: 30
+  - case_slug: "cientificalab_api"
+    flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
+    flow_name: "flow_cientificalab"
+    params:
+      environment: 'dev'
+      dt_inicio: '2025-01-21T10:00:00-0300'
+      dt_fim: '2025-01-21T11:30:00-0300'

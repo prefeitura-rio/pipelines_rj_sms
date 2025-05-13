@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 import pandas as pd
 import prefect
+import pytz
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -35,7 +36,11 @@ def from_relative_date(relative_date: Optional[str] = None) -> Optional[pd.Times
 
 @task(nout=2)
 def get_datetime_working_range(
-    start_datetime: str = "", end_datetime: str = "", interval: int = 1, return_as_str: bool = False
+    start_datetime: str = "",
+    end_datetime: str = "",
+    interval: int = 1,
+    return_as_str: bool = False,
+    timezone: str = None,
 ):
     logger = prefect.context.get("logger")
 
@@ -62,10 +67,26 @@ def get_datetime_working_range(
 
     logger.info(f"Target date range: {start_datetime} -> {end_datetime}")
 
+    if timezone is None:
+        timezone = "America/Sao_Paulo"
+    tz = pytz.timezone(timezone)
+
+    if isinstance(start_datetime, date) and not isinstance(start_datetime, datetime):
+        start_datetime = datetime.combine(start_datetime, datetime.min.time())
+
+    if isinstance(end_datetime, date) and not isinstance(end_datetime, datetime):
+        end_datetime = datetime.combine(end_datetime, datetime.min.time())
+
+    if start_datetime.tzinfo is None:
+        start_datetime = tz.localize(start_datetime)
+    if end_datetime.tzinfo is None:
+        end_datetime = tz.localize(end_datetime)
+
+    start_datetime = start_datetime.astimezone(tz)
+    end_datetime = end_datetime.astimezone(tz)
+
     if return_as_str:
-        return start_datetime.strftime("%Y-%m-%d %H:%M:%S"), end_datetime.strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+        return start_datetime.isoformat(), end_datetime.isoformat()
 
     return start_datetime, end_datetime
 
