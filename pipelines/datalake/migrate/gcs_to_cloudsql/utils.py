@@ -41,6 +41,18 @@ def get_info_from_filename(filename: str):
     }
 
 
+def check_db_name(name: str):
+    # Se for um dos nomes reservados (i.e. pré-existentes), erro
+    if name in ["master", "model", "msdb", "tempdb"]:
+        raise PermissionError(f"Database name '{name}' is reserved!")
+
+    # Se tiver algum caractere esquisito (e.g. *, %), erro
+    if re.search(r"[^A-Za-z0-9_\-]", name):
+        raise PermissionError(f"Database name '{name}' contains characters not in [A-Za-z0-9_\-]!")
+
+    return
+
+
 def call_and_wait(method: str, url_path: str, json=None):
     if not method or len(method) <= 0:
         method = "GET"

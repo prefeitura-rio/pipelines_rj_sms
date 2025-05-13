@@ -54,9 +54,11 @@ def get_most_recent_filenames(files):
 def send_sequential_api_requests(
     most_recent_files: list, bucket_name: str, instance_name: str, limit_files: int
 ):
+    # Caso queira limitar o número de arquivos para teste
     if limit_files is not None and limit_files > 0:
         log(f"[send_sequential_api_requests] Limiting to {limit_files} files")
         most_recent_files = most_recent_files[:limit_files]
+
     file_count = len(most_recent_files)
     log(f"[send_sequential_api_requests] Received {file_count} filename(s)")
 
@@ -86,6 +88,8 @@ def send_sequential_api_requests(
 
         log("-" * 20)
         log(f"[send_sequential_api_requests] Attempting to delete database '{database_name}'...")
+        # Erro se o nome da database for inválido/esquisito
+        utils.check_db_name(database_name)
 
         # Garante que não existe database com esse nome
         # https://cloud.google.com/sql/docs/sqlserver/create-manage-databases#delete
