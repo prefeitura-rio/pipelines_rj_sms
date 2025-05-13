@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
-from prefect.run_configs import VertexRun
+from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
@@ -90,14 +90,10 @@ with Flow(
 flow_cientificalab.schedule = schedule
 flow_cientificalab.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 flow_cientificalab.executor = LocalDaskExecutor(num_workers=3)
-flow_cientificalab.run_config = VertexRun(
-    image=constants.DOCKER_VERTEX_IMAGE.value,
+flow_cientificalab.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
     labels=[
-        constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
+        constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    machine_type="e2-standard-4",
-    env={
-        "INFISICAL_ADDRESS": constants.INFISICAL_ADDRESS.value,
-        "INFISICAL_TOKEN": constants.INFISICAL_TOKEN.value,
-    },
+    memory_limit="4Gi",
 )
