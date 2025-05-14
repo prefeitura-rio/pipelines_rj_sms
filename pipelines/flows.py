@@ -33,6 +33,7 @@ from pipelines.datalake.extract_load.vitai_db.flows import *
 # ===============================
 # MIGRATE
 # ===============================
+from pipelines.datalake.migrate.gcs_to_cloudsql.flows import *
 from pipelines.datalake.migrate.gdrive_to_gcs.flows import *
 
 # ===============================
