@@ -61,7 +61,7 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> list:
         # Pega a primeira linha
         data = csv_file.readline()
         first_line = data
-        if not type(data) == str:
+        if not type(data) is str:
             detected_encoding = chardet.detect(data)["encoding"]
             first_line = data.decode(detected_encoding)
         raw_columns = first_line.split(detected_separator)
