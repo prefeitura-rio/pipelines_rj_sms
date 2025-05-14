@@ -33,6 +33,7 @@ def get_estabelecimentos_sem_coordenadas(env):
 
     log("Executando query")
     df = client.query_and_wait(sql).to_dataframe()
+    log(sql)
     log("Query executada com sucesso")
 
     log(f"{df.sample(5)}")
