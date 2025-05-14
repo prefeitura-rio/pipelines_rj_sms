@@ -29,10 +29,6 @@ def get_estabelecimentos_sem_coordenadas(env):
             rj-sms.saude_cnes.estabelecimento_sus_rio_historico
         WHERE
             nome_fantasia IS NOT NULL
-            AND (
-                endereco_latitude IS NULL
-                OR endereco_longitude IS NULL
-            )
     """
 
     log("Executando query")
