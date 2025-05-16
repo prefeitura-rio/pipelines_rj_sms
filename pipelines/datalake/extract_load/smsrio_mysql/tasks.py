@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
+from math import ceil
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
@@ -35,7 +36,7 @@ def create_extraction_batches(
     if total_rows <= batch_size:
         return [f"SELECT * FROM {db_schema}.{db_table} {sql_filter}"]
 
-    num_batches = total_rows // batch_size
+    num_batches = ceil(total_rows / batch_size)
     log(f"Number of batches to download: {num_batches}")
 
     queries = []
