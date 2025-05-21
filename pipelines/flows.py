@@ -52,3 +52,8 @@ from pipelines.reports.long_running_flows.flows import *
 # ===============================
 from pipelines.tools.healthchecks.flows import *
 from pipelines.tools.unschedule_old_flows.flows import *
+
+# ===============================
+# PRONTUARIOS
+# ===============================
+from pipelines.prontuarios.std.deteccao_restricoes.flows import *

@@ -9,15 +9,20 @@ import re
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.prontuarios.std.deteccao_restricoes.constants import (
-    constants
-)
+from pipelines.prontuarios.std.deteccao_restricoes.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from google import genai
 from pipelines.utils.tasks import get_secret_key
 
 
-def reduce_raw_column(df):
+def reduce_raw_column(df: pd.DataFrame)-> pd.DataFrame:
+    """
+    Reduce the column 'motivo_atendimento' to only the strings that contain the keywords
+    Args:   
+        df (pd.DataFrame): Dataframe with the column 'motivo_atendimento' to be reduced
+    Returns:
+        df (pd.DataFrame): Dataframe with the column 'motivo_atendimento' reduced
+    """
     def reduce_raw_text_row(raw):
         raw = raw.lower()
         list_strings = raw.split('.')
@@ -29,16 +34,26 @@ def reduce_raw_column(df):
     df['len_motivo_atendimento'] = df['motivo_atendimento'].apply(lambda x: len(x))
     df['len_motivo_atendimento_reduced'] = df['motivo_atendimento_reduced'].apply(lambda x: len(x))
     
-    return df
+    return df['motivo_atendimento_reduced'].values, df['id_hci'].values, df['cpf'].values
 
 
 @task
-def get_result_gemini(atendimento, flag_rastreio, env):
+def get_result_gemini(atendimento:str, env:str):
+    """
+    Get the result from Gemini
+    Args:
+        atendimento (str): Atendimento to be analyzed
+        flag_rastreio (int): Flag to be used in the analysis
+        env (str): Environment to be used
+    Returns:
+        result (dict): Result from Gemini
+    """
     def load_gemini_client(env): 
         key = get_secret_key(
             secret_path=constants.INFISICAL_PATH, 
             secret_name=constants.INFISICAL_API_KEY, 
-            environment=env) # Ver secret
+            environment=env
+        ) # Ver secret direitin
 
         client = genai.Client(api_key=key)
         return client
@@ -48,10 +63,10 @@ def get_result_gemini(atendimento, flag_rastreio, env):
     Identifique com o formato {"flag": "1 caso o paciente em questao tenha o diagnostico e 0 caso contrário.", "motivo":"Explique o motivo de escolha da flag"}
     """
     client = load_gemini_client(env)
-    response = client.models.generate_content(model="gemini-2.0-flash",contents=prompt+atendimento)
+    response = client.models.generate_content(model="gemini-2.0-flash",
+                                              contents=prompt+atendimento)
     result = {'result':response.text, 
-              'raw':atendimento,
-              'flag_rastreado': flag_rastreio}
+              'raw':atendimento}
     
     return result
 
@@ -80,3 +95,13 @@ def parse_result_dataframe(list_result):
     df.rename({'result_json.flag':'flag_gemini','result_json.motivo':'motivo_gemini'},axis=1,inplace=True)
     
     return df
+
+@task
+def saving_results(result,file_folder):
+    """
+    Save the results in the folder
+    """
+    path = f'{file_folder}/hci_pacientes_restritos{pd.Timestamp.now()}.csv'
+    result.to_csv(path, index=False, sep=";", encoding="utf-8")
+    log.info(f"Saving results in {path}")
+    return path

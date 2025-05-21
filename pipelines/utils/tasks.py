@@ -995,6 +995,27 @@ def load_file_from_bigquery(
 
     return df
 
+@task
+def query_table_from_bigquery(
+    sql_query: str, environment: str = "dev"
+):
+    """
+    Query data from BigQuery table into a pandas DataFrame.
+
+    Args:
+        environment (str, optional): DON'T REMOVE THIS ARGUMENT.
+        sql_query (str): The SQL query to execute.
+
+    Returns:
+        pandas.DataFrame: The query data from the BigQuery table.
+    """
+    client = bigquery.Client()
+    log(f"[Ignore] Using Parameter to avoid Warnings: {environment}")
+
+    df = client.query(sql_query).to_dataframe()
+
+    return df
+
 
 @task()
 def is_equal(value, target):

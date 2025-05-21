@@ -11,7 +11,27 @@ class constants(Enum):
     Constant values for the dump vitai flows
     """
 
-    INFISICAL_PATH = "/smsrio"
-    INFISICAL_API_KEY = "DB_URL"
-    DATASET_ID = ""
-    TABLE_ID = ""
+    INFISICAL_PATH = "/"
+    INFISICAL_API_KEY = "GEMINI_API_KEY"
+    DATASET_ID = "intermediario_historico_clinico"
+    TABLE_ID = "pacientes_restritos"
+    QUERY = """
+        with pacientes as (
+        SELECT distinct 
+            id_hci,
+            cpf, 
+            clinical_motivation,
+        FROM `rj-sms.app_historico_clinico.episodio_assistencial` as ep
+        where (
+            lower(clinical_motivation) like "%hiv positivo%"
+                or lower(clinical_motivation) like "%soropositivo%"
+                or lower(clinical_motivation) like "%aids%"
+                or lower(clinical_motivation) like "%hiv+%"
+                or lower(clinical_motivation) like "%imunodeficiência%humana%"
+            )
+        and exibicao.paciente_restrito is false
+        )
+        select * from pacientes
+        order by rand()
+        limit 20
+    """
