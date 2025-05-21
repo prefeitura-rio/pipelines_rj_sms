@@ -13,6 +13,7 @@ class constants(Enum):
 
     INFISICAL_PATH = "/"
     INFISICAL_API_KEY = "GEMINI_API_KEY"
+    GEMINI_MODEL = "gemini-2.0-flash"
     DATASET_ID = "intermediario_historico_clinico"
     TABLE_ID = "pacientes_restritos"
     QUERY = """
@@ -33,5 +34,4 @@ class constants(Enum):
         )
         select * from pacientes
         order by rand()
-        limit 20
     """

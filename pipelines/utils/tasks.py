@@ -997,8 +997,8 @@ def load_file_from_bigquery(
 
 @task
 def query_table_from_bigquery(
-    sql_query: str, environment: str = "dev"
-):
+    sql_query: str, env: str = "dev"
+)-> pd.DataFrame:
     """
     Query data from BigQuery table into a pandas DataFrame.
 
@@ -1010,7 +1010,7 @@ def query_table_from_bigquery(
         pandas.DataFrame: The query data from the BigQuery table.
     """
     client = bigquery.Client()
-    log(f"[Ignore] Using Parameter to avoid Warnings: {environment}")
+    log(f"[Ignore] Using Parameter to avoid Warnings: {env}")
 
     df = client.query(sql_query).to_dataframe()
 
