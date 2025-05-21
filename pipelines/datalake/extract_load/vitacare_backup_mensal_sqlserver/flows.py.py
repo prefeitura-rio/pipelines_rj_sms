@@ -27,7 +27,7 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import upload_df_to_datalake
 
-with Flow("DataLake - Extração e Carga - Vitacare Backup Mensal") as flow:
+with Flow("DataLake - Extração e Carga - Vitacare Backup Mensal") as flow_vitacare_backup_mensal:
     # Parâmetros principais
     ENVIRONMENT = Parameter("environment", default="dev")
     CNES_CODE = Parameter("id_code", required=True)
@@ -93,12 +93,12 @@ with Flow("DataLake - Extração e Carga - Vitacare Backup Mensal") as flow:
         )
 
 # Configurações de execução
-flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow.executor = LocalDaskExecutor(num_workers=10)
-flow.run_config = KubernetesRun(
+flow_vitacare_backup_mensal.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_vitacare_backup_mensal.executor = LocalDaskExecutor(num_workers=10)
+flow_vitacare_backup_mensal.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
     memory_limit="5Gi",
     memory_request="5Gi",
 )
-flow.schedule = vitacare_monthly_schedule
+flow_vitacare_backup_mensal.schedule = vitacare_monthly_schedule
