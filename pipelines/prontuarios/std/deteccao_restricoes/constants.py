@@ -18,9 +18,9 @@ class constants(Enum):
     TABLE_ID = "pacientes_restritos"
     QUERY = """
         with pacientes as (
-        SELECT distinct 
+        SELECT distinct
             id_hci,
-            cpf, 
+            cpf,
             clinical_motivation,
         FROM `rj-sms.app_historico_clinico.episodio_assistencial` as ep
         where (

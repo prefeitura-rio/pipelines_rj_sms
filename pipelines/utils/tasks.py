@@ -995,10 +995,9 @@ def load_file_from_bigquery(
 
     return df
 
+
 @task
-def query_table_from_bigquery(
-    sql_query: str, env: str = "dev"
-)-> pd.DataFrame:
+def query_table_from_bigquery(sql_query: str, env: str = "dev") -> pd.DataFrame:
     """
     Query data from BigQuery table into a pandas DataFrame.
 

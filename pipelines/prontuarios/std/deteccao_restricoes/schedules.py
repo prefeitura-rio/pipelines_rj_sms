@@ -27,4 +27,6 @@ vitai_alergias_clocks = generate_dump_api_schedules(
     runs_interval_minutes=0,
 )
 
-hci_pacientes_restritos_daily_update_schedule = Schedule(clocks=untuple_clocks(vitai_alergias_clocks))
+hci_pacientes_restritos_daily_update_schedule = Schedule(
+    clocks=untuple_clocks(vitai_alergias_clocks)
+)
