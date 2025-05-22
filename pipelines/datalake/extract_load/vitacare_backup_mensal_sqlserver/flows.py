@@ -33,7 +33,7 @@ from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_historic:
     # Parâmetros do Flow
-    ENVIRONMENT = Parameter("environment", default="prod")
+    ENVIRONMENT = Parameter("environment", default="dev")
     SCHEMA = Parameter("schema", default="dbo")
     PARTITION_COLUMN = Parameter("partition_column", default="extracted_at")
     RENAME_FLOW = Parameter("rename_flow", default=False)
