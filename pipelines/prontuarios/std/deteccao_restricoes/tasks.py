@@ -90,18 +90,18 @@ def parse_result_dataframe(list_result: list) -> pd.DataFrame:
         Returns:
             result (dict): Result from Gemini
         """
-        dict_result = dict_result.replace('\n', '')
+        dict_result = dict_result.replace("\n", "")
         regexp_flag = re.compile(r'.*{"flag": {0,1}(?P<flag>.*), "motivo": {0,1}(?P<motivo>.*)}.*')
         re_match = regexp_flag.match(dict_result)
 
-        if 'flag' in re_match.groupdict().keys():
+        if "flag" in re_match.groupdict().keys():
             flag = re_match.group("flag")
             flag = flag.replace('"', "")
             flag = flag.replace('"', "")
         else:
-            flag = ''
+            flag = ""
 
-        if 'motivo' in re_match.groupdict().keys():
+        if "motivo" in re_match.groupdict().keys():
             motivo = re_match.group("motivo")
             motivo = motivo.replace('"', "")
             motivo = motivo.replace('"', "")
