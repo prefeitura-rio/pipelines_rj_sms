@@ -31,17 +31,16 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
     ENVIRONMENT = Parameter("environment", default="prod")
     SCHEMA = Parameter("schema", default="dbo")
     PARTITION_COLUMN = Parameter("partition_column", default="extracted_at")
-    RENAME_FLOW = Parameter("rename_flow", default=False) # Para renomear a execução no Prefect Cloud
-    # Este parâmetro será injetado pelo schedule para cada execução
-    # Cada execução do flow no Prefect Cloud será para um `cnes_code` específico
+    RENAME_FLOW = Parameter("rename_flow", default=False) #
+
     CNES_CODE_PARAM = Parameter("cnes_code", required=True)
 
-    # Constantes do projeto
+
     DATASET_ID = vitacare_constants.DATASET_ID.value
     TABLES_TO_EXTRACT = vitacare_constants.TABLES_TO_EXTRACT.value
     DB_NAME = f"vitacare_historic_{CNES_CODE_PARAM}" # O nome do banco de dados depende do CNES
 
-    # Renomeia a execução no Prefect Cloud para melhor rastreabilidade
+
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
@@ -49,8 +48,7 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
             table=f"vitacare_all_tables_{CNES_CODE_PARAM}",
         )
 
-    # 1. Busca as credenciais no Infisical
-    # Estas tarefas não precisam ser mapeadas, pois são chamadas uma vez por execução do flow
+
     host = get_secret_key(
         secret_path=vitacare_constants.INFISICAL_PATH.value,
         secret_name=vitacare_constants.INFISICAL_HOST.value,
@@ -72,7 +70,6 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         environment=ENVIRONMENT,
     )
 
-    # 2. Cria o engine de conexão para o banco de dados SQL Server específico deste CNES
     sql_server_engine = get_sql_server_engine(
         db_host=host,
         db_port=port,
@@ -83,9 +80,7 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
 
 
     for table_name in TABLES_TO_EXTRACT:
-        # Extrai e transforma os dados da tabela atual
-        # O `sql_server_engine` e `CNES_CODE_PARAM` são passados como `unmapped`
-        # porque são os mesmos para todas as extrações de tabela dentro deste fluxo
+
         extracted_df = extract_and_transform_table(
             db_url=sql_server_engine,
             db_schema=SCHEMA,
@@ -93,28 +88,27 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
             cnes_code=CNES_CODE_PARAM, # Usa o parâmetro do flow para o CNES
         )
 
-        # Constrói o nome da tabela no BigQuery
+
         bq_table_id = build_bq_table_name(table_name)
 
-        # Carrega o DataFrame no BigQuery
-        # Note que `extracted_df` é o resultado da tarefa anterior, então não precisa de `unmapped`
+
         upload_df_to_datalake(
             df=extracted_df,
             dataset_id=DATASET_ID,
             table_id=bq_table_id,
             partition_column=PARTITION_COLUMN,
-            source_format="parquet", # ou "csv", dependendo da sua necessidade
-            if_exists="append", # Anexa os dados à tabela existente no BigQuery
-            if_storage_data_exists="append", # Anexa os dados ao storage (GCS)
+            source_format="parquet", 
+            if_exists="append", 
+            if_storage_data_exists="append", 
         )
 
-# Configurações de execução do Flow
+
 flow_vitacare_historic.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_vitacare_historic.executor = LocalDaskExecutor(num_workers=10) # Ajuste conforme a necessidade de recursos
+flow_vitacare_historic.executor = LocalDaskExecutor(num_workers=10) 
 flow_vitacare_historic.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="8Gi", # Aumentei um pouco a memória, pode ser necessário para extrações maiores
+    memory_limit="8Gi", 
     memory_request="5Gi",
 )
 flow_vitacare_historic.schedule = vitacare_monthly_schedule
