@@ -1,85 +1,79 @@
 # -*- coding: utf-8 -*-
 """
-Tasks for Vitacare Historic SQL Server 
+Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
 from datetime import datetime, timedelta
-from math import ceil
 import pandas as pd
 import pytz
-
+from sqlalchemy import create_engine
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 
-
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
-def create_extraction_batches(
-    db_url: str,
-    db_schema: str,
-    db_table: str,
-    id_column: str,
-    batch_size: int = 50000,
-    date_filter: str = None,
-) -> list[str]:
+@task
+def get_sql_server_engine(
+    db_host: str,
+    db_port: str,
+    db_user: str,
+    db_password: str,
+    db_name: str,
+) -> str:
     """
-    Gera queries SQL para extrair a tabela em lotes, usando OFFSET/FETCH (SQL Server).
+    Cria e retorna uma URL de conexão para o SQL Server.
     """
-    sql_filter = f"WHERE {id_column} IS NOT NULL"
-    if date_filter:
-        sql_filter += f" AND {id_column} >= '{date_filter}'"
-
-    total_query = f"SELECT COUNT(*) AS quant FROM {db_schema}.{db_table} {sql_filter}"
-    total_rows = pd.read_sql(total_query, db_url).iloc[0]["quant"]
-    log(f"Total rows to download from {db_table}: {total_rows}")
-
-    if total_rows == 0:
-        log(f"Tabela {db_table} vazia. Nenhuma extração necessária.")
-        return []
-
-    if total_rows <= batch_size:
-        return [f"SELECT * FROM {db_schema}.{db_table} {sql_filter} ORDER BY {id_column} ASC"]
-
-    num_batches = ceil(total_rows / batch_size)
-    log(f"Number of batches to download from {db_table}: {num_batches}")
-
-    queries = []
-    for i in range(num_batches):
-        query = f"""
-            SELECT * FROM {db_schema}.{db_table}
-            {sql_filter}
-            ORDER BY {id_column} ASC
-            OFFSET {i * batch_size} ROWS
-            FETCH NEXT {batch_size} ROWS ONLY
-        """
-        log(f"Query {i+1} for {db_table}: {query}")
-        queries.append(query)
-
-    return queries
-
+    log(f"Building SQL Server engine for database: {db_name}")
+    # O driver ODBC para SQL Server geralmente é 'ODBC Driver 17 for SQL Server' ou similar
+    # Certifique-se de que o driver correto está instalado no ambiente de execução.
+    connection_string = (
+        f"mssql+pyodbc://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?"
+        "driver=ODBC Driver 17 for SQL Server"
+    )
+    # create_engine é do SQLAlchemy, que será usado para a conexão
+    engine = create_engine(connection_string)
+    log("SQL Server engine created successfully.")
+    return engine
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
-def download_from_db(
-    db_url: str,
-    query: str,
+def extract_and_transform_table(
+    db_url: str, # Recebe o engine de conexão criado por get_sql_server_engine
+    db_schema: str,
+    db_table: str,
     cnes_code: str,
 ) -> pd.DataFrame:
     """
-    Executa a query, baixa os dados e adiciona colunas extras.
+    Extrai dados de uma tabela específica, adiciona colunas de metadados e faz a limpeza.
     """
-    table = pd.read_sql(query, db_url)
-    log(f"Downloaded {len(table)} rows with query: {query[:60]}...")
+    full_table_name = f"{db_schema}.{db_table}"
+    log(f"Attempting to download data from {full_table_name} for CNES: {cnes_code}")
 
-    now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-    table["extracted_at"] = now
-    table["id_cnes"] = cnes_code
+    try:
+        # Extrai os dados completos da tabela. Para full load, isso é ideal.
+        # Se as tabelas forem muito grandes, precisaremos de paginação aqui,
+        # como no seu código anterior. Por enquanto, focando no básico.
+        df = pd.read_sql(f"SELECT * FROM {full_table_name}", db_url)
+        log(f"Successfully downloaded {len(df)} rows from {full_table_name}.")
 
-    table.columns = remove_columns_accents(table)
-    return table
+        # Adiciona colunas de metadados
+        now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+        df["extracted_at"] = now
+        df["id_cnes"] = cnes_code
 
+        # Limpa nomes das colunas
+        df.columns = remove_columns_accents(df)
+        log(f"Transformed DataFrame for {full_table_name} from CNES {cnes_code}.")
+        return df
+
+    except Exception as e:
+        log(f"Error downloading or transforming data from {full_table_name} (CNES: {cnes_code}): {e}", level="error")
+        raise # Re-raise a exceção para que o Prefect possa lidar com as retries
 
 @task
 def build_bq_table_name(table_name: str) -> str:
     """
     Retorna o nome da tabela padronizado para o BigQuery.
+    Ex: 'VACINAS' -> 'vacinas_historic'
     """
-    return f"{table_name}_historic" 
+    # Garante que o nome da tabela esteja em minúsculas para o BigQuery
+    bq_table_name = f"{table_name.lower()}_historic"
+    log(f"Built BigQuery table name: {bq_table_name} for source table: {table_name}")
+    return bq_table_name
