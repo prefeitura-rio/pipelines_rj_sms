@@ -3,6 +3,7 @@ import datetime
 import io
 import re
 import tempfile
+import csv
 
 import chardet
 import pytz
@@ -111,6 +112,40 @@ def fix_AP22_LISTAGEM_VACINA_V2_202408(csv_file):
     csv_file.close()
     new_csv_file.seek(0)
     return new_csv_file
+
+
+def fix_INDICADORES_VARIAVEL_3(csv_text, sep):
+    import csv
+    import io
+    """
+    Ajusta as colunas do arquivo G11 e G12,
+    garantindo que tenham exatamente as colunas do schema esperado e presente nos demais grupos.
+
+    Para arquivos cujo nome contenha os padrões "+INDICADORES_VARIAVEL_3_G11_CAP+"
+    ou "+INDICADORES_VARIAVEL_3_G12_CAP+", esta função adiciona as colunas faltantes
+    com valor vazio e reordena as colunas conforme o esquema esperado.
+    
+    Retorna o conteúdo corrigido como string.
+    """
+    expected_columns = ['INDICADOR', 'AP', 'CNES', 'UNIDADE', 'INE', 'EQUIPE',
+                        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'TOTAL']
+
+    input_io = io.StringIO(csv_text)
+    reader = csv.DictReader(input_io, delimiter=sep)
+
+    output_io = io.StringIO()
+    writer = csv.DictWriter(output_io, fieldnames=expected_columns, delimiter=sep, lineterminator='\n')
+
+    # Escreve o cabeçalho no padrão esperado
+    writer.writeheader()
+
+    for row in reader:
+        # Garante todas as colunas do schema esperado
+        new_row = {col: row.get(col, '') for col in expected_columns}
+        writer.writerow(new_row)
+
+    # Retorna como texto
+    return output_io.getvalue()
 
 
 def filter_bad_chars(row: str) -> str:
@@ -244,6 +279,14 @@ def download_file(bucket, file_name, extra_safe=True):
         detected_encoding = chardet.detect(data)["encoding"]
         csv_text = data.decode(detected_encoding)
         sep = detect_separator(csv_text)
+
+        # Desculpa amigos, to aprendendo :) --Day
+        if (
+            "INDICADORES_VARIAVEL_3_G11_CAP" in file_name
+            or "INDICADORES_VARIAVEL_3_G12_CAP" in file_name
+        ):
+            csv_text = fix_INDICADORES_VARIAVEL_3(csv_text,sep)
+
         # Evita erros independentemente da flag se o arquivo for pequeno o suficiente
         csv_text = fix_csv(csv_text, sep)
         csv_file = io.StringIO(csv_text)
