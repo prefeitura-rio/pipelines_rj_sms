@@ -3,6 +3,13 @@
 """
 Flow de extração e carga de dados do Vitacare Historic SQL Server para o BigQuery
 """
+
+#TODO 
+'''
+acto_id esta como string e deveria ser inteiro sem o .
+escape, criar um try exception e endpoint 
+'''
+
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -19,6 +26,7 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
     build_bq_table_name,
     extract_and_transform_table,
+    get_tables_to_extract
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
@@ -34,13 +42,12 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
 
     DATASET_ID = vitacare_constants.DATASET_ID.value
     TABLES_TO_EXTRACT = vitacare_constants.TABLES_TO_EXTRACT.value
-    DB_NAME = f"vitacare_historic_{CNES_CODE_PARAM}"
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
             dataset=DATASET_ID,
-            table=f"vitacare_all_tables_{CNES_CODE_PARAM}",
+            table=CNES_CODE_PARAM,
         )
 
     host = get_secret_key(
@@ -64,12 +71,15 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         environment=ENVIRONMENT,
     )
 
+
+    TABLES_TO_EXTRACT = get_tables_to_extract()
+ 
+
     extracted_dfs = extract_and_transform_table.map(
         db_host=unmapped(host),
         db_port=unmapped(port),
         db_user=unmapped(user),
         db_password=unmapped(password),
-        db_name=unmapped(DB_NAME),
         db_schema=unmapped(SCHEMA),
         db_table=TABLES_TO_EXTRACT,
         cnes_code=unmapped(CNES_CODE_PARAM),
@@ -90,7 +100,7 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
     )
 
 flow_vitacare_historic.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_vitacare_historic.executor = LocalDaskExecutor(num_workers=10)
+flow_vitacare_historic.executor = LocalDaskExecutor(num_workers=1)
 flow_vitacare_historic.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
