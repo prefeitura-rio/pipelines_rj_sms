@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import csv
 import datetime
 import io
 import re
@@ -299,7 +298,6 @@ def download_file(bucket, file_name, extra_safe=True):
         csv_text = data.decode(detected_encoding)
         sep = detect_separator(csv_text)
 
-        # Desculpa amigos, to aprendendo :) --Day
         if (
             "INDICADORES_VARIAVEL_3_G11_CAP" in file_name
             or "INDICADORES_VARIAVEL_3_G12_CAP" in file_name
