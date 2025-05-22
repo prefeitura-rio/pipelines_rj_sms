@@ -328,6 +328,6 @@ cases:
     flow_name: "sms_dump_vitacare_reports"
     params:
       environment: "dev"
-      file_pattern: "AP*/*/REPORT_INDICADORES_VARIAVEL_1/*/*+INDICADORES_VARIAVEL_1*.csv"
-      desired_table_name: "indicadores_cg_variavel_1"
+      file_pattern: "AP*/*/REPORT_PLANILHA_ACOMPANHAMENTO_ESTADO_NUTRICIONAL_SISVAN/*/*ESTADO_NUTRICIONAL_SISVAN.csv"
+      desired_table_name: "estado_nutricional_sisvan"
       desired_dataset_name: "brutos_informes_vitacare"

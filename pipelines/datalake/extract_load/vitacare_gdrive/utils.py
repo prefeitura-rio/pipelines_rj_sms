@@ -159,7 +159,7 @@ def fix_INDICADORES_VARIAVEL_3(csv_text, sep):
 
     for row in reader:
         # Garante todas as colunas do schema esperado
-        new_row = {col: row.get(col, "") for col in expected_columns}
+        new_row = {col: row[col] if col in row else None for col in expected_columns}
         writer.writerow(new_row)
 
     # Retorna como texto
@@ -283,7 +283,7 @@ def download_file(bucket, file_name, extra_safe=True):
         log(f"[download_file] Detected encoding of '{detected_encoding}'")
 
         if len(first_line) <= 0:
-            log(f"[download_file] First line is empty; error likely", level="warning")
+            log("[download_file] First line is empty; error likely", level="warning")
         sep = detect_separator(first_line)
         log(f"[download_file] Detected separator: '{sep}'")
 

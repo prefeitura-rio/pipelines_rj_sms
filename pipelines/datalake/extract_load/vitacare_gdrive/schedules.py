@@ -83,6 +83,13 @@ flow_parameters = [
         "environment": "dev",
         "rename_flow": True,
     },
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_PLANILHA_ACOMPANHAMENTO_ESTADO_NUTRICIONAL_SISVAN/*/*ESTADO_NUTRICIONAL_SISVAN.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "estado_nutricional_sisvan",
+        "environment": "dev",
+        "rename_flow": True,
+    },
 ]
 
 
