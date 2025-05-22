@@ -67,6 +67,8 @@ with Flow(
         table_id=table_names,
         partition_column=unmapped("_loaded_at"),
         source_format=unmapped("parquet"),
+        if_exists=unmapped("append"),
+        dump_mode=unmapped("append"),
     )
 
 
