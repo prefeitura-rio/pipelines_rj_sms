@@ -66,7 +66,7 @@ with Flow(
         dataset_id=unmapped(DATASET_ID),
         table_id=table_names,
         partition_column=unmapped("_loaded_at"),
-        source_format="parquet",
+        source_format=unmapped("parquet"),
     )
 
 
