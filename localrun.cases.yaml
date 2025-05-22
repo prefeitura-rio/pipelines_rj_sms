@@ -331,3 +331,12 @@ cases:
       environment: 'dev'
       dt_inicio: '2025-01-21T10:00:00-0300'
       dt_fim: '2025-01-21T11:30:00-0300'
+  - case_slug: "datalake-extract-vitacare_api_v2"
+    flow_path: "pipelines.datalake.extract_load.vitacare_api_v2.flows"
+    flow_name: "sms_vitacare_api_v2"
+    params:
+      environment: "dev"
+      endpoint: "posicao"
+      target_date: "D-1"
+      dataset_id: "brutos_api_vitacare"
+      table_id_prefix: "estoque_posicao"
