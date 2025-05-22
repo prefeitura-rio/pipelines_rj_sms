@@ -7,24 +7,22 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow # Importa seu Flow customizado
+from prefeitura_rio.pipelines_utils.custom import Flow  
 
 from pipelines.constants import constants
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake 
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
-    get_sql_server_engine,
-    extract_and_transform_table,
-    build_bq_table_name,
-)
-
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
     constants as vitacare_constants,
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules import (
-    vitacare_monthly_schedule, 
+    vitacare_monthly_schedule,
 )
+from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
+    build_bq_table_name,
+    extract_and_transform_table,
+    get_sql_server_engine,
+)
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_historic:
     # Parâmetros do Flow
@@ -38,7 +36,7 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
 
     DATASET_ID = vitacare_constants.DATASET_ID.value
     TABLES_TO_EXTRACT = vitacare_constants.TABLES_TO_EXTRACT.value
-    DB_NAME = f"vitacare_historic_{CNES_CODE_PARAM}" # O nome do banco de dados depende do CNES
+    DB_NAME = f"vitacare_historic_{CNES_CODE_PARAM}" 
 
 
     with case(RENAME_FLOW, True):
@@ -78,14 +76,13 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         db_name=DB_NAME,
     )
 
-
     for table_name in TABLES_TO_EXTRACT:
 
         extracted_df = extract_and_transform_table(
             db_url=sql_server_engine,
             db_schema=SCHEMA,
             db_table=table_name,
-            cnes_code=CNES_CODE_PARAM, # Usa o parâmetro do flow para o CNES
+            cnes_code=CNES_CODE_PARAM, 
         )
 
 
