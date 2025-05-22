@@ -322,7 +322,7 @@ cases:
     params:
       environment: 'dev'
       dt_inicio: '2025-01-21T10:00:00-0300'
-      dt_fim: '2025-01-21T11:30:00-0300' 
+      dt_fim: '2025-01-21T11:30:00-0300'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"

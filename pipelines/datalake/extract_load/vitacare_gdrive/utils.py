@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+import csv
 import datetime
 import io
 import re
 import tempfile
-import csv
 
 import chardet
 import pytz
@@ -117,6 +117,7 @@ def fix_AP22_LISTAGEM_VACINA_V2_202408(csv_file):
 def fix_INDICADORES_VARIAVEL_3(csv_text, sep):
     import csv
     import io
+
     """
     Ajusta as colunas do arquivo G11 e G12,
     garantindo que tenham exatamente as colunas do schema esperado e presente nos demais grupos.
@@ -124,24 +125,42 @@ def fix_INDICADORES_VARIAVEL_3(csv_text, sep):
     Para arquivos cujo nome contenha os padrões "+INDICADORES_VARIAVEL_3_G11_CAP+"
     ou "+INDICADORES_VARIAVEL_3_G12_CAP+", esta função adiciona as colunas faltantes
     com valor vazio e reordena as colunas conforme o esquema esperado.
-    
+
     Retorna o conteúdo corrigido como string.
     """
-    expected_columns = ['INDICADOR', 'AP', 'CNES', 'UNIDADE', 'INE', 'EQUIPE',
-                        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'TOTAL']
+    expected_columns = [
+        "INDICADOR",
+        "AP",
+        "CNES",
+        "UNIDADE",
+        "INE",
+        "EQUIPE",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "TOTAL",
+    ]
 
     input_io = io.StringIO(csv_text)
     reader = csv.DictReader(input_io, delimiter=sep)
 
     output_io = io.StringIO()
-    writer = csv.DictWriter(output_io, fieldnames=expected_columns, delimiter=sep, lineterminator='\n')
+    writer = csv.DictWriter(
+        output_io, fieldnames=expected_columns, delimiter=sep, lineterminator="\n"
+    )
 
     # Escreve o cabeçalho no padrão esperado
     writer.writeheader()
 
     for row in reader:
         # Garante todas as colunas do schema esperado
-        new_row = {col: row.get(col, '') for col in expected_columns}
+        new_row = {col: row.get(col, "") for col in expected_columns}
         writer.writerow(new_row)
 
     # Retorna como texto
@@ -285,7 +304,7 @@ def download_file(bucket, file_name, extra_safe=True):
             "INDICADORES_VARIAVEL_3_G11_CAP" in file_name
             or "INDICADORES_VARIAVEL_3_G12_CAP" in file_name
         ):
-            csv_text = fix_INDICADORES_VARIAVEL_3(csv_text,sep)
+            csv_text = fix_INDICADORES_VARIAVEL_3(csv_text, sep)
 
         # Evita erros independentemente da flag se o arquivo for pequeno o suficiente
         csv_text = fix_csv(csv_text, sep)
