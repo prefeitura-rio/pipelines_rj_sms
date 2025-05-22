@@ -6,37 +6,15 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
-from sqlalchemy import create_engine # Mantenha esta importação aqui
+from sqlalchemy import create_engine
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 
 
-@task
-def get_sql_server_engine(
-    db_host: str,
-    db_port: str,
-    db_user: str,
-    db_password: str,
-    db_name: str,
-):
-    log(f"Building SQL Server engine for database: {db_name}")
-
-    connection_string = (
-        f"mssql+pyodbc://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?"
-        "driver=ODBC Driver 17 for SQL Server"
-    )
-
-    engine = create_engine(connection_string)
-    log("SQL Server engine created successfully.")
-    return engine
-
-
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def extract_and_transform_table(
-    # REMOVIDO: db_url: str,
-    # ADICIONADO: Os parâmetros de conexão diretamente
     db_host: str,
     db_port: str,
     db_user: str,
@@ -50,14 +28,13 @@ def extract_and_transform_table(
     log(f"Attempting to download data from {full_table_name} for CNES: {cnes_code}")
 
     try:
-        # ADICIONADO: Criação do engine AQUI, dentro da task
         connection_string = (
             f"mssql+pyodbc://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?"
             "driver=ODBC Driver 17 for SQL Server"
         )
         engine = create_engine(connection_string)
 
-        df = pd.read_sql(f"SELECT * FROM {full_table_name}", engine) # Use o 'engine' recém-criado
+        df = pd.read_sql(f"SELECT * FROM {full_table_name}", engine)
         log(f"Successfully downloaded {len(df)} rows from {full_table_name}.")
 
         now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
