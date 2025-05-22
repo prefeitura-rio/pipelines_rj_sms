@@ -141,7 +141,7 @@ def fix_INDICADORES_VARIAVEL_3(csv_text, sep):
 
     for row in reader:
         # Garante todas as colunas do schema esperado
-        new_row = {col: row.get(col, '') for col in expected_columns}
+        new_row = {col: row[col] if col in row else None for col in expected_columns}
         writer.writerow(new_row)
 
     # Retorna como texto
