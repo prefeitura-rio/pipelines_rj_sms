@@ -93,11 +93,11 @@ def parse_result_dataframe(list_result: list) -> pd.DataFrame:
         dict_result = dict_result.replace("\n", "")
         regexp_flag = re.compile(r'.*{"flag": {0,1}(?P<flag>.*), "motivo": {0,1}(?P<motivo>.*)}.*')
         re_match = regexp_flag.match(dict_result)
-        
+
         if re_match is None:
-            return {"flag": '', "motivo": dict_result}
-        
-        if 'flag' in re_match.groupdict().keys():
+            return {"flag": "", "motivo": dict_result}
+
+        if "flag" in re_match.groupdict().keys():
             flag = re_match.group("flag")
             flag = flag.replace('"', "")
             flag = flag.replace('"', "")
