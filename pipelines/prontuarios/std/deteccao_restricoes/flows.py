@@ -103,4 +103,4 @@ hci_pacientes_restritos.run_config = KubernetesRun(
     ],
 )
 
-# hci_pacientes_restritos.schedule = hci_pacientes_restritos_daily_update_schedule
+hci_pacientes_restritos.schedule = hci_pacientes_restritos_daily_update_schedule
