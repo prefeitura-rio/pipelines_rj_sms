@@ -114,7 +114,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
         requested_data["_source_ap"] = endpoint_params["ap"]
         requested_data["_target_date"] = endpoint_params["target_date"]
         requested_data["_endpoint"] = endpoint_name
-        requested_data["_extracted_at"] = now
+        requested_data["_loaded_at"] = now
 
         extracted_data.append(requested_data)
 
