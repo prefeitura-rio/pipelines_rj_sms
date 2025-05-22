@@ -39,7 +39,7 @@ class constants(Enum):
         "TESTESRAPIDOS",
         "TUBERCULOSE",
         "UNIDADE",
-        "VACINAS"
+        "VACINAS",
     ]
 
     cnes_codes = [
@@ -279,5 +279,5 @@ class constants(Enum):
         "2273543",
         "2280760",
         "2806320",
-        "2280191"
+        "2280191",
     ]

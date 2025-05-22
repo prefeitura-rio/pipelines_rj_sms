@@ -4,11 +4,11 @@
 Flow de extração e carga de dados do Vitacare Historic SQL Server para o BigQuery
 """
 
-#TODO 
-'''
+# TODO
+"""
 acto_id esta como string e deveria ser inteiro sem o .
-escape, criar um try exception e endpoint 
-'''
+escape, criar um try exception e endpoint
+"""
 
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
@@ -26,7 +26,7 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
     build_bq_table_name,
     extract_and_transform_table,
-    get_tables_to_extract
+    get_tables_to_extract,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
@@ -71,9 +71,7 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         environment=ENVIRONMENT,
     )
 
-
     TABLES_TO_EXTRACT = get_tables_to_extract()
- 
 
     extracted_dfs = extract_and_transform_table.map(
         db_host=unmapped(host),
@@ -85,9 +83,7 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         cnes_code=unmapped(CNES_CODE_PARAM),
     )
 
-    bq_table_id_futures = build_bq_table_name.map(
-        table_name=TABLES_TO_EXTRACT
-    )
+    bq_table_id_futures = build_bq_table_name.map(table_name=TABLES_TO_EXTRACT)
 
     upload_df_to_datalake.map(
         df=extracted_dfs,
