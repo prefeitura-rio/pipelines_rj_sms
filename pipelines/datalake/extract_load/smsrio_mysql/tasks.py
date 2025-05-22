@@ -3,10 +3,10 @@
 Tasks for SMSRio Dump
 """
 from datetime import datetime, timedelta
+from math import ceil
 
 import pandas as pd
 import pytz
-from math import ceil
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents

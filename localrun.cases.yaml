@@ -237,7 +237,7 @@ cases:
     flow_path: "pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows"
     flow_name: "sms_estabelecimentos_coordenadas"
     params:
-      environment: "dev"
+      environment: "prod"
       bq_dataset_id: "brutos_geo_pgeo3"
       bq_table_id: "estabelecimentos_coordenadas"
   - case_slug: "datalake_minhasaude_mongodb_perfilacessos_100"
@@ -331,3 +331,8 @@ cases:
       environment: 'dev'
       dt_inicio: '2025-01-21T10:00:00-0300'
       dt_fim: '2025-01-21T11:30:00-0300'
+  - case_slug: "rastreio_pacientes_restritos"
+    flow_path: "pipelines.prontuarios.std.deteccao_restricoes.flows"
+    flow_name: "hci_pacientes_restritos"
+    params:
+      environment: 'dev'
