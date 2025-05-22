@@ -76,28 +76,26 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         db_name=DB_NAME,
     )
 
-    for table_name in TABLES_TO_EXTRACT:
+    extracted_dfs = extract_and_transform_table.map(
+        db_url=unmapped(sql_server_engine),
+        db_schema=unmapped(SCHEMA),
+        db_table=TABLES_TO_EXTRACT,  # O Prefect mapeia sobre esta lista
+        cnes_code=unmapped(CNES_CODE_PARAM),
+    )
 
-        extracted_df = extract_and_transform_table(
-            db_url=sql_server_engine,
-            db_schema=SCHEMA,
-            db_table=table_name,
-            cnes_code=CNES_CODE_PARAM, 
-        )
+    bq_table_id_futures = build_bq_table_name.map(
+        table_name=TABLES_TO_EXTRACT  # O Prefect mapeia sobre esta lista
+    )
 
-
-        bq_table_id = build_bq_table_name(table_name)
-
-
-        upload_df_to_datalake(
-            df=extracted_df,
-            dataset_id=DATASET_ID,
-            table_id=bq_table_id,
-            partition_column=PARTITION_COLUMN,
-            source_format="parquet", 
-            if_exists="append", 
-            if_storage_data_exists="append", 
-        )
+    upload_df_to_datalake.map(
+        df=extracted_dfs,
+        dataset_id=unmapped(DATASET_ID),
+        table_id=bq_table_id_futures,
+        partition_column=unmapped(PARTITION_COLUMN),
+        source_format=unmapped("parquet"),
+        if_exists=unmapped("append"),
+        if_storage_data_exists=unmapped("append"),
+    )
 
 
 flow_vitacare_historic.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

@@ -20,7 +20,7 @@ def get_sql_server_engine(
     db_user: str,
     db_password: str,
     db_name: str,
-) -> str:
+):
 
     log(f"Building SQL Server engine for database: {db_name}")
 
@@ -36,11 +36,7 @@ def get_sql_server_engine(
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def extract_and_transform_table(
-<<<<<<< HEAD
     db_url: str, 
-=======
-    db_url: str,  # Recebe o engine de conexão criado por get_sql_server_engine
->>>>>>> 8250b025d0d367b522d51cd33abc6dc03c041b05
     db_schema: str,
     db_table: str,
     cnes_code: str,
@@ -54,7 +50,6 @@ def extract_and_transform_table(
         df = pd.read_sql(f"SELECT * FROM {full_table_name}", db_url)
         log(f"Successfully downloaded {len(df)} rows from {full_table_name}.")
 
-        # Adiciona colunas de metadados
         now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         df["extracted_at"] = now
         df["id_cnes"] = cnes_code
@@ -65,17 +60,8 @@ def extract_and_transform_table(
         return df
 
     except Exception as e:
-<<<<<<< HEAD
         log(f"Error downloading or transforming data from {full_table_name} (CNES: {cnes_code}): {e}", level="error")
         raise 
-=======
-        log(
-            f"Error downloading or transforming data from {full_table_name} (CNES: {cnes_code}): {e}",
-            level="error",
-        )
-        raise  # Re-raise a exceção para que o Prefect possa lidar com as retries
-
->>>>>>> 8250b025d0d367b522d51cd33abc6dc03c041b05
 
 @task
 def build_bq_table_name(table_name: str) -> str:

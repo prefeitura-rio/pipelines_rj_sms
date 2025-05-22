@@ -333,10 +333,10 @@ cases:
       dt_fim: '2025-01-21T11:30:00-0300'
   - case_slug: "vitacare_backup_mensal"
     flow_path: "pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.flows"
-    flow_name: "flow_vitacare_backup_mensal"
+    flow_name: "flow_vitacare_historic"
     params:
-      schema = 'dbo'
-      partition_column = "extracted_at"
-      rename_flow = 'False'
-      cnes_code_param = '6023975'
+      schema: 'dbo'
+      partition_column: "extracted_at"
+      rename_flow: 'False'
+      cnes_code: '6023975'
 
