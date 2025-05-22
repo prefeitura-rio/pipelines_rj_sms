@@ -3,12 +3,15 @@
 Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
 from datetime import datetime, timedelta
+
 import pandas as pd
 import pytz
 from sqlalchemy import create_engine
+
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
+
 
 @task
 def get_sql_server_engine(
@@ -33,9 +36,10 @@ def get_sql_server_engine(
     log("SQL Server engine created successfully.")
     return engine
 
+
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def extract_and_transform_table(
-    db_url: str, # Recebe o engine de conexão criado por get_sql_server_engine
+    db_url: str,  # Recebe o engine de conexão criado por get_sql_server_engine
     db_schema: str,
     db_table: str,
     cnes_code: str,
@@ -64,8 +68,12 @@ def extract_and_transform_table(
         return df
 
     except Exception as e:
-        log(f"Error downloading or transforming data from {full_table_name} (CNES: {cnes_code}): {e}", level="error")
-        raise # Re-raise a exceção para que o Prefect possa lidar com as retries
+        log(
+            f"Error downloading or transforming data from {full_table_name} (CNES: {cnes_code}): {e}",
+            level="error",
+        )
+        raise  # Re-raise a exceção para que o Prefect possa lidar com as retries
+
 
 @task
 def build_bq_table_name(table_name: str) -> str:
