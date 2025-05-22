@@ -54,7 +54,7 @@ def get_result_gemini(atendimento: str, id_atendimento: str, cpf: str, gemini_ke
     """
     prompt = """
     Abaixo um relato clinico relacionado a um paciente quem contém alguma menção ao diagnóstico de HIV.
-    Identifique com o formato {"flag": "1 caso o paciente em questao tenha o diagnostico e 0 caso contrário.", "motivo":"Explique o motivo de escolha da flag"}
+    Identifique com o formato {"flag": "1 caso o paciente em questao tenha o diagnostico confirmado e 0 caso contrário.", "motivo":"Explique o motivo de escolha da flag"}
     """
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{constants.GEMINI_MODEL.value}:generateContent?key={gemini_key}"
 
