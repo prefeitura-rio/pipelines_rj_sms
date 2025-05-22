@@ -72,7 +72,20 @@ flow_parameters = [
         "environment": "dev",
         "rename_flow": True,
     },
-
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_2/*/*+INDICADORES_VARIAVEL_2*.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "indicadores_cg_variavel_2",
+        "environment": "dev",
+        "rename_flow": True,
+    },
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_1/*/*+INDICADORES_VARIAVEL_1*.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "indicadores_cg_variavel_1",
+        "environment": "dev",
+        "rename_flow": True,
+    },
 ]
 
 
