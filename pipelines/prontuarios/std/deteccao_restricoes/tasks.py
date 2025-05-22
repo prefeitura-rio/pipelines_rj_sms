@@ -11,6 +11,7 @@ import re
 import pandas as pd
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
+from datetime import timedelta
 
 from pipelines.prontuarios.std.deteccao_restricoes.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -39,8 +40,7 @@ def reduce_raw_column(df: pd.DataFrame) -> pd.DataFrame:
 
     return df["motivo_atendimento_reduced"].values, df["id_hci"].values, df["cpf"].values
 
-
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def get_result_gemini(atendimento: str, id_atendimento: str, cpf: str, gemini_key=str) -> dict:
     """
     Get the result from Gemini
