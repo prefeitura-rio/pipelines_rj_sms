@@ -91,7 +91,7 @@ def parse_result_dataframe(list_result: list) -> pd.DataFrame:
             result (dict): Result from Gemini
         """
         log(dict_result)
-        dict_result = dict_result.replace('\n', '')
+        dict_result = dict_result.replace("\n", "")
         regexp_flag = re.compile(r'.*{"flag": {0,1}(?P<flag>.*), "motivo": {0,1}(?P<motivo>.*)}.*')
         re_match = regexp_flag.match(dict_result)
 
