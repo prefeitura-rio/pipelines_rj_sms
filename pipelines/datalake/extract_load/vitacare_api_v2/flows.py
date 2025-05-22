@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from datetime import timedelta
 
 from prefect import Parameter, case, unmapped
@@ -7,11 +8,15 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.vitacare_api_v2.constants import constants as flow_constants
-from pipelines.datalake.extract_load.vitacare_api_v2.tasks import generate_endpoint_params, extract_data
-from pipelines.utils.tasks import upload_df_to_datalake, rename_current_flow_run
+from pipelines.datalake.extract_load.vitacare_api_v2.constants import (
+    constants as flow_constants,
+)
+from pipelines.datalake.extract_load.vitacare_api_v2.tasks import (
+    extract_data,
+    generate_endpoint_params,
+)
+from pipelines.utils.tasks import rename_current_flow_run, upload_df_to_datalake
 from pipelines.utils.time import from_relative_date
-
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare API v2",
