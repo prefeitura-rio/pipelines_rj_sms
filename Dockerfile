@@ -59,8 +59,8 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
 # ------------------------------------------------------------
 # Instala Cloud SQL Auth Proxy (v2)
 # ------------------------------------------------------------
-    ENV CLOUD_SQL_PROXY_VERSION=2.10.1
+ENV CLOUD_SQL_PROXY_VERSION=2.10.1
 
-    RUN curl -o /usr/local/bin/cloud-sql-proxy \
-        -L https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v${CLOUD_SQL_PROXY_VERSION}/cloud-sql-proxy.linux.amd64 && \
-        chmod +x /usr/local/bin/cloud-sql-proxy
+RUN curl -o /usr/local/bin/cloud-sql-proxy \
+    -L https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v${CLOUD_SQL_PROXY_VERSION}/cloud-sql-proxy.linux.amd64 && \
+    chmod +x /usr/local/bin/cloud-sql-proxy
