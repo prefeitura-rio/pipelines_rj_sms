@@ -2,11 +2,9 @@
 import fnmatch
 from datetime import timedelta
 
-import requests
 from google.cloud import storage
 
 import pipelines.datalake.migrate.gcs_to_cloudsql.utils as utils
-from pipelines.datalake.migrate.gcs_to_cloudsql.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 
@@ -97,7 +95,7 @@ def send_sequential_api_requests(
         utils.call_and_wait("DELETE", f"/instances/{instance_name}/databases/{database_name}")
 
         log(
-            f"[send_sequential_api_requests] "
+            "[send_sequential_api_requests] "
             + f"Attempting to import file {i+1}/{file_count}: "
             + f"'{full_file_uri}' (db '{database_name}')"
         )

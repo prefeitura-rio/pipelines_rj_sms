@@ -48,7 +48,7 @@ def check_db_name(name: str):
 
     # Se tiver algum caractere esquisito (e.g. *, %), erro
     if re.search(r"[^A-Za-z0-9_\-]", name):
-        raise PermissionError(f"Database name '{name}' contains characters not in [A-Za-z0-9_\-]!")
+        raise PermissionError(f"Database name '{name}' contains characters not in [A-Za-z0-9_\\-]!")
 
     return
 
@@ -90,7 +90,7 @@ def call_and_wait(method: str, url_path: str, json=None):
     # "`name` (string): An identifier that uniquely identifies the operation"
     if "name" not in res_json:
         raise KeyError(
-            "[call_and_wait] Google API's JSON response does not contain 'name' Operation identifier"
+            "[call_and_wait] Google API's JSON response dont contain 'name' Operation identifier"
         )
     # Pega o identificador da operação que precisamos esperar
     operation_id = res_json["name"]
@@ -142,7 +142,7 @@ def call_and_wait(method: str, url_path: str, json=None):
         else:
             log(poll_json)
             log(
-                f"[call_and_wait] 'status' not present in JSON response!",
+                "[call_and_wait] 'status' not present in JSON response!",
                 level="warning",
             )
 
