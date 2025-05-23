@@ -2,7 +2,9 @@
 import subprocess
 import threading
 import time
+
 import prefect
+
 
 def _pipe_output(stream, prefix, logger):
     for line in iter(stream.readline, b""):
