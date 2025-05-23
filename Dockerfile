@@ -46,7 +46,9 @@ RUN npm install -g npm@latest && \
 # Install Puppeteer and Mermaid CLI
 RUN npm install puppeteer@23.0.0 @mermaid-js/mermaid-cli@11.2.0
 
-# Install MSSQL dependencies
+# ------------------------------------------------------------
+# Instala MSSQL dependencies
+# ------------------------------------------------------------
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
     echo "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
@@ -54,3 +56,11 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# ------------------------------------------------------------
+# Instala Cloud SQL Auth Proxy (v2)
+# ------------------------------------------------------------
+    ENV CLOUD_SQL_PROXY_VERSION=2.10.1
+
+    RUN curl -o /usr/local/bin/cloud-sql-proxy \
+        -L https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v${CLOUD_SQL_PROXY_VERSION}/cloud-sql-proxy.linux.amd64 && \
+        chmod +x /usr/local/bin/cloud-sql-proxy
