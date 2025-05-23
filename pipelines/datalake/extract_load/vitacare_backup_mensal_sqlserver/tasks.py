@@ -10,13 +10,13 @@ import pandas as pd
 import pytz
 from sqlalchemy import create_engine
 
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.data_cleaning import remove_columns_accents
-from pipelines.utils.logger import log
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import (
     start_cloud_sql_proxy,
     stop_cloud_sql_proxy,
 )
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.data_cleaning import remove_columns_accents
+from pipelines.utils.logger import log
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
