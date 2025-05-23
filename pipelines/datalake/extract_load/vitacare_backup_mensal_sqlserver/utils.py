@@ -2,9 +2,7 @@
 import subprocess
 import threading
 import time
-
-from loguru import logger
-
+import prefect
 
 def _pipe_output(stream, prefix, logger):
     for line in iter(stream.readline, b""):
@@ -13,7 +11,11 @@ def _pipe_output(stream, prefix, logger):
 
 
 def start_cloud_sql_proxy(connection_name: str) -> subprocess.Popen:
+    logger = prefect.context.get("logger")
     logger.info(f"Starting Cloud SQL Proxy for connection: {connection_name}")
+
+    # Testing if cloud-sql-proxy is installed
+    subprocess.run(["cloud-sql-proxy", "--version"])
 
     process = subprocess.Popen(
         [
