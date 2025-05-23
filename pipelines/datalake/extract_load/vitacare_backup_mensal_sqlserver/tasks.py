@@ -2,8 +2,6 @@
 """
 Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
-import base64
-import os
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -122,7 +120,8 @@ def extract_and_transform_table(
             df[col] = '"' + current_col_data + '"'
 
         log(
-            f"All string columns for {full_table_name} prepared for strict CSV compatibility (forced quoting)."
+            f"All string columns for {full_table_name} prepared for strict CSV compatibility "
+            "(forced quoting)."
         )
 
         df = df.astype(str)
@@ -139,7 +138,8 @@ def extract_and_transform_table(
 
     except Exception as e:
         log(
-            f"Error downloading or transforming data from {full_table_name} (CNES: {cnes_code}): {e}",
+            f"Error downloading or transforming data from {full_table_name} "
+            f"(CNES: {cnes_code}): {e}",
             level="error",
         )
         raise

@@ -7,7 +7,7 @@ from pipelines.utils.logger import log
 
 def start_cloud_sql_proxy(connection_name: str) -> subprocess.Popen:
     log(f"Starting cloud SQL proxy for connection name: {connection_name}")
-    log(f"[IMPORTANT] Please guarantee that cloud-sql-proxy is installed in the system")
+    log("[IMPORTANT] Please guarantee that cloud-sql-proxy is installed in the system")
 
     proxy_process = subprocess.Popen(
         [
