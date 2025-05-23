@@ -96,7 +96,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
             )
         except Exception as e:
             log(
-                f"Error extracting data from API:"
+                "Error extracting data from API:"
                 + f" ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
                 + f" {e}"
             )
@@ -104,7 +104,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
 
         if response["status_code"] != 200:
             log(
-                f"Error extracting data from API:"
+                "Error extracting data from API:"
                 + f" ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
                 + f" {response['status_code']}"
             )
