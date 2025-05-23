@@ -4,12 +4,6 @@
 Flow de extração e carga de dados do Vitacare Historic SQL Server para o BigQuery
 """
 
-# TODO
-"""
-acto_id esta como string e deveria ser inteiro sem o .
-escape, criar um try exception e endpoint
-"""
-
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun

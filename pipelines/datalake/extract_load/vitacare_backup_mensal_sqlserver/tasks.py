@@ -48,6 +48,7 @@ def extract_and_transform_table(
         df.columns = remove_columns_accents(df)
         log(f"Transformed DataFrame for {full_table_name} from CNES {cnes_code}.")
 
+        # Essas 2 tabelas possuem uma columa varbinary e isso gera um erro ao tentar passar para csv
         tables_with_ut_id = ["PACIENTES", "ATENDIMENTOS"]
 
         if db_table.upper() in tables_with_ut_id and "_ut_id" in df.columns:
