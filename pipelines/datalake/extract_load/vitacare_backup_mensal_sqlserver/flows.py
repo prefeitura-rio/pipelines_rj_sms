@@ -35,7 +35,7 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
     CNES_CODE_PARAM = Parameter("cnes_code", required=True)
 
     DATASET_ID = vitacare_constants.DATASET_ID.value
-    TABLES_TO_EXTRACT = vitacare_constants.TABLES_TO_EXTRACT.value
+    TABLES_TO_EXTRACT = get_tables_to_extract()
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
@@ -65,7 +65,6 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         environment=ENVIRONMENT,
     )
 
-    TABLES_TO_EXTRACT = get_tables_to_extract()
 
     extracted_dfs = extract_and_transform_table.map(
         db_host=unmapped(host),
