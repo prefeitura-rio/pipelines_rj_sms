@@ -35,7 +35,6 @@ def start_cloud_sql_proxy(connection_name: str) -> subprocess.Popen:
     return process
 
 
-
 def stop_cloud_sql_proxy(proxy_process: subprocess.Popen):
     proxy_process.terminate()
     proxy_process.wait()
