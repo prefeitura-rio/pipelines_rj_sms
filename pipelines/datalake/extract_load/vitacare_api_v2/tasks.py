@@ -68,7 +68,8 @@ def generate_endpoint_params(
 def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "dev") -> dict:
 
     log(
-        f"Extracting data from API: {endpoint_params['ap']} {endpoint_name}. There are {len(endpoint_params['cnes_list'])} CNES to extract."
+        f"Extracting data from API: {endpoint_params['ap']} {endpoint_name}."
+        + f" There are {len(endpoint_params['cnes_list'])} CNES to extract."
     )
     api_url = (
         flow_constants.BASE_URL.value[endpoint_params["ap"]]
@@ -95,13 +96,17 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
             )
         except Exception as e:
             log(
-                f"Error extracting data from API: ({cnes}, {endpoint_params['target_date']}, {endpoint_name}) {e}"
+                f"Error extracting data from API:"
+                + f" ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
+                + f" {e}"
             )
             continue
 
         if response["status_code"] != 200:
             log(
-                f"Error extracting data from API: ({cnes}, {endpoint_params['target_date']}, {endpoint_name}) {response['status_code']}"
+                f"Error extracting data from API:"
+                + f" ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
+                + f" {response['status_code']}"
             )
             continue
 

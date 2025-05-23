@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from datetime import timedelta
-
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
