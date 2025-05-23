@@ -68,6 +68,14 @@ routine_flow_parameters = [
         "table_id_prefix": "vacinacao",
         "target_date": "D-4",
     },
+    {
+        "dataset_id": "brutos_api_vitacare",
+        "endpoint": "vacina",
+        "environment": "prod",
+        "rename_flow": True,
+        "table_id_prefix": "vacinacao",
+        "target_date": "D-5",
+    },
 ]
 
 routine_clocks = generate_dump_api_schedules(
