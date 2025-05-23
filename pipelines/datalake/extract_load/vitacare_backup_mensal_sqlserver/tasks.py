@@ -13,11 +13,15 @@ from sqlalchemy import create_engine
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import load_file_from_bigquery
+from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import (
+    start_cloud_sql_proxy,
+    stop_cloud_sql_proxy,
+)
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def extract_and_transform_table(
+    connection_name: str,
     db_host: str,
     db_port: str,
     db_user: str,
@@ -31,15 +35,16 @@ def extract_and_transform_table(
 
     db_name = f"vitacare_historic_{cnes_code}"
     try:
+        proxy_process = start_cloud_sql_proxy(connection_name)
+
         connection_string = (
-            f"mssql+pyodbc://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+            f"mssql+pyodbc://{db_user}:{db_password}@localhost:{db_port}/{db_name}"
             "?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
         )
         engine = create_engine(connection_string)
 
         df = pd.read_sql(f"SELECT * FROM {full_table_name}", engine)
         log(f"Successfully downloaded {len(df)} rows from {full_table_name}.")
-        print(connection_string)
 
         now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         df["extracted_at"] = now
@@ -138,6 +143,8 @@ def extract_and_transform_table(
             level="error",
         )
         raise
+    finally:
+        stop_cloud_sql_proxy(proxy_process)
 
 
 @task
