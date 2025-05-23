@@ -65,7 +65,6 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         environment=ENVIRONMENT,
     )
 
-
     extracted_dfs = extract_and_transform_table.map(
         db_host=unmapped(host),
         db_port=unmapped(port),
