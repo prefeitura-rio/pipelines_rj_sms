@@ -180,10 +180,11 @@ cases:
     flow_name: "dump_hci"
     params:
       environment: "dev"
-      table_id: "historico_clinico_integrado"
-      dataset_id: "brutos_historico_clinico_integrado"
+      table_id: "user"
+      dataset_id: "brutos_hci_app"
+      schema: "postgres"
       historical_mode: false
-      reference_datetime_column: "timestamp"
+      reference_datetime_column: "updated_at"
   - case_slug: "datalake_clone_table"
     flow_path: "pipelines.datalake.extract_load.datalake_bigquery.flows"
     flow_name: "datalake_bigquery_clone"
@@ -225,17 +226,17 @@ cases:
     flow_name: "sms_migrate_vitacare_db"
     params:
       environment: "dev"
-      last_update_start_date: "2024-10-20"
-      last_update_end_date: "2024-11-30"
+      last_update_start_date: "2025-03-01"
+      last_update_end_date: "2025-03-24"
   - case_slug: "datalake-extract_load-metabase"
     flow_path: "pipelines.datalake.extract_load.ser_metabase.flows"
     flow_name: "ser_metabase_flow"
     params:
       environment: "dev"
-      database_id: 178
-      table_id: 3255
+      database_id: 173
+      table_id: 5783
       bq_dataset_id: "ser_metabase"
-      bq_table_id: "FATO_AMBULATORIO"
+      bq_table_id: "tb_solicitacoes"
 
   - case_slug: "healthchecks"
     flow_path: "pipelines.tools.healthchecks.flows"
@@ -263,3 +264,89 @@ cases:
       sample_size: 100
       bq_dataset_id: "brutos_minhasaude_mongodb"
       bq_table_id: "perfil_acessos"
+  - case_slug: "cr_mysql_flow"
+    flow_path: "pipelines.datalake.extract_load.centralregulacao_mysql.flows"
+    flow_name: "sms_cr_mysql"
+    params:
+      environment: "dev"
+      database: "monitoramento"
+      host: "db.smsrio.org"
+      table: "vw_MS_CadastrosAtivacoesGov"
+      query: "SELECT * FROM vw_MS_CadastrosAtivacoesGov"
+      bq_dataset: "brutos_centralderegulacao_mysql"
+  - case_slug: "datalake-migrate-gdrive_to_gcs"
+    flow_path: "pipelines.datalake.migrate.gdrive_to_gcs.flows"
+    flow_name: "migrate_gdrive_to_gcs"
+    params:
+      environment: "dev"
+      bucket_name: "vitacare_informes_mensais_gdrive"
+      folder_id: "1H_49fLhbT0bWYk8gBKLOdYHgT_xODpg7"
+      owner_email: "storage02healthbr@gmail.com"
+      last_modified_date: "M-1"
+      rename_flow: True
+  - case_slug: "datalake-migrate-gcs_to_cloudsql"
+    flow_path: "pipelines.datalake.migrate.gcs_to_cloudsql.flows"
+    flow_name: "migrate_gcs_to_cloudsql"
+    params:
+      environment: "dev"
+      bucket_name: "vitacare_backups_gdrive"
+      instance_name: "vitacare"
+      file_pattern: "HISTÓRICO_PEPVITA_RJ/AP*/vitacare_historic_*_*_*.bak"
+      limit_files: -1
+  - case_slug: "datalake-extract-vitacare_gdrive"
+    flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
+    flow_name: "sms_dump_vitacare_reports"
+    params:
+      environment: "dev"
+      file_pattern: "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_LISTAGEM_VACINA_V2/*/*_LISTAGEM_VACINA_V2_*.csv"
+      desired_table_name: "listagem_vacina_v2"
+      desired_dataset_name: "brutos_informes_vitacare"
+  - case_slug: "datalake-extract-smsrio"
+    flow_path: "pipelines.datalake.extract_load.smsrio_mysql.flows"
+    flow_name: "sms_dump_smsrio"
+    params:
+      environment: "dev"
+      dataset_id: "brutos_plataforma_smsrio"
+      table_id: "contatos_unidades"
+      schema: "subpav_cnes"
+  - case_slug: "datalake-extract-google-sheets"
+    flow_path: "pipelines.datalake.extract_load.google_sheets.flows"
+    flow_name: "sms_dump_url"
+    params:
+      environment: "dev"
+      csv_delimiter: ";"
+      dataset_id: "brutos_sheets"
+      gsheets_sheet_name: "ATAS E PROCESSOS VIGENTES"
+      table_id: "compras_atas_processos_vigentes"
+      url: "https://docs.google.com/spreadsheets/d/1fi7MzF0S4OfTym-fjpLR51wIvTLq-WCE706N6eEEWys"
+      url_type: "google_sheet"
+  - case_slug: "sisreg_api"
+    flow_path: "pipelines.datalake.extract_load.sisreg_api.flows"
+    flow_name: "sms_sisreg_api"
+    params:
+      environment: 'dev'
+      es_index: 'marcacao-ambulatorial-rj'
+      page_size: 10_000
+      scroll_timeout: '2m'
+      filters: {"codigo_central_reguladora": "330455"}
+      data_inicial: '2025-04-07'
+      data_final: 'now'
+      bq_dataset: 'brutos_sisreg_api'
+      bq_table: 'marcacoes'
+      dias_por_faixa: 30
+  - case_slug: "cientificalab_api"
+    flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
+    flow_name: "flow_cientificalab"
+    params:
+      environment: 'dev'
+      dt_inicio: '2025-01-21T10:00:00-0300'
+      dt_fim: '2025-01-21T11:30:00-0300'
+  - case_slug: "datalake-extract-vitacare_api_v2"
+    flow_path: "pipelines.datalake.extract_load.vitacare_api_v2.flows"
+    flow_name: "sms_vitacare_api_v2"
+    params:
+      environment: "dev"
+      endpoint: "posicao"
+      target_date: "D-1"
+      dataset_id: "brutos_api_vitacare"
+      table_id_prefix: "estoque_posicao"

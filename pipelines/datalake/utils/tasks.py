@@ -4,6 +4,7 @@
 """
 General task functions for the data lake pipelines
 """
+from datetime import datetime
 
 import prefect
 from prefect.client import Client
@@ -11,6 +12,8 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.utils.data_transformations import convert_str_to_date
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.data_cleaning import remove_columns_accents
+from pipelines.utils.monitor import send_message
 
 
 @task
@@ -56,3 +59,61 @@ def rename_current_flow_run(environment: str, is_routine: bool = True, **kwargs)
     client.set_flow_run_name(flow_run_id, flow_run_name)
 
     log(f"Flow run {flow_run_id} renamed to {flow_run_name}")
+
+
+@task
+def handle_columns_to_bq(df):
+    log("Transformando colunas para adequação ao Big Query.")
+    df.columns = remove_columns_accents(df)
+    log("Colunas transformadas para adequação ao Big Query.")
+    return df
+
+
+@task
+def prepare_dataframe_for_upload(df, flow_name, flow_owner):
+    """
+    Prepara o DataFrame para upload, realizando transformações e validações necessárias.
+    Envia notificações em caso de erros.
+
+    df: DataFrame contendo os dados que serão carregados para o Big Query.
+    flow_name: Nome do fluxo.
+    flow_owner: Usuário que deve ser alertado no Discord em caso de erros.
+    """
+
+    # Verifica se o DataFrame está vazio
+    if df.empty:
+        mensagem_erro = f" @{flow_owner}. O DataFrame está vazio."
+        send_message(
+            title=f"❌ Erro no Fluxo {flow_name}",
+            message=mensagem_erro,
+            monitor_slug="error",
+        )
+        raise ValueError(mensagem_erro)
+
+    # Tenta remover acentos dos nomes das colunas
+    try:
+        df.columns = remove_columns_accents(df)
+        log("Acentos removidos dos nomes das colunas com sucesso.")
+    except Exception as e:
+        mensagem_erro = f" @{flow_owner}. Erro ao remover acentos dos nomes das colunas: {str(e)}"
+        send_message(
+            title=f"❌ Erro no Fluxo {flow_name}",
+            message=mensagem_erro,
+            monitor_slug="error",
+        )
+        raise ValueError(mensagem_erro)
+
+    # Tenta adicionar timestamp de extração (posteriormente utilizado para particionamento)
+    try:
+        df["data_extracao"] = datetime.now()
+        log("Coluna 'data_extracao' adicionada com sucesso.")
+    except Exception as e:
+        mensagem_erro = f" @{flow_owner}. Erro ao criar a coluna 'data_extracao': {str(e)}"
+        send_message(
+            title=f"❌ Erro no Fluxo {flow_name}",
+            message=mensagem_erro,
+            monitor_slug="error",
+        )
+        raise ValueError(mensagem_erro)
+
+    return df

@@ -93,6 +93,26 @@ flow_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/15OhN69JH6GdRK1Ixvr9P-eTSG03lM6qD7hobcT4Ilow",  # noqa
         "url_type": "google_sheet",
     },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1P4JbgfSpaTyE7Qh3fzSeHIxlxcHclbJWOTFcRE-DwgE/edit",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Procedimentos",
+        "table_id": "assistencial_procedimento",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Contas",
+        "rename_flow": True,
+        "table_id": "usuarios_permitidos_hci",
+        "url": "https://docs.google.com/spreadsheets/d/1jwp5rV3Rwr2NGQy60YQgF47PSFuTcVpE8uKhcrODnRs/edit",  # noqa: E501
+        "url_type": "google_sheet",
+    },
 ]
 
 

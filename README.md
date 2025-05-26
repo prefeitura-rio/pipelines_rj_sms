@@ -7,6 +7,8 @@
  - `poetry shell`
  - `poetry install`
 
+A versão do Poetry utilizada é 1.7.1. Se você instalou uma versão mais recente, você pode fazer downgrade com `poetry self update 1.7.1`.
+
 ### Etapa 2 - Configuração de Debugging
 - Crie pasta na raiz: `.vscode`
 - Dentro da pasta, crie um arquivo: `launch.json` e coloque o seguinte conteúdo dentro dele:
@@ -68,8 +70,8 @@ cases:
 - Sempre trabalhe com branchs `staging/<nome>`
 - Dê push e crie um Pull Request sem reviewer.
 - Cada commit nesta branch irá disparar as rotinas do Github que:
- - Verificam formatação
- - Fazem Deploy
- - Registram flows em staging (ambiente de testes)
+    - Verificam formatação
+    - Fazem Deploy
+    - Registram flows em staging (ambiente de testes)
 - Você acompanha o status destas rotinas na própria página do seu PR
 - Flows registrados aparecem no servidor Prefect. Eles podem ser rodados por lá

@@ -2,58 +2,71 @@
 """
 Tasks for SMSRio Dump
 """
-from datetime import timedelta
+from datetime import datetime, timedelta
+from math import ceil
 
 import pandas as pd
-from prefeitura_rio.pipelines_utils.logging import log
+import pytz
 
-from pipelines.datalake.extract_load.smsrio_mysql.constants import (
-    constants as smsrio_constants,
-)
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.data_cleaning import remove_columns_accents
+from pipelines.utils.logger import log
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def download_from_db(
+def create_extraction_batches(
     db_url: str,
     db_schema: str,
     db_table: str,
-    file_folder: str,
-    file_name: str,
-) -> None:
-    """
-    Downloads data from a database table and saves it as a CSV file.
+    datetime_column: str,
+    id_column: str,
+    batch_size: int = 50000,
+    date_filter: datetime = None,
+) -> list[str]:
 
-    Args:
-        db_url (str): The URL of the database.
-        db_schema (str): The schema of the database.
-        db_table (str): The name of the table to download data from.
-        file_folder (str): The folder where the CSV file will be saved.
-        file_name (str): The name of the CSV file.
+    sql_filter = ""
+    if date_filter:
+        sql_filter = f"WHERE {datetime_column} >= '{date_filter.strftime('%Y-%m-%d')}'"
 
-    Returns:
-        str: The file path of the downloaded CSV file.
-    """
+    total_rows = pd.read_sql(
+        f"SELECT COUNT(*) as quant FROM {db_schema}.{db_table} {sql_filter}", db_url
+    ).iloc[0]["quant"]
+    log(f"Total rows to download: {total_rows}")
 
-    connection_string = f"{db_url}/{db_schema}"
+    if total_rows <= batch_size:
+        return [f"SELECT * FROM {db_schema}.{db_table} {sql_filter}"]
 
-    if db_table == "contatos_unidades":
-        query = f"SELECT u.cnes, c.* FROM {db_table} AS c LEFT JOIN unidades AS u ON c.unidade_id = u.id"  # noqa: E501
-    else:
-        query = f"SELECT * FROM {db_table}"
+    num_batches = ceil(total_rows / batch_size)
+    log(f"Number of batches to download: {num_batches}")
 
-    table = pd.read_sql(query, connection_string)
+    queries = []
+    for i in range(num_batches):
+        query = f"""
+            SELECT * FROM {db_schema}.{db_table} {sql_filter}
+            ORDER BY {id_column} ASC
+            LIMIT {batch_size} OFFSET {i * batch_size}
+        """
+        log(f"Query {i+1}: {query}")
+        queries.append(query)
 
-    destination_file_path = f"{file_folder}/{file_name}.csv"
+    return queries
 
-    table.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
 
-    log(f"File {destination_file_path} downloaded from DB.")
+@task(max_retries=3, retry_delay=timedelta(seconds=90))
+def download_from_db(
+    db_url: str,
+    query: str,
+) -> pd.DataFrame:
 
-    return destination_file_path
+    table = pd.read_sql(query, db_url)
+    log(f"Downloaded {len(table)} rows from Table")
+
+    table["datalake_loaded_at"] = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+
+    table.columns = remove_columns_accents(table)
+    return table
 
 
 @task
-def build_gcp_table(db_table: str) -> str:
-    """Generate the GCP table name from the database table name."""
-    return smsrio_constants.TABLE_ID.value[db_table]
+def build_bq_table_name(db_table: str, schema: str) -> str:
+    return f"{schema}__{db_table}"
