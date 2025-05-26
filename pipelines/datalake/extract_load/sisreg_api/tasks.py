@@ -21,19 +21,6 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import upload_df_to_datalake
 
 
-@task
-def transforma_formato_data(date_str: str) -> str:
-    """
-    Transforma uma data no formato 'YYYY-MM-DD' para 'DD/MM/YYYY'.
-    """
-    try:
-        date_obj = datetime.fromisoformat(date_str[:10])
-        return date_obj.strftime("%d/%m/%Y")
-    
-    except ValueError as e:
-        log(f"Erro ao transformar data: {e}")
-        return date_str
-
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     fonte = registro.get("_source", {})
     return {**fonte}

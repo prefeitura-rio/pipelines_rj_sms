@@ -126,12 +126,11 @@ def prepare_dataframe_for_upload(df, flow_name, flow_owner):
 # Suíte para arquivos grandes demais para a memória:
 # 1 - 
 @task
-def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int = 1):
+def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int = 1, date_format = "%d/%m/%Y"):
     """
     Gera uma lista de tuplas (inicio, fim) dividindo o intervalo
     entre data_inicial e data_final em blocos de tamanho 'dias_por_faixa'.
 
-    As datas podem ser passadas no formato 'dd/mm/YYYY' ou como datetime.
     Se data_final for a string "now", será convertido para o datetime atual.
     """
 
@@ -159,8 +158,8 @@ def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int
         dt_chunk_fim = dt_chunk_inicio + timedelta(days=dias_por_faixa - 1)
         if dt_chunk_fim > dt_final:
             dt_chunk_fim = dt_final
-        faixa_inicio_str = dt_chunk_inicio.strftime("%d/%m/%Y")
-        faixa_fim_str = dt_chunk_fim.strftime("%d-%m-%Y")
+        faixa_inicio_str = dt_chunk_inicio.strftime(date_format)
+        faixa_fim_str = dt_chunk_fim.strftime(date_format)
         faixas.append((faixa_inicio_str, faixa_fim_str))
         dt_atual = dt_chunk_fim + timedelta(days=1)
 

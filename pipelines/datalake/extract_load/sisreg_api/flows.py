@@ -51,16 +51,15 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
 
     # PARAMETROS PARA DEFINIR TAMANHO DOS LOTES ------
     DIAS_POR_FAIXA = Parameter("dias_por_faixa", default=1)
+    FORMATO_DATA = Parameter("formato_data", default="%Y-%m-%d")
 
     # PARAMETROS BQ ----------------------------------
     BQ_DATASET = Parameter("bq_dataset", default="brutos_sisreg_api")
     BQ_TABLE = Parameter("bq_table", default="solicitacoes")
 
-    faixas_formato_antigo = gerar_faixas_de_data(
-        data_inicial=DATA_INICIAL, data_final=DATA_FINAL, dias_por_faixa=DIAS_POR_FAIXA
-    )
-
-    faixas = transforma_formato_data.map(faixa=faixas_formato_antigo)
+    faixas = gerar_faixas_de_data(
+        data_inicial=DATA_INICIAL, data_final=DATA_FINAL, dias_por_faixa=DIAS_POR_FAIXA,date_format=FORMATO_DATA
+    ) 
 
     inicio_faixas = extrair_inicio.map(faixa=faixas)
     fim_faixas = extrair_fim.map(faixa=faixas)

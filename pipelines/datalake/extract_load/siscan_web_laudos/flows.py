@@ -38,11 +38,12 @@ with Flow(name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos") as sms_siscan_
     )
 
     # PARAMETROS CONSULTA ---------------------------
-    DATA_INICIAL = Parameter("data_inicial", default="2025-01-01")
-    DATA_FINAL = Parameter("data_final", default="2025-01-31")
+    DATA_INICIAL = Parameter("data_inicial", default="01/01/2025")
+    DATA_FINAL = Parameter("data_final", default="31/01/2025")
 
     # PARAMETROS PARA DEFINIR TAMANHO DOS LOTES ------
     DIAS_POR_FAIXA = Parameter("dias_por_faixa", default=10)
+    FORMATO_DATA = Parameter("formato_data", default="%d/%m/%Y")
 
     # PARAMETROS BQ ----------------------------------
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
@@ -50,8 +51,8 @@ with Flow(name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos") as sms_siscan_
 
 
     faixas = gerar_faixas_de_data(
-        data_inicial=DATA_INICIAL, data_final=DATA_FINAL, dias_por_faixa=DIAS_POR_FAIXA
-    )
+        data_inicial=DATA_INICIAL, data_final=DATA_FINAL, dias_por_faixa=DIAS_POR_FAIXA,date_format=FORMATO_DATA
+    ) 
 
     inicio_faixas = extrair_inicio.map(faixa=faixas)
     fim_faixas = extrair_fim.map(faixa=faixas)
