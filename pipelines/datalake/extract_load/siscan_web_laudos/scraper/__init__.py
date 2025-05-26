@@ -1,0 +1,39 @@
+"""Pacote de raspagem SIS-CAN – versão robusta em PT-BR."""
+
+from __future__ import annotations
+from typing import List, Dict, Any
+
+from .config import LOGGER
+
+
+class ScraperError(RuntimeError):
+    """Erro de alto nível do scraper."""
+
+
+# Importações tardias evitam circularidade
+from .driver import init_firefox  # noqa: E402
+from .auth import login  # noqa: E402
+from .filters import goto_laudo_page, set_filters  # noqa: E402
+from .patients import iterate_patients  # noqa: E402
+
+__all__ = ["ScraperError", "run_scraper"]
+
+
+def run_scraper(
+    email: str,
+    password: str,
+    start_date: str,
+    end_date: str,
+    *,
+    headless: bool | None = None,
+) -> List[Dict[str, Any]]:
+    """Fluxo de ponta a ponta que devolve lista de laudos em dicionários."""
+    driver = init_firefox(headless=headless)
+    try:
+        login(email, password, driver)
+        goto_laudo_page(driver)
+        set_filters(driver, start_date, end_date)
+        return iterate_patients(driver)
+    finally:
+        driver.quit()
+        LOGGER.info("Driver encerrado.")
