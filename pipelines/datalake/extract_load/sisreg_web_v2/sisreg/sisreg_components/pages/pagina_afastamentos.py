@@ -4,22 +4,19 @@
 
 import os
 import time
-
-from prefeitura_rio.pipelines_utils.logging import log
-from selenium.common.exceptions import TimeoutException, WebDriverException
-
 from typing import List
 
 import google
 import google.api_core
+import pandas as pd
+from bs4 import BeautifulSoup
 from google.cloud import bigquery
 from prefect.engine.signals import FAIL
+from prefeitura_rio.pipelines_utils.logging import log
+from selenium.common.exceptions import TimeoutException, WebDriverException
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-
-from bs4 import BeautifulSoup
-import pandas as pd
 
 
 class PaginaAfastamentos:
@@ -52,17 +49,21 @@ class PaginaAfastamentos:
                 log(f"Progresso: {progress}% ({idx}/{total_cpfs})")
 
             # Concatena todos os DataFrames em um único
-            df = pd.concat(dfs, ignore_index=True)  
-            
+            df = pd.concat(dfs, ignore_index=True)
+
             # Verifica se já existe um arquivo com este nome
             try:
                 os.remove(f"afastamentos.csv")
-            except FileNotFoundError:   
+            except FileNotFoundError:
                 pass
 
             # Escreve dados de afastamento no disco
-            df.to_csv(os.path.join(self.caminho_download, "afastamentos.csv"), encoding="utf-8-sig", index=False)
-            
+            df.to_csv(
+                os.path.join(self.caminho_download, "afastamentos.csv"),
+                encoding="utf-8-sig",
+                index=False,
+            )
+
             # Retorna o caminho absoluto do arquivo baixado
             return os.path.join(self.caminho_download, "afastamentos.csv")
 
@@ -96,52 +97,53 @@ class PaginaAfastamentos:
         log(f"{len(cpfs)} CPFs encontrados.")
 
         return cpfs
-    
 
     def _get_afastamentos_from_cpf(driver, cpf):
         log(f"Obtendo afastamentos para o CPF: {cpf}")
 
         # Acessa afastamentos do profissional
-        driver.get(f"https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?cpf={cpf}&op=Log") 
+        driver.get(f"https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?cpf={cpf}&op=Log")
 
         # Fecha os possíveis alertas que surgirem na pagina (ex: profissional nao encontrado)
         try:
-            driver.switch_to.alert.accept() 
-        except: 
+            driver.switch_to.alert.accept()
+        except:
             pass
 
         # Checa se página carregou
-        if "CADASTRO DE AFASTAMENTO DE PROFISSIONAIS" in driver.page_source.upper(): 
+        if "CADASTRO DE AFASTAMENTO DE PROFISSIONAIS" in driver.page_source.upper():
             try:
                 # Joga o conteudo da pag pro beautiful soup
                 soup = BeautifulSoup(driver.page_source)
-                
+
                 # Encontra a tabela com os dados
-                tables = soup.find_all('table', {'class': 'table_listagem'}) 
+                tables = soup.find_all("table", {"class": "table_listagem"})
 
                 all_data = []
                 for table in tables:
                     # Pega linhas da tabela com exceção das duas primeiras (titulo da tabela e nomes das colunas)
-                    rows = table.find_all('tr')[2:] 
-                    
+                    rows = table.find_all("tr")[2:]
+
                     for row in rows:
                         # Pega todas as colunas da tabela
-                        cols = row.find_all('td') 
+                        cols = row.find_all("td")
 
                         # Pega o conteudo de cada celula, e da um tratamento especial pra coluna 3 (referente a "acoes")
-                        data = [col.text.upper() if i != 3 else str(col) for i, col in enumerate(cols)] 
+                        data = [
+                            col.text.upper() if i != 3 else str(col) for i, col in enumerate(cols)
+                        ]
                         all_data.append(data)
 
                 # Cria o dataframe definindo os nomes das colunas
-                df = pd.DataFrame(all_data, columns = ["codigo", "data", "operador", "acao"])
-                
+                df = pd.DataFrame(all_data, columns=["codigo", "data", "operador", "acao"])
+
                 # Adiciona uma coluna com o cpf buscado
                 df["cpf"] = cpf
 
                 log(f"Afastamentos obtidos para o CPF: {cpf} com sucesso.")
 
                 return df
-            
+
             except Exception as e:
                 log(f"Erro ao processar os dados do CPF {cpf}: {e}")
                 raise
