@@ -21,10 +21,22 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import upload_df_to_datalake
 
 
+@task
+def transforma_formato_data(date_str: str) -> str:
+    """
+    Transforma uma data no formato 'YYYY-MM-DD' para 'DD/MM/YYYY'.
+    """
+    try:
+        date_obj = datetime.fromisoformat(date_str[:10])
+        return date_obj.strftime("%d/%m/%Y")
+    
+    except ValueError as e:
+        log(f"Erro ao transformar data: {e}")
+        return date_str
+
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     fonte = registro.get("_source", {})
     return {**fonte}
-
 
 @task(max_retries=5, retry_delay=timedelta(seconds=30))
 def full_extract_process(
@@ -132,118 +144,3 @@ def full_extract_process(
     df.to_parquet(file_path, index=False)
 
     return file_path
-
-
-@task
-def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int = 1):
-    """
-    Gera uma lista de tuplas (inicio, fim) dividindo o intervalo
-    entre data_inicial e data_final em blocos de tamanho 'dias_por_faixa'.
-
-    As datas podem ser passadas no formato 'YYYY-MM-DD' ou como datetime.
-    Se data_final for a string "now", será convertido para o datetime atual.
-    """
-
-    # Verifica e converte data_inicial
-    if isinstance(data_inicial, datetime):
-        dt_inicial = data_inicial
-    else:
-        dt_inicial = datetime.fromisoformat(data_inicial[:10])
-
-    # Verifica e converte data_final
-    if isinstance(data_final, datetime):
-        dt_final = data_final
-    else:
-        if data_final.lower() == "now":
-            dt_final = datetime.now()
-        else:
-            dt_final = datetime.fromisoformat(data_final[:10])
-
-    log("Gerando faixas de datas para processamento em lotes.")
-    faixas = []
-    # Cria faixas de datas usando intervalos de 'dias_por_faixa'
-    dt_atual = dt_inicial
-    while dt_atual <= dt_final:
-        dt_chunk_inicio = dt_atual
-        dt_chunk_fim = dt_chunk_inicio + timedelta(days=dias_por_faixa - 1)
-        if dt_chunk_fim > dt_final:
-            dt_chunk_fim = dt_final
-        faixa_inicio_str = dt_chunk_inicio.strftime("%Y-%m-%d")
-        faixa_fim_str = dt_chunk_fim.strftime("%Y-%m-%d")
-        faixas.append((faixa_inicio_str, faixa_fim_str))
-        dt_atual = dt_chunk_fim + timedelta(days=1)
-
-    log(f"{len(faixas)} Faixas de datas geradas com sucesso.")
-    return faixas
-
-
-@task
-def extrair_inicio(faixa: Tuple[str, str]) -> str:
-    """
-    Extrai o início do intervalo da tupla.
-    """
-    return faixa[0]
-
-
-@task
-def extrair_fim(faixa: Tuple[str, str]) -> str:
-    """
-    Extrai o fim do intervalo da tupla.
-    """
-    return faixa[1]
-
-
-@task
-def prepare_df_from_disk(file_path: str, flow_name: str, flow_owner: str) -> str:
-    """
-    Lê um arquivo Parquet do disco, chama a tarefa de preparação
-    e salva em outro arquivo. Retorna o caminho do arquivo pronto.
-    """
-    # Lendo do disco
-    df = pd.read_parquet(file_path)
-
-    # Executa a preparação (chamando a task existente)
-    df_prepared = prepare_dataframe_for_upload.run(
-        df=df, flow_name=flow_name, flow_owner=flow_owner
-    )
-
-    # Salva como outro arquivo Parquet
-    prepared_path = file_path.replace(".parquet", "_prepared.parquet")
-    df_prepared.to_parquet(prepared_path, index=False)
-
-    return prepared_path
-
-
-@task
-def upload_from_disk(
-    file_path: str,
-    table_id: str,
-    dataset_id: str,
-    partition_column: str,
-    source_format: str,
-):
-    """
-    Lê o arquivo Parquet já preparado e faz o upload usando a função/task
-    existente 'upload_df_to_datalake', que requer DataFrame em memória.
-    """
-    # Leitura do parquet
-    df = pd.read_parquet(file_path)
-
-    # Chamando a task de upload
-    upload_df_to_datalake.run(
-        df=df,
-        table_id=table_id,
-        dataset_id=dataset_id,
-        partition_column=partition_column,
-        source_format=source_format,
-    )
-
-
-@task
-def delete_file(file_path: str):
-    """
-    Deleta o arquivo local para liberar espaço em disco.
-    """
-    # Comentário em português: removendo o arquivo do disco
-    if os.path.exists(file_path):
-        os.remove(file_path)
