@@ -43,6 +43,11 @@ from pipelines.datalake.migrate.gdrive_to_gcs.flows import *
 from pipelines.datalake.transform.dbt.flows import *
 
 # ===============================
+# PRONTUARIOS
+# ===============================
+from pipelines.prontuarios.std.deteccao_restricoes.flows import *
+
+# ===============================
 # REPORTS
 # ===============================
 from pipelines.reports.ingestao_dados.flows import *
