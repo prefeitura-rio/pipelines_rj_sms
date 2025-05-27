@@ -230,7 +230,7 @@ def download_file(bucket, file_name, extra_safe=True):
         log(f"[download_file] Detected encoding of '{detected_encoding}'")
 
         if len(first_line) <= 0:
-            log(f"[download_file] First line is empty; error likely", level="warning")
+            log("[download_file] First line is empty; error likely", level="warning")
         sep = detect_separator(first_line)
         log(f"[download_file] Detected separator: '{sep}'")
 
