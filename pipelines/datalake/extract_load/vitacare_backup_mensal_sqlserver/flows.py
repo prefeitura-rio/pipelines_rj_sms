@@ -21,7 +21,10 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks impo
     build_bq_table_name,
     extract_and_transform_table,
     get_tables_to_extract,
+    get_all_cnes_codes,               
+    generate_extraction_cartesian_product,
 )
+
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
@@ -32,16 +35,21 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
     PARTITION_COLUMN = Parameter("partition_column", default="extracted_at")
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
-    CNES_CODE_PARAM = Parameter("cnes_code", required=True)
 
     DATASET_ID = vitacare_constants.DATASET_ID.value
     TABLES_TO_EXTRACT = get_tables_to_extract()
+    ALL_CNES_CODES = get_all_cnes_codes()   
+
+    cnes_to_process_list, tables_to_process_list = generate_extraction_cartesian_product( # <<< ADICIONAR CHAMADA
+        cnes_codes=ALL_CNES_CODES,
+        tables_to_extract=TABLES_TO_EXTRACT
+    )
+
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
             dataset=DATASET_ID,
-            table=CNES_CODE_PARAM,
         )
 
     host = get_secret_key(
@@ -76,8 +84,8 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         db_user=unmapped(user),
         db_password=unmapped(password),
         db_schema=unmapped(SCHEMA),
-        db_table=TABLES_TO_EXTRACT,
-        cnes_code=unmapped(CNES_CODE_PARAM),
+        db_table=tables_to_process_list,   
+        cnes_code=cnes_to_process_list,
     )
 
     bq_table_id_futures = build_bq_table_name.map(table_name=TABLES_TO_EXTRACT)

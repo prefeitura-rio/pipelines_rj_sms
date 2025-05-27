@@ -338,7 +338,6 @@ cases:
       schema: 'dbo'
       partition_column: "extracted_at"
       rename_flow: 'False'
-      cnes_code: '6023975'
   - case_slug: "datalake-extract-vitacare_api_v2"
     flow_path: "pipelines.datalake.extract_load.vitacare_api_v2.flows"
     flow_name: "sms_vitacare_api_v2"

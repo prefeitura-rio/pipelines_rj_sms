@@ -11,6 +11,40 @@ from sqlalchemy import create_engine
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
+from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
+    constants as vitacare_constants,
+)
+
+@task
+def get_all_cnes_codes() -> list:
+    """Retorna a lista de todos os códigos CNES a serem processados."""
+    log("Iniciando a busca por todos os códigos CNES.")
+    try:
+        codes = vitacare_constants.cnes_codes.value
+        log(f"Foram encontrados {len(codes)} códigos CNES para processamento.")
+        return codes
+    except AttributeError:
+        log("Erro: 'cnes_codes' não encontrado ou não é um Enum com .value em vitacare_constants. Verifique a importação e definição.", level="error")
+        raise ValueError("Lista de CNES não pôde ser carregada a partir de vitacare_constants.")
+    except Exception as e:
+        log(f"Erro inesperado ao buscar códigos CNES: {e}", level="error")
+        raise
+
+@task(nout=2)
+def generate_extraction_cartesian_product(cnes_codes: list, tables_to_extract: list) -> tuple[list, list]:
+    """
+    Gera o produto cartesiano entre códigos CNES e tabelas para mapeamento.
+    Retorna duas listas: uma de códigos CNES e uma de nomes de tabelas, alinhadas para o map.
+    """
+    log(f"Gerando produto cartesiano para {len(cnes_codes)} CNES e {len(tables_to_extract)} tabelas.")
+    cnes_inputs = []
+    table_inputs = []
+    for cnes in cnes_codes:
+        for table in tables_to_extract:
+            cnes_inputs.append(cnes)
+            table_inputs.append(table)
+    log(f"Produto cartesiano gerado com {len(cnes_inputs)} combinações.")
+    return cnes_inputs, table_inputs
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
@@ -30,7 +64,7 @@ def extract_and_transform_table(
     try:
         connection_string = (
             f"mssql+pyodbc://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-            "?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
+            "?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes"
         )
         engine = create_engine(connection_string)
 
