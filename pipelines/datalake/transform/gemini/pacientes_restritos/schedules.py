@@ -15,7 +15,30 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 # Vitai Allergies Standardization
 #####################################
 
-hci_pacientes_restritos_flow_parameters = [{"environment": "prod", "rename_flow": True}]
+hci_pacientes_restritos_flow_parameters = [
+    {
+        "environment": "prod",
+        "rename_flow": True,
+        "query":  '''
+        with pacientes as (
+        SELECT distinct
+            id_hci,
+            cpf,
+            clinical_motivation,
+        FROM `rj-sms.app_historico_clinico.episodio_assistencial` as ep
+        where (
+            lower(clinical_motivation) like "%hiv positivo%"
+                or lower(clinical_motivation) like "%soropositivo%"
+                or lower(clinical_motivation) like "%aids%"
+                or lower(clinical_motivation) like "%hiv+%"
+                or lower(clinical_motivation) like "%imunodeficiência%humana%"
+            )
+        and exibicao.paciente_restrito is false
+        )
+        select * from pacientes
+    '''
+    }
+]
 
 vitai_alergias_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),

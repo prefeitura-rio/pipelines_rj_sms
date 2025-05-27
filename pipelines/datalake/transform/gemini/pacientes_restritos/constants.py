@@ -15,7 +15,7 @@ class constants(Enum):
     INFISICAL_API_KEY = "GEMINI_API_KEY"
     GEMINI_MODEL = "gemini-2.0-flash"
     DATASET_ID = "intermediario_historico_clinico"
-    TABLE_ID = "pacientes_restritos"
+    TABLE_ID = "paciente_restrito"
     QUERY = """
         with pacientes as (
         SELECT distinct
