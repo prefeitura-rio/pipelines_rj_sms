@@ -19,7 +19,7 @@ hci_pacientes_restritos_flow_parameters = [
     {
         "environment": "prod",
         "rename_flow": True,
-        "query":  '''
+        "query": """
         with pacientes as (
         SELECT distinct
             id_hci,
@@ -36,7 +36,7 @@ hci_pacientes_restritos_flow_parameters = [
         and exibicao.paciente_restrito is false
         )
         select * from pacientes
-    '''
+    """,
     }
 ]
 
