@@ -11,6 +11,7 @@ from sqlalchemy import create_engine
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import (
     start_cloud_sql_proxy,
     stop_cloud_sql_proxy,
+    wait_for_proxy,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
@@ -32,8 +33,13 @@ def extract_and_transform_table(
     log(f"Attempting to download data from {full_table_name} for CNES: {cnes_code}")
 
     db_name = f"vitacare_historic_{cnes_code}"
+    proxy_process = None
     try:
         proxy_process = start_cloud_sql_proxy(connection_name)
+
+        log(f"Waiting for Cloud SQL Proxy to become available on port {db_port}...")
+        wait_for_proxy(port=int(db_port), host="localhost")
+        log("Cloud SQL Proxy is ready and listening.")
 
         connection_string = (
             f"mssql+pyodbc://{db_user}:{db_password}@localhost:{db_port}/{db_name}"
@@ -144,7 +150,8 @@ def extract_and_transform_table(
         )
         raise
     finally:
-        stop_cloud_sql_proxy(proxy_process)
+        if proxy_process:
+            stop_cloud_sql_proxy(proxy_process)
 
 
 @task

@@ -2,6 +2,7 @@
 import subprocess
 import threading
 import time
+import socket
 
 from pipelines.utils.logger import log
 
@@ -22,19 +23,24 @@ def start_cloud_sql_proxy(connection_name: str) -> subprocess.Popen:
         "--port=1433",
     ]
 
-    process = subprocess.Popen(cwd, stdout=subprocess.PIPE)
-    for line in process.stdout:
-        log(line.decode())
+    process = subprocess.Popen(cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    process.stdout.close()
-    return_code = process.wait()
+    threading.Thread(target=_pipe_output, args=(process.stdout, "cloud-sql-proxy"), daemon=True).start()
 
-    if return_code:
-        raise subprocess.CalledProcessError(return_code, cwd)
-
-    return process
+    return process  # Devolve o processo imediatamente
 
 
 def stop_cloud_sql_proxy(proxy_process: subprocess.Popen):
     proxy_process.terminate()
     proxy_process.wait()
+
+
+def wait_for_proxy(port: int, host: str = "localhost", timeout: int = 30):
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            with socket.create_connection((host, port), timeout=2):
+                return True
+        except OSError:
+            time.sleep(1)
+    raise TimeoutError(f"Proxy did not become available at {host}:{port} within {timeout} seconds.")
