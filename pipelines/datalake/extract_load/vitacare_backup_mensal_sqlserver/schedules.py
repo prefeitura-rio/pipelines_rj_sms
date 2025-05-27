@@ -12,18 +12,18 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 single_flow_params = [
     {
-        "environment": "staging", #
-        "schema": "dbo",       
-        "rename_flow": False, 
+        "environment": "staging",  #
+        "schema": "dbo",
+        "rename_flow": False,
     }
 ]
 
 clocks = generate_dump_api_schedules(
-    interval=timedelta(days=20), # 
+    interval=timedelta(days=20),  #
     start_date=datetime(2023, 1, 1, 5, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
-    labels=[constants.RJ_SMS_AGENT_LABEL.value], 
+    labels=[constants.RJ_SMS_AGENT_LABEL.value],
     flow_run_parameters=single_flow_params,
-    runs_interval_minutes=0, 
+    runs_interval_minutes=0,
 )
 
 vitacare_monthly_schedule = Schedule(clocks=untuple_clocks(clocks))
