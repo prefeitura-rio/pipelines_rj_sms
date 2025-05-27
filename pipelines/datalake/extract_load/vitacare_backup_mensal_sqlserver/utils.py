@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
+import socket
 import subprocess
 import threading
 import time
-import socket
 
 from pipelines.utils.logger import log
 
@@ -25,7 +25,9 @@ def start_cloud_sql_proxy(connection_name: str) -> subprocess.Popen:
 
     process = subprocess.Popen(cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    threading.Thread(target=_pipe_output, args=(process.stdout, "cloud-sql-proxy"), daemon=True).start()
+    threading.Thread(
+        target=_pipe_output, args=(process.stdout, "cloud-sql-proxy"), daemon=True
+    ).start()
 
     return process  # Devolve o processo imediatamente
 
