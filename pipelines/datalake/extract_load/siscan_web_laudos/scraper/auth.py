@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import os
-
 from selenium.common.exceptions import TimeoutException, WebDriverException
 
 from . import ScraperError

@@ -16,7 +16,6 @@ from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
 from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
 from pipelines.datalake.extract_load.sisreg_api.tasks import (
     full_extract_process,
-    transforma_formato_data,
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,

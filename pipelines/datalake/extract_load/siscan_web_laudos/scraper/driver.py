@@ -11,7 +11,6 @@ from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
     TimeoutException,
-    UnexpectedAlertPresentException,
 )
 from selenium.webdriver import Firefox, FirefoxOptions
 from selenium.webdriver.common.by import By

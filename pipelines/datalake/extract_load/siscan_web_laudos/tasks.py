@@ -38,7 +38,11 @@ def run_siscan_scraper(
         log(f"Iniciando coleta de dados do SISCaN de {start_date} a {end_date}.")
 
         pacientes = run_scraper(
-            email=email, password=password, start_date=start_date, end_date=end_date, headless=True
+            email=email,
+            password=password,
+            start_date=start_date,
+            end_date=end_date,
+            headless=True
         )
         df = pd.DataFrame(pacientes)
 
