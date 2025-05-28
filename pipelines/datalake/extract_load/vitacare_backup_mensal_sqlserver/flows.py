@@ -40,7 +40,7 @@ from pipelines.utils.prefect import get_current_flow_labels
 with Flow("DataLake - Vitacare Historic - CNES Operator") as flow_vitacare_historic_operator:
     # Parâmetros recebidos do Manager
     CNES_CODE = Parameter("CNES_CODE", required=True)
-    ENVIRONMENT = Parameter("ENVIRONMENT", default="staging", required=True)
+    environment = Parameter("environment", default="staging", required=True)
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
     PARTITION_COLUMN = Parameter("PARTITION_COLUMN", default=vitacare_constants.BQ_PARTITION_COLUMN.value)
     RENAME_FLOW_OPERATOR = Parameter("RENAME_FLOW_OPERATOR", default=True)
@@ -51,29 +51,29 @@ with Flow("DataLake - Vitacare Historic - CNES Operator") as flow_vitacare_histo
         rename_current_flow_run(
             name_template="Operator: Vitacare CNES {cnes_code} ({env})",
             cnes_code=CNES_CODE,
-            env=ENVIRONMENT,
+            env=environment,
         )
 
     # Obter credenciais para este operador
     db_host = get_secret_key(
         secret_path=vitacare_constants.INFISICAL_PATH.value,
         secret_name=vitacare_constants.INFISICAL_HOST.value,
-        environment=ENVIRONMENT,
+        environment=environment,
     )
     db_port = get_secret_key(
         secret_path=vitacare_constants.INFISICAL_PATH.value,
         secret_name=vitacare_constants.INFISICAL_PORT.value,
-        environment=ENVIRONMENT,
+        environment=environment,
     )
     db_user = get_secret_key(
         secret_path=vitacare_constants.INFISICAL_PATH.value,
         secret_name=vitacare_constants.INFISICAL_USERNAME.value,
-        environment=ENVIRONMENT,
+        environment=environment,
     )
     db_password = get_secret_key(
         secret_path=vitacare_constants.INFISICAL_PATH.value,
         secret_name=vitacare_constants.INFISICAL_PASSWORD.value,
-        environment=ENVIRONMENT,
+        environment=environment,
     )
 
     tables_for_this_cnes = get_tables_to_extract()
@@ -104,19 +104,19 @@ with Flow("DataLake - Vitacare Historic - CNES Operator") as flow_vitacare_histo
 
 
 with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_manager:
-    ENVIRONMENT = Parameter("ENVIRONMENT", default="staging")
+    environment = Parameter("environment", default="staging")
     DB_SCHEMA_MANAGER = Parameter("DB_SCHEMA_MANAGER", default=vitacare_constants.DB_SCHEMA.value)
     RENAME_FLOW_MANAGER = Parameter("RENAME_FLOW_MANAGER", default=True)
 
     with case(RENAME_FLOW_MANAGER, True):
         rename_current_flow_run(
             name_template="Manager: Vitacare Backup ({env})",
-            env=ENVIRONMENT,
+            env=environment,
         )
 
     all_cnes_to_process = get_all_cnes_codes()
 
-    prefect_project_name = get_project_name(environment=ENVIRONMENT)
+    prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
 
 
@@ -130,7 +130,7 @@ with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_ma
         for cnes in cnes_list:
             params_list.append({
                 "CNES_CODE": cnes,
-                "ENVIRONMENT": env,
+                "environment": env,
                 "DB_SCHEMA": schema,
                 "PARTITION_COLUMN": part_col,
                 "RENAME_FLOW_OPERATOR": True,
@@ -139,7 +139,7 @@ with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_ma
 
     operator_parameters = build_operator_params(
         cnes_list=all_cnes_to_process,
-        env=ENVIRONMENT,
+        env=environment,
         schema=DB_SCHEMA_MANAGER, 
         part_col=vitacare_constants.BQ_PARTITION_COLUMN.value
     )
