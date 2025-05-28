@@ -148,7 +148,7 @@ with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_ma
     trigger_processing = should_process_runs(operator_parameters)
 
 
-    with case(operator_parameters, True): 
+    with case(trigger_processing, True): 
         created_operator_runs = create_flow_run.map(
             flow_name=unmapped(flow_vitacare_historic_operator.name), 
             project_name=unmapped(prefect_project_name),
