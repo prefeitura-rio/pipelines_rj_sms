@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from selenium.webdriver.common.by import By
-import logging
 
 logging.basicConfig(
     level=logging.INFO,
