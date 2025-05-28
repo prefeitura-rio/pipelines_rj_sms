@@ -324,6 +324,8 @@ cases:
       bq_dataset: 'brutos_sisreg_api'
       bq_table: 'marcacoes'
       dias_por_faixa: 30
+      formato_data: '%Y-%m-%d'
+
   - case_slug: "cientificalab_api"
     flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
     flow_name: "flow_cientificalab"
@@ -340,3 +342,15 @@ cases:
       target_date: "D-1"
       dataset_id: "brutos_api_vitacare"
       table_id_prefix: "estoque_posicao"
+
+  - case_slug: "siscan_web_laudos"
+    flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
+    flow_name: "sms_siscan_web"
+    params:
+      environment: "dev"
+      data_inicial: "26/01/2025"
+      data_final: "26/01/2025"
+      bq_dataset: "brutos_siscan_web"
+      bq_table: "laudos"
+      dias_por_faixa: 15
+      formato_data: "%d/%m/%Y"
