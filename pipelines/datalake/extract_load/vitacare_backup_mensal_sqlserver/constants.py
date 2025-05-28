@@ -7,7 +7,7 @@ Constants for the Vitacare Historic SQL Server dump pipeline
 from enum import Enum
 
 
-class constants(Enum):
+class vitacare_constants(Enum):
     """
     Constant values for the dump vitai flows
     """

@@ -9,7 +9,7 @@ import pytz
 from sqlalchemy import create_engine
 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
-    constants,
+    vitacare_constants,
 )
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -20,13 +20,13 @@ from pipelines.utils.logger import log
 @task
 def get_all_cnes_codes() -> list:
     """Retorna a lista de todos os códigos CNES a serem processados."""
-    return constants.CNES_CODES.value
+    return vitacare_constants.CNES_CODES.value
 
 
 @task
 def get_tables_to_extract() -> list:
     """Retorna a lista de tabelas a serem extraídas para um CNES."""
-    return constants.TABLES_TO_EXTRACT.value
+    return vitacare_constants.TABLES_TO_EXTRACT.value
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def extract_and_transform_table(
