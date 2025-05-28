@@ -14,9 +14,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
 from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
-from pipelines.datalake.extract_load.sisreg_api.tasks import (
-    full_extract_process,
-)
+from pipelines.datalake.extract_load.sisreg_api.tasks import full_extract_process
 from pipelines.datalake.utils.tasks import (
     delete_file,
     extrair_fim,
