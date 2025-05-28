@@ -38,10 +38,8 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
     TABLES_TO_EXTRACT = get_tables_to_extract()
     ALL_CNES_CODES = get_all_cnes_codes()
 
-    cnes_to_process_list, tables_to_process_list = (
-        generate_extraction_cartesian_product(  
-            cnes_codes=ALL_CNES_CODES, tables_to_extract=TABLES_TO_EXTRACT
-        )
+    cnes_to_process_list, tables_to_process_list = generate_extraction_cartesian_product(
+        cnes_codes=ALL_CNES_CODES, tables_to_extract=TABLES_TO_EXTRACT
     )
 
     with case(RENAME_FLOW, True):
