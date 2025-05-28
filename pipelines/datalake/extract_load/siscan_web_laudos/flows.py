@@ -12,9 +12,9 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
-from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
-from pipelines.datalake.extract_load.sisreg_api.tasks import full_extract_process
+from pipelines.datalake.extract_load.siscan_web_laudos.constants import CONFIG
+from pipelines.datalake.extract_load.siscan_web_laudos.schedules import schedule
+from pipelines.datalake.extract_load.siscan_web_laudos.tasks import run_siscan_scraper
 from pipelines.datalake.utils.tasks import (
     delete_file,
     extrair_fim,
@@ -25,33 +25,29 @@ from pipelines.datalake.utils.tasks import (
 )
 from pipelines.utils.tasks import get_secret_key
 
-with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
+with Flow(name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos") as sms_siscan_web:
     # PARAMETROS AMBIENTE ---------------------------
     ENVIRONMENT = Parameter("environment", default="dev")
 
     # PARAMETROS CREDENCIAIS ------------------------
     user = get_secret_key(
-        environment=ENVIRONMENT, secret_name="ES_USERNAME", secret_path="/sisreg_api"
+        environment=ENVIRONMENT, secret_name="SISCAN_MAIL", secret_path="/siscan_web"
     )
     password = get_secret_key(
-        environment=ENVIRONMENT, secret_name="ES_PASSWORD", secret_path="/sisreg_api"
+        environment=ENVIRONMENT, secret_name="SISCAN_PASS", secret_path="/siscan_web"
     )
 
     # PARAMETROS CONSULTA ---------------------------
-    ES_INDEX = Parameter("es_index", default="solicitacao-ambulatorial-rj")
-    PAGE_SIZE = Parameter("page_size", default=10_000)
-    SCROLL_TIMEOUT = Parameter("scroll_timeout", default="2m")
-    FILTERS = Parameter("filters", default={"codigo_central_reguladora": "330455"})
-    DATA_INICIAL = Parameter("data_inicial", default="2025-01-01")
-    DATA_FINAL = Parameter("data_final", default="2025-01-31")
+    DATA_INICIAL = Parameter("data_inicial", default="01/01/2025")
+    DATA_FINAL = Parameter("data_final", default="31/01/2025")
 
     # PARAMETROS PARA DEFINIR TAMANHO DOS LOTES ------
-    DIAS_POR_FAIXA = Parameter("dias_por_faixa", default=1)
-    FORMATO_DATA = Parameter("formato_data", default="%Y-%m-%d")
+    DIAS_POR_FAIXA = Parameter("dias_por_faixa", default=10)
+    FORMATO_DATA = Parameter("formato_data", default="%d/%m/%Y")
 
     # PARAMETROS BQ ----------------------------------
-    BQ_DATASET = Parameter("bq_dataset", default="brutos_sisreg_api")
-    BQ_TABLE = Parameter("bq_table", default="solicitacoes")
+    BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
+    BQ_TABLE = Parameter("bq_table", default="laudos")
 
     faixas = gerar_faixas_de_data(
         data_inicial=DATA_INICIAL,
@@ -64,18 +60,12 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
     fim_faixas = extrair_fim.map(faixa=faixas)
 
     # 1) Extrai e salva cada lote em disco, retorna caminho do parquet
-    raw_files = full_extract_process.map(
-        host=unmapped(CONFIG["host"]),
-        port=unmapped(CONFIG["port"]),
-        scheme=unmapped(CONFIG["scheme"]),
-        user=unmapped(user),
+    raw_files = run_siscan_scraper.map(
+        email=unmapped(user),
         password=unmapped(password),
-        index_name=unmapped(ES_INDEX),
-        page_size=unmapped(PAGE_SIZE),
-        scroll_timeout=unmapped(SCROLL_TIMEOUT),
-        filters=unmapped(FILTERS),
-        data_inicial=inicio_faixas,
-        data_final=fim_faixas,
+        start_date=inicio_faixas,
+        end_date=fim_faixas,
+        output_dir=unmapped(CONFIG["output_dir"]),
     )
 
     # 2) Prepara cada arquivo (lê e gera outro parquet)
@@ -99,12 +89,12 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
     delete_prepared = delete_file.map(file_path=prepared_files, upstream_tasks=[uploads])
 
 # Configurações de execução
-sms_sisreg_api.executor = LocalDaskExecutor(num_workers=3)
-sms_sisreg_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_sisreg_api.run_config = KubernetesRun(
+sms_siscan_web.executor = LocalDaskExecutor(num_workers=3)
+sms_siscan_web.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_siscan_web.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
     memory_request=CONFIG["memory_request"],
     memory_limit=CONFIG["memory_limit"],
 )
-sms_sisreg_api.schedule = schedule
+sms_siscan_web.schedule = schedule
