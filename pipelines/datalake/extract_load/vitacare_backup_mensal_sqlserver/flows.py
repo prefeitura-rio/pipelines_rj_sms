@@ -39,7 +39,7 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
     ALL_CNES_CODES = get_all_cnes_codes()
 
     cnes_to_process_list, tables_to_process_list = (
-        generate_extraction_cartesian_product(  # <<< ADICIONAR CHAMADA
+        generate_extraction_cartesian_product(  
             cnes_codes=ALL_CNES_CODES, tables_to_extract=TABLES_TO_EXTRACT
         )
     )
@@ -86,7 +86,7 @@ with Flow("DataLake - Extração e Carga - Vitacare Historic") as flow_vitacare_
         cnes_code=cnes_to_process_list,
     )
 
-    bq_table_id_futures = build_bq_table_name.map(table_name=TABLES_TO_EXTRACT)
+    bq_table_id_futures = build_bq_table_name.map(table_name=tables_to_process_list)
 
     upload_df_to_datalake.map(
         df=extracted_dfs,
