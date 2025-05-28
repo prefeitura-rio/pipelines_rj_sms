@@ -40,7 +40,7 @@ def generate_extraction_cartesian_product(
     cnes_codes: list, tables_to_extract: list
 ) -> tuple[list, list]:
     """
-    Gera o produto cartesiano entre códigos CNES e tabelas para mapeamento.
+    Gera o produto cartesiano entre códigos CNES e tabelas para mapeamento
     Retorna duas listas: uma de códigos CNES e uma de nomes de tabelas, alinhadas para o map.
     """
     log(
