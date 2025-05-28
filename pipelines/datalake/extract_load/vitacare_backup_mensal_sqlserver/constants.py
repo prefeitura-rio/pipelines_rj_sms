@@ -17,8 +17,10 @@ class constants(Enum):
     INFISICAL_HOST = "DATABASE_HOST"
     INFISICAL_USERNAME = "DATABASE_USER"
     INFISICAL_PASSWORD = "DATABASE_PASSWORD"
-    INFISICAL_CONNECTION_NAME = "DATABASE_CONNECTION_NAME"
     DATASET_ID = "brutos_vitacare_historic"
+    DB_SCHEMA = "dbo"
+    BQ_PARTITION_COLUMN = "extracted_at"
+
 
     TABLES_TO_EXTRACT = [
         "ALERGIAS",
@@ -43,7 +45,7 @@ class constants(Enum):
         "VACINAS",
     ]
 
-    cnes_codes = [
+    CNES_CODES = [
         "6023975",
         "6028233",
         "9057706",
