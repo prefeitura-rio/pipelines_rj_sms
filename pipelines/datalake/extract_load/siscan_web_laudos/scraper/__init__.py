@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 """Pacote de raspagem SIS-CAN – versão robusta em PT-BR."""
 
 from __future__ import annotations
-from typing import List, Dict, Any
+
+from typing import Any, Dict, List
 
 from .config import LOGGER
 
@@ -10,9 +12,10 @@ class ScraperError(RuntimeError):
     """Erro de alto nível do scraper."""
 
 
+from .auth import login  # noqa: E402
+
 # Importações tardias evitam circularidade
 from .driver import init_firefox  # noqa: E402
-from .auth import login  # noqa: E402
 from .filters import goto_laudo_page, set_filters  # noqa: E402
 from .patients import iterate_patients  # noqa: E402
 

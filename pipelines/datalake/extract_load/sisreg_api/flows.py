@@ -15,8 +15,8 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
 from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
 from pipelines.datalake.extract_load.sisreg_api.tasks import (
+    full_extract_process,
     transforma_formato_data,
-    full_extract_process
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,
@@ -26,7 +26,6 @@ from pipelines.datalake.utils.tasks import (
     prepare_df_from_disk,
     upload_from_disk,
 )
-
 from pipelines.utils.tasks import get_secret_key
 
 with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
@@ -58,8 +57,11 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
     BQ_TABLE = Parameter("bq_table", default="solicitacoes")
 
     faixas = gerar_faixas_de_data(
-        data_inicial=DATA_INICIAL, data_final=DATA_FINAL, dias_por_faixa=DIAS_POR_FAIXA,date_format=FORMATO_DATA
-    ) 
+        data_inicial=DATA_INICIAL,
+        data_final=DATA_FINAL,
+        dias_por_faixa=DIAS_POR_FAIXA,
+        date_format=FORMATO_DATA,
+    )
 
     inicio_faixas = extrair_inicio.map(faixa=faixas)
     fim_faixas = extrair_fim.map(faixa=faixas)

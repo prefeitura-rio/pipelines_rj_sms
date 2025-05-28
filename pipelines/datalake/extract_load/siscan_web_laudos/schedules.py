@@ -24,7 +24,6 @@ flow_parameters = [
         "bq_table": "laudos",
         "dias_por_faixa": 15,
         "formato_data": "%d/%m/%Y",
-
     }
 ]
 

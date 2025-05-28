@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Constantes centrais de configuração do scraper SIS-CAN (PT-BR)."""
 
 from __future__ import annotations

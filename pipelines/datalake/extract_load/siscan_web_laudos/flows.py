@@ -15,7 +15,6 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.siscan_web_laudos.constants import CONFIG
 from pipelines.datalake.extract_load.siscan_web_laudos.schedules import schedule
 from pipelines.datalake.extract_load.siscan_web_laudos.tasks import run_siscan_scraper
-from pipelines.utils.tasks import get_secret_key
 from pipelines.datalake.utils.tasks import (
     delete_file,
     extrair_fim,
@@ -24,6 +23,7 @@ from pipelines.datalake.utils.tasks import (
     prepare_df_from_disk,
     upload_from_disk,
 )
+from pipelines.utils.tasks import get_secret_key
 
 with Flow(name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos") as sms_siscan_web:
     # PARAMETROS AMBIENTE ---------------------------
@@ -49,10 +49,12 @@ with Flow(name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos") as sms_siscan_
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
     BQ_TABLE = Parameter("bq_table", default="laudos")
 
-
     faixas = gerar_faixas_de_data(
-        data_inicial=DATA_INICIAL, data_final=DATA_FINAL, dias_por_faixa=DIAS_POR_FAIXA,date_format=FORMATO_DATA
-    ) 
+        data_inicial=DATA_INICIAL,
+        data_final=DATA_FINAL,
+        dias_por_faixa=DIAS_POR_FAIXA,
+        date_format=FORMATO_DATA,
+    )
 
     inicio_faixas = extrair_inicio.map(faixa=faixas)
     fim_faixas = extrair_fim.map(faixa=faixas)

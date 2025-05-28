@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Aplicação de filtros (exame + município + datas) na tela de pesquisa."""
 
 from __future__ import annotations
@@ -5,26 +6,25 @@ from __future__ import annotations
 from selenium.webdriver import Firefox
 from selenium.webdriver.common.by import By
 
+from .config import LOGGER
 from .driver import (
+    clicar_com_retry,
+    esperar_overlay_sumir,
+    esperar_visivel,
     safe_click,
     wait_until,
-    esperar_visivel,
-    esperar_overlay_sumir,
-    clicar_com_retry,
 )
-
 from .locators import (
+    BOTAO_PESQUISAR,
+    CAMPO_DATA_FIM,
+    CAMPO_DATA_INICIO,
+    LUPA_LAUDO,
     MENU_EXAME,
     MENU_GERENCIAR_LAUDO,
     OPCAO_EXAME_MAMO,
-    OPCAO_MUNICIPIO,
     OPCAO_FILTRO_DATA,
-    CAMPO_DATA_INICIO,
-    CAMPO_DATA_FIM,
-    BOTAO_PESQUISAR,
-    LUPA_LAUDO,
+    OPCAO_MUNICIPIO,
 )
-from .config import LOGGER
 
 
 def goto_laudo_page(driver: Firefox) -> None:
@@ -53,9 +53,7 @@ def _definir_data_js(
 
     # 2) injeta valor e dispara evento `change`
     driver.execute_script("arguments[0].removeAttribute('readonly')", campo)
-    driver.execute_script(
-        "arguments[0].value = arguments[1];", campo, valor.replace("/", "")
-    )
+    driver.execute_script("arguments[0].value = arguments[1];", campo, valor.replace("/", ""))
     driver.execute_script("arguments[0].dispatchEvent(new Event('change'));", campo)
 
     # 3) aguarda overlay AJAX desaparecer para evitar ElementClickInterceptedException
@@ -89,6 +87,5 @@ def set_filters(driver: Firefox, data_inicio: str, data_fim: str) -> None:
 
     wait_until(
         driver,
-        lambda d: d.find_elements(*LUPA_LAUDO)
-        or d.find_elements(By.CSS_SELECTOR, "table"),
+        lambda d: d.find_elements(*LUPA_LAUDO) or d.find_elements(By.CSS_SELECTOR, "table"),
     )

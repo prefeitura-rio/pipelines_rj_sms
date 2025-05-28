@@ -25,6 +25,7 @@ def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     fonte = registro.get("_source", {})
     return {**fonte}
 
+
 @task(max_retries=5, retry_delay=timedelta(seconds=30))
 def full_extract_process(
     host,

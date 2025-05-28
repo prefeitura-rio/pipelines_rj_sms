@@ -1,29 +1,27 @@
+# -*- coding: utf-8 -*-
 """Iteração sobre pacientes e extração de laudos detalhados (v2.0)."""
 
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Dict, Any, Set
+from typing import Any, Dict, List, Set
 
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import Firefox
-from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    TimeoutException,
-)
+from selenium.webdriver.support.ui import WebDriverWait
 
+from .config import LOGGER
 from .driver import (
     clicar_com_retry,
-    safe_click,
-    esperar_visivel,
     esperar_carregamento,
     esperar_overlay_sumir,
+    esperar_visivel,
+    safe_click,
 )
 from .locators import *
-from .config import LOGGER
 
 _FORMATO_DATA = "%d/%m/%Y"
 
@@ -90,7 +88,6 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "unidade_municipio": get_txt(driver, DET_MUNICIPIO),  # noqa: F403
         "n_prontuario": get_txt(driver, DET_NPRONT),  # noqa: F403
         "n_protocolo": get_txt(driver, DET_NPROTO),  # noqa: F403
-
         # ------------------------------- Paciente -------------------------- #
         "paciente_cartao_sus": get_val(driver, DET_CARTAO_SUS),  # noqa: F403
         "paciente_nome": get_val(driver, DET_NOME_PACIENTE),  # noqa: F403
@@ -106,7 +103,6 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "paciente_municipio": get_val(driver, DET_MUNICIPIO_PACIENTE),  # noqa: F403
         "paciente_logradouro": get_val(driver, DET_ENDERECO),  # noqa: F403
         "paciente_endereco_complemento": get_val(driver, DET_COMPLEMENTO),  # noqa: F403
-
         # ------------------------------ Prestador -------------------------- #
         "prestador_nome": get_val(driver, DET_NOME_PRESTADOR),  # noqa: F403
         "prestador_cnpj": get_val(driver, DET_CNPJ),  # noqa: F403
@@ -114,37 +110,41 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "prestador_cnes": get_val(driver, DET_CNES_PRESTADOR),  # noqa: F403
         "data_realizacao": get_val(driver, DET_DATA_RECEBIMENTO),  # noqa: F403
         "prestador_municipio": get_val(driver, DET_MUNICIPIO_PRESTADOR),  # noqa: F403
-
         # ------------------------------ Indicação -------------------------- #
         "mamografia_tipo": get_val(driver, DET_TIPO_MAMOGRAFIA),  # noqa: F403
-        "mamografia_rastreamento_tipo": get_val(driver, DET_TIPO_MAMOGRAFIA_RASTREAMENTO),  # noqa: F403
+        "mamografia_rastreamento_tipo": get_val(
+            driver, DET_TIPO_MAMOGRAFIA_RASTREAMENTO
+        ),  # noqa: F403
         "achado_exame_clinico": get_val(driver, DET_ACHADO_EXAME_CLINICO),  # noqa: F403
         "achado_exame_direita": get_val(driver, DET_ACHADO_EXAME_DIREITA),  # noqa: F403
         "data_ultima_menstruacao": get_val(driver, DET_DATA_ULTIMA_MENSTRUACAO),  # noqa: F403
-
         # ------------------------------ Mamografia ------------------------- #
         "numero_filmes": get_val(driver, DET_NUMERO_FILMES),  # noqa: F403
         "mama_direita_pele": get_val(driver, DET_MAMA_DIREITA_PELE),  # noqa: F403
         "tipo_mama_direita": get_val(driver, DET_TIPO_MAMA_DIREITA),  # noqa: F403
         "microcalcificacoes": get_val(driver, DET_MICROCALCIFICACOES),  # noqa: F403
-        "linfonodos_axiliares_direita": get_val(driver, DET_LINFONODOS_AXILIARES_DIREITA),  # noqa: F403
+        "linfonodos_axiliares_direita": get_val(
+            driver, DET_LINFONODOS_AXILIARES_DIREITA
+        ),  # noqa: F403
         "achados_benignos_direita": get_val(driver, DET_ACHADOS_BENIGNOS_DIREITA),  # noqa: F403
         "mama_esquerda_pele": get_val(driver, DET_MAMA_ESQUERDA_PELE),  # noqa: F403
         "tipo_mama_esquerda": get_val(driver, DET_TIPO_MAMA_ESQUERDA),  # noqa: F403
-        "linfonodos_axiliares_esquerda": get_val(driver, DET_LINFONODOS_AXILIARES_ESQUERDA),  # noqa: F403
+        "linfonodos_axiliares_esquerda": get_val(
+            driver, DET_LINFONODOS_AXILIARES_ESQUERDA
+        ),  # noqa: F403
         "achados_benignos_esquerda": get_val(driver, DET_ACHADOS_BENIGNOS_ESQUERDA),  # noqa: F403
-
         # --------------------- Classificação Radiológica ------------------- #
-        "classif_radiologica_direita": get_val(driver, DET_CLASSIF_RADIOLOGICA_DIREITA),  # noqa: F403
-        "classif_radiologica_esquerda": get_val(driver, DET_CLASSIF_RADIOLOGICA_ESQUERDA),  # noqa: F403
+        "classif_radiologica_direita": get_val(
+            driver, DET_CLASSIF_RADIOLOGICA_DIREITA
+        ),  # noqa: F403
+        "classif_radiologica_esquerda": get_val(
+            driver, DET_CLASSIF_RADIOLOGICA_ESQUERDA
+        ),  # noqa: F403
         "texto_mamas_labels": get_txt(driver, DET_MAMAS_LABELS),  # noqa: F403
-
         # ---------------------------- Recomendações ------------------------ #
         "recomendacoes": get_val(driver, DET_RECOMENDACOES),  # noqa: F403
-
         # -------------------------- Observações Gerais --------------------- #
         "observacoes_gerais": get_txt(driver, DET_OBSERVACOES_GERAIS),  # noqa: F403
-
         # ------------------- Responsável pelo Resultado -------------------- #
         "responsavel_resultado": get_val(driver, DET_RESPONSAVEL_RESULTADO),  # noqa: F403
         "cns_resultado": get_val(driver, DET_CNS_RESULTADO),  # noqa: F403
@@ -193,9 +193,7 @@ def iterate_patients(driver: Firefox) -> List[Dict[str, Any]]:
         esperar_overlay_sumir(driver, 90)
         botoes = driver.find_elements(*LUPA_LAUDO)
         if not botoes:  # sem laudos = fim da coleta
-            LOGGER.info(
-                "Nenhum laudo encontrado na página %d - encerrando loop.", pagina
-            )
+            LOGGER.info("Nenhum laudo encontrado na página %d - encerrando loop.", pagina)
             break
 
         novos_na_pagina = 0  # conta quantos protocolos **inéditos** surgem nesta página
@@ -216,9 +214,7 @@ def iterate_patients(driver: Firefox) -> List[Dict[str, Any]]:
                 continue
 
             detalhes = _extrair_detalhes(driver)
-            if (
-                detalhes["n_protocolo"] not in protocolos_vistos
-            ):  # verifica nº de protocolo
+            if detalhes["n_protocolo"] not in protocolos_vistos:  # verifica nº de protocolo
                 resultados.append(detalhes)
                 protocolos_vistos.add(detalhes["n_protocolo"])
                 novos_na_pagina += 1

@@ -1,25 +1,26 @@
+# -*- coding: utf-8 -*-
 """Inicialização do Firefox + utilitários de espera/clique robustos."""
 
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Callable, TypeVar, Any
+from typing import Any, Callable, TypeVar
 
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    NoSuchElementException,
+    StaleElementReferenceException,
+    TimeoutException,
+    UnexpectedAlertPresentException,
+)
 from selenium.webdriver import Firefox, FirefoxOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import (
-    TimeoutException,
-    UnexpectedAlertPresentException,
-    NoSuchElementException,
-    StaleElementReferenceException,
-    ElementClickInterceptedException,
-)
+from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
 
-from .config import DIRETORIO_DOWNLOADS, HEADLESS_PADRAO, TEMPO_ESPERA_PADRAO, LOGGER
+from .config import DIRETORIO_DOWNLOADS, HEADLESS_PADRAO, LOGGER, TEMPO_ESPERA_PADRAO
 
 _T = TypeVar("_T")
 
@@ -52,23 +53,17 @@ def init_firefox(*, headless: bool | None = None) -> Firefox:
 # --------------------------------------------------------------------------- #
 # Esperas genéricas                                                           #
 # --------------------------------------------------------------------------- #
-def esperar_ate(
-    driver: Firefox, cond: Callable[[Any], _T], timeout: int | None = None
-) -> _T:
+def esperar_ate(driver: Firefox, cond: Callable[[Any], _T], timeout: int | None = None) -> _T:
     """Wrapper para ``WebDriverWait`` com timeout padrão."""
     return WebDriverWait(driver, timeout or TEMPO_ESPERA_PADRAO).until(cond)
 
 
-def esperar_visivel(
-    driver: Firefox, locator: tuple[str, str], timeout: int | None = None
-):
+def esperar_visivel(driver: Firefox, locator: tuple[str, str], timeout: int | None = None):
     """Espera elemento **visível** na página."""
     return esperar_ate(driver, EC.visibility_of_element_located(locator), timeout)
 
 
-def esperar_clicavel(
-    driver: Firefox, locator: tuple[str, str], timeout: int | None = None
-):
+def esperar_clicavel(driver: Firefox, locator: tuple[str, str], timeout: int | None = None):
     """Espera elemento presente **e** clicável."""
     return esperar_ate(driver, EC.element_to_be_clickable(locator), timeout)
 
@@ -120,8 +115,7 @@ def esperar_overlay_sumir(driver: Firefox, timeout: int = 30) -> None:
     bloqueia cliques enquanto há requisições AJAX.
     """
     cond = lambda d: not any(
-        e.is_displayed()
-        for e in d.find_elements(By.CSS_SELECTOR, "div.rich-mpnl-mask-div")
+        e.is_displayed() for e in d.find_elements(By.CSS_SELECTOR, "div.rich-mpnl-mask-div")
     )
     esperar_ate(driver, cond, timeout)
 
@@ -156,9 +150,7 @@ def clicar_com_retry(
     return False
 
 
-def clique_seguro(
-    driver: Firefox, locator: tuple[str, str], timeout: int | None = None
-):
+def clique_seguro(driver: Firefox, locator: tuple[str, str], timeout: int | None = None):
     """Clique tolerante a alertas e *stale element* (mantida para compatibilidade)."""
     clicar_com_retry(driver, locator, tentativas=3, timeout=timeout)
 

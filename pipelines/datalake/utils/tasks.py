@@ -7,8 +7,8 @@ General task functions for the data lake pipelines
 import os
 from datetime import datetime, timedelta
 from typing import Tuple
-import pandas as pd
 
+import pandas as pd
 import prefect
 from prefect.client import Client
 from prefeitura_rio.pipelines_utils.logging import log
@@ -124,9 +124,11 @@ def prepare_dataframe_for_upload(df, flow_name, flow_owner):
 
 
 # Suíte para arquivos grandes demais para a memória:
-# 1 - 
+# 1 -
 @task
-def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int = 1, date_format="%d/%m/%Y"):
+def gerar_faixas_de_data(
+    data_inicial: str, data_final: str, dias_por_faixa: int = 1, date_format="%d/%m/%Y"
+):
     """
     Gera uma lista de tuplas (inicio, fim) dividindo o intervalo
     entre data_inicial e data_final em blocos de tamanho 'dias_por_faixa'.
@@ -168,13 +170,15 @@ def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int
     log(f"{len(faixas)} Faixas de datas geradas com sucesso.")
     return faixas
 
-# 2 - 
+
+# 2 -
 @task
 def extrair_inicio(faixa: Tuple[str, str]) -> str:
     """
     Extrai o início do intervalo da tupla.
     """
     return faixa[0]
+
 
 # 3 -
 @task
@@ -184,7 +188,8 @@ def extrair_fim(faixa: Tuple[str, str]) -> str:
     """
     return faixa[1]
 
-# 4 - 
+
+# 4 -
 @task
 def prepare_df_from_disk(file_path: str, flow_name: str, flow_owner: str) -> str:
     """
@@ -205,7 +210,8 @@ def prepare_df_from_disk(file_path: str, flow_name: str, flow_owner: str) -> str
 
     return prepared_path
 
-# 5 - 
+
+# 5 -
 @task
 def upload_from_disk(
     file_path: str,
@@ -230,7 +236,8 @@ def upload_from_disk(
         source_format=source_format,
     )
 
-# 6 - 
+
+# 6 -
 @task
 def delete_file(file_path: str):
     """
@@ -239,4 +246,3 @@ def delete_file(file_path: str):
     # Comentário em português: removendo o arquivo do disco
     if os.path.exists(file_path):
         os.remove(file_path)
-

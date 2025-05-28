@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Coleção de localizadores (By, value) em português."""
 
 from selenium.webdriver.common.by import By

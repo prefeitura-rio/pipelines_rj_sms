@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Rotina de autenticação no SIS-CAN (com *retries* e pop-up handling)."""
 
 from __future__ import annotations
@@ -6,14 +7,10 @@ import os
 
 from selenium.common.exceptions import TimeoutException, WebDriverException
 
-from .config import URL_BASE, TENTATIVAS_LOGIN, LOGGER
-from .driver import (
-    safe_click,
-    wait_clickable,
-    safe_get,
-)
-from .locators import CAMPO_EMAIL, CAMPO_SENHA, BOTAO_ENTRAR
 from . import ScraperError
+from .config import LOGGER, TENTATIVAS_LOGIN, URL_BASE
+from .driver import safe_click, safe_get, wait_clickable
+from .locators import BOTAO_ENTRAR, CAMPO_EMAIL, CAMPO_SENHA
 
 
 def login(email: str, senha: str, driver):  # type: ignore[arg-type]
