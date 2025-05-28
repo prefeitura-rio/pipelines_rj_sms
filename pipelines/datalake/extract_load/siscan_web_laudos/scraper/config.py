@@ -4,6 +4,14 @@
 from __future__ import annotations
 from pathlib import Path
 from selenium.webdriver.common.by import By
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%d/%m/%Y %H:%M:%S",
+)
+LOGGER = logging.getLogger("scraper")
 
 # Configurações gerais                                                        #
 URL_BASE: str = "https://siscan.saude.gov.br/"
