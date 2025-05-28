@@ -20,6 +20,7 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks impo
     extract_and_transform_table,
     get_all_cnes_codes,
     get_tables_to_extract,
+    should_process_runs
 )
 
 from pipelines.utils.tasks import (
@@ -143,6 +144,8 @@ with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_ma
         schema=DB_SCHEMA_MANAGER, 
         part_col=vitacare_constants.BQ_PARTITION_COLUMN.value
     )
+
+    trigger_processing = should_process_runs(operator_parameters)
 
 
     with case(operator_parameters, True): 

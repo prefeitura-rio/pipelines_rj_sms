@@ -27,6 +27,10 @@ def get_all_cnes_codes() -> list:
 def get_tables_to_extract() -> list:
     """Retorna a lista de tabelas a serem extraídas para um CNES."""
     return vitacare_constants.TABLES_TO_EXTRACT.value
+@task
+def should_process_runs(params_list: list) -> bool:
+    """Retorna True se a lista de parâmetros não estiver vazia, False caso contrário."""
+    return bool(params_list)
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def extract_and_transform_table(
