@@ -18,7 +18,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {
         "environment": "prod",
-        "data_inicial": "01/01/2018",
+        "data_inicial": "01/01/2020",
         "data_final": "now",
         "bq_dataset": "brutos_siscan_web",
         "bq_table": "laudos",

@@ -20,7 +20,6 @@ def run_siscan_scraper(
     password: str,
     start_date: str,
     end_date: str,
-    headless: bool,
     output_dir: str = "."
 ):
     """
@@ -31,7 +30,6 @@ def run_siscan_scraper(
         password (str): Senha de acesso ao sistema SISCAN.
         start_date (str): Data inicial no formato 'dd/mm/YYYY'.
         end_date (str): Data final no formato 'dd/mm/YYYY'.
-        headless (bool): Indica se o navegador deve rodar em modo headless.
         output_dir (str): Diretório onde os arquivos parquet serão salvos.
 
     Retorna:
@@ -46,7 +44,7 @@ def run_siscan_scraper(
             password=password,
             start_date=start_date,
             end_date=end_date,
-            headless=headless
+            headless=True
         )
         df = pd.DataFrame(pacientes)
 

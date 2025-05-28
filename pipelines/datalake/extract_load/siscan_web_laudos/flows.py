@@ -63,8 +63,7 @@ with Flow(name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos") as sms_siscan_
         password=unmapped(password),
         start_date=inicio_faixas,
         end_date=fim_faixas,
-        headless=True,
-        output_dir=CONFIG["output_dir"],
+        output_dir=unmapped(CONFIG["output_dir"]),
     )
 
     # 2) Prepara cada arquivo (lê e gera outro parquet)

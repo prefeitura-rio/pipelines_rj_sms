@@ -126,32 +126,34 @@ def prepare_dataframe_for_upload(df, flow_name, flow_owner):
 # Suíte para arquivos grandes demais para a memória:
 # 1 - 
 @task
-def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int = 1, date_format = "%d/%m/%Y"):
+def gerar_faixas_de_data(data_inicial: str, data_final: str, dias_por_faixa: int = 1, date_format="%d/%m/%Y"):
     """
     Gera uma lista de tuplas (inicio, fim) dividindo o intervalo
     entre data_inicial e data_final em blocos de tamanho 'dias_por_faixa'.
 
     Se data_final for a string "now", será convertido para o datetime atual.
+    O parâmetro date_format define o formato das datas de entrada e saída.
     """
 
-    # Verifica e converte data_inicial
-    if isinstance(data_inicial, datetime):
-        dt_inicial = data_inicial
-    else:
-        dt_inicial = datetime.fromisoformat(data_inicial[:10])
+    # Função auxiliar para converter string para datetime usando o formato informado
+    def parse_date(date_str, fmt):
+        if isinstance(date_str, datetime):
+            return date_str
+        return datetime.strptime(date_str, fmt)
 
-    # Verifica e converte data_final
+    # Converte data_inicial
+    dt_inicial = parse_date(data_inicial, date_format)
+
+    # Converte data_final
     if isinstance(data_final, datetime):
         dt_final = data_final
+    elif isinstance(data_final, str) and data_final.lower() == "now":
+        dt_final = datetime.now()
     else:
-        if data_final.lower() == "now":
-            dt_final = datetime.now()
-        else:
-            dt_final = datetime.fromisoformat(data_final[:10])
+        dt_final = parse_date(data_final, date_format)
 
     log("Gerando faixas de datas para processamento em lotes.")
     faixas = []
-    # Cria faixas de datas usando intervalos de 'dias_por_faixa'
     dt_atual = dt_inicial
     while dt_atual <= dt_final:
         dt_chunk_inicio = dt_atual
