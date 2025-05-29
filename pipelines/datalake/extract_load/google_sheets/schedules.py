@@ -24,6 +24,36 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
+        "url": "https://docs.google.com/spreadsheets/d/176u8I3xlAW7mFN3M0QADZ2b6jU0iUAfWs4CvKd5rhJU/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Listagem",
+        "table_id": "municipios_rio",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1b4HBj85ZqAXhS36hI0TZG5y4Obsav0utzRkcOiHMBC8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Classificações CID",
+        "table_id": "projeto_c34_cids",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1b4HBj85ZqAXhS36hI0TZG5y4Obsav0utzRkcOiHMBC8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Classificações Procedimentos",
+        "table_id": "projeto_c34_procedimentos",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
         "url": "https://docs.google.com/spreadsheets/d/1Y7ji6HL5a2fJGIX-olRCVdv98oQ5nWHaBYUNAF7jTKg/edit?gid=1600307210",  # noqa: E501
         "url_type": "google_sheet",
         "gsheets_sheet_name": "relacao_materiais",
