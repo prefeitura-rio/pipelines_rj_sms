@@ -343,6 +343,13 @@ cases:
       environment: 'dev'
       dt_inicio: '2025-01-21T10:00:00-0300'
       dt_fim: '2025-01-21T11:30:00-0300'
+  - case_slug: "vitacare_backup_mensal"
+    flow_path: "pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.flows"
+    flow_name: "flow_vitacare_historic"
+    params:
+      schema: 'dbo'
+      partition_column: "extracted_at"
+      rename_flow: 'False'
   - case_slug: "datalake-extract-vitacare_api_v2"
     flow_path: "pipelines.datalake.extract_load.vitacare_api_v2.flows"
     flow_name: "sms_vitacare_api_v2"
