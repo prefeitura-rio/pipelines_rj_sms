@@ -1,10 +1,11 @@
-from bs4 import BeautifulSoup, NavigableString
+# -*- coding: utf-8 -*-
 from datetime import datetime
-from dateutil import parser
 from typing import Optional
 
 import pytz
 import requests
+from bs4 import BeautifulSoup, NavigableString
+from dateutil import parser
 
 from pipelines.utils.logger import log
 
@@ -43,7 +44,7 @@ def send_get_request(url: str, type: Optional[str]):
 
 
 def string_cleanup(string):
-    return str(string).replace('\xa0', ' ').replace('\r', '')
+    return str(string).replace("\xa0", " ").replace("\r", "")
 
 
 def node_cleanup(root):

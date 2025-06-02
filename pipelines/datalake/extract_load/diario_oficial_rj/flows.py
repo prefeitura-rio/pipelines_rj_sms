@@ -13,12 +13,11 @@ from pipelines.datalake.extract_load.diario_oficial_rj.constants import (
 )
 from pipelines.datalake.extract_load.diario_oficial_rj.schedules import schedule
 from pipelines.datalake.extract_load.diario_oficial_rj.tasks import (
-    get_current_DO_identifiers,
-    get_article_names_ids,
     get_article_contents,
-    upload_results
+    get_article_names_ids,
+    get_current_DO_identifiers,
+    upload_results,
 )
-
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Diário Oficial Municipal",
@@ -36,19 +35,12 @@ with Flow(
     diario_ids = get_current_DO_identifiers(date=DATE, env=ENVIRONMENT)
 
     # Para cada DO, pegamos todos os decretos...
-    names_and_ids = get_article_names_ids.map(
-        diario_id=diario_ids,
-        test=unmapped(True)
-    )
+    names_and_ids = get_article_names_ids.map(diario_id=diario_ids, test=unmapped(True))
 
     # FIXME: `article_contents` aqui é a função (???) e não o resultado
-    article_contents = get_article_contents.map(
-        obj=names_and_ids,
-        test=unmapped(True)
-    )
+    article_contents = get_article_contents.map(obj=names_and_ids, test=unmapped(True))
 
     upload_results(results_list=article_contents, dataset=DATASET_ID)
-
 
 
 # Storage and run configs

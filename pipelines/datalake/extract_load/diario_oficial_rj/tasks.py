@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-from datetime import timedelta
 import datetime
-from typing import List, Optional
-import urllib.parse
-import pandas as pd
 import re
+import urllib.parse
+from datetime import timedelta
+from typing import List, Optional
 
+import pandas as pd
 import pytz
 
 from pipelines.datalake.extract_load.diario_oficial_rj.utils import (
+    get_today,
+    node_cleanup,
     send_get_request,
     standardize_date_from_string,
-    get_today,
     string_cleanup,
-    node_cleanup
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -35,9 +35,7 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
     DATE_INTERVAL = f"di:{date}/df:{date}/"
     # Precisamos de algum texto de busca, então buscamos
     # por "Secretaria Municipal de Saúde", entre aspas
-    QUERY = "?q=" + urllib.parse.quote(
-        '"Secretaria Municipal de Saúde"'
-    )
+    QUERY = "?q=" + urllib.parse.quote('"Secretaria Municipal de Saúde"')
     URL = f"{BASE}{DATE_INTERVAL}{QUERY}"
     log(f"Fetching DO for date '{date}'")
 
@@ -67,8 +65,8 @@ def get_article_names_ids(diario_id: str, test: bool) -> List[tuple]:
     # De onde vamos extrair `identificador` ou `data-materia-id`
     REGEX_DIGITS = re.compile(r"[0-9]+")
     results = set(
-        html.find_all("a", attrs={ "identificador": REGEX_DIGITS })
-        + html.find_all("a", attrs={ "data-materia-id": REGEX_DIGITS })
+        html.find_all("a", attrs={"identificador": REGEX_DIGITS})
+        + html.find_all("a", attrs={"data-materia-id": REGEX_DIGITS})
     )
 
     def get_any_attribute(tag, attr_list):
@@ -83,10 +81,7 @@ def get_article_names_ids(diario_id: str, test: bool) -> List[tuple]:
 
     # TODO: ver com a Natacha se queremos realmente só os decretos (:D), ou se queremos tudo (:c)
     filtered_results = set(
-        (
-            tag.text.strip(),
-            get_any_attribute(tag, ["identificador", "data-materia-id"])
-        )
+        (tag.text.strip(), get_any_attribute(tag, ["identificador", "data-materia-id"]))
         for tag in results
         if re.search(r"decreto rio", tag.text, re.IGNORECASE)
     )
@@ -113,14 +108,9 @@ def get_article_contents(obj: tuple, test: bool):
 
     html = node_cleanup(html)
     # Usa .getText() para pegar o conteúdo textual da página toda
-    full_text = string_cleanup(html.body.get_text(separator='\n', strip=True))
+    full_text = string_cleanup(html.body.get_text(separator="\n", strip=True))
 
-    return {
-        "id": id,
-        "title": title,
-        "text": full_text,
-        "html": body_html
-    }
+    return {"id": id, "title": title, "text": full_text, "html": body_html}
 
 
 def upload_results(results_list: List[dict], dataset: str):
