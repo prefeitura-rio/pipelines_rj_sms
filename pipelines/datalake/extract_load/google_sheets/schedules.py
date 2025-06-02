@@ -26,8 +26,18 @@ flow_parameters = [
     {
         "url": "https://docs.google.com/spreadsheets/d/176u8I3xlAW7mFN3M0QADZ2b6jU0iUAfWs4CvKd5rhJU/edit?usp=sharing",  # noqa: E501
         "url_type": "google_sheet",
-        "gsheets_sheet_name": "Listagem",
+        "gsheets_sheet_name": "Municipios",
         "table_id": "municipios_rio",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/176u8I3xlAW7mFN3M0QADZ2b6jU0iUAfWs4CvKd5rhJU/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Bairros",
+        "table_id": "bairros_rio",
         "dataset_id": "brutos_sheets",
         "csv_delimiter": "|",
         "environment": "prod",
