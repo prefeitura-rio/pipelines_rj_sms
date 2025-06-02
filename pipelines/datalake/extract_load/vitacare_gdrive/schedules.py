@@ -48,12 +48,54 @@ flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
     },
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_SUB_PAV_FICHA_C_CRIANCA_V2/*/*FICHA_C_CRIANCAS_CAP_V2*.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "ficha_c_v2",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_SUB_PAV_RELACAO_CRIANCAS_MENORES_DE_5_ANOS/*/*_RELACAO_CRIANCAS_VITAhisCARE.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "criancas_menores_5_anos",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_3_G*/*/*+INDICADORES_VARIAVEL_3_G12*.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "indicadores_cg_variavel_3",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_2/*/*+INDICADORES_VARIAVEL_2*.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "indicadores_cg_variavel_2",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_1/*/*+INDICADORES_VARIAVEL_1*.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "indicadores_cg_variavel_1",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_PLANILHA_ACOMPANHAMENTO_ESTADO_NUTRICIONAL_SISVAN/*/*ESTADO_NUTRICIONAL_SISVAN.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "estado_nutricional_sisvan",
+        "environment": "prod",
+        "rename_flow": True,
+    },
 ]
 
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(weeks=1),
-    start_date=datetime(2025, 3, 22, 0, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2025, 5, 21, 0, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

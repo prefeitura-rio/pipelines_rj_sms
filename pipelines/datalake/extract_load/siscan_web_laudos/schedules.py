@@ -18,32 +18,14 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {
         "environment": "prod",
-        "es_index": "solicitacao-ambulatorial-rj",
-        "page_size": 10_000,
-        "scroll_timeout": "2m",
-        "filters": {"codigo_central_reguladora": "330455"},
-        "data_inicial": "2018-01-01",
+        "data_inicial": "01/01/2020",
         "data_final": "now",
-        "bq_dataset": "brutos_sisreg_api",
-        "bq_table": "solicitacoes",
+        "bq_dataset": "brutos_siscan_web",
+        "bq_table": "laudos",
         "dias_por_faixa": 15,
-        "formato_data": "%Y-%m-%d",
-    },
-    {
-        "environment": "prod",
-        "es_index": "marcacao-ambulatorial-rj",
-        "page_size": 10_000,
-        "scroll_timeout": "2m",
-        "filters": {"codigo_central_reguladora": "330455"},
-        "data_inicial": "2018-01-01",
-        "data_final": "now",
-        "bq_dataset": "brutos_sisreg_api",
-        "bq_table": "marcacoes",
-        "dias_por_faixa": 15,
-        "formato_data": "%Y-%m-%d",
-    },
+        "formato_data": "%d/%m/%Y",
+    }
 ]
-
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
