@@ -13,12 +13,12 @@ from pipelines.utils.logger import log
 def standardize_date_from_string(date: str) -> str:
     # Tenta fazer parsing da string recebida, pode dar erro
     dateobj = parser.parse(date, dayfirst=True)
-    # Pega data no formato YYYYMMDD, formato que a API recebe
+    # Pega data no formato YYYY-MM-DD, formato que a API recebe
     return dateobj.strftime("%Y-%m-%d")
 
 
 def get_today() -> str:
-    # Retorna a data atual em YYYYMMDD, formato que a API recebe
+    # Retorna a data atual em YYYY-MM-DD, formato que a API recebe
     current_time = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
     return current_time.strftime("%Y-%m-%d")
 

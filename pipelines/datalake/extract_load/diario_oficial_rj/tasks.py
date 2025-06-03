@@ -91,7 +91,7 @@ def get_article_names_ids(diario_id: str) -> List[tuple]:
         )
     )
     log(f"Found {len(results)} articles; filtered to {len(filtered_results)} articles")
-    return filtered_results[:10]  # FIXME
+    return filtered_results[:100]  # FIXME
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
