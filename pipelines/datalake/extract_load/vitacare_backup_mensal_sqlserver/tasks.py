@@ -82,7 +82,6 @@ def extract_and_transform_table(
         for col in df.select_dtypes(include=["object", "string"]).columns:
             current_col_data = df[col].astype(str)
             current_col_data = current_col_data.str.replace(r"[\n\r\t\x00]+", " ", regex=True)
-            current_col_data = current_col_data.str.replace(r"[^ -~]+", " ", regex=True) # Remove non-printable ASCII
             current_col_data = current_col_data.str.replace('"', '""', regex=False) # Escape double quotes for CSV
             df[col] = '"' + current_col_data + '"' # Force quoting
         log(f"All string columns for {full_table_name} (CNES {cnes_code}) prepared for CSV.")
