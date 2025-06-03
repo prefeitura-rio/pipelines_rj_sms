@@ -27,6 +27,7 @@ from pipelines.datalake.extract_load.tasks_clickup.flows import *
 from pipelines.datalake.extract_load.tpc_azure_blob.flows import *
 from pipelines.datalake.extract_load.vitacare_api.flows import *
 from pipelines.datalake.extract_load.vitacare_api_v2.flows import *
+from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver import *
 from pipelines.datalake.extract_load.vitacare_conectividade_gcs.flows import *
 from pipelines.datalake.extract_load.vitacare_db.flows import *
 from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
