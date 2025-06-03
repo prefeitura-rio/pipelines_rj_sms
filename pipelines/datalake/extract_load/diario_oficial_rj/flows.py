@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 # flake8: noqa E501
-from prefect import Parameter, unmapped
+from prefect import Parameter, flatten
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -34,11 +34,11 @@ with Flow(
     # Podemos ter múltiplos DOs em um dia...
     diario_ids = get_current_DO_identifiers(date=DATE, env=ENVIRONMENT)
 
-    # Para cada DO, pegamos todos os decretos...
-    names_and_ids = get_article_names_ids.map(diario_id=diario_ids, test=unmapped(True))
+    # Para cada DO, pegamos todos os artigos...
+    names_and_ids = get_article_names_ids.map(diario_id=diario_ids)
 
-    # FIXME: `article_contents` aqui é a função (???) e não o resultado
-    article_contents = get_article_contents.map(obj=names_and_ids, test=unmapped(True))
+    # Para cada par de nome/id, pega o conteúdo do artigo
+    article_contents = get_article_contents.map(article=flatten(names_and_ids))
 
     upload_results(results_list=article_contents, dataset=DATASET_ID)
 

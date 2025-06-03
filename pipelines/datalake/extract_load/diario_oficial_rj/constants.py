@@ -11,4 +11,4 @@ class constants(Enum):
     Constant values for the dump vitacare flows
     """
 
-    DATASET_ID = "brutos_diario_oficial_rj"
+    DATASET_ID = "brutos_diario_oficial"

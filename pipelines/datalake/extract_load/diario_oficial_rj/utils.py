@@ -10,14 +10,14 @@ from dateutil import parser
 from pipelines.utils.logger import log
 
 
-def standardize_date_from_string(date: str):
+def standardize_date_from_string(date: str) -> str:
     # Tenta fazer parsing da string recebida, pode dar erro
     dateobj = parser.parse(date, dayfirst=True)
     # Pega data no formato YYYYMMDD, formato que a API recebe
     return dateobj.strftime("%Y-%m-%d")
 
 
-def get_today():
+def get_today() -> str:
     # Retorna a data atual em YYYYMMDD, formato que a API recebe
     current_time = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
     return current_time.strftime("%Y-%m-%d")
@@ -43,11 +43,11 @@ def send_get_request(url: str, type: Optional[str]):
     return res.text
 
 
-def string_cleanup(string):
+def string_cleanup(string: str) -> str:
     return str(string).replace("\xa0", " ").replace("\r", "")
 
 
-def node_cleanup(root):
+def node_cleanup(root: BeautifulSoup) -> BeautifulSoup:
     # Para pegar o conteúdo textual, remove elementos inline
     for inline_tag in ["a", "b", "i", "em", "span"]:
         for tag in root.find_all(inline_tag):

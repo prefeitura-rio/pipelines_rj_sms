@@ -54,7 +54,7 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def get_article_names_ids(diario_id: str, test: bool) -> List[tuple]:
+def get_article_names_ids(diario_id: str) -> List[tuple]:
     URL = f"https://doweb.rio.rj.gov.br/portal/visualizacoes/view_html_diario/{diario_id}"
     log(f"Fetching articles for DO ID '{diario_id}'")
     # Faz requisição GET, recebe HTML
@@ -69,6 +69,8 @@ def get_article_names_ids(diario_id: str, test: bool) -> List[tuple]:
         + html.find_all("a", attrs={"data-materia-id": REGEX_DIGITS})
     )
 
+    # Não temos como garantir que ambos os atributos vão existir sempre;
+    # então pegamos o valor do primeiro preenhcido que encontrarmos
     def get_any_attribute(tag, attr_list):
         for attr in attr_list:
             val = tag.attrs.get(attr)
@@ -79,54 +81,64 @@ def get_article_names_ids(diario_id: str, test: bool) -> List[tuple]:
                 return val
         return None
 
-    # TODO: ver com a Natacha se queremos realmente só os decretos (:D), ou se queremos tudo (:c)
-    filtered_results = set(
-        (tag.text.strip(), get_any_attribute(tag, ["identificador", "data-materia-id"]))
+    # Cria lista de par (título, ID); título é guardado direto no banco
+    # e ID é usado pra pegar o conteúdo textual/HTML do artigo
+    filtered_results = list(set(
+        (
+            tag.text.strip(),
+            get_any_attribute(tag, ["identificador", "data-materia-id"])
+        )
         for tag in results
-        if re.search(r"decreto rio", tag.text, re.IGNORECASE)
-    )
-    log(f"Found {len(results)} articles; filtered down to {len(filtered_results)} decrees")
-
-    return list(filtered_results)
+        #if re.search(r"decreto rio", tag.text, re.IGNORECASE)
+    ))
+    log(f"Found {len(results)} articles; filtered to {len(filtered_results)} articles")
+    return filtered_results[:10]  # FIXME
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def get_article_contents(obj: tuple, test: bool):
-    # FIXME: por algum motivo o map() não ta funcionando, e essa função
-    # recebe uma lista de tuplas ao invés de uma tupla
-    if len(obj) > 0:
-        obj = obj[0]
+def get_article_contents(article: tuple) -> dict:
+    assert len(article) == 2, "Tuple must be (title, id) pair!"
 
-    title = obj[0]
-    id = obj[1]
+    title = article[0]
+    id = article[1]
 
+    log(f"Getting content of article '{title}' (id '{id}')...")
     URL = f"https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/{id}"
     # Faz requisição GET, recebe HTML
     html = send_get_request(URL, "html")
     # Salva o HTML cru do corpo
     body_html = string_cleanup(html.body)
-
+    # Remove elementos inline comuns (<b>, <i>, <span>) pra não
+    # atrapalhar o .get_text() com separador de \n abaixo
     html = node_cleanup(html)
-    # Usa .getText() para pegar o conteúdo textual da página toda
+    # Usa .get_text() para pegar o conteúdo textual da página toda
     full_text = string_cleanup(html.body.get_text(separator="\n", strip=True))
 
-    return {"id": id, "title": title, "text": full_text, "html": body_html}
+    log(f"Article '{title}' (id '{id}') has size {len(full_text)} ({len(body_html)} with HTML)")
+    return {
+        "titulo": title,
+        "texto": full_text,
+        "html": body_html
+    }
 
 
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def upload_results(results_list: List[dict], dataset: str):
     main_df = pd.DataFrame()
     current_datetime = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
     for result in results_list:
         result["_extracted_at"] = current_datetime
-        single_df = pd.DataFrame(result)
-        main_df = pd.concat([main_df, single_df])
+        single_df = pd.DataFrame.from_records([result])
+        main_df = pd.concat([main_df, single_df], ignore_index=True)
 
-    print(main_df)
+    log(f"Uploading DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
     # Chamando a task de upload
-    # upload_df_to_datalake.run(
-    #     df=main_df,
-    #     table_id="diarios",
-    #     dataset_id=dataset_name,
-    #     partition_column="_extracted_at",
-    # )
+    upload_df_to_datalake.run(
+        df=main_df,
+        dataset_id=dataset,
+        table_id="diarios_municipio",
+        partition_column="_extracted_at",
+        if_exists="append",
+        if_storage_data_exists="append",
+    )
