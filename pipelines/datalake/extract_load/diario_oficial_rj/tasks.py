@@ -83,14 +83,13 @@ def get_article_names_ids(diario_id: str) -> List[tuple]:
 
     # Cria lista de par (título, ID); título é guardado direto no banco
     # e ID é usado pra pegar o conteúdo textual/HTML do artigo
-    filtered_results = list(set(
-        (
-            tag.text.strip(),
-            get_any_attribute(tag, ["identificador", "data-materia-id"])
+    filtered_results = list(
+        set(
+            (tag.text.strip(), get_any_attribute(tag, ["identificador", "data-materia-id"]))
+            for tag in results
+            # if re.search(r"decreto rio", tag.text, re.IGNORECASE)
         )
-        for tag in results
-        #if re.search(r"decreto rio", tag.text, re.IGNORECASE)
-    ))
+    )
     log(f"Found {len(results)} articles; filtered to {len(filtered_results)} articles")
     return filtered_results[:10]  # FIXME
 
@@ -115,11 +114,7 @@ def get_article_contents(article: tuple) -> dict:
     full_text = string_cleanup(html.body.get_text(separator="\n", strip=True))
 
     log(f"Article '{title}' (id '{id}') has size {len(full_text)} ({len(body_html)} with HTML)")
-    return {
-        "titulo": title,
-        "texto": full_text,
-        "html": body_html
-    }
+    return {"titulo": title, "texto": full_text, "html": body_html}
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
