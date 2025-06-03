@@ -21,7 +21,6 @@ class vitacare_constants(Enum):
     DB_SCHEMA = "dbo"
     BQ_PARTITION_COLUMN = "extracted_at"
 
-
     TABLES_TO_EXTRACT = [
         "ALERGIAS",
         "ATENDIMENTOS",

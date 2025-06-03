@@ -11,7 +11,6 @@ from sqlalchemy import create_engine
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
     vitacare_constants,
 )
-
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
@@ -27,6 +26,7 @@ def get_all_cnes_codes() -> list:
 def get_tables_to_extract() -> list:
     """Retorna a lista de tabelas a serem extraídas para um CNES."""
     return vitacare_constants.TABLES_TO_EXTRACT.value
+
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
 def extract_and_transform_table(
@@ -54,36 +54,77 @@ def extract_and_transform_table(
 
         now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         df["extracted_at"] = now
-        df["id_cnes"] = cnes_code 
+        df["id_cnes"] = cnes_code
 
-        df.columns = remove_columns_accents(df) #
+        df.columns = remove_columns_accents(df)  #
         log(f"Transformed DataFrame for {full_table_name} from CNES {cnes_code}.")
 
         tables_with_ut_id = ["PACIENTES", "ATENDIMENTOS"]
         if db_table.upper() in tables_with_ut_id and "_ut_id" in df.columns:
+
             def clean_ut_id(val):
                 if isinstance(val, bytes):
-                    try: decoded_val = val.decode("utf-16-le", errors="ignore")
-                    except UnicodeDecodeError: decoded_val = val.decode("latin-1", errors="ignore")
-                    clean_str = decoded_val.replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ")
-                    return val.hex() if any(ord(c) < 32 and c not in (" ",) for c in clean_str) else clean_str.strip()
+                    try:
+                        decoded_val = val.decode("utf-16-le", errors="ignore")
+                    except UnicodeDecodeError:
+                        decoded_val = val.decode("latin-1", errors="ignore")
+                    clean_str = (
+                        decoded_val.replace("\x00", "")
+                        .replace("\n", " ")
+                        .replace("\r", " ")
+                        .replace("\t", " ")
+                    )
+                    return (
+                        val.hex()
+                        if any(ord(c) < 32 and c not in (" ",) for c in clean_str)
+                        else clean_str.strip()
+                    )
                 elif isinstance(val, str):
                     if val.startswith("b'") and val.endswith("'"):
-                        byte_repr = val[2:-1].encode("latin-1").decode("unicode_escape").encode("latin-1")
-                        try: decoded_val = byte_repr.decode("utf-16-le", errors="ignore")
-                        except UnicodeDecodeError: decoded_val = byte_repr.decode("latin-1", errors="ignore")
-                        clean_str = decoded_val.replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ")
-                        return byte_repr.hex() if any(ord(c) < 32 and c not in (" ",) for c in clean_str) else clean_str.strip()
-                    return val.replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ").strip()
-                return str(val).replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ").strip()
+                        byte_repr = (
+                            val[2:-1].encode("latin-1").decode("unicode_escape").encode("latin-1")
+                        )
+                        try:
+                            decoded_val = byte_repr.decode("utf-16-le", errors="ignore")
+                        except UnicodeDecodeError:
+                            decoded_val = byte_repr.decode("latin-1", errors="ignore")
+                        clean_str = (
+                            decoded_val.replace("\x00", "")
+                            .replace("\n", " ")
+                            .replace("\r", " ")
+                            .replace("\t", " ")
+                        )
+                        return (
+                            byte_repr.hex()
+                            if any(ord(c) < 32 and c not in (" ",) for c in clean_str)
+                            else clean_str.strip()
+                        )
+                    return (
+                        val.replace("\x00", "")
+                        .replace("\n", " ")
+                        .replace("\r", " ")
+                        .replace("\t", " ")
+                        .strip()
+                    )
+                return (
+                    str(val)
+                    .replace("\x00", "")
+                    .replace("\n", " ")
+                    .replace("\r", " ")
+                    .replace("\t", " ")
+                    .strip()
+                )
+
             df["_ut_id"] = df["_ut_id"].apply(clean_ut_id)
             log(f"'_ut_id' in {full_table_name} (CNES {cnes_code}) cleaned.")
 
         for col in df.select_dtypes(include=["object", "string"]).columns:
             current_col_data = df[col].astype(str)
             current_col_data = current_col_data.str.replace(r"[\n\r\t\x00]+", " ", regex=True)
-            current_col_data = current_col_data.str.replace('"', '""', regex=False) # Escape double quotes for CSV
-            df[col] = '"' + current_col_data + '"' 
+            current_col_data = current_col_data.str.replace(
+                '"', '""', regex=False
+            )  # Escape double quotes for CSV
+            df[col] = '"' + current_col_data + '"'
         log(f"All string columns for {full_table_name} (CNES {cnes_code}) prepared for CSV.")
 
         df = df.astype(str)
@@ -93,7 +134,9 @@ def extract_and_transform_table(
             if col_name.lower() == "acto_id":
                 df[col_name] = pd.to_numeric(df[col_name], errors="coerce")
                 df[col_name] = df[col_name].astype(pd.Int64Dtype())
-                log(f"Column '{col_name}' in {full_table_name} (CNES {cnes_code}) converted to nullable integer.")
+                log(
+                    f"Column '{col_name}' in {full_table_name} (CNES {cnes_code}) converted to nullable integer."
+                )
         return df
     except Exception as e:
         log(
@@ -107,6 +150,6 @@ def extract_and_transform_table(
 @task
 def build_bq_table_name(table_name: str) -> str:
     """Constrói o nome da tabela no BigQuery."""
-    bq_table_name = f'{table_name}'
+    bq_table_name = f"{table_name}"
     log(f"Built BigQuery table name: {bq_table_name} for source table: {table_name}")
     return bq_table_name
