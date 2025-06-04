@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+import re
 from datetime import datetime
 from typing import List, Optional
 
 import pytz
-import re
 import requests
 from bs4 import BeautifulSoup, NavigableString
 from dateutil import parser

@@ -68,7 +68,11 @@ def get_article_names_ids(diario_id: str) -> List[tuple]:
     all_folders = html.find_all("span", attrs={"class": "folder"})
     results = []
     results.extend(get_links_for_path(all_folders, ["atos do prefeito", "decretos n"]))
-    results.extend(get_links_for_path(all_folders, ["secretaria municipal de saúde", "resoluções", "resolução n"]))
+    results.extend(
+        get_links_for_path(
+            all_folders, ["secretaria municipal de saúde", "resoluções", "resolução n"]
+        )
+    )
     results.extend(get_links_if_match(all_folders, r"^controladoria geral"))
     results.extend(get_links_if_match(all_folders, r"^tribunal de contas"))
 
@@ -122,7 +126,7 @@ def get_article_contents(article: tuple) -> dict:
         "titulo": title,
         "texto": full_text,
         "html": body_html,
-        "_extracted_at": current_datetime
+        "_extracted_at": current_datetime,
     }
 
 
