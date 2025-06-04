@@ -21,7 +21,7 @@ flow_parameters = [
 
 def get_schedules(times: List[tuple]) -> List[IntervalClock]:
     all_schedules = []
-    for (hour, minute) in times:
+    for hour, minute in times:
         date = datetime(2025, 6, 4, hour, minute, tzinfo=pytz.timezone("America/Sao_Paulo"))
         all_schedules.extend(
             generate_dump_api_schedules(
@@ -34,12 +34,11 @@ def get_schedules(times: List[tuple]) -> List[IntervalClock]:
         )
     return all_schedules
 
+
 # Executamos o flow pela primeira vez às 5:00
 # Mas não temos como garantir que o Diário Oficial já terá sido publicado
 # Então executamos novamente 5:30, 6:00 e 6:30 para garantir que
 # eventualmente pegaremos o DO
-clocks = get_schedules([
-    (5, 0), (5, 30), (6, 0), (6, 30)
-])
+clocks = get_schedules([(5, 0), (5, 30), (6, 0), (6, 30)])
 
 schedule = Schedule(clocks=untuple_clocks(clocks))
