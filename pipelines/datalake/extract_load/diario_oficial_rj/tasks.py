@@ -50,18 +50,11 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
     for edition in json["aggregations"]["Edicoes"]["buckets"]:
         distinct_ids.add(edition["key"])
     distinct_ids = list(distinct_ids)
-
-    ids_dict = dict()
-    for hit in json["hits"]["hits"]:
-        src = hit["_source"]
-        id = src["diario_id"]
-        if id not in ids_dict:
-            ids_dict[id] = src["data"]
-
-    assert len(ids_dict.values()) == len(distinct_ids), "D.O. ID count does not match found dates!"
-
-    log(f"Found {len(distinct_ids)} distinct DO(s) on specified date: {distinct_ids}")
-    return list(ids_dict.items())
+    do_count = len(distinct_ids)
+    log(f"Found {do_count} distinct DO(s) on specified date: {distinct_ids}")
+    # Atrela os IDs à data atual
+    result = list(zip(distinct_ids, [date] * do_count))
+    return result
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
