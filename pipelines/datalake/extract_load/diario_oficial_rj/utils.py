@@ -37,10 +37,7 @@ def send_get_request(url: str, type: Optional[str]):
 
     # Parece que alguns anexos são diretamente PDFs; não sei se alguma outra
     # coisa esquisita pode vir. Então filtramos por Content Type
-    ALLOWED_CONTENT_TYPES = [
-        "application/json",
-        "text/html"
-    ]
+    ALLOWED_CONTENT_TYPES = ["application/json", "text/html"]
     # Precisamos quebrar em ';' porque às vezes termina em '; charset=UTF-8'
     ct = res.headers["Content-Type"].split(";")[0].lower()
     if ct not in ALLOWED_CONTENT_TYPES:

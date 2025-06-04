@@ -110,7 +110,7 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
         )
     )
     log(f"Found {len(filtered_results)} relevant articles")
-    return [ (diario_id_date, result) for result in filtered_results ]
+    return [(diario_id_date, result) for result in filtered_results]
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
