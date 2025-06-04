@@ -13,7 +13,7 @@ from pipelines.utils.logger import log
 
 def standardize_date_from_string(date: str) -> str:
     # Tenta fazer parsing da string recebida, pode dar erro
-    dateobj = parser.parse(date, dayfirst=True)
+    dateobj = parser.parse(date)
     # Pega data no formato YYYY-MM-DD, formato que a API recebe
     return dateobj.strftime("%Y-%m-%d")
 
@@ -35,10 +35,26 @@ def send_get_request(url: str, type: Optional[str]):
     # [Ref] https://stackoverflow.com/a/52615216/4824627
     res.encoding = res.apparent_encoding
 
+    # Parece que alguns anexos são diretamente PDFs; não sei se alguma outra
+    # coisa esquisita pode vir. Então filtramos por Content Type
+    ALLOWED_CONTENT_TYPES = [
+        "application/json",
+        "text/html"
+    ]
+    # Precisamos quebrar em ';' porque às vezes termina em '; charset=UTF-8'
+    ct = res.headers["Content-Type"].split(";")[0].lower()
+    if ct not in ALLOWED_CONTENT_TYPES:
+        log(f"Got disallowed Content-Type '{ct}' for URL '{url}'", level="warning")
+        return None
+
     if type == "json":
+        if ct != "application/json":
+            log(f"Expected Content-Type 'application/json'; got '{ct}'", level="warning")
         return res.json()
 
     if type == "html":
+        if ct != "text/html":
+            log(f"Expected Content-Type 'text/html'; got '{ct}'", level="warning")
         return BeautifulSoup(res.text, "html.parser")
 
     return res.text

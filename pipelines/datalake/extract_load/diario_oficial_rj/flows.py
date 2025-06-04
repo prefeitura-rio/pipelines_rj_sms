@@ -35,10 +35,10 @@ with Flow(
     diario_ids = get_current_DO_identifiers(date=DATE, env=ENVIRONMENT)
 
     # Para cada DO, pegamos todos os artigos...
-    names_and_ids = get_article_names_ids.map(diario_id=diario_ids)
+    do_article_tuple = get_article_names_ids.map(diario_id_date=diario_ids)
 
     # Para cada par de nome/id, pega o conteúdo do artigo
-    article_contents = get_article_contents.map(article=flatten(names_and_ids))
+    article_contents = get_article_contents.map(do_tuple=flatten(do_article_tuple))
 
     upload_results(results_list=article_contents, dataset=DATASET_ID)
 

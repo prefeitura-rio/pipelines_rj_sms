@@ -51,12 +51,25 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
         distinct_ids.add(edition["key"])
     distinct_ids = list(distinct_ids)
 
+    ids_dict = dict()
+    for hit in json["hits"]["hits"]:
+        src = hit["_source"]
+        id = src["diario_id"]
+        if id not in ids_dict:
+            ids_dict[id] = src["data"]
+
+    assert len(ids_dict.values()) == len(distinct_ids), "D.O. ID count does not match found dates!"
+
     log(f"Found {len(distinct_ids)} distinct DO(s) on specified date: {distinct_ids}")
-    return distinct_ids
+    return list(ids_dict.items())
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def get_article_names_ids(diario_id: str) -> List[tuple]:
+def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
+    assert len(diario_id_date) == 2, "Tuple must be (id, date) pair!"
+    diario_id = diario_id_date[0]
+    diario_date = diario_id_date[1]
+
     URL = f"https://doweb.rio.rj.gov.br/portal/visualizacoes/view_html_diario/{diario_id}"
     log(f"Fetching articles for DO ID '{diario_id}'")
     # Faz requisição GET, recebe HTML
@@ -97,20 +110,22 @@ def get_article_names_ids(diario_id: str) -> List[tuple]:
         )
     )
     log(f"Found {len(filtered_results)} relevant articles")
-    return filtered_results
+    return [ (diario_id_date, result) for result in filtered_results ]
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def get_article_contents(article: tuple) -> dict:
-    assert len(article) == 2, "Tuple must be (title, id) pair!"
-
-    title = article[0]
-    id = article[1]
+def get_article_contents(do_tuple: tuple) -> dict:
+    assert len(do_tuple) == 2, "Tuple must be ((do_id, date), (title, id)) pair!"
+    (do_id, do_date) = do_tuple[0]
+    (title, id) = do_tuple[1]
 
     log(f"Getting content of article '{title}' (id '{id}')...")
     URL = f"https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/{id}"
     # Faz requisição GET, recebe HTML
     html = send_get_request(URL, "html")
+    # Talvez o resultado não seja HTML (pode ser PDF por exemplo)
+    if html is None:
+        return None
     # Registra data/hora da extração
     current_datetime = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
     # Salva o HTML cru do corpo
@@ -126,6 +141,8 @@ def get_article_contents(article: tuple) -> dict:
         "titulo": title,
         "texto": full_text,
         "html": body_html,
+        "do_id": do_id,
+        "do_data": do_date,
         "_extracted_at": current_datetime,
     }
 
@@ -138,8 +155,14 @@ def upload_results(results_list: List[dict], dataset: str):
 
     main_df = pd.DataFrame()
 
+    # Para cada resultado
     for result in results_list:
+        # Pula resultados 'vazios' (i.e. PDFs ao invés de texto, etc)
+        if result is None:
+            continue
+        # Constrói DataFrame a partir do resultado
         single_df = pd.DataFrame.from_records([result])
+        # Concatena com os outros resultados
         main_df = pd.concat([main_df, single_df], ignore_index=True)
 
     log(f"Uploading DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
@@ -151,4 +174,6 @@ def upload_results(results_list: List[dict], dataset: str):
         partition_column="_extracted_at",
         if_exists="append",
         if_storage_data_exists="append",
+        source_format="csv",
+        csv_delimiter=",",
     )
