@@ -19,8 +19,8 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
     build_bq_table_name,
     extract_and_transform_table,
-    get_vitacare_cnes_from_bigquery,
     get_tables_to_extract,
+    get_vitacare_cnes_from_bigquery,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,

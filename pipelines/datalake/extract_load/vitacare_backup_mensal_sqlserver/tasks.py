@@ -6,9 +6,8 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
-from sqlalchemy import create_engine
-
 from google.cloud import bigquery
+from sqlalchemy import create_engine
 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
     vitacare_constants,
@@ -18,8 +17,7 @@ from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 
 
-
-@task(max_retries=2, retry_delay=timedelta(minutes=1)) 
+@task(max_retries=2, retry_delay=timedelta(minutes=1))
 def get_vitacare_cnes_from_bigquery() -> list:
     """
     Busca a lista de códigos CNES distintos da tabela de estabelecimentos
@@ -34,7 +32,7 @@ def get_vitacare_cnes_from_bigquery() -> list:
 
     try:
         client = bigquery.Client()
-        query_job = client.query(query)  
+        query_job = client.query(query)
 
         # Coleta os resultados
         cnes_list = [str(row.id_cnes) for row in query_job if row.id_cnes is not None]
@@ -49,7 +47,6 @@ def get_vitacare_cnes_from_bigquery() -> list:
     except Exception as e:
         log(f"Erro ao buscar códigos CNES do BigQuery: {e}", level="error")
         raise
-
 
 
 @task
