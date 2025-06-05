@@ -8,6 +8,8 @@ import pandas as pd
 import pytz
 from sqlalchemy import create_engine
 
+from google.cloud import bigquery
+
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
     vitacare_constants,
 )
@@ -20,6 +22,38 @@ from pipelines.utils.logger import log
 def get_all_cnes_codes() -> list:
     """Retorna a lista de todos os códigos CNES a serem processados."""
     return vitacare_constants.CNES_CODES.value
+
+@task(max_retries=2, retry_delay=timedelta(minutes=1)) 
+def get_vitacare_cnes_from_bigquery() -> list:
+    """
+    Busca a lista de códigos CNES distintos da tabela de estabelecimentos
+    no BigQuery para prontuários Vitacare.
+    """
+    query = """
+        SELECT DISTINCT id_cnes
+        FROM `rj-sms.saude_dados_mestres.estabelecimento`
+        WHERE prontuario_versao = 'vitacare'
+    """
+    log(f"Buscando códigos CNES do BigQuery com a query: {query}")
+
+    try:
+        client = bigquery.Client()
+        query_job = client.query(query)  
+
+        # Coleta os resultados
+        cnes_list = [str(row.id_cnes) for row in query_job if row.id_cnes is not None]
+
+        if not cnes_list:
+            log("Nenhum código CNES encontrado no BigQuery para Vitacare.", level="warning")
+            # raise FAIL("Nenhum CNES encontrado para Vitacare no BigQuery.")
+            return []
+
+        log(f"Encontrados {len(cnes_list)} códigos CNES no BigQuery.")
+        return cnes_list
+    except Exception as e:
+        log(f"Erro ao buscar códigos CNES do BigQuery: {e}", level="error")
+        raise
+
 
 
 @task
