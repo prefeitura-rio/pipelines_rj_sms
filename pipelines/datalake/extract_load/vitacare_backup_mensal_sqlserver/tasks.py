@@ -21,7 +21,7 @@ from pipelines.utils.logger import log
 def get_vitacare_cnes_from_bigquery() -> list:
     """
     Busca a lista de códigos CNES distintos da tabela de estabelecimentos
-    no BigQuery para prontuários Vitacare.
+    no BigQuery para prontuários Vitacare
     """
     query = """
         SELECT DISTINCT id_cnes
