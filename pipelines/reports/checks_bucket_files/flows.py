@@ -10,25 +10,22 @@ from pipelines.constants import constants
 from pipelines.reports.checks_bucket_files.schedules import schedule
 from pipelines.reports.checks_bucket_files.tasks import get_data
 
-with Flow(
-    name="Report: Monitoramento de arquivos no GCS"
-) as report_bucket_files:
+with Flow(name="Report: Monitoramento de arquivos no GCS") as report_bucket_files:
 
     #####################################
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev")
-    BUCKET_NAME = 'cgcca_cnes'
-    FILE_PREFIX = ''
-    FILE_SUFFIX = '.GDB'
-    
-    
+    BUCKET_NAME = "cgcca_cnes"
+    FILE_PREFIX = ""
+    FILE_SUFFIX = ".GDB"
+
     #####################################
     # Tasks
     #####################################
-    data = get_data(bucket_name=BUCKET_NAME, 
-                    file_prefix=FILE_PREFIX, 
-                    file_suffix=FILE_SUFFIX,
-                    environment=ENVIRONMENT)
-
-
+    data = get_data(
+        bucket_name=BUCKET_NAME,
+        file_prefix=FILE_PREFIX,
+        file_suffix=FILE_SUFFIX,
+        environment=ENVIRONMENT,
+    )
