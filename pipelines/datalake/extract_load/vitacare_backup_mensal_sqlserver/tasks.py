@@ -51,7 +51,7 @@ def get_vitacare_cnes_from_bigquery() -> list:
 
 @task
 def get_tables_to_extract() -> list:
-    """Retorna a lista de tabelas a serem extraídas para um CNES."""
+    """Retorna a lista de tabelas a serem extraídas para um CNES"""
     return vitacare_constants.TABLES_TO_EXTRACT.value
 
 
