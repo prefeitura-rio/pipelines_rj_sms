@@ -39,7 +39,7 @@ def get_vitacare_cnes_from_bigquery() -> list:
 
         if not cnes_list:
             log("Nenhum código CNES encontrado no BigQuery para Vitacare.", level="warning")
-            # raise FAIL("Nenhum CNES encontrado para Vitacare no BigQuery.")
+            # raise FAIL("Nenhum CNES encontrado para Vitacare no BigQuery")
             return []
 
         log(f"Encontrados {len(cnes_list)} códigos CNES no BigQuery.")
