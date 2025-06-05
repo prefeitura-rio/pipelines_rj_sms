@@ -19,7 +19,7 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
     build_bq_table_name,
     extract_and_transform_table,
-    get_all_cnes_codes,
+    get_vitacare_cnes_from_bigquery,
     get_tables_to_extract,
 )
 from pipelines.utils.credential_injector import (
@@ -113,7 +113,7 @@ with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_ma
             env=environment,
         )
 
-    all_cnes_to_process = get_all_cnes_codes()
+    all_cnes_to_process = get_vitacare_cnes_from_bigquery()
 
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()

@@ -18,10 +18,6 @@ from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 
 
-@task
-def get_all_cnes_codes() -> list:
-    """Retorna a lista de todos os códigos CNES a serem processados."""
-    return vitacare_constants.CNES_CODES.value
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1)) 
 def get_vitacare_cnes_from_bigquery() -> list:
