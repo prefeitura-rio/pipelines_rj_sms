@@ -50,20 +50,20 @@ with Flow(
     # Set environment
     ####################################
     vitai_allergies = load_file_from_bigquery(
-        project_name='rj-sms',
+        project_name="rj-sms",
         dataset_name="intermediario_historico_clinico",
         table_name="alergias_vitai",
         environment=ENVIRONMENT,
     )
     reference_allergies = load_file_from_bigquery(
-        project_name='rj-sms',
+        project_name="rj-sms",
         dataset_name="intermediario_historico_clinico",
         table_name="alergias_referencia",
         environment=ENVIRONMENT,
     )
 
     std_allergies = load_std_dataset(
-        project_name='rj-sms',
+        project_name="rj-sms",
         dataset_name="intermediario_historico_clinico",
         table_name="alergias_vitai_padronizacao",
         environment=ENVIRONMENT,
@@ -97,7 +97,7 @@ with Flow(
     raw_allergies = saving_results(
         raw_allergies=df_vitai_allergies,
         gemini_result=gemini_result,
-        levenshtein_result=std_allergies
+        levenshtein_result=std_allergies,
     )
 
     # ####################################

@@ -64,10 +64,10 @@ def create_allergie_list(
         allergies_field_clean = allergies_field_clean.strip()
 
         return allergies_field_clean
-    
-    list_of_lists_alergias = dataframe_allergies_vitai['alergias'].values
+
+    list_of_lists_alergias = dataframe_allergies_vitai["alergias"].values
     flat_list_alergias = [x for xs in list_of_lists_alergias for x in xs]
-    allergies_vitai = [d['descricao_raw'] for d in flat_list_alergias if d['padronizado']==0]
+    allergies_vitai = [d["descricao_raw"] for d in flat_list_alergias if d["padronizado"] == 0]
 
     allergies_unique = []
     for i in allergies_vitai:
@@ -298,6 +298,6 @@ def saving_results(
         raw_allergies["alergias_padronizado"] = raw_allergies["alergias_limpo"].apply(
             lambda x: find_std(x, from_to_dict)
         )
-        raw_allergies['_extracted_at'] = pd.to_datetime("now")
+        raw_allergies["_extracted_at"] = pd.to_datetime("now")
 
     return raw_allergies
