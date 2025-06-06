@@ -49,6 +49,7 @@ from pipelines.datalake.transform.dbt.flows import *
 # ===============================
 from pipelines.reports.ingestao_dados.flows import *
 from pipelines.reports.long_running_flows.flows import *
+from pipelines.reports.checks_bucket_files.flows import *
 
 # ===============================
 # TOOLS

@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
+import pytz
 import pandas as pd
+from datetime import datetime
+from dateutil import parser
 from google.cloud import storage
 
 from pipelines.constants import constants
@@ -11,46 +14,50 @@ from pipelines.utils.time import from_relative_date
 
 
 @task
-def get_data(bucket_name:str, 
-             file_prefix:str, 
-             file_suffix:str,
-             environment:str):
+def get_data_from_gcs_bucket(bucket_name:str, 
+             environment:str,
+             relative_date:pd.Timestamp):
     
     client = storage.Client()
-    
     bucket = client.get_bucket(bucket_name)
-    blobs = bucket.list_blobs(prefix=file_prefix)
+    blobs = bucket.list_blobs()
     
-    files = [x for x in blobs if x.name.endswith(file_suffix)]
+    relative_date = parser.parse(relative_date.isoformat())
+    relative_date = pytz.timezone("America/Sao_Paulo").localize(relative_date)
+    files = [x for x in blobs if x.time_created > relative_date]
+    
+    log(f'Quantidade de arquivos no período selecionado:{len(files)}')
+    
+    return len(files)
 
-    log(f'Formato do blob: {files[0]}')
-    log(f'Tamanho do blob:{len(files)}')
-    
-    def blob_to_dict(blob):
-        return {
-            "name": blob.name,
-            "updated": blob.updated,
-            "created": blob.time_created,
-        }
-    
-    log(f'Formato de data: {files[0].time_created}')
-    log(f'Tipo do formato de data: {type(files[0].time_created)}')
-        
-    file_metadata = [blob_to_dict(x) for x in files]
-    
-    return file_metadata
 
 @task
-def get_base_date(base_date):
-    log("Getting target date")
-    if base_date == "today" or not base_date:
-        base_date = pd.Timestamp.now().strftime("%Y-%m-%d")
-        log(f"Using today's date: {base_date}")
-    elif base_date == "yesterday":
-        base_date = (pd.Timestamp.now() - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
-        log(f"Using yesterday's date: {base_date}")
+def send_report(bucket_name:str, source_freshness:str, len_files:int):
+    
+    base_date_readable = pd.to_datetime(datetime.now()).strftime("%d/%m/%Y")
+    
+    if 'vitacare' in bucket_name:
+        source = 'VITACARE'
+    elif 'cgcca' in bucket_name:
+        source = 'CGCCA'
+    elif 'aps' in bucket_name:
+        source = 'APS'
+    
+    title = f"Relatório de arquivos do GCS -  {source} - {base_date_readable}"
+    
+    message_lines = []
+    
+    if len_files == 0:
+        emoji = '🔴'
     else:
-        base_date = pd.Timestamp(base_date).strftime("%Y-%m-%d")
-        log(f"Using specified date: {base_date}")
-
-    return base_date
+        emoji = '🟢'
+       
+    message_lines.append(f'{emoji} {bucket_name} ({source_freshness}): {len_files} arquivos.')
+    
+    log(f'Sending message with {len(message_lines)} line(s).')
+    
+    send_message(
+            title=title,
+            message="\n".join(message_lines),
+            monitor_slug="data-ingestion",
+        )
