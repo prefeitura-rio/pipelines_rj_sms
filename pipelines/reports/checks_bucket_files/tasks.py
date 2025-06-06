@@ -1,19 +1,13 @@
 # -*- coding: utf-8 -*-
 import pytz
-import pytz
 import pandas as pd
-from datetime import datetime
-from dateutil import parser
 from datetime import datetime
 from dateutil import parser
 from google.cloud import storage
 
-from pipelines.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.monitor import send_message
-from pipelines.utils.tasks import load_files_from_gcs_bucket
-from pipelines.utils.time import from_relative_date
 
 
 @task
