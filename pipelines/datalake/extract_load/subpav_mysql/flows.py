@@ -62,6 +62,7 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             name_template="Rotina - {table}: {scheduled_date}",
+            environment=ENVIRONMENT,
             table=bq_table_name
         )
 
