@@ -365,3 +365,11 @@ cases:
       dataset_id: "brutos_plataforma_subpav"
       table_id: "competencias"
       schema: "subpav_cnes"
+
+  - case_slug: 'checks-bucket-files'
+    flow_path: 'pipelines.reports.checks_bucket_files.flows'
+    flow_name: 'report_bucket_files'
+    params:
+      environment: 'dev'
+      bucket_name: 'conectividade_aps'
+      source_freshness: 'D-1'
