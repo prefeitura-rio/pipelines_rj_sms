@@ -44,6 +44,8 @@ from pipelines.datalake.migrate.gdrive_to_gcs.flows import *
 # TRANSFORM
 # ===============================
 from pipelines.datalake.transform.dbt.flows import *
+from pipelines.prontuarios.raw.smsrio.flows import *
+from pipelines.prontuarios.std.alergias_vitai.flows import *
 
 # ===============================
 # REPORTS
