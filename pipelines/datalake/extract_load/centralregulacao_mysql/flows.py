@@ -20,20 +20,20 @@ from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
-with Flow(name="SUBGERAL - Extract & Load - Central de Regulação MySQL") as sms_cr_mysql:
+with Flow(name="SUBGERAL - Extract & Load - Central de Regulação (MySQL)") as sms_cr_mysql:
     # PARAMETROS #
     # AMBIENTE ------------------------------
     ENVIRONMENT = Parameter("environment", default="dev")
 
     # MySQL ---------------------------------
-    HOST = Parameter("host", default="db.smsrio.org", required=True)
-    DATABASE = Parameter("database", default="monitoramento", required=True)
-    PORT = Parameter("port", default=None, required=False)
+    HOST = Parameter("host", default="db.smsrio.org")
+    DATABASE = Parameter("database", default="monitoramento")
+    PORT = Parameter("port", default=None)
     TABLE = Parameter("table", default="vw_MS_CadastrosAtivacoesGov")
     QUERY = Parameter("query", default="SELECT * FROM vw_MS_CadastrosAtivacoesGov")
 
     # BQ ------------------------------------
-    BQ_DATASET = Parameter("bq_dataset", default="brutos_centralderegulacao_mysql", required=True)
+    BQ_DATASET = Parameter("bq_dataset", default="brutos_centralderegulacao_mysql")
 
     # CREDENTIALS ---------------------------
     user = get_secret_key(environment=ENVIRONMENT, secret_name="USER", secret_path="/cr_mysql")

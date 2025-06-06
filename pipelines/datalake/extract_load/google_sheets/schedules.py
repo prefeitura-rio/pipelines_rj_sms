@@ -24,6 +24,56 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
+        "url": "https://docs.google.com/spreadsheets/d/176u8I3xlAW7mFN3M0QADZ2b6jU0iUAfWs4CvKd5rhJU/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Municipios",
+        "table_id": "municipios_rio",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1WdUZ0vB5Sr2wVhA6bKKwOaQiauLB3r4A4iL2O1E2XwU/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Lista",
+        "table_id": "procedimentos_ser",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/176u8I3xlAW7mFN3M0QADZ2b6jU0iUAfWs4CvKd5rhJU/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Bairros",
+        "table_id": "bairros_rio",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1b4HBj85ZqAXhS36hI0TZG5y4Obsav0utzRkcOiHMBC8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Classificações CID",
+        "table_id": "projeto_c34_cids",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1b4HBj85ZqAXhS36hI0TZG5y4Obsav0utzRkcOiHMBC8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Classificações Procedimentos",
+        "table_id": "projeto_c34_procedimentos",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
         "url": "https://docs.google.com/spreadsheets/d/1Y7ji6HL5a2fJGIX-olRCVdv98oQ5nWHaBYUNAF7jTKg/edit?gid=1600307210",  # noqa: E501
         "url_type": "google_sheet",
         "gsheets_sheet_name": "relacao_materiais",
@@ -77,10 +127,10 @@ flow_parameters = [
         "csv_delimiter": ";",
         "dataset_id": "brutos_sheets",
         "environment": "prod",
-        "gsheets_sheet_name": "Procedimentos",
+        "gsheets_sheet_name": "Dado",
         "rename_flow": True,
         "table_id": "sigtap_procedimentos",
-        "url": "https://docs.google.com/spreadsheets/d/1kndrUjVFpRW-LIZ1pV-LwcAmxylB4kVt944nzL_pfhU",  # noqa
+        "url": "https://docs.google.com/spreadsheets/d/14kBPPc9VdeMHlNbUVc_C6PLUrwL73yrQfyl14rjrGuA",  # noqa
         "url_type": "google_sheet",
     },
     {

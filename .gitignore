@@ -157,3 +157,6 @@ dbt_packages/
 dbt_repository/
 logs/
 dbt_log.txt
+
+# downloaded files
+downloaded_data/

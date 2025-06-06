@@ -13,29 +13,59 @@ from prefect.schedules import Schedule
 
 # Internos
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.centralregulacao_mysql.constants import SCHEMAS
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 flow_parameters = [
     {
         "environment": "prod",
-        "database": schema,
-        "host": SCHEMAS[schema]["host"],
-        "port": SCHEMAS[schema]["port"],
-        "table": table,
-        "query": f"SELECT * FROM {table}",
+        "database": "monitoramento",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_MS_CadastrosAtivacoesGov",
+        "query": "SELECT * FROM vw_MS_CadastrosAtivacoesGov",
         "bq_dataset": "brutos_centralderegulacao_mysql",
-    }
-    for schema in SCHEMAS
-    for table in SCHEMAS[schema]["tables"]
+    },
+    {
+        "environment": "prod",
+        "database": "monitoramento",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_fibromialgia_relatorio",
+        "query": "SELECT * FROM vw_fibromialgia_relatorio",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
+    },
+    {
+        "environment": "prod",
+        "database": "monitoramento",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_minhaSaude_listaUsuario",
+        "query": "SELECT * FROM vw_minhaSaude_listaUsuario",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
+    },
+    {
+        "environment": "prod",
+        "database": "monitoramento",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_tea_relatorio",
+        "query": "SELECT * FROM vw_tea_relatorio",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
+    },
+    {
+        "environment": "prod",
+        "database": "dw",
+        "host": "db.smsrio.org",
+        "port": None,
+        "table": "vw_minhasauderio_pesquisa_satisfacao",
+        "query": "SELECT * FROM vw_minhasauderio_pesquisa_satisfacao",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
+    },
 ]
-print("Flow params:")
-for param in flow_parameters:
-    print(param)
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2025, 2, 27, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2025, 3, 28, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

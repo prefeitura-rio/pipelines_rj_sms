@@ -671,6 +671,12 @@ def create_partitions(
         None
     """
 
+    log(f"Data path: {data_path}")
+    log(f"Partition directory: {partition_directory}")
+    log(f"Partition level: {level}")
+    log(f"Partition date: {partition_date}")
+    log(f"File type: {file_type}")
+
     # check if data_path is a directory or a file
     if isinstance(data_path, str):
         if os.path.isdir(data_path):
@@ -865,27 +871,41 @@ def upload_to_datalake(
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
 def upload_df_to_datalake(
     df: pd.DataFrame,
-    partition_column: str,
     dataset_id: str,
     table_id: str,
     dump_mode: str = "append",
     source_format: str = "csv",
     csv_delimiter: str = ";",
+    partition_column: Optional[str] = None,
     if_exists: str = "replace",
     if_storage_data_exists: str = "replace",
     biglake_table: bool = True,
     dataset_is_public: bool = False,
 ):
     root_folder = f"./data/{uuid.uuid4()}"
+    os.makedirs(root_folder, exist_ok=True)
     log(f"Using as root folder: {root_folder}")
 
-    log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
-    partition_folder = create_date_partitions.run(
-        dataframe=df,
-        partition_column=partition_column,
-        file_format=source_format,
-        root_folder=root_folder,
-    )
+    # All columns as strings
+    df = df.astype(str)
+    log("Converted all columns to strings")
+
+    if partition_column:
+        log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
+        partition_folder = create_date_partitions.run(
+            dataframe=df,
+            partition_column=partition_column,
+            file_format=source_format,
+            root_folder=root_folder,
+        )
+    else:
+        log(f"Creating a single partition for a {df.shape[0]} rows dataframe")
+        file_path = os.path.join(root_folder, f"{uuid.uuid4()}.{source_format}")
+        if source_format == "csv":
+            df.to_csv(file_path, index=False)
+        elif source_format == "parquet":
+            safe_export_df_to_parquet.run(df=df, output_path=file_path)
+        partition_folder = root_folder
 
     log(f"Uploading data to partition folder: {partition_folder}")
     upload_to_datalake.run(
@@ -1138,7 +1158,7 @@ def safe_export_df_to_parquet(df: pd.DataFrame, output_path: str) -> str:
 
     # Delete the csv file
     os.remove(output_path.replace("parquet", "csv"))
-    return
+    return output_path
 
 
 @task

@@ -23,10 +23,11 @@ from pipelines.datalake.extract_load.historico_clinico_integrado.tasks import (
     download_from_db,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.tasks import create_folders, get_secret_key, upload_to_datalake
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.utils.time import get_datetime_working_range
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - Histórico Clínico Integrado",
+    name="DataLake - Extração e Carga de Dados - HCI Aplicação",
 ) as dump_hci:
     #####################################
     # Parameters
@@ -35,8 +36,10 @@ with Flow(
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
+    SCHEMA = Parameter("schema", default="postgres")
     HISTORICAL_MODE = Parameter("historical_mode", default=False)
-    TARGET_DATE = Parameter("target_date", default="")
+    START_TARGET_DATE = Parameter("start_target_date", default="")
+    END_TARGET_DATE = Parameter("end_target_date", default="")
     DATASET_ID = Parameter("dataset_id", default=hci_constants.DATASET_ID.value)
     TABLE_ID = Parameter("table_id", required=True)
     REFERENCE_DATETIME_COLUMN = Parameter("reference_datetime_column", default="created_at")
@@ -48,9 +51,15 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    build_gcp_table_task = build_gcp_table(db_table=TABLE_ID)
+    build_gcp_table_task = build_gcp_table(db_table=TABLE_ID, schema=SCHEMA)
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT, table=TABLE_ID)
+
+    interval_start, interval_end = get_datetime_working_range(
+        start_datetime=START_TARGET_DATE,
+        end_datetime=END_TARGET_DATE,
+        return_as_str=True,
+    )
 
     ####################################
     # Tasks section #1 - Get data
@@ -58,17 +67,15 @@ with Flow(
     get_secret_task = get_secret_key(
         secret_path=INFISICAL_PATH,
         secret_name=INFISICAL_DBURL,
-        environment="prod",
+        environment=ENVIRONMENT,
     )
 
-    create_folders_task = create_folders()
-
-    download_task = download_from_db(
+    table = download_from_db(
         db_url=get_secret_task,
         db_table=TABLE_ID,
-        target_date=TARGET_DATE,
-        file_folder=create_folders_task["raw"],
-        file_name=TABLE_ID,
+        db_schema=SCHEMA,
+        start_target_date=interval_start,
+        end_target_date=interval_end,
         historical_mode=HISTORICAL_MODE,
         reference_datetime_column=REFERENCE_DATETIME_COLUMN,
     )
@@ -76,15 +83,12 @@ with Flow(
     # Tasks section #2 - Transform data and Create table
     #####################################
 
-    upload_to_datalake_task = upload_to_datalake(
-        input_path=download_task,
+    upload_df_to_datalake(
+        df=table,
         dataset_id=DATASET_ID,
         table_id=build_gcp_table_task,
-        if_exists="replace",
-        csv_delimiter=";",
-        if_storage_data_exists="replace",
-        biglake_table=True,
-        dataset_is_public=False,
+        source_format="parquet",
+        partition_column="datalake_loaded_at",
     )
 
 
