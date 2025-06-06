@@ -19,7 +19,7 @@ from pipelines.datalake.transform.gemini.pacientes_restritos.schedules import (
 from pipelines.datalake.transform.gemini.pacientes_restritos.tasks import (
     get_result_gemini,
     parse_result_dataframe,
-    reduce_raw_column
+    reduce_raw_column,
 )
 from pipelines.utils.tasks import (
     create_folders,

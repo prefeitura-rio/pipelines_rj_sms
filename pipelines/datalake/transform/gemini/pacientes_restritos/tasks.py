@@ -126,6 +126,6 @@ def parse_result_dataframe(list_result: list) -> pd.DataFrame:
         axis=1,
         inplace=True,
     )
-    df['_extracted_at'] = pd.Timestamp.now()
+    df["_extracted_at"] = pd.Timestamp.now()
 
     return df
