@@ -194,6 +194,11 @@ cases:
       destination_dataset_name: "brutos_ergon_staging"
       destination_table_name: "funcionarios_ativos"
       dbt_select_exp: "tag:ergon"
+  - case_slug: "extract_diario_oficial_rj"
+    flow_path: "pipelines.datalake.extract_load.diario_oficial_rj.flows"
+    flow_name: "extract_diario_oficial_rj"
+    params:
+      environment: "dev"
   - case_slug: "tasks_clickup_extraction"
     flow_path: "pipelines.datalake.extract_load.tasks_clickup.flows"
     flow_name: "tasks_clickup_extraction"
