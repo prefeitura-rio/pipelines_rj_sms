@@ -22,9 +22,9 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks impo
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
 )
-
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import create_and_send_final_report
-
+from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import (
+    create_and_send_final_report,
+)
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
@@ -162,9 +162,7 @@ with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_ma
         raise_final_state=unmapped(False),
     )
 
-    create_and_send_final_report(
-        operator_run_states=wait_for_operator_runs
-    )
+    create_and_send_final_report(operator_run_states=wait_for_operator_runs)
 
 
 flow_vitacare_historic_manager.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)

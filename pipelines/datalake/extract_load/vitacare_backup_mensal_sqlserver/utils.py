@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.monitor import send_message 
+from pipelines.utils.monitor import send_message
+
 
 @task
 def create_and_send_final_report(operator_run_states: list):
@@ -8,9 +10,9 @@ def create_and_send_final_report(operator_run_states: list):
     Analisa os estados finais dos flow runs dos Operators, consolida os erros
     esperados e envia um único relatório.
     """
-    expected_failures = {} # Dicionário para guardar erros esperados
-    non_existent_backups = [] # Para os Cnes sem backup
-    unexpected_failures = [] # Lista para guardar erros graves/inesperados
+    expected_failures = {}  # Dicionário para guardar erros esperados
+    non_existent_backups = []  # Para os Cnes sem backup
+    unexpected_failures = []  # Lista para guardar erros graves/inesperados
 
     for state in operator_run_states:
         # Pega o código CNES dos parâmetros daquele flow run
@@ -19,22 +21,22 @@ def create_and_send_final_report(operator_run_states: list):
 
         if state.is_failed():
             error_message = str(state.result)
-            
-            
+
             if "Invalid object name" in error_message:
-                table_name = error_message.split("'")[1].split('.')[-1]
+                table_name = error_message.split("'")[1].split(".")[-1]
                 if cnes_code not in expected_failures:
                     expected_failures[cnes_code] = []
                 expected_failures[cnes_code].append(table_name)
 
-            elif 'Cannot open database' in error_message and 'login failed' in error_message:
+            elif "Cannot open database" in error_message and "login failed" in error_message:
                 if cnes_code not in non_existent_backups:
                     non_existent_backups.append(cnes_code)
-                
-            else:
-                unexpected_failures.append(f"CNES {cnes_code}: Falha inesperada! Erro: {error_message[:200]}...")
 
-    
+            else:
+                unexpected_failures.append(
+                    f"CNES {cnes_code}: Falha inesperada! Erro: {error_message[:200]}..."
+                )
+
     if not expected_failures and not unexpected_failures and not non_existent_backups:
         log("Todos os flows Backup Vitacare foram executados com sucesso!")
         return
@@ -64,9 +66,5 @@ def create_and_send_final_report(operator_run_states: list):
 
     final_message = "\n".join(message_lines)
 
-    send_message(
-        title=title,
-        message=final_message,
-        monitor_slug="ingestion" 
-    )
+    send_message(title=title, message=final_message, monitor_slug="ingestion")
     log("Relatório consolidado de extração enviado.")
