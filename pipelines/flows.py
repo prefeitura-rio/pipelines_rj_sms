@@ -46,9 +46,9 @@ from pipelines.datalake.migrate.gdrive_to_gcs.flows import *
 from pipelines.datalake.transform.dbt.flows import *
 
 # ===============================
-# PRONTUARIOS
+# GEMINI
 # ===============================
-from pipelines.prontuarios.std.deteccao_restricoes.flows import *
+from pipelines.datalake.transform.gemini.pacientes_restritos.flows import *
 
 # ===============================
 # REPORTS

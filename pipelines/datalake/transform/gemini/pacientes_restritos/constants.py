@@ -34,5 +34,5 @@ class constants(Enum):
         )
         select * from pacientes
         order by rand()
-        limit 100
+        limit 10
     """

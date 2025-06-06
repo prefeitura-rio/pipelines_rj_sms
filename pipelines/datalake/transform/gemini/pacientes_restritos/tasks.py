@@ -13,7 +13,7 @@ import pandas as pd
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.prontuarios.std.deteccao_restricoes.constants import constants
+from pipelines.datalake.transform.gemini.pacientes_restritos.constants import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
@@ -126,21 +126,6 @@ def parse_result_dataframe(list_result: list) -> pd.DataFrame:
         axis=1,
         inplace=True,
     )
+    df['_extracted_at'] = pd.Timestamp.now()
 
     return df
-
-
-@task
-def saving_results(result: pd.DataFrame, file_folder: str) -> str:
-    """
-    Save the results in the folder
-    Args:
-        result (pd.DataFrame): Dataframe with the results
-        file_folder (str): Folder to save the results
-    Returns:
-        path (str): Path to the saved file
-    """
-    path = f"{file_folder}/hci_pacientes_restritos{pd.Timestamp.now()}.csv"
-    result.to_csv(path, index=False, sep=";", encoding="utf-8")
-    log(f"Saving results in {path}")
-    return path

@@ -10,24 +10,23 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.std.deteccao_restricoes.constants import (
+from pipelines.datalake.transform.gemini.pacientes_restritos.constants import (
     constants as hci_pacientes_restritos_constants,
 )
-from pipelines.prontuarios.std.deteccao_restricoes.schedules import (
+from pipelines.datalake.transform.gemini.pacientes_restritos.schedules import (
     hci_pacientes_restritos_daily_update_schedule,
 )
-from pipelines.prontuarios.std.deteccao_restricoes.tasks import (
+from pipelines.datalake.transform.gemini.pacientes_restritos.tasks import (
     get_result_gemini,
     parse_result_dataframe,
-    reduce_raw_column,
-    saving_results,
+    reduce_raw_column
 )
 from pipelines.utils.tasks import (
     create_folders,
     get_secret_key,
     query_table_from_bigquery,
     rename_current_flow_run,
-    upload_to_datalake,
+    upload_df_to_datalake,
 )
 
 with Flow(name="HCI - Detecção de pacientes restritos") as hci_pacientes_restritos:
@@ -79,17 +78,16 @@ with Flow(name="HCI - Detecção de pacientes restritos") as hci_pacientes_restr
     #     ####################################
     #     # Tasks section #3 - Load data to BQ
     #     #####################################
-    create_folders_task = create_folders()
-    path = saving_results(
-        result=df_result,
-        file_folder=create_folders_task["raw"],
-    )
 
-    upload_to_datalake_task = upload_to_datalake(
-        input_path=path,
+    upload_to_datalake_task = upload_df_to_datalake(
+        df=df_result,
         table_id=hci_pacientes_restritos_constants.TABLE_ID.value,
         dataset_id=hci_pacientes_restritos_constants.DATASET_ID.value,
-        dump_mode="append",
+        partition_column="_extracted_at",
+        if_exists="append",
+        if_storage_data_exists="append",
+        source_format="csv",
+        csv_delimiter=",",
     )
 
 
