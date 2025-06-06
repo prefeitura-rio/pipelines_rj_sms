@@ -194,6 +194,11 @@ cases:
       destination_dataset_name: "brutos_ergon_staging"
       destination_table_name: "funcionarios_ativos"
       dbt_select_exp: "tag:ergon"
+  - case_slug: "extract_diario_oficial_rj"
+    flow_path: "pipelines.datalake.extract_load.diario_oficial_rj.flows"
+    flow_name: "extract_diario_oficial_rj"
+    params:
+      environment: "dev"
   - case_slug: "tasks_clickup_extraction"
     flow_path: "pipelines.datalake.extract_load.tasks_clickup.flows"
     flow_name: "tasks_clickup_extraction"
@@ -293,14 +298,6 @@ cases:
       instance_name: "vitacare"
       file_pattern: "HISTÓRICO_PEPVITA_RJ/AP*/vitacare_historic_*_*_*.bak"
       limit_files: -1
-  - case_slug: "datalake-extract-vitacare_gdrive"
-    flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
-    flow_name: "sms_dump_vitacare_reports"
-    params:
-      environment: "dev"
-      file_pattern: "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_LISTAGEM_VACINA_V2/*/*_LISTAGEM_VACINA_V2_*.csv"
-      desired_table_name: "listagem_vacina_v2"
-      desired_dataset_name: "brutos_informes_vitacare"
   - case_slug: "datalake-extract-smsrio"
     flow_path: "pipelines.datalake.extract_load.smsrio_mysql.flows"
     flow_name: "sms_dump_smsrio"
@@ -353,6 +350,9 @@ cases:
   - case_slug: "datalake-extract-vitacare_api_v2"
     flow_path: "pipelines.datalake.extract_load.vitacare_api_v2.flows"
     flow_name: "sms_vitacare_api_v2"
+  - case_slug: "datalake-extract-vitacare_gdrive"
+    flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
+    flow_name: "sms_dump_vitacare_reports"
     params:
       environment: "dev"
       endpoint: "posicao"
@@ -371,3 +371,12 @@ cases:
       bq_table: "laudos"
       dias_por_faixa: 15
       formato_data: "%d/%m/%Y"
+
+  - case_slug: "datalake-extract-subpav"
+    flow_path: "pipelines.datalake.extract_load.subpav_mysql.flows"
+    flow_name: "sms_dump_subpav"
+    params:
+      environment: "dev"
+      dataset_id: "brutos_plataforma_subpav"
+      table_id: "competencias"
+      schema: "subpav_cnes"
