@@ -33,6 +33,7 @@ def get_data_from_gcs_bucket(bucket_name:str,
     
     return len(files)
 
+@task
 def send_report(bucket_name:str, source_freshness:str, len_files:int):
     
     base_date_readable = pd.to_datetime(datetime.now()).strftime("%d/%m/%Y")
