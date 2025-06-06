@@ -12,4 +12,6 @@ class constants(Enum):
     INFISICAL_API_URL = "URL"
     INFISICAL_API_USERNAME = "USERNAME"
     INFISICAL_API_PASSWORD = "PASSWORD"
+    DATASET_ID = "intermediario_historico_clinico"
+    TABLE_ID = "alergias_vitai_padronizacao"
     PROJECT = {"dev": "rj-sms-dev", "prod": "rj-sms"}

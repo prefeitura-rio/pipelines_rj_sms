@@ -64,9 +64,13 @@ def create_allergie_list(
         allergies_field_clean = allergies_field_clean.strip()
 
         return allergies_field_clean
+    
+    list_of_lists_alergias = dataframe_allergies_vitai['alergias'].values
+    flat_list_alergias = [x for xs in list_of_lists_alergias for x in xs]
+    allergies_vitai = [d['descricao_raw'] for d in flat_list_alergias if d['padronizado']==0]
 
     allergies_unique = []
-    for i in dataframe_allergies_vitai["alergias"]:
+    for i in allergies_vitai:
         allergies_unique.extend(i)
     allergies_unique = np.unique(allergies_unique)
     log(f"Loading {len(allergies_unique)} allergies")
@@ -77,6 +81,7 @@ def create_allergie_list(
         ]
 
     df_allergies = pd.DataFrame(data=allergies_unique, columns=["alergias_raw"])
+    df_allergies = df_allergies[0:100]
     log(f"Standardizing {len(allergies_unique)} allergies")
 
     df_allergies["alergias_limpo"] = df_allergies["alergias_raw"].apply(clean_allergies_field)
@@ -267,7 +272,7 @@ def get_similar_allergie_gemini(allergies_list: list, api_url: str, api_token: s
 
 @task
 def saving_results(
-    raw_allergies: pd.DataFrame, gemini_result: list, levenshtein_result: list, file_folder: str
+    raw_allergies: pd.DataFrame, gemini_result: list, levenshtein_result: list
 ) -> dict:
     """
     Concatenate results from both gemini and levenshtein models and save into a csv file
@@ -293,9 +298,6 @@ def saving_results(
         raw_allergies["alergias_padronizado"] = raw_allergies["alergias_limpo"].apply(
             lambda x: find_std(x, from_to_dict)
         )
+        raw_allergies['_extracted_at'] = pd.to_datetime("now")
 
-        destination_file_path = f"{file_folder}/alergias_vitai_{pd.Timestamp.now()}.csv"
-        raw_allergies.to_csv(destination_file_path, index=False, sep=";", encoding="utf-8")
-        log(f"File {destination_file_path} downloaded.")
-
-    return destination_file_path
+    return raw_allergies

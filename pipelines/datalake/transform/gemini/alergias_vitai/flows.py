@@ -10,13 +10,13 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.prontuarios.std.alergias_vitai.constants import (
+from pipelines.datalake.transform.gemini.alergias_vitai.constants import (
     constants as vitai_alergias_constants,
 )
-from pipelines.prontuarios.std.alergias_vitai.schedules import (
+from pipelines.datalake.transform.gemini.alergias_vitai.schedules import (
     vitai_alergias_daily_update_schedule,
 )
-from pipelines.prontuarios.std.alergias_vitai.tasks import (
+from pipelines.datalake.transform.gemini.alergias_vitai.tasks import (
     create_allergie_list,
     get_api_token,
     get_similar_allergie_gemini,
@@ -25,10 +25,9 @@ from pipelines.prontuarios.std.alergias_vitai.tasks import (
     saving_results,
 )
 from pipelines.utils.tasks import (
-    create_folders,
     load_file_from_bigquery,
     rename_current_flow_run,
-    upload_to_datalake,
+    upload_df_to_datalake,
 )
 
 ####################################
@@ -51,20 +50,20 @@ with Flow(
     # Set environment
     ####################################
     vitai_allergies = load_file_from_bigquery(
-        project_name=vitai_alergias_constants.PROJECT.value["dev"],
+        project_name='rj-sms',
         dataset_name="intermediario_historico_clinico",
         table_name="alergias_vitai",
         environment=ENVIRONMENT,
     )
     reference_allergies = load_file_from_bigquery(
-        project_name=vitai_alergias_constants.PROJECT.value["dev"],
+        project_name='rj-sms',
         dataset_name="intermediario_historico_clinico",
         table_name="alergias_referencia",
         environment=ENVIRONMENT,
     )
 
     std_allergies = load_std_dataset(
-        project_name=vitai_alergias_constants.PROJECT.value["dev"],
+        project_name='rj-sms',
         dataset_name="intermediario_historico_clinico",
         table_name="alergias_vitai_padronizacao",
         environment=ENVIRONMENT,
@@ -95,22 +94,24 @@ with Flow(
         allergies_list=no_std_allergies, api_url=api_url, api_token=api_token
     )
 
-    create_folders_task = create_folders()
-    path = saving_results(
+    raw_allergies = saving_results(
         raw_allergies=df_vitai_allergies,
         gemini_result=gemini_result,
-        levenshtein_result=std_allergies,
-        file_folder=create_folders_task["raw"],
+        levenshtein_result=std_allergies
     )
 
     # ####################################
     # # Task Section #3 - Loading data
     # ####################################
-    upload_to_datalake_task = upload_to_datalake(
-        input_path=path,
-        dataset_id="intermediario_historico_clinico",
-        table_id="alergias_vitai_padronizacao",
-        dump_mode="append",
+    upload_to_datalake_task = upload_df_to_datalake(
+        df=raw_allergies,
+        dataset_id=vitai_alergias_constants.DATASET_ID.value,
+        table_id=vitai_alergias_constants.TABLE_ID.value,
+        partition_column="_extracted_at",
+        if_exists="append",
+        if_storage_data_exists="append",
+        source_format="csv",
+        csv_delimiter=",",
     )
 
 
