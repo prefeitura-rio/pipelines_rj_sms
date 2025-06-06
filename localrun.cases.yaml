@@ -199,6 +199,11 @@ cases:
     flow_name: "extract_diario_oficial_rj"
     params:
       environment: "dev"
+  - case_slug: "extract_tribunal_de_contas_rj"
+    flow_path: "pipelines.datalake.extract_load.tribunal_de_contas_rj.flows"
+    flow_name: "extract_tribunal_de_contas_rj"
+    params:
+      environment: "dev"
   - case_slug: "tasks_clickup_extraction"
     flow_path: "pipelines.datalake.extract_load.tasks_clickup.flows"
     flow_name: "tasks_clickup_extraction"
