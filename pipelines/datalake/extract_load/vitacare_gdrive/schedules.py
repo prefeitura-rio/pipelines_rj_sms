@@ -63,7 +63,7 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
-        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_3_G*/*/*INDICADORES_VARIAVEL_3_G12*.csv",  # noqa: E501
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_3_G*/*/*INDICADORES_VARIAVEL_3_G*.csv",  # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "indicadores_cg_variavel_3",
         "environment": "prod",
