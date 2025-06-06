@@ -27,6 +27,7 @@ def get_vitacare_cnes_from_bigquery() -> list:
         SELECT DISTINCT id_cnes
         FROM `rj-sms.saude_dados_mestres.estabelecimento`
         WHERE prontuario_versao = 'vitacare'
+        AND prontuario_tem = 'sim'
     """
     log(f"Buscando códigos CNES do BigQuery com a query: {query}")
 
