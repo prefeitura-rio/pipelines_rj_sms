@@ -11,9 +11,10 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.constants import (
     constants as flow_constants,
 )
+
 # from pipelines.datalake.extract_load.tribunal_de_contas_rj.schedules import schedule
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.tasks import (
-    fetch_process_page
+    fetch_process_page,
 )
 
 with Flow(
@@ -30,7 +31,7 @@ with Flow(
 
     fetch_process_page(process_num=PROCESS_ID, env=ENVIRONMENT)
 
-    #upload_results(results_list=article_contents, dataset=DATASET_ID)
+    # upload_results(results_list=article_contents, dataset=DATASET_ID)
 
 
 # FIXME: schedule?

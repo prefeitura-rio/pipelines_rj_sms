@@ -10,7 +10,7 @@ import pytz
 
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.utils import (
     send_post_request,
-    split_process_number
+    split_process_number,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -32,12 +32,9 @@ def fetch_process_page(process_num: str, env: Optional[str]) -> List[str]:
     # Ex.: Sec=040&Num=101331&Ano=2021&TipoConsulta=PorNumero
     # Isso redireciona pra um 'GET /processo/Ficha?Ctid=1911377', onde Ctid é o ID interno
     URL = "https://etcm.tcmrio.tc.br/processo/Lista"
-    html = send_post_request(URL, {
-        "Sec": sec,
-        "Num": num,
-        "Ano": year,
-        "TipoConsulta": "PorNumero"
-    })
+    html = send_post_request(
+        URL, {"Sec": sec, "Num": num, "Ano": year, "TipoConsulta": "PorNumero"}
+    )
     # TODO: o site parece dar muito timeout; configurar uns retries que não
     #       dependam da task inteira falhar e retentar
 
