@@ -91,7 +91,7 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
-        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_LISTAGEM_ATENDIMENTOS_PACIENTES_TEA/*/*_LISTAGEM_ATENDIMENTOS_PACIENTES_TEA*.csv",  # noqa: E501
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/2025-*/REPORT_LISTAGEM_ATENDIMENTOS_PACIENTES_TEA/*/*_LISTAGEM_ATENDIMENTOS_PACIENTES_TEA*.csv",  # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "listagem_pacientes_tea",
         "environment": "prod",

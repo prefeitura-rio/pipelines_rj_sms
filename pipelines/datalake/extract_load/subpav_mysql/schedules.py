@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 """
-Schedules for the subpav dump pipeline
+Schedules for the subpav dump pipeline de extração e carga de dados do SUBPAV.
+
+Este módulo organiza as tabelas por frequência de execução (mensal, semanal e por hora),
+gera os parâmetros padrão para cada tabela e define os clocks usados pelos agendamentos do Prefect.
+Não recomendado uso por hora sem aprovação.
 """
 
 from datetime import datetime, timedelta
@@ -22,7 +26,9 @@ LABELS = [constants.RJ_SMS_AGENT_LABEL.value]
 # Parâmetros
 # -----------
 
-# -------- Configuração simples: apenas tabela, schema e frequência
+# Lista de configurações de tabelas com suas respectivas frequências de execução.
+# Cada item é uma tupla com (table_id, schema, frequencia), onde:
+# - frequencia pode ser: "monthly", "weekly" ou "per_hour".
 TABELAS_CONFIG = [
     # Principal
     ("bairros", "subpav_principal", "monthly"),
@@ -58,8 +64,17 @@ TABELAS_CONFIG = [
 ]
 
 
-# -------- Função para gerar parâmetros padrão
 def build_param(table_id, schema):
+    """
+    Gera um dicionário de parâmetros padrão para o fluxo de extração e carga de uma tabela.
+
+    Args:
+        table_id (str): Nome da tabela no banco de origem.
+        schema (str): Nome do schema da tabela no banco de origem.
+
+    Returns:
+        dict: Dicionário com os parâmetros necessários para o flow run do Prefect.
+    """
     return {
         "table_id": table_id,
         "schema": schema,
@@ -73,9 +88,10 @@ def build_param(table_id, schema):
 # -------- Agrupando por frequência
 monthly_params = [build_param(t, s) for t, s, f in TABELAS_CONFIG if f == "monthly"]
 weekly_params = [build_param(t, s) for t, s, f in TABELAS_CONFIG if f == "weekly"]
-per_minute_params = [build_param(t, s) for t, s, f in TABELAS_CONFIG if f == "per_minute"]
+per_hour_params = [build_param(t, s) for t, s, f in TABELAS_CONFIG if f == "per_hour"]
 
-# -------- Gerando os clocks
+# Geração dos clocks (agendamentos) para cada grupo de tabelas com frequência específica.
+# Os clocks são criados com base em um intervalo de tempo fixo (timedelta) e data de início.
 monthly_clocks = generate_dump_api_schedules(
     interval=timedelta(weeks=4),
     start_date=datetime(2025, 6, 1, 6, 0, tzinfo=RJ_TZ),
@@ -92,18 +108,20 @@ weekly_clocks = generate_dump_api_schedules(
     runs_interval_minutes=1,
 )
 
-per_minute_clocks = generate_dump_api_schedules(
-    interval=timedelta(minutes=5),
+# Antes de usar por hora, verificar com o Pedro
+per_hour_clocks = generate_dump_api_schedules(
+    interval=timedelta(hours=1),
     start_date=datetime(2025, 6, 1, 5, 0, tzinfo=RJ_TZ),
     labels=LABELS,
-    flow_run_parameters=per_minute_params,
+    flow_run_parameters=per_hour_params,
     runs_interval_minutes=1,
 )
 
-# -------- Schedules
+# Instâncias de Schedule do Prefect que agrupam os clocks definidos acima.
+# Podem ser usadas individualmente (mensal, semanal, por hora) ou em conjunto.
 subpav_monthly_schedule = Schedule(clocks=untuple_clocks(monthly_clocks))
 subpav_weekly_schedule = Schedule(clocks=untuple_clocks(weekly_clocks))
-subpav_per_minute_schedule = Schedule(clocks=untuple_clocks(per_minute_clocks))
+subpav_per_hour_schedule = Schedule(clocks=untuple_clocks(per_hour_clocks))
 subpav_combined_schedule = Schedule(
-    clocks=untuple_clocks(monthly_clocks + weekly_clocks + per_minute_clocks)
+    clocks=untuple_clocks(monthly_clocks + weekly_clocks + per_hour_clocks)
 )
