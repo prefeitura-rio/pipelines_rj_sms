@@ -14,6 +14,7 @@ from pipelines.datalake.extract_load.cientificalab_api.flows import *
 from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows import *
 from pipelines.datalake.extract_load.datalake_bigquery.flows import *
 from pipelines.datalake.extract_load.datasus_ftp.flows import *
+from pipelines.datalake.extract_load.diario_oficial_rj.flows import *
 from pipelines.datalake.extract_load.google_sheets.flows import *
 from pipelines.datalake.extract_load.historico_clinico_integrado.flows import *
 from pipelines.datalake.extract_load.minhasaude_mongodb.flows import *
