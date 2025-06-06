@@ -46,6 +46,11 @@ from pipelines.datalake.migrate.gdrive_to_gcs.flows import *
 from pipelines.datalake.transform.dbt.flows import *
 
 # ===============================
+# GEMINI
+# ===============================
+from pipelines.datalake.transform.gemini.pacientes_restritos.flows import *
+
+# ===============================
 # REPORTS
 # ===============================
 from pipelines.reports.ingestao_dados.flows import *
