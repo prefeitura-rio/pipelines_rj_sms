@@ -63,21 +63,21 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
-        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_3_G*/*/*+INDICADORES_VARIAVEL_3_G12*.csv",  # noqa: E501
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_3_G*/*/*INDICADORES_VARIAVEL_3_G*.csv",  # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "indicadores_cg_variavel_3",
         "environment": "prod",
         "rename_flow": True,
     },
     {
-        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_2/*/*+INDICADORES_VARIAVEL_2*.csv",  # noqa: E501
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_2/*/*INDICADORES_VARIAVEL_2*.csv",  # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "indicadores_cg_variavel_2",
         "environment": "prod",
         "rename_flow": True,
     },
     {
-        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_1/*/*+INDICADORES_VARIAVEL_1*.csv",  # noqa: E501
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_INDICADORES_VARIAVEL_1/*/*INDICADORES_VARIAVEL_1*.csv",  # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "indicadores_cg_variavel_1",
         "environment": "prod",
@@ -87,6 +87,13 @@ flow_parameters = [
         "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_PLANILHA_ACOMPANHAMENTO_ESTADO_NUTRICIONAL_SISVAN/*/*ESTADO_NUTRICIONAL_SISVAN.csv",  # noqa: E501
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "estado_nutricional_sisvan",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/2025-*/REPORT_LISTAGEM_ATENDIMENTOS_PACIENTES_TEA/*/*_LISTAGEM_ATENDIMENTOS_PACIENTES_TEA*.csv",  # noqa: E501
+        "desired_dataset_name": "brutos_informes_vitacare",
+        "desired_table_name": "listagem_pacientes_tea",
         "environment": "prod",
         "rename_flow": True,
     },
