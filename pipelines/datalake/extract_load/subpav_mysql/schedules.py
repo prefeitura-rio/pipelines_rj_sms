@@ -35,19 +35,19 @@ TABELAS_CONFIG = [
     # Indicadores
     ("indicadores", "subpav_indicadores", "monthly"),
     # CNES APS
+    ("cbos", "subpav_cnes", "monthly"),
+    ("categorias_profissionais", "subpav_cnes", "monthly"),
+    ("cbos_categorias_profissionais", "subpav_cnes", "monthly"),
     ("competencias", "subpav_cnes", "weekly"),
-    ("unidades", "subpav_cnes", "weekly"),
-    ("horarios_atendimentos", "subpav_cnes", "weekly"),
-    ("unidades_auxiliares", "subpav_cnes", "weekly"),
     ("equipes", "subpav_cnes", "weekly"),
     ("equipes_profissionais", "subpav_cnes", "weekly"),
     ("equipes_tipos", "subpav_cnes", "monthly"),
-    ("equipes_profissionais", "subpav_cnes", "weekly"),
+    ("horarios_atendimentos", "subpav_cnes", "weekly"),
     ("profissionais", "subpav_cnes", "weekly"),
     ("profissionais_unidades", "subpav_cnes", "weekly"),
-    ("categorias_profissionais", "subpav_cnes", "monthly"),
-    ("cbos", "subpav_cnes", "monthly"),
-    ("cbos_categorias_profissionais", "subpav_cnes", "monthly"),
+    ("unidades", "subpav_cnes", "weekly"),
+    ("unidades_auxiliares", "subpav_cnes", "weekly"),
+    ("unidades_estruturas_fisicas", "subpav_cnes", "weekly"),
     # Acesso Mais Seguro AMS
     # Prefixo notificacoes_ são as transacionais
     ("consequencias", "subpav_acesso_mais_seguro", "monthly"),
