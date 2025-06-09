@@ -51,3 +51,23 @@ def send_request(method: str, url: str, data: Optional[dict] = None):
 
     log(f"Got HTML response of size {len(res.text)}")
     return BeautifulSoup(res.text, "html.parser")
+
+
+def find_h5_from_text(root: BeautifulSoup, match: str):
+    all_h5s = root.find_all("h5")
+    for h5 in all_h5s:
+        m = re.match(match, h5.get_text().strip(), re.IGNORECASE)
+        if m:
+            return h5
+    return None
+
+
+def get_table_rows_from_h5(h5: BeautifulSoup):
+    # Odeio isso, mas acho que é a única forma de fazer com tantos elementos genéricos
+    table_wrapper = h5.parent.parent.find_next_sibling("div", attrs={"class", "row"})
+    table = table_wrapper.find("table")
+    # Se não encontramos, retorna
+    if table is None:
+        return None
+    # Retorna todos os <tr> em <tbody>
+    return table.find("tbody").find_all("tr")

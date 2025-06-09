@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 import ipaddress
 import socket
-
+import re
 import requests
 
 
 # [Ref] https://stackoverflow.com/a/57477670/4824627
 class HostHeaderSSLAdapter(requests.adapters.HTTPAdapter):
+    _ipv4_regex = re.compile(r"^([0-9]+\.?\b){4}$")
+
     def resolve(self, hostname):
         # Tentamos vários servidores em busca de um que tenha o IP do site
         dns_servers = [
@@ -19,9 +21,9 @@ class HostHeaderSSLAdapter(requests.adapters.HTTPAdapter):
             results = dns_lookup(hostname, server)
             if "A" in results:
                 return results["A"][0]
-        # Precisamos escolher um endereço inválido para retornar
-        # 255.255.255.255 é broadcast; usa .254 que é reservado
-        return "255.255.255.254"
+        # Se chegamos aqui, nenhum servidor de DNS conseguiu traduzir
+        # o hostname para um IP
+        raise ConnectionError(f"None of the {len(dns_servers)} servers could resolve hostname '{hostname}'")
 
     def send(self, request, **kwargs):
         from urllib.parse import urlparse
@@ -29,18 +31,26 @@ class HostHeaderSSLAdapter(requests.adapters.HTTPAdapter):
         connection_pool_kwargs = self.poolmanager.connection_pool_kw
 
         result = urlparse(request.url)
-        resolved_ip = self.resolve(result.hostname)
+        hostname = result.hostname
+        # Por algum motivo, às vezes (mas não sempre!) a requisição redirecionada
+        # passa de novo por aqui mas com um IP ao invés de domínio
+        # Se recebemos um IP, envia a requisição sem tratar
+        if self._ipv4_regex.match(hostname):
+            return super(HostHeaderSSLAdapter, self).send(request, **kwargs)
+
+        # Caso contrário, temos um domínio a ser resolvido
+        resolved_ip = self.resolve(hostname)
 
         if result.scheme == "https" and resolved_ip:
             request.url = request.url.replace(
-                "https://" + result.hostname,
+                "https://" + hostname,
                 "https://" + resolved_ip,
             )
-            connection_pool_kwargs["server_hostname"] = result.hostname  # SNI
-            connection_pool_kwargs["assert_hostname"] = result.hostname
+            connection_pool_kwargs["server_hostname"] = hostname  # SNI
+            connection_pool_kwargs["assert_hostname"] = hostname
 
             # overwrite the host header
-            request.headers["Host"] = result.hostname
+            request.headers["Host"] = hostname
         else:
             # theses headers from a previous request may have been left
             connection_pool_kwargs.pop("server_hostname", None)

@@ -30,9 +30,9 @@ with Flow(
     CASE_ID = Parameter("case_id", required=True)
     DATASET_ID = Parameter("dataset_id", default=flow_constants.DATASET_ID.value)
 
-    page = fetch_case_page(case_num=CASE_ID, env=ENVIRONMENT)
+    (case, page) = fetch_case_page(case_num=CASE_ID, env=ENVIRONMENT)
 
-    scrape_lastest_decision_from_page(page=page)
+    scrape_lastest_decision_from_page(case=case, page=page)
 
     # upload_results(results_list=article_contents, dataset=DATASET_ID)
 
