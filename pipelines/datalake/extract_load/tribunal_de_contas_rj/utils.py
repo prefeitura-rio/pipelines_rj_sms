@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 import re
-import requests
 import time
-
 from typing import Optional
+
+import requests
 from bs4 import BeautifulSoup
 
+from pipelines.datalake.extract_load.tribunal_de_contas_rj.dns import (
+    HostHeaderSSLAdapter,
+)
 from pipelines.utils.logger import log
-from pipelines.datalake.extract_load.tribunal_de_contas_rj.dns import HostHeaderSSLAdapter
 
 
 def split_case_number(case_num: str) -> tuple:

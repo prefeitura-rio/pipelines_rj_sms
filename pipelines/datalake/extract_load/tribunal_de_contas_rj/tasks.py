@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 import datetime
 import re
-
 from datetime import timedelta
 from typing import List, Optional
-from bs4 import BeautifulSoup
 
 import pandas as pd
 import pytz
+from bs4 import BeautifulSoup
 
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.utils import (
     send_request,
@@ -34,9 +33,7 @@ def fetch_case_page(case_num: str, env: Optional[str]) -> List[str]:
     HOST = "https://etcm.tcmrio.tc.br"
     PATH = "/processo/Lista"
     html = send_request(
-        "POST",
-        f"{HOST}{PATH}",
-        {"Sec": sec, "Num": num, "Ano": year, "TipoConsulta": "PorNumero"}
+        "POST", f"{HOST}{PATH}", {"Sec": sec, "Num": num, "Ano": year, "TipoConsulta": "PorNumero"}
     )
 
     # Alguns processos estão vinculados a várias "referências", então abrem um

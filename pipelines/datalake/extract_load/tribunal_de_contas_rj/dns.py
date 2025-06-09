@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 import ipaddress
-import requests
 import socket
+
+import requests
 
 
 # [Ref] https://stackoverflow.com/a/57477670/4824627
@@ -11,7 +13,7 @@ class HostHeaderSSLAdapter(requests.adapters.HTTPAdapter):
             "1.1.1.1",  # Cloudflare
             "8.8.8.8",  # Google
             "9.9.9.9",  # Quad9
-            "208.67.222.222"  # OpenDNS
+            "208.67.222.222",  # OpenDNS
         ]
         for server in dns_servers:
             results = dns_lookup(hostname, server)
@@ -29,20 +31,20 @@ class HostHeaderSSLAdapter(requests.adapters.HTTPAdapter):
         result = urlparse(request.url)
         resolved_ip = self.resolve(result.hostname)
 
-        if result.scheme == 'https' and resolved_ip:
+        if result.scheme == "https" and resolved_ip:
             request.url = request.url.replace(
-                'https://' + result.hostname,
-                'https://' + resolved_ip,
+                "https://" + result.hostname,
+                "https://" + resolved_ip,
             )
-            connection_pool_kwargs['server_hostname'] = result.hostname  # SNI
-            connection_pool_kwargs['assert_hostname'] = result.hostname
+            connection_pool_kwargs["server_hostname"] = result.hostname  # SNI
+            connection_pool_kwargs["assert_hostname"] = result.hostname
 
             # overwrite the host header
-            request.headers['Host'] = result.hostname
+            request.headers["Host"] = result.hostname
         else:
             # theses headers from a previous request may have been left
-            connection_pool_kwargs.pop('server_hostname', None)
-            connection_pool_kwargs.pop('assert_hostname', None)
+            connection_pool_kwargs.pop("server_hostname", None)
+            connection_pool_kwargs.pop("assert_hostname", None)
 
         return super(HostHeaderSSLAdapter, self).send(request, **kwargs)
 
@@ -51,8 +53,9 @@ class HostHeaderSSLAdapter(requests.adapters.HTTPAdapter):
 # Daqui pra baixo é um lookup de DNS simples
 # [Ref] https://github.com/1ocalhost/py_cheat/blob/dd1eca597371c5dcf05f980b5cb6bb298f373cc0/dns_lookup.py
 
+
 def parse_dns_string(reader, data):
-    res = ''
+    res = ""
     to_resue = None
     bytes_left = 0
 
@@ -76,7 +79,7 @@ def parse_dns_string(reader, data):
             bytes_left = ch
 
         if res:
-            res += '.'
+            res += "."
 
     return res
 
@@ -91,12 +94,12 @@ class StreamReader:
         if pos >= len(self.data):
             raise
 
-        res = self.data[pos: pos+len_]
+        res = self.data[pos : pos + len_]
         self.pos += len_
         return res
 
     def reuse(self, pos):
-        pos = int.from_bytes(pos.encode(), 'big')
+        pos = int.from_bytes(pos.encode(), "big")
         return parse_dns_string(None, self.data[pos:])
 
 
@@ -104,22 +107,22 @@ def make_dns_query_domain(domain):
     def f(s):
         return chr(len(s)) + s
 
-    parts = domain.split('.')
+    parts = domain.split(".")
     parts = list(map(f, parts))
-    return ''.join(parts).encode()
+    return "".join(parts).encode()
 
 
 def make_dns_request_data(dns_query: bytes) -> bytes:
-    req = b'\xaa\xbb\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00'
+    req = b"\xaa\xbb\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00"
     req += dns_query
-    req += b'\x00\x00\x01\x00\x01'
+    req += b"\x00\x00\x01\x00\x01"
     return req
 
 
 def add_record_to_result(result, type_, data, reader):
-    if type_ == 'A':
+    if type_ == "A":
         item = str(ipaddress.IPv4Address(data))
-    elif type_ == 'CNAME':
+    elif type_ == "CNAME":
         item = parse_dns_string(reader, data)
     else:
         return
@@ -131,13 +134,13 @@ def parse_dns_response(res, dq_len, req):
     reader = StreamReader(res)
 
     def get_query(s):
-        return s[12:12+dq_len]
+        return s[12 : 12 + dq_len]
 
     data = reader.read(len(req))
-    assert(get_query(data) == get_query(req))
+    assert get_query(data) == get_query(req)
 
     def to_int(bytes_):
-        return int.from_bytes(bytes_, 'big')
+        return int.from_bytes(bytes_, "big")
 
     result = {}
     res_num = to_int(data[6:8])
@@ -147,9 +150,9 @@ def parse_dns_response(res, dq_len, req):
 
         type_ = None
         if type_num == 1:
-            type_ = 'A'
+            type_ = "A"
         elif type_num == 5:
-            type_ = 'CNAME'
+            type_ = "CNAME"
 
         reader.read(6)
         data = reader.read(2)
