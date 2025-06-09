@@ -45,6 +45,7 @@ from pipelines.datalake.migrate.gdrive_to_gcs.flows import *
 # TRANSFORM
 # ===============================
 from pipelines.datalake.transform.dbt.flows import *
+from pipelines.reports.checks_bucket_files.flows import *
 
 # ===============================
 # REPORTS
