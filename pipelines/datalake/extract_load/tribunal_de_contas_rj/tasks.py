@@ -9,10 +9,10 @@ import pytz
 from bs4 import BeautifulSoup
 
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.utils import (
-    send_request,
-    split_case_number,
     find_h5_from_text,
     get_table_rows_from_h5,
+    send_request,
+    split_case_number,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log

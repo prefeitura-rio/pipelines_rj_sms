@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import ipaddress
-import socket
 import re
+import socket
+
 import requests
 
 
@@ -23,7 +24,9 @@ class HostHeaderSSLAdapter(requests.adapters.HTTPAdapter):
                 return results["A"][0]
         # Se chegamos aqui, nenhum servidor de DNS conseguiu traduzir
         # o hostname para um IP
-        raise ConnectionError(f"None of the {len(dns_servers)} servers could resolve hostname '{hostname}'")
+        raise ConnectionError(
+            f"None of the {len(dns_servers)} servers could resolve hostname '{hostname}'"
+        )
 
     def send(self, request, **kwargs):
         from urllib.parse import urlparse
