@@ -61,9 +61,8 @@ def fetch_case_page(case_num: str, env: Optional[str]) -> List[str]:
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def scrape_decision_from_page(page: BeautifulSoup, env: Optional[str]) -> List[str]:
-    pass
-    # A gente provavelmente quer pegar a tabela logo após "<h5>Decisões do Processo</h5>"
+def scrape_lastest_decision_from_page(page: BeautifulSoup) -> List[str]:
+    # Queremos pegar a tabela logo após "<h5>Decisões do Processo</h5>"
     # O formato é:
     # <div class="row">
     #   <div class="col-md-12">
@@ -78,6 +77,37 @@ def scrape_decision_from_page(page: BeautifulSoup, env: Optional[str]) -> List[s
     #         <tr>
     #           <td>dd/mm/yyyy</td>
     #           <td>(texto que queremos)</td>
+
+    # Primeiro, encontra o <h5>:
+    def find_correct_h5(root):
+        h5s = root.find_all("h5")
+        for h5 in h5s:
+            m = re.match(r"decisões do processo", h5.get_text().strip(), re.IGNORECASE)
+            if m:
+                return h5
+        return None
+
+    h5 = find_correct_h5(page)
+    if h5 is None:
+        raise RuntimeError("Unable to find case rulings in page")
+
+    # Odeio isso, mas acho que é a única forma de fazer com tantos elementos genéricos
+    table_wrapper = h5.parent.parent.find_next_sibling("div", attrs={"class", "row"})
+
+    table = table_wrapper.find("table")
+    if table is None:
+        raise RuntimeError("Unable to find case rulings in page")
+
+    row = table.find("tbody").find("tr")
+
+    values = []
+    for child in row.children:
+        if child.name is None:
+            continue
+        values.append(child.get_text().strip())
+
+    # Ex.: ['21/05/2025', 'Arquivamento com Resolução de Mérito']
+    return values
 
     # Alguns processo também têm 'processos apensos'
     # Ex: 009/001493/2020

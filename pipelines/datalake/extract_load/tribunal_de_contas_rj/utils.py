@@ -49,4 +49,5 @@ def send_request(method: str, url: str, data: Optional[dict] = None):
         log(f"Expected Content-Type 'text/html'; got '{ct}' for URL '{url}'", level="warning")
         return None
 
+    log(f"Got HTML response of size {len(res.text)}")
     return BeautifulSoup(res.text, "html.parser")
