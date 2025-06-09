@@ -16,27 +16,27 @@ flow_parameters = [
     {
         "environment": "prod",
         "bucket_name": "cgcca_cnes",
-        "source_freshness": "M-1",
+        "source_freshness": "M-0",
     },
     {
         "environment": "prod",
         "bucket_name": "cgcca_sih",
-        "source_freshness": "Y-1",
+        "source_freshness": "Y-0",
     },
     {
         "environment": "prod",
         "bucket_name": "conectividade_aps",
-        "source_freshness": "D-1",
+        "source_freshness": "D-0",
     },
     {
         "environment": "prod",
         "bucket_name": "vitacare_informes_mensais_gdrive",
-        "source_freshness": "M-1",
+        "source_freshness": "M-0",
     },
     {
         "environment": "prod",
         "bucket_name": "vitacare_backups_gdrive",
-        "source_freshness": "M-1",
+        "source_freshness": "M-0",
     },
 ]
 

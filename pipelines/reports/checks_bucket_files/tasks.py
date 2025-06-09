@@ -39,7 +39,7 @@ def send_report(bucket_name: str, source_freshness: str, len_files: int):
     elif "aps" in bucket_name:
         source = "APS"
 
-    title = f"Relatório de arquivos do GCS -  {source} - {base_date_readable}"
+    title = f"Relatório de arquivos do GCS - {source} - {base_date_readable}"
 
     message_lines = []
 
