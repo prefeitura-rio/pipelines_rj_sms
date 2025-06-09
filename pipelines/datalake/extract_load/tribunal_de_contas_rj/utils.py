@@ -1,28 +1,43 @@
 # -*- coding: utf-8 -*-
 import re
-from typing import Optional
-
 import requests
+import time
+
+from typing import Optional
 from bs4 import BeautifulSoup
 
 from pipelines.utils.logger import log
+from pipelines.datalake.extract_load.tribunal_de_contas_rj.dns import HostHeaderSSLAdapter
 
 
-def split_process_number(process_num: str) -> tuple:
+def split_case_number(case_num: str) -> tuple:
     # Exemplo: '040/100420/2019'
-    process_regex = re.compile(r"(?P<sec>[0-9]+)/(?P<num>[0-9]+)/(?P<year>[0-9]{4})")
-    m = process_regex.search(process_num.strip())
+    case_regex = re.compile(r"(?P<sec>[0-9]+)/(?P<num>[0-9]+)/(?P<year>[0-9]{4})")
+    m = case_regex.search(case_num.strip())
     sec = m.group("sec")
     num = m.group("num")
     year = m.group("year")
     return (sec, num, year)
 
 
-def send_post_request(url: str, data: Optional[dict]):
-    log(f"Sending POST request expecting 'text/html' response: {url}")
+def send_request(method: str, url: str, data: Optional[dict] = None):
+    method = method.strip().upper()
+    log(f"Sending {method} request expecting 'text/html' response: {url}")
 
-    res = requests.post(url=url, data=data)
+    # Alguns servidores de DNS parecem não ter o IP do site do TCM
+    # Quando isso acontece, ficamos presos em ConnectionError
+    # Então, usamos um Adapter que tenta vários (Cloudflare, Google, etc)
+    # e usa o primeiro IP que encontrar
+    session = requests.Session()
+    session.mount("https://", HostHeaderSSLAdapter())
+
+    res = None
+    if method == "POST":
+        res = session.post(url=url, data=data)
+    elif method == "GET":
+        res = session.get(url=url)
     res.raise_for_status()
+
     # [Ref] https://stackoverflow.com/a/52615216/4824627
     res.encoding = res.apparent_encoding
 

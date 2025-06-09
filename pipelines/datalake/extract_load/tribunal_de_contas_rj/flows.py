@@ -14,7 +14,8 @@ from pipelines.datalake.extract_load.tribunal_de_contas_rj.constants import (
 
 # from pipelines.datalake.extract_load.tribunal_de_contas_rj.schedules import schedule
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.tasks import (
-    fetch_process_page,
+    fetch_case_page,
+    scrape_decision_from_page
 )
 
 with Flow(
@@ -26,10 +27,12 @@ with Flow(
 
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    PROCESS_ID = Parameter("process_id", required=True)
+    CASE_ID = Parameter("case_id", required=True)
     DATASET_ID = Parameter("dataset_id", default=flow_constants.DATASET_ID.value)
 
-    fetch_process_page(process_num=PROCESS_ID, env=ENVIRONMENT)
+    page = fetch_case_page(case_num=CASE_ID, env=ENVIRONMENT)
+
+    scrape_decision_from_page(page=page)
 
     # upload_results(results_list=article_contents, dataset=DATASET_ID)
 
