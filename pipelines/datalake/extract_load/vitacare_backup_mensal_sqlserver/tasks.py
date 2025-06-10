@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytz
 from google.cloud import bigquery
+from prefect.engine.signals import SKIP
 from sqlalchemy import create_engine
 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
@@ -167,6 +168,12 @@ def extract_and_transform_table(
                 )
         return df
     except Exception as e:
+        if "Invalid object name" in str(e):
+            log(
+                f"Table {full_table_name} not found for CNES {cnes_code}. Skipping task.",
+                level="warning",
+            )
+            raise SKIP(f"Table not found: '{db_table}'")
         log(
             f"Error downloading or transforming data from {full_table_name} "
             f"(CNES: {cnes_code}): {e}",
