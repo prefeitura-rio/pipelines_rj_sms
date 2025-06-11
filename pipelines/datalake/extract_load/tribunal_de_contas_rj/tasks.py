@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Union
 
 import pandas as pd
@@ -194,7 +194,7 @@ def upload_results(main_result: dict, appendix_results: List[dict], dataset: str
         main_df = pd.concat([main_df, single_df], ignore_index=True)
 
     # FIXME
-    pd.set_option('display.max_columns', None)
+    pd.set_option("display.max_columns", None)
     log(f"Uploading DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
     # Chamando a task de upload
     upload_df_to_datalake.run(

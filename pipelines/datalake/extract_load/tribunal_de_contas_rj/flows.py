@@ -11,7 +11,6 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.constants import (
     constants as flow_constants,
 )
-
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.tasks import (
     fetch_case_page,
     scrape_lastest_decision_from_page,
