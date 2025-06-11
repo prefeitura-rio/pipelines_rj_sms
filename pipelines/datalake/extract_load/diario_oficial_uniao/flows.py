@@ -4,49 +4,41 @@ from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from pipelines.datalake.extract_load.diario_oficial_uniao.schedules import schedule
 from prefeitura_rio.pipelines_utils.custom import Flow
+
 from pipelines.constants import constants
-from pipelines.reports.checks_bucket_files.schedules import schedule
+from pipelines.datalake.extract_load.diario_oficial_uniao.schedules import schedule
 from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     dou_extraction,
-    upload_to_datalake
+    upload_to_datalake,
 )
+from pipelines.reports.checks_bucket_files.schedules import schedule
 
-
-with Flow(name="DataLake - Extração e Carga de Dados - Diário Oficial da União") as extract_diario_oficial_uniao:
+with Flow(
+    name="DataLake - Extração e Carga de Dados - Diário Oficial da União"
+) as extract_diario_oficial_uniao:
     """
     Fluxo de extração e carga de atos oficiais do Diário Oficial da União (DOU).
     """
-    
-    
+
     #####################################
     # Parameters
     #####################################
-    
-    ENVIRONMENT = Parameter('environment', default='dev')
-    DOU_SECTION = Parameter('dou_section', default=1)
-    MAX_WORKERS = Parameter('max_workers', default=10)
-    DATASET_ID = Parameter('dataset_id', default='brutos_diario_oficial')
-    DATE = Parameter('date', default=None)
-    
-    
+
+    ENVIRONMENT = Parameter("environment", default="dev")
+    DOU_SECTION = Parameter("dou_section", default=1)
+    MAX_WORKERS = Parameter("max_workers", default=10)
+    DATASET_ID = Parameter("dataset_id", default="brutos_diario_oficial")
+    DATE = Parameter("date", default=None)
+
     #####################################
     # Flow
     #####################################
-    
-    dou_infos = dou_extraction(
-        date=DATE,
-        dou_section=DOU_SECTION,
-        max_workers=MAX_WORKERS
-    )
 
-    upload_to_datalake(
-        dou_infos=dou_infos,
-        environment=ENVIRONMENT,
-        dataset=DATASET_ID
-    )
-    
+    dou_infos = dou_extraction(date=DATE, dou_section=DOU_SECTION, max_workers=MAX_WORKERS)
+
+    upload_to_datalake(dou_infos=dou_infos, environment=ENVIRONMENT, dataset=DATASET_ID)
+
 # Flow configs
 extract_diario_oficial_uniao.schedule = schedule
 extract_diario_oficial_uniao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
