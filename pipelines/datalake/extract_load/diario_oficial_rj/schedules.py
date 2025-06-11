@@ -4,9 +4,9 @@
 Schedules
 """
 
-import pytz
 from datetime import datetime, timedelta
 
+import pytz
 from prefect.schedules import Schedule
 from prefect.schedules.clocks import IntervalClock
 
