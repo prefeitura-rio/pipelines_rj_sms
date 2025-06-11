@@ -377,4 +377,4 @@ cases:
     params:
       environment: 'dev'
       bucket_name: 'conectividade_aps'
-      source_freshness: 'D-1'
+      source_freshness: 'D-0'
