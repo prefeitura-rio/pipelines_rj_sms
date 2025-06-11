@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta, datetime
 from typing import List, Optional, Union
 
 import pandas as pd
@@ -52,6 +52,9 @@ def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
         # Pegamos o primeiro 'a[href^="/processo/Ficha?Ctid="]' da página
         a = html.find("a", attrs={"href": re.compile("^/processo/Ficha\?Ctid=")})
         if a is None or not a:
+            h5 = html.find("h5")
+            if h5 is not None:
+                log(h5.get_text().strip(), level="warning")
             raise RuntimeError("Failed to find main case ID")
         # Pega o caminho do URL
         path = a.get("href")
@@ -69,7 +72,7 @@ def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30), nout=2)
-def scrape_lastest_decision_from_page(case_tuple: tuple) -> List[Union[dict, List[str]]]:
+def scrape_case_info_from_page(case_tuple: tuple) -> List[Union[dict, List[str]]]:
     assert len(case_tuple) == 2, f"Expected 2 parameters; got {len(case_tuple)}"
     # Extrai os parâmetros reais da tupla recebida
     case_obj: dict = case_tuple[0]
@@ -95,7 +98,7 @@ def scrape_lastest_decision_from_page(case_tuple: tuple) -> List[Union[dict, Lis
             return None
         return p.get_text().strip()
 
-    case_obj["titulo"] = get_information_from_label(page, "Processo_Objeto")
+    case_obj["objeto"] = get_information_from_label(page, "Processo_Objeto")
     case_obj["detalhes"] = get_information_from_label(page, "Processo_Detalhamento_ObjetoDetalhado")
     case_obj["valor"] = get_information_from_label(page, "Processo_IdentificacaoInstrumento_ValorComMoeda")
     case_obj["autuacao_data"] = get_information_from_label(page, "Processo_Autuacao")
@@ -156,16 +159,20 @@ def scrape_lastest_decision_from_page(case_tuple: tuple) -> List[Union[dict, Lis
     # Alguns processos possuem 'partes' interessadas; pegamos se existir
     rows = get_rows_from_text(page, r"^partes") or []
     parts = []
+    prosecutors = []
     for row in rows:
         part = get_row_contents(row)
         if len(part) < 2:
             continue
         if part[0].lower() == "parte":
             parts.append(part[1])
-    if len(parts) > 0:
-        case_obj["partes"] = ";".join(parts)
-    else:
-        case_obj["partes"] = None
+        elif part[0].lower().startswith("advogado"):
+            prosecutors.append(part[1])
+        else:
+            log(f"Unknown part {part}; ignoring", level="warning")
+
+    case_obj["partes"] = ";".join(parts) if len(parts) > 0 else None
+    case_obj["procuradores"] = ";".join(prosecutors) if len(prosecutors) > 0 else None
 
     # Alguns processos também têm 'processos apensos' (ex.: 009/001493/2020)
     # Tenta pegar, se existir
@@ -215,8 +222,6 @@ def upload_results(main_result: dict, appendix_results: List[dict], dataset: str
         # Concatena com os outros resultados
         main_df = pd.concat([main_df, single_df], ignore_index=True)
 
-    # FIXME
-    pd.set_option("display.max_columns", None)
     log(f"Uploading DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
     # Chama a task de upload
     upload_df_to_datalake.run(

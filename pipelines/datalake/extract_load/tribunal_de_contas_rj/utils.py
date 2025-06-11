@@ -16,9 +16,11 @@ def split_case_number(case_num: str) -> tuple:
     # Exemplo: '040/100420/2019'
     case_regex = re.compile(r"(?P<sec>[0-9]+)/(?P<num>[0-9]+)/(?P<year>[0-9]{4})")
     m = case_regex.search(case_num.strip())
-    sec = m.group("sec")
+    # Padding para transformar "40" -> "040"
+    sec = m.group("sec").rjust(3, "0")
     num = m.group("num")
     year = m.group("year")
+    assert len(year) == 4, f"Year '{year}' has length {len(year)}; expected 4"
     return (sec, num, year)
 
 
