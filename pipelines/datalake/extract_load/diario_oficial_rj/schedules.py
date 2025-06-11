@@ -4,10 +4,9 @@
 Schedules
 """
 
-from datetime import datetime, timedelta
-from typing import List
-
 import pytz
+from datetime import datetime, timedelta
+
 from prefect.schedules import Schedule
 from prefect.schedules.clocks import IntervalClock
 
@@ -19,6 +18,9 @@ from pipelines.constants import constants
 # eventualmente pegaremos o DO
 times = [(5, 0), (5, 30), (6, 0), (6, 30)]
 
+flow_parameters = {"environment": "prod"}
+
+
 daily_schedule = Schedule(
     clocks=[
         IntervalClock(
@@ -27,7 +29,7 @@ daily_schedule = Schedule(
                 2020, 6, 4, hour, minute, tzinfo=pytz.timezone("America/Sao_Paulo")
             ),
             labels=[constants.RJ_SMS_AGENT_LABEL.value],
-            parameter_defaults={"environment": "dev"},
+            parameter_defaults=flow_parameters,
         )
         for hour, minute in times
     ]
