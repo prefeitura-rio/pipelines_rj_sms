@@ -61,38 +61,50 @@ def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
     # Salva data/hora em que a página foi extraída
     dt = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
-    # Por fim, também queremos o nome do processo. O formato é:
-    # <div class="form-group">
-    #   <label for="Processo_Objeto">Objeto</label>
-    #   <p class="form-control-static">(texto que queremos)</p>
-    # </div>
-    name = None
-    # Por algum motivo, html.find("label", attrs={"for", "Processo_Objeto"})
-    # retorna None, mas .select(...) funciona
-    label = html.select("label[for='Processo_Objeto']")
-    p = label[0].parent.find("p") if len(label) > 0 else None
-    if p is None or not p:
-        log("Failed to find case name! Will be 'null'", level="error")
-    else:
-        name = p.get_text().strip()
-
-    # Ex.: (
-    #   '009/004365/2016',
-    #   'Prestação de Contas do Contrato ...',
-    #   <datetime>,
-    #   <BeautifulSoup>
-    # )
-    return (case_num, name, dt, html)
+    case_obj = {
+        "_extracted_at": dt,
+        "processo_id": case_num,
+    }
+    return (case_obj, html)
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30), nout=2)
 def scrape_lastest_decision_from_page(case_tuple: tuple) -> List[Union[dict, List[str]]]:
-    assert len(case_tuple) == 4, f"Expected 4 parameters; got {len(case_tuple)}"
+    assert len(case_tuple) == 2, f"Expected 2 parameters; got {len(case_tuple)}"
     # Extrai os parâmetros reais da tupla recebida
-    case_num: str = case_tuple[0]
-    name: str = case_tuple[1]
-    extracted_at: datetime = case_tuple[2]
-    page: BeautifulSoup = case_tuple[3]
+    case_obj: dict = case_tuple[0]
+    page: BeautifulSoup = case_tuple[1]
+
+    ###########################################################
+    #  Cabeçalho
+    ###########################################################
+
+    # Queremos algumas informações do cabeçalho do processo
+    # O formato é:
+    # <div class="form-group">
+    #   <label for="Processo_Objeto">Objeto</label>
+    #   <p class="form-control-static">(texto que queremos)</p>
+    # </div>
+    def get_information_from_label(root: BeautifulSoup, label_for: str):
+        # Por algum motivo, html.find("label", attrs={"for", "..."})
+        # retorna None, mas .select(...) funciona
+        label = root.select(f"label[for='{label_for}']")
+        p = label[0].parent.find("p") if len(label) > 0 else None
+        if p is None or not p:
+            log(f"Failed to find case information (for='{label_for}'); will be 'null'", level="warning")
+            return None
+        return p.get_text().strip()
+
+    case_obj["titulo"] = get_information_from_label(page, "Processo_Objeto")
+    case_obj["detalhes"] = get_information_from_label(page, "Processo_Detalhamento_ObjetoDetalhado")
+    case_obj["valor"] = get_information_from_label(page, "Processo_IdentificacaoInstrumento_ValorComMoeda")
+    case_obj["autuacao_data"] = get_information_from_label(page, "Processo_Autuacao")
+    case_obj["entrada_tcm_data"] = get_information_from_label(page, "Processo_Entrada")
+
+
+    ###########################################################
+    #  Tabelas
+    ###########################################################
 
     # Queremos pegar a tabela logo após "<h5>Decisões do Processo</h5>"
     # O formato é:
@@ -109,13 +121,18 @@ def scrape_lastest_decision_from_page(case_tuple: tuple) -> List[Union[dict, Lis
     #         <tr>
     #           <td>dd/mm/yyyy</td>
     #           <td>(texto que queremos)</td>
-    h5_decisions = find_h5_from_text(page, r"decisões do processo")
-    if h5_decisions is None:
-        raise RuntimeError("Unable to find case rulings in page")
-
-    rows = get_table_rows_from_h5(h5_decisions)
-    if rows is None or len(rows) < 1:
-        raise RuntimeError("Unable to find case rulings in page")
+    def get_rows_from_text(root: BeautifulSoup, match: str, throw: Optional[str] = None):
+        h5 = find_h5_from_text(root, match)
+        if h5 is None:
+            if throw is not None:
+                raise RuntimeError(throw)
+            return None
+        rows = get_table_rows_from_h5(h5)
+        if rows is None or len(rows) < 1:
+            if throw is not None:
+                raise RuntimeError(throw)
+            return None
+        return rows
 
     # Pega data e decisão a partir de linha de tabela
     def get_row_contents(row: BeautifulSoup):
@@ -128,37 +145,42 @@ def scrape_lastest_decision_from_page(case_tuple: tuple) -> List[Union[dict, Lis
             values.append(child.get_text().strip())
         return values
 
-    decision = get_row_contents(rows[0])
-    # Deve ser algo no formato ['01/01/2000', 'Contas Regulares']
-    assert len(decision) > 1, "Failed to get latest decision from page!"
-    result = {
-        "titulo": name,
-        "processo_id": case_num,
-        "decisao_data": decision[0],
-        "decisao_texto": decision[1],
-        "apensos": None,
-        "_extracted_at": extracted_at,
-    }
+    rows = get_rows_from_text(page, r"decisões do processo", throw="Unable to find case rulings in page")
+    ruling = get_row_contents(rows[0])
+    # Deve ser algo como ['01/01/2000', 'Contas Regulares']
+    assert len(ruling) > 1, "Failed to get latest ruling from page!"
+    case_obj["decisao_data"] = ruling[0]
+    case_obj["decisao_texto"] = ruling[1]
+    case_obj["apensos"] = None
+
+    # Alguns processos possuem 'partes' interessadas; pegamos se existir
+    rows = get_rows_from_text(page, r"^partes") or []
+    parts = []
+    for row in rows:
+        part = get_row_contents(row)
+        if len(part) < 2:
+            continue
+        if part[0].lower() == "parte":
+            parts.append(part[1])
+    if len(parts) > 0:
+        case_obj["partes"] = ";".join(parts)
+    else:
+        case_obj["partes"] = None
 
     # Alguns processos também têm 'processos apensos' (ex.: 009/001493/2020)
-    h5_appendices = find_h5_from_text(page, r"processos apensos")
-    # Se não encontramos o <h5>, então podemos ir embora
-    if h5_appendices is None:
-        return [result, []]
+    # Tenta pegar, se existir
+    rows = get_rows_from_text(page, r"processos apensos")
+    if rows is None:
+        return [case_obj, []]
 
-    # Senão, então precisamos pegar também os apensos
-    log("Found appendices; fetching...")
+    log(f"Found {len(rows)} {'appendix' if len(rows) < 2 else 'appendices'}")
 
     # É similar, mas uma tabela que aparece depois de um de "<h5>Processos Apensos</h5>"
     # ...
     # <td> <a href="/processo/Ficha?ctid=1831051">009/004365/2016</a> </td>
     # <td> Prestação de Contas do Contrato de Gestão ... </td>
     # Precisamos pegar a decisão mais recente de cada um desses apensos
-    rows = get_table_rows_from_h5(h5_appendices)
-    if rows is None:
-        log("Unable to find case appendices in page", level="warning")
-        return [result, []]
-
+    # Ou seja, rodar o processo desde o início mas com seus IDs
     appendices = []
     for row in rows:
         appendix = get_row_contents(row)
@@ -171,8 +193,8 @@ def scrape_lastest_decision_from_page(case_tuple: tuple) -> List[Union[dict, Lis
         appendices.append(appendix[0])
 
     # Salva referências aos apensos no resultado principal
-    result["apensos"] = ";".join(appendices)
-    return [result, appendices]
+    case_obj["apensos"] = ";".join(appendices)
+    return [case_obj, appendices]
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
@@ -196,7 +218,7 @@ def upload_results(main_result: dict, appendix_results: List[dict], dataset: str
     # FIXME
     pd.set_option("display.max_columns", None)
     log(f"Uploading DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
-    # Chamando a task de upload
+    # Chama a task de upload
     upload_df_to_datalake.run(
         df=main_df,
         dataset_id=dataset,
