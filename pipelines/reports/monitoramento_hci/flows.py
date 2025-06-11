@@ -8,10 +8,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.reports.monitoramento_hci.schedules import schedule
-from pipelines.reports.monitoramento_hci.tasks import (
-    get_data,
-    send_report,
-)
+from pipelines.reports.monitoramento_hci.tasks import get_data, send_report
 
 with Flow(
     name="Report: Monitoramento do HCI",
@@ -33,14 +30,14 @@ with Flow(
         dataset_name=DATASET,
         table_name=TABLE,
         interval=INTERVAL,
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
     http = get_data(
         field="resultado",
         dataset_name=DATASET,
         table_name=TABLE,
         interval=INTERVAL,
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
     send_report(data=(endpoints, http))
 

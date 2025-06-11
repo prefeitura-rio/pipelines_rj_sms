@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
-
 from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -14,15 +13,14 @@ def get_data(field: str, dataset_name: str, table_name: str, interval: str, envi
     client = bigquery.Client()
     project_name = get_bigquery_project_from_environment.run(environment="prod")
 
-    QUERY = (
-        f"""
+    QUERY = f"""
 select {field}, count(*)
 from `{project_name}.{dataset_name}.{table_name}`
 where created_at >= DATETIME_SUB(CURRENT_DATETIME("America/Sao_Paulo"), INTERVAL {interval})
 group by {field}
-        """)
+        """
     query_job = client.query(QUERY)
-    rows = [ row.values() for row in query_job.result() ]
+    rows = [row.values() for row in query_job.result()]
     log(f"Query for '{field}' (INTERVAL {interval}) returned {len(rows)} row(s)")
     # Lista de tuplas (evento, quantidade)
     return rows
