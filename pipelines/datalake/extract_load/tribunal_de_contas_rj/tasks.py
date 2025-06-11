@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Union
 
 import pandas as pd
@@ -94,16 +94,20 @@ def scrape_case_info_from_page(case_tuple: tuple) -> List[Union[dict, List[str]]
         label = root.select(f"label[for='{label_for}']")
         p = label[0].parent.find("p") if len(label) > 0 else None
         if p is None or not p:
-            log(f"Failed to find case information (for='{label_for}'); will be 'null'", level="warning")
+            log(
+                f"Failed to find case information (for='{label_for}'); will be 'null'",
+                level="warning",
+            )
             return None
         return p.get_text().strip()
 
     case_obj["objeto"] = get_information_from_label(page, "Processo_Objeto")
     case_obj["detalhes"] = get_information_from_label(page, "Processo_Detalhamento_ObjetoDetalhado")
-    case_obj["valor"] = get_information_from_label(page, "Processo_IdentificacaoInstrumento_ValorComMoeda")
+    case_obj["valor"] = get_information_from_label(
+        page, "Processo_IdentificacaoInstrumento_ValorComMoeda"
+    )
     case_obj["autuacao_data"] = get_information_from_label(page, "Processo_Autuacao")
     case_obj["entrada_tcm_data"] = get_information_from_label(page, "Processo_Entrada")
-
 
     ###########################################################
     #  Tabelas
@@ -148,7 +152,9 @@ def scrape_case_info_from_page(case_tuple: tuple) -> List[Union[dict, List[str]]
             values.append(child.get_text().strip())
         return values
 
-    rows = get_rows_from_text(page, r"decisões do processo", throw="Unable to find case rulings in page")
+    rows = get_rows_from_text(
+        page, r"decisões do processo", throw="Unable to find case rulings in page"
+    )
     ruling = get_row_contents(rows[0])
     # Deve ser algo como ['01/01/2000', 'Contas Regulares']
     assert len(ruling) > 1, "Failed to get latest ruling from page!"
