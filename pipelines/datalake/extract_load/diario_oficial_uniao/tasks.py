@@ -51,6 +51,7 @@ def dou_extraction(dou_section: int, max_workers:int, date:datetime) -> list:
     driver.get(f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}")
 
     while True:
+        # Lógica para evitar a poluição do log
         if page_count == 1 or page_count % 10 == 0:
             log(f'Extração da página {page_count}')
             
