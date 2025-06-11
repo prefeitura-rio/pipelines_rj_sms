@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 # flake8: noqa E501
-from prefect import Parameter, flatten
+from prefect import Parameter, flatten, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -12,10 +12,10 @@ from pipelines.datalake.extract_load.tribunal_de_contas_rj.constants import (
     constants as flow_constants,
 )
 
-# from pipelines.datalake.extract_load.tribunal_de_contas_rj.schedules import schedule
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.tasks import (
     fetch_case_page,
     scrape_lastest_decision_from_page,
+    upload_results,
 )
 
 with Flow(
@@ -30,15 +30,17 @@ with Flow(
     CASE_ID = Parameter("case_id", required=True)
     DATASET_ID = Parameter("dataset_id", default=flow_constants.DATASET_ID.value)
 
-    (case, page) = fetch_case_page(case_num=CASE_ID, env=ENVIRONMENT)
+    result_tuple = fetch_case_page(case_num=CASE_ID, env=ENVIRONMENT)
 
-    scrape_lastest_decision_from_page(case=case, page=page)
+    (result, cases) = scrape_lastest_decision_from_page(case_tuple=result_tuple)
 
-    # upload_results(results_list=article_contents, dataset=DATASET_ID)
+    # Podemos ter recebido apensos ao caso que precisamos pegar também
+    appendix_tuple = fetch_case_page.map(case_num=cases, env=unmapped(ENVIRONMENT))
+    results_list = scrape_lastest_decision_from_page.map(case_tuple=appendix_tuple)
+
+    upload_results(main_result=result, appendix_results=results_list, dataset=DATASET_ID)
 
 
-# FIXME: schedule?
-# extract_tribunal_de_contas_rj.schedule = schedule
 extract_tribunal_de_contas_rj.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 extract_tribunal_de_contas_rj.executor = LocalDaskExecutor(num_workers=1)
 extract_tribunal_de_contas_rj.run_config = KubernetesRun(
