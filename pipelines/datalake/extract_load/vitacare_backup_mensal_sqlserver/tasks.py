@@ -184,7 +184,7 @@ def extract_and_transform_table(
 
 @task
 def build_bq_table_name(table_name: str) -> str:
-    """Constrói o nome da tabela no BigQuery"""
+    """Constrói nome da tabela no BigQuery"""
     bq_table_name = f"{table_name.lower()}"
     log(f"Built BigQuery table name: {bq_table_name} for source table: {table_name}")
     return bq_table_name
