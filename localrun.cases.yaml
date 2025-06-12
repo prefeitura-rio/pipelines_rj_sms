@@ -383,3 +383,11 @@ cases:
       environment: 'dev'
       bucket_name: 'conectividade_aps'
       source_freshness: 'D-0'
+
+  - case_slug: 'dou-extraction'
+    flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao.flows'
+    flow_name: 'extract_diario_oficial_uniao'
+    params:
+      environment: 'dev'
+      dou_section: 3
+      max_workers: 10
