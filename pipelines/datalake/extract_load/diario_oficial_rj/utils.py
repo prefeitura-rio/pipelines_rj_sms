@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import re
 from datetime import datetime
+from itertools import groupby
 from typing import List, Optional
 
 import pytz
 import requests
 from bs4 import BeautifulSoup, NavigableString
-from itertools import groupby
 from dateutil import parser
 
 from pipelines.utils.logger import log
@@ -173,14 +173,14 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
             ("\u00A0", ""),  # NO-BREAK SPACE
             ("\u202F", " "),  # NARROW NO-BREAK SPACE
             ("\r", ""),
-            ("\n", " ")
+            ("\n", " "),
         ]
         for fro, to in replace_list:
             text = text.replace(fro, to)
         return text
 
     # Pega o texto de todos os <p>'s da página, passando por limpeza
-    ps = [ clean_text(p.get_text()) for p in root.find_all("p") ]
+    ps = [clean_text(p.get_text()) for p in root.find_all("p")]
 
     # Usamos instâncias de <p>&nbsp;</p> como separadores de "conceitos"
     # Os Diários Oficiais são extremamente diversos (para não dizer anárquicos)
@@ -189,6 +189,6 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
     for _, group in groupby(ps, lambda x: len(x) == 0):
         groups.append(list(group))
 
-    # Retorna grupos 
-    content = [ "\n".join(group) for group in groups if len(group[0]) > 0 ]
+    # Retorna grupos
+    content = ["\n".join(group) for group in groups if len(group[0]) > 0]
     return content

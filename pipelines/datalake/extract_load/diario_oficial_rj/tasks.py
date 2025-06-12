@@ -5,19 +5,19 @@ import urllib.parse
 from datetime import timedelta
 from typing import List, Optional
 
-from bs4 import BeautifulSoup
 import pandas as pd
 import pytz
+from bs4 import BeautifulSoup
 
 from pipelines.datalake.extract_load.diario_oficial_rj.utils import (
     get_links_for_path,
     get_links_if_match,
     get_today,
     node_cleanup,
+    parse_do_contents,
     send_get_request,
     standardize_date_from_string,
     string_cleanup,
-    parse_do_contents
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -115,7 +115,7 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
             (
                 get_folder_path(tag),
                 tag.text.strip(),
-                get_any_attribute(tag, ["identificador", "data-materia-id"])
+                get_any_attribute(tag, ["identificador", "data-materia-id"]),
             )
             for tag in results
         )
