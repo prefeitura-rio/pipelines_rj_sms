@@ -55,8 +55,8 @@ with Flow(
     INTERVAL_START = Parameter("interval_start", default=None)
     INTERVAL_END = Parameter("interval_end", default=None)
     PARTITION_COLUMN = Parameter("partition_column", default=None)
-    BATCH_SIZE = Parameter('batch_size', default=30000)
-    
+    BATCH_SIZE = Parameter("batch_size", default=30000)
+
     #####################################
     # Tasks section #1 - Setup Environment
     #####################################
