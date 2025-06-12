@@ -5,6 +5,7 @@ import urllib.parse
 from datetime import timedelta
 from typing import List, Optional
 
+from bs4 import BeautifulSoup
 import pandas as pd
 import pytz
 
@@ -16,6 +17,7 @@ from pipelines.datalake.extract_load.diario_oficial_rj.utils import (
     send_get_request,
     standardize_date_from_string,
     string_cleanup,
+    parse_do_contents
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -94,11 +96,27 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
                 return val
         return None
 
+    def get_folder_path(tag: BeautifulSoup):
+        path = []
+        while True:
+            tag = tag.parent
+            if tag is None or not tag or tag.attrs.get("id") == "tree":
+                break
+            folder = tag.findChild("span", attrs={"class", "folder"}, recursive=False)
+            if folder is None or not folder:
+                continue
+            path.append(folder.text.strip())
+        return "/".join(reversed(path))
+
     # Cria lista de par (título, ID); título é guardado direto no banco
     # e ID é usado pra pegar o conteúdo textual/HTML do artigo
     filtered_results = list(
         set(
-            (tag.text.strip(), get_any_attribute(tag, ["identificador", "data-materia-id"]))
+            (
+                get_folder_path(tag),
+                tag.text.strip(),
+                get_any_attribute(tag, ["identificador", "data-materia-id"])
+            )
             for tag in results
         )
     )
@@ -107,10 +125,10 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def get_article_contents(do_tuple: tuple) -> dict:
+def get_article_contents(do_tuple: tuple) -> List[dict]:
     assert len(do_tuple) == 2, "Tuple must be ((do_id, date), (title, id)) pair!"
     (do_id, do_date) = do_tuple[0]
-    (title, id) = do_tuple[1]
+    (folder_path, title, id) = do_tuple[1]
 
     log(f"Getting content of article '{title}' (id '{id}')...")
     URL = f"https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/{id}"
@@ -122,22 +140,31 @@ def get_article_contents(do_tuple: tuple) -> dict:
     # Registra data/hora da extração
     current_datetime = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
     # Salva o HTML cru do corpo
-    body_html = string_cleanup(html.body)
+    # body_html = string_cleanup(html.body)
+
     # Remove elementos inline comuns (<b>, <i>, <span>) pra não
     # atrapalhar o .get_text() com separador de \n abaixo
+    # TODO: limpar essa função se não formos voltar com nada disso
     html = node_cleanup(html)
-    # Usa .get_text() para pegar o conteúdo textual da página toda
-    full_text = string_cleanup(html.body.get_text(separator="\n", strip=True))
+    content_list = parse_do_contents(html.body)
 
-    log(f"Article '{title}' (id '{id}') has size {len(full_text)} ({len(body_html)} with HTML)")
-    return {
-        "titulo": title,
-        "texto": full_text,
-        "html": body_html,
-        "do_id": do_id,
-        "do_data": do_date,
-        "_extracted_at": current_datetime,
-    }
+    # Usa .get_text() para pegar o conteúdo textual da página toda
+    # full_text = string_cleanup(html.body.get_text(separator="\n", strip=True))
+
+    log(f"Article '{title}' (id '{id}') has size {len(content_list)} block(s)")
+    return [
+        {
+            "do_data": do_date,
+            "do_id": do_id,
+            "secao": folder_path,
+            "titulo": title,
+            "conteudo": content,
+            "_extracted_at": current_datetime,
+            # "texto": full_text,
+            # "html": body_html,
+        }
+        for content in content_list
+    ]
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))

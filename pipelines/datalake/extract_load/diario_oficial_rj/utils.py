@@ -6,6 +6,7 @@ from typing import List, Optional
 import pytz
 import requests
 from bs4 import BeautifulSoup, NavigableString
+from itertools import groupby
 from dateutil import parser
 
 from pipelines.utils.logger import log
@@ -126,34 +127,68 @@ def string_cleanup(string: str) -> str:
 
 def node_cleanup(root: BeautifulSoup) -> BeautifulSoup:
     # Para pegar o conteúdo textual, remove elementos inline
-    for inline_tag in ["a", "b", "i", "em", "span"]:
-        for tag in root.find_all(inline_tag):
-            parent = tag.parent
-            tag.unwrap()  # Remove a tag
-            # Infelizmente isso cria vários nós de texto soltos
-            # Precisamos juntá-los manualmente
-            merged_strings = []
-            # Para cada nó filho
-            for child in parent.children:
-                # Se for uma string solta, salva
-                if isinstance(child, NavigableString):
-                    merged_strings.append(child)
-                # Senão, confere se já temos 2 ou mais strings
-                elif len(merged_strings) >= 2:
-                    # Se sim, junta as strings e cria uma nova
-                    merged_text = "".join(merged_strings)
-                    new_string = NavigableString(merged_text)
-                    merged_strings[0].replace_with(new_string)
-                    # Remove as antigas
-                    for s in merged_strings[1:]:
-                        s.extract()
-                    merged_strings = []
-            # Se ainda tínhamos strings soltas, junta todas
-            if len(merged_strings) > 1:
+    for tag in root.find_all(["a", "b", "i", "em", "span"]):
+        parent = tag.parent
+        tag.unwrap()  # Remove a tag
+        # Infelizmente isso cria vários nós de texto soltos
+        # Precisamos juntá-los manualmente
+        merged_strings = []
+        # Para cada nó filho
+        for child in parent.children:
+            # Se for uma string solta, salva
+            if isinstance(child, NavigableString):
+                merged_strings.append(child)
+            # Senão, confere se já temos 2 ou mais strings
+            elif len(merged_strings) >= 2:
+                # Se sim, junta as strings e cria uma nova
                 merged_text = "".join(merged_strings)
                 new_string = NavigableString(merged_text)
                 merged_strings[0].replace_with(new_string)
+                # Remove as antigas
                 for s in merged_strings[1:]:
-                    s.extract()
+                    s.decompose()
+                merged_strings = []
+            # Se só tínhamos uma string, ela fica como é
+            else:
+                merged_strings = []
+        # Se ainda tínhamos strings soltas, junta todas
+        if len(merged_strings) > 1:
+            merged_text = "".join(merged_strings)
+            new_string = NavigableString(merged_text)
+            merged_strings[0].replace_with(new_string)
+            for s in merged_strings[1:]:
+                s.decompose()
 
     return root
+
+
+def parse_do_contents(root: BeautifulSoup) -> List[str]:
+    # TODO: lidar com tabelas
+    for table in root.find_all("table"):
+        table.decompose()
+
+    def clean_text(text: str):
+        text = str(text).strip()
+        replace_list = [
+            ("\u00A0", ""),  # NO-BREAK SPACE
+            ("\u202F", " "),  # NARROW NO-BREAK SPACE
+            ("\r", ""),
+            ("\n", " ")
+        ]
+        for fro, to in replace_list:
+            text = text.replace(fro, to)
+        return text
+
+    # Pega o texto de todos os <p>'s da página, passando por limpeza
+    ps = [ clean_text(p.get_text()) for p in root.find_all("p") ]
+
+    # Usamos instâncias de <p>&nbsp;</p> como separadores de "conceitos"
+    # Os Diários Oficiais são extremamente diversos (para não dizer anárquicos)
+    # então tratamos o conteúdo entre os <p>&nbsp;</p>'s como blocos de informação
+    groups = []
+    for _, group in groupby(ps, lambda x: len(x) == 0):
+        groups.append(list(group))
+
+    # Retorna grupos 
+    content = [ "\n".join(group) for group in groups if len(group[0]) > 0 ]
+    return content
