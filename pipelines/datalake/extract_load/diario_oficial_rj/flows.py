@@ -52,6 +52,6 @@ extract_diario_oficial_rj.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="13Gi",
-    memory_request="13Gi",
+    memory_limit="5Gi",
+    memory_request="5Gi",
 )
