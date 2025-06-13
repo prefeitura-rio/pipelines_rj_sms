@@ -17,7 +17,7 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
     vitacare_backup_manager_schedule,
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
-    build_bq_table_name,
+    concatenate_and_upload_dataframes,
     extract_and_transform_table,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
@@ -32,33 +32,27 @@ from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
 from pipelines.utils.prefect import get_current_flow_labels
-from pipelines.utils.tasks import (
-    get_project_name,
-    get_secret_key,
-    rename_current_flow_run,
-    upload_df_to_datalake,
-)
+from pipelines.utils.tasks import get_project_name, get_secret_key, rename_current_flow_run
 
-with Flow("DataLake - Vitacare Historic - CNES Operator") as flow_vitacare_historic_operator:
-    # Parâmetros recebidos do Manager
-    CNES_CODE = Parameter("CNES_CODE", required=True)
+
+with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_historic_table_operator:
+    TABLE_NAME = Parameter("TABLE_NAME", required=True)
     environment = Parameter("environment", default="staging", required=True)
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
     PARTITION_COLUMN = Parameter(
         "PARTITION_COLUMN", default=vitacare_constants.BQ_PARTITION_COLUMN.value
     )
-    RENAME_FLOW_OPERATOR = Parameter("RENAME_FLOW_OPERATOR", default=True)
+    RENAME_FLOW = Parameter("RENAME_FLOW", default=True)
 
     DATASET_ID = vitacare_constants.DATASET_ID.value
 
-    with case(RENAME_FLOW_OPERATOR, True):
+    with case(RENAME_FLOW, True):
         rename_current_flow_run(
-            name_template="Operator: Vitacare CNES {cnes_code} ({env})",
-            cnes_code=CNES_CODE,
+            name_template="Operator: Vitacare Table {table_name} ({env})",
+            table_name=TABLE_NAME,
             env=environment,
         )
 
-    # Obter credenciais para este operador
     db_host = get_secret_key(
         secret_path=vitacare_constants.INFISICAL_PATH.value,
         secret_name=vitacare_constants.INFISICAL_HOST.value,
@@ -80,7 +74,7 @@ with Flow("DataLake - Vitacare Historic - CNES Operator") as flow_vitacare_histo
         environment=environment,
     )
 
-    tables_for_this_cnes = get_tables_to_extract()
+    all_cnes_to_process = get_vitacare_cnes_from_bigquery()
 
     extracted_dfs = extract_and_transform_table.map(
         db_host=unmapped(db_host),
@@ -88,35 +82,30 @@ with Flow("DataLake - Vitacare Historic - CNES Operator") as flow_vitacare_histo
         db_user=unmapped(db_user),
         db_password=unmapped(db_password),
         db_schema=unmapped(DB_SCHEMA),
-        db_table=tables_for_this_cnes,
-        cnes_code=unmapped(CNES_CODE),
+        db_table=unmapped(TABLE_NAME),
+        cnes_code=all_cnes_to_process,
     )
 
-    bq_table_ids = build_bq_table_name.map(table_name=tables_for_this_cnes)
-
-    upload_results = upload_df_to_datalake.map(
-        df=extracted_dfs,
-        dataset_id=unmapped(DATASET_ID),
-        table_id=bq_table_ids,
-        partition_column=unmapped(PARTITION_COLUMN),
-        source_format=unmapped("parquet"),
-        if_exists=unmapped("append"),
-        if_storage_data_exists=unmapped("append"),
+    upload_result = concatenate_and_upload_dataframes(
+        dfs=extracted_dfs,
+        dataset_id=DATASET_ID,
+        table_id=TABLE_NAME,
+        partition_column=PARTITION_COLUMN,
     )
 
 
 with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_manager:
     environment = Parameter("environment", default="staging")
-    DB_SCHEMA_MANAGER = Parameter("DB_SCHEMA_MANAGER", default=vitacare_constants.DB_SCHEMA.value)
-    RENAME_FLOW_MANAGER = Parameter("RENAME_FLOW_MANAGER", default=True)
+    DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
+    RENAME_FLOW = Parameter("RENAME_FLOW", default=True)
 
-    with case(RENAME_FLOW_MANAGER, True):
+    with case(RENAME_FLOW, True):
         rename_current_flow_run(
             name_template="Manager: Vitacare Backup ({env})",
             env=environment,
         )
 
-    all_cnes_to_process = get_vitacare_cnes_from_bigquery()
+    all_tables_to_process = get_tables_to_extract()
 
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
@@ -124,31 +113,31 @@ with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_ma
     from prefect import task as prefect_task
 
     @prefect_task
-    def build_operator_params(cnes_list: list, env: str, schema: str, part_col: str) -> list:
+    def build_operator_params(table_list: list, env: str, schema: str, part_col: str) -> list:
         params_list = []
-        if not cnes_list:
+        if not table_list:
             return []
-        for cnes in cnes_list:
+        for table in table_list:
             params_list.append(
                 {
-                    "CNES_CODE": cnes,
+                    "TABLE_NAME": table,
                     "environment": env,
                     "DB_SCHEMA": schema,
                     "PARTITION_COLUMN": part_col,
-                    "RENAME_FLOW_OPERATOR": True,
+                    "RENAME_FLOW": True,
                 }
             )
         return params_list
 
     operator_parameters = build_operator_params(
-        cnes_list=all_cnes_to_process,
+        table_list=all_tables_to_process,
         env=environment,
-        schema=DB_SCHEMA_MANAGER,
+        schema=DB_SCHEMA,
         part_col=vitacare_constants.BQ_PARTITION_COLUMN.value,
     )
 
     created_operator_runs = create_flow_run.map(
-        flow_name=unmapped(flow_vitacare_historic_operator.name),
+        flow_name=unmapped(flow_vitacare_historic_table_operator.name),
         project_name=unmapped(prefect_project_name),
         parameters=operator_parameters,
         labels=unmapped(current_labels),
@@ -174,9 +163,9 @@ flow_vitacare_historic_manager.run_config = KubernetesRun(
     memory_request="1Gi",
 )
 
-flow_vitacare_historic_operator.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
-flow_vitacare_historic_operator.executor = LocalDaskExecutor(num_workers=2)
-flow_vitacare_historic_operator.run_config = KubernetesRun(
+flow_vitacare_historic_table_operator.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
+flow_vitacare_historic_table_operator.executor = LocalDaskExecutor(num_workers=2)
+flow_vitacare_historic_table_operator.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
     memory_limit="12Gi",
