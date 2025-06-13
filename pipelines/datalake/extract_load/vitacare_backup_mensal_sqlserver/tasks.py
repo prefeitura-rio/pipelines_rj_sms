@@ -76,7 +76,9 @@ def concatenate_and_upload_dataframes(
         return
 
     final_df = pd.concat(valid_dfs, ignore_index=True)
-    log(f"Tabela {table_id}: {len(valid_dfs)} DataFrames concatenados em um final com {len(final_df)} linhas.")
+    log(
+        f"Tabela {table_id}: {len(valid_dfs)} DataFrames concatenados em um final com {len(final_df)} linhas."
+    )
 
     bq_table_id = table_id.lower()
 

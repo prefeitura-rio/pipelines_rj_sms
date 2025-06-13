@@ -32,8 +32,11 @@ from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
 from pipelines.utils.prefect import get_current_flow_labels
-from pipelines.utils.tasks import get_project_name, get_secret_key, rename_current_flow_run
-
+from pipelines.utils.tasks import (
+    get_project_name,
+    get_secret_key,
+    rename_current_flow_run,
+)
 
 with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_historic_table_operator:
     TABLE_NAME = Parameter("TABLE_NAME", required=True)
