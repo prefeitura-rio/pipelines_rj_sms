@@ -115,7 +115,6 @@ def fix_AP22_LISTAGEM_VACINA_V2_202408(csv_file):
 
 def fix_INDICADORES_VARIAVEL_3(csv_text, sep):
     import csv
-    import io
 
     """
     Ajusta as colunas do arquivo G11 e G12,
@@ -154,16 +153,143 @@ def fix_INDICADORES_VARIAVEL_3(csv_text, sep):
         output_io, fieldnames=expected_columns, delimiter=sep, lineterminator="\n"
     )
 
-    # Escreve o cabeçalho no padrão esperado
     writer.writeheader()
-
     for row in reader:
-        # Garante todas as colunas do schema esperado
         new_row = {col: row[col] if col in row else None for col in expected_columns}
         writer.writerow(new_row)
 
-    # Retorna como texto
-    return output_io.getvalue()
+    fixed_text = output_io.getvalue()
+
+    new_csv_file = tempfile.TemporaryFile()
+    new_csv_file.write(fixed_text.encode("utf-8"))
+    new_csv_file.seek(0)
+    return new_csv_file
+
+
+def shorten_column_name(column_name: str, max_len: int = 30) -> str:
+    """
+    Gera um nome de coluna compatível com o BigQuery, removendo
+    ocorrências indesejadas e normalizando o resultado.
+    Em específico no arquivo TEA, podendo ser expandida e melhor refatorada.
+
+    :param column_name: Nome original da coluna.
+    :param max_len: Tamanho máximo permitido (default: 30 caracteres).
+    :return: Nome de coluna ajustado.
+    """
+    # 1. Passo inicial: aplica fix_column_name
+    sanitized = fix_column_name(column_name)
+    # 2. Remove variações "r/f" ou "rf" e "?"
+    sanitized = re.sub(r"(?i)r[ _/-]*f", "", sanitized)
+    sanitized = sanitized.replace("?", "")
+    # 3. Normaliza todos os caracteres que não sejam [a-z0-9] ⇒ "_", e colapsa underscores repetidos
+    normalized = re.sub(r"[^a-z0-9]+", "_", sanitized.lower()).strip("_")
+    normalized = re.sub(r"_+", "_", normalized)
+
+    # Se já cabe em max_len, devolve:
+    if len(normalized) <= max_len:
+        return normalized
+
+    # 4. Caso ultrapasse max_len, tokeniza e trunca:
+    stopwords = {
+        "a",
+        "o",
+        "os",
+        "as",
+        "de",
+        "do",
+        "da",
+        "dos",
+        "das",
+        "quando",
+        "vc",
+        "com",
+        "ou",
+        "para",
+        "seu",
+        "sua",
+        "isso",
+        "que",
+        "é",
+    }
+    tokens = normalized.split("_")
+    prefix_set = {"mchat", "aq10"}
+    selected = []
+
+    # Preserva prefixo importante
+    if tokens and tokens[0] in prefix_set:
+        selected.append(tokens.pop(0))
+
+    # Filtra stopwords e tokens vazios
+    tokens = [t for t in tokens if t and t not in stopwords and t not in {"r", "rf"}]
+
+    for tok in tokens:
+        candidate = "_".join(selected + [tok])
+        if len(candidate) <= max_len:
+            selected.append(tok)
+        else:
+            available = max_len - (len("_".join(selected)) + 1)  # 1 para o underscore
+            if available > 3:
+                selected.append(tok[:available])
+            break
+
+    short_name = "_".join(selected)[:max_len]
+    short_name = re.sub(r"_+", "_", short_name).strip("_")
+    return short_name
+
+
+def fix_LISTAGEM_ATENDIMENTOS_PACIENTES_TEA(csv_file):
+    """
+    Processa o CSV de atendimentos TEA, aplicando a sanitização e encurtamento dos nomes de coluna.
+    """
+    new_csv_file = tempfile.TemporaryFile()
+    csv_file.seek(0)
+
+    header_data = csv_file.readline()
+    if isinstance(header_data, bytes):
+        try:
+            header_line = header_data.decode("cp1252").strip()
+        except UnicodeDecodeError:
+            header_line = header_data.decode("utf-8", errors="replace").strip()
+    else:
+        header_line = header_data.strip()
+
+    sep = detect_separator(header_line)
+    original_columns = header_line.split(sep)
+
+    new_columns = []
+    seen = {}
+    for col in original_columns:
+        sanitized = fix_column_name(col)
+        normalized = re.sub(r"[^a-z0-9]+", "_", sanitized.lower()).strip("_")
+        normalized = re.sub(r"_+", "_", normalized)
+
+        if len(normalized) > 30:
+            new_col = shorten_column_name(col, max_len=30)
+        else:
+            new_col = normalized
+
+        base = new_col
+        if base in seen:
+            seen[base] += 1
+            new_col = f"{base}_{seen[base]}"
+        else:
+            seen[base] = 1
+
+        new_columns.append(new_col)
+        # log(f"[DEBUG] original: {col}\nnovo: {new_col}")
+
+    new_header = sep.join(new_columns) + "\n"
+    new_csv_file.write(new_header.encode("utf-8"))
+
+    rest = csv_file.read()
+    if isinstance(rest, bytes):
+        new_csv_file.write(rest)
+    else:
+        new_csv_file.write(rest.encode("utf-8"))
+
+    csv_file.close()
+    new_csv_file.seek(0)
+    return new_csv_file
 
 
 def filter_bad_chars(row: str) -> str:
@@ -298,16 +424,16 @@ def download_file(bucket, file_name, extra_safe=True):
         csv_text = data.decode(detected_encoding)
         sep = detect_separator(csv_text)
 
-        # Desculpa amigos, to aprendendo :) --Day
         if (
             "INDICADORES_VARIAVEL_3_G11_CAP" in file_name
             or "INDICADORES_VARIAVEL_3_G12_CAP" in file_name
         ):
-            csv_text = fix_INDICADORES_VARIAVEL_3(csv_text, sep)
-
-        # Evita erros independentemente da flag se o arquivo for pequeno o suficiente
-        csv_text = fix_csv(csv_text, sep)
-        csv_file = io.StringIO(csv_text)
+            csv_file = fix_INDICADORES_VARIAVEL_3(csv_text, sep)
+        elif "LISTAGEM_ATENDIMENTOS_PACIENTES_TEA" in file_name:
+            csv_file = fix_LISTAGEM_ATENDIMENTOS_PACIENTES_TEA(io.StringIO(csv_text))
+        else:
+            csv_text = fix_csv(csv_text, sep)
+            csv_file = io.StringIO(csv_text)
 
     # Retorna tupla com:
     # - Handle do buffer aberto do CSV (arquivo real ou StringIO, a depender do tamanho)
