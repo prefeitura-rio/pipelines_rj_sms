@@ -185,13 +185,10 @@ def filter_paragraphs(arr: List[str], type: str) -> List[str]:
         r"^subsecretaria",
         r"^superintendência",
         r"^administração setorial",
-
         r"^tribunal de contas do município do rio de janeiro$",
-
         r"^controladoria geral do município$",
         r"^subcontroladoria de",
         r"^coordenadoria técnica",
-
         r"^secretári[ao]",
         r"^controladora?",
         r"^rio de janeiro, [0-9]+ de",
@@ -240,11 +237,10 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         text = clean_text(p.get_text())
 
         # Se encontramos um parágrafo centralizado
-        is_centered = p.attrs.get("align") == "center" or\
-            re.search(
-                r"text\-align\s*\:\s*center",
-                p.attrs.get("style") or ""
-            ) is not None
+        is_centered = (
+            p.attrs.get("align") == "center"
+            or re.search(r"text\-align\s*\:\s*center", p.attrs.get("style") or "") is not None
+        )
         if is_centered:
             # Então estamos no início ou fim de uma seção
             # Se já não estávamos numa seção
@@ -252,10 +248,7 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
                 # Flag que estamos, incrementa índice
                 is_in_header = True
                 section_index += 1
-                sections[section_index] = {
-                    "header": [],
-                    "body": []
-                }
+                sections[section_index] = {"header": [], "body": []}
             sections[section_index]["header"].append(text)
         else:
             is_in_header = False
@@ -265,17 +258,16 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
                 section_index = 0
 
             if section_index not in sections:
-                sections[section_index] = {
-                    "header": [],
-                    "body": []
-                }
+                sections[section_index] = {"header": [], "body": []}
 
             # Se encontramos um parágrafo com margem à esquerda
             # (pelo menos 3 dígitos, i.e. >=100, ou >=90)
-            has_left_margin = re.search(
-                    r"margin\-left\s*\:\s*([1-9][0-9][0-9]+|9[0-9])\.?",
-                    p.attrs.get("style") or ""
-                ) is not None
+            has_left_margin = (
+                re.search(
+                    r"margin\-left\s*\:\s*([1-9][0-9][0-9]+|9[0-9])\.?", p.attrs.get("style") or ""
+                )
+                is not None
+            )
             if has_left_margin:
                 skip_to_next_header = True
                 sections[section_index]["body"].append(text)
@@ -307,8 +299,4 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
             # Cabeçalho deve ser uma string
             sections[section_k]["header"] = "\n".join(sections[section_k]["header"])
 
-    return [
-        obj
-        for _, obj in sections.items()
-        if obj is not None
-    ]
+    return [obj for _, obj in sections.items() if obj is not None]
