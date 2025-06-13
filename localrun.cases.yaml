@@ -368,8 +368,8 @@ cases:
     params:
       environment: "dev"
       dataset_id: "brutos_plataforma_subpav"
-      table_id: "competencias"
-      schema: "subpav_cnes"
+      table_id: "notificacoes"
+      schema: "subpav_acesso_mais_seguro"
 
   - case_slug: 'checks-bucket-files'
     flow_path: 'pipelines.reports.checks_bucket_files.flows'

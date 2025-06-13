@@ -25,6 +25,7 @@ from pipelines.datalake.extract_load.sisreg_api.flows import *
 from pipelines.datalake.extract_load.sisreg_web.flows import *
 from pipelines.datalake.extract_load.sisreg_web_v2.flows import *
 from pipelines.datalake.extract_load.smsrio_mysql.flows import *
+from pipelines.datalake.extract_load.subpav_mysql.flows import *
 from pipelines.datalake.extract_load.tasks_clickup.flows import *
 from pipelines.datalake.extract_load.tpc_azure_blob.flows import *
 from pipelines.datalake.extract_load.vitacare_api.flows import *
