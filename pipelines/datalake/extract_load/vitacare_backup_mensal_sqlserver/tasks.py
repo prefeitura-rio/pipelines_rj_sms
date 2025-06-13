@@ -206,6 +206,13 @@ def extract_and_transform_table(
                 )
         return df
     except Exception as e:
+        if "4060" in str(e) and "Cannot open database" in str(e):
+            log(
+                f"Database vitacare_historic_{cnes_code} not found. Skipping task.",
+                level="warning",
+            )
+            raise SKIP(f"Database for CNES {cnes_code} does not exist.")
+
         if "Invalid object name" in str(e):
             log(
                 f"Table {full_table_name} not found for CNES {cnes_code}. Skipping task.",
