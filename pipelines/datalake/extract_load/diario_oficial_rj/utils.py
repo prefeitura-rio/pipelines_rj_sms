@@ -121,10 +121,6 @@ def get_links_if_match(folders: List[BeautifulSoup], regex_search_str: str) -> L
     return all_links
 
 
-def string_cleanup(string: str) -> str:
-    return str(string).replace("\xa0", " ").replace("\r", "")
-
-
 def node_cleanup(root: BeautifulSoup) -> BeautifulSoup:
     # Para pegar o conteúdo textual, remove elementos inline
     for tag in root.find_all(["a", "b", "i", "em", "span"]):
@@ -162,15 +158,70 @@ def node_cleanup(root: BeautifulSoup) -> BeautifulSoup:
     return root
 
 
+def filter_paragraphs(arr: List[str], type: str) -> List[str]:
+    # from itertools import groupby
+    # groups = []
+    # for _, group in groupby(arr, lambda x: len(x) == 0):
+    #     groups.append(list(group))
+    # groups
+
+    # Limpa qualquer string vazia
+    arr = [text for text in arr if len(text)]
+
+    def filter_for_regex(arr: List[str], regex: List[str]) -> List[str]:
+        new_arr = []
+        for text in arr:
+            ignore = False
+            for r in regex:
+                if re.search(r, text, re.IGNORECASE):
+                    ignore = True
+                    break
+            if not ignore:
+                new_arr.append(text)
+        return new_arr
+
+    remove_header = [
+        r"^atos? d[ao]",
+        r"^subsecretaria",
+        r"^superintendência",
+        r"^administração setorial",
+
+        r"^tribunal de contas do município do rio de janeiro$",
+
+        r"^controladoria geral do município$",
+        r"^subcontroladoria de",
+        r"^coordenadoria técnica",
+
+        r"^secretári[ao]",
+        r"^controladora?",
+        r"^rio de janeiro, [0-9]+ de",
+    ]
+    remove_body = [
+        r"^decreta:?$",
+        r"^resolve:?$",
+        r"^rio de janeiro, [0-9]+ de",
+    ]
+    if type == "header":
+        return filter_for_regex(arr, remove_header)
+    return filter_for_regex(arr, remove_body)
+
+
 def parse_do_contents(root: BeautifulSoup) -> List[str]:
     # TODO: lidar com tabelas
     for table in root.find_all("table"):
+        # Pega último ancestral; só o [document] tem .new_tag()
+        document = None
+        for parent in root.parents:
+            document = parent
+        p = document.new_tag("p")
+        p.string = "[tabela]"
+        table.replace_with(p)
         table.decompose()
 
     def clean_text(text: str):
         text = str(text).strip()
         replace_list = [
-            ("\u00A0", ""),  # NO-BREAK SPACE
+            ("\u00A0", " "),  # NO-BREAK SPACE
             ("\u202F", " "),  # NARROW NO-BREAK SPACE
             ("\r", ""),
             ("\n", " "),
@@ -179,16 +230,85 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
             text = text.replace(fro, to)
         return text
 
-    # Pega o texto de todos os <p>'s da página, passando por limpeza
-    ps = [clean_text(p.get_text()) for p in root.find_all("p")]
+    all_ps = root.find_all("p")
 
-    # Usamos instâncias de <p>&nbsp;</p> como separadores de "conceitos"
-    # Os Diários Oficiais são extremamente diversos (para não dizer anárquicos)
-    # então tratamos o conteúdo entre os <p>&nbsp;</p>'s como blocos de informação
-    groups = []
-    for _, group in groupby(ps, lambda x: len(x) == 0):
-        groups.append(list(group))
+    section_index = -1
+    is_in_header = False
+    skip_to_next_header = False
+    sections = dict()
+    for p in all_ps:
+        text = clean_text(p.get_text())
 
-    # Retorna grupos
-    content = ["\n".join(group) for group in groups if len(group[0]) > 0]
-    return content
+        # Se encontramos um parágrafo centralizado
+        is_centered = p.attrs.get("align") == "center" or\
+            re.search(
+                r"text\-align\s*\:\s*center",
+                p.attrs.get("style") or ""
+            ) is not None
+        if is_centered:
+            # Então estamos no início ou fim de uma seção
+            # Se já não estávamos numa seção
+            if not is_in_header:
+                # Flag que estamos, incrementa índice
+                is_in_header = True
+                section_index += 1
+                sections[section_index] = {
+                    "header": [],
+                    "body": []
+                }
+            sections[section_index]["header"].append(text)
+        else:
+            is_in_header = False
+
+            if section_index == -1:
+                # Temos corpo sem cabeçalho antecedendo
+                section_index = 0
+
+            if section_index not in sections:
+                sections[section_index] = {
+                    "header": [],
+                    "body": []
+                }
+
+            # Se encontramos um parágrafo com margem à esquerda
+            # (pelo menos 3 dígitos, i.e. >=100, ou >=90)
+            has_left_margin = re.search(
+                    r"margin\-left\s*\:\s*([1-9][0-9][0-9]+|9[0-9])\.?",
+                    p.attrs.get("style") or ""
+                ) is not None
+            if has_left_margin:
+                skip_to_next_header = True
+                sections[section_index]["body"].append(text)
+            # Se já temos tudo que precisamos do corpo, continua
+            elif skip_to_next_header:
+                continue
+            # Senão, não queremos pular nada; salva conteúdo
+            else:
+                sections[section_index]["body"].append(text)
+
+    # `sections` é algo como:
+    # {
+    #   '0': {
+    #     'header': ['...', ...],
+    #     'body': ['...', ...]
+    #   }
+    #   ...
+    # }
+    for section_k in sections.keys():
+        # k = header, body / v = array de parágrafos
+        for area_k, area_v in sections[section_k].items():
+            # Filtra parágrafos pelo que temos interesse
+            sections[section_k][area_k] = filter_paragraphs(area_v, area_k)
+        # Se o corpo veio vazio
+        if len(sections[section_k]["body"]) <= 0:
+            # Apaga essa entrada
+            sections[section_k] = None
+        else:
+            # Cabeçalho deve ser uma string
+            sections[section_k]["header"] = "\n".join(sections[section_k]["header"])
+
+    return [
+        obj
+        for _, obj in sections.items()
+        if obj is not None
+    ]

@@ -17,7 +17,6 @@ from pipelines.datalake.extract_load.diario_oficial_rj.utils import (
     parse_do_contents,
     send_get_request,
     standardize_date_from_string,
-    string_cleanup,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -139,32 +138,34 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
         return None
     # Registra data/hora da extração
     current_datetime = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-    # Salva o HTML cru do corpo
-    # body_html = string_cleanup(html.body)
 
-    # Remove elementos inline comuns (<b>, <i>, <span>) pra não
-    # atrapalhar o .get_text() com separador de \n abaixo
-    # TODO: limpar essa função se não formos voltar com nada disso
+    base_result = {
+        "_extracted_at": current_datetime,
+        "do_data": do_date,
+        "do_id": do_id,
+        "materia_id": id,
+        "secao": folder_path,
+        "titulo": title,
+    }
+
+    # Remove elementos inline comuns (<b>, <i>, <span>)
     html = node_cleanup(html)
+    # Faz parsing do conteúdo para deixar tudo estruturado
     content_list = parse_do_contents(html.body)
 
-    # Usa .get_text() para pegar o conteúdo textual da página toda
-    # full_text = string_cleanup(html.body.get_text(separator="\n", strip=True))
-
     log(f"Article '{title}' (id '{id}') has size {len(content_list)} block(s)")
-    return [
+    ret = [
         {
-            "do_data": do_date,
-            "do_id": do_id,
-            "secao": folder_path,
-            "titulo": title,
-            "conteudo": content,
-            "_extracted_at": current_datetime,
-            # "texto": full_text,
-            # "html": body_html,
+            **base_result,
+            "secao_indice": sec_idx,
+            "conteudo_indice": cont_idx,
+            "cabecalho": content["header"],
+            "conteudo": body,
         }
-        for content in content_list
+        for sec_idx, content in enumerate(content_list)
+        for cont_idx, body in enumerate(content["body"])
     ]
+    return ret
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
