@@ -18,28 +18,14 @@ with Flow(
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment", default="dev")
-    INTERVAL = Parameter("interval", default="30 MINUTE")
     DATASET = Parameter("dataset_name", default="app_historico_clinico")
     TABLE = Parameter("table_name", default="registros")
 
     #####################################
     # Tasks
     #####################################
-    endpoints = get_data(
-        field="tipo_evento",
-        dataset_name=DATASET,
-        table_name=TABLE,
-        interval=INTERVAL,
-        environment=ENVIRONMENT,
-    )
-    http = get_data(
-        field="resultado",
-        dataset_name=DATASET,
-        table_name=TABLE,
-        interval=INTERVAL,
-        environment=ENVIRONMENT,
-    )
-    send_report(data=(endpoints, http))
+    data = get_data(dataset_name=DATASET, table_name=TABLE, environment=ENVIRONMENT)
+    send_report(data=data)
 
 
 report_uso_hci.schedule = schedule
