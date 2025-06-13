@@ -31,7 +31,7 @@ flow_parameters = [
         "rename_flow": True,
         "table_id": "cids_risco_gestacional",
         "url": "https://docs.google.com/spreadsheets/d/1hpTi-pwJlYqOcdor__v4ONg6yH-2H73qClesdTmGyeo/edit",  # noqa: E501
-        "url_type": "google_sheet"
+        "url_type": "google_sheet",
     },
     {
         "url": "https://docs.google.com/spreadsheets/d/176u8I3xlAW7mFN3M0QADZ2b6jU0iUAfWs4CvKd5rhJU/edit?usp=sharing",  # noqa: E501
