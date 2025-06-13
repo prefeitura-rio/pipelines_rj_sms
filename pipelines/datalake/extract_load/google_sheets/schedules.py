@@ -24,6 +24,16 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "CID de Risco Gestacional",
+        "rename_flow": True,
+        "table_id": "cids_risco_gestacional",
+        "url": "https://docs.google.com/spreadsheets/d/1hpTi-pwJlYqOcdor__v4ONg6yH-2H73qClesdTmGyeo/edit",  # noqa: E501
+        "url_type": "google_sheet"
+    },
+    {
         "url": "https://docs.google.com/spreadsheets/d/176u8I3xlAW7mFN3M0QADZ2b6jU0iUAfWs4CvKd5rhJU/edit?usp=sharing",  # noqa: E501
         "url_type": "google_sheet",
         "gsheets_sheet_name": "Municipios",
