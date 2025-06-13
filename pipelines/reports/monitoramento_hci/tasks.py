@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 from typing import Optional
+
 import pandas as pd
-from google.cloud import bigquery
 import pytz
+from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -45,7 +46,7 @@ def send_report(data):
     # Se estamos fora do horário de trabalho, é esperado que tenhamos
     # poucos acessos; não vamos reportar erros de pouco acesso
     now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-    REPORT_LOW_ACCESS = (now.hour >= 7 and now.hour <= 19 and now.weekday() < 5)
+    REPORT_LOW_ACCESS = now.hour >= 7 and now.hour <= 19 and now.weekday() < 5
 
     UID = ""
     USER_MENTION = f"<@{UID}>"
@@ -70,14 +71,16 @@ def send_report(data):
     # - Se for HTTP 500, avisa
     # - Se for HTTP 200, confere se está próximo à média semanal
 
-
     # Além disso:
     # - Verifica se só temos logins/buscas/etc, mas não consultas
-    types = [event_type.lower() for event_type, event_instances in events_30m.items() if "200" in event_instances]
+    types = [
+        event_type.lower()
+        for event_type, event_instances in events_30m.items()
+        if "200" in event_instances
+    ]
     actual_usage_count = len([t for t in types if t.startswith("consulta")])
     if actual_usage_count <= 0:
         log("No 'consulta' event type!", level="warning")
-
 
     # send_discord_webhook(
     #     title=...,
