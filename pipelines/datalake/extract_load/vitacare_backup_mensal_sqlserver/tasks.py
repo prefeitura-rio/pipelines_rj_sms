@@ -3,6 +3,7 @@
 Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
 from datetime import datetime, timedelta
+from typing import List
 
 import pandas as pd
 import pytz
@@ -168,6 +169,13 @@ def extract_and_transform_table(
                 )
         return df
     except Exception as e:
+        if "4060" in str(e) and "Cannot open database" in str(e):
+            log(
+                f"Database vitacare_historic_{cnes_code} not found. Skipping task.",
+                level="warning",
+            )
+            raise SKIP(f"Database for CNES {cnes_code} does not exist.")
+
         if "Invalid object name" in str(e):
             log(
                 f"Table {full_table_name} not found for CNES {cnes_code}. Skipping task.",
@@ -184,7 +192,5 @@ def extract_and_transform_table(
 
 @task
 def build_bq_table_name(table_name: str) -> str:
-    """Constrói o nome da tabela no BigQuery."""
-    bq_table_name = f"{table_name.lower()}"
-    log(f"Built BigQuery table name: {bq_table_name} for source table: {table_name}")
-    return bq_table_name
+    """Constrói o nome da tabela no BQ"""
+    return table_name.lower()
