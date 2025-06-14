@@ -17,7 +17,6 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
     vitacare_backup_manager_schedule,
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
-    concatenate_and_upload_dataframes,
     extract_and_transform_table,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
@@ -36,6 +35,7 @@ from pipelines.utils.tasks import (
     get_project_name,
     get_secret_key,
     rename_current_flow_run,
+    upload_df_to_datalake,
 )
 
 with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_historic_table_operator:
@@ -89,11 +89,16 @@ with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_hist
         cnes_code=all_cnes_to_process,
     )
 
-    upload_result = concatenate_and_upload_dataframes(
-        dfs=extracted_dfs,
-        dataset_id=DATASET_ID,
-        table_id=TABLE_NAME,
-        partition_column=PARTITION_COLUMN,
+    bq_table_id = TABLE_NAME.lower()
+
+    upload_results = upload_df_to_datalake.map(
+        df=extracted_dfs,
+        dataset_id=unmapped(DATASET_ID),
+        table_id=unmapped(bq_table_id),
+        partition_column=unmapped(PARTITION_COLUMN),
+        source_format=unmapped("parquet"),
+        if_exists=unmapped("append"),
+        if_storage_data_exists=unmapped("append"),
     )
 
 
@@ -171,8 +176,8 @@ flow_vitacare_historic_table_operator.executor = LocalDaskExecutor(num_workers=2
 flow_vitacare_historic_table_operator.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="16Gi",
-    memory_request="16Gi",
+    memory_limit="8Gi",
+    memory_request="8Gi",
 )
 
 flow_vitacare_historic_manager.schedule = vitacare_backup_manager_schedule

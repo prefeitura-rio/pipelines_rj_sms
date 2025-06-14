@@ -17,7 +17,6 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import upload_df_to_datalake
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
@@ -57,42 +56,6 @@ def get_vitacare_cnes_from_bigquery() -> list:
 def get_tables_to_extract() -> list:
     """Retorna a lista de tabelas a serem extraídas para um CNES"""
     return vitacare_constants.TABLES_TO_EXTRACT.value
-
-
-@task
-def concatenate_and_upload_dataframes(
-    dfs: List[pd.DataFrame],
-    dataset_id: str,
-    table_id: str,
-    partition_column: str,
-):
-    """
-    Recebe uma lista de DataFrames, concatena em um só e chama a task de upload.
-    """
-    valid_dfs = [df for df in dfs if isinstance(df, pd.DataFrame) and not df.empty]
-
-    if not valid_dfs:
-        log(f"Nenhum dado extraído para a tabela {table_id}. Upload pulado.", level="info")
-        return
-
-    final_df = pd.concat(valid_dfs, ignore_index=True)
-    log(
-        f"Tabela {table_id}: {len(valid_dfs)} DataFrames concatenados em um final com {len(final_df)} linhas."
-    )
-
-    bq_table_id = table_id.lower()
-
-    upload_df_to_datalake.run(
-        df=final_df,
-        dataset_id=dataset_id,
-        table_id=bq_table_id,
-        partition_column=partition_column,
-        source_format="parquet",
-        if_exists="append",
-        if_storage_data_exists="append",
-    )
-
-    log(f"Upload para a tabela {bq_table_id} no dataset {dataset_id} foi iniciado.")
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
