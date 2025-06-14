@@ -188,6 +188,8 @@ def extract_and_transform_table(
             level="error",
         )
         raise
+
+
 @task
 def build_bq_table_name(table_name: str) -> str:
     """Constrói o nome da tabela no BQ"""
