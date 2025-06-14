@@ -17,6 +17,7 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
     vitacare_backup_manager_schedule,
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
+    build_bq_table_name,
     extract_and_transform_table,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
@@ -89,7 +90,7 @@ with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_hist
         cnes_code=all_cnes_to_process,
     )
 
-    bq_table_id = TABLE_NAME.lower()
+    bq_table_id = build_bq_table_name(TABLE_NAME)
 
     upload_results = upload_df_to_datalake.map(
         df=extracted_dfs,
