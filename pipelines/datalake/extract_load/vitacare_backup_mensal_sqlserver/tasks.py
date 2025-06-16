@@ -48,22 +48,7 @@ def process_cnes_table(
         )
         engine = create_engine(connection_string)
 
-        query = ""
-        if db_table.upper() == 'PRESCRICOES':
-            # Query que corrige o backslash na coluna posologia.
-            query = """
-            SELECT
-                acto_id,
-                nome_medicamento,
-                cod_medicamento,
-                REPLACE(posologia, '\\', '/') AS posologia,
-                quantidade,
-                uso_continuado
-            FROM dbo.prescricoes
-            """
-        else:
-            # Para todas as outras tabelas, continua como antes.
-            query = f"SELECT * FROM {full_table_name}"
+        query = f"SELECT * FROM {full_table_name}"
 
         df = pd.read_sql(query, engine)
 
@@ -94,6 +79,10 @@ def process_cnes_table(
             df["ut_id"] = df["ut_id"].apply(clean_ut_id)
 
         df = df.astype(str)
+
+        for col in df.select_dtypes(include=['object']).columns:
+            # Remove quebras de linha, tabs e o caractere NULO, substituindo por um espaço
+            df[col] = df[col].str.replace(r"[\n\r\t\x00]+", " ", regex=True)
 
         # --- 2. Carga ---
         log(f"Enviando {len(df)} linhas do CNES {cnes_code} para o BigQuery.")
