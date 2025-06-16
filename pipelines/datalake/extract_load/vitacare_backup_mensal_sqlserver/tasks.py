@@ -49,7 +49,7 @@ def process_cnes_table(
         engine = create_engine(connection_string)
 
         query = ""
-        if db_table.upper() == 'PRESCRICOES':
+        if db_table.upper() == "PRESCRICOES":
             # Query que corrige o backslash na coluna posologia.
             query = """
             SELECT
@@ -66,7 +66,6 @@ def process_cnes_table(
             query = f"SELECT * FROM {full_table_name}"
 
         df = pd.read_sql(query, engine)
-
 
         if df.empty:
             log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
