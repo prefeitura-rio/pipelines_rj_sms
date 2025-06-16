@@ -72,12 +72,12 @@ cases:
     params:
       environment: "dev"
       schema_name: "basecentral"
-      table_name: "prescricao"
+      table_name: "atendimento"
       partition_column: "datalake_loaded_at"
       datetime_column: "created_at"
-      target_name: "basecentral__prescricao_eventos"
-      interval_start: "2024-09-30"
-      interval_end: "2024-10-07"
+      target_name: "basecentral__atendimento_eventos"
+      interval_start:
+      interval_end:
   - case_slug: "load-hci-from-datake"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
     flow_name: "datalake_to_hci"
@@ -368,8 +368,8 @@ cases:
     params:
       environment: "dev"
       dataset_id: "brutos_plataforma_subpav"
-      table_id: "competencias"
-      schema: "subpav_cnes"
+      table_id: "notificacoes"
+      schema: "subpav_acesso_mais_seguro"
 
   - case_slug: 'checks-bucket-files'
     flow_path: 'pipelines.reports.checks_bucket_files.flows'
