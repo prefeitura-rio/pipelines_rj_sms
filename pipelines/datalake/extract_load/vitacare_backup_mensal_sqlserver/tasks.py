@@ -79,7 +79,7 @@ def process_cnes_table(
 
         df = df.astype(str)
 
-        for col in df.select_dtypes(include=['object']).columns:
+        for col in df.select_dtypes(include=["object"]).columns:
             # Remove quebras de linha, tabs e o caractere NULO, substituindo por um espaço
             df[col] = df[col].str.replace(r"[\n\r\t\x00]+", " ", regex=True)
 
