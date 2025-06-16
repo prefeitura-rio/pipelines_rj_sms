@@ -48,18 +48,25 @@ def process_cnes_table(
         )
         engine = create_engine(connection_string)
 
-        try:
-            df = pd.read_sql(f"SELECT * FROM {full_table_name}", engine)
+        query = ""
+        if db_table.upper() == 'PRESCRICOES':
+            # Query que corrige o backslash na coluna posologia.
+            query = """
+            SELECT
+                acto_id,
+                nome_medicamento,
+                cod_medicamento,
+                REPLACE(posologia, '\\', '/') AS posologia,
+                quantidade,
+                uso_continuado
+            FROM dbo.prescricoes
+            """
+        else:
+            # Para todas as outras tabelas, continua como antes.
+            query = f"SELECT * FROM {full_table_name}"
 
-        except Exception as e:
-            if "need to escape" in str(e):
-                with engine.connect() as connection:
-                    result = connection.execute(text(f"SELECT * FROM {full_table_name}"))
-                    rows = result.fetchall()
-                    columns = result.keys()
-                    df = pd.DataFrame(rows, columns=columns)
-            else:
-                raise e
+        df = pd.read_sql(query, engine)
+
 
         if df.empty:
             log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
