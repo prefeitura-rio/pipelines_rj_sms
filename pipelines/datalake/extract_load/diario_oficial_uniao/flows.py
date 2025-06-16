@@ -13,7 +13,6 @@ from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     parse_date,
     upload_to_datalake,
 )
-from pipelines.reports.checks_bucket_files.schedules import schedule
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Diário Oficial da União"
@@ -28,7 +27,7 @@ with Flow(
 
     ENVIRONMENT = Parameter("environment", default="dev")
     DATE = Parameter("date", default="")
-    DOU_SECTION = Parameter("dou_section", default=1)
+    DOU_SECTION = Parameter("dou_section", default=3)
     MAX_WORKERS = Parameter("max_workers", default=10)
     DATASET_ID = Parameter("dataset_id", default="brutos_diario_oficial")
 

@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 import pandas as pd
-from bs4 import BeautifulSoup
 from prefect import task
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
