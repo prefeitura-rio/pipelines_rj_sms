@@ -52,7 +52,6 @@ def process_cnes_table(
 
         df = pd.read_sql(query, engine)
 
-
         if df.empty:
             log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
             return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
