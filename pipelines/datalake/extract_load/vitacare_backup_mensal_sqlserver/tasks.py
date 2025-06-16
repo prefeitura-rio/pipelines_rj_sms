@@ -10,6 +10,7 @@ import pytz
 from google.cloud import bigquery
 from prefect.engine.signals import SKIP
 from sqlalchemy import create_engine
+from sqlalchemy import text
 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
     vitacare_constants,
@@ -47,7 +48,19 @@ def process_cnes_table(
             "?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
         )
         engine = create_engine(connection_string)
-        df = pd.read_sql(f"SELECT * FROM {full_table_name}", engine)
+
+        try:
+            df = pd.read_sql(f"SELECT * FROM {full_table_name}", engine)
+
+        except Exception as e:
+            if "need to escape" in str(e):
+                with engine.connect() as connection:
+                    result = connection.execute(text(f"SELECT * FROM {full_table_name}"))
+                    rows = result.fetchall()
+                    columns = result.keys()
+                    df = pd.DataFrame(rows, columns=columns)
+            else:
+                raise e
 
         if df.empty:
             log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
