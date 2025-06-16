@@ -384,5 +384,5 @@ cases:
     flow_name: 'extract_diario_oficial_uniao'
     params:
       environment: 'dev'
-      dou_section: 3
+      dou_section: 1
       max_workers: 10

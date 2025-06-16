@@ -129,7 +129,7 @@ def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
         environment (str):
     """
     df = pd.DataFrame(dou_infos)
-    df["_uploaded_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    df["extracted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     log(f"Realizando upload no datalake em {dataset}...")
 
@@ -137,7 +137,7 @@ def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
         df=df,
         dataset_id=dataset,
         table_id="diarios_uniao",
-        partition_column="_extracted_at",
+        partition_column="extracted_at",
         if_exists="append",
         if_storage_data_exists="append",
         source_format="csv",
