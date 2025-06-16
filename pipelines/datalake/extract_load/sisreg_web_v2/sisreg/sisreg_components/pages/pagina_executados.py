@@ -12,8 +12,8 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.common.by import By
 
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.datas import (
-    gerar_intervalo_datas,
+from pipelines.datalake.utils.tasks import (
+    gerar_faixas_de_data,
 )
 from pipelines.utils.logger import log
 
@@ -43,7 +43,7 @@ class PaginaExecutados:
             data_final = (datetime.now() - timedelta(days=7)).strftime("%d/%m/%Y")
             # TMP: end
 
-            lista_datas = gerar_intervalo_datas(data_inicial, data_final)
+            lista_datas = gerar_faixas_de_data.run(data_inicial, data_final)
             if not lista_datas:
                 log("Nenhuma data válida foi gerada. Encerrando extrair_executados.")
                 return
