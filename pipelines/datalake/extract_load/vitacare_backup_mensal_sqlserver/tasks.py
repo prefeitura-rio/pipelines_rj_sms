@@ -18,6 +18,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 
+
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def extract_and_transform_table(
     db_host: str,
@@ -49,14 +50,14 @@ def extract_and_transform_table(
         now = datetime.now(pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
         df["extracted_at"] = now
         df["id_cnes"] = cnes_code
-        
+
         # Remove acentos dos nomes das colunas
         df.columns = remove_columns_accents(df)
 
         # Tratamento específico para a coluna `ut_id``
         tables_with_ut_id = ["PACIENTES", "ATENDIMENTOS"]
         if db_table.upper() in tables_with_ut_id and "ut_id" in df.columns:
-            
+
             def clean_ut_id(val):
                 if isinstance(val, bytes):
                     try:
@@ -97,6 +98,7 @@ def extract_and_transform_table(
         )
         raise
 
+
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
 def get_vitacare_cnes_from_bigquery() -> list:
     """
@@ -134,6 +136,7 @@ def get_vitacare_cnes_from_bigquery() -> list:
 def get_tables_to_extract() -> list:
     """Retorna a lista de tabelas a serem extraídas para um CNES"""
     return vitacare_constants.TABLES_TO_EXTRACT.value
+
 
 @task
 def build_bq_table_name(table_name: str) -> str:
