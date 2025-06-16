@@ -18,9 +18,9 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
     build_bq_table_name,
-    extract_and_transform_table,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
+    process_cnes_table,
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import (
     create_and_send_final_report,
@@ -36,7 +36,6 @@ from pipelines.utils.tasks import (
     get_project_name,
     get_secret_key,
     rename_current_flow_run,
-    upload_df_to_datalake,
 )
 
 with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_historic_table_operator:
@@ -79,27 +78,19 @@ with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_hist
     )
 
     all_cnes_to_process = get_vitacare_cnes_from_bigquery()
+    bq_table_id = build_bq_table_name(TABLE_NAME)
 
-    extracted_dfs = extract_and_transform_table.map(
+    etl_results = process_cnes_table.map(
         db_host=unmapped(db_host),
         db_port=unmapped(db_port),
         db_user=unmapped(db_user),
         db_password=unmapped(db_password),
         db_schema=unmapped(DB_SCHEMA),
         db_table=unmapped(TABLE_NAME),
-        cnes_code=all_cnes_to_process,
-    )
-
-    bq_table_id = build_bq_table_name(TABLE_NAME)
-
-    upload_results = upload_df_to_datalake.map(
-        df=extracted_dfs,
         dataset_id=unmapped(DATASET_ID),
-        table_id=unmapped(bq_table_id),
+        bq_table_id=unmapped(bq_table_id),
         partition_column=unmapped(PARTITION_COLUMN),
-        source_format=unmapped("parquet"),
-        if_exists=unmapped("append"),
-        if_storage_data_exists=unmapped("append"),
+        cnes_code=all_cnes_to_process,
     )
 
 

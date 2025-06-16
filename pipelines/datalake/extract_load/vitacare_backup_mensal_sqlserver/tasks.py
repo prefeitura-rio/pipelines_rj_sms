@@ -17,10 +17,10 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
+from pipelines.utils.tasks import upload_df_to_datalake
 
-
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
-def extract_and_transform_table(
+@task(max_retries=2, retry_delay=timedelta(minutes=1))
+def process_cnes_table(
     db_host: str,
     db_port: str,
     db_user: str,
@@ -28,14 +28,17 @@ def extract_and_transform_table(
     db_schema: str,
     db_table: str,
     cnes_code: str,
-) -> pd.DataFrame:
+    dataset_id: str,
+    bq_table_id: str,
+    partition_column: str,
+) -> dict:
     """
-    Função Python para extrair e transformar dados.
+    Extrai, transforma e carrega dados de uma tabela para um único CNES.
     """
     try:
-
+        # --- 1. Extração e Transformação ---
         full_table_name = f"{db_schema}.{db_table}"
-        log(f"Attempting to download data from {full_table_name} for CNES: {cnes_code}")
+        log(f"Iniciando processo para {full_table_name} do CNES: {cnes_code}")
         db_name = f"vitacare_historic_{cnes_code}"
 
         connection_string = (
@@ -44,59 +47,62 @@ def extract_and_transform_table(
         )
         engine = create_engine(connection_string)
         df = pd.read_sql(f"SELECT * FROM {full_table_name}", engine)
-        log(f"Successfully downloaded {len(df)} rows from {full_table_name} for CNES {cnes_code}.")
+        
+        if df.empty:
+            log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
+            return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
 
-        # Adiciona metadados da extração
+        log(f"Extraídas {len(df)} linhas de {full_table_name} para o CNES {cnes_code}.")
+
         now = datetime.now(pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
         df["extracted_at"] = now
         df["id_cnes"] = cnes_code
-
-        # Remove acentos dos nomes das colunas
+        
         df.columns = remove_columns_accents(df)
 
-        # Tratamento específico para a coluna `ut_id``
         tables_with_ut_id = ["PACIENTES", "ATENDIMENTOS"]
         if db_table.upper() in tables_with_ut_id and "ut_id" in df.columns:
-
             def clean_ut_id(val):
                 if isinstance(val, bytes):
                     try:
-                        # Tenta decodificar com o encoding mais provável, removendo nulos
                         return val.decode("utf-16-le", errors="ignore").replace("\x00", "").strip()
                     except UnicodeDecodeError:
-                        # Fallback para outro encoding comum
                         return val.decode("latin-1", errors="ignore").replace("\x00", "").strip()
-                # Garante que qualquer outra coisa seja convertida para string
                 return str(val).replace("\x00", "").strip()
-
             df["ut_id"] = df["ut_id"].apply(clean_ut_id)
-            log(f"'ut_id' in {full_table_name} (CNES {cnes_code}) cleaned.")
 
-        # Converte todas as colunas para string
         df = df.astype(str)
-        log(f"All columns converted to string type for {full_table_name} (CNES {cnes_code}).")
 
-        return df
+        # --- 2. Carga ---
+        log(f"Enviando {len(df)} linhas do CNES {cnes_code} para o BigQuery.")
+        upload_df_to_datalake.run(
+            df=df,
+            dataset_id=dataset_id,
+            table_id=bq_table_id,
+            partition_column=partition_column,
+            source_format="parquet",
+            if_exists="append",
+            if_storage_data_exists="append",
+        )
+        log(f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída.")
+        
+        return {"cnes": cnes_code, "status": "success", "rows_loaded": len(df)}
+
+    except SKIP as e:
+        log(f"Task pulada para CNES {cnes_code}: {e.message}", level="info")
+        reason = "Table not found" if "Table not found" in e.message else "Database not found"
+        return {"cnes": cnes_code, "status": "skipped", "reason": reason}
+
     except Exception as e:
         if "4060" in str(e) and "Cannot open database" in str(e):
-            log(
-                f"Database vitacare_historic_{cnes_code} not found. Skipping task.",
-                level="warning",
-            )
+            log(f"Database vitacare_historic_{cnes_code} não encontrado. Pulando.", level="warning")
             raise SKIP(f"Database for CNES {cnes_code} does not exist.")
-
         if "Invalid object name" in str(e):
-            log(
-                f"Table {full_table_name} not found for CNES {cnes_code}. Skipping task.",
-                level="warning",
-            )
+            log(f"Tabela {full_table_name} não encontrada para o CNES {cnes_code}. Pulando.", level="warning")
             raise SKIP(f"Table not found: '{db_table}'")
-        log(
-            f"Error downloading or transforming data from {full_table_name} "
-            f"(CNES: {cnes_code}): {e}",
-            level="error",
-        )
-        raise
+        
+        log(f"Falha no processo para CNES {cnes_code}: {e}", level="error")
+        return {"cnes": cnes_code, "status": "failed", "error": str(e)[:300]}
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
@@ -112,19 +118,13 @@ def get_vitacare_cnes_from_bigquery() -> list:
         AND prontuario_episodio_tem_dado = 'sim'
     """
     log(f"Buscando códigos CNES do BigQuery com a query: {query}")
-
     try:
         client = bigquery.Client()
         query_job = client.query(query)
-
-        # Coleta os resultados
         cnes_list = [str(row.id_cnes) for row in query_job if row.id_cnes is not None]
-
         if not cnes_list:
             log("Nenhum código CNES encontrado no BigQuery para Vitacare.", level="warning")
-            # raise FAIL("Nenhum CNES encontrado para Vitacare no BigQuery")
             return []
-
         log(f"Encontrados {len(cnes_list)} códigos CNES no BigQuery.")
         return cnes_list
     except Exception as e:
@@ -136,6 +136,7 @@ def get_vitacare_cnes_from_bigquery() -> list:
 def get_tables_to_extract() -> list:
     """Retorna a lista de tabelas a serem extraídas para um CNES"""
     return vitacare_constants.TABLES_TO_EXTRACT.value
+
 
 
 @task
