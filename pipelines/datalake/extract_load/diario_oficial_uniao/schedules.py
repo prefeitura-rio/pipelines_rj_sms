@@ -4,10 +4,10 @@
 Schedules
 """
 
-from datetime import datetime, timedelta
+from datetime import time, datetime, timedelta
 
 import pytz
-from prefect.schedules import Schedule
+from prefect.schedules import Schedule, filters
 
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
@@ -47,4 +47,7 @@ clocks = generate_dump_api_schedules(
     runs_interval_minutes=0,
 )
 
-schedule = Schedule(clocks=untuple_clocks(clocks))
+schedule = Schedule(
+    clocks=untuple_clocks(clocks),
+    filters=[filters.between_times(time(8), time(9))]
+)
