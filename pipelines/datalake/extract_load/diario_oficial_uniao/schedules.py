@@ -18,21 +18,21 @@ flow_parameters = [
         "dataset": "brutos_diario_oficial",
         "max_workers": 10,
         "dou_section": 1,
-        "date": ""
+        "date": "",
     },
     {
         "environment": "prod",
         "dataset": "brutos_diario_oficial",
         "max_workers": 10,
         "dou_section": 2,
-        "date": ""
+        "date": "",
     },
     {
         "environment": "prod",
         "dataset": "brutos_diario_oficial",
         "max_workers": 10,
         "dou_section": 3,
-        "date": ""
+        "date": "",
     },
 ]
 

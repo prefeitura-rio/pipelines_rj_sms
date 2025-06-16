@@ -10,8 +10,8 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao.schedules import schedule
 from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     dou_extraction,
+    parse_date,
     upload_to_datalake,
-    parse_date
 )
 from pipelines.reports.checks_bucket_files.schedules import schedule
 
@@ -27,7 +27,7 @@ with Flow(
     #####################################
 
     ENVIRONMENT = Parameter("environment", default="dev")
-    DATE = Parameter("date", default='')
+    DATE = Parameter("date", default="")
     DOU_SECTION = Parameter("dou_section", default=1)
     MAX_WORKERS = Parameter("max_workers", default=10)
     DATASET_ID = Parameter("dataset_id", default="brutos_diario_oficial")
@@ -36,7 +36,7 @@ with Flow(
     # Flow
     #####################################
 
-    date = parse_date(date_string=DATE)    
+    date = parse_date(date_string=DATE)
     dou_infos = dou_extraction(date=date, dou_section=DOU_SECTION, max_workers=MAX_WORKERS)
     upload_to_datalake(dou_infos=dou_infos, environment=ENVIRONMENT, dataset=DATASET_ID)
 
