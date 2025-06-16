@@ -11,7 +11,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 
 from pipelines.datalake.extract_load.diario_oficial_uniao.utils import (
-    extract_decree_details,
+    extract_decree_details
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -59,19 +59,24 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
     driver.get(
         f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}"
     )
-
+    
     while True:
         # Lógica para evitar a poluição do log
         if page_count == 1 or page_count % 10 == 0:
             log(f"Extração da página {page_count}")
-
+        
+        # Quando não há atos oficias, há um elemento de aviso
+        if driver.find_elements(by=By.CLASS_NAME, value='alert.alert-info'):
+            log('⚠️ Não há atos oficias para extrair.')
+            break
+        
         cards = driver.find_elements(by=By.CLASS_NAME, value="resultado")
 
         decree_links_to_process = []  # Lista para armazenar os links dos decretos
         card_metadata = (
             []
         )  # Para armazenar title e outros dados que não dependem da requisição interna
-
+        
         for card in cards:
             title = card.find_element(by=By.CLASS_NAME, value="title-marker")
             info = card.find_element(
@@ -128,20 +133,29 @@ def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
         dataset (str): Dataset do BigQuery onde os dados serão carregados.
         environment (str):
     """
-    df = pd.DataFrame(dou_infos)
-    df["extracted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(len(dou_infos))
+    if dou_infos:
+        rows  = len(dou_infos)
+        df = pd.DataFrame(dou_infos)
+        df["extracted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log(f"Realizando upload de {rows} registros no datalake em {dataset}...")
 
-    log(f"Realizando upload no datalake em {dataset}...")
+        upload_df_to_datalake.run(
+            df=df,
+            dataset_id=dataset,
+            table_id="diarios_uniao",
+            partition_column="extracted_at",
+            if_exists="append",
+            if_storage_data_exists="append",
+            source_format="csv",
+            csv_delimiter=",",
+        )
+        log("✅ Carregamento no datalake finalizado.")
+    else:
+        log("❌ Não há dados para carregar.")
 
-    upload_df_to_datalake.run(
-        df=df,
-        dataset_id=dataset,
-        table_id="diarios_uniao",
-        partition_column="extracted_at",
-        if_exists="append",
-        if_storage_data_exists="append",
-        source_format="csv",
-        csv_delimiter=",",
-    )
-
-    log("✅ Flow finalizado.")
+@task
+def parse_date(date_string: str) -> datetime | None:
+    if date_string != '':
+        return datetime.strptime(date_string, "%d/%m/%Y")
+    return None

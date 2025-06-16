@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
+from datetime import datetime
 from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -8,9 +9,11 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao.schedules import schedule
+from pipelines.utils.logger import log
 from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     dou_extraction,
     upload_to_datalake,
+    parse_date
 )
 from pipelines.reports.checks_bucket_files.schedules import schedule
 
@@ -26,18 +29,19 @@ with Flow(
     #####################################
 
     ENVIRONMENT = Parameter("environment", default="dev")
+    DATE = Parameter("date", default='')
     DOU_SECTION = Parameter("dou_section", default=1)
     MAX_WORKERS = Parameter("max_workers", default=10)
     DATASET_ID = Parameter("dataset_id", default="brutos_diario_oficial")
-    DATE = Parameter("date", default=None)
 
     #####################################
     # Flow
     #####################################
 
-    dou_infos = dou_extraction(date=DATE, dou_section=DOU_SECTION, max_workers=MAX_WORKERS)
-
+    date = parse_date(date_string=DATE)    
+    dou_infos = dou_extraction(date=date, dou_section=DOU_SECTION, max_workers=MAX_WORKERS)
     upload_to_datalake(dou_infos=dou_infos, environment=ENVIRONMENT, dataset=DATASET_ID)
+
 
 # Flow configs
 extract_diario_oficial_uniao.schedule = schedule
