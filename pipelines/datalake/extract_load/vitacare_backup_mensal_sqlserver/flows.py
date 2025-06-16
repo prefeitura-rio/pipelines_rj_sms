@@ -156,8 +156,8 @@ flow_vitacare_historic_manager.executor = LocalDaskExecutor(num_workers=1)
 flow_vitacare_historic_manager.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="8Gi",
-    memory_request="4Gi",
+    memory_limit="2Gi",
+    memory_request="1Gi",
 )
 
 flow_vitacare_historic_table_operator.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
