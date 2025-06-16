@@ -1,19 +1,21 @@
+# -*- coding: utf-8 -*-
 import os
 import time
-
-import pandas as pd
-from selenium.webdriver.common.by import By
-from pipelines.utils.logger import log
-
-from bs4 import BeautifulSoup
-from selenium.common.exceptions import (
-    TimeoutException,
-    NoSuchElementException,
-    WebDriverException
-)
 from datetime import datetime, timedelta
 
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.datas import gerar_intervalo_datas
+import pandas as pd
+from bs4 import BeautifulSoup
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    TimeoutException,
+    WebDriverException,
+)
+from selenium.webdriver.common.by import By
+
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.datas import (
+    gerar_intervalo_datas,
+)
+from pipelines.utils.logger import log
 
 
 class PaginaExecutados:
@@ -21,7 +23,7 @@ class PaginaExecutados:
     Página de Executados no SISREG.
     """
 
-    def baixar_executados(self) -> None: #, data_inicial: str, data_final: str) -> None:
+    def baixar_executados(self) -> None:  # , data_inicial: str, data_final: str) -> None:
         """
         Extrai dados de executados no SISREG para o intervalo de datas especificado.
         Salva o resultado em CSV.
@@ -58,9 +60,7 @@ class PaginaExecutados:
 
             df_final = pd.concat(dataframes, ignore_index=True)
             df_final.to_csv(
-                os.path.join(self.caminho_download, "executados.csv"),
-                index=False,
-                encoding='utf-8'
+                os.path.join(self.caminho_download, "executados.csv"), index=False, encoding="utf-8"
             )
             log(f"Executados consolidados salvos em: {self.caminho_download}")
 
@@ -102,7 +102,9 @@ class PaginaExecutados:
             log(f"Erro ao extrair tabela para {data_str}: {e}")
             return None
 
-    def _abrir_executados_com_retentativas(self, url_complemento: str, max_tentativas: int = 50) -> bool:
+    def _abrir_executados_com_retentativas(
+        self, url_complemento: str, max_tentativas: int = 50
+    ) -> bool:
         """
         Tenta abrir a página de executados repetidas vezes, caso falhe por timeouts ou instabilidades.
 
@@ -118,7 +120,7 @@ class PaginaExecutados:
                 self.abrir_pagina(
                     url_complemento=url_complemento,
                     seletor_espera=(By.NAME, "pesquisar"),
-                    tempo_espera=300
+                    tempo_espera=300,
                 )
                 return True
             except Exception as e:
@@ -131,18 +133,18 @@ class PaginaExecutados:
         Localiza a tabela de listagem e extrai seus dados em um DataFrame.
         """
         # A classe table_listagem aparece várias vezes; a segunda (index 1) costuma ter os dados.
-        tabelas = self.browser.find_elements(By.CLASS_NAME, 'table_listagem')
+        tabelas = self.browser.find_elements(By.CLASS_NAME, "table_listagem")
         if len(tabelas) < 2:
             return None
 
-        soup = BeautifulSoup(tabelas[1].get_attribute('outerHTML'), 'html.parser')
-        tbody = soup.find('tbody')
+        soup = BeautifulSoup(tabelas[1].get_attribute("outerHTML"), "html.parser")
+        tbody = soup.find("tbody")
         if not tbody:
             return None
 
-        linhas = tbody.find_all('tr')
+        linhas = tbody.find_all("tr")
         dados = [
-            [col.text.strip() for col in linha.find_all('td')]
+            [col.text.strip() for col in linha.find_all("td")]
             for linha in linhas
             if "RETORNADAS" not in linha.text
         ]
