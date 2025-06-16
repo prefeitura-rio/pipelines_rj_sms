@@ -9,8 +9,7 @@ import pandas as pd
 import pytz
 from google.cloud import bigquery
 from prefect.engine.signals import SKIP
-from sqlalchemy import create_engine
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
     vitacare_constants,
