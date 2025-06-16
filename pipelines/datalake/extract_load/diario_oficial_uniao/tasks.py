@@ -133,7 +133,7 @@ def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
         dataset (str): Dataset do BigQuery onde os dados serão carregados.
         environment (str):
     """
-    print(len(dou_infos))
+    
     if dou_infos:
         rows  = len(dou_infos)
         df = pd.DataFrame(dou_infos)

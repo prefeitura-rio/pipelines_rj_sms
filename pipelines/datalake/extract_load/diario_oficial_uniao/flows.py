@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
-from datetime import datetime
 from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -9,7 +8,6 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao.schedules import schedule
-from pipelines.utils.logger import log
 from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     dou_extraction,
     upload_to_datalake,
