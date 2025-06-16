@@ -12,9 +12,7 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.common.by import By
 
-from pipelines.datalake.utils.tasks import (
-    gerar_faixas_de_data,
-)
+from pipelines.datalake.utils.tasks import gerar_faixas_de_data
 from pipelines.utils.logger import log
 
 
