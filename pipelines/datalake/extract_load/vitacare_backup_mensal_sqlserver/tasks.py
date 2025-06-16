@@ -29,12 +29,12 @@ def process_cnes_table(
     db_table: str,
     cnes_code: str,
     dataset_id: str,
-    bq_table_id: str,
     partition_column: str,
 ) -> dict:
     """
     Extrai, transforma e carrega dados de uma tabela para um único CNES.
     """
+    bq_table_id = db_table.lower()
     try:
         # --- 1. Extração e Transformação ---
         full_table_name = f"{db_schema}.{db_table}"
@@ -136,10 +136,3 @@ def get_vitacare_cnes_from_bigquery() -> list:
 def get_tables_to_extract() -> list:
     """Retorna a lista de tabelas a serem extraídas para um CNES"""
     return vitacare_constants.TABLES_TO_EXTRACT.value
-
-
-
-@task
-def build_bq_table_name(table_name: str) -> str:
-    """Constrói o nome da tabela no BQ"""
-    return table_name.lower()

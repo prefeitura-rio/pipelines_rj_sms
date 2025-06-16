@@ -17,7 +17,6 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
     vitacare_backup_manager_schedule,
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
-    build_bq_table_name,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
     process_cnes_table,
@@ -78,7 +77,7 @@ with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_hist
     )
 
     all_cnes_to_process = get_vitacare_cnes_from_bigquery()
-    bq_table_id = build_bq_table_name(TABLE_NAME)
+
 
     etl_results = process_cnes_table.map(
         db_host=unmapped(db_host),
@@ -88,7 +87,6 @@ with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_hist
         db_schema=unmapped(DB_SCHEMA),
         db_table=unmapped(TABLE_NAME),
         dataset_id=unmapped(DATASET_ID),
-        bq_table_id=unmapped(bq_table_id),
         partition_column=unmapped(PARTITION_COLUMN),
         cnes_code=all_cnes_to_process,
     )
