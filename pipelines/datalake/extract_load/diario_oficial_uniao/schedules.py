@@ -4,7 +4,7 @@
 Schedules
 """
 
-from datetime import time, datetime, timedelta
+from datetime import datetime, time, timedelta
 
 import pytz
 from prefect.schedules import Schedule, filters
@@ -48,6 +48,5 @@ clocks = generate_dump_api_schedules(
 )
 
 schedule = Schedule(
-    clocks=untuple_clocks(clocks),
-    filters=[filters.between_times(time(8), time(9))]
+    clocks=untuple_clocks(clocks), filters=[filters.between_times(time(8), time(9))]
 )
