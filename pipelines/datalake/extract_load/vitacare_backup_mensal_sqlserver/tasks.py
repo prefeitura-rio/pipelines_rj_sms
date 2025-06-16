@@ -19,6 +19,7 @@ from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
 
+
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
 def process_cnes_table(
     db_host: str,
@@ -47,7 +48,7 @@ def process_cnes_table(
         )
         engine = create_engine(connection_string)
         df = pd.read_sql(f"SELECT * FROM {full_table_name}", engine)
-        
+
         if df.empty:
             log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
             return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
@@ -57,11 +58,12 @@ def process_cnes_table(
         now = datetime.now(pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
         df["extracted_at"] = now
         df["id_cnes"] = cnes_code
-        
+
         df.columns = remove_columns_accents(df)
 
         tables_with_ut_id = ["PACIENTES", "ATENDIMENTOS"]
         if db_table.upper() in tables_with_ut_id and "ut_id" in df.columns:
+
             def clean_ut_id(val):
                 if isinstance(val, bytes):
                     try:
@@ -69,6 +71,7 @@ def process_cnes_table(
                     except UnicodeDecodeError:
                         return val.decode("latin-1", errors="ignore").replace("\x00", "").strip()
                 return str(val).replace("\x00", "").strip()
+
             df["ut_id"] = df["ut_id"].apply(clean_ut_id)
 
         df = df.astype(str)
@@ -85,7 +88,7 @@ def process_cnes_table(
             if_storage_data_exists="append",
         )
         log(f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída.")
-        
+
         return {"cnes": cnes_code, "status": "success", "rows_loaded": len(df)}
 
     except SKIP as e:
@@ -98,9 +101,12 @@ def process_cnes_table(
             log(f"Database vitacare_historic_{cnes_code} não encontrado. Pulando.", level="warning")
             raise SKIP(f"Database for CNES {cnes_code} does not exist.")
         if "Invalid object name" in str(e):
-            log(f"Tabela {full_table_name} não encontrada para o CNES {cnes_code}. Pulando.", level="warning")
+            log(
+                f"Tabela {full_table_name} não encontrada para o CNES {cnes_code}. Pulando.",
+                level="warning",
+            )
             raise SKIP(f"Table not found: '{db_table}'")
-        
+
         log(f"Falha no processo para CNES {cnes_code}: {e}", level="error")
         return {"cnes": cnes_code, "status": "failed", "error": str(e)[:300]}
 

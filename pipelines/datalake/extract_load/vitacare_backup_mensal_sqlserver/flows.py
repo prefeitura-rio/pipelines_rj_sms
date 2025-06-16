@@ -78,7 +78,6 @@ with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_hist
 
     all_cnes_to_process = get_vitacare_cnes_from_bigquery()
 
-
     etl_results = process_cnes_table.map(
         db_host=unmapped(db_host),
         db_port=unmapped(db_port),
