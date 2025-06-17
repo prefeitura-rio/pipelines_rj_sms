@@ -31,32 +31,52 @@ LABELS = [constants.RJ_SMS_AGENT_LABEL.value]
 
 TABELAS_CONFIG = [
     # Principal
-    ("bairros", "subpav_principal", "monthly",{
-        "dump_mode":"overwrite",
-        "if_exists":"replace",
-        "if_storage_data_exists":"replace",
-    }),
+    (
+        "bairros",
+        "subpav_principal",
+        "monthly",
+        {
+            "dump_mode": "overwrite",
+            "if_exists": "replace",
+            "if_storage_data_exists": "replace",
+        },
+    ),
     # Indicadores
     ("indicadores", "subpav_indicadores", "monthly"),
     # CNES APS
     ("cbos", "subpav_cnes", "monthly"),
     ("categorias_profissionais", "subpav_cnes", "monthly"),
     ("cbos_categorias_profissionais", "subpav_cnes", "monthly"),
-    ("competencias", "subpav_cnes", "weekly",{
-        "dump_mode":"overwrite",
-        "if_exists":"replace",
-        "if_storage_data_exists":"replace",
-    }),
+    (
+        "competencias",
+        "subpav_cnes",
+        "weekly",
+        {
+            "dump_mode": "overwrite",
+            "if_exists": "replace",
+            "if_storage_data_exists": "replace",
+        },
+    ),
     ("equipes", "subpav_cnes", "monthly"),
-    ("equipes_profissionais", "subpav_cnes", "monthly",{
-        "relative_date_filter": "D-60",
-    }),
+    (
+        "equipes_profissionais",
+        "subpav_cnes",
+        "monthly",
+        {
+            "relative_date_filter": "D-60",
+        },
+    ),
     ("equipes_tipos", "subpav_cnes", "monthly"),
     ("horarios_atendimentos", "subpav_cnes", "monthly"),
     ("profissionais", "subpav_cnes", "monthly"),
-    ("profissionais_unidades", "subpav_cnes", "monthly",{
-        "relative_date_filter": "D-60",
-    }),
+    (
+        "profissionais_unidades",
+        "subpav_cnes",
+        "monthly",
+        {
+            "relative_date_filter": "D-60",
+        },
+    ),
     ("unidades", "subpav_cnes", "monthly"),
     ("unidades_auxiliares", "subpav_cnes", "monthly"),
     ("unidades_estruturas_fisicas", "subpav_cnes", "monthly"),
@@ -74,6 +94,7 @@ TABELAS_CONFIG = [
     ("riscos", "subpav_acesso_mais_seguro", "monthly"),
     ("status", "subpav_acesso_mais_seguro", "monthly"),
 ]
+
 
 def build_param(table_id, config, extra=None):
     """
@@ -102,6 +123,7 @@ def unpack_params(freq):
         extra = item[3] if len(item) == 4 else None
         result.append(build_param(table_id, {"schema": schema}, extra=extra))
     return result
+
 
 monthly_params = unpack_params("monthly")
 weekly_params = unpack_params("weekly")

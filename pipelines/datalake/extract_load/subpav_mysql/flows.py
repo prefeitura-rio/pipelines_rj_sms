@@ -44,7 +44,9 @@ with Flow(
 
     IF_EXISTS = Parameter("if_exists", default="append")
     IF_STORAGE_DATA_EXISTS = Parameter("if_storage_data_exists", default="append")
-    DUMP_MODE = Parameter("dump_mode", default="append") #Accepted values are "append" and "overwrite".
+    DUMP_MODE = Parameter(
+        "dump_mode", default="append"
+    )  # Accepted values are "append" and "overwrite".
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
