@@ -36,10 +36,10 @@ def process_cnes_table(
     Extrai, transforma e carrega dados de uma tabela para um único CNES.
     """
 
-    if db_table.upper() == 'ATENDIMENTOS':
-        bq_table_id = 'acto_id'
-    elif db_table.upper() == 'PACIENTES':
-        bq_table_id = 'cadastro'
+    if db_table.upper() == "ATENDIMENTOS":
+        bq_table_id = "acto_id"
+    elif db_table.upper() == "PACIENTES":
+        bq_table_id = "cadastro"
     else:
         bq_table_id = db_table.lower()
 
