@@ -15,34 +15,28 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {
         "environment": "prod",
-        "bucket_name": "cgcca_cnes",
-        "source_freshness": "M-0",
+        "dataset": "brutos_diario_oficial",
+        "max_workers": 10,
+        "dou_section": 1,
     },
     {
         "environment": "prod",
-        "bucket_name": "cgcca_sih",
-        "source_freshness": "Y-0",
+        "dataset": "brutos_diario_oficial",
+        "max_workers": 10,
+        "dou_section": 2,
     },
     {
         "environment": "prod",
-        "bucket_name": "conectividade_aps",
-        "source_freshness": "D-0",
-    },
-    {
-        "environment": "prod",
-        "bucket_name": "vitacare_informes_mensais_gdrive",
-        "source_freshness": "M-0",
-    },
-    {
-        "environment": "prod",
-        "bucket_name": "vitacare_backups_gdrive",
-        "source_freshness": "M-0",
+        "dataset": "brutos_diario_oficial",
+        "max_workers": 10,
+        "dou_section": 3,
     },
 ]
 
+# Atos oficiais podem ser publicados no DOU até as 8 a.m de cada dia.
 clocks = generate_dump_api_schedules(
-    interval=timedelta(days=7),
-    start_date=datetime(2025, 1, 5, 9, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    interval=timedelta(days=1),
+    start_date=datetime(2025, 6, 12, 8, 5, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

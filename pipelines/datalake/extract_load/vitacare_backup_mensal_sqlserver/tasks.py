@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytz
 from google.cloud import bigquery
+from prefect.engine.signals import SKIP
 from sqlalchemy import create_engine
 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
@@ -80,7 +81,7 @@ def extract_and_transform_table(
         df = pd.read_sql(f"SELECT * FROM {full_table_name}", engine)
         log(f"Successfully downloaded {len(df)} rows from {full_table_name} for CNES {cnes_code}.")
 
-        now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+        now = datetime.now(pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
         df["extracted_at"] = now
         df["id_cnes"] = cnes_code
 
@@ -167,6 +168,12 @@ def extract_and_transform_table(
                 )
         return df
     except Exception as e:
+        if "Invalid object name" in str(e):
+            log(
+                f"Table {full_table_name} not found for CNES {cnes_code}. Skipping task.",
+                level="warning",
+            )
+            raise SKIP(f"Table not found: '{db_table}'")
         log(
             f"Error downloading or transforming data from {full_table_name} "
             f"(CNES: {cnes_code}): {e}",
@@ -178,6 +185,6 @@ def extract_and_transform_table(
 @task
 def build_bq_table_name(table_name: str) -> str:
     """Constrói o nome da tabela no BigQuery."""
-    bq_table_name = f"{table_name}"
+    bq_table_name = f"{table_name.lower()}"
     log(f"Built BigQuery table name: {bq_table_name} for source table: {table_name}")
     return bq_table_name
