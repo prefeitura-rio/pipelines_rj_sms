@@ -83,6 +83,9 @@ def process_cnes_table(
             # Remove quebras de linha, tabs e o caractere NULO, substituindo por um espaço
             df[col] = df[col].str.replace(r"[\n\r\t\x00]+", " ", regex=True)
 
+        if "acto_id" in df.columns:
+            df["acto_id"] = df["acto_id"].str.replace(".0", "", regex=False)
+
         # --- 2. Carga ---
         log(f"Enviando {len(df)} linhas do CNES {cnes_code} para o BigQuery.")
         upload_df_to_datalake.run(
