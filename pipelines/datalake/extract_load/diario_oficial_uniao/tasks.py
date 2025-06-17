@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 import pandas as pd
-from bs4 import BeautifulSoup
 from prefect import task
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -64,6 +63,11 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
         # Lógica para evitar a poluição do log
         if page_count == 1 or page_count % 10 == 0:
             log(f"Extração da página {page_count}")
+
+        # Quando não há atos oficias, há um elemento de aviso
+        if driver.find_elements(by=By.CLASS_NAME, value="alert.alert-info"):
+            log("⚠️ Não há atos oficias para extrair.")
+            break
 
         cards = driver.find_elements(by=By.CLASS_NAME, value="resultado")
 
@@ -128,20 +132,30 @@ def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
         dataset (str): Dataset do BigQuery onde os dados serão carregados.
         environment (str):
     """
-    df = pd.DataFrame(dou_infos)
-    df["_uploaded_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    log(f"Realizando upload no datalake em {dataset}...")
+    if dou_infos:
+        rows = len(dou_infos)
+        df = pd.DataFrame(dou_infos)
+        df["extracted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log(f"Realizando upload de {rows} registros no datalake em {dataset}...")
 
-    upload_df_to_datalake.run(
-        df=df,
-        dataset_id=dataset,
-        table_id="diarios_uniao",
-        partition_column="_extracted_at",
-        if_exists="append",
-        if_storage_data_exists="append",
-        source_format="csv",
-        csv_delimiter=",",
-    )
+        upload_df_to_datalake.run(
+            df=df,
+            dataset_id=dataset,
+            table_id="diarios_uniao",
+            partition_column="extracted_at",
+            if_exists="append",
+            if_storage_data_exists="append",
+            source_format="csv",
+            csv_delimiter=",",
+        )
+        log("✅ Carregamento no datalake finalizado.")
+    else:
+        log("❌ Não há dados para carregar.")
 
-    log("✅ Flow finalizado.")
+
+@task
+def parse_date(date_string: str) -> datetime | None:
+    if date_string != "":
+        return datetime.strptime(date_string, "%d/%m/%Y")
+    return None
