@@ -21,28 +21,28 @@ def create_and_send_final_report(operator_run_states: list):
     def get_clean_reason(state):
         if isinstance(state.result, dict) and state.result.get("reason"):
             return state.result["reason"]
-        
+
         message = str(state.message).lower()
         if "database" in message and "does not exist" in message:
             return "Database não encontrado"
         if "table not found" in message or "invalid object name" in message:
             return "Tabela não encontrada"
         if "no data extracted" in message:
-             return "Nenhum dado extraído"
-        
+            return "Nenhum dado extraído"
+
         if state.is_failed() and state.message:
-            return str(state.message).split('\n')[0][:100]
+            return str(state.message).split("\n")[0][:100]
 
         return "Motivo desconhecido"
 
     for flow_run in operator_run_states:
         params = flow_run.parameters or {}
         table_name = params.get("TABLE_NAME", "Tabela_Desconhecida")
-        
+
         report[table_name] = {
-            "failed_cnes": defaultdict(list), 
-            "skipped_cnes": defaultdict(list), 
-            "flow_error": None
+            "failed_cnes": defaultdict(list),
+            "skipped_cnes": defaultdict(list),
+            "flow_error": None,
         }
 
         flow_state = flow_run.state
@@ -87,7 +87,7 @@ def create_and_send_final_report(operator_run_states: list):
         message_lines.append(f"**Tabela: {table}**")
         if results["flow_error"]:
             message_lines.append(f"  - 🔴 Falha geral no fluxo: ```{results['flow_error']}...```")
-        
+
         if results["failed_cnes"]:
             for reason, cnes_list in results["failed_cnes"].items():
                 cnes_str = ", ".join(sorted(cnes_list))
@@ -97,7 +97,7 @@ def create_and_send_final_report(operator_run_states: list):
             for reason, cnes_list in results["skipped_cnes"].items():
                 cnes_str = ", ".join(sorted(cnes_list))
                 message_lines.append(f"  - ⚠️ Skip (`{reason}`): CNES `{cnes_str}`")
-        
+
         message_lines.append("")
 
     message_lines.append("\n-----------------------------------\n")
