@@ -91,13 +91,17 @@ def process_cnes_table(
 
                 total_rows += len(chunk)
 
-            log(f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída. Total de linhas: {total_rows}.")
+            log(
+                f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída. Total de linhas: {total_rows}."
+            )
             return {"cnes": cnes_code, "status": "success", "rows_loaded": total_rows}
         else:
             df = pd.read_sql(query, engine)
 
             if df.empty:
-                log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
+                log(
+                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando."
+                )
                 return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
 
             log(f"Extraídas {len(df)} linhas de {full_table_name} para o CNES {cnes_code}.")
