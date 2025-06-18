@@ -20,6 +20,15 @@ from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
 
 
+def clean_ut_id(val):
+    if isinstance(val, bytes):
+        try:
+            return val.decode("utf-16-le", errors="ignore").replace("\x00", "").strip()
+        except UnicodeDecodeError:
+            return val.decode("latin-1", errors="ignore").replace("\x00", "").strip()
+    return str(val).replace("\x00", "").strip()
+
+
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
 def process_cnes_table(
     db_host: str,
@@ -32,10 +41,6 @@ def process_cnes_table(
     dataset_id: str,
     partition_column: str,
 ) -> dict:
-    """
-    Extrai, transforma e carrega dados de uma tabela para um único CNES.
-    """
-
     if db_table.upper() == "ATENDIMENTOS":
         bq_table_id = "acto_id"
     elif db_table.upper() == "PACIENTES":
@@ -44,7 +49,6 @@ def process_cnes_table(
         bq_table_id = db_table.lower()
 
     try:
-        # --- 1. Extração e Transformação ---
         full_table_name = f"{db_schema}.{db_table}"
         log(f"Iniciando processo para {full_table_name} do CNES: {cnes_code}")
         db_name = f"vitacare_historic_{cnes_code}"
@@ -56,57 +60,79 @@ def process_cnes_table(
         engine = create_engine(connection_string)
 
         query = f"SELECT * FROM {full_table_name}"
+        if db_table.upper() == "ATENDIMENTOS":
+            chunks = pd.read_sql(query, engine, chunksize=100000)
+            total_rows = 0
+            for chunk in chunks:
+                now = datetime.now(pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
+                chunk["extracted_at"] = now
+                chunk["id_cnes"] = cnes_code
+                chunk.columns = remove_columns_accents(chunk)
 
-        df = pd.read_sql(query, engine)
+                if "ut_id" in chunk.columns:
+                    chunk["ut_id"] = chunk["ut_id"].apply(clean_ut_id)
 
-        if df.empty:
-            log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
-            return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
+                chunk = chunk.astype(str)
+                for col in chunk.select_dtypes(include=["object"]).columns:
+                    chunk[col] = chunk[col].str.replace(r"[\n\r\t\x00]+", " ", regex=True)
 
-        log(f"Extraídas {len(df)} linhas de {full_table_name} para o CNES {cnes_code}.")
+                if "acto_id" in chunk.columns:
+                    chunk["acto_id"] = chunk["acto_id"].str.replace(".0", "", regex=False)
 
-        now = datetime.now(pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
-        df["extracted_at"] = now
-        df["id_cnes"] = cnes_code
+                upload_df_to_datalake.run(
+                    df=chunk,
+                    dataset_id=dataset_id,
+                    table_id=bq_table_id,
+                    partition_column=partition_column,
+                    source_format="parquet",
+                    if_exists="append",
+                    if_storage_data_exists="append",
+                )
 
-        df.columns = remove_columns_accents(df)
+                total_rows += len(chunk)
 
-        tables_with_ut_id = ["PACIENTES", "ATENDIMENTOS"]
-        if db_table.upper() in tables_with_ut_id and "ut_id" in df.columns:
+            log(f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída. Total de linhas: {total_rows}.")
+            return {"cnes": cnes_code, "status": "success", "rows_loaded": total_rows}
+        else:
+            df = pd.read_sql(query, engine)
 
-            def clean_ut_id(val):
-                if isinstance(val, bytes):
-                    try:
-                        return val.decode("utf-16-le", errors="ignore").replace("\x00", "").strip()
-                    except UnicodeDecodeError:
-                        return val.decode("latin-1", errors="ignore").replace("\x00", "").strip()
-                return str(val).replace("\x00", "").strip()
+            if df.empty:
+                log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
+                return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
 
-            df["ut_id"] = df["ut_id"].apply(clean_ut_id)
+            log(f"Extraídas {len(df)} linhas de {full_table_name} para o CNES {cnes_code}.")
 
-        df = df.astype(str)
+            now = datetime.now(pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
+            df["extracted_at"] = now
+            df["id_cnes"] = cnes_code
 
-        for col in df.select_dtypes(include=["object"]).columns:
-            # Remove quebras de linha, tabs e o caractere NULO, substituindo por um espaço
-            df[col] = df[col].str.replace(r"[\n\r\t\x00]+", " ", regex=True)
+            df.columns = remove_columns_accents(df)
 
-        if "acto_id" in df.columns:
-            df["acto_id"] = df["acto_id"].str.replace(".0", "", regex=False)
+            tables_with_ut_id = ["PACIENTES", "ATENDIMENTOS"]
+            if db_table.upper() in tables_with_ut_id and "ut_id" in df.columns:
+                df["ut_id"] = df["ut_id"].apply(clean_ut_id)
 
-        # --- 2. Carga ---
-        log(f"Enviando {len(df)} linhas do CNES {cnes_code} para o BigQuery.")
-        upload_df_to_datalake.run(
-            df=df,
-            dataset_id=dataset_id,
-            table_id=bq_table_id,
-            partition_column=partition_column,
-            source_format="parquet",
-            if_exists="append",
-            if_storage_data_exists="append",
-        )
-        log(f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída.")
+            df = df.astype(str)
 
-        return {"cnes": cnes_code, "status": "success", "rows_loaded": len(df)}
+            for col in df.select_dtypes(include=["object"]).columns:
+                df[col] = df[col].str.replace(r"[\n\r\t\x00]+", " ", regex=True)
+
+            if "acto_id" in df.columns:
+                df["acto_id"] = df["acto_id"].str.replace(".0", "", regex=False)
+
+            log(f"Enviando {len(df)} linhas do CNES {cnes_code} para o BigQuery.")
+            upload_df_to_datalake.run(
+                df=df,
+                dataset_id=dataset_id,
+                table_id=bq_table_id,
+                partition_column=partition_column,
+                source_format="parquet",
+                if_exists="append",
+                if_storage_data_exists="append",
+            )
+            log(f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída.")
+
+            return {"cnes": cnes_code, "status": "success", "rows_loaded": len(df)}
 
     except SKIP as e:
         log(f"Task pulada para CNES {cnes_code}: {e.message}", level="info")
@@ -130,10 +156,6 @@ def process_cnes_table(
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
 def get_vitacare_cnes_from_bigquery() -> list:
-    """
-    Busca a lista de códigos CNES distintos da tabela de estabelecimentos
-    no BigQuery para prontuários Vitacare
-    """
     query = """
         SELECT DISTINCT id_cnes
         FROM `rj-sms.saude_dados_mestres.estabelecimento`
@@ -157,5 +179,4 @@ def get_vitacare_cnes_from_bigquery() -> list:
 
 @task
 def get_tables_to_extract() -> list:
-    """Retorna a lista de tabelas a serem extraídas para um CNES"""
     return vitacare_constants.TABLES_TO_EXTRACT.value
