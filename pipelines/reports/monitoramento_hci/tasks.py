@@ -48,9 +48,6 @@ def send_report(data):
     log(data_30m)
     log(data_7d)
 
-    UID = ""
-    USER_MENTION = f"<@{UID}>"
-
     to_warn = []
     to_notify = []
     # Para cada evento recente:
@@ -90,26 +87,40 @@ def send_report(data):
     if actual_usage_count <= 0:
         to_warn.append(f"🚨 Nenhuma consulta no intervalo avaliado!")
 
+    # Notificações
     message = ""
     to_notify.sort()
     if len(to_notify) > 0:
         outstr = "\n* ".join(to_notify)
         message += "* " + outstr if len(outstr) else ""
         log(f"Sending notification:{outstr}")
+    if len(message):
+        asyncio.run(
+            send_discord_webhook(
+                text_content=message,
+                username="Monitoramento HCI",
+                monitor_slug="warning",
+            )
+        )
 
+    # Avisos
+    ROLE_ID = "1224334248345862164"
+    ROLE_MENTION = f"<@&{ROLE_ID}>"
+    message = ""
     to_warn.sort()
     if len(to_warn) > 0:
-        message += "\n\n"
+        message = f"{ROLE_MENTION}\n\n"
         outstr = "\n* ".join(to_warn)
         message += "* " + outstr if len(outstr) else ""
         log(f"Sending warning:{outstr}", level="warning")
 
-    # TODO: Teste de requisição da API diretamente
-
-    asyncio.run(
-        send_discord_webhook(
-            text_content=message,
-            username="Monitoramento HCI",
-            monitor_slug="warning",
+    if len(message):
+        asyncio.run(
+            send_discord_webhook(
+                text_content=message,
+                username="Monitoramento HCI",
+                monitor_slug="warning",
+            )
         )
-    )
+
+    # TODO: Teste de requisição da API diretamente
