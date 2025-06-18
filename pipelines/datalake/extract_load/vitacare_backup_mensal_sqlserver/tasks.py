@@ -63,6 +63,7 @@ def process_cnes_table(
         if db_table.upper() == "ATENDIMENTOS":
             chunks = pd.read_sql(query, engine, chunksize=100000)
             total_rows = 0
+            is_first_chunk = True
             for chunk in chunks:
                 now = datetime.now(pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
                 chunk["extracted_at"] = now
@@ -85,10 +86,10 @@ def process_cnes_table(
                     table_id=bq_table_id,
                     partition_column=partition_column,
                     source_format="parquet",
-                    if_exists="append",
+                    if_exists="replace" if is_first_chunk else "append",
                     if_storage_data_exists="append",
                 )
-
+                is_first_chunk = False
                 total_rows += len(chunk)
 
             log(
