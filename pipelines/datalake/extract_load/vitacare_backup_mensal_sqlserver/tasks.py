@@ -55,7 +55,7 @@ def process_cnes_table(
 
         connection_string = (
             f"mssql+pyodbc://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-            "?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes"
+            "?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
         )
         engine = create_engine(connection_string)
 
