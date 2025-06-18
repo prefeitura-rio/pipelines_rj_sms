@@ -4,10 +4,10 @@
 Schedules
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 import pytz
-from prefect.schedules import Schedule
+from prefect.schedules import Schedule, filters
 
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
@@ -18,18 +18,14 @@ flow_parameters = [
         "dataset": "brutos_diario_oficial",
         "max_workers": 10,
         "dou_section": 1,
-    },
-    {
-        "environment": "prod",
-        "dataset": "brutos_diario_oficial",
-        "max_workers": 10,
-        "dou_section": 2,
+        "date": "",
     },
     {
         "environment": "prod",
         "dataset": "brutos_diario_oficial",
         "max_workers": 10,
         "dou_section": 3,
+        "date": "",
     },
 ]
 
@@ -44,4 +40,6 @@ clocks = generate_dump_api_schedules(
     runs_interval_minutes=0,
 )
 
-schedule = Schedule(clocks=untuple_clocks(clocks))
+schedule = Schedule(
+    clocks=untuple_clocks(clocks), filters=[filters.between_times(time(8), time(9))]
+)
