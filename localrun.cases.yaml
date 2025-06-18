@@ -386,13 +386,3 @@ cases:
       environment: 'dev'
       dou_section: 3
       max_workers: 10
-
-  - case_slug: 'vitacare_historico'
-    flow_path: 'pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.flows'
-    flow_name: 'flow_vitacare_historic_table_operator'
-    params:
-      TABLE_NAME: 'PRESCRICOES'
-      environment: 'staging'
-      DB_SCHEMA: 'dbo'
-      PARTITION_COLUMN: 'extracted_at'
-      RENAME_FLOW: True
