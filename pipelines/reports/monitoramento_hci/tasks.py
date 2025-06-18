@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+import asyncio
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 import pandas as pd
 import pytz
@@ -29,8 +30,9 @@ GROUP BY 1, 2
     rows_30m = [row.values() for row in client.query(QUERY_30M).result()]
     log(f"Query for tipo_evento, resultado (30 min) returned {len(rows_30m)} row(s)")
 
-    # Quantidade de intervalos de 30 minutos em 7 dias
-    denom = 7 * 24 * 2
+    # Quantidade de intervalos de 30 minutos em horas úteis de 7 dias
+    # 7 (dias) x 8 (horas) x 2 (meia-horas)
+    denom = 7 * 8 * 2
     QUERY_7D = get_query(interval="7 DAY", denom=denom)
     rows_7d = [row.values() for row in client.query(QUERY_7D).result()]
     log(f"Query for tipo_evento, resultado (7 d) returned {len(rows_7d)} row(s)")
@@ -43,48 +45,71 @@ def send_report(data):
     data_30m = data[0]
     data_7d = data[1]
 
-    # Se estamos fora do horário de trabalho, é esperado que tenhamos
-    # poucos acessos; não vamos reportar erros de pouco acesso
-    now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-    REPORT_LOW_ACCESS = now.hour >= 7 and now.hour <= 19 and now.weekday() < 5
+    log(data_30m)
+    log(data_7d)
 
     UID = ""
     USER_MENTION = f"<@{UID}>"
 
-    def build_event_dict(data):
-        events = dict()
-        for event in data:
-            endpoint = event[0]
-            status = event[1]
-            average = event[2]
-            if endpoint not in events:
-                events[endpoint] = {}
-            events[endpoint][status] = average
-        return events
+    to_warn = []
+    to_notify = []
+    # Para cada evento recente:
+    for event in data_30m:
+        evt_type: str = event[0]
+        status: str = event[1]
+        amount: float = event[2]
+        if amount <= 0:
+            continue
+        if 'desenvolvimento' in evt_type.lower():
+            continue
 
-    events_30m = build_event_dict(data_30m)
-    events_7d = build_event_dict(data_7d)
-    log(events_30m)
-    log(events_7d)
+        s = "" if amount < 2 else "s"
+        # Se for HTTP 500, avisa
+        if status == '500':
+            to_warn.append(f"🚨 '{evt_type}' (500): {amount:.0f} ocorrência{s}")
+            continue
 
-    # Para cada evento recente (events_30m):
-    # - Se for HTTP 500, avisa
-    # - Se for HTTP 200, confere se está próximo à média semanal
+        # Se for HTTP 200, confere se está próximo à média semanal
+        average = next((
+            average
+            for (endpoint_7d, status_7d, average) in data_7d
+            if endpoint_7d  == evt_type and status_7d == status
+        ), 0)
+        # TODO: 10?
+        to_notify.append(f"'{evt_type}' ({status}): {amount:.0f} ocorrência{s} (média: {average:.2f})")
 
     # Além disso:
     # - Verifica se só temos logins/buscas/etc, mas não consultas
     types = [
-        event_type.lower()
-        for event_type, event_instances in events_30m.items()
-        if "200" in event_instances
+        evt_type.lower()
+        for (evt_type, status, _) in data_30m
+        if status == "200"
     ]
     actual_usage_count = len([t for t in types if t.startswith("consulta")])
     if actual_usage_count <= 0:
-        log("No 'consulta' event type!", level="warning")
+        to_warn.append(f"🚨 Nenhuma consulta no intervalo avaliado!")
 
-    # send_discord_webhook(
-    #     title=...,
-    #     message=...,
-    #     username=...,
-    #     monitor_slug="warnings",
-    # )
+
+    message = ""
+    to_notify.sort()
+    if len(to_notify) > 0:
+        outstr = "\n* ".join(to_notify)
+        message += "* " + outstr if len(outstr) else ""
+        log(f"Sending notification:{outstr}")
+
+    to_warn.sort()
+    if len(to_warn) > 0:
+        message += "\n\n"
+        outstr = "\n* ".join(to_warn)
+        message += "* " + outstr if len(outstr) else ""
+        log(f"Sending warning:{outstr}", level="warning")
+
+    # TODO: Teste de requisição da API diretamente
+
+    asyncio.run(
+        send_discord_webhook(
+            text_content=message,
+            username="Monitoramento HCI",
+            monitor_slug="warning",
+        )
+    )
