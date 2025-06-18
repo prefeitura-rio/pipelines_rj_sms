@@ -60,35 +60,35 @@ def send_report(data):
         amount: float = event[2]
         if amount <= 0:
             continue
-        if 'desenvolvimento' in evt_type.lower():
+        if "desenvolvimento" in evt_type.lower():
             continue
 
         s = "" if amount < 2 else "s"
         # Se for HTTP 500, avisa
-        if status == '500':
+        if status == "500":
             to_warn.append(f"🚨 '{evt_type}' (500): {amount:.0f} ocorrência{s}")
             continue
 
         # Se for HTTP 200, confere se está próximo à média semanal
-        average = next((
-            average
-            for (endpoint_7d, status_7d, average) in data_7d
-            if endpoint_7d  == evt_type and status_7d == status
-        ), 0)
+        average = next(
+            (
+                average
+                for (endpoint_7d, status_7d, average) in data_7d
+                if endpoint_7d == evt_type and status_7d == status
+            ),
+            0,
+        )
         # TODO: 10?
-        to_notify.append(f"'{evt_type}' ({status}): {amount:.0f} ocorrência{s} (média: {average:.2f})")
+        to_notify.append(
+            f"'{evt_type}' ({status}): {amount:.0f} ocorrência{s} (média: {average:.2f})"
+        )
 
     # Além disso:
     # - Verifica se só temos logins/buscas/etc, mas não consultas
-    types = [
-        evt_type.lower()
-        for (evt_type, status, _) in data_30m
-        if status == "200"
-    ]
+    types = [evt_type.lower() for (evt_type, status, _) in data_30m if status == "200"]
     actual_usage_count = len([t for t in types if t.startswith("consulta")])
     if actual_usage_count <= 0:
         to_warn.append(f"🚨 Nenhuma consulta no intervalo avaliado!")
-
 
     message = ""
     to_notify.sort()
