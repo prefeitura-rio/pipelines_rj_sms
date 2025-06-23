@@ -78,7 +78,7 @@ def process_cnes_table(
                     partition_column=partition_column,
                     source_format="parquet",
                     if_exists="replace" if is_first_chunk else "append",
-                    if_storage_data_exists="append",
+                    if_storage_data_exists="replace" if is_first_chunk else "append",
                 )
                 is_first_chunk = False
                 total_rows += len(processed_chunk)
