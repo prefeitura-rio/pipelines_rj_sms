@@ -38,7 +38,7 @@ def process_cnes_table(
 ) -> dict:
 
     bq_table_rename = {
-        "ATENDIMENTOS": "acto_id",
+        "ATENDIMENTOS": "acto",
         "PACIENTES": "cadastro",
     }
     bq_table_id = bq_table_rename.get(db_table.upper(), db_table.lower())
