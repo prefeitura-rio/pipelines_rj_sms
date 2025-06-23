@@ -115,81 +115,21 @@ def create_and_send_final_report(operator_run_states: list):
 
 # --- Funções auxiliares para pré-processamento ---
 
-
 def clean_ut_id(val):
     """
-    Decodifica e limpa valores VARBINARY de 'ut_id'.
-    Versão aprimorada com tratamento para caracteres de controle e representação hexadecimal.
+    Decodifica e limpa valores VARBINARY de 'ut_id' 
     """
     if isinstance(val, bytes):
         try:
-            decoded_val = val.decode("utf-16-le", errors="ignore")
+            return val.decode("utf-16-le", errors="ignore").replace("\x00", "").strip()
         except UnicodeDecodeError:
-            decoded_val = val.decode("latin-1", errors="ignore")
-
-        # Remove caracteres nulos e normaliza quebras de linha/tabulações
-        clean_str = (
-            decoded_val.replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ")
-        )
-        # Verifica se ainda há caracteres de controle não-espaço após a limpeza básica
-        # Se houver, retorna a representação hexadecimal para garantir uma string plana
-        if any(ord(c) < 32 and c not in (" ",) for c in clean_str):
-            return val.hex()  # Retorna a representação hexadecimal dos bytes originais
-        else:
-            return clean_str.strip()
-    elif isinstance(val, str):
-        # Trata strings que parecem representações de bytes (e.g., b'...')
-        if val.startswith("b'") and val.endswith("'"):
-            try:
-                # Tenta converter a representação de string de bytes para bytes reais
-                byte_repr = val[2:-1].encode("latin-1").decode("unicode_escape").encode("latin-1")
-                try:
-                    decoded_val = byte_repr.decode("utf-16-le", errors="ignore")
-                except UnicodeDecodeError:
-                    decoded_val = byte_repr.decode("latin-1", errors="ignore")
-
-                clean_str = (
-                    decoded_val.replace("\x00", "")
-                    .replace("\n", " ")
-                    .replace("\r", " ")
-                    .replace("\t", " ")
-                )
-                if any(ord(c) < 32 and c not in (" ",) for c in clean_str):
-                    return byte_repr.hex()  # Retorna a representação hexadecimal dos bytes reais
-                else:
-                    return clean_str.strip()
-            except Exception:
-                # Em caso de erro na conversão de string de bytes, fallback para tratamento de string simples
-                pass
-
-        # Para strings que não são representações de bytes ou falham na conversão de bytes
-        return (
-            val.replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ").strip()
-        )
-    # Para qualquer outro tipo, converte para string e limpa
-    return (
-        str(val)
-        .replace("\x00", "")
-        .replace("\n", " ")
-        .replace("\r", " ")
-        .replace("\t", " ")
-        .strip()
-    )
-
-
-# Definir as colunas que precisam do tratamento especial de aspas duplas
-SPECIAL_TEXT_COLUMNS_FOR_QUOTING = {
-    "subjetivo_motivo",
-    "plano_observacoes",
-    "avaliacao_observacoes",
-    "objetivo_descricao",
-    "notas_observacoes",
-}
+            return val.decode("latin-1", errors="ignore").replace("\x00", "").strip()
+    return str(val).replace("\x00", "").strip()
 
 
 def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.DataFrame:
     """
-    Aplica transformações aos DataFrames extraídos da Vitacare.
+    Aplica transformações DataFrames extraídos daq Vitacare 
     """
     if df.empty:
         return df
@@ -204,26 +144,8 @@ def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.D
     if "ut_id" in df.columns:
         df["ut_id"] = df["ut_id"].apply(clean_ut_id)
 
-    # Processa colunas de texto (do tipo object no Pandas)
     for col in df.select_dtypes(include=["object"]).columns:
-        df[col] = df[col].astype(str)  # Garante que a coluna é string para operações de str
+        df[col] = df[col].astype(str).str.replace(r"[\n\r\t\x00]+", " ", regex=True)
 
-        # Limpeza básica de caracteres especiais
-        df[col] = df[col].str.replace(r"[\n\r\t\x00]+", " ", regex=True)
-
-        # APLICA TRATAMENTO ESPECIAL DE ASPAS DUPLAS SOMENTE PARA COLUNAS ESPECÍFICAS
-        # E SOMENTE PARA A TABELA 'ATENDIMENTOS'
-        if db_table.upper() == "ATENDIMENTOS" and col.lower() in SPECIAL_TEXT_COLUMNS_FOR_QUOTING:
-            # Primeiro, escapa as aspas duplas internas (duas aspas para uma)
-            df[col] = df[col].str.replace('"', '""', regex=False)
-            # Segundo, envolve toda a string em aspas duplas
-            df[col] = '"' + df[col] + '"'
-
-    # Trata a coluna 'acto_id' como numérico se presente
-    if "acto_id" in df.columns:
-        # Tenta converter para numérico, coercing erros para NaN
-        df["acto_id"] = pd.to_numeric(df["acto_id"], errors="coerce")
-        # Converte para Int64Dtype (inteiro com suporte a valores nulos)
-        df["acto_id"] = df["acto_id"].astype(pd.Int64Dtype())
 
     return df
