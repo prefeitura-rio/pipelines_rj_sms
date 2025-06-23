@@ -115,22 +115,79 @@ def create_and_send_final_report(operator_run_states: list):
 
 # --- Funções auxiliares para pré-processamento ---
 
-
 def clean_ut_id(val):
     """
     Decodifica e limpa valores VARBINARY de 'ut_id'.
+    Versão aprimorada com tratamento para caracteres de controle e representação hexadecimal.
     """
     if isinstance(val, bytes):
         try:
-            return val.decode("utf-16-le", errors="ignore").replace("\x00", "").strip()
+            decoded_val = val.decode("utf-16-le", errors="ignore")
         except UnicodeDecodeError:
-            return val.decode("latin-1", errors="ignore").replace("\x00", "").strip()
-    return str(val).replace("\x00", "").strip()
+            decoded_val = val.decode("latin-1", errors="ignore")
+
+        # Remove caracteres nulos e normaliza quebras de linha/tabulações
+        clean_str = (
+            decoded_val.replace("\x00", "")
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+        )
+        # Verifica se ainda há caracteres de controle não-espaço após a limpeza básica
+        # Se houver, retorna a representação hexadecimal para garantir uma string plana
+        if any(ord(c) < 32 and c not in (" ",) for c in clean_str):
+            return val.hex() # Retorna a representação hexadecimal dos bytes originais
+        else:
+            return clean_str.strip()
+    elif isinstance(val, str):
+        # Trata strings que parecem representações de bytes (e.g., b'...')
+        if val.startswith("b'") and val.endswith("'"):
+            try:
+                # Tenta converter a representação de string de bytes para bytes reais
+                byte_repr = (
+                    val[2:-1].encode("latin-1").decode("unicode_escape").encode("latin-1")
+                )
+                try:
+                    decoded_val = byte_repr.decode("utf-16-le", errors="ignore")
+                except UnicodeDecodeError:
+                    decoded_val = byte_repr.decode("latin-1", errors="ignore")
+
+                clean_str = (
+                    decoded_val.replace("\x00", "")
+                    .replace("\n", " ")
+                    .replace("\r", " ")
+                    .replace("\t", " ")
+                )
+                if any(ord(c) < 32 and c not in (" ",) for c in clean_str):
+                    return byte_repr.hex() # Retorna a representação hexadecimal dos bytes reais
+                else:
+                    return clean_str.strip()
+            except Exception:
+                # Em caso de erro na conversão de string de bytes, fallback para tratamento de string simples
+                pass
+
+        # Para strings que não são representações de bytes ou falham na conversão de bytes
+        return (
+            val.replace("\x00", "")
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+            .strip()
+        )
+    # Para qualquer outro tipo, converte para string e limpa
+    return (
+        str(val)
+        .replace("\x00", "")
+        .replace("\n", " ")
+        .replace("\r", " ")
+        .replace("\t", " ")
+        .strip()
+    )
 
 
 def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.DataFrame:
     """
-    Aplica transformações aos DataFrames extraídos daq Vitacare.
+    Aplica transformações aos DataFrames extraídos da Vitacare.
     """
     if df.empty:
         return df
@@ -149,8 +206,12 @@ def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.D
     for col in df.select_dtypes(include=["object"]).columns:
         df[col] = df[col].astype(str).str.replace(r"[\n\r\t\x00]+", " ", regex=True)
 
-    # Trata a coluna 'acto_id' se presente
+    # NOVO: Trata a coluna 'acto_id' como numérico se presente
+    # Removido o .replace(".0", "") pois será convertido para numérico
     if "acto_id" in df.columns:
-        df["acto_id"] = df["acto_id"].astype(str).str.replace(".0", "", regex=False)
+        # Tenta converter para numérico, coercing erros para NaN
+        df["acto_id"] = pd.to_numeric(df["acto_id"], errors="coerce")
+        # Converte para Int64Dtype (inteiro com suporte a valores nulos)
+        df["acto_id"] = df["acto_id"].astype(pd.Int64Dtype())
 
     return df
