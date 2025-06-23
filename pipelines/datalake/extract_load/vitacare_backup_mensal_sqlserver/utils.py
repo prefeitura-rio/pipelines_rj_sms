@@ -2,11 +2,12 @@
 import re
 from collections import defaultdict
 from datetime import datetime
-import pytz
+
 import pandas as pd
-from pipelines.utils.data_cleaning import remove_columns_accents
+import pytz
 
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 from pipelines.utils.monitor import send_message
 
@@ -111,7 +112,9 @@ def create_and_send_final_report(operator_run_states: list):
     final_message = "\n".join(message_lines)
     send_message(title=title, message=final_message, monitor_slug="data-ingestion")
 
+
 # --- Funções auxiliares para pré-processamento ---
+
 
 def clean_ut_id(val):
     """
@@ -144,10 +147,10 @@ def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.D
 
     # Limpa caracteres especiais de colunas de texto (do tipo object no Pandas)
     for col in df.select_dtypes(include=["object"]).columns:
-        df[col] = df[col].astype(str).str.replace(r"[\n\r\t\x00]+", " ", regex=True) 
+        df[col] = df[col].astype(str).str.replace(r"[\n\r\t\x00]+", " ", regex=True)
 
     # Trata a coluna 'acto_id' se presente
     if "acto_id" in df.columns:
-        df["acto_id"] = df["acto_id"].astype(str).str.replace(".0", "", regex=False) 
+        df["acto_id"] = df["acto_id"].astype(str).str.replace(".0", "", regex=False)
 
     return df

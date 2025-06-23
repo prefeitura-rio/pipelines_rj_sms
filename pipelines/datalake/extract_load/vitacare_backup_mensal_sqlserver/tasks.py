@@ -15,8 +15,8 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants 
     vitacare_constants,
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import (
-    transform_dataframe,
     clean_ut_id,
+    transform_dataframe,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
@@ -36,7 +36,7 @@ def process_cnes_table(
     dataset_id: str,
     partition_column: str,
 ) -> dict:
-    
+
     bq_table_rename = {
         "ATENDIMENTOS": "acto_id",
         "PACIENTES": "cadastro",
@@ -63,11 +63,11 @@ def process_cnes_table(
             log(f"Extraindo tabela '{db_table}' em chunks para o CNES {cnes_code}.")
             chunks = pd.read_sql(query, engine, chunksize=100000)
             is_first_chunk = True
-            
+
             for chunk in chunks:
                 # Transforma o lote
-                processed_chunk = transform_dataframe(chunk, cnes_code, db_table) 
-                
+                processed_chunk = transform_dataframe(chunk, cnes_code, db_table)
+
                 if processed_chunk.empty:
                     continue
 
@@ -81,18 +81,20 @@ def process_cnes_table(
                     if_storage_data_exists="append",
                 )
                 is_first_chunk = False
-                total_rows += len(processed_chunk) 
+                total_rows += len(processed_chunk)
 
             # Se nenhum chunk foi processado (tabela vazia), loga e retorna skipped
             if total_rows == 0:
-                 log(f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando.")
-                 return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
+                log(
+                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando."
+                )
+                return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
 
             log(
                 f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída. Total de linhas: {total_rows}."
             )
             return {"cnes": cnes_code, "status": "success", "rows_loaded": total_rows}
-        
+
         # Lógica para as demais tabelas (leitura completa)
         else:
             log(f"Extraindo tabela '{db_table}' para o CNES {cnes_code}.")
@@ -106,8 +108,8 @@ def process_cnes_table(
 
             log(f"Extraídas {len(df)} linhas de {full_table_name} para o CNES {cnes_code}.")
 
-            # Chama a função de transformação 
-            processed_df = transform_dataframe(df, cnes_code, db_table) 
+            # Chama a função de transformação
+            processed_df = transform_dataframe(df, cnes_code, db_table)
 
             log(f"Enviando {len(processed_df)} linhas do CNES {cnes_code} para o BigQuery.")
             upload_df_to_datalake.run(
