@@ -115,6 +115,7 @@ def create_and_send_final_report(operator_run_states: list):
 
 # --- Funções auxiliares para pré-processamento ---
 
+
 def clean_ut_id(val):
     """
     Decodifica e limpa valores VARBINARY de 'ut_id'.
@@ -128,15 +129,12 @@ def clean_ut_id(val):
 
         # Remove caracteres nulos e normaliza quebras de linha/tabulações
         clean_str = (
-            decoded_val.replace("\x00", "")
-            .replace("\n", " ")
-            .replace("\r", " ")
-            .replace("\t", " ")
+            decoded_val.replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ")
         )
         # Verifica se ainda há caracteres de controle não-espaço após a limpeza básica
         # Se houver, retorna a representação hexadecimal para garantir uma string plana
         if any(ord(c) < 32 and c not in (" ",) for c in clean_str):
-            return val.hex() # Retorna a representação hexadecimal dos bytes originais
+            return val.hex()  # Retorna a representação hexadecimal dos bytes originais
         else:
             return clean_str.strip()
     elif isinstance(val, str):
@@ -144,9 +142,7 @@ def clean_ut_id(val):
         if val.startswith("b'") and val.endswith("'"):
             try:
                 # Tenta converter a representação de string de bytes para bytes reais
-                byte_repr = (
-                    val[2:-1].encode("latin-1").decode("unicode_escape").encode("latin-1")
-                )
+                byte_repr = val[2:-1].encode("latin-1").decode("unicode_escape").encode("latin-1")
                 try:
                     decoded_val = byte_repr.decode("utf-16-le", errors="ignore")
                 except UnicodeDecodeError:
@@ -159,7 +155,7 @@ def clean_ut_id(val):
                     .replace("\t", " ")
                 )
                 if any(ord(c) < 32 and c not in (" ",) for c in clean_str):
-                    return byte_repr.hex() # Retorna a representação hexadecimal dos bytes reais
+                    return byte_repr.hex()  # Retorna a representação hexadecimal dos bytes reais
                 else:
                     return clean_str.strip()
             except Exception:
@@ -168,11 +164,7 @@ def clean_ut_id(val):
 
         # Para strings que não são representações de bytes ou falham na conversão de bytes
         return (
-            val.replace("\x00", "")
-            .replace("\n", " ")
-            .replace("\r", " ")
-            .replace("\t", " ")
-            .strip()
+            val.replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ").strip()
         )
     # Para qualquer outro tipo, converte para string e limpa
     return (
