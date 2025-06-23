@@ -2,12 +2,11 @@
 import re
 from collections import defaultdict
 from datetime import datetime
-
-import pandas as pd
 import pytz
+import pandas as pd
+from pipelines.utils.data_cleaning import remove_columns_accents
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 from pipelines.utils.monitor import send_message
 
@@ -115,7 +114,6 @@ def create_and_send_final_report(operator_run_states: list):
 
 # --- Funções auxiliares para pré-processamento ---
 
-
 def clean_ut_id(val):
     """
     Decodifica e limpa valores VARBINARY de 'ut_id'.
@@ -129,12 +127,15 @@ def clean_ut_id(val):
 
         # Remove caracteres nulos e normaliza quebras de linha/tabulações
         clean_str = (
-            decoded_val.replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ")
+            decoded_val.replace("\x00", "")
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
         )
         # Verifica se ainda há caracteres de controle não-espaço após a limpeza básica
         # Se houver, retorna a representação hexadecimal para garantir uma string plana
         if any(ord(c) < 32 and c not in (" ",) for c in clean_str):
-            return val.hex()  # Retorna a representação hexadecimal dos bytes originais
+            return val.hex() # Retorna a representação hexadecimal dos bytes originais
         else:
             return clean_str.strip()
     elif isinstance(val, str):
@@ -142,7 +143,9 @@ def clean_ut_id(val):
         if val.startswith("b'") and val.endswith("'"):
             try:
                 # Tenta converter a representação de string de bytes para bytes reais
-                byte_repr = val[2:-1].encode("latin-1").decode("unicode_escape").encode("latin-1")
+                byte_repr = (
+                    val[2:-1].encode("latin-1").decode("unicode_escape").encode("latin-1")
+                )
                 try:
                     decoded_val = byte_repr.decode("utf-16-le", errors="ignore")
                 except UnicodeDecodeError:
@@ -155,7 +158,7 @@ def clean_ut_id(val):
                     .replace("\t", " ")
                 )
                 if any(ord(c) < 32 and c not in (" ",) for c in clean_str):
-                    return byte_repr.hex()  # Retorna a representação hexadecimal dos bytes reais
+                    return byte_repr.hex() # Retorna a representação hexadecimal dos bytes reais
                 else:
                     return clean_str.strip()
             except Exception:
@@ -164,7 +167,11 @@ def clean_ut_id(val):
 
         # Para strings que não são representações de bytes ou falham na conversão de bytes
         return (
-            val.replace("\x00", "").replace("\n", " ").replace("\r", " ").replace("\t", " ").strip()
+            val.replace("\x00", "")
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+            .strip()
         )
     # Para qualquer outro tipo, converte para string e limpa
     return (
@@ -175,6 +182,15 @@ def clean_ut_id(val):
         .replace("\t", " ")
         .strip()
     )
+
+# Definir as colunas que precisam do tratamento especial de aspas duplas
+SPECIAL_TEXT_COLUMNS_FOR_QUOTING = {
+    "subjetivo_motivo",
+    "plano_observacoes",
+    "avaliacao_observacoes",
+    "objetivo_descricao",
+    "notas_observacoes",
+}
 
 
 def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.DataFrame:
@@ -194,12 +210,23 @@ def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.D
     if "ut_id" in df.columns:
         df["ut_id"] = df["ut_id"].apply(clean_ut_id)
 
-    # Limpa caracteres especiais de colunas de texto (do tipo object no Pandas)
+    # Processa colunas de texto (do tipo object no Pandas)
     for col in df.select_dtypes(include=["object"]).columns:
-        df[col] = df[col].astype(str).str.replace(r"[\n\r\t\x00]+", " ", regex=True)
+        df[col] = df[col].astype(str) # Garante que a coluna é string para operações de str
 
-    # NOVO: Trata a coluna 'acto_id' como numérico se presente
-    # Removido o .replace(".0", "") pois será convertido para numérico
+        # Limpeza básica de caracteres especiais
+        df[col] = df[col].str.replace(r"[\n\r\t\x00]+", " ", regex=True)
+
+        # APLICA TRATAMENTO ESPECIAL DE ASPAS DUPLAS SOMENTE PARA COLUNAS ESPECÍFICAS
+        # E SOMENTE PARA A TABELA 'ATENDIMENTOS'
+        if db_table.upper() == "ATENDIMENTOS" and col.lower() in SPECIAL_TEXT_COLUMNS_FOR_QUOTING:
+            # Primeiro, escapa as aspas duplas internas (duas aspas para uma)
+            df[col] = df[col].str.replace('"', '""', regex=False)
+            # Segundo, envolve toda a string em aspas duplas
+            df[col] = '"' + df[col] + '"'
+
+
+    # Trata a coluna 'acto_id' como numérico se presente
     if "acto_id" in df.columns:
         # Tenta converter para numérico, coercing erros para NaN
         df["acto_id"] = pd.to_numeric(df["acto_id"], errors="coerce")
