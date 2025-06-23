@@ -115,9 +115,10 @@ def create_and_send_final_report(operator_run_states: list):
 
 # --- Funções auxiliares para pré-processamento ---
 
+
 def clean_ut_id(val):
     """
-    Decodifica e limpa valores VARBINARY de 'ut_id' 
+    Decodifica e limpa valores VARBINARY de 'ut_id'
     """
     if isinstance(val, bytes):
         try:
@@ -129,7 +130,7 @@ def clean_ut_id(val):
 
 def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.DataFrame:
     """
-    Aplica transformações DataFrames extraídos daq Vitacare 
+    Aplica transformações DataFrames extraídos daq Vitacare
     """
     if df.empty:
         return df
@@ -146,6 +147,5 @@ def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.D
 
     for col in df.select_dtypes(include=["object"]).columns:
         df[col] = df[col].astype(str).str.replace(r"[\n\r\t\x00]+", " ", regex=True)
-
 
     return df
