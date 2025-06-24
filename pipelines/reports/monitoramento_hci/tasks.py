@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 import asyncio
-from datetime import datetime
-from typing import List, Optional
 
-import pandas as pd
 import pytz
+from datetime import datetime
+from typing import Optional
+
 from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.monitor import send_discord_webhook
+from discord import Embed
+from pipelines.utils.monitor import send_discord_embed, send_discord_webhook
 from pipelines.utils.tasks import get_bigquery_project_from_environment
 
 
@@ -48,8 +49,12 @@ def send_report(data):
     log(f"Últimos 30 min:\n{data_30m}")
     log(f"Últimos 7 dias (média):\n{data_7d}")
 
-    to_warn = []
-    to_notify = []
+    warnings = []
+    sections = {
+        "access": dict(),
+        "use": dict(),
+        "others": dict()
+    }
     # Para cada evento recente:
     for event in data_30m:
         evt_type: str = event[0]
@@ -59,14 +64,7 @@ def send_report(data):
             continue
         if "desenvolvimento" in evt_type.lower():
             continue
-
-        s = "" if amount < 2 else "s"
-
-        # Se for HTTP 500 inesperado, avisa
-        if status == "500" and "mapeado" not in evt_type:
-            to_warn.append(f"🚨 '{evt_type}' (500): **{amount:.0f}** ocorrência{s}")
-            continue
-        # Caso contrário, confere se está próximo à média semanal
+        # Pega média semanal do evento
         average = next(
             (
                 average
@@ -75,9 +73,21 @@ def send_report(data):
             ),
             0,
         )
-        status_str = f" ({status})" if status != "200" else ""
-        to_notify.append(
-            f"'{evt_type}'{status_str}: **{amount:.0f}** ocorrência{s} (média: {average:.2f})"
+        section = "others"
+        if evt_type.startswith("Login") or evt_type.startswith("Termos"):
+            section = "access"
+        elif evt_type.startswith("Busca") or evt_type.startswith("Consulta"):
+            section = "use"
+
+        s = "" if amount < 2 else "s"
+        if status == "500" and not evt_type.startswith("("):
+            warnings.append(f"🚨 HTTP 500 em {evt_type}")
+
+        if evt_type not in sections[section]:
+            sections[section][evt_type] = []
+
+        sections[section][evt_type].append(
+            (status, f"**{amount:.0f}** ocorrência{s} (média: {average:.2f})")
         )
 
     # Além disso:
@@ -85,45 +95,76 @@ def send_report(data):
     types = [evt_type.lower() for (evt_type, status, _) in data_30m if status == "200"]
     actual_usage_count = len([t for t in types if t.startswith("consulta")])
     if actual_usage_count <= 0:
-        to_warn.append(f"🚨 Nenhuma consulta no intervalo avaliado!")
+        warnings.append(f"🚨 Nenhuma consulta na última meia hora!")
 
     # TODO: Testar requisição à API diretamente
 
     ####################################
     ## Notificações
     ####################################
-    message = ""
-    to_notify.sort()
-    if len(to_notify):
-        message = "-# Última meia hora (vs. média semanal):\n"
-        outstr = "\n* ".join(to_notify)
-        message += "* " + outstr if len(outstr) else ""
-        log(f"Sending notification:{message}")
-    if len(message):
+
+    HTTP_STATUS = {
+        "400": "Requisição mal formatada",
+        "401": "Não autorizado",
+        "403": "Permissão negada",
+        "404": "Não encontrado",
+        "500": "⚠️ Erro interno"
+    }
+    def create_section(title, obj):
+        embed = Embed(
+            title=title,
+            color=0xdbdbe5,
+            timestamp=datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+        )
+
+        keys = list(obj.keys())
+        keys.sort()
+        for key in keys:
+            outstr = ""
+            for status_code, text in obj[key]:
+                outstr += '\u00b7 \u2003 '  # middle dot (U+00B7) + em space (U+2003)
+                if status_code == "200":
+                    outstr += text
+                elif status_code in HTTP_STATUS.keys():
+                    outstr += text + f" [**{status_code}**: {HTTP_STATUS[status_code]}]"
+                else:
+                    outstr += text + f" [**{status_code}**: ❓]"
+                outstr += '\n'
+            embed.add_field(name=f"📄 {key}", value=outstr, inline=False)
+
+        embed.set_footer(text="Última meia hora (vs. média semanal)")
+        return embed
+
+    all_embeds = []
+    if len(sections["access"]):
+        all_embeds.append(create_section("Acessos", sections["access"]))
+    if len(sections["use"]):
+        all_embeds.append(create_section("Uso", sections["use"]))
+    if len(sections["others"]):
+        all_embeds.append(create_section("Outros", sections["others"]))
+
+    if len(all_embeds) > 0:
         asyncio.run(
-            send_discord_webhook(
-                text_content=message,
+            send_discord_embed(
+                contents=all_embeds,
                 username="Monitoramento HCI",
                 monitor_slug="hci_status",
             )
         )
 
+
     ####################################
-    ## Avisos
+    ## Alertas
     ####################################
     ROLE_ID = "1224334248345862164"
     ROLE_MENTION = f"<@&{ROLE_ID}>"
-    message = ""
-    to_warn.sort()
-    if len(to_warn) > 0:
-        message = f"{ROLE_MENTION}\n\n"
-        outstr = "\n* ".join(to_warn)
-        message += "* " + outstr if len(outstr) else ""
-        log(f"Sending warning:{outstr}", level="warning")
-    if len(message):
+    if len(warnings) > 0:
+        log(f"Sending warnings:{warnings}", level="warning")
+        message = f"**Alertas** ({ROLE_MENTION}):\n"
+        message += "\n".join(warnings)
         asyncio.run(
             send_discord_webhook(
-                text_content=message,
+                message=message,
                 username="Monitoramento HCI",
                 monitor_slug="hci_status",
             )
