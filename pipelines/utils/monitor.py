@@ -16,7 +16,7 @@ async def send_discord_webhook(
     text_content: str,
     file_path: str = None,
     username: str = None,
-    monitor_slug: str = Literal["endpoint-health", "dbt-runs", "data-ingestion", "warning"],
+    monitor_slug: str = Literal["endpoint-health", "dbt-runs", "data-ingestion", "warning", "hci_status"],
 ):
     """
     Sends a message to a Discord webhook

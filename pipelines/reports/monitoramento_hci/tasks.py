@@ -31,12 +31,12 @@ GROUP BY 1, 2
     log(f"Query for tipo_evento, resultado (30 min) returned {len(rows_30m)} row(s)")
 
     # Quantidade de intervalos de 30 minutos em horas úteis de 7 dias
-    # 7 (dias) x 8 (horas) x 2 (meia-horas)
+    # 7 (dias) × 8 (horas) × 2 (meia-horas)
     denom = 7 * 8 * 2
     QUERY_7D = get_query(interval="7 DAY", denom=denom)
     rows_7d = [row.values() for row in client.query(QUERY_7D).result()]
     log(f"Query for tipo_evento, resultado (7 d) returned {len(rows_7d)} row(s)")
-    # Lista de tuplas (evento, quantidade)
+    # Retorna duas listas de tuplas (evento, quantidade)
     return (rows_30m, rows_7d)
 
 
@@ -45,8 +45,8 @@ def send_report(data):
     data_30m = data[0]
     data_7d = data[1]
 
-    log(data_30m)
-    log(data_7d)
+    log(f"Últimos 30 min:\n{data_30m}")
+    log(f"Últimos 7 dias (média):\n{data_7d}")
 
     to_warn = []
     to_notify = []
@@ -61,12 +61,12 @@ def send_report(data):
             continue
 
         s = "" if amount < 2 else "s"
-        # Se for HTTP 500, avisa
-        if status == "500":
-            to_warn.append(f"🚨 '{evt_type}' (500): {amount:.0f} ocorrência{s}")
-            continue
 
-        # Se for HTTP 200, confere se está próximo à média semanal
+        # Se for HTTP 500 inesperado, avisa
+        if status == "500" and "mapeado" not in evt_type:
+            to_warn.append(f"🚨 '{evt_type}' (500): **{amount:.0f}** ocorrência{s}")
+            continue
+        # Caso contrário, confere se está próximo à média semanal
         average = next(
             (
                 average
@@ -75,9 +75,9 @@ def send_report(data):
             ),
             0,
         )
-        # TODO: 10?
+        status_str = f" ({status})" if status != "200" else ""
         to_notify.append(
-            f"'{evt_type}' ({status}): {amount:.0f} ocorrência{s} (média: {average:.2f})"
+            f"'{evt_type}'{status_str}: **{amount:.0f}** ocorrência{s} (média: {average:.2f})"
         )
 
     # Além disso:
@@ -87,23 +87,30 @@ def send_report(data):
     if actual_usage_count <= 0:
         to_warn.append(f"🚨 Nenhuma consulta no intervalo avaliado!")
 
-    # Notificações
+    # TODO: Testar requisição à API diretamente
+
+    ####################################
+    ## Notificações
+    ####################################
     message = ""
     to_notify.sort()
-    if len(to_notify) > 0:
+    if len(to_notify):
+        message = "-# Última meia hora (vs. média semanal):\n"
         outstr = "\n* ".join(to_notify)
         message += "* " + outstr if len(outstr) else ""
-        log(f"Sending notification:{outstr}")
+        log(f"Sending notification:{message}")
     if len(message):
         asyncio.run(
             send_discord_webhook(
                 text_content=message,
                 username="Monitoramento HCI",
-                monitor_slug="warning",
+                monitor_slug="hci_status",
             )
         )
 
-    # Avisos
+    ####################################
+    ## Avisos
+    ####################################
     ROLE_ID = "1224334248345862164"
     ROLE_MENTION = f"<@&{ROLE_ID}>"
     message = ""
@@ -113,14 +120,11 @@ def send_report(data):
         outstr = "\n* ".join(to_warn)
         message += "* " + outstr if len(outstr) else ""
         log(f"Sending warning:{outstr}", level="warning")
-
     if len(message):
         asyncio.run(
             send_discord_webhook(
                 text_content=message,
                 username="Monitoramento HCI",
-                monitor_slug="warning",
+                monitor_slug="hci_status",
             )
         )
-
-    # TODO: Teste de requisição da API diretamente
