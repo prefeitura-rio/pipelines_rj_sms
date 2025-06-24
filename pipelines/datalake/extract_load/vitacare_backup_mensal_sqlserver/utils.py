@@ -1,109 +1,151 @@
 # -*- coding: utf-8 -*-
+import re
+from collections import defaultdict
+from datetime import datetime
+
+import pandas as pd
+import pytz
+
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 from pipelines.utils.monitor import send_message
 
 
 @task
 def create_and_send_final_report(operator_run_states: list):
-    tables_not_found = {}
-    db_not_found = []
-    unexpected_failures = []
+    """
+    Analisa os resultados dos fluxos de tabela e envia um relatório final consolidado
+    """
+    TASK_NAME_TO_CHECK = "process_cnes_table"
 
-    for flow_run_state in operator_run_states:
-        params = flow_run_state.context.get("parameters", {})
-        cnes_code = params.get("CNES_CODE", "CNES_Desconhecido")
+    report = {}
+    total_tables = len(operator_run_states)
+    successful_tables = 0
 
-        if flow_run_state.is_failed():
-            error_message = str(flow_run_state.result)
-            if "Cannot open database" in error_message and "login failed" not in error_message:
-                if cnes_code not in db_not_found:
-                    db_not_found.append(cnes_code)
-            else:
-                unexpected_failures.append(
-                    f"CNES {cnes_code}: Falha inesperada no flow! Erro: {error_message[:200]}..."
-                )
+    def get_clean_reason(state):
+        if isinstance(state.result, dict) and state.result.get("reason"):
+            return state.result["reason"]
+
+        message = str(state.message).lower()
+        if "database" in message and "does not exist" in message:
+            return "Database não encontrado"
+        if "table not found" in message or "invalid object name" in message:
+            return "Tabela não encontrada"
+        if "no data extracted" in message:
+            return "Nenhum dado extraído"
+
+        if state.is_failed() and state.message:
+            return str(state.message).split("\n")[0][:100]
+
+        return "Motivo desconhecido"
+
+    for flow_run in operator_run_states:
+        params = flow_run.parameters or {}
+        table_name = params.get("TABLE_NAME", "Tabela_Desconhecida")
+
+        report[table_name] = {
+            "failed_cnes": defaultdict(list),
+            "skipped_cnes": defaultdict(list),
+            "flow_error": None,
+        }
+
+        flow_state = flow_run.state
+
+        if flow_state.is_failed():
+            report[table_name]["flow_error"] = str(flow_state.result)[:300]
             continue
 
-        if flow_run_state.is_successful() and isinstance(flow_run_state.result, dict):
-            task_states_dict = flow_run_state.result
+        if flow_state.is_successful() and isinstance(flow_state.result, dict):
+            task_states_dict = flow_state.result
+            has_issues = False
 
             for task_run_state in task_states_dict.values():
-                if task_run_state.is_skipped() and task_run_state.name.startswith(
-                    "extract_and_transform_table"
-                ):
-                    message = task_run_state.message
-                    if "Table not found:" in message:
-                        table_name = message.split("'")[1]
-                        if cnes_code not in tables_not_found:
-                            tables_not_found[cnes_code] = []
-                        tables_not_found[cnes_code].append(table_name)
+                if not task_run_state.name.startswith(TASK_NAME_TO_CHECK):
+                    continue
 
-                elif task_run_state.is_failed():
-                    error_message = str(task_run_state.result)
-                    unexpected_failures.append(
-                        f"CNES {cnes_code}, Task '{task_run_state.name}': Falha inesperada! Erro: {error_message[:150]}..."
-                    )
+                task_result = task_run_state.result or {}
+                cnes_code = task_result.get("cnes", "CNES_Desconhecido")
+                reason = get_clean_reason(task_run_state)
 
-    total_runs = len(operator_run_states)
+                if task_run_state.is_failed():
+                    report[table_name]["failed_cnes"][reason].append(cnes_code)
+                    has_issues = True
+                elif task_run_state.is_skipped():
+                    report[table_name]["skipped_cnes"][reason].append(cnes_code)
+                    has_issues = True
 
-    all_problematic_cnes = set(db_not_found) | set(tables_not_found.keys())
-    for failure in unexpected_failures:
-        cnes_in_failure = failure.split(":")[0].replace("CNES", "").strip().split(",")[0]
-        all_problematic_cnes.add(cnes_in_failure)
+            if not has_issues and not report[table_name]["flow_error"]:
+                successful_tables += 1
 
-    successful_runs = total_runs - len(all_problematic_cnes)
-
-    if not all_problematic_cnes:
-        log("Todos os flows Backup Vitacare foram executados com sucesso!")
-        send_message(
-            title="Relatório Extração - Backup Vitacare",
-            message=f"Execução finalizada com sucesso para todos os {total_runs} CNES.",
-            monitor_slug="data-ingestion",
-        )
+    # Construção da mensagem final
+    if successful_tables == total_tables:
         return
 
     title = "Relatório Extração - Backup Vitacare"
     message_lines = []
 
-    if db_not_found:
-        message_lines.append(f"**🔴 {len(db_not_found)} CNES com falha de acesso ao banco:**")
-        message_lines.append("```")
-        for cnes in sorted(db_not_found):
-            message_lines.append(cnes)
-        message_lines.append("```")
+    for table, results in sorted(report.items()):
+        if not results["failed_cnes"] and not results["skipped_cnes"] and not results["flow_error"]:
+            continue
+
+        message_lines.append(f"**Tabela: {table}**")
+        if results["flow_error"]:
+            message_lines.append(f"  - 🔴 Falha geral no fluxo: ```{results['flow_error']}...```")
+
+        if results["failed_cnes"]:
+            for reason, cnes_list in results["failed_cnes"].items():
+                cnes_str = ", ".join(sorted(cnes_list))
+                message_lines.append(f"  - 🔴 Falha (`{reason}`): CNES `{cnes_str}`")
+
+        if results["skipped_cnes"]:
+            for reason, cnes_list in results["skipped_cnes"].items():
+                cnes_str = ", ".join(sorted(cnes_list))
+                message_lines.append(f"  - ⚠️ Skip (`{reason}`): CNES `{cnes_str}`")
+
         message_lines.append("")
 
-    if tables_not_found:
-        message_lines.append(f"**🔴 {len(tables_not_found)} CNES com tabelas ausentes:**")
-        message_lines.append("```")
-        for cnes, tables in sorted(tables_not_found.items()):
-            tables_str = ", ".join(sorted(list(set(tables))))
-            message_lines.append(f"{cnes}: {tables_str}")
-        message_lines.append("```")
-        message_lines.append("")
-
-    if unexpected_failures:
-        message_lines.append("**🔴 FALHAS INESPERADAS:**")
-        message_lines.append("```")
-        for failure in unexpected_failures:
-            message_lines.append(f"- {failure}")
-        message_lines.append("```")
-
-    if all_problematic_cnes:
-        message_lines.append("\n-----------------------------------\n")
-        message_lines.append(
-            f"**Lista de CNES para Investigação ({len(all_problematic_cnes)} no total):**"
-        )
-        message_lines.append("```")
-        for cnes in sorted(list(all_problematic_cnes)):
-            message_lines.append(cnes)
-        message_lines.append("```")
-
+    message_lines.append("\n-----------------------------------\n")
     message_lines.append(
-        f"**Status Final:** {successful_runs}/{total_runs} CNES processados sem alertas."
+        f"**Status Final:** {successful_tables}/{total_tables} tabelas processadas sem alertas."
     )
-
     final_message = "\n".join(message_lines)
-
     send_message(title=title, message=final_message, monitor_slug="data-ingestion")
+
+
+# --- Funções auxiliares para pré-processamento ---
+
+
+def clean_ut_id(val):
+    """
+    Decodifica e limpa valores VARBINARY de 'ut_id'
+    """
+    if isinstance(val, bytes):
+        try:
+            return val.decode("utf-16-le", errors="ignore").replace("\x00", "").strip()
+        except UnicodeDecodeError:
+            return val.decode("latin-1", errors="ignore").replace("\x00", "").strip()
+    return str(val).replace("\x00", "").strip()
+
+
+def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.DataFrame:
+    """
+    Aplica transformações DataFrames extraídos daq Vitacare
+    """
+    if df.empty:
+        return df
+
+    now = datetime.now(pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
+    df["extracted_at"] = now
+    df["id_cnes"] = cnes_code
+
+    df.columns = remove_columns_accents(df)
+
+    # Aplica clean_ut_id se a coluna existe
+    if "ut_id" in df.columns:
+        df["ut_id"] = df["ut_id"].apply(clean_ut_id)
+
+    for col in df.select_dtypes(include=["object"]).columns:
+        df[col] = df[col].astype(str).str.replace(r"[\n\r\t\x00]+", " ", regex=True)
+
+    return df
