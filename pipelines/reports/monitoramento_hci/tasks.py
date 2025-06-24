@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 import asyncio
-
-import pytz
 from datetime import datetime
 from typing import Optional
 
+import pytz
+from discord import Embed
 from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from discord import Embed
 from pipelines.utils.monitor import send_discord_embed, send_discord_webhook
 from pipelines.utils.tasks import get_bigquery_project_from_environment
 
@@ -50,11 +49,7 @@ def send_report(data):
     log(f"Últimos 7 dias (média):\n{data_7d}")
 
     warnings = []
-    sections = {
-        "access": dict(),
-        "use": dict(),
-        "others": dict()
-    }
+    sections = {"access": dict(), "use": dict(), "others": dict()}
     # Para cada evento recente:
     for event in data_30m:
         evt_type: str = event[0]
@@ -108,13 +103,14 @@ def send_report(data):
         "401": "Não autorizado",
         "403": "Permissão negada",
         "404": "Não encontrado",
-        "500": "⚠️ Erro interno"
+        "500": "⚠️ Erro interno",
     }
+
     def create_section(title, obj):
         embed = Embed(
             title=title,
-            color=0xdbdbe5,
-            timestamp=datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+            color=0xDBDBE5,
+            timestamp=datetime.now(tz=pytz.timezone("America/Sao_Paulo")),
         )
 
         keys = list(obj.keys())
@@ -122,14 +118,14 @@ def send_report(data):
         for key in keys:
             outstr = ""
             for status_code, text in obj[key]:
-                outstr += '\u00b7 \u2003 '  # middle dot (U+00B7) + em space (U+2003)
+                outstr += "\u00b7 \u2003 "  # middle dot (U+00B7) + em space (U+2003)
                 if status_code == "200":
                     outstr += text
                 elif status_code in HTTP_STATUS.keys():
                     outstr += text + f" [**{status_code}**: {HTTP_STATUS[status_code]}]"
                 else:
                     outstr += text + f" [**{status_code}**: ❓]"
-                outstr += '\n'
+                outstr += "\n"
             embed.add_field(name=f"📄 {key}", value=outstr, inline=False)
 
         embed.set_footer(text="Última meia hora (vs. média semanal)")
@@ -151,7 +147,6 @@ def send_report(data):
                 monitor_slug="hci_status",
             )
         )
-
 
     ####################################
     ## Alertas

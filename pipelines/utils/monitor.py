@@ -75,7 +75,11 @@ async def send_discord_embed(
     webhook_url = get_secret(secret_name=secret_name, environment=environment).get(secret_name)
 
     async with aiohttp.ClientSession() as session:
-        kwargs = {"content": "", "embeds": contents, "allowed_mentions": AllowedMentions(users=True)}
+        kwargs = {
+            "content": "",
+            "embeds": contents,
+            "allowed_mentions": AllowedMentions(users=True),
+        }
         if username:
             kwargs["username"] = username
 
