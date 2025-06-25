@@ -15,6 +15,7 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
+
 flow_parameters = [
     {
         "environment": "prod",
