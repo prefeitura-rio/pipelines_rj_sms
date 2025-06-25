@@ -149,7 +149,7 @@ def close_mysql(connection):
         raise
 
 
-@task
+@task(max_retries=5, retry_delay=timedelta(minutes=3))
 def query_mysql_all_in_one(
     host: str, database: str, user: str, password: str, query: str, table: str, port: str = None
 ):
@@ -176,18 +176,25 @@ def query_mysql_all_in_one(
         # Estabelecendo conexão com o MySQL
         connection = (
             mysql.connector.connect(
-                host=host, database=database, user=user, password=password, port=port
+                host=host, database=database,
+                user=user, password=password, port=port,
+                connection_timeout=30,          #  tempo para handshake
+                autocommit=False                #  explicita modo de commit                
             )
             if port
             else mysql.connector.connect(host=host, database=database, user=user, password=password)
         )
 
         if connection.is_connected():
+            connection.cmd_query(
+                "SET SESSION wait_timeout = 1000000, net_read_timeout = 1000000, net_write_timeout = 1000000"
+            )
+
             log("Conexão com MySQL estabelecida com sucesso.")
 
             # Executando a consulta SQL
             log(f"Executando query no MySQL: {query}")
-            cursor = connection.cursor()
+            cursor = connection.cursor(buffered=False)   # evita estourar RAM
             cursor.execute(query)
             records = cursor.fetchall()
             df = pd.DataFrame(records)
