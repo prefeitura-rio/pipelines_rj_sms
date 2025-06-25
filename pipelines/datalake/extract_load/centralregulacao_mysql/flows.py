@@ -28,7 +28,7 @@ with Flow(name=" SUBGERAL - Extract & Load - Central de Regulação (MySQL) ") a
     # MySQL ---------------------------------
     HOST = Parameter("host", default="db.smsrio.org")
     DATABASE = Parameter("database", default="monitoramento")
-    PORT = Parameter("port", default=None)
+    PORT = Parameter("port")
     TABLE = Parameter("table", default="vw_MS_CadastrosAtivacoesGov")
     QUERY = Parameter("query", default="SELECT * FROM vw_MS_CadastrosAtivacoesGov")
 
