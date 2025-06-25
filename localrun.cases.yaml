@@ -9,6 +9,11 @@ cases:
     flow_name: "flow"
     params:
       environment: "dev"
+  - case_slug: "report_uso_hci"
+    flow_path: "pipelines.reports.monitoramento_hci.flows"
+    flow_name: "report_uso_hci"
+    params:
+      environment: "dev"
   - case_slug: "mrg-patientrecord"
     flow_path: "pipelines.prontuarios.mrg.flows"
     flow_name: "patientrecord_mrg"
