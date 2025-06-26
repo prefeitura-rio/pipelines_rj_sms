@@ -90,7 +90,7 @@ def extract_data_from_api(
             f"Failed to extract data from API: {response['status_code']} - {response['body']}"
         )
 
-    requested_data = json.loads(response["body"])
+    requested_data = response["body"]
 
     if len(requested_data) > 0:
 

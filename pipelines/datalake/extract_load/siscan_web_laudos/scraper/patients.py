@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: F405, F403
+
 """Iteração sobre pacientes e extração de laudos detalhados (v2.0)."""
 
 from __future__ import annotations
