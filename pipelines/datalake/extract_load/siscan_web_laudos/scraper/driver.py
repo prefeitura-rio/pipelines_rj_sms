@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E731
+
 """Inicialização do Firefox + utilitários de espera/clique robustos."""
 
 from __future__ import annotations
