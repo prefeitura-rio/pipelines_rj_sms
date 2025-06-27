@@ -392,3 +392,11 @@ cases:
       dou_section: 3
       max_workers: 10
       date: ""
+
+  - case_slug: 'medlab_api'
+    flow_path: 'pipelines.datalake.extract_load.medlab_api.flows'
+    flow_name: 'flow_medlab_api'
+    params:
+      environment: 'dev'
+      dt_start: '2001-01-01'
+      dt_end: '2100-01-01'
