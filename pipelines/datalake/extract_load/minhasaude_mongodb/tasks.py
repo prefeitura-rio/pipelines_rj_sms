@@ -117,7 +117,7 @@ def dump_collection_slices_to_datalake(
                 table_id=bq_table_id,
                 dataset_id=bq_dataset_id,
                 partition_column="data_extracao",
-                source_format="csv",
+                source_format="parquet",
             )
 
             # Libera recursos -------------------------------------------
