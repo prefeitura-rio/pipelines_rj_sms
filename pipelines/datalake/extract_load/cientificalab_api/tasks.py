@@ -2,10 +2,12 @@
 import uuid
 from datetime import datetime, timedelta
 
+import json
 import pandas as pd
 import pytz
 import requests
 from bs4 import BeautifulSoup
+from pipelines.utils.tasks import cloud_function_request
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
@@ -17,47 +19,67 @@ def authenticate_and_fetch(
     apccodigo: str,
     dt_inicio: str = "2025-01-21T10:00:00-0300",
     dt_fim: str = "2025-01-21T11:30:00-0300",
+    environment: str = "dev",
 ):
-    res = requests.get(
+    token_response = cloud_function_request.run(
         url="https://cielab.lisnet.com.br/lisnetws/tokenlisnet/apccodigo",
-        headers={
+        request_type="GET",
+        query_params={
             "Content-Type": "application/json",
             "apccodigo": apccodigo,
             "emissor": username,
             "pass": password,
         },
+        body_params="",
+        api_type="xml",
+        env=environment,
     )
-    res.raise_for_status()
-    result = res.json()
 
-    if result.get("status") != 200:
-        raise Exception(result.get("mensagem"))
+    if token_response.get("status_code") != 200:
+        message = f"Failed to get token from Lisnet API: {token_response.get('status_code')} - {token_response.get('body')}"
+        raise Exception(message)
 
-    token = result.get("token")
+    token_data = json.loads(token_response["body"])
+    if token_data.get("status") != 200:
+        message = f"Lisnet API returned error for token: {token_data.get('status')} - {token_data.get('mensagem')}"
+        raise Exception(message)
 
-    res = requests.get(
+    token = token_data.get("token")
+
+    data = f"""
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <lote>
+            <codigoLis>1</codigoLis>
+            <identificadorLis>1021</identificadorLis>
+            <origemLis>1</origemLis>
+            <dataResultado>
+                <inicial>{dt_inicio}</inicial>
+                <final>{dt_fim}</final>
+            </dataResultado>
+            <parametros>
+                <parcial>N</parcial>
+                <retorno>ESTRUTURADO</retorno>
+            </parametros>
+        </lote>
+        """.strip()
+
+    resultado_response = cloud_function_request.run(
         url="https://cielab.lisnet.com.br/lisnetws/APOIO/DTL/resultado",
-        headers={"Content-Type": "application/xml", "codigo": apccodigo, "token": token},
-        data=f"""
-      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-      <lote>
-          <codigoLis>1</codigoLis>
-          <identificadorLis>1021</identificadorLis>
-          <origemLis>1</origemLis>
-          <dataResultado>
-              <inicial>{dt_inicio}</inicial>
-              <final>{dt_fim}</final>
-          </dataResultado>
-          <parametros>
-              <parcial>N</parcial>
-              <retorno>ESTRUTURADO</retorno>
-          </parametros>
-      </lote>
-      """,
+        request_type="GET",
+        query_params={
+            "codigo": apccodigo,
+            "token": token,
+        },
+        body_params=data, 
+        api_type="xml",
+        env=environment,
     )
-    res.raise_for_status()
 
-    return res.text
+    if resultado_response.get("status_code") != 200:
+        message = f"Failed to get XML results from Lisnet API: {resultado_response.get('status_code')} - {resultado_response.get('body')}"
+        raise Exception(message)
+
+    return resultado_response["body"]
 
 
 @task(nout=3)

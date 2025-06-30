@@ -59,6 +59,7 @@ with Flow(
         apccodigo=apccodigo_secret,
         dt_inicio=start_datetime,
         dt_fim=end_datetime,
+        environment=ENVIRONMENT
     )
 
     solicitacoes_df, exames_df, resultados_df = transform(resultado_xml=resultado_xml)
