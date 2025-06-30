@@ -91,11 +91,14 @@ def transform_data(file_path: str, blob_file: str):
 
     log("Conforming CSV to GCP")
 
-    # remove " from csv to avoid errors
     with open(file_path, "r", encoding="utf-8") as f:
         file_contents = f.read()
 
-    file_contents = file_contents.replace('"', "")
+        file_contents = file_contents.replace('\\""', '\\"')
+
+        file_contents = file_contents.replace('"', "")
+
+        file_contents = file_contents.replace(";/;.;", ";")
 
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(file_contents)
