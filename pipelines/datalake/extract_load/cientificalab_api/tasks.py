@@ -33,6 +33,7 @@ def authenticate_and_fetch(
         body_params="",
         api_type="xml",
         env=environment,
+        credential=None,
     )
 
     if token_response.get("status_code") != 200:
@@ -73,6 +74,7 @@ def authenticate_and_fetch(
         body_params=data, 
         api_type="xml",
         env=environment,
+        credential=None,
     )
 
     if resultado_response.get("status_code") != 200:
