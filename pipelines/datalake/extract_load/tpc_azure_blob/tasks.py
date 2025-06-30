@@ -98,7 +98,7 @@ def transform_data(file_path: str, blob_file: str):
 
         file_contents = file_contents.replace('"', "")
 
-        file_contents = file_contents.replace(';/;.;', ';')
+        file_contents = file_contents.replace(";/;.;", ";")
 
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(file_contents)
