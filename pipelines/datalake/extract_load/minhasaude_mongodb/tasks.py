@@ -3,22 +3,22 @@
 Tarefas
 """
 
-# Geral
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Set
+from typing import Any, Dict
+import gc
 
 import pandas as pd
-
-# Internas
+from pymongo import MongoClient, ASCENDING, DESCENDING
 from prefeitura_rio.pipelines_utils.logging import log
-from pymongo import MongoClient
-from pymongo.database import Database
 
 from pipelines.utils.credential_injector import authenticated_task as task
-
+from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def get_collection_data_from_mongodb(
+def dump_collection_slices_to_datalake(
+    flow_name: str,
+    flow_owner: str,
     host: str,
     port: int,
     user: str,
@@ -26,160 +26,113 @@ def get_collection_data_from_mongodb(
     authsource: str,
     db_name: str,
     collection_name: str,
-    query: Dict[str, Any] = None,
-    sample_size: int = 0,
-) -> List[Dict[str, Any]]:
+    query: Dict[str, Any] | None,
+    slice_var: str,
+    slice_size: int,
+    bq_dataset_id: str,
+    bq_table_id: str,
+) -> int:
+    """Faz a extração paginada da *collection* MongoDB utilizando **slice_var**
+    como critério e envia cada fatia diretamente ao Data Lake.
+
+    Nenhuma fatia permanece em memória após o upload.
+
+    Retorna o total de documentos processados.
     """
-    Retorna dados de uma coleção (tabela) MongoDB, dado um filtro (query), projeção e opcionalmente
-    um limite.
 
-    Parâmetros
-    ----------
-    db : Database
-        Objeto de banco de dados (Database) já conectado ao MongoDB.
-    collection_name : str
-        Nome da coleção (tabela) a ser consultada.
-    query : Dict[str, Any], opcional
-        Filtro de pesquisa no formato de dicionário do MongoDB (default=None, que significa buscar
-          tudo).
-    sample_size : int, opcional
-        Limite de documentos a serem retornados. 0 é o equivalente a buscar tudo (default=0).
-
-    Retorna
-    -------
-    List[Dict[str, Any]]
-        Retorna uma lista de dicionários, onde cada dicionário representa um documento.
-    """
-    log("Iniciando criação de conexão com o MongoDB...")
-    log(f"Parâmetros recebidos: host={host}, port={port}, user={user}, db_name={db_name}")
-
-    # Monta a string de conexão de forma genérica
-    # Exemplo: "mongodb://usuario:senha@host:porta/?authSource=db_auth"
-    connection_string = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
-
-    # Cria o cliente
-    client = MongoClient(connection_string)
-
-    # Obtem o objeto de banco de dados
+    log("Conectando ao MongoDB...")
+    conn_str = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
+    client = MongoClient(conn_str)
+    log("Conexão com o MongoDB estabelecida.")
     db = client[db_name]
-
-    log(f"Iniciando busca de dados na coleção '{collection_name}'.")
-    log(f"Parâmetros: query={query}, sample_size={sample_size}")
+    log(f"Collection: {collection_name}")
+    coll = db[collection_name]
 
     if query is None:
         query = {}
 
-    collection = db[collection_name]
+    # Obtém o total de registros na collection com a query fornecida
+    total_registros_real = coll.count_documents(query)
+    log(f"Total de registros encontrados na collection: {total_registros_real}")
 
-    # Executa a busca no MongoDB
-    cursor = collection.find(filter=query, limit=sample_size)
-
-    # Converte o cursor em uma lista de dicionários
-    data = list(cursor)
-
-    log(f"Busca finalizada. Foram retornados {len(data)} documentos.")
-
-    # Encerra conexão
-    client.close()
-    return data
-
-
-@task
-def to_pandas(data: List[Dict[str, Any]]) -> pd.DataFrame:
-    """
-    Converte uma lista de dicionários (documentos) em um DataFrame pandas.
-
-    Parâmetros
-    ----------
-    data : List[Dict[str, Any]]
-        Lista de documentos (dicionários) retornados de uma consulta no MongoDB.
-
-    Retorna
-    -------
-    pd.DataFrame
-        DataFrame contendo os dados.
-    """
-
-    log("Iniciando conversão dos dados em pandas DataFrame...")
-
-    # Use json_normalize para expandir colunas aninhadas
-    df = pd.json_normalize(data)
-
-    # Se existir a coluna '_id', converta para string (ou remova, conforme necessidade)
-    if "_id" in df.columns:
-        df["_id"] = df["_id"].astype(str)
-
-    df["data_extracao"] = datetime.now()
-
-    log(
-        f"Conversão concluída. O DataFrame resultante tem {df.shape[0]} linhas \
-        e {df.shape[1]} colunas."
+    # Descobre os limites da variável de corte -----------------------------
+    log(f"Obtendo max e min de '{slice_var}'...")
+    min_doc = list(
+        coll.find(query, {slice_var: 1, "_id": 0}).sort(slice_var, ASCENDING).limit(1)
+    )
+    max_doc = list(
+        coll.find(query, {slice_var: 1, "_id": 0}).sort(slice_var, DESCENDING).limit(1)
     )
 
-    return df
+    if not min_doc or not max_doc:
+        log("Nenhum documento encontrado com a query fornecida. Encerrando.")
+        client.close()
+        return 0
 
+    min_val = min_doc[0][slice_var]
+    max_val = max_doc[0][slice_var]
+    log(f"Intervalo detectado: {min_val} → {max_val}")
 
-# -------------------------------------------------
-# OPCIONAL: Tarefas adicionais para inspeção de coleções e campos
-@task
-def list_collections(db: Database) -> List[str]:
-    """
-    Lista todas as coleções (tabelas) disponíveis em um banco de dados MongoDB.
+    total_docs = 0
+    current_start = min_val
 
-    Parâmetros
-    ----------
-    db : Database
-        Objeto de banco de dados (Database) já conectado ao MongoDB.
+    log(f"Iniciando extração em fatias de {slice_size} unidades de '{slice_var}'...")
+    while current_start <= max_val:
+        # Calcula o próximo valor de corte considerando o tipo de current_start
+        if isinstance(current_start, (int, float)):
+            current_end = current_start + slice_size
+        elif isinstance(current_start, pd.Timestamp):
+            current_end = current_start + pd.Timedelta(slice_size, unit="D")
+        elif isinstance(current_start, datetime):
+            current_end = current_start + timedelta(days=slice_size)
+        else:
+            raise TypeError(f"Tipo de variável de fatiamento '{type(current_start)}' não suportado.")
 
-    Retorna
-    -------
-    List[str]
-        Retorna a lista de nomes de coleções (tabelas).
-    """
+        slice_query = {
+            **query,
+            slice_var: {"$gte": current_start, "$lt": current_end},
+        }
 
-    log("Iniciando listagem de coleções (tabelas) no banco de dados...")
-    collections = db.list_collection_names()
-    log(f"Foram encontradas {len(collections)} coleções no banco de dados.")
-    return collections
+        log(f"Consultando documentos entre {current_start} e {current_end}…")
+        docs = list(coll.find(slice_query))
+        log(f"Processando fatia de {current_start} a {current_end}…")
 
+        if docs:
+            total_docs += len(docs)
 
-@task
-def list_columns(db: Database, collection_name: str, sample_size: int = 1) -> Set[str]:
-    """
-    Lista colunas (campos) em uma coleção (tabela) do MongoDB,
-    baseado em uma amostra de documentos.
+            # Converte para DataFrame -------------------------------------
+            df = pd.json_normalize(docs)
+            if "_id" in df.columns:
+                df["_id"] = df["_id"].astype(str)
 
-    Observação: MongoDB é um banco NoSQL sem esquema fixo. Logo,
-    as 'colunas' podem variar de documento para documento.
+            log("Preparando DataFrame para upload…")
+            df_prepared = prepare_dataframe_for_upload.run(
+                df=df, flow_name=flow_name, flow_owner=flow_owner
+            )
 
-    Parâmetros
-    ----------
-    db : Database
-        Objeto de banco de dados (Database) já conectado ao MongoDB.
-    collection_name : str
-        Nome da coleção (tabela) a ser inspecionada.
-    sample_size : int, opcional
-        Número de documentos para analisar a fim de extrair as colunas (default=1).
+            # Upload para o Data Lake -----------------------------------
+            log("Enviando fatia para o Data Lake…")
+            upload_df_to_datalake.run(
+                df=df_prepared,
+                table_id=bq_table_id,
+                dataset_id=bq_dataset_id,
+                partition_column="data_extracao",
+                source_format="csv",
+            )
 
-    Retorna
-    -------
-    Set[str]
-        Retorna um conjunto com os nomes das colunas encontradas.
-    """
+            # Libera recursos -------------------------------------------
+            del df, df_prepared, docs
+            gc.collect()
+            log(f"Fatia {current_start}-{current_end} processada e enviada para o DataLake.")
 
-    log(f"Iniciando listagem de colunas na coleção '{collection_name}'.")
-    log(f"Parâmetros: collection_name={collection_name}, sample_size={sample_size}")
+        current_start = current_end
 
-    collection = db[collection_name]
-    columns_set = set()
+    client.close()
 
-    # Realiza a busca nos documentos, limitando a sample_size.
-    # Caso haja poucos documentos, ele retornará a quantidade disponível.
-    cursor = collection.find({}, limit=sample_size)
+    if total_docs == total_registros_real:
+        log(f"Processo concluído. {total_docs} documentos enviados ao Data Lake.")
+    else:
+        log(f"Erro: {total_docs} documentos processados, mas {total_registros_real} documentos foram encontrados na collection. Interrompendo o processo.")
+        raise RuntimeError(f"Número de documentos processados ({total_docs}) difere do total encontrado ({total_registros_real}).")
 
-    for doc in cursor:
-        # Pegamos as chaves do dicionário (documento) e adicionamos a um set
-        columns_set.update(doc.keys())
-
-    log(f"Colunas encontradas na coleção '{collection_name}': {columns_set}")
-    return columns_set
+    return total_docs
