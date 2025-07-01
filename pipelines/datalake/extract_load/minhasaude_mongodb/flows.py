@@ -15,7 +15,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.minhasaude_mongodb.schedules import schedule
 from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
-    dump_collection_slices_to_datalake,
+    dump_collection_por_fatias,
 )
 from pipelines.utils.tasks import get_secret_key
 
@@ -54,7 +54,7 @@ with Flow(
     )
 
     # Tarefa única: extração + upload -------------------------------------
-    dump_collection_slices_to_datalake(
+    dump_collection_por_fatias(
         host=MONGO_HOST,
         port=MONGO_PORT,
         user=user,
