@@ -65,11 +65,7 @@ def _flush_e_enviar(
         df["_id"] = df["_id"].astype(str)
 
     log(f"Preparando DataFrame ({n_docs} docs) para upload…")
-    df_pronto = prepare_dataframe_for_upload.run(
-        df=df,
-        flow_name=flow_name,
-        flow_owner=flow_owner
-    )
+    df_pronto = prepare_dataframe_for_upload.run(df=df, flow_name=flow_name, flow_owner=flow_owner)
 
     log("Enviando lote para o BigQuery…")
     upload_df_to_datalake.run(
@@ -151,9 +147,7 @@ def dump_collection_por_fatias(
         log(f"Buscando menor e maior valor de `{slice_var}`…")
 
         menor_doc = next(
-            colecao.find(filtro_base, {slice_var: 1, "_id": 0})
-            .sort(slice_var, ASCENDING)
-            .limit(1),
+            colecao.find(filtro_base, {slice_var: 1, "_id": 0}).sort(slice_var, ASCENDING).limit(1),
             None,
         )
         maior_doc = next(
