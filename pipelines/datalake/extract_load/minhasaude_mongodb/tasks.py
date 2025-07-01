@@ -65,7 +65,9 @@ def _get_extreme_value(collection, filtro: Dict[str, Any], campo: str, ordem: in
         doc = collection.find(filtro, {campo: 1, "_id": 0}).sort(campo, ordem).limit(1).next()
         return doc[campo]
     except StopIteration:
-        raise ValueError(f"Nenhum documento encontrado para o campo '{campo}' com o filtro fornecido.")
+        raise ValueError(
+            f"Nenhum documento encontrado para o campo '{campo}' com o filtro fornecido."
+        )
 
 
 def _generate_slices(
