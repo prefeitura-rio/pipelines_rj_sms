@@ -12,9 +12,9 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.minhasaude_mongodb.schedules import schedule
 from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
-    obter_faixas_de_fatiamento,
     extrair_fatia_para_datalake,
-    validar_total_documentos
+    obter_faixas_de_fatiamento,
+    validar_total_documentos,
 )
 from pipelines.utils.tasks import get_secret_key
 

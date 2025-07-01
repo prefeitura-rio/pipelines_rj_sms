@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import gc
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Union, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
@@ -104,9 +104,10 @@ def obter_faixas_de_fatiamento(
     e gera uma lista de tuplas representando intervalos [(início, fim), ...] de tamanho `slice_size` para serem usados em extrações paralelas ou paginadas.
 
     Retorna:
-        List[Tuple[ValorSlice, ValorSlice]]
+        List[Tuple[ValorSlice, ValorSlice]], int: 
             - Lista de tuplas (início, fim) representando cada faixa de fatiamento.
-    """
+            - Total de documentos esperados na coleção com o filtro aplicado.
+"""
 
     conn = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
     with MongoClient(conn) as cliente_mongo:
@@ -186,6 +187,7 @@ def obter_faixas_de_fatiamento(
 
         log(f"Total de faixas geradas: {len(faixas)}")
         return faixas
+
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
