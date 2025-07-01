@@ -201,8 +201,8 @@ def dump_collection_por_fatias(
                 try:
                     cursor = (
                         colecao.find(filtro_fatia, no_cursor_timeout=True)
-                        .batch_size(1_000)
-                        .max_time_ms(30_000)
+                        .batch_size(10_000)
+                        .max_time_ms(120_000)
                     )
                     break  # sucesso
                 except AutoReconnect as erro:
