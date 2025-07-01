@@ -5,7 +5,7 @@ Tarefas · Extração paginada de coleção MongoDB -> Carga para o Data Lake (B
 Objetivo
 --------
 Extrair documentos em lotes (“fatias”) sem sobrecarregar RAM nem manter cursores
-abertos por tempo excessivo, tratando quedas de conexão (`AutoReconnect`) e
+abertos por tempo excessivo e
 subindo cada lote diretamente para o Data Lake.
 
 Fluxo geral
@@ -18,7 +18,6 @@ Fluxo geral
    - normaliza DataFrame -> prepara -> faz upload (parquet particionado).
    - conta documentos e libera memória.
 6. Controle de erros:
-   - 5 tentativas com back-off exponencial para `AutoReconnect`;
    - validações de parâmetros e tipos, logs detalhados.
 """
 
@@ -32,11 +31,12 @@ from typing import Any, Dict, List, Union, Tuple
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 from pymongo import ASCENDING, DESCENDING, MongoClient
-from pymongo.errors import AutoReconnect
 
 from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.utils.monitor import send_message
+
 
 # -------------------------------------------------------------- Tipos auxiliares
 ValorSlice = Union[int, float, datetime, pd.Timestamp]
@@ -104,10 +104,9 @@ def obter_faixas_de_fatiamento(
     e gera uma lista de tuplas representando intervalos [(início, fim), ...] de tamanho `slice_size` para serem usados em extrações paralelas ou paginadas.
 
     Retorna:
-        List[Tuple[ValorSlice, ValorSlice]], int: 
+        List[Tuple[ValorSlice, ValorSlice]]
             - Lista de tuplas (início, fim) representando cada faixa de fatiamento.
-            - Total de documentos esperados na coleção com o filtro aplicado.
-"""
+    """
 
     conn = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
     with MongoClient(conn) as cliente_mongo:
@@ -134,7 +133,7 @@ def obter_faixas_de_fatiamento(
 
         if menor_doc is None or maior_doc is None:
             log("Nenhum documento encontrado com o filtro fornecido. Encerrando.")
-            return 0
+            raise ValueError("Nenhum documento encontrado com o filtro fornecido.")
 
         menor_valor: ValorSlice = menor_doc[slice_var]
         maior_valor: ValorSlice = maior_doc[slice_var]
@@ -145,7 +144,6 @@ def obter_faixas_de_fatiamento(
             raise TypeError(f"`slice_var` deve ser numérico ou data; obtido {type(menor_valor)}")
 
         log(f"Intervalo detectado: {menor_valor} -> {maior_valor}")
-
 
         # ------------------------- gera faixas de fatiamento ------------------------ #
         log(f"Gerando faixas de fatiamento de tamanho {slice_size}…")
@@ -169,13 +167,17 @@ def obter_faixas_de_fatiamento(
 
                 # Previne loops infinitos em caso de dados inconsistentes
                 if fim == atual:
-                    log("Valor de fim igual ao início, possível loop infinito. Encerrando geração de faixas.")
+                    log(
+                        "Valor de fim igual ao início, possível loop infinito. Encerrando geração de faixas."
+                    )
                     break
 
                 atual = fim
 
                 if not faixas:
-                    log("Nenhuma faixa de fatiamento foi gerada. Verifique os parâmetros de entrada.")
+                    log(
+                        "Nenhuma faixa de fatiamento foi gerada. Verifique os parâmetros de entrada."
+                    )
                     raise ValueError("Nenhuma faixa de fatiamento gerada.")
 
         except Exception as e:
@@ -184,6 +186,7 @@ def obter_faixas_de_fatiamento(
 
         log(f"Total de faixas geradas: {len(faixas)}")
         return faixas
+
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def extrair_fatia_para_datalake(
@@ -201,7 +204,7 @@ def extrair_fatia_para_datalake(
     slice_size: int,
     bq_dataset_id: str,
     bq_table_id: str,
-    faixa: List[Tuple[ValorSlice, ValorSlice]],
+    faixa: Tuple[ValorSlice, ValorSlice],
 ) -> int:
     """
     Extrai documentos de `collection_name` paginando por `slice_var`
@@ -243,9 +246,7 @@ def extrair_fatia_para_datalake(
         log(f"Collection: {collection_name}")
 
         cursor = (
-            colecao.find(filtro, no_cursor_timeout=True)
-            .batch_size(10_000)
-            .max_time_ms(120_000)
+            colecao.find(filtro, no_cursor_timeout=True).batch_size(10_000).max_time_ms(120_000)
         )
 
         # -------------------- itera cursor & faz flush ---------------- #
@@ -275,7 +276,8 @@ def extrair_fatia_para_datalake(
 
         log(f"Fatia concluída. Total parcial = {documentos_enviados:,d} documentos.")
 
-    return len(documentos_enviados)
+    return documentos_enviados
+
 
 @task
 def validar_total_documentos(
@@ -288,6 +290,8 @@ def validar_total_documentos(
     collection_name: str,
     query: dict | None,
     docs_por_fatia: List[int],
+    flow_name: str,
+    flow_owner: str,
 ) -> None:
     """
     Conta os documentos na coleção **uma vez**, soma o que já foi
@@ -302,7 +306,13 @@ def validar_total_documentos(
     log(f"Esperado: {total_esperado:,d} · Enviado: {total_enviado:,d}")
 
     if total_enviado != total_esperado:
-        raise ValueError(
-            f"Inconsistência - coleção tem {total_esperado:,d} documentos, "
+        mensagem_erro = (
+            f" @{flow_owner} Inconsistência - coleção tem {total_esperado:,d} documentos, "
             f"mas só {total_enviado:,d} foram enviados."
         )
+        send_message(
+            title=f"❌ Erro no Fluxo {flow_name}",
+            message=mensagem_erro,
+            monitor_slug="error",
+        )
+        raise ValueError(mensagem_erro)

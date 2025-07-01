@@ -3,8 +3,6 @@
 Fluxo
 """
 
-# TO DO: PARALELIZAR
-
 from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -39,8 +37,8 @@ with Flow(
     MONGO_QUERY = Parameter("query", default={}, required=False)
 
     # Paginação -----------------------------------------------------------
-    SLICE_VAR = Parameter("slice_var", default="_id", required=True)
-    SLICE_SIZE = Parameter("slice_size", default=50_000, required=True)
+    SLICE_VAR = Parameter("slice_var", default="createdAt", required=True)
+    SLICE_SIZE = Parameter("slice_size", default=30, required=True)
 
     # BigQuery -------------------------------------------------------------
     BQ_DATASET_ID = Parameter("bq_dataset_id", default="brutos_minhasaude_mongodb", required=True)
@@ -83,7 +81,7 @@ with Flow(
         bq_table_id=unmapped(BQ_TABLE_ID),
         flow_name=unmapped(FLOW_NAME),
         flow_owner=unmapped(FLOW_OWNER),
-        faixa=lista_faixas
+        faixa=lista_faixas,
     )
 
     validacao = validar_total_documentos(
@@ -94,8 +92,10 @@ with Flow(
         authsource=MONGO_AUTHSOURCE,
         db_name=MONGO_DATABASE,
         collection_name=MONGO_COLLECTION,
+        flow_name=FLOW_NAME,
+        flow_owner=FLOW_OWNER,
         query=MONGO_QUERY,
-        docs_por_fatia=n_documentos_enviados
+        docs_por_fatia=n_documentos_enviados,
     )
 
 minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=3)
