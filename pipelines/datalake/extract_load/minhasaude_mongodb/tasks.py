@@ -146,17 +146,18 @@ def dump_collection_por_fatias(
 
         # ------------------ obtém valores min/max do slice ---------------- #
         log(f"Buscando menor e maior valor de `{slice_var}`…")
-        menor_doc = (
+
+        menor_doc = next(
             colecao.find(filtro_base, {slice_var: 1, "_id": 0})
-            .sort(slice_var, ASCENDING)
-            .limit(1)
-            .next(None)
+                .sort(slice_var, ASCENDING)
+                .limit(1),
+            None,
         )
-        maior_doc = (
+        maior_doc = next(
             colecao.find(filtro_base, {slice_var: 1, "_id": 0})
-            .sort(slice_var, DESCENDING)
-            .limit(1)
-            .next(None)
+                .sort(slice_var, DESCENDING)
+                .limit(1),
+            None,
         )
 
         if menor_doc is None or maior_doc is None:
