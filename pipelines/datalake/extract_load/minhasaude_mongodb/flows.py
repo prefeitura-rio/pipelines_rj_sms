@@ -53,7 +53,7 @@ with Flow(
     )
 
     # Tarefas -------------------------------------
-    lista_faixas = gerar_faixas_de_fatiamento(
+    lista_faixas, n_documentos = gerar_faixas_de_fatiamento(
         host=MONGO_HOST,
         port=MONGO_PORT,
         user=user,
@@ -84,17 +84,10 @@ with Flow(
     )
 
     validacao = validar_total_documentos(
-        host=MONGO_HOST,
-        port=MONGO_PORT,
-        user=user,
-        password=password,
-        authsource=MONGO_AUTHSOURCE,
-        db_name=MONGO_DATABASE,
-        collection_name=MONGO_COLLECTION,
-        flow_name=FLOW_NAME,
-        flow_owner=FLOW_OWNER,
-        query=MONGO_QUERY,
+        total_esperado=n_documentos,
         docs_por_fatia=n_documentos_enviados,
+        flow_name=FLOW_NAME,
+        flow_owner=FLOW_OWNER
     )
 
 minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=10)

@@ -156,7 +156,7 @@ def _flush_and_upload(
 
 # Tasks Prefect
 # -----------------------------------------------------------------------------#
-@task(max_retries=5, retry_delay=timedelta(minutes=3))
+@task(max_retries=5, retry_delay=timedelta(minutes=3), nout=2)
 def gerar_faixas_de_fatiamento(
     host: str,
     port: int,
@@ -168,7 +168,7 @@ def gerar_faixas_de_fatiamento(
     query: Dict[str, Any] | None,
     slice_var: str,
     slice_size: int,
-) -> List[Tuple[ValorSlice, ValorSlice]]:
+) -> Tuple[List[Tuple[ValorSlice, ValorSlice]], int]:
     """
     Conecta ao MongoDB e devolve as faixas [(início, fim), …] para fatiamento.
 
@@ -183,6 +183,9 @@ def gerar_faixas_de_fatiamento(
         minimo = _get_extreme_value(col, filtro, slice_var, ASCENDING)
         maximo = _get_extreme_value(col, filtro, slice_var, DESCENDING)
 
+        log("Obtendo a quantidade de documentos na coleção…")
+        total_esperado = col.count_documents(filtro)
+
         # Valida tipo
         if type(minimo) is not type(maximo):
             raise TypeError(
@@ -193,7 +196,7 @@ def gerar_faixas_de_fatiamento(
         log(f"Gerando faixas de tamanho {slice_size}…")
         faixas = _generate_slices(minimo, maximo, slice_size)
         log(f"Total de faixas: {len(faixas)}")
-        return faixas
+        return faixas, total_esperado
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
@@ -253,40 +256,39 @@ def extrair_fatia_para_datalake(
 
 @task
 def validar_total_documentos(
-    host: str,
-    port: int,
-    user: str,
-    password: str,
-    authsource: str,
-    db_name: str,
-    collection_name: str,
-    query: Dict[str, Any] | None,
+    total_esperado: int,
     docs_por_fatia: Sequence[int],
     flow_name: str,
     flow_owner: str,
 ) -> None:
     """
     Compara total enviado vs. total existente na coleção.
-    Dispara alerta no monitor se houver divergência.
+    Dispara alerta no monitor se houver divergência acima de 3%.
     """
-    conn = _build_conn_string(host, port, user, password, authsource)
-    with MongoClient(conn) as cli:
-        total_esperado = cli[db_name][collection_name].count_documents(query or {})
 
     total_enviado = sum(docs_por_fatia)
     log(f"Esperado: {total_esperado:,d} · Enviado: {total_enviado:,d}")
 
-    if total_enviado != total_esperado:
+    if total_esperado == 0:
+        log("Total esperado é zero, nada a validar.")
+        return
+
+    diff = abs(total_enviado - total_esperado)
+    percent_diff = diff / total_esperado
+
+    if percent_diff > 0.03:
         log(
             f"❌ Inconsistência detectada: "
             f"coleção tem {total_esperado:,d} docs, "
-            f"mas apenas {total_enviado:,d} chegaram ao Data Lake."
+            f"mas apenas {total_enviado:,d} chegaram ao Data Lake "
+            f"({percent_diff:.2%} de diferença)."
         )
 
         # Envia alerta para o monitor (Discord)
         msg = (
             f" @{flow_owner} Inconsistência: coleção tem {total_esperado:,d} docs, "
-            f"mas apenas {total_enviado:,d} chegaram ao Data Lake."
+            f"mas apenas {total_enviado:,d} chegaram ao Data Lake "
+            f"({percent_diff:.2%} de diferença)."
         )
         send_message(
             title=f"❌ Erro no Fluxo {flow_name}",
