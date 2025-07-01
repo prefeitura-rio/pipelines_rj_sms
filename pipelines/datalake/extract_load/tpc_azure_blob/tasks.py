@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
+import csv
+import os
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.logging import log
@@ -74,6 +76,73 @@ def extract_data_from_blob(
     else:
         log("File is from current date")
         return file_path
+
+@task
+def validate_csv_data(file_path: str, blob_file: str):
+    """
+    Valida um arquivo CSV tentando carregá-lo com pandas.
+    Em caso de erro, faz leitura linha a linha para identificar linhas inválidas.
+
+    Args:
+        file_path (str): Caminho do arquivo CSV original.
+        blob_file (str): Nome do tipo de arquivo (ex: posicao, pedidos...).
+
+    Returns:
+        Tuple[str, List[str] or None]: 
+            - Caminho do arquivo corrigido (ou original se válido),
+            - Lista de erros encontrados (ou None).
+    """
+    log("Validando CSV...")
+
+    try:
+        # Testa leitura completa com pandas
+        pd.read_csv(file_path, sep=";", dtype=str, keep_default_na=False)
+        log("Arquivo lido com sucesso. Nenhum erro identificado.")
+        return file_path, None
+
+    except Exception as e:
+        log(f"Erro ao ler arquivo com pandas: {str(e)}")
+        log("Iniciando leitura linha a linha para validar dados...")
+
+        valid_rows = []
+        error_logs = []
+        header = []
+        expected_cols = None
+
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            reader = csv.reader(f, delimiter=";")
+            for idx, row in enumerate(reader):
+                if idx == 0:
+                    header = row
+                    expected_cols = len(header)
+                    valid_rows.append(row)
+                    continue
+
+                if len(row) != expected_cols:
+                    error_logs.append(
+                        f"Linha {idx+1}: {len(row)} colunas encontradas (esperado: {expected_cols})\nConteúdo: {row}"
+                    )
+                else:
+                    valid_rows.append(row)
+
+        if not error_logs:
+            log("Todas as linhas válidas após validação manual.")
+            return file_path, None
+
+        # Criar novo arquivo apenas com linhas válidas
+        corrected_path = file_path.replace(".csv", "_valid.csv")
+        with open(corrected_path, "w", encoding="utf-8", newline="") as out_f:
+            writer = csv.writer(out_f, delimiter=";")
+            writer.writerows(valid_rows)
+
+        log(f"{len(error_logs)} linhas inválidas encontradas. Novo arquivo salvo em: {corrected_path}")
+
+        return corrected_path, error_logs
+
+@task
+def report_csv_validation_errors_task(blob_file: str, error_logs: list[str]):
+    from pipelines.datalake.extract_load.tpc_azure_blob.utils import report_csv_validation_errors
+    report_csv_validation_errors(blob_file, error_logs)
 
 
 @task
