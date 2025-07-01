@@ -20,18 +20,16 @@ from __future__ import annotations
 
 import gc
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Tuple, Union, Sequence, TypeAlias
+from typing import Any, Dict, List, Sequence, Tuple, TypeAlias, Union
 
 import pandas as pd
-from pymongo import ASCENDING, DESCENDING, MongoClient
 from prefeitura_rio.pipelines_utils.logging import log
+from pymongo import ASCENDING, DESCENDING, MongoClient
 
 from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.monitor import send_message
 from pipelines.utils.tasks import upload_df_to_datalake
-from pipelines.utils.monitor import send_message
-
 
 # Configurações gerais
 # -----------------------------------------------------------------------------#
