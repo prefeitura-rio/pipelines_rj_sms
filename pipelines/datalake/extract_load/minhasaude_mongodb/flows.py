@@ -13,7 +13,7 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.minhasaude_mongodb.schedules import schedule
 from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
     extrair_fatia_para_datalake,
-    obter_faixas_de_fatiamento,
+    gerar_faixas_de_fatiamento,
     validar_total_documentos,
 )
 from pipelines.utils.tasks import get_secret_key
@@ -53,7 +53,7 @@ with Flow(
     )
 
     # Tarefas -------------------------------------
-    lista_faixas = obter_faixas_de_fatiamento(
+    lista_faixas = gerar_faixas_de_fatiamento(
         host=MONGO_HOST,
         port=MONGO_PORT,
         user=user,
@@ -76,7 +76,6 @@ with Flow(
         collection_name=unmapped(MONGO_COLLECTION),
         query=unmapped(MONGO_QUERY),
         slice_var=unmapped(SLICE_VAR),
-        slice_size=unmapped(SLICE_SIZE),
         bq_dataset_id=unmapped(BQ_DATASET_ID),
         bq_table_id=unmapped(BQ_TABLE_ID),
         flow_name=unmapped(FLOW_NAME),
@@ -98,7 +97,7 @@ with Flow(
         docs_por_fatia=n_documentos_enviados,
     )
 
-minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=3)
+minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=10)
 minhasaude_mongodb_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 minhasaude_mongodb_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,

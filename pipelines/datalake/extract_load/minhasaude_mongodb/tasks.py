@@ -61,8 +61,11 @@ def _build_conn_string(
 
 def _get_extreme_value(collection, filtro: Dict[str, Any], campo: str, ordem: int) -> ValorSlice:
     """Retorna o menor ou maior valor de `campo` conforme `ordem`."""
-    doc = collection.find(filtro, {campo: 1, "_id": 0}).sort(campo, ordem).limit(1).next()
-    return doc[campo]
+    try:
+        doc = collection.find(filtro, {campo: 1, "_id": 0}).sort(campo, ordem).limit(1).next()
+        return doc[campo]
+    except StopIteration:
+        raise ValueError(f"Nenhum documento encontrado para o campo '{campo}' com o filtro fornecido.")
 
 
 def _generate_slices(
@@ -71,16 +74,26 @@ def _generate_slices(
     slice_size: int,
 ) -> List[Tuple[ValorSlice, ValorSlice]]:
     """Gera faixas de fatiamento de tamanho `slice_size`."""
+
+    if slice_size <= 0:
+        raise ValueError("O parâmetro `slice_size` deve ser maior que zero.")
+
+    if minimo >= maximo:
+        raise ValueError("O valor de `minimo` deve ser menor que `maximo`.")
+
     faixas: List[Tuple[ValorSlice, ValorSlice]] = []
     atual = minimo
 
-    while atual <= maximo:
+    while atual < maximo:
         if isinstance(atual, (int, float)):
             fim = atual + slice_size
         elif isinstance(atual, (datetime, pd.Timestamp)):
             fim = atual + timedelta(days=slice_size)
         else:
             raise TypeError(f"Tipo não suportado para fatiamento: {type(atual)}")
+
+        if fim > maximo:
+            fim = maximo
 
         faixas.append((atual, fim))
         if fim == atual:  # segurança contra loop infinito
