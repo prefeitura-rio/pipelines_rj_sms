@@ -31,14 +31,13 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
 
 import pandas as pd
+from prefeitura_rio.pipelines_utils.logging import log
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import AutoReconnect
-from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import upload_df_to_datalake
-from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
-
 
 # -------------------------------------------------------------- Tipos auxiliares
 ValorSlice = Union[int, float, datetime, pd.Timestamp]
@@ -148,15 +147,13 @@ def dump_collection_por_fatias(
         log(f"Buscando menor e maior valor de `{slice_var}`…")
 
         menor_doc = next(
-            colecao.find(filtro_base, {slice_var: 1, "_id": 0})
-                .sort(slice_var, ASCENDING)
-                .limit(1),
+            colecao.find(filtro_base, {slice_var: 1, "_id": 0}).sort(slice_var, ASCENDING).limit(1),
             None,
         )
         maior_doc = next(
             colecao.find(filtro_base, {slice_var: 1, "_id": 0})
-                .sort(slice_var, DESCENDING)
-                .limit(1),
+            .sort(slice_var, DESCENDING)
+            .limit(1),
             None,
         )
 
