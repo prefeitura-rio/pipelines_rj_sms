@@ -1,22 +1,96 @@
 # -*- coding: utf-8 -*-
 """
-Tarefas
+Tarefas · Extração paginada de coleção MongoDB -> Carga para o Data Lake (BigQuery)
+
+Objetivo
+--------
+Extrair documentos em lotes (“fatias”) sem sobrecarregar RAM nem manter cursores
+abertos por tempo excessivo, tratando quedas de conexão (`AutoReconnect`) e
+subindo cada lote diretamente para o Data Lake.
+
+Fluxo geral
+-----------
+1. Conecta ao MongoDB com time-outs e keep-alive ajustados.
+2. Determina intervalo mínimo/máximo da variável de fatiamento (`slice_var`).
+3. Percorre esse intervalo em passos (`slice_size`), criando um cursor por fatia.
+4. Consome o cursor em *mini-lotes* (`batch_size`), acumulando em um `buffer`.
+5. Sempre que o `buffer` atinge 10 000 docs (ou ao final da fatia) -> faz flush:
+   - normaliza DataFrame -> prepara -> faz upload (parquet particionado).  
+   - conta documentos e libera memória.
+6. Controle de erros:
+   - 5 tentativas com back-off exponencial para `AutoReconnect`;
+   - validações de parâmetros e tipos, logs detalhados.
 """
 
-from datetime import datetime, timedelta
-from typing import Any, Dict
+
+from __future__ import annotations
+
 import gc
+import time
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Union
 
 import pandas as pd
-from pymongo import MongoClient, ASCENDING, DESCENDING
+from pymongo import ASCENDING, DESCENDING, MongoClient
+from pymongo.errors import AutoReconnect
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import upload_df_to_datalake
 from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
 
+
+# -------------------------------------------------------------- Tipos auxiliares
+ValorSlice = Union[int, float, datetime, pd.Timestamp]
+
+
+# -------------------------------------------------------------- Funções auxiliares
+def _flush_e_enviar(
+    buffer: List[Dict[str, Any]],
+    flow_name: str,
+    flow_owner: str,
+    bq_dataset_id: str,
+    bq_table_id: str,
+) -> int:
+    """
+    Converte lista de documentos -> DataFrame -> parquet -> Data Lake.
+
+    Retorna o número de documentos enviados.
+    """
+    n_docs = len(buffer)
+    if n_docs == 0:  # proteção extra
+        return 0
+
+    df = pd.json_normalize(buffer)
+    if "_id" in df.columns:
+        df["_id"] = df["_id"].astype(str)
+
+    log(f"Preparando DataFrame ({n_docs} docs) para upload…")
+    df_pronto = prepare_dataframe_for_upload.run(
+        df=df, flow_name=flow_name, flow_owner=flow_owner
+    )
+
+    log("Enviando lote para o BigQuery…")
+    upload_df_to_datalake.run(
+        df=df_pronto,
+        table_id=bq_table_id,
+        dataset_id=bq_dataset_id,
+        partition_column="data_extracao",
+        source_format="parquet",
+    )
+
+    # limpeza de memória
+    del df, df_pronto
+    buffer.clear()
+    gc.collect()
+
+    log(f"Lote de {n_docs} documentos enviado com sucesso.")
+    return n_docs
+
+
+# -------------------------------------------------------------- Tarefa principal
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def dump_collection_slices_to_datalake(
+def dump_collection_por_fatias(
     flow_name: str,
     flow_owner: str,
     host: str,
@@ -32,107 +106,156 @@ def dump_collection_slices_to_datalake(
     bq_dataset_id: str,
     bq_table_id: str,
 ) -> int:
-    """Faz a extração paginada da *collection* MongoDB utilizando **slice_var**
-    como critério e envia cada fatia diretamente ao Data Lake.
+    """
+    Extrai documentos de `collection_name` paginando por `slice_var`
+    e envia cada fatia ao Data Lake.
 
-    Nenhuma fatia permanece em memória após o upload.
+    Parâmetros
+    ----------
+    slice_var  : campo usado para fatiar (int/float ou datetime/timestamp)
+    slice_size : tamanho da fatia (unidades numéricas ou dias)
 
-    Retorna o total de documentos processados.
+    Retorna
+    -------
+    int
+        Quantidade total de documentos enviados.
     """
 
-    log("Conectando ao MongoDB...")
-    conn_str = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
-    client = MongoClient(conn_str)
-    log("Conexão com o MongoDB estabelecida.")
-    db = client[db_name]
-    log(f"Collection: {collection_name}")
-    coll = db[collection_name]
+    # -------------------------- validações iniciais ------------ #
+    if slice_size <= 0:
+        raise ValueError("`slice_size` deve ser > 0.")
 
-    if query is None:
-        query = {}
-
-    # Obtém o total de registros na collection com a query fornecida
-    total_registros_real = coll.count_documents(query)
-    log(f"Total de registros encontrados na collection: {total_registros_real}")
-
-    # Descobre os limites da variável de corte -----------------------------
-    log(f"Obtendo max e min de '{slice_var}'...")
-    min_doc = list(
-        coll.find(query, {slice_var: 1, "_id": 0}).sort(slice_var, ASCENDING).limit(1)
-    )
-    max_doc = list(
-        coll.find(query, {slice_var: 1, "_id": 0}).sort(slice_var, DESCENDING).limit(1)
+    # Conexão MongoDB com timeouts
+    conn_str = (
+        f"mongodb://{user}:{password}@{host}:{port}/"
+        f"?authSource={authsource}"
+        "&connectTimeoutMS=20000"
+        "&socketTimeoutMS=300000"
+        "&serverSelectionTimeoutMS=20000"
+        "&socketKeepAlive=true"
     )
 
-    if not min_doc or not max_doc:
-        log("Nenhum documento encontrado com a query fornecida. Encerrando.")
-        client.close()
-        return 0
+    log("Conectando ao MongoDB…")
+    with MongoClient(conn_str) as cliente_mongo:
+        db = cliente_mongo[db_name]
+        colecao = db[collection_name]
+        log(f"Collection: {collection_name}")
 
-    min_val = min_doc[0][slice_var]
-    max_val = max_doc[0][slice_var]
-    log(f"Intervalo detectado: {min_val} → {max_val}")
+        # ---------------------- n de docs para conferir posteriormente se obtemos todos ------------ #
+        filtro_base: Dict[str, Any] = query or {}
+        total_esperado = colecao.count_documents(filtro_base)
+        log(f"Total de documentos na collection com filtro = {total_esperado:,d} documentos")
 
-    total_docs = 0
-    current_start = min_val
+        # ------------------ obtém valores min/max do slice ---------------- #
+        log(f"Buscando menor e maior valor de `{slice_var}`…")
+        menor_doc = (
+            colecao.find(filtro_base, {slice_var: 1, "_id": 0})
+            .sort(slice_var, ASCENDING)
+            .limit(1)
+            .next(None)
+        )
+        maior_doc = (
+            colecao.find(filtro_base, {slice_var: 1, "_id": 0})
+            .sort(slice_var, DESCENDING)
+            .limit(1)
+            .next(None)
+        )
 
-    log(f"Iniciando extração em fatias de {slice_size} unidades de '{slice_var}'...")
-    while current_start <= max_val:
-        # Calcula o próximo valor de corte considerando o tipo de current_start
-        if isinstance(current_start, (int, float)):
-            current_end = current_start + slice_size
-        elif isinstance(current_start, pd.Timestamp):
-            current_end = current_start + pd.Timedelta(slice_size, unit="D")
-        elif isinstance(current_start, datetime):
-            current_end = current_start + timedelta(days=slice_size)
-        else:
-            raise TypeError(f"Tipo de variável de fatiamento '{type(current_start)}' não suportado.")
+        if menor_doc is None or maior_doc is None:
+            log("Nenhum documento encontrado com o filtro fornecido. Encerrando.")
+            return 0
 
-        slice_query = {
-            **query,
-            slice_var: {"$gte": current_start, "$lt": current_end},
-        }
+        menor_valor: ValorSlice = menor_doc[slice_var]
+        maior_valor: ValorSlice = maior_doc[slice_var]
 
-        log(f"Consultando documentos entre {current_start} e {current_end}…")
-        docs = list(coll.find(slice_query))
-        log(f"Processando fatia de {current_start} a {current_end}…")
-
-        if docs:
-            total_docs += len(docs)
-
-            # Converte para DataFrame -------------------------------------
-            df = pd.json_normalize(docs)
-            if "_id" in df.columns:
-                df["_id"] = df["_id"].astype(str)
-
-            log("Preparando DataFrame para upload…")
-            df_prepared = prepare_dataframe_for_upload.run(
-                df=df, flow_name=flow_name, flow_owner=flow_owner
+        if not isinstance(
+            menor_valor, (int, float, datetime, pd.Timestamp)
+        ) or not isinstance(maior_valor, (int, float, datetime, pd.Timestamp)):
+            raise TypeError(
+                f"`slice_var` deve ser numérico ou data; obtido {type(menor_valor)}"
             )
 
-            # Upload para o Data Lake -----------------------------------
-            log("Enviando fatia para o Data Lake…")
-            upload_df_to_datalake.run(
-                df=df_prepared,
-                table_id=bq_table_id,
-                dataset_id=bq_dataset_id,
-                partition_column="data_extracao",
-                source_format="parquet",
+        log(f"Intervalo detectado: {menor_valor} -> {maior_valor}")
+
+        # ------------------------- loop por fatias ------------------------ #
+        documentos_enviados = 0
+        inicio_fatia: ValorSlice = menor_valor
+
+        log(f"Iniciando extração em fatias de {slice_size}…")
+        while inicio_fatia <= maior_valor:
+            # define fim da fatia
+            if isinstance(inicio_fatia, (int, float)):
+                fim_fatia = inicio_fatia + slice_size
+            else:  # datetime ou Timestamp
+                fim_fatia = inicio_fatia + timedelta(days=slice_size)
+
+            filtro_fatia = {
+                **filtro_base,
+                slice_var: {"$gte": inicio_fatia, "$lt": fim_fatia},
+            }
+            log(f"Fatia `{inicio_fatia}` -> `{fim_fatia}`")
+
+            # ----------- tentativa com retry & back-off para AutoReconnect ------------------------ #
+            backoff_segundos = 5
+            for tentativa in range(1, 6):
+                try:
+                    cursor = (
+                        colecao.find(filtro_fatia, no_cursor_timeout=True)
+                        .batch_size(1_000)
+                        .max_time_ms(30_000)
+                    )
+                    break  # sucesso
+                except AutoReconnect as erro:
+                    log(
+                        f"AutoReconnect (tentativa {tentativa}/5) "
+                        f"-> aguardando {backoff_segundos}s: {erro}"
+                    )
+                    time.sleep(backoff_segundos)
+                    backoff_segundos *= 2 # aumento exponencial do tempo de espera
+            else:
+                raise RuntimeError(
+                    "Falha permanente após 5 tentativas de AutoReconnect."
+                )
+
+            # -------------------- itera cursor & faz flush ---------------- #
+            buffer: List[Dict[str, Any]] = []
+            try:
+                for doc in cursor:
+                    buffer.append(doc)
+                    if len(buffer) >= 10_000:
+                        documentos_enviados += _flush_e_enviar(
+                            buffer,
+                            flow_name,
+                            flow_owner,
+                            bq_dataset_id,
+                            bq_table_id,
+                        )
+                # flush residual
+                if buffer:
+                    documentos_enviados += _flush_e_enviar(
+                        buffer,
+                        flow_name,
+                        flow_owner,
+                        bq_dataset_id,
+                        bq_table_id,
+                    )
+            finally:
+                cursor.close()  # sempre fecha cursor
+
+            log(
+                f"Fatia concluída. Total parcial = {documentos_enviados:,d} documentos."
             )
+            inicio_fatia = fim_fatia  # avança para próxima fatia
 
-            # Libera recursos -------------------------------------------
-            del df, df_prepared, docs
-            gc.collect()
-            log(f"Fatia {current_start}-{current_end} processada e enviada para o DataLake.")
-
-        current_start = current_end
-
-    client.close()
-
-    if total_docs == total_registros_real:
-        log(f"Processo concluído. {total_docs} documentos enviados ao Data Lake.")
+    # -------------------------- pós-processamento ------------------------- #
+    if documentos_enviados == total_esperado:
+        log(f"Processo concluído! {documentos_enviados:,d} documentos enviados.")
     else:
-        log(f"Erro: {total_docs} documentos processados, mas {total_registros_real} documentos foram encontrados na collection. Interrompendo o processo.")
-        raise RuntimeError(f"Número de documentos processados ({total_docs}) difere do total encontrado ({total_registros_real}).")
+        mensagem = (
+            f"Erro de consistência: enviados {documentos_enviados:,d} "
+            f"!= esperado {total_esperado:,d}."
+        )
+        log(f"{mensagem}")
+        raise RuntimeError(mensagem)
 
-    return total_docs
+    return documentos_enviados
