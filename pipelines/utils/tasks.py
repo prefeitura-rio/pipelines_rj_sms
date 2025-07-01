@@ -442,9 +442,10 @@ def cloud_function_request(
     url: str,
     credential: None,
     request_type: str = "GET",
-    body_params: list = None,
-    query_params: list = None,
+    body_params: any = None,
+    query_params: dict = None,
     env: str = "dev",
+    api_type: str = "json",
 ):
     """
     Sends a request to an endpoint trough a cloud function.
@@ -476,19 +477,24 @@ def cloud_function_request(
     request = google.auth.transport.requests.Request()
     TOKEN = google.oauth2.id_token.fetch_id_token(request, cloud_function_url)
 
-    payload = json.dumps(
-        {
-            "url": url,
-            "request_type": request_type,
-            "body_params": json.dumps(body_params),
-            "query_params": query_params,
-            "credential": credential,
-        }
-    )
+    payload = {
+        "tipo_api": api_type,
+        "url": url,
+        "request_type": request_type,
+        "body_params": body_params,
+        "query_params": query_params,
+        "credential": credential,
+    }
+
+    if isinstance(body_params, dict) and api_type == "json":
+        payload["body_params"] = json.dumps(body_params)
+
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {TOKEN}"}
 
     try:
-        response = requests.request("POST", cloud_function_url, headers=headers, data=payload)
+        response = requests.request(
+            "POST", cloud_function_url, headers=headers, data=json.dumps(payload)
+        )
 
         if response.status_code == 200:
             logger.info("[Cloud Function] Request was Successful")
