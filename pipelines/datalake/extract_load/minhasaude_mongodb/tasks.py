@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import gc
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Union, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
@@ -104,10 +104,10 @@ def obter_faixas_de_fatiamento(
     e gera uma lista de tuplas representando intervalos [(início, fim), ...] de tamanho `slice_size` para serem usados em extrações paralelas ou paginadas.
 
     Retorna:
-        List[Tuple[ValorSlice, ValorSlice]], int: 
+        List[Tuple[ValorSlice, ValorSlice]], int:
             - Lista de tuplas (início, fim) representando cada faixa de fatiamento.
             - Total de documentos esperados na coleção com o filtro aplicado.
-"""
+    """
 
     conn = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
     with MongoClient(conn) as cliente_mongo:
@@ -146,7 +146,6 @@ def obter_faixas_de_fatiamento(
 
         log(f"Intervalo detectado: {menor_valor} -> {maior_valor}")
 
-
         # ------------------------- gera faixas de fatiamento ------------------------ #
         log(f"Gerando faixas de fatiamento de tamanho {slice_size}…")
         faixas: List[Tuple[ValorSlice, ValorSlice]] = []
@@ -169,13 +168,17 @@ def obter_faixas_de_fatiamento(
 
                 # Previne loops infinitos em caso de dados inconsistentes
                 if fim == atual:
-                    log("Valor de fim igual ao início, possível loop infinito. Encerrando geração de faixas.")
+                    log(
+                        "Valor de fim igual ao início, possível loop infinito. Encerrando geração de faixas."
+                    )
                     break
 
                 atual = fim
 
                 if not faixas:
-                    log("Nenhuma faixa de fatiamento foi gerada. Verifique os parâmetros de entrada.")
+                    log(
+                        "Nenhuma faixa de fatiamento foi gerada. Verifique os parâmetros de entrada."
+                    )
                     raise ValueError("Nenhuma faixa de fatiamento gerada.")
 
         except Exception as e:
@@ -184,6 +187,7 @@ def obter_faixas_de_fatiamento(
 
         log(f"Total de faixas geradas: {len(faixas)}")
         return faixas
+
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def extrair_fatia_para_datalake(
@@ -243,9 +247,7 @@ def extrair_fatia_para_datalake(
         log(f"Collection: {collection_name}")
 
         cursor = (
-            colecao.find(filtro, no_cursor_timeout=True)
-            .batch_size(10_000)
-            .max_time_ms(120_000)
+            colecao.find(filtro, no_cursor_timeout=True).batch_size(10_000).max_time_ms(120_000)
         )
 
         # -------------------- itera cursor & faz flush ---------------- #
@@ -276,6 +278,7 @@ def extrair_fatia_para_datalake(
         log(f"Fatia concluída. Total parcial = {documentos_enviados:,d} documentos.")
 
     return len(documentos_enviados)
+
 
 @task
 def validar_total_documentos(

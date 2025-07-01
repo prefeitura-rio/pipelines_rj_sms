@@ -14,9 +14,9 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.minhasaude_mongodb.schedules import schedule
 from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
-    obter_faixas_de_fatiamento,
     extrair_fatia_para_datalake,
-    validar_total_documentos
+    obter_faixas_de_fatiamento,
+    validar_total_documentos,
 )
 from pipelines.utils.tasks import get_secret_key
 
@@ -83,7 +83,7 @@ with Flow(
         bq_table_id=unmapped(BQ_TABLE_ID),
         flow_name=unmapped(FLOW_NAME),
         flow_owner=unmapped(FLOW_OWNER),
-        faixa=lista_faixas
+        faixa=lista_faixas,
     )
 
     validacao = validar_total_documentos(
@@ -95,7 +95,7 @@ with Flow(
         db_name=MONGO_DATABASE,
         collection_name=MONGO_COLLECTION,
         query=MONGO_QUERY,
-        docs_por_fatia=n_documentos_enviados
+        docs_por_fatia=n_documentos_enviados,
     )
 
 minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=3)
