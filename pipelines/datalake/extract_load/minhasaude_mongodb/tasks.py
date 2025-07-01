@@ -65,7 +65,11 @@ def _flush_e_enviar(
         df["_id"] = df["_id"].astype(str)
 
     log(f"Preparando DataFrame ({n_docs} docs) para upload…")
-    df_pronto = prepare_dataframe_for_upload.run(df=df, flow_name=flow_name, flow_owner=flow_owner)
+    df_pronto = prepare_dataframe_for_upload.run(
+        df=df,
+        flow_name=flow_name,
+        flow_owner=flow_owner
+    )
 
     log("Enviando lote para o BigQuery…")
     upload_df_to_datalake.run(
@@ -138,7 +142,7 @@ def dump_collection_por_fatias(
         colecao = db[collection_name]
         log(f"Collection: {collection_name}")
 
-        # ---------------------- n de docs para conferir posteriormente se obtemos todos ------------ #
+        # ---------------------- n de docs para conferir posteriormente se obtemos todos ------- #
         filtro_base: Dict[str, Any] = query or {}
         total_esperado = colecao.count_documents(filtro_base)
         log(f"Total de documentos na collection com filtro = {total_esperado:,d} documentos")
@@ -147,7 +151,9 @@ def dump_collection_por_fatias(
         log(f"Buscando menor e maior valor de `{slice_var}`…")
 
         menor_doc = next(
-            colecao.find(filtro_base, {slice_var: 1, "_id": 0}).sort(slice_var, ASCENDING).limit(1),
+            colecao.find(filtro_base, {slice_var: 1, "_id": 0})
+            .sort(slice_var, ASCENDING)
+            .limit(1),
             None,
         )
         maior_doc = next(
@@ -189,7 +195,7 @@ def dump_collection_por_fatias(
             }
             log(f"Fatia `{inicio_fatia}` -> `{fim_fatia}`")
 
-            # ----------- tentativa com retry & back-off para AutoReconnect ------------------------ #
+            # ----------- tentativa com retry & back-off para AutoReconnect -------------------- #
             backoff_segundos = 5
             for tentativa in range(1, 6):
                 try:
