@@ -87,7 +87,7 @@ with Flow(
         total_esperado=n_documentos,
         docs_por_fatia=n_documentos_enviados,
         flow_name=FLOW_NAME,
-        flow_owner=FLOW_OWNER
+        flow_owner=FLOW_OWNER,
     )
 
 minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=10)
