@@ -171,7 +171,7 @@ def gerar_faixas_de_fatiamento(
         maximo = _get_extreme_value(col, filtro, slice_var, DESCENDING)
 
         # Valida tipo
-        if type(minimo) != type(maximo):
+        if type(minimo) is not type(maximo):
             raise TypeError(
                 "`slice_var` deve ter tipo único; " f"detectado {type(minimo)} e {type(maximo)}"
             )
