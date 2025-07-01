@@ -34,9 +34,8 @@ from pymongo import ASCENDING, DESCENDING, MongoClient
 
 from pipelines.datalake.utils.tasks import prepare_dataframe_for_upload
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import upload_df_to_datalake
 from pipelines.utils.monitor import send_message
-
+from pipelines.utils.tasks import upload_df_to_datalake
 
 # -------------------------------------------------------------- Tipos auxiliares
 ValorSlice = Union[int, float, datetime, pd.Timestamp]
@@ -104,10 +103,10 @@ def obter_faixas_de_fatiamento(
     e gera uma lista de tuplas representando intervalos [(início, fim), ...] de tamanho `slice_size` para serem usados em extrações paralelas ou paginadas.
 
     Retorna:
-        List[Tuple[ValorSlice, ValorSlice]], int: 
+        List[Tuple[ValorSlice, ValorSlice]], int:
             - Lista de tuplas (início, fim) representando cada faixa de fatiamento.
             - Total de documentos esperados na coleção com o filtro aplicado.
-"""
+    """
 
     conn = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
     with MongoClient(conn) as cliente_mongo:
@@ -187,7 +186,6 @@ def obter_faixas_de_fatiamento(
 
         log(f"Total de faixas geradas: {len(faixas)}")
         return faixas
-
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
