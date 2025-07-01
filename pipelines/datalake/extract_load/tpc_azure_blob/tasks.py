@@ -7,6 +7,7 @@ Tasks for TPC Dump
 from datetime import datetime, timedelta
 
 import pandas as pd
+import sys
 import pytz
 import csv
 import os
@@ -77,7 +78,7 @@ def extract_data_from_blob(
         log("File is from current date")
         return file_path
 
-@task
+@task(nout=2)
 def validate_csv_data(file_path: str, blob_file: str):
     """
     Valida um arquivo CSV tentando carregá-lo com pandas.
@@ -109,6 +110,8 @@ def validate_csv_data(file_path: str, blob_file: str):
         header = []
         expected_cols = None
 
+        csv.field_size_limit(sys.maxsize)
+
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             reader = csv.reader(f, delimiter=";")
             for idx, row in enumerate(reader):
@@ -138,11 +141,6 @@ def validate_csv_data(file_path: str, blob_file: str):
         log(f"{len(error_logs)} linhas inválidas encontradas. Novo arquivo salvo em: {corrected_path}")
 
         return corrected_path, error_logs
-
-@task
-def report_csv_validation_errors_task(blob_file: str, error_logs: list[str]):
-    from pipelines.datalake.extract_load.tpc_azure_blob.utils import report_csv_validation_errors
-    report_csv_validation_errors(blob_file, error_logs)
 
 
 @task

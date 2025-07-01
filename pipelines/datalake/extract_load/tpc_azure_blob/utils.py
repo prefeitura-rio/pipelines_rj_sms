@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from pipelines.utils.monitor import send_message
+from pipelines.utils.credential_injector import authenticated_task as task  # importar aqui
 
+@task
 def report_csv_validation_errors(blob_file: str, error_logs: list[str]):
     """
     Envia uma mensagem ao Discord com os erros encontrados na validação do CSV.

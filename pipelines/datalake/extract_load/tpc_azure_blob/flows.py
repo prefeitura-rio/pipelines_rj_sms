@@ -14,6 +14,9 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.tpc_azure_blob.constants import (
     constants as tpc_constants,
 )
+from pipelines.datalake.extract_load.tpc_azure_blob.utils import (
+    report_csv_validation_errors,
+)
 from pipelines.datalake.extract_load.tpc_azure_blob.schedules import (
     tpc_daily_update_schedule,
 )
@@ -21,7 +24,6 @@ from pipelines.datalake.extract_load.tpc_azure_blob.tasks import (
     extract_data_from_blob,
     transform_data,
     validate_csv_data,
-    report_csv_validation_errors_task,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
@@ -77,7 +79,7 @@ with Flow(
     )
 
     # Alerta se houver erros
-    report_csv_validation_errors_task(
+    report_csv_validation_errors(
         blob_file=BLOB_FILE,
         error_logs=validation_errors,
         upstream_tasks=[validated_file_path],
