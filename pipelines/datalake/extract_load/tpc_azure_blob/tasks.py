@@ -4,13 +4,13 @@
 """
 Tasks for TPC Dump
 """
+import csv
+import os
+import sys
 from datetime import datetime, timedelta
 
 import pandas as pd
-import sys
 import pytz
-import csv
-import os
 from prefect.engine.signals import ENDRUN
 from prefect.engine.state import Failed
 from prefeitura_rio.pipelines_utils.logging import log
@@ -78,6 +78,7 @@ def extract_data_from_blob(
         log("File is from current date")
         return file_path
 
+
 @task(nout=2)
 def validate_csv_data(file_path: str, blob_file: str):
     """
@@ -89,7 +90,7 @@ def validate_csv_data(file_path: str, blob_file: str):
         blob_file (str): Nome do tipo de arquivo (ex: posicao, pedidos...).
 
     Returns:
-        Tuple[str, List[str] or None]: 
+        Tuple[str, List[str] or None]:
             - Caminho do arquivo corrigido (ou original se válido),
             - Lista de erros encontrados (ou None).
     """
@@ -138,7 +139,9 @@ def validate_csv_data(file_path: str, blob_file: str):
             writer = csv.writer(out_f, delimiter=";")
             writer.writerows(valid_rows)
 
-        log(f"{len(error_logs)} linhas inválidas encontradas. Novo arquivo salvo em: {corrected_path}")
+        log(
+            f"{len(error_logs)} linhas inválidas encontradas. Novo arquivo salvo em: {corrected_path}"
+        )
 
         return corrected_path, error_logs
 

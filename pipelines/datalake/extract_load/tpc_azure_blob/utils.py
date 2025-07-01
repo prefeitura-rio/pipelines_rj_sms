@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+from pipelines.utils.credential_injector import (
+    authenticated_task as task,  # importar aqui
+)
 from pipelines.utils.monitor import send_message
-from pipelines.utils.credential_injector import authenticated_task as task  # importar aqui
+
 
 @task
 def report_csv_validation_errors(blob_file: str, error_logs: list[str]):
@@ -15,7 +18,7 @@ def report_csv_validation_errors(blob_file: str, error_logs: list[str]):
         return
 
     title = f"Erros de Validação no CSV - {blob_file.upper()}"
-    
+
     max_lines = 15  # evitar mensagens muito longas no Discord
     trimmed_logs = error_logs[:max_lines]
     total = len(error_logs)
