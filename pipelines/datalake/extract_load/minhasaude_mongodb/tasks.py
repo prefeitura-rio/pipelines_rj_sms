@@ -26,9 +26,8 @@ Fluxo geral
 from __future__ import annotations
 
 import gc
-import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Tuple
 
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
@@ -85,9 +84,109 @@ def _flush_e_enviar(
     return n_docs
 
 
-# -------------------------------------------------------------- Tarefa principal
+# -------------------------------------------------------------- Tarefas
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def dump_collection_por_fatias(
+def obter_faixas_de_fatiamento(
+    host: str,
+    port: int,
+    user: str,
+    password: str,
+    authsource: str,
+    db_name: str,
+    collection_name: str,
+    query: Dict[str, Any] | None,
+    slice_var: str,
+    slice_size: int,
+) -> List[Tuple[ValorSlice, ValorSlice]]:
+    """
+    Obtém as faixas de fatiamento para extração de dados de uma coleção MongoDB, com base em um campo de corte (numérico ou data).
+    Conecta-se ao MongoDB, determina o menor e maior valor do campo de fatiamento (`slice_var`) considerando um filtro opcional,
+    e gera uma lista de tuplas representando intervalos [(início, fim), ...] de tamanho `slice_size` para serem usados em extrações paralelas ou paginadas.
+
+    Retorna:
+        List[Tuple[ValorSlice, ValorSlice]], int: 
+            - Lista de tuplas (início, fim) representando cada faixa de fatiamento.
+            - Total de documentos esperados na coleção com o filtro aplicado.
+"""
+
+    conn = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
+    with MongoClient(conn) as cliente_mongo:
+        db = cliente_mongo[db_name]
+        colecao = db[collection_name]
+        log(f"Collection: {collection_name}")
+
+        # ---------------------- n de docs para conferir posteriormente se obtemos todos ------- #
+        filtro_base: Dict[str, Any] = query or {}
+
+        # ------------------ obtém valores min/max do slice ---------------- #
+        log(f"Buscando menor e maior valor de `{slice_var}`…")
+
+        menor_doc = next(
+            colecao.find(filtro_base, {slice_var: 1, "_id": 0}).sort(slice_var, ASCENDING).limit(1),
+            None,
+        )
+        maior_doc = next(
+            colecao.find(filtro_base, {slice_var: 1, "_id": 0})
+            .sort(slice_var, DESCENDING)
+            .limit(1),
+            None,
+        )
+
+        if menor_doc is None or maior_doc is None:
+            log("Nenhum documento encontrado com o filtro fornecido. Encerrando.")
+            return 0
+
+        menor_valor: ValorSlice = menor_doc[slice_var]
+        maior_valor: ValorSlice = maior_doc[slice_var]
+
+        if not isinstance(menor_valor, (int, float, datetime, pd.Timestamp)) or not isinstance(
+            maior_valor, (int, float, datetime, pd.Timestamp)
+        ):
+            raise TypeError(f"`slice_var` deve ser numérico ou data; obtido {type(menor_valor)}")
+
+        log(f"Intervalo detectado: {menor_valor} -> {maior_valor}")
+
+
+        # ------------------------- gera faixas de fatiamento ------------------------ #
+        log(f"Gerando faixas de fatiamento de tamanho {slice_size}…")
+        faixas: List[Tuple[ValorSlice, ValorSlice]] = []
+        atual: ValorSlice = menor_valor
+
+        try:
+            while atual <= maior_valor:
+                # Define o fim da fatia conforme o tipo do valor (numérico ou data)
+                if isinstance(atual, (int, float)):
+                    fim = atual + slice_size
+                elif isinstance(atual, (datetime, pd.Timestamp)):
+                    fim = atual + timedelta(days=slice_size)
+                else:
+                    log(f"Tipo inesperado para fatiamento: {type(atual)}")
+                    raise TypeError(f"Tipo não suportado para fatiamento: {type(atual)}")
+
+                # Adiciona a faixa à lista
+                faixas.append((atual, fim))
+                log(f"Faixa adicionada: início={atual}, fim={fim}")
+
+                # Previne loops infinitos em caso de dados inconsistentes
+                if fim == atual:
+                    log("Valor de fim igual ao início, possível loop infinito. Encerrando geração de faixas.")
+                    break
+
+                atual = fim
+
+                if not faixas:
+                    log("Nenhuma faixa de fatiamento foi gerada. Verifique os parâmetros de entrada.")
+                    raise ValueError("Nenhuma faixa de fatiamento gerada.")
+
+        except Exception as e:
+            log(f"Erro ao gerar faixas de fatiamento: {e}")
+            raise
+
+        log(f"Total de faixas geradas: {len(faixas)}")
+        return faixas
+
+@task(max_retries=5, retry_delay=timedelta(minutes=3))
+def extrair_fatia_para_datalake(
     flow_name: str,
     flow_owner: str,
     host: str,
@@ -102,6 +201,7 @@ def dump_collection_por_fatias(
     slice_size: int,
     bq_dataset_id: str,
     bq_table_id: str,
+    faixa: List[Tuple[ValorSlice, ValorSlice]],
 ) -> int:
     """
     Extrai documentos de `collection_name` paginando por `slice_var`
@@ -132,98 +232,28 @@ def dump_collection_por_fatias(
         "&socketKeepAlive=true"
     )
 
+    gte, lt = faixa
+    filtro = {**(query or {}), slice_var: {"$gte": gte, "$lt": lt}}
+
     log("Conectando ao MongoDB…")
+    documentos_enviados = 0
     with MongoClient(conn_str) as cliente_mongo:
         db = cliente_mongo[db_name]
         colecao = db[collection_name]
         log(f"Collection: {collection_name}")
 
-        # ---------------------- n de docs para conferir posteriormente se obtemos todos ------- #
-        filtro_base: Dict[str, Any] = query or {}
-        total_esperado = colecao.count_documents(filtro_base)
-        log(f"Total de documentos na collection com filtro = {total_esperado:,d} documentos")
-
-        # ------------------ obtém valores min/max do slice ---------------- #
-        log(f"Buscando menor e maior valor de `{slice_var}`…")
-
-        menor_doc = next(
-            colecao.find(filtro_base, {slice_var: 1, "_id": 0}).sort(slice_var, ASCENDING).limit(1),
-            None,
-        )
-        maior_doc = next(
-            colecao.find(filtro_base, {slice_var: 1, "_id": 0})
-            .sort(slice_var, DESCENDING)
-            .limit(1),
-            None,
+        cursor = (
+            colecao.find(filtro, no_cursor_timeout=True)
+            .batch_size(10_000)
+            .max_time_ms(120_000)
         )
 
-        if menor_doc is None or maior_doc is None:
-            log("Nenhum documento encontrado com o filtro fornecido. Encerrando.")
-            return 0
-
-        menor_valor: ValorSlice = menor_doc[slice_var]
-        maior_valor: ValorSlice = maior_doc[slice_var]
-
-        if not isinstance(menor_valor, (int, float, datetime, pd.Timestamp)) or not isinstance(
-            maior_valor, (int, float, datetime, pd.Timestamp)
-        ):
-            raise TypeError(f"`slice_var` deve ser numérico ou data; obtido {type(menor_valor)}")
-
-        log(f"Intervalo detectado: {menor_valor} -> {maior_valor}")
-
-        # ------------------------- loop por fatias ------------------------ #
-        documentos_enviados = 0
-        inicio_fatia: ValorSlice = menor_valor
-
-        log(f"Iniciando extração em fatias de {slice_size}…")
-        while inicio_fatia <= maior_valor:
-            # define fim da fatia
-            if isinstance(inicio_fatia, (int, float)):
-                fim_fatia = inicio_fatia + slice_size
-            else:  # datetime ou Timestamp
-                fim_fatia = inicio_fatia + timedelta(days=slice_size)
-
-            filtro_fatia = {
-                **filtro_base,
-                slice_var: {"$gte": inicio_fatia, "$lt": fim_fatia},
-            }
-            log(f"Fatia `{inicio_fatia}` -> `{fim_fatia}`")
-
-            # ----------- tentativa com retry & back-off para AutoReconnect -------------------- #
-            backoff_segundos = 5
-            for tentativa in range(1, 6):
-                try:
-                    cursor = (
-                        colecao.find(filtro_fatia, no_cursor_timeout=True)
-                        .batch_size(10_000)
-                        .max_time_ms(120_000)
-                    )
-                    break  # sucesso
-                except AutoReconnect as erro:
-                    log(
-                        f"AutoReconnect (tentativa {tentativa}/5) "
-                        f"-> aguardando {backoff_segundos}s: {erro}"
-                    )
-                    time.sleep(backoff_segundos)
-                    backoff_segundos *= 2  # aumento exponencial do tempo de espera
-            else:
-                raise RuntimeError("Falha permanente após 5 tentativas de AutoReconnect.")
-
-            # -------------------- itera cursor & faz flush ---------------- #
-            buffer: List[Dict[str, Any]] = []
-            try:
-                for doc in cursor:
-                    buffer.append(doc)
-                    if len(buffer) >= 10_000:
-                        documentos_enviados += _flush_e_enviar(
-                            buffer,
-                            flow_name,
-                            flow_owner,
-                            bq_dataset_id,
-                            bq_table_id,
-                        )
-                # flush residual
-                if buffer:
+        # -------------------- itera cursor & faz flush ---------------- #
+        buffer: List[Dict[str, Any]] = []
+        try:
+            for doc in cursor:
+                buffer.append(doc)
+                if len(buffer) >= 10_000:
                     documentos_enviados += _flush_e_enviar(
                         buffer,
                         flow_name,
@@ -231,21 +261,48 @@ def dump_collection_por_fatias(
                         bq_dataset_id,
                         bq_table_id,
                     )
-            finally:
-                cursor.close()  # sempre fecha cursor
+            # flush residual
+            if buffer:
+                documentos_enviados += _flush_e_enviar(
+                    buffer,
+                    flow_name,
+                    flow_owner,
+                    bq_dataset_id,
+                    bq_table_id,
+                )
+        finally:
+            cursor.close()  # sempre fecha cursor
 
-            log(f"Fatia concluída. Total parcial = {documentos_enviados:,d} documentos.")
-            inicio_fatia = fim_fatia  # avança para próxima fatia
+        log(f"Fatia concluída. Total parcial = {documentos_enviados:,d} documentos.")
 
-    # -------------------------- pós-processamento ------------------------- #
-    if documentos_enviados == total_esperado:
-        log(f"Processo concluído! {documentos_enviados:,d} documentos enviados.")
-    else:
-        mensagem = (
-            f"Erro de consistência: enviados {documentos_enviados:,d} "
-            f"!= esperado {total_esperado:,d}."
+    return len(documentos_enviados)
+
+@task
+def validar_total_documentos(
+    host: str,
+    port: int,
+    user: str,
+    password: str,
+    authsource: str,
+    db_name: str,
+    collection_name: str,
+    query: dict | None,
+    docs_por_fatia: List[int],
+) -> None:
+    """
+    Conta os documentos na coleção **uma vez**, soma o que já foi
+    enviado por todas as fatias e dispara erro se houver diferença.
+    """
+    conn = f"mongodb://{user}:{password}@{host}:{port}/?authSource={authsource}"
+    with MongoClient(conn) as cli:
+        col = cli[db_name][collection_name]
+        total_esperado = col.count_documents(query or {})
+
+    total_enviado = sum(docs_por_fatia)
+    log(f"Esperado: {total_esperado:,d} · Enviado: {total_enviado:,d}")
+
+    if total_enviado != total_esperado:
+        raise ValueError(
+            f"Inconsistência - coleção tem {total_esperado:,d} documentos, "
+            f"mas só {total_enviado:,d} foram enviados."
         )
-        log(f"{mensagem}")
-        raise RuntimeError(mensagem)
-
-    return documentos_enviados

@@ -5,7 +5,7 @@ Fluxo
 
 # TO DO: PARALELIZAR
 
-from prefect import Parameter
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -14,7 +14,9 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.minhasaude_mongodb.schedules import schedule
 from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
-    dump_collection_por_fatias,
+    obter_faixas_de_fatiamento,
+    extrair_fatia_para_datalake,
+    validar_total_documentos
 )
 from pipelines.utils.tasks import get_secret_key
 
@@ -52,8 +54,8 @@ with Flow(
         environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/minhasaude_mongodb"
     )
 
-    # Tarefa única: extração + upload -------------------------------------
-    dump_collection_por_fatias(
+    # Tarefas -------------------------------------
+    lista_faixas = obter_faixas_de_fatiamento(
         host=MONGO_HOST,
         port=MONGO_PORT,
         user=user,
@@ -64,13 +66,39 @@ with Flow(
         query=MONGO_QUERY,
         slice_var=SLICE_VAR,
         slice_size=SLICE_SIZE,
-        bq_dataset_id=BQ_DATASET_ID,
-        bq_table_id=BQ_TABLE_ID,
-        flow_name=FLOW_NAME,
-        flow_owner=FLOW_OWNER,
     )
 
-minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=5)
+    n_documentos_enviados = extrair_fatia_para_datalake.map(
+        host=unmapped(MONGO_HOST),
+        port=unmapped(MONGO_PORT),
+        user=unmapped(user),
+        password=unmapped(password),
+        authsource=unmapped(MONGO_AUTHSOURCE),
+        db_name=unmapped(MONGO_DATABASE),
+        collection_name=unmapped(MONGO_COLLECTION),
+        query=unmapped(MONGO_QUERY),
+        slice_var=unmapped(SLICE_VAR),
+        slice_size=unmapped(SLICE_SIZE),
+        bq_dataset_id=unmapped(BQ_DATASET_ID),
+        bq_table_id=unmapped(BQ_TABLE_ID),
+        flow_name=unmapped(FLOW_NAME),
+        flow_owner=unmapped(FLOW_OWNER),
+        faixa=lista_faixas
+    )
+
+    validacao = validar_total_documentos(
+        host=MONGO_HOST,
+        port=MONGO_PORT,
+        user=user,
+        password=password,
+        authsource=MONGO_AUTHSOURCE,
+        db_name=MONGO_DATABASE,
+        collection_name=MONGO_COLLECTION,
+        query=MONGO_QUERY,
+        docs_por_fatia=n_documentos_enviados
+    )
+
+minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=3)
 minhasaude_mongodb_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 minhasaude_mongodb_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
