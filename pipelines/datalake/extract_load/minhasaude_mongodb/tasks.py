@@ -35,8 +35,8 @@ from pipelines.utils.monitor import send_message
 
 # Configurações gerais
 # -----------------------------------------------------------------------------#
-BATCH_SIZE: int = 10_000          # tamanho do batch ao iterar no cursor
-FLUSH_THRESHOLD: int = 10_000     # dispara upload quando buffer atinge este valor
+BATCH_SIZE: int = 10_000  # tamanho do batch ao iterar no cursor
+FLUSH_THRESHOLD: int = 10_000  # dispara upload quando buffer atinge este valor
 
 ValorSlice: TypeAlias = Union[int, float, datetime, pd.Timestamp]
 
@@ -61,16 +61,9 @@ def _build_conn_string(
     )
 
 
-def _get_extreme_value(
-    collection, filtro: Dict[str, Any], campo: str, ordem: int
-) -> ValorSlice:
+def _get_extreme_value(collection, filtro: Dict[str, Any], campo: str, ordem: int) -> ValorSlice:
     """Retorna o menor ou maior valor de `campo` conforme `ordem`."""
-    doc = (
-        collection.find(filtro, {campo: 1, "_id": 0})
-        .sort(campo, ordem)
-        .limit(1)
-        .next()
-    )
+    doc = collection.find(filtro, {campo: 1, "_id": 0}).sort(campo, ordem).limit(1).next()
     return doc[campo]
 
 
@@ -182,8 +175,7 @@ def gerar_faixas_de_fatiamento(
         # Valida tipo
         if type(minimo) != type(maximo):
             raise TypeError(
-                "`slice_var` deve ter tipo único; "
-                f"detectado {type(minimo)} e {type(maximo)}"
+                "`slice_var` deve ter tipo único; " f"detectado {type(minimo)} e {type(maximo)}"
             )
 
         log(f"Intervalo detectado: {minimo} -> {maximo}")
@@ -226,9 +218,7 @@ def extrair_fatia_para_datalake(
     with MongoClient(conn) as cli:
         col = cli[db_name][collection_name]
         cursor = (
-            col.find(filtro, no_cursor_timeout=True)
-            .batch_size(BATCH_SIZE)
-            .max_time_ms(120_000)
+            col.find(filtro, no_cursor_timeout=True).batch_size(BATCH_SIZE).max_time_ms(120_000)
         )
 
         try:
