@@ -484,15 +484,17 @@ def cloud_function_request(
         "body_params": body_params,
         "query_params": query_params,
         "credential": credential,
-        }
-    
+    }
+
     if isinstance(body_params, dict) and api_type == "json":
         payload["body_params"] = json.dumps(body_params)
-    
+
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {TOKEN}"}
 
     try:
-        response = requests.request("POST", cloud_function_url, headers=headers, data=json.dumps(payload))
+        response = requests.request(
+            "POST", cloud_function_url, headers=headers, data=json.dumps(payload)
+        )
 
         if response.status_code == 200:
             logger.info("[Cloud Function] Request was Successful")

@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
+import json
 import uuid
 from datetime import datetime, timedelta
 
-import json
 import pandas as pd
 import pytz
 import requests
 from bs4 import BeautifulSoup
-from pipelines.utils.tasks import cloud_function_request
 
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.tasks import cloud_function_request
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
@@ -71,7 +71,7 @@ def authenticate_and_fetch(
             "codigo": apccodigo,
             "token": token,
         },
-        body_params=data, 
+        body_params=data,
         api_type="xml",
         env=environment,
         credential=None,
