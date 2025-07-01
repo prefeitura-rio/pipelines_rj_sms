@@ -19,7 +19,9 @@ from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
 )
 from pipelines.utils.tasks import get_secret_key
 
-with Flow("SUBGERAL - Extract & Load - MinhaSaude.rio MongoDB (paginado)") as minhasaude_mongodb_flow:
+with Flow(
+    "SUBGERAL - Extract & Load - MinhaSaude.rio MongoDB (paginado)"
+) as minhasaude_mongodb_flow:
     # Parâmetros -----------------------------------------------------------
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
@@ -66,7 +68,7 @@ with Flow("SUBGERAL - Extract & Load - MinhaSaude.rio MongoDB (paginado)") as mi
         bq_dataset_id=BQ_DATASET_ID,
         bq_table_id=BQ_TABLE_ID,
         flow_name=FLOW_NAME,
-        flow_owner=FLOW_OWNER
+        flow_owner=FLOW_OWNER,
     )
 
 minhasaude_mongodb_flow.executor = LocalDaskExecutor(num_workers=5)

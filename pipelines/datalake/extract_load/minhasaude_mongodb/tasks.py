@@ -15,7 +15,7 @@ Fluxo geral
 3. Percorre esse intervalo em passos (`slice_size`), criando um cursor por fatia.
 4. Consome o cursor em *mini-lotes* (`batch_size`), acumulando em um `buffer`.
 5. Sempre que o `buffer` atinge 10 000 docs (ou ao final da fatia) -> faz flush:
-   - normaliza DataFrame -> prepara -> faz upload (parquet particionado).  
+   - normaliza DataFrame -> prepara -> faz upload (parquet particionado).
    - conta documentos e libera memória.
 6. Controle de erros:
    - 5 tentativas com back-off exponencial para `AutoReconnect`;
@@ -66,9 +66,7 @@ def _flush_e_enviar(
         df["_id"] = df["_id"].astype(str)
 
     log(f"Preparando DataFrame ({n_docs} docs) para upload…")
-    df_pronto = prepare_dataframe_for_upload.run(
-        df=df, flow_name=flow_name, flow_owner=flow_owner
-    )
+    df_pronto = prepare_dataframe_for_upload.run(df=df, flow_name=flow_name, flow_owner=flow_owner)
 
     log("Enviando lote para o BigQuery…")
     upload_df_to_datalake.run(
@@ -168,12 +166,10 @@ def dump_collection_por_fatias(
         menor_valor: ValorSlice = menor_doc[slice_var]
         maior_valor: ValorSlice = maior_doc[slice_var]
 
-        if not isinstance(
-            menor_valor, (int, float, datetime, pd.Timestamp)
-        ) or not isinstance(maior_valor, (int, float, datetime, pd.Timestamp)):
-            raise TypeError(
-                f"`slice_var` deve ser numérico ou data; obtido {type(menor_valor)}"
-            )
+        if not isinstance(menor_valor, (int, float, datetime, pd.Timestamp)) or not isinstance(
+            maior_valor, (int, float, datetime, pd.Timestamp)
+        ):
+            raise TypeError(f"`slice_var` deve ser numérico ou data; obtido {type(menor_valor)}")
 
         log(f"Intervalo detectado: {menor_valor} -> {maior_valor}")
 
@@ -211,11 +207,9 @@ def dump_collection_por_fatias(
                         f"-> aguardando {backoff_segundos}s: {erro}"
                     )
                     time.sleep(backoff_segundos)
-                    backoff_segundos *= 2 # aumento exponencial do tempo de espera
+                    backoff_segundos *= 2  # aumento exponencial do tempo de espera
             else:
-                raise RuntimeError(
-                    "Falha permanente após 5 tentativas de AutoReconnect."
-                )
+                raise RuntimeError("Falha permanente após 5 tentativas de AutoReconnect.")
 
             # -------------------- itera cursor & faz flush ---------------- #
             buffer: List[Dict[str, Any]] = []
@@ -242,9 +236,7 @@ def dump_collection_por_fatias(
             finally:
                 cursor.close()  # sempre fecha cursor
 
-            log(
-                f"Fatia concluída. Total parcial = {documentos_enviados:,d} documentos."
-            )
+            log(f"Fatia concluída. Total parcial = {documentos_enviados:,d} documentos.")
             inicio_fatia = fim_fatia  # avança para próxima fatia
 
     # -------------------------- pós-processamento ------------------------- #
