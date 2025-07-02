@@ -3,6 +3,8 @@
 Fluxo
 """
 
+# TO DO: PARALELIZAR
+
 from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun

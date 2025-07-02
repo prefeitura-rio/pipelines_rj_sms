@@ -265,10 +265,12 @@ cases:
       environment: "dev"
       bq_dataset_id: "brutos_geo_pgeo3"
       bq_table_id: "estabelecimentos_coordenadas"
-  - case_slug: "datalake_minhasaude_mongodb_perfilacessos_100"
+  - case_slug: "datalake_minhasaude_mongodb_perfilacessos"
     flow_path: "pipelines.datalake.extract_load.minhasaude_mongodb.flows"
     flow_name: "minhasaude_mongodb_flow"
     params:
+      flow_name: "minhasaude_mongodb_flow"
+      flow_owner: "matheusmiloski"
       environment: "dev"
       host: "db.smsrio.org"
       port: 27017
@@ -276,9 +278,10 @@ cases:
       database: "minhasauderio"
       collection: "perfil_acessos"
       query: {}
-      sample_size: 100
       bq_dataset_id: "brutos_minhasaude_mongodb"
       bq_table_id: "perfil_acessos"
+      slice_var: "createdAt"
+      slice_size: 10
   - case_slug: "cr_mysql_flow"
     flow_path: "pipelines.datalake.extract_load.centralregulacao_mysql.flows"
     flow_name: "sms_cr_mysql"
