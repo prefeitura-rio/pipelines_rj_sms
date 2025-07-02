@@ -26,7 +26,7 @@ with Flow(
 
     # Dados do administrador do fluxo --------------------------------------------
     FLOW_NAME = Parameter("flow_name", default="MinhaSaude.rio MongoDB", required=True)
-    FLOW_OWNER = Parameter("flow_owner", default="matheusmiloski", required=True)
+    FLOW_OWNER = Parameter("flow_owner", default="1184846547242995722", required=True)
 
     # MongoDB --------------------------------------------------------------
     MONGO_HOST = Parameter("host", default="db.smsrio.org", required=True)

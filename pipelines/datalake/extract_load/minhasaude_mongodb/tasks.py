@@ -288,7 +288,7 @@ def validar_total_documentos(
 
         # Envia alerta para o monitor (Discord)
         msg = (
-            f" @{flow_owner} Inconsistência: coleção tem {total_esperado:,d} docs, "
+            f" <@{flow_owner}> Inconsistência: coleção tem {total_esperado:,d} docs, "
             f"mas apenas {total_enviado:,d} chegaram ao Data Lake "
             f"({percent_diff:.2%} de diferença)."
         )
