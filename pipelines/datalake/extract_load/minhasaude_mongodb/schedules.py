@@ -25,11 +25,12 @@ flow_parameters = [
         "database": "minhasauderio",
         "collection": collection,
         "query": {},
-        "sample_size": 0,
         "bq_dataset_id": "brutos_minhasaude_mongodb",
         "bq_table_id": collection,
+        "slice_var": props["slice_var"],
+        "slice_size": props["slice_size"],
     }
-    for collection in COLLECTIONS
+    for collection, props in COLLECTIONS.items()
 ]
 
 clocks = generate_dump_api_schedules(
