@@ -22,7 +22,7 @@ flow_parameters = [
         "data_final": "now",
         "bq_dataset": "brutos_siscan_web",
         "bq_table": "laudos",
-        "dias_por_faixa": 15,
+        "dias_por_faixa": 1,
         "formato_data": "%d/%m/%Y",
     }
 ]
