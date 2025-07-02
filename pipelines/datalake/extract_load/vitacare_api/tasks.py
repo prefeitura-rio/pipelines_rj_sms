@@ -204,7 +204,7 @@ def transform_data(file_path: str, table_id: str) -> str:
 
     add_load_date_column.run(input_path=csv_file_path, sep=";")
 
-    if table_id in ("estoque_posicao", "estoque_movimento","vacina"):
+    if table_id in ("estoque_posicao", "estoque_movimento", "vacina"):
         fix_payload_column_order(filepath=csv_file_path, table_id=table_id)
 
     return csv_file_path
