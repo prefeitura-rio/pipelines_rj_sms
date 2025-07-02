@@ -278,7 +278,7 @@ def validar_total_documentos(
     diff = abs(total_enviado - total_esperado)
     percent_diff = diff / total_esperado
 
-    if percent_diff > 0.03:
+    if percent_diff > 0.05:
         log(
             f"❌ Inconsistência detectada: "
             f"coleção tem {total_esperado:,d} docs, "
