@@ -124,7 +124,7 @@ def validate_csv_data(file_path: str, blob_file: str):
 
                 if len(row) != expected_cols:
                     error_logs.append(
-                        f"Linha {idx+1}: {len(row)} colunas encontradas (esperado: {expected_cols})\nConteúdo: {row}"
+                        f"Linha {idx+1}: {len(row)} colunas encontradas (esperado: {expected_cols})"
                     )
                 else:
                     valid_rows.append(row)
