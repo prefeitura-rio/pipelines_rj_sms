@@ -82,68 +82,57 @@ def extract_data_from_blob(
 @task(nout=2)
 def validate_csv_data(file_path: str, blob_file: str):
     """
-    Valida um arquivo CSV tentando carregá-lo com pandas.
-    Em caso de erro, faz leitura linha a linha para identificar linhas inválidas.
-
-    Args:
-        file_path (str): Caminho do arquivo CSV original.
-        blob_file (str): Nome do tipo de arquivo (ex: posicao, pedidos...).
-
-    Returns:
-        Tuple[str, List[str] or None]:
-            - Caminho do arquivo corrigido (ou original se válido),
-            - Lista de erros encontrados (ou None).
+    Valida um arquivo CSV linha a linha 
     """
     log("Validando CSV...")
 
-    try:
-        # Testa leitura completa com pandas
-        pd.read_csv(file_path, sep=";", dtype=str, keep_default_na=False)
-        log("Arquivo lido com sucesso. Nenhum erro identificado.")
+    error_logs = []
+
+    # Lê todas as linhas do arquivo
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # Header
+    header_line = lines[0].strip()
+    header_list = header_line.split(";")
+    expected_cols = len(header_list)
+
+    data = {column: [] for column in header_list}
+    valid_rows = [header_list]  
+
+    # Valida linha a linha (ignorando a primeira, que é o header)
+    for idx, line in enumerate(lines[1:], start=2): 
+        line = line.strip()
+
+        # pula linha vazi
+        if not line:
+            continue
+
+        values = line.split(";")
+
+        if len(values) != expected_cols:
+            error_logs.append(
+                f"Linha {idx}: {len(values)} colunas encontradas (esperado: {expected_cols})"
+            )
+            continue
+
+        valid_rows.append(values)
+
+        for i in range(expected_cols):
+            data[header_list[i]].append(values[i])
+
+    # Se nenhuma linha inválida foi encontrada, retorna o original
+    if not error_logs:
+        log("Todas as linhas válidas após validação")
         return file_path, None
 
-    except Exception as e:
-        log(f"Erro ao ler arquivo com pandas: {str(e)}")
-        log("Iniciando leitura linha a linha para validar dados...")
+    with open(file_path, "w", encoding="utf-8", newline="") as out_f:
+        writer = csv.writer(out_f, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        writer.writerows(valid_rows)
 
-        valid_rows = []
-        error_logs = []
-        header = []
-        expected_cols = None
+    log(f"{len(error_logs)} linhas inválidas encontradas. Arquivo corrigido e sobrescrito em: {file_path}")
 
-        csv.field_size_limit(sys.maxsize)
-
-        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-            reader = csv.reader(f, delimiter=";")
-            for idx, row in enumerate(reader):
-                if idx == 0:
-                    header = row
-                    expected_cols = len(header)
-                    valid_rows.append(row)
-                    continue
-
-                if len(row) != expected_cols:
-                    error_logs.append(
-                        f"Linha {idx+1}: {len(row)} colunas encontradas (esperado: {expected_cols})"
-                    )
-                else:
-                    valid_rows.append(row)
-
-        if not error_logs:
-            log("Todas as linhas válidas após validação manual.")
-            return file_path, None
-
-        # Criar novo arquivo apenas com linhas válidas
-        corrected_path = file_path.replace(".csv", "_valid.csv")
-        with open(corrected_path, "w", encoding="utf-8", newline="") as out_f:
-            writer = csv.writer(out_f, delimiter=";")
-            writer.writerows(valid_rows)
-
-        log(
-            f"{len(error_logs)} linhas inválidas encontradas. Novo arquivo salvo em: {corrected_path}"
-        )
-
-        return corrected_path, error_logs
+    return file_path, error_logs
 
 
 @task
@@ -164,11 +153,9 @@ def transform_data(file_path: str, blob_file: str):
     with open(file_path, "r", encoding="utf-8") as f:
         file_contents = f.read()
 
-        file_contents = file_contents.replace('\\""', '\\"')
-
         file_contents = file_contents.replace('"', "")
 
-        file_contents = file_contents.replace(";/;.;", ";")
+
 
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(file_contents)
