@@ -18,6 +18,8 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
+        "flow_name": "MinhaSaude.rio MongoDB",
+        "flow_owner": "1184846547242995722",
         "environment": "prod",
         "host": "db.smsrio.org",
         "port": 27017,
