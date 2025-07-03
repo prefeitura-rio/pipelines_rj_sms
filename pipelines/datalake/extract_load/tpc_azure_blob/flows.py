@@ -20,6 +20,10 @@ from pipelines.datalake.extract_load.tpc_azure_blob.schedules import (
 from pipelines.datalake.extract_load.tpc_azure_blob.tasks import (
     extract_data_from_blob,
     transform_data,
+    validate_csv_data,
+)
+from pipelines.datalake.extract_load.tpc_azure_blob.utils import (
+    report_csv_validation_errors,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
@@ -64,12 +68,29 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
+    ####################################
+    # Tasks section #2 - Validate data
+    #####################################
+
+    validated_file_path, validation_errors = validate_csv_data(
+        file_path=raw_file,
+        blob_file=BLOB_FILE,
+        upstream_tasks=[raw_file],
+    )
+
+    # Alerta se houver erros
+    report_csv_validation_errors(
+        blob_file=BLOB_FILE,
+        error_logs=validation_errors,
+        upstream_tasks=[validated_file_path],
+    )
+
     #####################################
     # Tasks section #3 - Transform data
     #####################################
 
     transformed_file = transform_data(
-        file_path=raw_file, blob_file=BLOB_FILE, upstream_tasks=[raw_file]
+        file_path=validated_file_path, blob_file=BLOB_FILE, upstream_tasks=[validated_file_path]
     )
 
     #####################################
