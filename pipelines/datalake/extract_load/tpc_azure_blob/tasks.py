@@ -82,7 +82,7 @@ def extract_data_from_blob(
 @task(nout=2)
 def validate_csv_data(file_path: str, blob_file: str):
     """
-    Valida um arquivo CSV linha a linha 
+    Valida um arquivo CSV linha a linha
     """
     log("Validando CSV...")
 
@@ -98,10 +98,10 @@ def validate_csv_data(file_path: str, blob_file: str):
     expected_cols = len(header_list)
 
     data = {column: [] for column in header_list}
-    valid_rows = [header_list]  
+    valid_rows = [header_list]
 
     # Valida linha a linha (ignorando a primeira, que é o header)
-    for idx, line in enumerate(lines[1:], start=2): 
+    for idx, line in enumerate(lines[1:], start=2):
         line = line.strip()
 
         # pula linha vazi
@@ -130,7 +130,9 @@ def validate_csv_data(file_path: str, blob_file: str):
         writer = csv.writer(out_f, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerows(valid_rows)
 
-    log(f"{len(error_logs)} linhas inválidas encontradas. Arquivo corrigido e sobrescrito em: {file_path}")
+    log(
+        f"{len(error_logs)} linhas inválidas encontradas. Arquivo corrigido e sobrescrito em: {file_path}"
+    )
 
     return file_path, error_logs
 
@@ -154,8 +156,6 @@ def transform_data(file_path: str, blob_file: str):
         file_contents = f.read()
 
         file_contents = file_contents.replace('"', "")
-
-
 
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(file_contents)
