@@ -6,15 +6,16 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
+
 from pipelines.constants import constants
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.datalake.migrate.gcs_to_cloudsql.schedules import schedule
 from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
     find_all_filenames_from_pattern,
     get_most_recent_filenames,
     send_sequential_api_requests,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
     name="DataLake - Migração de Dados - GCS to Cloud SQL",

@@ -8,10 +8,8 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.constants import constants
 
+from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitacare_db.tasks import (
     create_parquet_file,
     create_temp_database,
@@ -26,7 +24,9 @@ from pipelines.datalake.extract_load.vitacare_db.tasks import (
     upload_many_to_datalake,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.flow import Flow
 from pipelines.utils.sms import get_healthcenter_name_from_cnes
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import create_folders
 
 with Flow(
