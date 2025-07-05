@@ -15,10 +15,12 @@ from discord import Embed
 from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 
+from pipelines.utils.infisical import inject_bd_credentials
 from pipelines.utils.monitor import get_environment, send_discord_embed
 
 
 def handle_flow_state_change(flow, old_state, new_state):
+    inject_bd_credentials()
     info = {
         "flow_name": flow.name,
         "flow_id": prefect.context.get("flow_id"),
