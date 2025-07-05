@@ -24,10 +24,16 @@ from pipelines.datalake.extract_load.vitacare_db.tasks import (
     upload_many_to_datalake,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.flow import Flow
 from pipelines.utils.sms import get_healthcenter_name_from_cnes
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import create_folders
 
-with Flow(name="DataLake - Extração e Carga de Dados - VitaCare DB") as sms_dump_vitacare_db:
+with Flow(
+    name="DataLake - Extração e Carga de Dados - VitaCare DB",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.DIT_ID.value],
+) as sms_dump_vitacare_db:
     #####################################
     # Parameters
     #####################################

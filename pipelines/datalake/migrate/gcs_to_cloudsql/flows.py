@@ -14,9 +14,13 @@ from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
     get_most_recent_filenames,
     send_sequential_api_requests,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
     name="DataLake - Migração de Dados - GCS to Cloud SQL",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.DIT_ID.value],
 ) as migrate_gcs_to_cloudsql:
     #####################################
     # Parameters
