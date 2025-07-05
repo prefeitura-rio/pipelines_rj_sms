@@ -7,6 +7,7 @@ State handlers for prefect tasks
 """
 
 import asyncio
+import json
 from datetime import datetime
 
 import prefect
@@ -26,7 +27,7 @@ def handle_flow_state_change(flow, old_state, new_state):
         "flow_name": flow.name,
         "flow_id": prefect.context.get("flow_id"),
         "flow_run_id": prefect.context.get("flow_run_id"),
-        "flow_parameters": prefect.context.get("parameters", {}),
+        "flow_parameters": json.dumps(prefect.context.get("parameters", {})),
         "state": type(new_state).__name__,
         "message": new_state.message,
         "occurrence": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat(),
@@ -84,7 +85,7 @@ def handle_flow_state_change(flow, old_state, new_state):
             bigquery.SchemaField("flow_name", "STRING"),
             bigquery.SchemaField("flow_id", "STRING"),
             bigquery.SchemaField("flow_run_id", "STRING"),
-            bigquery.SchemaField("flow_parameters", "JSON"),
+            bigquery.SchemaField("flow_parameters", "STRING"),
             bigquery.SchemaField("state", "STRING"),
             bigquery.SchemaField("message", "STRING"),
             bigquery.SchemaField("occurrence", "TIMESTAMP"),
