@@ -6,8 +6,9 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
-
 from pipelines.constants import constants
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.datalake.extract_load.vitacare_gdrive.schedules import schedule
 from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
     find_all_file_names_from_pattern,
@@ -18,6 +19,8 @@ from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Vitacare GDrive",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.DIT_ID.value],
 ) as sms_dump_vitacare_reports:
     #####################################
     # Parameters

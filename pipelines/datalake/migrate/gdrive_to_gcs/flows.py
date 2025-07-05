@@ -16,9 +16,13 @@ from pipelines.datalake.migrate.gdrive_to_gcs.tasks import (
 from pipelines.utils.basics import from_relative_date
 from pipelines.utils.google_drive import get_files_from_folder, get_folder_name
 from pipelines.utils.tasks import rename_current_flow_run
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
     name="DataLake - Migração de Dados - GDrive to GCS",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.DIT_ID.value],
 ) as migrate_gdrive_to_gcs:
     #####################################
     # Parameters
