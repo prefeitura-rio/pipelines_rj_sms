@@ -16,6 +16,7 @@ from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 
 from pipelines.utils.infisical import inject_bd_credentials
+from pipelines.utils.logger import log
 from pipelines.utils.monitor import get_environment, send_discord_embed
 
 
@@ -72,7 +73,7 @@ def handle_flow_state_change(flow, old_state, new_state):
     except NotFound:
         dataset = bigquery.Dataset(dataset_ref)
         client.create_dataset(dataset)
-        print(f"Created dataset {dataset_id}")
+        log(f"Created dataset {dataset_id}")
 
     # Create Table if it does not exist
     table_ref = dataset_ref.table(table_id)
@@ -90,12 +91,14 @@ def handle_flow_state_change(flow, old_state, new_state):
         ]
         table = bigquery.Table(table_ref, schema=schema)
         client.create_table(table)
-        print(f"Created table {table_id}")
+        log(f"Created table {table_id}")
 
     # Insert rows
     errors = client.insert_rows_json(table_ref, rows)
 
     if errors:
-        print(f"Encountered errors while inserting rows: {errors}")
+        log(f"Encountered errors while inserting rows: {errors}")
+    else:
+        log(f"Rows inserted successfully")
 
     return new_state
