@@ -1,14 +1,11 @@
+# -*- coding: utf-8 -*-
 from typing import List, Optional
 
 from prefeitura_rio.pipelines_utils.custom import Flow as CustomFlow
 
+
 class Flow(CustomFlow):
-    def __init__(
-        self,
-        *args,
-        owners: Optional[List[str]] = None,
-        **kwargs
-    ):
+    def __init__(self, *args, owners: Optional[List[str]] = None, **kwargs):
         # Guarda a lista de owners como atributo
         self.owners = owners or []
 

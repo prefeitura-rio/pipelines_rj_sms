@@ -11,9 +11,9 @@ from datetime import datetime
 
 import prefect
 import pytz
-
 from discord import Embed
 from google.cloud import bigquery
+
 from pipelines.utils.monitor import get_environment, send_discord_embed
 
 
@@ -40,7 +40,7 @@ def handle_flow_state_change(flow, old_state, new_state):
             send_discord_embed(
                 contents=[
                     Embed(
-                        title=info['flow_name'],
+                        title=info["flow_name"],
                         description="\n".join(message),
                         color=15158332,
                     )

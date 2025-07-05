@@ -22,7 +22,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import download_azure_blob, get_secret_key
 
 
-@task#(max_retries=4, retry_delay=timedelta(minutes=3))
+@task  # (max_retries=4, retry_delay=timedelta(minutes=3))
 def extract_data_from_blob(
     blob_file: str, file_folder: str, file_name: str, environment: str = "dev"
 ) -> str:
