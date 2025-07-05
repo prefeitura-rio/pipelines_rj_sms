@@ -64,12 +64,13 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    #####################################
-    # Tasks section #3 - Transform data
+    ####################################
+    # Tasks section #2 - Validate data
     #####################################
 
     transformed_file = transform_data(
-        file_path=raw_file, blob_file=BLOB_FILE, upstream_tasks=[raw_file]
+        file_path=raw_file,
+        blob_file=BLOB_FILE,
     )
 
     #####################################
