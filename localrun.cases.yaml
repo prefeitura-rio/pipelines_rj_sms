@@ -262,7 +262,7 @@ cases:
     flow_path: "pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows"
     flow_name: "sms_estabelecimentos_coordenadas"
     params:
-      environment: "dev"
+      environment: "prod"
       bq_dataset_id: "brutos_geo_pgeo3"
       bq_table_id: "estabelecimentos_coordenadas"
   - case_slug: "datalake_minhasaude_mongodb_perfilacessos"
@@ -345,7 +345,6 @@ cases:
       bq_table: 'marcacoes'
       dias_por_faixa: 30
       formato_data: '%Y-%m-%d'
-
   - case_slug: "cientificalab_api"
     flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
     flow_name: "flow_cientificalab"
@@ -362,7 +361,6 @@ cases:
       target_date: "D-1"
       dataset_id: "brutos_api_vitacare"
       table_id_prefix: "estoque_posicao"
-
   - case_slug: "siscan_web_laudos"
     flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
     flow_name: "sms_siscan_web"
@@ -374,16 +372,21 @@ cases:
       bq_table: "laudos"
       dias_por_faixa: 15
       formato_data: "%d/%m/%Y"
-
   - case_slug: "datalake-extract-subpav"
     flow_path: "pipelines.datalake.extract_load.subpav_mysql.flows"
     flow_name: "sms_dump_subpav"
     params:
       environment: "dev"
       dataset_id: "brutos_plataforma_subpav"
+      table_id: "competencias"
+      schema: "subpav_cnes"
+  - case_slug: "rastreio_pacientes_restritos"
+    flow_path: "pipelines.datalake.transform.gemini.pacientes_restritos.flows"
+    flow_name: "hci_pacientes_restritos"
+    params:
+      environment: 'dev'
       table_id: "notificacoes"
       schema: "subpav_acesso_mais_seguro"
-
   - case_slug: 'checks-bucket-files'
     flow_path: 'pipelines.reports.checks_bucket_files.flows'
     flow_name: 'report_bucket_files'
@@ -391,7 +394,6 @@ cases:
       environment: 'dev'
       bucket_name: 'conectividade_aps'
       source_freshness: 'D-0'
-
   - case_slug: 'dou-extraction'
     flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao.flows'
     flow_name: 'extract_diario_oficial_uniao'

@@ -13,7 +13,7 @@ from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task(max_retries=3, retry_delay=timedelta(seconds=90))
 def create_extraction_batches(
     db_url: str,
     db_schema: str,
