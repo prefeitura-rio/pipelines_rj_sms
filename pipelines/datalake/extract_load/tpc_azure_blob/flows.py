@@ -8,7 +8,7 @@ from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.tpc_azure_blob.constants import (
@@ -22,10 +22,14 @@ from pipelines.datalake.extract_load.tpc_azure_blob.tasks import (
     transform_data,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
+from pipelines.constants import constants
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - TPC",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.DIT_ID.value],
 ) as sms_dump_tpc:
     #####################################
     # Parameters

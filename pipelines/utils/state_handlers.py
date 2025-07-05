@@ -6,43 +6,92 @@
 State handlers for prefect tasks
 """
 
-from prefect.engine import state
+import asyncio
+from datetime import datetime
+
+import prefect
+import pytz
+
+from discord import Embed
+from google.cloud import bigquery
+from pipelines.utils.monitor import get_environment, send_discord_embed
 
 
-def on_fail(task, old_state, new_state, task_to_run_on_fail):
-    """
-    Handles the behavior when a task fails.
+def handle_flow_state_change(flow, old_state, new_state):
+    info = {
+        "flow_name": flow.name,
+        "flow_id": prefect.context.get("flow_id"),
+        "flow_run_id": prefect.context.get("flow_run_id"),
+        "state": type(new_state).__name__,
+        "message": new_state.message,
+        "occurrence": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat(),
+    }
 
-    Args:
-        task (str): The name of the task that failed.
-        old_state: The previous state of the task.
-        new_state: The new state of the task.
-        task_to_run_on_fail: The task to run when the specified task fails.
+    if new_state.is_failed():
+        message = [
+            " ".join([f"<@&{owner}>" for owner in flow.get_owners()]),
+            f"> Flow Run: [{prefect.context.get('flow_run_name')}](https://pipelines.dados.rio/flow-run/{info['flow_run_id']})",
+            f"*Parâmetros:*",
+        ]
+        for key, value in prefect.context.get("parameters", {}).items():
+            message.append(f"- {key}: `{value}`")
 
-    Returns:
-        The new state of the task.
-    """
-    if isinstance(new_state, state.Failed):
-        print(f"Task {task} failed...")
-        task_to_run_on_fail.run()
-    return new_state
+        asyncio.run(
+            send_discord_embed(
+                contents=[
+                    Embed(
+                        title=info['flow_name'],
+                        description="\n".join(message),
+                        color=15158332,
+                    )
+                ],
+                monitor_slug="error",
+            )
+        )
 
+    rows = [info]
+    # ------------------------------------------------------------
+    # Sending data to BigQuery
+    # ------------------------------------------------------------
+    environment = get_environment()
 
-def on_success(task, old_state, new_state, task_to_run_on_success):
-    """
-    Handles the logic when a task transitions to a success state.
+    project_id = "rj-sms-dev" if environment == "dev" else "rj-sms"
+    dataset_id = "brutos_prefect_staging"
+    table_id = "flow_state_change"
 
-    Args:
-        task: The task that transitioned to the success state.
-        old_state: The previous state of the task.
-        new_state: The new success state of the task.
-        task_to_run_on_success: The task to run when the success state is reached.
+    client = bigquery.Client(project=project_id)
 
-    Returns:
-        The new state of the task.
-    """
+    # Create Dataset if it does not exist
+    dataset_ref = client.dataset(dataset_id)
+    try:
+        client.get_dataset(dataset_ref)  # Will raise NotFound if dataset does not exist
+    except Exception:
+        dataset = bigquery.Dataset(dataset_ref)
+        dataset.location = "US"  # Defina sua localização se necessário
+        client.create_dataset(dataset)
+        print(f"Created dataset {dataset_id}")
 
-    if isinstance(new_state, state.Success):
-        print(f"Task {task} Success...")
-        task_to_run_on_success.run()
+    # Create Table if it does not exist
+    table_ref = dataset_ref.table(table_id)
+    try:
+        client.get_table(table_ref)  # Will raise NotFound if table does not exist
+    except Exception:
+        schema = [
+            bigquery.SchemaField("flow_name", "STRING"),
+            bigquery.SchemaField("flow_id", "STRING"),
+            bigquery.SchemaField("flow_run_id", "STRING"),
+            bigquery.SchemaField("state", "STRING"),
+            bigquery.SchemaField("message", "STRING"),
+            bigquery.SchemaField("occurrence", "TIMESTAMP"),
+        ]
+        table = bigquery.Table(table_ref, schema=schema)
+        client.create_table(table)
+        print(f"Created table {table_id}")
+
+    # Insert rows
+    errors = client.insert_rows_json(table_ref, rows)
+
+    if errors:
+        print(f"Encountered errors while inserting rows: {errors}")
+
     return new_state
