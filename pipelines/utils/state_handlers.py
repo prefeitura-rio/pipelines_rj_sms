@@ -13,6 +13,7 @@ import prefect
 import pytz
 from discord import Embed
 from google.cloud import bigquery
+from google.api_core.exceptions import NotFound
 
 from pipelines.utils.monitor import get_environment, send_discord_embed
 
@@ -22,6 +23,7 @@ def handle_flow_state_change(flow, old_state, new_state):
         "flow_name": flow.name,
         "flow_id": prefect.context.get("flow_id"),
         "flow_run_id": prefect.context.get("flow_run_id"),
+        "flow_parameters": prefect.context.get("parameters", {}),
         "state": type(new_state).__name__,
         "message": new_state.message,
         "occurrence": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat(),
@@ -64,22 +66,22 @@ def handle_flow_state_change(flow, old_state, new_state):
     # Create Dataset if it does not exist
     dataset_ref = client.dataset(dataset_id)
     try:
-        client.get_dataset(dataset_ref)  # Will raise NotFound if dataset does not exist
-    except Exception:
+        client.get_dataset(dataset_ref)
+    except NotFound:
         dataset = bigquery.Dataset(dataset_ref)
-        dataset.location = "US"  # Defina sua localização se necessário
         client.create_dataset(dataset)
         print(f"Created dataset {dataset_id}")
 
     # Create Table if it does not exist
     table_ref = dataset_ref.table(table_id)
     try:
-        client.get_table(table_ref)  # Will raise NotFound if table does not exist
-    except Exception:
+        client.get_table(table_ref)
+    except NotFound:
         schema = [
             bigquery.SchemaField("flow_name", "STRING"),
             bigquery.SchemaField("flow_id", "STRING"),
             bigquery.SchemaField("flow_run_id", "STRING"),
+            bigquery.SchemaField("flow_parameters", "JSON"),
             bigquery.SchemaField("state", "STRING"),
             bigquery.SchemaField("message", "STRING"),
             bigquery.SchemaField("occurrence", "TIMESTAMP"),
