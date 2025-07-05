@@ -12,8 +12,8 @@ from datetime import datetime
 import prefect
 import pytz
 from discord import Embed
-from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
+from google.cloud import bigquery
 
 from pipelines.utils.monitor import get_environment, send_discord_embed
 
