@@ -41,8 +41,12 @@ with Flow(
     SCHEMA = Parameter("schema", required=True)
     DATETIME_COLUMN = Parameter("datetime_column", default="created_at")
     ID_COLUMN = Parameter("id_column", default="id")
+
     IF_EXISTS = Parameter("if_exists", default="append")
     IF_STORAGE_DATA_EXISTS = Parameter("if_storage_data_exists", default="append")
+    DUMP_MODE = Parameter(
+        "dump_mode", default="append"
+    )  # Accepted values are "append" and "overwrite".
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -94,7 +98,7 @@ with Flow(
         source_format=unmapped("parquet"),
         if_exists=unmapped(IF_EXISTS),
         if_storage_data_exists=unmapped(IF_STORAGE_DATA_EXISTS),
-        dump_mode=unmapped("replace"),
+        dump_mode=unmapped(DUMP_MODE),
     )
 
 
