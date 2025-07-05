@@ -64,7 +64,18 @@ def extract_data_from_blob(
 
     # CHECK IF FILE IS FROM CURRENT DATE
     log("Verifying if file is from current date")
-    df = pd.read_csv(file_path, sep=";", dtype=str, keep_default_na=False, nrows=1)
+    df = pd.read_csv(
+        file_path,
+        sep=";",
+        quoting=csv.QUOTE_MINIMAL,
+        encoding='utf-8',
+        quotechar='"',
+        escapechar='\\',
+        keep_default_na=False,
+        dtype=str,
+        nrows=1,
+    )
+
     replication_date = df.data_atualizacao[0]
     replication_date = pd.Timestamp(replication_date).strftime("%Y-%m-%d")
 
@@ -77,65 +88,6 @@ def extract_data_from_blob(
     else:
         log("File is from current date")
         return file_path
-
-
-@task(nout=2)
-def validate_csv_data(file_path: str, blob_file: str):
-    """
-    Valida um arquivo CSV linha a linha
-    """
-    log("Validando CSV...")
-
-    error_logs = []
-
-    # Lê todas as linhas do arquivo
-    with open(file_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-
-    # Header
-    header_line = lines[0].strip()
-    header_list = header_line.split(";")
-    expected_cols = len(header_list)
-
-    data = {column: [] for column in header_list}
-    valid_rows = [header_list]
-
-    # Valida linha a linha (ignorando a primeira, que é o header)
-    for idx, line in enumerate(lines[1:], start=2):
-        line = line.strip()
-
-        # pula linha vazi
-        if not line:
-            continue
-
-        values = line.split(";")
-
-        if len(values) != expected_cols:
-            error_logs.append(
-                f"Linha {idx}: {len(values)} colunas encontradas (esperado: {expected_cols})"
-            )
-            continue
-
-        valid_rows.append(values)
-
-        for i in range(expected_cols):
-            data[header_list[i]].append(values[i])
-
-    # Se nenhuma linha inválida foi encontrada, retorna o original
-    if not error_logs:
-        log("Todas as linhas válidas após validação")
-        return file_path, None
-
-    with open(file_path, "w", encoding="utf-8", newline="") as out_f:
-        writer = csv.writer(out_f, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        writer.writerows(valid_rows)
-
-    log(
-        f"{len(error_logs)} linhas inválidas encontradas. Arquivo corrigido e sobrescrito em: {file_path}"
-    )
-
-    return file_path, error_logs
-
 
 @task
 def transform_data(file_path: str, blob_file: str):
@@ -152,15 +104,16 @@ def transform_data(file_path: str, blob_file: str):
 
     log("Conforming CSV to GCP")
 
-    with open(file_path, "r", encoding="utf-8") as f:
-        file_contents = f.read()
-
-        file_contents = file_contents.replace('"', "")
-
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(file_contents)
-
-    df = pd.read_csv(file_path, sep=";", dtype=str, keep_default_na=False)
+    df = pd.read_csv(
+        file_path,
+        sep=";",
+        quoting=csv.QUOTE_MINIMAL,
+        encoding='utf-8',
+        quotechar='"',
+        escapechar='\\',
+        keep_default_na=False,
+        dtype=str,
+    )
 
     if blob_file == "posicao":
         # remove registros errados
