@@ -68,9 +68,9 @@ def extract_data_from_blob(
         file_path,
         sep=";",
         quoting=csv.QUOTE_MINIMAL,
-        encoding='utf-8',
+        encoding="utf-8",
         quotechar='"',
-        escapechar='\\',
+        escapechar="\\",
         keep_default_na=False,
         dtype=str,
         nrows=1,
@@ -88,6 +88,7 @@ def extract_data_from_blob(
     else:
         log("File is from current date")
         return file_path
+
 
 @task
 def transform_data(file_path: str, blob_file: str):
@@ -108,9 +109,9 @@ def transform_data(file_path: str, blob_file: str):
         file_path,
         sep=";",
         quoting=csv.QUOTE_MINIMAL,
-        encoding='utf-8',
+        encoding="utf-8",
         quotechar='"',
-        escapechar='\\',
+        escapechar="\\",
         keep_default_na=False,
         dtype=str,
     )
