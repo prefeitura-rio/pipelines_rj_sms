@@ -3,16 +3,14 @@
 Tarefas
 """
 
-from prefect.engine.signals import SKIP
-
 # Geral
 import sys
 from datetime import timedelta
 from typing import Any, Dict
 
 import pandas as pd
-
 from elasticsearch import Elasticsearch, exceptions
+from prefect.engine.signals import SKIP
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
@@ -126,7 +124,7 @@ def full_extract_process(
             f"Esperado: {total_registros}, Obtido: {len(dados_processados)}"
         )
         return None
-    
+
     df = pd.DataFrame(dados_processados)
 
     file_path = f"sisreg_extraction_{data_inicial}_{data_final}.parquet"
