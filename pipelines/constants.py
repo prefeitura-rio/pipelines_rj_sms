@@ -52,3 +52,7 @@ class constants(Enum):
         "local-prod": "rj-sms",
         "local-staging": "rj-sms-dev",
     }
+
+    # DISCORD MENTIONS
+    DIT_ID = "1224334248345862164"
+    SUBGERAL_ID = "1184846547242995722"
