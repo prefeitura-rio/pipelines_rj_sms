@@ -15,9 +15,13 @@ from pipelines.datalake.extract_load.vitacare_gdrive.tasks import (
     report_inadequacy,
     upload_consistent_files,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Vitacare GDrive",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.DIT_ID.value],
 ) as sms_dump_vitacare_reports:
     #####################################
     # Parameters
