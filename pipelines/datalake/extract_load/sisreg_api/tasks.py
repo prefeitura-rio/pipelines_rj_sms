@@ -16,14 +16,49 @@ from elasticsearch import Elasticsearch, exceptions
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
-
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.monitor import send_message
 
 
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     fonte = registro.get("_source", {})
     return {**fonte}
 
+def checa_completude(dados_processados: int, total_registros: int):
+    """
+    Valida se a diferença entre registros esperados e processados
+    excede 5 %. Se exceder, dispara erro.
+
+    Parameters
+    ----------
+    dados_processados : Iterable | pd.DataFrame
+        Coleção ou DataFrame já processado.
+    total_registros : int
+        Quantidade total de registros esperados.
+    """
+
+    # Converte para len() de forma segura
+    processados = len(dados_processados) if dados_processados is not None else 0
+    diff = abs(processados - total_registros)
+    porcent_diff = diff / total_registros if total_registros else 1
+
+    # Critério de falha (> 5 %)
+    if total_registros == 0 or porcent_diff > 0.05:
+        mensagem_erro = (f"Divergência na contagem de registros processados — "
+                         f"Esperado: {total_registros}, Obtido: {processados}")
+        log(mensagem_erro)
+
+        send_message(
+            title="❌ Erro no Fluxo SISREG API",
+            message=mensagem_erro,
+            monitor_slug="error",
+        )
+
+        raise ValueError(mensagem_erro)
+
+    # Caso passe na verificação
+    log(f"Completude OK: \
+        {processados}/{total_registros} ({porcent_diff * 100:.2f} % de diferença)")
 
 @task(max_retries=5, retry_delay=timedelta(seconds=30))
 def full_extract_process(
@@ -118,15 +153,8 @@ def full_extract_process(
     es.options(ignore_status=(404,)).clear_scroll(scroll_id=scroll_ids)
     log("Scroll encerrado com sucesso.")
 
-    # Permite até 5% de diferença entre o total esperado e o processado
-    diff = abs(len(dados_processados) - total_registros)
-    if total_registros > 0 and diff / total_registros > 0.05:
-        log(
-            f"Advertência: Divergência na contagem de registros processados. "
-            f"Esperado: {total_registros}, Obtido: {len(dados_processados)}"
-        )
-        return None
-    
+    checa_completude(dados_processados, total_registros)
+
     df = pd.DataFrame(dados_processados)
 
     file_path = f"sisreg_extraction_{data_inicial}_{data_final}.parquet"
