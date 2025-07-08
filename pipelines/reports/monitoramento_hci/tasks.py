@@ -63,8 +63,10 @@ def send_report(data):
     if not IS_WORKDAY:
         # Novamente leniência de 15 min antes ou depois
         if current_time.minute >= 15 and current_time.minute <= 45:
-            log("Flow is configured to only run in 1 hour intervals; "
-                f"it is currently minute {current_time.minute} (waits for <15, >45)")
+            log(
+                "Flow is configured to only run in 1 hour intervals; "
+                f"it is currently minute {current_time.minute} (waits for <15, >45)"
+            )
             return
 
     data_recent = data[0]
@@ -115,7 +117,7 @@ def send_report(data):
     types = [evt_type.lower() for (evt_type, status, _) in data_recent if status == "200"]
     actual_usage_count = len([t for t in types if t.startswith("consulta")])
     if actual_usage_count <= 0:
-        emoji = '🚨' if IS_WORKDAY else '⚠️'
+        emoji = "🚨" if IS_WORKDAY else "⚠️"
         warnings.append(f"{emoji} Nenhuma consulta no último intervalo de {INTERVAL}!")
 
     # TODO: Testar requisição à API diretamente
@@ -135,9 +137,9 @@ def send_report(data):
     def create_section(title, obj):
         embed = None
         if IS_WORKDAY:
-            embed = Embed(title=title, color=0xdbdbe5, timestamp=current_time)
+            embed = Embed(title=title, color=0xDBDBE5, timestamp=current_time)
         else:
-            embed = Embed(title=f"💤 {title}", color=0x95a7c9, timestamp=current_time)
+            embed = Embed(title=f"💤 {title}", color=0x95A7C9, timestamp=current_time)
 
         keys = list(obj.keys())
         keys.sort()

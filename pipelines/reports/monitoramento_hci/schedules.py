@@ -33,7 +33,5 @@ clocks = generate_dump_api_schedules(
 schedule = Schedule(
     clocks=untuple_clocks(clocks),
     # Só executa em dias úteis
-    filters=[
-        filters.is_weekday
-    ],
+    filters=[filters.is_weekday],
 )
