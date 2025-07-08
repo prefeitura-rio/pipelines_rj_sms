@@ -99,7 +99,7 @@ with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
     delete_prepared = delete_file.map(file_path=prepared_files, upstream_tasks=[uploads])
 
 # Configurações de execução
-sms_sisreg_api.executor = LocalDaskExecutor(num_workers=10)
+sms_sisreg_api.executor = LocalDaskExecutor(num_workers=15)
 sms_sisreg_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_sisreg_api.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,

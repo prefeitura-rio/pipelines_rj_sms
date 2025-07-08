@@ -106,6 +106,7 @@ def full_extract_process(
     # Constrói query inicial
     query = {
         "size": page_size,
+        "track_total_hits": True,
         "query": {
             "bool": {
                 "must": [
@@ -127,7 +128,7 @@ def full_extract_process(
     # Consulta inicial
     resposta = es.search(index=index_name, body=query, scroll=scroll_timeout)
     scroll_id = resposta.get("_scroll_id")
-    total_registros = resposta["hits"]["total"]["value"]
+    total_registros = es.count(index=index_name, body={"query": query["query"]})["count"]
     hits = resposta["hits"]["hits"]
 
     if total_registros == 0:
