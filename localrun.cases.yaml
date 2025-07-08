@@ -339,7 +339,7 @@ cases:
       page_size: 10_000
       scroll_timeout: '2m'
       filters: {"codigo_central_reguladora": "330455"}
-      data_inicial: '2025-04-07'
+      data_inicial: '2025-07-07'
       data_final: 'now'
       bq_dataset: 'brutos_sisreg_api'
       bq_table: 'marcacoes'
