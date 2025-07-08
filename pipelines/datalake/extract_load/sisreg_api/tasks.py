@@ -14,6 +14,7 @@ from prefect.engine.signals import SKIP
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.monitor import send_message
 
@@ -21,6 +22,7 @@ from pipelines.utils.monitor import send_message
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     fonte = registro.get("_source", {})
     return {**fonte}
+
 
 def checa_completude(dados_processados: int, total_registros: int):
     """
@@ -42,8 +44,10 @@ def checa_completude(dados_processados: int, total_registros: int):
 
     # Critério de falha (> 5 %)
     if total_registros == 0 or porcent_diff > 0.05:
-        mensagem_erro = (f"Divergência na contagem de registros processados — "
-                         f"Esperado: {total_registros}, Obtido: {processados}")
+        mensagem_erro = (
+            f"Divergência na contagem de registros processados — "
+            f"Esperado: {total_registros}, Obtido: {processados}"
+        )
         log(mensagem_erro)
 
         send_message(
@@ -55,8 +59,11 @@ def checa_completude(dados_processados: int, total_registros: int):
         raise ValueError(mensagem_erro)
 
     # Caso passe na verificação
-    log(f"Completude OK: \
-        {processados}/{total_registros} ({porcent_diff * 100:.2f} % de diferença)")
+    log(
+        f"Completude OK: \
+        {processados}/{total_registros} ({porcent_diff * 100:.2f} % de diferença)"
+    )
+
 
 @task(max_retries=5, retry_delay=timedelta(seconds=30))
 def full_extract_process(
