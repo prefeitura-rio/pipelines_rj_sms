@@ -23,7 +23,7 @@ def authenticate_and_fetch(
 ):
     token_response = cloud_function_request.run(
         url="https://cielab.lisnet.com.br/lisnetws/tokenlisnet/apccodigo",
-        request_type="GET",
+        request_type="POST",
         query_params={
             "Content-Type": "application/json",
             "apccodigo": apccodigo,
@@ -66,7 +66,7 @@ def authenticate_and_fetch(
 
     resultado_response = cloud_function_request.run(
         url="https://cielab.lisnet.com.br/lisnetws/APOIO/DTL/resultado",
-        request_type="GET",
+        request_type="POST",
         query_params={
             "codigo": apccodigo,
             "token": token,
