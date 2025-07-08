@@ -32,9 +32,8 @@ clocks = generate_dump_api_schedules(
 
 schedule = Schedule(
     clocks=untuple_clocks(clocks),
-    # Só executa em dias úteis entre 7-19h
+    # Só executa em dias úteis
     filters=[
-        filters.is_weekday,
-        filters.between_times(time(7, tzinfo=TIMEZONE), time(19, tzinfo=TIMEZONE)),
+        filters.is_weekday
     ],
 )
