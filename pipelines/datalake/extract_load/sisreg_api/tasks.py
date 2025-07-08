@@ -2,14 +2,15 @@
 """
 Tarefas
 """
+
+# Geral
 import sys
 from datetime import timedelta
 from typing import Any, Dict
 
 import pandas as pd
-
-# Geral
 from elasticsearch import Elasticsearch, exceptions
+from prefect.engine.signals import SKIP
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
@@ -89,7 +90,7 @@ def full_extract_process(
 
     if total_registros == 0:
         log(f"Nenhum registro encontrado no intervalo {data_inicial} a {data_final}.")
-        return pd.DataFrame()
+        raise SKIP("Faixa sem registros. Nada a fazer.")
 
     log(f"Total de registros encontrados ({data_inicial} a {data_final}): {total_registros}")
 
@@ -115,12 +116,14 @@ def full_extract_process(
     es.options(ignore_status=(404,)).clear_scroll(scroll_id=scroll_ids)
     log("Scroll encerrado com sucesso.")
 
-    if len(dados_processados) != total_registros:
+    # Permite até 5% de diferença entre o total esperado e o processado
+    diff = abs(len(dados_processados) - total_registros)
+    if total_registros > 0 and diff / total_registros > 0.05:
         log(
             f"Advertência: Divergência na contagem de registros processados. "
             f"Esperado: {total_registros}, Obtido: {len(dados_processados)}"
         )
-        return pd.DataFrame()
+        return None
 
     df = pd.DataFrame(dados_processados)
 
