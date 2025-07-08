@@ -18,6 +18,18 @@ def get_data(dataset_name: str, table_name: str, environment: str):
     client = bigquery.Client()
     project_name = get_bigquery_project_from_environment.run(environment="prod")
 
+    current_time = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+    # Fora de horas úteis, queremos conferir de 1 em 1 hora
+    # Damos leniência de 15 min antes ou depois
+    start_time = current_time.replace(hour=7, minute=45)
+    end_time = current_time.replace(hour=19, minute=15)
+    IS_WORKDAY = current_time >= start_time and current_time <= end_time
+
+    interval = "30 MINUTE" if IS_WORKDAY else "1 HOUR"
+    # Quantidade de intervalos de 30 minutos em horas úteis de 7 dias
+    # 7 (dias) × 9 (horas) × 2 (meia-horas)
+    denom = (7 * 9 * 2) if IS_WORKDAY else (7 * 9)
+
     def get_query(interval: str = "30 MINUTE", denom: Optional[int] = 1):
         return f"""
 SELECT tipo_evento, resultado, (COUNT(*) / ({denom})) AS cnt
@@ -26,32 +38,47 @@ WHERE created_at >= DATETIME_SUB(CURRENT_DATETIME("America/Sao_Paulo"), INTERVAL
 GROUP BY 1, 2
         """
 
-    QUERY_30M = get_query(interval="30 MINUTE")
-    rows_30m = [row.values() for row in client.query(QUERY_30M).result()]
-    log(f"Query for tipo_evento, resultado (30 min) returned {len(rows_30m)} row(s)")
+    QUERY_RECENT = get_query(interval=interval)
+    rows_recent = [row.values() for row in client.query(QUERY_RECENT).result()]
+    log(f"Query for `tipo_evento`, `resultado` ({interval}) returned {len(rows_recent)} row(s)")
 
-    # Quantidade de intervalos de 30 minutos em horas úteis de 7 dias
-    # 7 (dias) × 8 (horas) × 2 (meia-horas)
-    denom = 7 * 8 * 2
     QUERY_7D = get_query(interval="7 DAY", denom=denom)
     rows_7d = [row.values() for row in client.query(QUERY_7D).result()]
-    log(f"Query for tipo_evento, resultado (7 d) returned {len(rows_7d)} row(s)")
+    log(f"Query for `tipo_evento`, `resultado` (7 DAY) returned {len(rows_7d)} row(s)")
     # Retorna duas listas de tuplas (evento, quantidade)
-    return (rows_30m, rows_7d)
+    return (rows_recent, rows_7d)
 
 
 @task
 def send_report(data):
-    data_30m = data[0]
+    current_time = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+    # Só queremos avisos em horas úteis (8:00–19:00)
+    # Damos leniência de 15 min antes ou depois
+    start_time = current_time.replace(hour=7, minute=45)
+    end_time = current_time.replace(hour=19, minute=15)
+    IS_WORKDAY = current_time >= start_time and current_time <= end_time
+    INTERVAL = "30min" if IS_WORKDAY else "1h"
+
+    # Fora de horas úteis, queremos só executar de 1 em 1 hora
+    if not IS_WORKDAY:
+        # Novamente leniência de 15 min antes ou depois
+        if current_time.minute >= 15 and current_time.minute <= 45:
+            log(
+                "Flow is configured to only run in 1 hour intervals; "
+                f"it is currently minute {current_time.minute} (waits for <15, >45)"
+            )
+            return
+
+    data_recent = data[0]
     data_7d = data[1]
 
-    log(f"Últimos 30 min:\n{data_30m}")
+    log(f"Últimos {INTERVAL}:\n{data_recent}")
     log(f"Últimos 7 dias (média):\n{data_7d}")
 
     warnings = []
     sections = {"access": dict(), "use": dict(), "others": dict()}
     # Para cada evento recente:
-    for event in data_30m:
+    for event in data_recent:
         evt_type: str = event[0]
         status: str = event[1]
         amount: float = event[2]
@@ -87,10 +114,11 @@ def send_report(data):
 
     # Além disso:
     # - Verifica se só temos logins/buscas/etc, mas não consultas
-    types = [evt_type.lower() for (evt_type, status, _) in data_30m if status == "200"]
+    types = [evt_type.lower() for (evt_type, status, _) in data_recent if status == "200"]
     actual_usage_count = len([t for t in types if t.startswith("consulta")])
     if actual_usage_count <= 0:
-        warnings.append(f"🚨 Nenhuma consulta na última meia hora!")
+        emoji = "🚨" if IS_WORKDAY else "⚠️"
+        warnings.append(f"{emoji} Nenhuma consulta no último intervalo de {INTERVAL}!")
 
     # TODO: Testar requisição à API diretamente
 
@@ -107,28 +135,34 @@ def send_report(data):
     }
 
     def create_section(title, obj):
-        embed = Embed(
-            title=title,
-            color=0xDBDBE5,
-            timestamp=datetime.now(tz=pytz.timezone("America/Sao_Paulo")),
-        )
+        embed = None
+        if IS_WORKDAY:
+            embed = Embed(title=title, color=0xDBDBE5, timestamp=current_time)
+        else:
+            embed = Embed(title=f"💤 {title}", color=0x95A7C9, timestamp=current_time)
 
         keys = list(obj.keys())
         keys.sort()
         for key in keys:
             outstr = ""
             for status_code, text in obj[key]:
-                outstr += "\u00b7 \u2003 "  # middle dot (U+00B7) + em space (U+2003)
+                # O Discord faz um .strip() em textos, então pra fazer
+                # espaçamento customizado é preciso burlar com caracteres
+                # esquisitos:
+                # -> U+034F COMBINING GRAPHEME JOINER
+                # -> U+2003 EM SPACE
+                outstr += "\u034f \u2003 "
                 if status_code == "200":
                     outstr += text
                 elif status_code in HTTP_STATUS.keys():
                     outstr += text + f" [**{status_code}**: {HTTP_STATUS[status_code]}]"
                 else:
-                    outstr += text + f" [**{status_code}**: ❓]"
+                    outstr += text + f" [**{status_code}**: ❗ Status inesperado]"
                 outstr += "\n"
             embed.add_field(name=f"📄 {key}", value=outstr, inline=False)
 
-        embed.set_footer(text="Última meia hora (vs. média semanal)")
+        interval_text = "meia" if IS_WORKDAY else "1"
+        embed.set_footer(text=f"Última {interval_text} hora (vs. média semanal)")
         return embed
 
     all_embeds = []
@@ -155,11 +189,13 @@ def send_report(data):
     ROLE_MENTION = f"<@&{ROLE_ID}>"
     if len(warnings) > 0:
         log(f"Sending warnings:{warnings}", level="warning")
-        message = f"**Alertas** ({ROLE_MENTION}):\n"
+        message = ""
+        if IS_WORKDAY:
+            message = f"**Alertas** ({ROLE_MENTION}):\n"
         message += "\n".join(warnings)
         asyncio.run(
             send_discord_webhook(
-                message=message,
+                text_content=message,
                 username="Monitoramento HCI",
                 monitor_slug="hci_status",
             )
