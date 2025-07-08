@@ -22,7 +22,10 @@ from pipelines.utils.monitor import get_environment, send_discord_embed
 
 
 def handle_flow_state_change(flow, old_state, new_state):
-    inject_bd_credentials()
+    environment = get_environment()
+
+    inject_bd_credentials(environment=environment)
+
     info = {
         "flow_name": flow.name,
         "flow_id": prefect.context.get("flow_id"),
@@ -59,8 +62,6 @@ def handle_flow_state_change(flow, old_state, new_state):
     # ------------------------------------------------------------
     # Sending data to BigQuery
     # ------------------------------------------------------------
-    environment = get_environment()
-
     project_id = "rj-sms-dev" if environment == "dev" else "rj-sms"
     dataset_id = "brutos_prefect_staging"
     table_id = "flow_state_change"
