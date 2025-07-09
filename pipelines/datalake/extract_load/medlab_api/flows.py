@@ -10,9 +10,6 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.medlab_api.constants import medlab_api_constants
 from pipelines.datalake.extract_load.medlab_api.schedules import medlab_api_schedule
@@ -21,6 +18,8 @@ from pipelines.datalake.extract_load.medlab_api.tasks import (
     get_patient_code_from_bigquery,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
 
 with Flow(
