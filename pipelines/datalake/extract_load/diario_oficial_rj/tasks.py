@@ -151,6 +151,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
         "materia_id": id,
         "secao": folder_path,
         "titulo": title,
+        "html": html.body
     }
 
     # Remove elementos inline comuns (<b>, <i>, <span>)
@@ -159,17 +160,19 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
     content_list = parse_do_contents(clean_html.body)
 
     log(f"Article '{title}' (id '{id}') has size {len(content_list)} block(s)")
-    ret = [
-        {
-            **base_result,
-            "secao_indice": sec_idx,
-            "conteudo_indice": cont_idx,
-            "cabecalho": content["header"],
-            "conteudo": body,
-        }
-        for sec_idx, content in enumerate(content_list)
-        for cont_idx, body in enumerate(content["body"])
-    ]
+    ret = {
+        **base_result,
+        "sections": [
+            {
+                "secao_indice": sec_idx,
+                "conteudo_indice": cont_idx,
+                "cabecalho": content["header"],
+                "conteudo": body,
+            }
+            for sec_idx, content in enumerate(content_list)
+            for cont_idx, body in enumerate(content["body"])
+        ]
+    }
     return ret
 
 
@@ -186,17 +189,53 @@ def upload_results(results_list: List[dict], dataset: str):
         # Pula resultados 'vazios' (i.e. PDFs ao invés de texto, etc)
         if result is None:
             continue
-        # Constrói DataFrame a partir do resultado
-        single_df = pd.DataFrame.from_records([result])
-        # Concatena com os outros resultados
-        main_df = pd.concat([main_df, single_df], ignore_index=True)
+        # Para cada seção no resultado
+        for section in result["sections"]:
+            # Constrói objeto a ser upado com informações base
+            # Remove `html` (vai pra outra tabela) e `sections` (obviamente)
+            remove = set(["html", "sections"])
+            prepped_section = {
+                **{ k: v for k, v in result.items() if k not in remove },
+                **section
+            }
+            # Constrói DataFrame a partir do objeto
+            single_df = pd.DataFrame.from_records([prepped_section])
+            # Concatena com os outros resultados
+            main_df = pd.concat([main_df, single_df], ignore_index=True)
 
-    log(f"Uploading DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
+    log(f"Uploading main DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
     # Chamando a task de upload
     upload_df_to_datalake.run(
         df=main_df,
         dataset_id=dataset,
         table_id="diarios_municipio",
+        partition_column="_extracted_at",
+        if_exists="append",
+        if_storage_data_exists="append",
+        source_format="csv",
+        csv_delimiter=",",
+    )
+
+    # HTML
+    html_df = pd.DataFrame()
+    # Para cada resultado
+    for result in results_list:
+        # Pula resultados 'vazios'
+        if result is None:
+            continue
+        del result["sections"]
+
+        # Constrói DataFrame a partir do objeto
+        single_df = pd.DataFrame.from_records([result])
+        # Concatena com os outros resultados
+        html_df = pd.concat([html_df, single_df], ignore_index=True)
+
+    log(f"Uploading HTML DataFrame: {len(html_df)} rows; columns {list(html_df.columns)}")
+    # Chamando a task de upload
+    upload_df_to_datalake.run(
+        df=html_df,
+        dataset_id=dataset,
+        table_id="diarios_municipio_html",
         partition_column="_extracted_at",
         if_exists="append",
         if_storage_data_exists="append",

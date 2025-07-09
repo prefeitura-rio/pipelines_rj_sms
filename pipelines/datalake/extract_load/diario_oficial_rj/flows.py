@@ -40,7 +40,7 @@ with Flow(
     # Para cada par de nome/id, pega o conteúdo do artigo
     article_contents = get_article_contents.map(do_tuple=flatten(do_article_tuple))
 
-    upload_results(results_list=flatten(article_contents), dataset=DATASET_ID)
+    upload_results(results_list=article_contents, dataset=DATASET_ID)
 
 
 # Storage and run configs
