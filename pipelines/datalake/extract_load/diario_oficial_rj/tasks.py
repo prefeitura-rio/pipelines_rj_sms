@@ -151,7 +151,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
         "materia_id": id,
         "secao": folder_path,
         "titulo": title,
-        "html": html.body
+        "html": html.body,
     }
 
     # Remove elementos inline comuns (<b>, <i>, <span>)
@@ -171,7 +171,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
             }
             for sec_idx, content in enumerate(content_list)
             for cont_idx, body in enumerate(content["body"])
-        ]
+        ],
     }
     return ret
 
@@ -194,10 +194,7 @@ def upload_results(results_list: List[dict], dataset: str):
             # Constrói objeto a ser upado com informações base
             # Remove `html` (vai pra outra tabela) e `sections` (obviamente)
             remove = set(["html", "sections"])
-            prepped_section = {
-                **{ k: v for k, v in result.items() if k not in remove },
-                **section
-            }
+            prepped_section = {**{k: v for k, v in result.items() if k not in remove}, **section}
             # Constrói DataFrame a partir do objeto
             single_df = pd.DataFrame.from_records([prepped_section])
             # Concatena com os outros resultados
