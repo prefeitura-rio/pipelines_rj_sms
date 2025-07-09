@@ -285,7 +285,7 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         if block_index == -1:
             block_index = 0
         # Garante que body[block_index] é um array
-        while len(sections[section_index]["body"]) < (block_index+1):
+        while len(sections[section_index]["body"]) < (block_index + 1):
             sections[section_index]["body"].append([])
 
         # Se encontramos um parágrafo com margem à esquerda (>=100 | >=90)
@@ -339,7 +339,7 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
             # Cabeçalho deve ser uma string
             sections[section_k]["header"] = "\n".join(sections[section_k]["header"])
             for i, arr in enumerate(sections[section_k]["body"]):
-                sections[section_k]["body"][i] = [ sub_arr for sub_arr in arr if len(sub_arr) ]
+                sections[section_k]["body"][i] = [sub_arr for sub_arr in arr if len(sub_arr)]
 
     return_ = [obj for _, obj in sections.items() if obj is not None]
     return return_
