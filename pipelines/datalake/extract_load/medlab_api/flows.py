@@ -10,6 +10,9 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
+
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.medlab_api.constants import medlab_api_constants
 from pipelines.datalake.extract_load.medlab_api.schedules import medlab_api_schedule
@@ -22,6 +25,8 @@ from pipelines.utils.tasks import get_secret_key
 
 with Flow(
     name="Medlab API - Pacientes",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.DIT_ID.value],
 ) as flow_medlab_api:
 
     #####################################
