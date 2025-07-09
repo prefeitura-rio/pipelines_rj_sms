@@ -74,14 +74,19 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
     # De onde queremos extrair `identificador` ou `data-materia-id`
     all_folders = html.find_all("span", attrs={"class": "folder"})
     results = []
-    results.extend(get_links_for_path(all_folders, ["atos do prefeito", "decretos n"]))
-    results.extend(
-        get_links_for_path(
-            all_folders, ["secretaria municipal de saúde", "resoluções", "resolução n"]
-        )
-    )
-    results.extend(get_links_if_match(all_folders, r"^controladoria geral"))
-    results.extend(get_links_if_match(all_folders, r"^tribunal de contas"))
+    paths = [
+        ["atos do prefeito", "decretos n"],
+        ["secretaria municipal de saúde", "resoluções", "resolução n"],
+        ["controladoria geral do município", "resoluções", "resolução n"],
+        ["tribunal de contas do município", "resoluções", "resolução n"],
+        ["tribunal de contas do município", "outros"],
+        ["avisos editais e termos de contratos", "secretaria municipal de saúde", "avisos"],
+        ["avisos editais e termos de contratos", "secretaria municipal de saúde", "outros"],
+        ["avisos editais e termos de contratos", "controladoria geral do município", "outros"],
+        ["avisos editais e termos de contratos", "tribunal de contas do município", "outros"]
+    ]
+    for path in paths:
+        results.extend(get_links_for_path(all_folders, path))
 
     # Não temos como garantir que ambos os atributos vão existir sempre;
     # então pegamos o valor do primeiro preenhcido que encontrarmos
@@ -149,9 +154,9 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
     }
 
     # Remove elementos inline comuns (<b>, <i>, <span>)
-    html = node_cleanup(html)
+    clean_html = node_cleanup(html)
     # Faz parsing do conteúdo para deixar tudo estruturado
-    content_list = parse_do_contents(html.body)
+    content_list = parse_do_contents(clean_html.body)
 
     log(f"Article '{title}' (id '{id}') has size {len(content_list)} block(s)")
     ret = [

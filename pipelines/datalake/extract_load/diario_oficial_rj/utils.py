@@ -87,6 +87,8 @@ def get_links_for_path(folders: List[BeautifulSoup], path: list) -> List[Beautif
         # Para cada pasta que recebemos
         links = []
         for folder in folders:
+            if folder is None:
+                continue
             # Pega todos os links nela, e guarda junto com os outros
             links.extend(get_all_links_in_folder(folder))
         return links
@@ -100,9 +102,19 @@ def get_links_for_path(folders: List[BeautifulSoup], path: list) -> List[Beautif
         # Confere se bate com o que queremos
         if text == first_folder_name:
             # Se sim, pega somente as pastas dentro dessa
-            subfolders = folder.parent.find_all("span", attrs={"class": "folder"})
+            # subfolders = folder.parent.find_all("span", attrs={"class": "folder"})
+            # Se sim, pega somente descendentes diretos da pasta
+            ## <span class="folder">...</span>  <-- Estamos aqui
+            ## <ul>
+            ##     <li>
+            ##         <div ...></div>
+            ##         <span class="folder">...</span>  <-- Queremos chegar aqui
+            subfolders = [
+                li.find("span", attrs={"class": "folder"})
+                for li in folder.find_next_sibling("ul").find_all("li", recursive=False)
+            ]
             # ...e remove a própria do caminho
-            return get_links_for_path(subfolders, path[1:])
+            return get_links_for_path([folder, *(subfolders or [])], path[1:])
     # Se chegamos aqui, não encontramos a pasta especificada pelo caminho
     return []
 
