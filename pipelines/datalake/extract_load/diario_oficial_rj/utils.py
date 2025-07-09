@@ -242,11 +242,16 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
     all_ps = root.find_all("p")
 
     section_index = -1
+    block_index = -1
     is_in_header = False
     skip_to_next_header = False
+    new_block = False
     sections = dict()
     for p in all_ps:
         text = clean_text(p.get_text())
+        if len(text) <= 0:
+            new_block = True
+            continue
 
         # Se encontramos um parágrafo centralizado
         is_centered = (
@@ -260,49 +265,72 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
                 # Flag que estamos, incrementa índice
                 is_in_header = True
                 section_index += 1
+                new_block = True
+                block_index = -1
                 sections[section_index] = {"header": [], "body": []}
             sections[section_index]["header"].append(text)
-        else:
-            is_in_header = False
+            continue
 
-            if section_index == -1:
-                # Temos corpo sem cabeçalho antecedendo
-                section_index = 0
+        is_in_header = False
 
-            if section_index not in sections:
-                sections[section_index] = {"header": [], "body": []}
+        if section_index == -1:
+            # Temos corpo sem cabeçalho antecedendo
+            section_index = 0
+        if section_index not in sections:
+            sections[section_index] = {"header": [], "body": []}
 
-            # Se encontramos um parágrafo com margem à esquerda
-            # (pelo menos 3 dígitos, i.e. >=100, ou >=90)
-            has_left_margin = (
-                re.search(
-                    r"margin\-left\s*\:\s*([1-9][0-9][0-9]+|9[0-9])\.?", p.attrs.get("style") or ""
-                )
-                is not None
+        if new_block:
+            block_index += 1
+            new_block = False
+        if block_index == -1:
+            block_index = 0
+        # Garante que body[block_index] é um array
+        while len(sections[section_index]["body"]) < (block_index+1):
+            sections[section_index]["body"].append([])
+
+        # Se encontramos um parágrafo com margem à esquerda (>=100 | >=90)
+        has_left_margin = (
+            re.search(
+                r"margin\-left\s*\:\s*([1-9][0-9][0-9]+|9[0-9])\.?", p.attrs.get("style") or ""
             )
-            if has_left_margin:
-                skip_to_next_header = True
-                sections[section_index]["body"].append(text)
-            # Se já temos tudo que precisamos do corpo, continua
-            elif skip_to_next_header:
-                continue
-            # Senão, não queremos pular nada; salva conteúdo
-            else:
-                sections[section_index]["body"].append(text)
+            is not None
+        )
+        if has_left_margin:
+            skip_to_next_header = True
+            sections[section_index]["body"][block_index].append(text)
+        # Se já temos tudo que precisamos do corpo, continua
+        elif skip_to_next_header:
+            continue
+        # Senão, não queremos pular nada; salva conteúdo
+        else:
+            sections[section_index]["body"][block_index].append(text)
 
     # `sections` é algo como:
     # {
     #   '0': {
     #     'header': ['...', ...],
-    #     'body': ['...', ...]
+    #     'body': [
+    #       ['...', ...],
+    #       ['...', ...],
+    #       ...
+    #     ]
     #   }
     #   ...
     # }
     for section_k in sections.keys():
         # k = header, body / v = array de parágrafos
         for area_k, area_v in sections[section_k].items():
-            # Filtra parágrafos pelo que temos interesse
-            sections[section_k][area_k] = filter_paragraphs(area_v, area_k)
+            if len(area_v) <= 0:
+                continue
+            if type(area_v[0]) == str:
+                # Filtra parágrafos pelo que temos interesse
+                sections[section_k][area_k] = filter_paragraphs(area_v, area_k)
+                continue
+            # Estamos no corpo e temos vários blocos, cada um com múltiplos parágrafos
+            # Para cada bloco
+            for i, block in enumerate(area_v):
+                # Filtra parágrafos
+                sections[section_k][area_k][i] = filter_paragraphs(block, area_k)
         # Se o corpo veio vazio
         if len(sections[section_k]["body"]) <= 0:
             # Apaga essa entrada
@@ -310,5 +338,8 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         else:
             # Cabeçalho deve ser uma string
             sections[section_k]["header"] = "\n".join(sections[section_k]["header"])
+            for i, arr in enumerate(sections[section_k]["body"]):
+                sections[section_k]["body"][i] = [ sub_arr for sub_arr in arr if len(sub_arr) ]
 
-    return [obj for _, obj in sections.items() if obj is not None]
+    return_ = [obj for _, obj in sections.items() if obj is not None]
+    return return_

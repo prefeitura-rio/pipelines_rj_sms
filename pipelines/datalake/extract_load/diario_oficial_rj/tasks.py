@@ -164,13 +164,15 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
         **base_result,
         "sections": [
             {
-                "secao_indice": sec_idx,
-                "conteudo_indice": cont_idx,
+                "secao_indice": section_index,
+                "bloco_indice": block_index,
+                "conteudo_indice": content_index,
                 "cabecalho": content["header"],
                 "conteudo": body,
             }
-            for sec_idx, content in enumerate(content_list)
-            for cont_idx, body in enumerate(content["body"])
+            for section_index, content in enumerate(content_list)
+            for block_index, block in enumerate(content["body"])
+            for content_index, body in enumerate(block)
         ],
     }
     return ret
