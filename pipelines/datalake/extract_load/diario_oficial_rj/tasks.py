@@ -83,7 +83,7 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
         ["avisos editais e termos de contratos", "secretaria municipal de saúde", "avisos"],
         ["avisos editais e termos de contratos", "secretaria municipal de saúde", "outros"],
         ["avisos editais e termos de contratos", "controladoria geral do município", "outros"],
-        ["avisos editais e termos de contratos", "tribunal de contas do município", "outros"]
+        ["avisos editais e termos de contratos", "tribunal de contas do município", "outros"],
     ]
     for path in paths:
         results.extend(get_links_for_path(all_folders, path))

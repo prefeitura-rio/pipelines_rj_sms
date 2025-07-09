@@ -12,7 +12,6 @@ from prefect.schedules.clocks import IntervalClock
 
 from pipelines.constants import constants
 
-
 flow_parameters = {"environment": "prod"}
 
 # Executamos o flow pela primeira vez às 5:00
