@@ -21,8 +21,8 @@ with Flow(
     name="DataLake - Extração e Carga de Dados - CientificaLab",
 ) as flow_cientificalab:
     ENVIRONMENT = Parameter("environment", default="dev")
-    DT_INICIO = Parameter("dt_inicio", default="")
-    DT_FIM = Parameter("dt_fim", default="")
+    DT_INICIO = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
+    DT_FIM = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
 
     # INFISICAL
     INFISICAL_PATH = cientificalab_constants.INFISICAL_PATH.value
@@ -59,6 +59,7 @@ with Flow(
         apccodigo=apccodigo_secret,
         dt_inicio=start_datetime,
         dt_fim=end_datetime,
+        environment=ENVIRONMENT,
     )
 
     solicitacoes_df, exames_df, resultados_df = transform(resultado_xml=resultado_xml)

@@ -80,7 +80,7 @@ routine_flow_parameters = [
 
 routine_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2025, 5, 22, 3, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2025, 5, 22, 8, 30, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
