@@ -23,7 +23,7 @@ from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
 
 with Flow(
-    name="Medlab API - Pacientes",
+    name="Medlab API - Exames",
     state_handlers=[handle_flow_state_change],
     owners=[constants.DIT_ID.value],
 ) as flow_medlab_api:
