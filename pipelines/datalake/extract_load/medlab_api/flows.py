@@ -41,13 +41,11 @@ with Flow(
 
     OUTPUT_DIRECTORY = 'output'
 
-    AI_URL = get_secret_key(
+    API_URL = get_secret_key(
         secret_path=INFISICAL_PATH, 
         secret_name="API_URL", 
         environment=ENVIRONMENT
     )
-
-    API_URL = 'https://centrocariocadeimagem.com.br:8443/medisaudeapi/v1/getToken'
 
     API_USUARIO = get_secret_key(
         secret_path=INFISICAL_PATH, 
@@ -84,7 +82,7 @@ with Flow(
 
 
 flow_medlab_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_medlab_api.executor = LocalDaskExecutor(num_workers=2)
+flow_medlab_api.executor = LocalDaskExecutor(num_workers=5)
 flow_medlab_api.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],

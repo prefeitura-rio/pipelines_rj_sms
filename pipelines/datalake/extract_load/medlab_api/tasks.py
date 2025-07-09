@@ -21,7 +21,7 @@ def get_exams_list_and_results(
 ):
     
     result = requests.post(
-        url=api_url,
+        url=f"{api_url}/medisaudeapi/v1/getToken",
         json={
             "usuario": api_usuario,
             "senha": api_senha,
@@ -30,19 +30,10 @@ def get_exams_list_and_results(
     )
     result.raise_for_status()
 
-    log(f"API Token Response Text: {result.text}", level="info")
-
-    try:
-        token = result.json()['requestToken']
-    except KeyError:
-        log(f"Failed to get 'requestToken' from API response for patient {patientcode}. Response: {result.text}", level="error")
-        return
-    except requests.exceptions.JSONDecodeError as e:
-        log(f"API Token Response is not valid JSON for patient {patientcode}. Error: {e}. Response: {result.text}", level="error")
-        return
+    token = result.json()['requestToken']
 
     result = requests.post(
-        url='https://centrocariocadeimagem.com.br:8443/medisaudeapi/v1/getStudyList',
+        url=f"{api_url}/medisaudeapi/v1/getStudyList",
         json={
         "requestToken": token,
         "dt_start": dt_start,
@@ -50,23 +41,26 @@ def get_exams_list_and_results(
         "patientcode": patientcode,
         }
     )
+
     result.raise_for_status()
+
     study_list_data = result.json()
-    log(f"API StudyList Response JSON: {study_list_data}", level="info")
+
 
     if 'studies' not in study_list_data or not study_list_data['studies']:
-        log(f"No 'studies' found or list is empty for patient {patientcode}. Skipping PDF download.", level="warning")
+        log(f"No 'studies' found or list is empty for patient {patientcode}", level="warning")
         return
 
     for study in study_list_data['studies']:
         if 'accessionNumber' not in study or not study['accessionNumber']:
-            log(f"Study for patient {patientcode} missing 'accessionNumber'. Skipping this study.", level="warning")
+            log(f"Study for patient {patientcode} missing 'accessionNumber'", level="warning")
             continue
 
         current_accession_number = study['accessionNumber']
 
         report_result = requests.post(
-            url='https://centrocariocadeimagem.com.br:8443/medisaudeapi/v1/getStudyReport',
+
+            url=f"{api_url}/medisaudeapi/v1/getStudyReport",
             json={
                 "requestToken": token,
                 "accessionNumber": current_accession_number,
@@ -75,10 +69,9 @@ def get_exams_list_and_results(
         report_result.raise_for_status()
 
         report_data = report_result.json()
-        log(f"API StudyReport Response JSON for {current_accession_number}: {report_data}", level="info")
 
         if 'arquivo' not in report_data or not report_data['arquivo']:
-            log(f"No 'arquivo' (base64 data) found for AccessionNumber {current_accession_number} for patient {patientcode}. Skipping PDF download.", level="warning")
+            log(f"No 'arquivo' (base64 data) found for patient {patientcode}", level="warning")
             continue
 
         arquivo_b64 = report_data['arquivo']
@@ -90,7 +83,6 @@ def get_exams_list_and_results(
 
         with open(file_path, 'wb') as f:
             f.write(base64.b64decode(arquivo_b64))
-        log(f"Saved exam for patient {patientcode}, AccessionNumber {current_accession_number} to {file_path}", level="info")
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
