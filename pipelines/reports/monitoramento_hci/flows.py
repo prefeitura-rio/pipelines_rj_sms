@@ -8,7 +8,6 @@ from prefect.storage import GCS
 from pipelines.constants import constants
 from pipelines.reports.monitoramento_hci.schedules import schedule
 from pipelines.reports.monitoramento_hci.tasks import get_data, send_report
-
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 
