@@ -83,7 +83,7 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
             future_to_url = {
                 executor.submit(extract_decree_details, url): url for url in decree_links_to_process
             }
-    
+
             for i, future in enumerate(as_completed(future_to_url)):
                 url = future_to_url[future]
                 try:
@@ -92,7 +92,7 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
                 except Exception as exc:
                     log(f"{url} gerou uma exceção: {exc}")
                     raise exc
-    
+
         # Buscando o botão para a próxima página de pesquisa
         pagination_buttons = driver.find_elements(by=By.CLASS_NAME, value="pagination-button")
         next_btn = None
@@ -127,7 +127,7 @@ def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
 
     if dou_infos:
         rows = len(dou_infos)
-        df = pd.DataFrame(dou_infos) 
+        df = pd.DataFrame(dou_infos)
         df["extracted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log(f"Realizando upload de {rows} registros no datalake em {dataset}...")
 
