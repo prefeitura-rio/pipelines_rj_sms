@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import re
-import time
-from typing import Optional
-
 import requests
-from bs4 import BeautifulSoup
 
-from pipelines.datalake.extract_load.tribunal_de_contas_rj.dns import (
+from bs4 import BeautifulSoup
+from typing import List, Tuple, Union, Optional
+from unidecode import unidecode
+
+from .dns import (
     HostHeaderSSLAdapter,
 )
 from pipelines.utils.logger import log
@@ -24,9 +24,9 @@ def split_case_number(case_num: str) -> tuple:
     return (sec, num, year)
 
 
-def send_request(method: str, url: str, data: Optional[dict] = None):
+def send_request(method: str, url: str, data: Optional[dict] = None, expected_type: str = "html") -> Tuple[Union[str, Optional[BeautifulSoup]]]:
     method = method.strip().upper()
-    log(f"Sending {method} request expecting 'text/html' response: {url}")
+    log(f"Sending {method} request expecting '{expected_type}' response: {url}")
 
     # Alguns servidores de DNS parecem não ter o IP do site do TCM
     # Quando isso acontece, ficamos presos em ConnectionError
@@ -41,18 +41,30 @@ def send_request(method: str, url: str, data: Optional[dict] = None):
     elif method == "GET":
         res = session.get(url=url)
     res.raise_for_status()
-
     # [Ref] https://stackoverflow.com/a/52615216/4824627
     res.encoding = res.apparent_encoding
 
+    ALLOWED_CONTENT_TYPES = ["application/json", "text/html"]
+
     # Precisamos quebrar em ';' porque às vezes termina em '; charset=UTF-8'
     ct = res.headers["Content-Type"].split(";")[0].lower()
-    if ct != "text/html":
-        log(f"Expected Content-Type 'text/html'; got '{ct}' for URL '{url}'", level="warning")
-        return None
+    if ct not in ALLOWED_CONTENT_TYPES:
+        log(f"Got disallowed Content-Type '{ct}' for URL '{url}'", level="warning")
+        return (res.url, None)
 
-    log(f"Got HTML response of size {len(res.text)}")
-    return BeautifulSoup(res.text, "html.parser")
+    if expected_type == "json":
+        if ct != "application/json":
+            log(f"Expected Content-Type 'application/json'; got '{ct}'", level="warning")
+        log(f"Got response of size {len(res.text)}")
+        return (res.url, res.json())
+
+    if expected_type == "html":
+        if ct != "text/html":
+            log(f"Expected Content-Type 'text/html'; got '{ct}'", level="warning")
+        log(f"Got response of size {len(res.text)}")
+        return (res.url, BeautifulSoup(res.text, "html.parser"))
+
+    return (res.url, res.text)
 
 
 def find_h5_from_text(root: BeautifulSoup, match: str):
@@ -73,3 +85,62 @@ def get_table_rows_from_h5(h5: BeautifulSoup):
         return None
     # Retorna todos os <tr> em <tbody>
     return table.find("tbody").find_all("tr")
+
+
+def cleanup_text(text: str) -> str:
+    text = str(text)
+
+    EMPTY = ""
+    SPACE = " "
+    replace_pairs = [
+        ("\u00AD", EMPTY),  # Soft Hyphen
+        ("\u200C", EMPTY),  # Zero Width Non-Joiner
+        ("\t", SPACE),  # Tab
+        ("\n", SPACE),  # Line feed
+        ("\u00A0", SPACE),  # No-Break Space
+    ]
+    for pair in replace_pairs:
+        text = text.replace(pair[0], pair[1])
+
+    # NULL, \r, etc
+    text = re.sub(r"[\u0000-\u001F]", EMPTY, text)
+    # DEL, outros de controle
+    text = re.sub(r"[\u007F-\u009F]", EMPTY, text)
+    # Espaços de tamanhos diferentes
+    text = re.sub(r"[\u2000-\u200B\u202F\u205F]", SPACE, text)
+    # LTR/RTL marks, overrides
+    text = re.sub(r"[\u200E-\u202E]", EMPTY, text)
+    # Espaços repetidos
+    text = re.sub(r"\s+", SPACE, text)
+
+    return text.strip()
+
+def get_counselors_initials() -> List[str]:
+    # Página de conselheiros
+    (_, html) = send_request(
+        "GET", "https://www.tcmrio.tc.br/web/site/Destaques.aspx?group=Conselheiros"
+    )
+    # Remove conselheiros aposentados
+    html.find("div", {"id": "galeria_conselheiros"}).decompose()
+    # Nomes completos de conselheiros
+    counselors_full = [
+        span.get_text().strip()
+        for span in html.find_all("span", {"class": "conselheiros"})
+    ]
+    # Iniciais de conselheiros
+    counselors = [
+        # Pega somente letras maiúsculas
+        re.sub(r"[^A-Z]", "",
+            # Remove acentos (ex.: 'Á' -> 'A')
+            unidecode(counselor, replace_str="")
+        )
+        for counselor in counselors_full
+    ]
+    logstr = ', '.join(
+        [
+            f"{full_name} ({initials})"
+            for full_name, initials in zip(counselors_full, counselors)
+        ]
+    )
+    log(f"Found {len(counselors_full)} counselors: {logstr}")
+    return counselors

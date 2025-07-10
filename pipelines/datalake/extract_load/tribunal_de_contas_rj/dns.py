@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import ipaddress
 import re
+import requests
 import socket
 
-import requests
+from pipelines.utils.logger import log
 
 
 # [Ref] https://stackoverflow.com/a/57477670/4824627
@@ -13,10 +14,18 @@ class HostHeaderSSLAdapter(requests.adapters.HTTPAdapter):
     def resolve(self, hostname):
         # Tentamos vários servidores em busca de um que tenha o IP do site
         dns_servers = [
-            "1.1.1.1",  # Cloudflare
-            "8.8.8.8",  # Google
-            "9.9.9.9",  # Quad9
-            "208.67.222.222",  # OpenDNS
+            # Cloudflare
+            "1.1.1.1",
+            "1.0.0.1",
+            # Google
+            "8.8.8.8",
+            "8.8.4.4",
+            # Quad9
+            "9.9.9.10",
+            "149.112.112.10",
+            # OpenDNS
+            "208.67.222.222",
+            "208.67.220.220",
         ]
         for server in dns_servers:
             results = dns_lookup(hostname, server)
@@ -175,7 +184,7 @@ def parse_dns_response(res, dq_len, req):
     return result
 
 
-def dns_lookup(domain: str, address: str):
+def dns_lookup(domain: str, address: str) -> dict:
     dns_query = make_dns_query_domain(domain)
     dq_len = len(dns_query)
 
@@ -187,8 +196,9 @@ def dns_lookup(domain: str, address: str):
         sock.sendto(req, (address, 53))
         res, _ = sock.recvfrom(1024 * 4)
         result = parse_dns_response(res, dq_len, req)
-    except Exception:
-        return
+    except Exception as e:
+        log(f"Error fetching DNS records for '{domain}' from server '{address}:53': {repr(e)}", level="warning")
+        return dict()
     finally:
         sock.close()
 
