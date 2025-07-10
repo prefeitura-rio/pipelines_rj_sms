@@ -93,6 +93,15 @@ TABELAS_CONFIG = [
     ("protagonistas", "subpav_acesso_mais_seguro", "monthly"),
     ("riscos", "subpav_acesso_mais_seguro", "monthly"),
     ("status", "subpav_acesso_mais_seguro", "monthly"),
+    # Onde ser Atendido
+    (
+        "unidades_osa",
+        "views_ipp",
+        "monthly",
+        {
+            "id_column": "CNES",
+        },
+    ),
 ]
 
 
