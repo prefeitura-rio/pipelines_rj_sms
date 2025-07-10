@@ -17,7 +17,6 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     define_queries,
     run_query,
 )
-from pipelines.utils.flow import Flow
 from pipelines.utils.basics import as_dict, is_null_or_empty
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -25,12 +24,14 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
+from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.progress import (
     get_remaining_operators,
     load_operators_progress,
     save_operator_progress,
 )
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     create_folder,
     get_bigquery_project_from_environment,
@@ -39,14 +40,13 @@ from pipelines.utils.tasks import (
     rename_current_flow_run,
     upload_df_to_datalake,
 )
-from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Operator",
     state_handlers=[handle_flow_state_change],
     owners=[
         global_constants.HERIAN_ID.value,
-    ]
+    ],
 ) as datalake_extract_vitai_db_operator:
     #####################################
     # Tasks section #0 - Params
@@ -163,7 +163,7 @@ with Flow(
     state_handlers=[handle_flow_state_change],
     owners=[
         global_constants.HERIAN_ID.value,
-    ]
+    ],
 ) as datalake_extract_vitai_db_manager:
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     WINDOW_SIZE = Parameter("window_size", default=7)
