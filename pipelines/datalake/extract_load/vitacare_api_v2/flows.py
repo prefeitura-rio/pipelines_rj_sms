@@ -13,6 +13,7 @@ from pipelines.datalake.extract_load.vitacare_api_v2.tasks import (
     extract_data,
     generate_endpoint_params,
 )
+from pipelines.datalake.extract_load.vitacare_api_v2.schedules import schedules
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import rename_current_flow_run, upload_df_to_datalake
@@ -74,6 +75,7 @@ with Flow(
     )
 
 
+sms_vitacare_api_v2.schedule = schedules
 sms_vitacare_api_v2.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_vitacare_api_v2.executor = LocalDaskExecutor(num_workers=5)
 sms_vitacare_api_v2.run_config = KubernetesRun(
