@@ -39,7 +39,6 @@ with Flow(
     dou_infos = dou_extraction(date=date, dou_section=DOU_SECTION, max_workers=MAX_WORKERS)
     upload_to_datalake(dou_infos=dou_infos, environment=ENVIRONMENT, dataset=DATASET_ID)
 
-
 # Flow configs
 extract_diario_oficial_uniao.schedule = schedule
 extract_diario_oficial_uniao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
