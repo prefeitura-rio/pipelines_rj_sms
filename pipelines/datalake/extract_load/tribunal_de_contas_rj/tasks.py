@@ -9,17 +9,18 @@ import pytz
 from bs4 import BeautifulSoup
 from requests import HTTPError
 
-from .utils import (
-    cleanup_text,
-    find_h5_from_text,
-    get_table_rows_from_h5,
-    send_request,
-    split_case_number,
-    get_counselors_initials,
-)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
+
+from .utils import (
+    cleanup_text,
+    find_h5_from_text,
+    get_counselors_initials,
+    get_table_rows_from_h5,
+    send_request,
+    split_case_number,
+)
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30), nout=2)
@@ -127,7 +128,9 @@ def get_latest_vote(ctid: str):
     # Portanto, precisamos das iniciais dos conselheiros
     initials = get_counselors_initials()
 
-    def get_table_contents_from_h5_text(root: BeautifulSoup, match: str, throw: Optional[str] = None):
+    def get_table_contents_from_h5_text(
+        root: BeautifulSoup, match: str, throw: Optional[str] = None
+    ):
         # Encontra <h5> com o conteúdo textual especificado
         h5 = find_h5_from_text(root, match)
         if h5 is None:

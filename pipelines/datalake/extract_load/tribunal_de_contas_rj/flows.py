@@ -8,13 +8,12 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from .constants import (
-    constants as flow_constants,
-)
+
+from .constants import constants as flow_constants
 from .tasks import (
     fetch_case_page,
-    scrape_case_info_from_page,
     get_latest_vote,
+    scrape_case_info_from_page,
     upload_results,
 )
 

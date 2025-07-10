@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 import re
-import requests
+from typing import List, Optional, Tuple, Union
 
+import requests
 from bs4 import BeautifulSoup
-from typing import List, Tuple, Union, Optional
 from unidecode import unidecode
 
-from .dns import (
-    HostHeaderSSLAdapter,
-)
 from pipelines.utils.logger import log
+
+from .dns import HostHeaderSSLAdapter
 
 
 def split_case_number(case_num: str) -> tuple:
@@ -24,7 +23,9 @@ def split_case_number(case_num: str) -> tuple:
     return (sec, num, year)
 
 
-def send_request(method: str, url: str, data: Optional[dict] = None, expected_type: str = "html") -> Tuple[Union[str, Optional[BeautifulSoup]]]:
+def send_request(
+    method: str, url: str, data: Optional[dict] = None, expected_type: str = "html"
+) -> Tuple[Union[str, Optional[BeautifulSoup]]]:
     method = method.strip().upper()
     log(f"Sending {method} request expecting '{expected_type}' response: {url}")
 
@@ -115,6 +116,7 @@ def cleanup_text(text: str) -> str:
 
     return text.strip()
 
+
 def get_counselors_initials() -> List[str]:
     # Página de conselheiros
     (_, html) = send_request(
@@ -124,23 +126,21 @@ def get_counselors_initials() -> List[str]:
     html.find("div", {"id": "galeria_conselheiros"}).decompose()
     # Nomes completos de conselheiros
     counselors_full = [
-        span.get_text().strip()
-        for span in html.find_all("span", {"class": "conselheiros"})
+        span.get_text().strip() for span in html.find_all("span", {"class": "conselheiros"})
     ]
     # Iniciais de conselheiros
     counselors = [
         # Pega somente letras maiúsculas
-        re.sub(r"[^A-Z]", "",
+        re.sub(
+            r"[^A-Z]",
+            "",
             # Remove acentos (ex.: 'Á' -> 'A')
-            unidecode(counselor, replace_str="")
+            unidecode(counselor, replace_str=""),
         )
         for counselor in counselors_full
     ]
-    logstr = ', '.join(
-        [
-            f"{full_name} ({initials})"
-            for full_name, initials in zip(counselors_full, counselors)
-        ]
+    logstr = ", ".join(
+        [f"{full_name} ({initials})" for full_name, initials in zip(counselors_full, counselors)]
     )
     log(f"Found {len(counselors_full)} counselors: {logstr}")
     return counselors

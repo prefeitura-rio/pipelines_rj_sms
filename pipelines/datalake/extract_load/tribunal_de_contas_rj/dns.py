@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import ipaddress
 import re
-import requests
 import socket
+
+import requests
 
 from pipelines.utils.logger import log
 
@@ -197,7 +198,10 @@ def dns_lookup(domain: str, address: str) -> dict:
         res, _ = sock.recvfrom(1024 * 4)
         result = parse_dns_response(res, dq_len, req)
     except Exception as e:
-        log(f"Error fetching DNS records for '{domain}' from server '{address}:53': {repr(e)}", level="warning")
+        log(
+            f"Error fetching DNS records for '{domain}' from server '{address}:53': {repr(e)}",
+            level="warning",
+        )
         return dict()
     finally:
         sock.close()
