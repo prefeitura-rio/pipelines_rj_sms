@@ -88,4 +88,4 @@ routine_clocks = generate_dump_api_schedules(
     runs_interval_minutes=60,
 )
 
-vitacare_daily_update_schedule = Schedule(clocks=untuple_clocks(routine_clocks))
+schedules = Schedule(clocks=untuple_clocks(routine_clocks))
