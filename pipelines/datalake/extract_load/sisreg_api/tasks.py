@@ -5,6 +5,7 @@ Tarefas
 
 # Geral
 import sys
+import time
 from datetime import timedelta
 from typing import Any, Dict
 
@@ -17,7 +18,6 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.monitor import send_message
-import time
 
 
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
@@ -25,7 +25,9 @@ def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     return {**fonte}
 
 
-def checa_completude(dados_processados: int, total_registros: int, data_inicial: str, data_final: str):
+def checa_completude(
+    dados_processados: int, total_registros: int, data_inicial: str, data_final: str
+):
     """
     Valida se a diferença entre registros esperados e processados
     excede 5 %. Se exceder, dispara erro.
