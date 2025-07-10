@@ -10,8 +10,8 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 # internos
-from prefeitura_rio.pipelines_utils.custom import Flow
-
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.centralregulacao_mysql.schedules import schedule
 from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
@@ -20,7 +20,13 @@ from pipelines.datalake.extract_load.centralregulacao_mysql.tasks import (
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
-with Flow(name=" SUBGERAL - Extract & Load - Central de Regulação (MySQL) ") as sms_cr_mysql:
+with Flow(
+    name=" SUBGERAL - Extract & Load - Central de Regulação (MySQL) ",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.MATHEUS_ID.value,
+    ]
+) as sms_cr_mysql:
     # PARAMETROS #
     # AMBIENTE ------------------------------
     ENVIRONMENT = Parameter("environment", default="dev")
