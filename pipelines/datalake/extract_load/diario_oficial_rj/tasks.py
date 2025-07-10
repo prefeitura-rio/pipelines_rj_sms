@@ -151,7 +151,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
         "materia_id": id,
         "secao": folder_path,
         "titulo": title,
-        "html": html.body,
+        "html": str(html.body),
     }
 
     # Remove elementos inline comuns (<b>, <i>, <span>)
@@ -159,7 +159,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
     # Faz parsing do conteúdo para deixar tudo estruturado
     content_list = parse_do_contents(clean_html.body)
 
-    log(f"Article '{title}' (id '{id}') has size {len(content_list)} block(s)")
+    log(f"Article '{title}' (id '{id}') has {len(content_list)} block(s)")
     ret = {
         **base_result,
         "sections": [
