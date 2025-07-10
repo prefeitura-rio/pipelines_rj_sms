@@ -30,7 +30,6 @@ def extract_decree_details(text_link_href: str) -> dict:
         soup = BeautifulSoup(response.text, "html.parser")
 
         decree_title = soup.find(class_='portlet-title-text border-bottom-0')
-        print(decree_title.text) ###########3 tirar essa linha ###########
         decree_text = soup.find(class_="texto-dou")
         decree_date = soup.find(class_="publicado-dou-data")
         decree_edition = soup.find(class_="edicao-dou-data")
