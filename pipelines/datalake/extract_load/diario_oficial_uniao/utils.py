@@ -29,7 +29,8 @@ def extract_decree_details(text_link_href: str) -> dict:
         response = session.get(text_link_href)
         soup = BeautifulSoup(response.text, "html.parser")
 
-        decree_title = soup.find(clas_='portlet-title-text')
+        decree_title = soup.find(class_='portlet-title-text border-bottom-0')
+        print(decree_title.text) ###########3 tirar essa linha ###########
         decree_text = soup.find(class_="texto-dou")
         decree_date = soup.find(class_="publicado-dou-data")
         decree_edition = soup.find(class_="edicao-dou-data")
@@ -38,7 +39,7 @@ def extract_decree_details(text_link_href: str) -> dict:
         decree_agency = soup.find(class_="orgao-dou-data")
 
         return {
-            'title': decree_title if decree_title else "",
+            'title': decree_title.text if decree_title else "",
             "published_at": decree_date.text if decree_date else "",
             "edition": decree_edition.text if decree_edition else "",
             "section": decree_section.text if decree_section else "",

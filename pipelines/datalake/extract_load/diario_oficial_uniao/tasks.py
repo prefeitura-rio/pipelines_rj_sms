@@ -127,7 +127,7 @@ def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
 
     if dou_infos:
         rows = len(dou_infos)
-        df = pd.DataFrame(dou_infos)
+        df = pd.DataFrame(dou_infos) 
         df["extracted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log(f"Realizando upload de {rows} registros no datalake em {dataset}...")
 
