@@ -19,7 +19,7 @@ flow_parameters = [
     {
         "environment": "prod",
         "es_index": "solicitacao-ambulatorial-rj",
-        "page_size": 5_000,
+        "page_size": 2_500,
         "scroll_timeout": "10m",
         "filters": {"codigo_central_reguladora": "330455"},
         "data_inicial": "2018-01-01",
@@ -32,7 +32,7 @@ flow_parameters = [
     {
         "environment": "prod",
         "es_index": "marcacao-ambulatorial-rj",
-        "page_size": 5_000,
+        "page_size": 2_500,
         "scroll_timeout": "10m",
         "filters": {"codigo_central_reguladora": "330455"},
         "data_inicial": "2018-01-01",

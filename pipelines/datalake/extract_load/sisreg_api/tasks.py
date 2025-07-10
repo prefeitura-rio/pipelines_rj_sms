@@ -17,6 +17,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.monitor import send_message
+import time
 
 
 def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
@@ -24,7 +25,7 @@ def processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     return {**fonte}
 
 
-def checa_completude(dados_processados: int, total_registros: int):
+def checa_completude(dados_processados: int, total_registros: int, data_inicial: str, data_final: str):
     """
     Valida se a diferença entre registros esperados e processados
     excede 5 %. Se exceder, dispara erro.
@@ -46,7 +47,8 @@ def checa_completude(dados_processados: int, total_registros: int):
     if total_registros == 0 or porcent_diff > 0.05:
         mensagem_erro = (
             f"Divergência na contagem de registros processados — "
-            f"Esperado: {total_registros}, Obtido: {processados}"
+            f"Esperado: {total_registros}, Obtido: {processados} "
+            f"(Intervalo: {data_inicial} a {data_final})"
         )
         log(mensagem_erro)
 
@@ -142,9 +144,22 @@ def full_extract_process(
     log(f"Processados {len(dados_processados)}/{total_registros} registros (lote inicial)")
 
     # Lógica de paginação / scroll
+
     scroll_ids = [scroll_id] if scroll_id else []
     while len(dados_processados) < total_registros:
-        resposta = es.scroll(scroll_id=scroll_id, scroll=scroll_timeout)
+        retries = 0
+        while retries < 5:
+            resposta = es.scroll(scroll_id=scroll_id, scroll=scroll_timeout)
+            if resposta.get("timed_out", False):
+                log(f"Scroll timed out (tentativa {retries + 1}/5). Retentando em 60s...")
+                time.sleep(60)
+                retries += 1
+            else:
+                break
+        if resposta.get("timed_out", False):
+            log("Scroll falhou após 5 tentativas devido a timeout.")
+            raise RuntimeError("Scroll falhou após múltiplos timeouts.")
+
         new_scroll_id = resposta.get("_scroll_id")
         if new_scroll_id:
             scroll_ids.append(new_scroll_id)
@@ -159,7 +174,7 @@ def full_extract_process(
     es.options(ignore_status=(404,)).clear_scroll(scroll_id=scroll_ids)
     log("Scroll encerrado com sucesso.")
 
-    checa_completude(dados_processados, total_registros)
+    checa_completude(dados_processados, total_registros, data_inicial, data_final)
 
     df = pd.DataFrame(dados_processados)
 
