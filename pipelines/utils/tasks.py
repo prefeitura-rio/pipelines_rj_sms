@@ -502,7 +502,7 @@ def cloud_function_request(
             payload = response.json()
 
             if "gcs_url" in payload:
-                gcs_url = payload["gcs_url"] 
+                gcs_url = payload["gcs_url"]
                 logger.info(f"[Cloud Function] GCS URL received. Downloading from: {gcs_url}")
 
                 try:
@@ -513,22 +513,23 @@ def cloud_function_request(
                     bucket_name = path_parts[0]
                     blob_name = path_parts[1]
 
-                    client = storage.Client() 
+                    client = storage.Client()
                     bucket = client.bucket(bucket_name)
                     blob = bucket.blob(blob_name)
 
-                    #Baixa o conteúdo do GCS
-                    downloaded_content = blob.download_as_text() 
-                    
+                    # Baixa o conteúdo do GCS
+                    downloaded_content = blob.download_as_text()
 
                     # Insere o conteúdo baixado de volta na chave 'body'
                     if api_type == "json":
-                        payload["body"] = json.loads(downloaded_content) 
+                        payload["body"] = json.loads(downloaded_content)
                     else:
-                        payload["body"] = downloaded_content 
+                        payload["body"] = downloaded_content
 
-                except Exception as gcs_e: 
-                    message = f"[Cloud Function] Failed to download data from GCS ({gcs_url}): {gcs_e}" 
+                except Exception as gcs_e:
+                    message = (
+                        f"[Cloud Function] Failed to download data from GCS ({gcs_url}): {gcs_e}"
+                    )
                     logger.error(message)
                     raise RuntimeError(message) from gcs_e
 
