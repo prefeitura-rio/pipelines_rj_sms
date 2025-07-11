@@ -83,7 +83,7 @@ def extract_data_from_api(
         query_params={"date": str(target_day), "cnes": cnes},
         credential={"username": username, "password": password},
         env=environment,
-        endpoint_for_filename=endpoint
+        endpoint_for_filename=endpoint,
     )
 
     if response["status_code"] != 200:

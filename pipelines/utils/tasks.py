@@ -483,7 +483,7 @@ def cloud_function_request(
     if query_params is None:
         query_params_for_cf = {}
     else:
-        query_params_for_cf = query_params.copy() # Cria uma cópia para não modificar o original
+        query_params_for_cf = query_params.copy()  # Cria uma cópia para não modificar o original
 
     if endpoint_for_filename:
         # Adiciona o descritor ao query_params sob uma chave específica
