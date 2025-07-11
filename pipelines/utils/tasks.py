@@ -461,7 +461,7 @@ def cloud_function_request(
 
     Returns:
         requests.Response: The response from the cloud function.
-    """  # noqa: E501 
+    """  # noqa: E501
 
     # Get Prefect Logger
     logger = prefect.context.get("logger")
