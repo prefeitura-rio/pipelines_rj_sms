@@ -34,6 +34,7 @@ def authenticate_and_fetch(
         api_type="xml",
         env=environment,
         credential=None,
+        endpoint_for_filename="lab_token"
     )
 
     if token_response.get("status_code") != 200:
@@ -75,6 +76,7 @@ def authenticate_and_fetch(
         api_type="xml",
         env=environment,
         credential=None,
+        endpoint_for_filename="lab_exames"
     )
 
     if resultado_response.get("status_code") != 200:

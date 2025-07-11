@@ -446,6 +446,7 @@ def cloud_function_request(
     query_params: dict = None,
     env: str = "dev",
     api_type: str = "json",
+    endpoint_for_filename: str = None,
 ):
     """
     Sends a request to an endpoint trough a cloud function.
@@ -477,12 +478,23 @@ def cloud_function_request(
     request = google.auth.transport.requests.Request()
     TOKEN = google.oauth2.id_token.fetch_id_token(request, cloud_function_url)
 
+    # Prepara query_params para incluir o filename_descriptor
+    # Garante que query_params é um dicionário mutável
+    if query_params is None:
+        query_params_for_cf = {}
+    else:
+        query_params_for_cf = query_params.copy() # Cria uma cópia para não modificar o original
+
+    if endpoint_for_filename:
+        # Adiciona o descritor ao query_params sob uma chave específica
+        query_params_for_cf["_endpoint_for_filename"] = endpoint_for_filename
+
     payload = {
         "tipo_api": api_type,
         "url": url,
         "request_type": request_type,
         "body_params": body_params,
-        "query_params": query_params,
+        "query_params": query_params_for_cf,
         "credential": credential,
     }
 
