@@ -21,6 +21,8 @@ from pipelines.datalake.transform.gemini.pacientes_restritos.tasks import (
     parse_result_dataframe,
     reduce_raw_column,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     create_folders,
     get_secret_key,
@@ -28,14 +30,12 @@ from pipelines.utils.tasks import (
     rename_current_flow_run,
     upload_df_to_datalake,
 )
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
-        name="HCI - Transformação de dados - Detecção de pacientes restritos",
-        state_handlers=[handle_flow_state_change],
-        owners=[constants.VITORIA_ID.value]
-    ) as hci_pacientes_restritos:
+    name="HCI - Transformação de dados - Detecção de pacientes restritos",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.VITORIA_ID.value],
+) as hci_pacientes_restritos:
     #####################################
     # Parameters
     #####################################
