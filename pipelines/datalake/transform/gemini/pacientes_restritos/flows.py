@@ -28,8 +28,14 @@ from pipelines.utils.tasks import (
     rename_current_flow_run,
     upload_df_to_datalake,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
-with Flow(name="HCI - Detecção de pacientes restritos") as hci_pacientes_restritos:
+with Flow(
+        name="HCI - Transformação de dados - Detecção de pacientes restritos",
+        state_handlers=[handle_flow_state_change],
+        owners=[constants.VITORIA_ID.value]
+    ) as hci_pacientes_restritos:
     #####################################
     # Parameters
     #####################################
