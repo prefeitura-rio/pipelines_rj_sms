@@ -29,6 +29,7 @@ def extract_decree_details(text_link_href: str) -> dict:
         response = session.get(text_link_href)
         soup = BeautifulSoup(response.text, "html.parser")
 
+        decree_title = soup.find(class_="portlet-title-text border-bottom-0")
         decree_text = soup.find(class_="texto-dou")
         decree_date = soup.find(class_="publicado-dou-data")
         decree_edition = soup.find(class_="edicao-dou-data")
@@ -37,6 +38,7 @@ def extract_decree_details(text_link_href: str) -> dict:
         decree_agency = soup.find(class_="orgao-dou-data")
 
         return {
+            "title": decree_title.text if decree_title else "",
             "published_at": decree_date.text if decree_date else "",
             "edition": decree_edition.text if decree_edition else "",
             "section": decree_section.text if decree_section else "",
@@ -50,15 +52,5 @@ def extract_decree_details(text_link_href: str) -> dict:
     except Exception as e:
         log(f"Erro durante a extração de {text_link_href}: {str(e)}")
         raise e
-        return {
-            "published_at": f"Erro: {str(e)}",
-            "edition": f"Erro: {str(e)}",
-            "section": f"Erro: {str(e)}",
-            "agency": f"Erro: {str(e)}",
-            "page": f"Erro: {str(e)}",
-            "text": f"Erro: {str(e)}",
-            "html": f"Erro: {str(e)}",
-            "url": text_link_href,
-        }
     finally:
         session.close()
