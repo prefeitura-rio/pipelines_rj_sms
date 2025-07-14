@@ -404,6 +404,6 @@ cases:
       environment: "dev"
       rename_flow: True
       endpoint: "posicao"
-      dataset_id: "brutos_api_vitacare"
+      dataset_id: "brutos_prontuario_vitacare_api"
       table_id_prefix: "estoque_posicao"
       target_date: "D-0"
