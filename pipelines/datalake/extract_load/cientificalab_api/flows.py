@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime, timedelta
+
+import pytz
 from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-
-from datetime import datetime, timedelta
-import pytz
-
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.cientificalab_api.constants import (
@@ -38,7 +37,6 @@ with Flow(
 
     today_dt_inicio = f"{yesterday_date}T10:00:00-0300"
     today_dt_fim = f"{yesterday_date}T11:30:00-0300"
-
 
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", default=today_dt_inicio)
