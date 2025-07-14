@@ -11,12 +11,9 @@ from prefect.schedules import Schedule
 
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
+from pipelines.datalake.extract_load.cientificalab_api.utils import generate_3_windows
 
-flow_parameters = [
-    {
-        "environment": "prod",
-    }
-]
+flow_parameters = generate_3_windows()
 
 
 clocks = generate_dump_api_schedules(
