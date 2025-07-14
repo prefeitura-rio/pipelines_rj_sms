@@ -72,20 +72,13 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
         cards = driver.find_elements(by=By.CLASS_NAME, value="resultado")
 
         decree_links_to_process = []  # Lista para armazenar os links dos decretos
-        card_metadata = (
-            []
-        )  # Para armazenar title e outros dados que não dependem da requisição interna
 
+        # Pegando a url de cada ato na página de pesquisa
         for card in cards:
-            title = card.find_element(by=By.CLASS_NAME, value="title-marker")
-            info = card.find_element(
-                by=By.CLASS_NAME, value="breadcrumb-item.publication-info-marker"
-            )
             text_link = card.find_element(by=By.TAG_NAME, value="a")
-
             decree_links_to_process.append(text_link.get_attribute("href"))
-            card_metadata.append({"title": title.text, "info": info.text})
 
+        # Implementando extracao com concorrência
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_url = {
                 executor.submit(extract_decree_details, url): url for url in decree_links_to_process
@@ -95,13 +88,12 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
                 url = future_to_url[future]
                 try:
                     decree_details = future.result()
-                    # Combinar os metadados do card com os detalhes do decreto
-                    combined_item = {**card_metadata[i], **decree_details}
-                    items.append(combined_item)
+                    items.append(decree_details)
                 except Exception as exc:
                     log(f"{url} gerou uma exceção: {exc}")
                     raise exc
 
+        # Buscando o botão para a próxima página de pesquisa
         pagination_buttons = driver.find_elements(by=By.CLASS_NAME, value="pagination-button")
         next_btn = None
 
@@ -115,7 +107,7 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
             page_count += 1
             time.sleep(0.5)
         else:
-            break  # Chegou na última página da seção. Fim da extração
+            break  # Não há o botão para a próxima paǵina. Chegou na última página da seção, fim da extração
 
     driver.quit()
     log("✅ Extração finalizada.")
