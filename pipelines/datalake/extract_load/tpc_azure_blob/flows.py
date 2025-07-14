@@ -28,7 +28,7 @@ from pipelines.utils.tasks import create_folders, create_partitions, upload_to_d
 with Flow(
     name="DataLake - Extração e Carga de Dados - TPC",
     state_handlers=[handle_flow_state_change],
-    owners=[constants.DIT_ID.value],
+    owners=[constants.DANIEL_ID.value],
 ) as sms_dump_tpc:
     #####################################
     # Parameters
