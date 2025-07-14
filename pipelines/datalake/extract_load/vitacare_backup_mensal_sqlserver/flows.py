@@ -42,7 +42,6 @@ from pipelines.utils.tasks import (
 
 with Flow(
     "DataLake - Vitacare Historic - Table Operator",
-    description="Extrai e carrega dados do Vitacare Historic SQL Server para o BigQuery",
     state_handlers=[handle_flow_state_change],
     owners=[
         global_constants.DANIEL_ID.value,
@@ -103,7 +102,6 @@ with Flow(
 
 with Flow(
     "DataLake - Vitacare Historic - Manager",
-    description="Gerencia o processo de extração e carga de dados do Vitacare Historic SQL Server para o BigQuery",
     state_handlers=[handle_flow_state_change],
     owners=[
         global_constants.DANIEL_ID.value,
