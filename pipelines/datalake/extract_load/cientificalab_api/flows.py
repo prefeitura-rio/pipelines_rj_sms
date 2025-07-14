@@ -17,30 +17,22 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     transform,
 )
 from pipelines.utils.flow import Flow
+from pipelines.utils.time import from_relative_date
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import get_datetime_working_range
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - CientificaLab",
+    name="DataLake - Extração e Carga de Dados - CientificaLab (Operator)",
     state_handlers=[handle_flow_state_change],
     owners=[
         constants.DANIEL_ID.value,
     ],
 ) as flow_cientificalab:
 
-    local = pytz.timezone("America/Sao_Paulo")
-    today = datetime.now(local)
-    yesterday = today - timedelta(days=1)
-
-    yesterday_date = yesterday.strftime("%Y-%m-%d")
-
-    today_dt_inicio = f"{yesterday_date}T10:00:00-0300"
-    today_dt_fim = f"{yesterday_date}T11:30:00-0300"
-
     ENVIRONMENT = Parameter("environment", default="dev")
-    DT_INICIO = Parameter("dt_inicio", default=today_dt_inicio)
-    DT_FIM = Parameter("dt_fim", default=today_dt_fim)
+    DT_INICIO = Parameter("dt_inicio", default=None)
+    DT_FIM = Parameter("dt_fim", default=None)
 
     # INFISICAL
     INFISICAL_PATH = cientificalab_constants.INFISICAL_PATH.value
@@ -116,3 +108,27 @@ flow_cientificalab.run_config = KubernetesRun(
     ],
     memory_limit="4Gi",
 )
+
+
+with Flow(
+    name="DataLake - Extração e Carga de Dados - CientificaLab (Manager)",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DANIEL_ID.value,
+    ],
+) as flow_cientificalab_manager:
+    ENVIRONMENT = Parameter("environment", default="dev")
+    RELATIVE_DATE_FILTER = Parameter("relative_date_filter", default="D-1") #Y-1
+
+    date_filter = from_relative_date(relative_date=RELATIVE_DATE_FILTER)
+
+
+    # date_filer = '2024-01-01'
+
+    # Task que Cria janelas de '2025-01-01' até <HOJE>
+
+    # Task que cria lista de paramentros
+
+    # Task que cria flow runs
+
+    # Task que espera flow runs
