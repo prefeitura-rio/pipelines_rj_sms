@@ -4,7 +4,6 @@ from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao.schedules import schedule
@@ -13,9 +12,13 @@ from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     parse_date,
     upload_to_datalake,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - Diário Oficial da União"
+    name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.HERIAN_ID.value],
 ) as extract_diario_oficial_uniao:
     """
     Fluxo de extração e carga de atos oficiais do Diário Oficial da União (DOU).

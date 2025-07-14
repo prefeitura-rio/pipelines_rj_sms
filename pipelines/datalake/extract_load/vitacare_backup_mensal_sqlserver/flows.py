@@ -3,11 +3,12 @@
 """
 Flows de extração e carga de dados do Vitacare Historic SQL Server para o BigQuery
 """
-from prefect import Parameter, case, unmapped
+from prefect import Parameter, case
+from prefect import task as prefect_task
+from prefect import unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants as global_constants
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
@@ -30,14 +31,22 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
+from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     get_project_name,
     get_secret_key,
     rename_current_flow_run,
 )
 
-with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_historic_table_operator:
+with Flow(
+    "DataLake - Vitacare Historic - Table Operator",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        global_constants.DANIEL_ID.value,
+    ],
+) as flow_vitacare_historic_table_operator:
     TABLE_NAME = Parameter("TABLE_NAME", required=True)
     environment = Parameter("environment", default="staging", required=True)
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
@@ -91,7 +100,13 @@ with Flow("DataLake - Vitacare Historic - Table Operator") as flow_vitacare_hist
     )
 
 
-with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_manager:
+with Flow(
+    "DataLake - Vitacare Historic - Manager",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        global_constants.DANIEL_ID.value,
+    ],
+) as flow_vitacare_historic_manager:
     environment = Parameter("environment", default="staging")
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
     RENAME_FLOW = Parameter("RENAME_FLOW", default=True)
@@ -106,8 +121,6 @@ with Flow("DataLake - Vitacare Historic - Manager") as flow_vitacare_historic_ma
 
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
-
-    from prefect import task as prefect_task
 
     @prefect_task
     def build_operator_params(table_list: list, env: str, schema: str, part_col: str) -> list:

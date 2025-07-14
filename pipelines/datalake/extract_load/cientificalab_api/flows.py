@@ -3,7 +3,6 @@ from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.cientificalab_api.constants import (
@@ -14,11 +13,17 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     transform,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import get_datetime_working_range
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - CientificaLab",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DANIEL_ID.value,
+    ],
 ) as flow_cientificalab:
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
