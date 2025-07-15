@@ -8,23 +8,24 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.cientificalab_api.constants import (
     constants as cientificalab_constants,
 )
-from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
 from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
-    transform,
     generate_extraction_windows,
+    transform,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
-from pipelines.utils.time import get_datetime_working_range, from_relative_date
+from pipelines.utils.time import from_relative_date, get_datetime_working_range
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - CientificaLab (Operator)",
@@ -118,23 +119,21 @@ with Flow(
     owners=[constants.DANIEL_ID.value],
 ) as flow_cientificalab_manager:
 
-
     environment = Parameter("environment", default="staging", required=True)
     relative_date = Parameter("RELATIVE_DATE_FILTER", default="M-1", required=True)
 
-
     start_date = from_relative_date(relative_date=relative_date)
-
 
     all_windows = generate_extraction_windows(start_date=start_date)
 
-
     @task
     def build_operator_params(windows: list, env: str) -> list:
-        return [{"dt_inicio": w["dt_inicio"], "dt_fim": w["dt_fim"], "environment": env} for w in windows]
+        return [
+            {"dt_inicio": w["dt_inicio"], "dt_fim": w["dt_fim"], "environment": env}
+            for w in windows
+        ]
 
     operator_parameters = build_operator_params(windows=all_windows, env=environment)
-
 
     project_name = constants.GCP_PROJECT_ID.value
     current_labels = get_current_flow_labels()

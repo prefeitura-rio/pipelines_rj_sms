@@ -15,7 +15,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {
         "environment": "prod",
-        "RELATIVE_DATE_FILTER": "D-1", 
+        "RELATIVE_DATE_FILTER": "D-1",
     }
 ]
 

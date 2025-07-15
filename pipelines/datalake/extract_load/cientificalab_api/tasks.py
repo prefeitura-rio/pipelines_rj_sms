@@ -2,8 +2,8 @@
 import json
 import uuid
 from datetime import datetime, timedelta
-from typing import List, Dict
-from pipelines.utils.time import get_datetime_working_range 
+from typing import Dict, List
+
 import pandas as pd
 import pytz
 import requests
@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import cloud_function_request
+from pipelines.utils.time import get_datetime_working_range
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
@@ -42,11 +43,10 @@ def authenticate_and_fetch(
         message = f"Failed to get token from Lisnet API: {token_response.get('status_code')} - {token_response.get('body')}"
         raise Exception(message)
 
-
     # Body é uma string para api tipo 'xml'
     token_data_string = token_response.get("body")
     token_data = json.loads(token_data_string)
-    
+
     if token_data.get("status") != 200:
         message = f"Lisnet API returned error for token: {token_data.get('status')} - {token_data.get('mensagem')}"
         raise Exception(message)
@@ -184,13 +184,13 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
     """
 
     tz = pytz.timezone("America/Sao_Paulo")
-    
 
     if start_date.tzinfo is None:
         start_date = tz.localize(start_date)
 
-
-    end_date = tz.localize(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)) - timedelta(seconds=1)
+    end_date = tz.localize(
+        datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    ) - timedelta(seconds=1)
 
     windows = []
 
@@ -212,10 +212,12 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
                 timezone="America/Sao_Paulo",
             )
 
-            windows.append({
-                "dt_inicio": dt_inicio,
-                "dt_fim": dt_fim,
-            })
+            windows.append(
+                {
+                    "dt_inicio": dt_inicio,
+                    "dt_fim": dt_fim,
+                }
+            )
 
         current_date += timedelta(days=1)
 
