@@ -42,7 +42,11 @@ def authenticate_and_fetch(
         message = f"Failed to get token from Lisnet API: {token_response.get('status_code')} - {token_response.get('body')}"
         raise Exception(message)
 
-    token_data = token_response.get("body")
+
+    # Body é uma string para api tipo 'xml'
+    token_data_string = token_response.get("body")
+    token_data = json.loads(token_data_string)
+    
     if token_data.get("status") != 200:
         message = f"Lisnet API returned error for token: {token_data.get('status')} - {token_data.get('mensagem')}"
         raise Exception(message)
