@@ -243,6 +243,7 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
 
     section_index = -1
     block_index = -1
+    p_index = -1
     is_in_header = False
     skip_to_next_header = False
     new_block = False
@@ -252,13 +253,17 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         if len(text) <= 0:
             new_block = True
             continue
+        # Substituto de `i` em `for (i, p) in enumerate(...)`
+        # mas ignorando parágrafos vazios
+        p_index += 1
 
         # Se encontramos um parágrafo centralizado
         is_centered = (
             p.attrs.get("align") == "center"
             or re.search(r"text\-align\s*\:\s*center", p.attrs.get("style") or "") is not None
         )
-        if is_centered:
+        # Trata o primeiro parágrafo do texto sempre como um cabeçalho
+        if is_centered or p_index == 0:
             # Então estamos no início ou fim de uma seção
             # Se já não estávamos numa seção
             if not is_in_header:
@@ -269,6 +274,7 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
                 block_index = -1
                 sections[section_index] = {"header": [], "body": []}
             sections[section_index]["header"].append(text)
+            skip_to_next_header = False
             continue
 
         is_in_header = False
@@ -288,10 +294,11 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         while len(sections[section_index]["body"]) < (block_index + 1):
             sections[section_index]["body"].append([])
 
-        # Se encontramos um parágrafo com margem à esquerda (>=100 | >=90)
+        # Se encontramos um parágrafo com margem à esquerda (>=50pt)
+        # "Ah só precisa >90pt" vide 1171545
         has_left_margin = (
             re.search(
-                r"margin\-left\s*\:\s*([1-9][0-9][0-9]+|9[0-9])\.?", p.attrs.get("style") or ""
+                r"margin\-left\s*\:\s*(([1-9][0-9]*)?[5-9][0-9])\b", p.attrs.get("style") or ""
             )
             is not None
         )
