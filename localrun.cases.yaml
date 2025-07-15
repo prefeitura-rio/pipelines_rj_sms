@@ -397,3 +397,13 @@ cases:
       dou_section: 3
       max_workers: 10
       date: ""
+  - case_slug: "datalake-extract-load-vitacare-api-v2"
+    flow_path: "pipelines.datalake.extract_load.vitacare_api_v2.flows"
+    flow_name: "sms_vitacare_api_v2"
+    params:
+      environment: "dev"
+      rename_flow: True
+      endpoint: "posicao"
+      dataset_id: "brutos_prontuario_vitacare_api"
+      table_id_prefix: "estoque_posicao"
+      target_date: "D-0"
