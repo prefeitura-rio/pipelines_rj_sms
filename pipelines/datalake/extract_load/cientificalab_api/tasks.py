@@ -2,7 +2,8 @@
 import json
 import uuid
 from datetime import datetime, timedelta
-
+from typing import List, Dict
+from pipelines.utils.time import get_datetime_working_range 
 import pandas as pd
 import pytz
 import requests
@@ -169,3 +170,49 @@ def transform(resultado_xml: str):
         df["datalake_loaded_at"] = now
 
     return solicitacoes_df, exames_df, resultados_df
+
+
+@task
+def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]]:
+    """
+    Gera janelas de extração de 8 horas por dia a partir de start_date até ontem.
+    Retorna lista de dicionários com dt_inicio e dt_fim formatados (ex: YYYY-MM-DDTHH:MM:SS-0300)
+    """
+
+    tz = pytz.timezone("America/Sao_Paulo")
+    
+
+    if start_date.tzinfo is None:
+        start_date = tz.localize(start_date)
+
+
+    end_date = tz.localize(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)) - timedelta(seconds=1)
+
+    windows = []
+
+    current_date = start_date
+    while current_date <= end_date:
+        for hour_ranges in [
+            ("00:00:01", "08:00:00"),
+            ("08:00:01", "16:00:00"),
+            ("16:00:01", "23:59:59"),
+        ]:
+            start_time = f"{current_date.date()} {hour_ranges[0]}"
+            end_time = f"{current_date.date()} {hour_ranges[1]}"
+
+            dt_inicio, dt_fim = get_datetime_working_range.run(
+                start_datetime=start_time,
+                end_datetime=end_time,
+                interval=1,
+                return_as_str=True,
+                timezone="America/Sao_Paulo",
+            )
+
+            windows.append({
+                "dt_inicio": dt_inicio,
+                "dt_fim": dt_fim,
+            })
+
+        current_date += timedelta(days=1)
+
+    return windows
