@@ -102,7 +102,7 @@ with Flow(
         upstream_tasks=[exames_upload_task],
     )
 
-flow_cientificalab.schedule = schedule
+
 flow_cientificalab.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 flow_cientificalab.executor = LocalDaskExecutor(num_workers=3)
 flow_cientificalab.run_config = KubernetesRun(
@@ -152,7 +152,7 @@ with Flow(
         raise_final_state=unmapped(False),
     )
 
-
+flow_cientificalab_manager.schedule = schedule
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=1)
 flow_cientificalab_manager.run_config = KubernetesRun(
