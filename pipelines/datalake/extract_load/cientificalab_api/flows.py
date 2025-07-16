@@ -150,9 +150,7 @@ flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=1)
 flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
-    labels=[
-        constants.RJ_SMS_AGENT_LABEL.value
-        ],
+    labels=[constants.RJ_SMS_AGENT_LABEL.value],
     memory_limit="2Gi",
     memory_request="1Gi",
 )
