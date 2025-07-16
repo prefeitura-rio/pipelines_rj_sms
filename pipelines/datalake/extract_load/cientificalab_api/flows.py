@@ -107,15 +107,6 @@ with Flow(
     )
 
 
-flow_cientificalab_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=3)
-flow_cientificalab_operator.run_config = KubernetesRun(
-    image=constants.DOCKER_IMAGE.value,
-    labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
-    ],
-    memory_limit="4Gi",
-)
 
 with Flow(
     "DataLake - CientificaLab Historic - Manager",
@@ -163,6 +154,16 @@ flow_cientificalab_manager.run_config = KubernetesRun(
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
     memory_limit="2Gi",
     memory_request="1Gi",
+)
+
+flow_cientificalab_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=3)
+flow_cientificalab_operator.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="4Gi",
 )
 
 flow_cientificalab_manager.schedule = schedule
