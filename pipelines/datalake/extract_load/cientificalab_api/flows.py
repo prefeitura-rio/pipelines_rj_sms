@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.cientificalab_api.constants import (
@@ -11,20 +18,24 @@ from pipelines.datalake.extract_load.cientificalab_api.constants import (
 from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
 from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
+    build_operator_params,
+    generate_extraction_windows,
     transform,
 )
 from pipelines.utils.flow import Flow
+from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.utils.tasks import get_project_name, get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import get_datetime_working_range
+from pipelines.utils.time import from_relative_date
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - CientificaLab",
+    name="DataLake - Extração e Carga de Dados - CientificaLab (Operator)",
     state_handlers=[handle_flow_state_change],
     owners=[
         constants.DANIEL_ID.value,
     ],
-) as flow_cientificalab:
+) as flow_cientificalab_operator:
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     DT_FIM = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
@@ -93,13 +104,61 @@ with Flow(
         upstream_tasks=[exames_upload_task],
     )
 
-flow_cientificalab.schedule = schedule
-flow_cientificalab.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab.executor = LocalDaskExecutor(num_workers=3)
-flow_cientificalab.run_config = KubernetesRun(
+with Flow(
+    "DataLake - Extração e Carga de Dados - CientificaLab (Manager)",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DANIEL_ID.value,
+    ],
+) as flow_cientificalab_manager:
+    environment = Parameter("environment", default="dev")
+    relative_date_filter = Parameter("relative_date", default='D-1')
+
+    prefect_project_name = get_project_name(environment=environment)
+
+    current_labels = get_current_flow_labels()
+
+    date_filter = from_relative_date(relative_date=relative_date_filter)
+    windows = generate_extraction_windows(start_date=date_filter)
+    
+    operator_parameters = build_operator_params(
+        windows=windows,
+        env=environment
+    )    
+
+    created_operator_runs = create_flow_run.map(
+        flow_name=unmapped(flow_cientificalab_operator.name),
+        project_name=unmapped(prefect_project_name),
+        parameters=operator_parameters,
+        labels=unmapped(current_labels),
+        run_name=unmapped(None),
+    )
+
+    wait_for_operator_runs = wait_for_flow_run.map(
+        flow_run_id=created_operator_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(False),
+    )
+
+flow_cientificalab_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=3)
+flow_cientificalab_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="4Gi",
 )
+
+flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=1)
+flow_cientificalab_manager.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="2Gi",
+)
+
+flow_cientificalab_manager.schedule = schedule

@@ -218,3 +218,17 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
         current_date += timedelta(days=1)
 
     return windows
+
+@task
+def build_operator_params(
+    windows: List[Dict[str, str]],
+    env: str,
+) -> List[Dict[str, str]]:
+    return [
+        {
+            "dt_inicio": window["dt_inicio"],
+            "dt_fim": window["dt_fim"],
+            "environment": env,
+        }
+        for window in windows
+    ]
