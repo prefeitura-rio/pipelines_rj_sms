@@ -10,6 +10,7 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_rj.constants import (
     constants as flow_constants,
 )
+
 # from pipelines.datalake.extract_load.diario_oficial_rj.schedules import daily_schedule
 from pipelines.datalake.extract_load.diario_oficial_rj.tasks import (
     get_article_contents,
