@@ -151,7 +151,7 @@ flow_cientificalab_operator.run_config = KubernetesRun(
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=6)
+flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=1)
 flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
