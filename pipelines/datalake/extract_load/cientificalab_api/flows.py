@@ -42,7 +42,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     DT_FIM = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
-    RENAME_FLOW = Parameter("rename_flow", default=False)
+    RENAME_FLOW = Parameter("rename_flow", default=True)
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
@@ -156,7 +156,8 @@ flow_cientificalab_operator.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="4Gi",
+    memory_limit="6Gi",
+    memory_request="6Gi",
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
@@ -167,6 +168,7 @@ flow_cientificalab_manager.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="2Gi",
+    memory_request="2Gi",
 )
 
 flow_cientificalab_manager.schedule = schedule

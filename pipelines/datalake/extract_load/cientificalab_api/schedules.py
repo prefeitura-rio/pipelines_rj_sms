@@ -16,6 +16,8 @@ flow_manager_parameters = [
     {
         "environment": "prod",
         "relative_date": "D-1",
+        "dataset_id": "brutos_cientificalab",
+        "rename_flow": True,
     }
 ]
 
