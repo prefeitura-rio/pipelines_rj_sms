@@ -114,7 +114,7 @@ with Flow(
 ) as flow_cientificalab_manager:
 
     environment = Parameter("environment", default="dev", required=True)
-    relative_date = Parameter("RELATIVE_DATE_FILTER", default="D-1", required=True)
+    relative_date = Parameter("relative_date", default="D-1", required=True)
 
     start_date = from_relative_date(relative_date=relative_date)
 
@@ -150,7 +150,9 @@ flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=1)
 flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
-    labels=[constants.RJ_SMS_AGENT_LABEL.value],
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value
+        ],
     memory_limit="2Gi",
     memory_request="1Gi",
 )
@@ -163,6 +165,7 @@ flow_cientificalab_operator.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="4Gi",
+    memory_request="1Gi",
 )
 
 flow_cientificalab_manager.schedule = schedule

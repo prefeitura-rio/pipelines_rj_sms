@@ -340,6 +340,12 @@ cases:
       bq_table: 'marcacoes'
       dias_por_faixa: 30
       formato_data: '%Y-%m-%d'
+  - case_slug: "cientificalab_api_manager"
+    flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
+    flow_name: "flow_cientificalab_manager"
+    params:
+      environment: 'dev'
+      relative_date: 'D-1'
   - case_slug: "cientificalab_api"
     flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
     flow_name: "flow_cientificalab"
