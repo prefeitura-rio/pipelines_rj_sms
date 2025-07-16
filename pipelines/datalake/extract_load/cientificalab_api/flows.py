@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prefect import Parameter, unmapped
+from prefect import Parameter, unmapped, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -15,6 +15,7 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     generate_extraction_windows,
     transform,
 )
+from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
@@ -41,6 +42,15 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     DT_FIM = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
+    RENAME_FLOW = Parameter("rename_flow", default=False)
+    
+
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(
+            environment=ENVIRONMENT,
+            dt_inicio=DT_INICIO,
+            dt_fim=DT_FIM,
+        )
 
     # INFISICAL
     INFISICAL_PATH = cientificalab_constants.INFISICAL_PATH.value
