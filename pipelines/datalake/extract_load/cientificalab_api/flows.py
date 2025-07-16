@@ -33,7 +33,7 @@ with Flow(
     owners=[
         constants.DANIEL_ID.value,
     ],
-) as flow_cientificalab:
+) as flow_cientificalab_operator:
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     DT_FIM = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
@@ -103,9 +103,9 @@ with Flow(
     )
 
 
-flow_cientificalab.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab.executor = LocalDaskExecutor(num_workers=3)
-flow_cientificalab.run_config = KubernetesRun(
+flow_cientificalab_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=3)
+flow_cientificalab_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -139,7 +139,7 @@ with Flow(
     current_labels = get_current_flow_labels()
 
     created_runs = create_flow_run.map(
-        flow_name=unmapped(flow_cientificalab.name),
+        flow_name=unmapped(flow_cientificalab_operator.name),
         project_name=unmapped(project_name),
         parameters=operator_parameters,
         labels=unmapped(current_labels),
@@ -152,7 +152,6 @@ with Flow(
         raise_final_state=unmapped(False),
     )
 
-flow_cientificalab_manager.schedule = schedule
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=1)
 flow_cientificalab_manager.run_config = KubernetesRun(
@@ -161,3 +160,5 @@ flow_cientificalab_manager.run_config = KubernetesRun(
     memory_limit="2Gi",
     memory_request="1Gi",
 )
+
+flow_cientificalab_manager.schedule = schedule
