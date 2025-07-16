@@ -38,7 +38,7 @@ def handle_flow_state_change(flow, old_state, new_state):
 
     if new_state.is_failed():
         message = [
-            " ".join([f"<@&{owner}>" for owner in flow.get_owners()]),
+            " ".join([f"<@{owner}>" for owner in flow.get_owners()]),
             f"> Flow Run: [{prefect.context.get('flow_run_name')}](https://pipelines.dados.rio/flow-run/{info['flow_run_id']})",
             f"*Parâmetros:*",
         ]
