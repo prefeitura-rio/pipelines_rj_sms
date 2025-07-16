@@ -2,6 +2,7 @@
 import json
 import uuid
 from datetime import datetime, timedelta
+from typing import Dict, List
 
 import pandas as pd
 import pytz
@@ -10,6 +11,7 @@ from bs4 import BeautifulSoup
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import cloud_function_request
+from pipelines.utils.time import get_datetime_working_range
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
@@ -41,7 +43,9 @@ def authenticate_and_fetch(
         message = f"Failed to get token from Lisnet API: {token_response.get('status_code')} - {token_response.get('body')}"
         raise Exception(message)
 
-    token_data = token_response.get("body")
+    token_data_string = token_response.get("body")
+    token_data = json.loads(token_data_string)
+
     if token_data.get("status") != 200:
         message = f"Lisnet API returned error for token: {token_data.get('status')} - {token_data.get('mensagem')}"
         raise Exception(message)
@@ -169,3 +173,69 @@ def transform(resultado_xml: str):
         df["datalake_loaded_at"] = now
 
     return solicitacoes_df, exames_df, resultados_df
+
+
+@task
+def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]]:
+    """
+    Gera janelas de extração de 8 horas por dia a partir de start_date até ontem.
+    Retorna lista de dicionários com dt_inicio e dt_fim formatados (ex: YYYY-MM-DDTHH:MM:SS-0300)
+    """
+
+    tz = pytz.timezone("America/Sao_Paulo")
+
+    if start_date.tzinfo is None:
+        start_date = tz.localize(start_date)
+
+    end_date = tz.localize(
+        datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    ) - timedelta(seconds=1)
+
+    windows = []
+
+    current_date = start_date
+    while current_date <= end_date:
+        for hour_ranges in [
+            ("00:00:01", "04:00:00"),
+            ("04:00:01", "08:00:00"),
+            ("08:00:01", "12:00:00"),
+            ("12:00:01", "16:00:00"),
+            ("16:00:01", "20:00:00"),
+            ("20:00:01", "23:59:59"),
+        ]:
+            start_time = f"{current_date.date()} {hour_ranges[0]}"
+            end_time = f"{current_date.date()} {hour_ranges[1]}"
+
+            dt_inicio, dt_fim = get_datetime_working_range.run(
+                start_datetime=start_time,
+                end_datetime=end_time,
+                interval=1,
+                return_as_str=True,
+                timezone="America/Sao_Paulo",
+            )
+
+            windows.append(
+                {
+                    "dt_inicio": dt_inicio,
+                    "dt_fim": dt_fim,
+                }
+            )
+
+        current_date += timedelta(days=1)
+
+    return windows
+
+
+@task
+def build_operator_params(
+    windows: List[Dict[str, str]],
+    env: str,
+) -> List[Dict[str, str]]:
+    return [
+        {
+            "dt_inicio": window["dt_inicio"],
+            "dt_fim": window["dt_fim"],
+            "environment": env,
+        }
+        for window in windows
+    ]
