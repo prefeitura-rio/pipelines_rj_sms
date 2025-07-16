@@ -42,7 +42,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     DT_FIM = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
-    RENAME_FLOW = Parameter("rename_flow", default=False)
+    RENAME_FLOW = Parameter("rename_flow", default=True)
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
