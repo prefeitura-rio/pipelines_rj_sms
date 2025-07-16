@@ -24,7 +24,11 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_project_name, get_secret_key, upload_df_to_datalake
+from pipelines.utils.tasks import (
+    get_project_name,
+    get_secret_key,
+    upload_df_to_datalake,
+)
 from pipelines.utils.time import from_relative_date, get_datetime_working_range
 
 with Flow(
