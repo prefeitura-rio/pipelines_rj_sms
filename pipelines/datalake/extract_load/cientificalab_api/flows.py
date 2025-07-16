@@ -4,13 +4,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-from pipelines.utils.credential_injector import (
-    authenticated_create_flow_run as create_flow_run,
-)
-from pipelines.utils.credential_injector import (
-    authenticated_wait_for_flow_run as wait_for_flow_run,
-)
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.cientificalab_api.constants import (
     constants as cientificalab_constants,
@@ -22,12 +15,21 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     generate_extraction_windows,
     transform,
 )
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_project_name, get_secret_key, upload_df_to_datalake
-from pipelines.utils.time import get_datetime_working_range
-from pipelines.utils.time import from_relative_date
+from pipelines.utils.tasks import (
+    get_project_name,
+    get_secret_key,
+    upload_df_to_datalake,
+)
+from pipelines.utils.time import from_relative_date, get_datetime_working_range
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - CientificaLab (Operator)",
@@ -112,7 +114,7 @@ with Flow(
     ],
 ) as flow_cientificalab_manager:
     environment = Parameter("environment", default="dev")
-    relative_date_filter = Parameter("relative_date", default='D-1')
+    relative_date_filter = Parameter("relative_date", default="D-1")
 
     prefect_project_name = get_project_name(environment=environment)
 
@@ -120,11 +122,8 @@ with Flow(
 
     date_filter = from_relative_date(relative_date=relative_date_filter)
     windows = generate_extraction_windows(start_date=date_filter)
-    
-    operator_parameters = build_operator_params(
-        windows=windows,
-        env=environment
-    )    
+
+    operator_parameters = build_operator_params(windows=windows, env=environment)
 
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(flow_cientificalab_operator.name),

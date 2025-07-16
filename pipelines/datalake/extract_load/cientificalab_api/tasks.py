@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import json
-from typing import Dict, List
 import uuid
 from datetime import datetime, timedelta
+from typing import Dict, List
 
 import pandas as pd
 import pytz
@@ -172,6 +172,7 @@ def transform(resultado_xml: str):
 
     return solicitacoes_df, exames_df, resultados_df
 
+
 @task
 def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]]:
     """
@@ -218,6 +219,7 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
         current_date += timedelta(days=1)
 
     return windows
+
 
 @task
 def build_operator_params(
