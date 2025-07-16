@@ -123,8 +123,8 @@ with Flow(
     owners=[constants.DANIEL_ID.value],
 ) as flow_cientificalab_manager:
 
-    environment = Parameter("environment", default="staging", required=True)
-    relative_date = Parameter("RELATIVE_DATE_FILTER", default="M-1", required=True)
+    environment = Parameter("environment", default="dev", required=True)
+    relative_date = Parameter("RELATIVE_DATE_FILTER", default="D-1", required=True)
 
     start_date = from_relative_date(relative_date=relative_date)
 
