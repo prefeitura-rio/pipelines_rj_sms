@@ -17,10 +17,9 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     transform,
 )
 from pipelines.utils.flow import Flow
-from pipelines.utils.time import from_relative_date
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
-from pipelines.utils.time import get_datetime_working_range
+from pipelines.utils.time import from_relative_date, get_datetime_working_range
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - CientificaLab (Operator)",
@@ -118,10 +117,9 @@ with Flow(
     ],
 ) as flow_cientificalab_manager:
     ENVIRONMENT = Parameter("environment", default="dev")
-    RELATIVE_DATE_FILTER = Parameter("relative_date_filter", default="D-1") #Y-1
+    RELATIVE_DATE_FILTER = Parameter("relative_date_filter", default="D-1")  # Y-1
 
     date_filter = from_relative_date(relative_date=RELATIVE_DATE_FILTER)
-
 
     # date_filer = '2024-01-01'
 

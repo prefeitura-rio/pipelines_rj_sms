@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
+
 import pytz
 
 
@@ -16,10 +18,12 @@ def generate_3_windows():
 
     parametros = []
     for inicio, fim in janelas:
-        parametros.append({
-            "dt_inicio": f"{base_date_str}T{inicio}-0300",
-            "dt_fim": f"{base_date_str}T{fim}-0300",
-            "environment": "prod",  
-        })
+        parametros.append(
+            {
+                "dt_inicio": f"{base_date_str}T{inicio}-0300",
+                "dt_fim": f"{base_date_str}T{fim}-0300",
+                "environment": "prod",
+            }
+        )
 
     return parametros
