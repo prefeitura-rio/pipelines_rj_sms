@@ -196,9 +196,12 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
     current_date = start_date
     while current_date <= end_date:
         for hour_ranges in [
-            ("00:00:01", "08:00:00"),
-            ("08:00:01", "16:00:00"),
-            ("16:00:01", "23:59:59"),
+            ("00:00:01", "04:00:00"),
+            ("04:00:01", "08:00:00"),
+            ("08:00:01", "12:00:00"),
+            ("12:00:01", "16:00:00"),
+            ("16:00:01", "20:00:00"),
+            ("20:00:01", "23:59:59"),
         ]:
             start_time = f"{current_date.date()} {hour_ranges[0]}"
             end_time = f"{current_date.date()} {hour_ranges[1]}"
