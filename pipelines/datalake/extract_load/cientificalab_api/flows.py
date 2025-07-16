@@ -24,7 +24,7 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.utils.tasks import get_project_name, get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import from_relative_date, get_datetime_working_range
 
 with Flow(
@@ -135,7 +135,7 @@ with Flow(
 
     operator_parameters = build_operator_params(windows=all_windows, env=environment)
 
-    project_name = constants.GCP_PROJECT_ID.value
+    project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
 
     created_runs = create_flow_run.map(
