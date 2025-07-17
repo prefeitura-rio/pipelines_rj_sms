@@ -1,0 +1,30 @@
+
+Salva o URL
+Joga tabelas fora
+Inicia o loop:
+[
+    Cria índice de seção
+
+    Parágrafos centralizados
+    - Pega todos consecutivos
+    - Elimina os que não queremos (nome do lugar etc)
+    - O que vier antes de "Secretário Municipal ..." (incl.) é uma assinatura, joga fora
+        https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1170642
+    - O que sobrar é o 'título' de uma seção
+        https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1170691
+        https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1162123
+
+    Parágrafo com margem à esquerda
+    - Margem de pelo menos 90pt
+        https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1171162
+    - É só o que precisa, salva e fim da seção; volta a procurar centralizados
+        https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1170454
+
+    Parágrafos normais
+    - Elimina os que não queremos ("RESOLVE" etc)
+    - Quebra em blocos separados por <p>&nbsp;</p>
+    - Cria índice para cada parágrafo em um 'bloco'
+        https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1170548
+    - Cada parágrafo é uma linha no BQ
+]
+
