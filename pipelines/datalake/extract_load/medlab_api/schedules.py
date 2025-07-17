@@ -22,7 +22,6 @@ flow_params = [
 ]
 
 
-
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
     start_date=datetime(2024, 1, 1, 5, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),

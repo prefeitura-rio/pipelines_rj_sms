@@ -2,12 +2,11 @@
 import base64
 import os
 from datetime import datetime, timedelta
-import pytz
-from google.cloud import storage
 
 import pandas as pd
+import pytz
 import requests
-from google.cloud import bigquery
+from google.cloud import bigquery, storage
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -15,9 +14,17 @@ from pipelines.utils.logger import log
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
 def get_exams_list_and_results(
-    api_url, api_usuario, api_senha, api_codacesso, dt_start, dt_end, patientcode, output_dir, bucket_name
+    api_url,
+    api_usuario,
+    api_senha,
+    api_codacesso,
+    dt_start,
+    dt_end,
+    patientcode,
+    output_dir,
+    bucket_name,
 ):
-    
+
     gcs_bucket_name = bucket_name
     storage_client = storage.Client()
     bucket = storage_client.bucket(gcs_bucket_name)
