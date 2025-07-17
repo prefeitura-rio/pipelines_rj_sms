@@ -9,6 +9,11 @@ cases:
     flow_name: "flow"
     params:
       environment: "dev"
+  - case_slug: "report_uso_hci"
+    flow_path: "pipelines.reports.monitoramento_hci.flows"
+    flow_name: "report_uso_hci"
+    params:
+      environment: "dev"
   - case_slug: "mrg-patientrecord"
     flow_path: "pipelines.prontuarios.mrg.flows"
     flow_name: "patientrecord_mrg"
@@ -72,12 +77,12 @@ cases:
     params:
       environment: "dev"
       schema_name: "basecentral"
-      table_name: "prescricao"
+      table_name: "atendimento"
       partition_column: "datalake_loaded_at"
       datetime_column: "created_at"
-      target_name: "basecentral__prescricao_eventos"
-      interval_start: "2024-09-30"
-      interval_end: "2024-10-07"
+      target_name: "basecentral__atendimento_eventos"
+      interval_start:
+      interval_end:
   - case_slug: "load-hci-from-datake"
     flow_path: "pipelines.prontuarios.load_datalake.flows"
     flow_name: "datalake_to_hci"
@@ -199,6 +204,11 @@ cases:
     flow_name: "extract_diario_oficial_rj"
     params:
       environment: "dev"
+  - case_slug: "extract_tribunal_de_contas_rj"
+    flow_path: "pipelines.datalake.extract_load.tribunal_de_contas_rj.flows"
+    flow_name: "extract_tribunal_de_contas_rj"
+    params:
+      environment: "dev"
   - case_slug: "tasks_clickup_extraction"
     flow_path: "pipelines.datalake.extract_load.tasks_clickup.flows"
     flow_name: "tasks_clickup_extraction"
@@ -258,13 +268,15 @@ cases:
     flow_path: "pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows"
     flow_name: "sms_estabelecimentos_coordenadas"
     params:
-      environment: "dev"
+      environment: "prod"
       bq_dataset_id: "brutos_geo_pgeo3"
       bq_table_id: "estabelecimentos_coordenadas"
-  - case_slug: "datalake_minhasaude_mongodb_perfilacessos_100"
+  - case_slug: "datalake_minhasaude_mongodb_perfilacessos"
     flow_path: "pipelines.datalake.extract_load.minhasaude_mongodb.flows"
     flow_name: "minhasaude_mongodb_flow"
     params:
+      flow_name: "minhasaude_mongodb_flow"
+      flow_owner: "matheusmiloski"
       environment: "dev"
       host: "db.smsrio.org"
       port: 27017
@@ -272,9 +284,10 @@ cases:
       database: "minhasauderio"
       collection: "perfil_acessos"
       query: {}
-      sample_size: 100
       bq_dataset_id: "brutos_minhasaude_mongodb"
       bq_table_id: "perfil_acessos"
+      slice_var: "createdAt"
+      slice_size: 10
   - case_slug: "cr_mysql_flow"
     flow_path: "pipelines.datalake.extract_load.centralregulacao_mysql.flows"
     flow_name: "sms_cr_mysql"
@@ -332,20 +345,20 @@ cases:
       page_size: 10_000
       scroll_timeout: '2m'
       filters: {"codigo_central_reguladora": "330455"}
-      data_inicial: '2025-04-07'
+      data_inicial: '2025-07-07'
       data_final: 'now'
       bq_dataset: 'brutos_sisreg_api'
       bq_table: 'marcacoes'
       dias_por_faixa: 30
       formato_data: '%Y-%m-%d'
-
   - case_slug: "cientificalab_api"
     flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
-    flow_name: "flow_cientificalab"
+    flow_name: "flow_cientificalab_operator"
     params:
+      dataset_id: 'brutos_cientificalab'
       environment: 'dev'
-      dt_inicio: '2025-01-21T10:00:00-0300'
-      dt_fim: '2025-01-21T11:30:00-0300'
+      dt_inicio: '2025-07-12T00:00:01-03:00'
+      dt_fim: '2025-07-12T04:00:00-03:00'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
@@ -355,7 +368,6 @@ cases:
       target_date: "D-1"
       dataset_id: "brutos_api_vitacare"
       table_id_prefix: "estoque_posicao"
-
   - case_slug: "siscan_web_laudos"
     flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
     flow_name: "sms_siscan_web"
@@ -367,7 +379,6 @@ cases:
       bq_table: "laudos"
       dias_por_faixa: 15
       formato_data: "%d/%m/%Y"
-
   - case_slug: "datalake-extract-subpav"
     flow_path: "pipelines.datalake.extract_load.subpav_mysql.flows"
     flow_name: "sms_dump_subpav"
@@ -376,3 +387,35 @@ cases:
       dataset_id: "brutos_plataforma_subpav"
       table_id: "competencias"
       schema: "subpav_cnes"
+  - case_slug: "rastreio_pacientes_restritos"
+    flow_path: "pipelines.datalake.transform.gemini.pacientes_restritos.flows"
+    flow_name: "hci_pacientes_restritos"
+    params:
+      environment: 'dev'
+      table_id: "notificacoes"
+      schema: "subpav_acesso_mais_seguro"
+  - case_slug: 'checks-bucket-files'
+    flow_path: 'pipelines.reports.checks_bucket_files.flows'
+    flow_name: 'report_bucket_files'
+    params:
+      environment: 'dev'
+      bucket_name: 'conectividade_aps'
+      source_freshness: 'D-0'
+  - case_slug: 'dou-extraction'
+    flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao.flows'
+    flow_name: 'extract_diario_oficial_uniao'
+    params:
+      environment: 'dev'
+      dou_section: 3
+      max_workers: 10
+      date: ""
+  - case_slug: "datalake-extract-load-vitacare-api-v2"
+    flow_path: "pipelines.datalake.extract_load.vitacare_api_v2.flows"
+    flow_name: "sms_vitacare_api_v2"
+    params:
+      environment: "dev"
+      rename_flow: True
+      endpoint: "posicao"
+      dataset_id: "brutos_prontuario_vitacare_api"
+      table_id_prefix: "estoque_posicao"
+      target_date: "D-0"

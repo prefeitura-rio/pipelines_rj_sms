@@ -86,7 +86,7 @@ def prepare_dataframe_for_upload(df, flow_name, flow_owner):
 
     # Verifica se o DataFrame está vazio
     if df.empty:
-        mensagem_erro = f" @{flow_owner}. O DataFrame está vazio."
+        mensagem_erro = f" <@{flow_owner}> O DataFrame está vazio."
         send_message(
             title=f"❌ Erro no Fluxo {flow_name}",
             message=mensagem_erro,
@@ -99,7 +99,7 @@ def prepare_dataframe_for_upload(df, flow_name, flow_owner):
         df.columns = remove_columns_accents(df)
         log("Acentos removidos dos nomes das colunas com sucesso.")
     except Exception as e:
-        mensagem_erro = f" @{flow_owner}. Erro ao remover acentos dos nomes das colunas: {str(e)}"
+        mensagem_erro = f" <@{flow_owner}> Erro ao remover acentos dos nomes das colunas: {str(e)}"
         send_message(
             title=f"❌ Erro no Fluxo {flow_name}",
             message=mensagem_erro,
@@ -112,7 +112,7 @@ def prepare_dataframe_for_upload(df, flow_name, flow_owner):
         df["data_extracao"] = datetime.now()
         log("Coluna 'data_extracao' adicionada com sucesso.")
     except Exception as e:
-        mensagem_erro = f" @{flow_owner}. Erro ao criar a coluna 'data_extracao': {str(e)}"
+        mensagem_erro = f" <@{flow_owner}> Erro ao criar a coluna 'data_extracao': {str(e)}"
         send_message(
             title=f"❌ Erro no Fluxo {flow_name}",
             message=mensagem_erro,

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+import json
 import uuid
 from datetime import datetime, timedelta
+from typing import Dict, List
 
 import pandas as pd
 import pytz
@@ -8,6 +10,8 @@ import requests
 from bs4 import BeautifulSoup
 
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.tasks import cloud_function_request
+from pipelines.utils.time import get_datetime_working_range
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
@@ -17,47 +21,73 @@ def authenticate_and_fetch(
     apccodigo: str,
     dt_inicio: str = "2025-01-21T10:00:00-0300",
     dt_fim: str = "2025-01-21T11:30:00-0300",
+    environment: str = "dev",
 ):
-    res = requests.get(
+    token_response = cloud_function_request.run(
         url="https://cielab.lisnet.com.br/lisnetws/tokenlisnet/apccodigo",
-        headers={
+        request_type="GET",
+        query_params={
             "Content-Type": "application/json",
             "apccodigo": apccodigo,
             "emissor": username,
             "pass": password,
         },
+        body_params="",
+        api_type="xml",
+        env=environment,
+        credential=None,
+        endpoint_for_filename="lab_token",
     )
-    res.raise_for_status()
-    result = res.json()
 
-    if result.get("status") != 200:
-        raise Exception(result.get("mensagem"))
+    if token_response.get("status_code") != 200:
+        message = f"Failed to get token from Lisnet API: {token_response.get('status_code')} - {token_response.get('body')}"
+        raise Exception(message)
 
-    token = result.get("token")
+    token_data_string = token_response.get("body")
+    token_data = json.loads(token_data_string)
 
-    res = requests.get(
+    if token_data.get("status") != 200:
+        message = f"Lisnet API returned error for token: {token_data.get('status')} - {token_data.get('mensagem')}"
+        raise Exception(message)
+
+    token = token_data.get("token")
+
+    data = f"""
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <lote>
+            <codigoLis>1</codigoLis>
+            <identificadorLis>1021</identificadorLis>
+            <origemLis>1</origemLis>
+            <dataResultado>
+                <inicial>{dt_inicio}</inicial>
+                <final>{dt_fim}</final>
+            </dataResultado>
+            <parametros>
+                <parcial>N</parcial>
+                <retorno>ESTRUTURADO</retorno>
+            </parametros>
+        </lote>
+        """.strip()
+
+    resultado_response = cloud_function_request.run(
         url="https://cielab.lisnet.com.br/lisnetws/APOIO/DTL/resultado",
-        headers={"Content-Type": "application/xml", "codigo": apccodigo, "token": token},
-        data=f"""
-      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-      <lote>
-          <codigoLis>1</codigoLis>
-          <identificadorLis>1021</identificadorLis>
-          <origemLis>1</origemLis>
-          <dataResultado>
-              <inicial>{dt_inicio}</inicial>
-              <final>{dt_fim}</final>
-          </dataResultado>
-          <parametros>
-              <parcial>N</parcial>
-              <retorno>ESTRUTURADO</retorno>
-          </parametros>
-      </lote>
-      """,
+        request_type="GET",
+        query_params={
+            "codigo": apccodigo,
+            "token": token,
+        },
+        body_params=data,
+        api_type="xml",
+        env=environment,
+        credential=None,
+        endpoint_for_filename="lab_exames",
     )
-    res.raise_for_status()
 
-    return res.text
+    if resultado_response.get("status_code") != 200:
+        message = f"Failed to get XML results from Lisnet API: {resultado_response.get('status_code')} - {resultado_response.get('body')}"
+        raise Exception(message)
+
+    return resultado_response["body"]
 
 
 @task(nout=3)
@@ -143,3 +173,69 @@ def transform(resultado_xml: str):
         df["datalake_loaded_at"] = now
 
     return solicitacoes_df, exames_df, resultados_df
+
+
+@task
+def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]]:
+    """
+    Gera janelas de extração de 8 horas por dia a partir de start_date até ontem.
+    Retorna lista de dicionários com dt_inicio e dt_fim formatados (ex: YYYY-MM-DDTHH:MM:SS-0300)
+    """
+
+    tz = pytz.timezone("America/Sao_Paulo")
+
+    if start_date.tzinfo is None:
+        start_date = tz.localize(start_date)
+
+    end_date = tz.localize(
+        datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    ) - timedelta(seconds=1)
+
+    windows = []
+
+    current_date = start_date
+    while current_date <= end_date:
+        for hour_ranges in [
+            ("00:00:01", "04:00:00"),
+            ("04:00:01", "08:00:00"),
+            ("08:00:01", "12:00:00"),
+            ("12:00:01", "16:00:00"),
+            ("16:00:01", "20:00:00"),
+            ("20:00:01", "23:59:59"),
+        ]:
+            start_time = f"{current_date.date()} {hour_ranges[0]}"
+            end_time = f"{current_date.date()} {hour_ranges[1]}"
+
+            dt_inicio, dt_fim = get_datetime_working_range.run(
+                start_datetime=start_time,
+                end_datetime=end_time,
+                interval=1,
+                return_as_str=True,
+                timezone="America/Sao_Paulo",
+            )
+
+            windows.append(
+                {
+                    "dt_inicio": dt_inicio,
+                    "dt_fim": dt_fim,
+                }
+            )
+
+        current_date += timedelta(days=1)
+
+    return windows
+
+
+@task
+def build_operator_params(
+    windows: List[Dict[str, str]],
+    env: str,
+) -> List[Dict[str, str]]:
+    return [
+        {
+            "dt_inicio": window["dt_inicio"],
+            "dt_fim": window["dt_fim"],
+            "environment": env,
+        }
+        for window in windows
+    ]

@@ -18,6 +18,8 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
+        "flow_name": "MinhaSaude.rio MongoDB",
+        "flow_owner": "1184846547242995722",
         "environment": "prod",
         "host": "db.smsrio.org",
         "port": 27017,
@@ -25,11 +27,12 @@ flow_parameters = [
         "database": "minhasauderio",
         "collection": collection,
         "query": {},
-        "sample_size": 0,
         "bq_dataset_id": "brutos_minhasaude_mongodb",
         "bq_table_id": collection,
+        "slice_var": props["slice_var"],
+        "slice_size": props["slice_size"],
     }
-    for collection in COLLECTIONS
+    for collection, props in COLLECTIONS.items()
 ]
 
 clocks = generate_dump_api_schedules(

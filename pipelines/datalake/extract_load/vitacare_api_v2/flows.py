@@ -9,15 +9,20 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitacare_api_v2.constants import (
     constants as flow_constants,
 )
+from pipelines.datalake.extract_load.vitacare_api_v2.schedules import schedules
 from pipelines.datalake.extract_load.vitacare_api_v2.tasks import (
     extract_data,
     generate_endpoint_params,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import rename_current_flow_run, upload_df_to_datalake
 from pipelines.utils.time import from_relative_date
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare API v2",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.DIT_ID.value],
 ) as sms_vitacare_api_v2:
     #####################################
     # Parameters
@@ -70,6 +75,7 @@ with Flow(
     )
 
 
+sms_vitacare_api_v2.schedule = schedules
 sms_vitacare_api_v2.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_vitacare_api_v2.executor = LocalDaskExecutor(num_workers=5)
 sms_vitacare_api_v2.run_config = KubernetesRun(

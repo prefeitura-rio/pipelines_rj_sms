@@ -442,9 +442,11 @@ def cloud_function_request(
     url: str,
     credential: None,
     request_type: str = "GET",
-    body_params: list = None,
-    query_params: list = None,
+    body_params: any = None,
+    query_params: dict = None,
     env: str = "dev",
+    api_type: str = "json",
+    endpoint_for_filename: str = None,
 ):
     """
     Sends a request to an endpoint trough a cloud function.
@@ -465,7 +467,7 @@ def cloud_function_request(
     # Get Prefect Logger
     logger = prefect.context.get("logger")
 
-    if env == "prod":
+    if env in ["prod", "local-prod"]:
         cloud_function_url = "https://us-central1-rj-sms.cloudfunctions.net/vitacare"
     elif env in ["dev", "staging"]:
         cloud_function_url = "https://us-central1-rj-sms-dev.cloudfunctions.net/vitacare"
@@ -476,24 +478,72 @@ def cloud_function_request(
     request = google.auth.transport.requests.Request()
     TOKEN = google.oauth2.id_token.fetch_id_token(request, cloud_function_url)
 
-    payload = json.dumps(
-        {
-            "url": url,
-            "request_type": request_type,
-            "body_params": json.dumps(body_params),
-            "query_params": query_params,
-            "credential": credential,
-        }
-    )
+    # Prepara query_params para incluir o filename_descriptor
+    # Garante que query_params é um dicionário mutável
+    if query_params is None:
+        query_params_for_cf = {}
+    else:
+        query_params_for_cf = query_params.copy()  # Cria uma cópia para não modificar o original
+
+    if endpoint_for_filename:
+        # Adiciona o descritor ao query_params sob uma chave específica
+        query_params_for_cf["_endpoint_for_filename"] = endpoint_for_filename
+
+    payload = {
+        "tipo_api": api_type,
+        "url": url,
+        "request_type": request_type,
+        "body_params": body_params,
+        "query_params": query_params_for_cf,
+        "credential": credential,
+    }
+
+    if isinstance(body_params, dict) and api_type == "json":
+        payload["body_params"] = json.dumps(body_params)
+
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {TOKEN}"}
 
     try:
-        response = requests.request("POST", cloud_function_url, headers=headers, data=payload)
+        response = requests.request(
+            "POST", cloud_function_url, headers=headers, data=json.dumps(payload)
+        )
 
         if response.status_code == 200:
             logger.info("[Cloud Function] Request was Successful")
 
             payload = response.json()
+
+            if "gcs_url" in payload:
+                gcs_url = payload["gcs_url"]
+                logger.info(f"[Cloud Function] GCS URL received. Downloading from: {gcs_url}")
+
+                try:
+                    # Parseia a URL GCS para obter o nome do bucket e do blob
+                    path_parts = gcs_url.replace("gs://", "").split("/", 1)
+                    if len(path_parts) < 2:
+                        raise ValueError(f"Invalid GCS URL format: {gcs_url}")
+                    bucket_name = path_parts[0]
+                    blob_name = path_parts[1]
+
+                    client = storage.Client()
+                    bucket = client.bucket(bucket_name)
+                    blob = bucket.blob(blob_name)
+
+                    # Baixa o conteúdo do GCS
+                    downloaded_content = blob.download_as_text()
+
+                    # Insere o conteúdo baixado de volta na chave 'body'
+                    if api_type == "json":
+                        payload["body"] = json.loads(downloaded_content)
+                    else:
+                        payload["body"] = downloaded_content
+
+                except Exception as gcs_e:
+                    message = (
+                        f"[Cloud Function] Failed to download data from GCS ({gcs_url}): {gcs_e}"
+                    )
+                    logger.error(message)
+                    raise RuntimeError(message) from gcs_e
 
             if payload["status_code"] != 200:
                 logger.error(
@@ -998,6 +1048,26 @@ def load_file_from_bigquery(
     table = client.get_table(table_ref)
 
     df = client.list_rows(table).to_dataframe()
+
+    return df
+
+
+@task
+def query_table_from_bigquery(sql_query: str, env: str = "dev") -> pd.DataFrame:
+    """
+    Query data from BigQuery table into a pandas DataFrame.
+
+    Args:
+        environment (str, optional): DON'T REMOVE THIS ARGUMENT.
+        sql_query (str): The SQL query to execute.
+
+    Returns:
+        pandas.DataFrame: The query data from the BigQuery table.
+    """
+    client = bigquery.Client()
+    log(f"[Ignore] Using Parameter to avoid Warnings: {env}")
+
+    df = client.query(sql_query).to_dataframe()
 
     return df
 

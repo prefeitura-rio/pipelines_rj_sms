@@ -83,6 +83,7 @@ def extract_data_from_api(
         query_params={"date": str(target_day), "cnes": cnes},
         credential={"username": username, "password": password},
         env=environment,
+        endpoint_for_filename=endpoint,
     )
 
     if response["status_code"] != 200:
@@ -90,7 +91,7 @@ def extract_data_from_api(
             f"Failed to extract data from API: {response['status_code']} - {response['body']}"
         )
 
-    requested_data = json.loads(response["body"])
+    requested_data = response["body"]
 
     if len(requested_data) > 0:
 
@@ -204,7 +205,7 @@ def transform_data(file_path: str, table_id: str) -> str:
 
     add_load_date_column.run(input_path=csv_file_path, sep=";")
 
-    if table_id in ("estoque_posicao", "estoque_movimento"):
+    if table_id in ("estoque_posicao", "estoque_movimento", "vacina"):
         fix_payload_column_order(filepath=csv_file_path, table_id=table_id)
 
     return csv_file_path

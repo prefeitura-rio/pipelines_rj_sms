@@ -17,7 +17,7 @@ routine_flow_parameters = [
     # Execuções do Dia
     # ------------------------------------------------------------
     {
-        "dataset_id": "brutos_api_vitacare",
+        "dataset_id": "brutos_prontuario_vitacare_api",
         "endpoint": "posicao",
         "environment": "prod",
         "rename_flow": True,
@@ -25,7 +25,7 @@ routine_flow_parameters = [
         "target_date": "D-0",
     },
     {
-        "dataset_id": "brutos_api_vitacare",
+        "dataset_id": "brutos_prontuario_vitacare_api",
         "endpoint": "movimento",
         "environment": "prod",
         "rename_flow": True,
@@ -33,7 +33,7 @@ routine_flow_parameters = [
         "target_date": "D-1",
     },
     {
-        "dataset_id": "brutos_api_vitacare",
+        "dataset_id": "brutos_prontuario_vitacare_api",
         "endpoint": "vacina",
         "environment": "prod",
         "rename_flow": True,
@@ -44,7 +44,7 @@ routine_flow_parameters = [
     # Execuções de Redundância
     # ------------------------------------------------------------
     {
-        "dataset_id": "brutos_api_vitacare",
+        "dataset_id": "brutos_prontuario_vitacare_api",
         "endpoint": "movimento",
         "environment": "prod",
         "rename_flow": True,
@@ -52,7 +52,7 @@ routine_flow_parameters = [
         "target_date": "D-2",
     },
     {
-        "dataset_id": "brutos_api_vitacare",
+        "dataset_id": "brutos_prontuario_vitacare_api",
         "endpoint": "movimento",
         "environment": "prod",
         "rename_flow": True,
@@ -61,7 +61,7 @@ routine_flow_parameters = [
     },
     # ------------------------------------------------------------
     {
-        "dataset_id": "brutos_api_vitacare",
+        "dataset_id": "brutos_prontuario_vitacare_api",
         "endpoint": "vacina",
         "environment": "prod",
         "rename_flow": True,
@@ -69,7 +69,7 @@ routine_flow_parameters = [
         "target_date": "D-4",
     },
     {
-        "dataset_id": "brutos_api_vitacare",
+        "dataset_id": "brutos_prontuario_vitacare_api",
         "endpoint": "vacina",
         "environment": "prod",
         "rename_flow": True,
@@ -80,7 +80,7 @@ routine_flow_parameters = [
 
 routine_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2025, 5, 22, 3, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2025, 5, 22, 8, 30, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
@@ -88,4 +88,4 @@ routine_clocks = generate_dump_api_schedules(
     runs_interval_minutes=60,
 )
 
-vitacare_daily_update_schedule = Schedule(clocks=untuple_clocks(routine_clocks))
+schedules = Schedule(clocks=untuple_clocks(routine_clocks))
