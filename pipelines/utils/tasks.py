@@ -954,10 +954,18 @@ def upload_df_to_datalake(
     else:
         log(f"Creating a single partition for a {df.shape[0]} rows dataframe")
         file_path = os.path.join(root_folder, f"{uuid.uuid4()}.{source_format}")
+
         if source_format == "csv":
+            log(f"Salvando CSV em {file_path}")
             df.to_csv(file_path, index=False)
         elif source_format == "parquet":
+            log(f"Salvando Parquet em {file_path}")
             safe_export_df_to_parquet.run(df=df, output_path=file_path)
+
+        # ✅ Verificação se o arquivo foi realmente criado
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Arquivo não foi criado em {file_path}")
+
         partition_folder = root_folder
 
     log(f"Uploading data to partition folder: {partition_folder}")
