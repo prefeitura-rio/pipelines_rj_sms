@@ -13,9 +13,5 @@ class medlab_api_constants(Enum):
     """
 
     INFISICAL_PATH = "/medlab"
-    INFISICAL_URL = "API_URL"
-    INFISICAL_USERNAME = "API_USUARIO"
-    INFISICAL_PASSWORD = "API_SENHA"
-    INFISICAL_CODACESSO = "API_CODACESSO"
     DATASET_ID = "brutos_medlab"
     GCS_BUCKET_NAME = "medlab_laudos"
