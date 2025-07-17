@@ -8,11 +8,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-from pipelines.utils.flow import Flow
-from pipelines.utils.prefect import get_current_flow_labels
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_project_name_from_prefect_environment
-
 from pipelines.constants import constants
 
 ##
@@ -21,6 +16,7 @@ from pipelines.datalake.migrate.orquestracao_cdi.constants import (
 )
 from pipelines.datalake.migrate.orquestracao_cdi.schedules import schedules
 from pipelines.datalake.migrate.orquestracao_cdi.tasks import create_params_dict
+
 ##
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -28,6 +24,11 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.prefect import get_current_flow_labels
+from pipelines.utils.state_handlers import handle_flow_state_change
+from pipelines.utils.tasks import get_project_name_from_prefect_environment
+
 ##
 
 with Flow(
