@@ -16,10 +16,11 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_params = [
     {
         "ENVIRONMENT": "prod",
-        "DT_START": "2001-01-01",
-        "DT_END": "2100-01-01",
+        "DT_START": "2025-06-01",
+        "DT_END": "2025-06-30",
     }
 ]
+
 
 
 clocks = generate_dump_api_schedules(

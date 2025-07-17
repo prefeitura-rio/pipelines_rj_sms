@@ -2,6 +2,8 @@
 import base64
 import os
 from datetime import datetime, timedelta
+import pytz
+from google.cloud import storage
 
 import pandas as pd
 import requests
@@ -11,10 +13,14 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=2))
+@task(max_retries=2, retry_delay=timedelta(minutes=1))
 def get_exams_list_and_results(
-    api_url, api_usuario, api_senha, api_codacesso, dt_start, dt_end, patientcode, output_dir
+    api_url, api_usuario, api_senha, api_codacesso, dt_start, dt_end, patientcode, output_dir, bucket_name
 ):
+    
+    gcs_bucket_name = bucket_name
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(gcs_bucket_name)
 
     result = requests.post(
         url=f"{api_url}/medisaudeapi/v1/getToken",
@@ -66,13 +72,29 @@ def get_exams_list_and_results(
 
         arquivo_b64 = report_data["arquivo"]
 
-        os.makedirs(output_dir, exist_ok=True)
+        study_date_raw = study.get("date")
 
-        filename = f"{patientcode}_{current_accession_number}.pdf"
-        file_path = os.path.join(output_dir, filename)
+        if not study_date_raw:
+            log(f"no studies found for patient {patientcode}, using current date.", level="warning")
+            study_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
+        else:
+            study_date = datetime.fromisoformat(study_date_raw)
 
-        with open(file_path, "wb") as f:
-            f.write(base64.b64decode(arquivo_b64))
+        study_date_str = study_date.strftime("%Y-%m-%d")
+
+        filename = f"laudo_{patientcode}_{current_accession_number}.pdf"
+        blob_path = f"{study_date_str}/{filename}"
+
+        blob = bucket.blob(blob_path)
+
+        if blob.exists():
+            log(f"Arquivo {blob_path} já existe no bucket, pulando upload.", level="info")
+        else:
+            log(f"Uploading laudo to GCS as {blob_path}")
+
+            blob.upload_from_string(base64.b64decode(arquivo_b64), content_type="application/pdf")
+
+            log(f"Laudo uploaded successfully: gs://{gcs_bucket_name}/{blob_path}")
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))

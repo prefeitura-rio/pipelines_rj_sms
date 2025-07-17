@@ -33,12 +33,13 @@ with Flow(
     #####################################
 
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    DT_START = Parameter("dt_start", default="2001-01-01")
-    DT_END = Parameter("dt_end", default="2100-01-01")
+    DT_START = Parameter("dt_start", default="2025-06-01")
+    DT_END = Parameter("dt_end", default="2025-06-30")
 
     INFISICAL_PATH = medlab_api_constants.INFISICAL_PATH.value
 
     OUTPUT_DIRECTORY = "output"
+    BUCKET_NAME = medlab_api_constants.GCS_BUCKET_NAME.value
 
     API_URL = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name="API_URL", environment=ENVIRONMENT
@@ -67,6 +68,7 @@ with Flow(
         dt_end=unmapped(DT_END),
         patientcode=PATIENTS,
         output_dir=unmapped(OUTPUT_DIRECTORY),
+        bucket_name=unmapped(BUCKET_NAME),
     )
 
 
