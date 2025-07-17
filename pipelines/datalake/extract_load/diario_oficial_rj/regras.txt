@@ -1,8 +1,24 @@
-* Atos do Prefeito > Decretos N: queremos (se mencionar SMS ou saúde de alguma forma, problema futuro)
-                   > Decretos P: não queremos
-* Secretaria Municipal de Saúde > Resolução N: queremos
-                                > Resolução P: não queremos
-* Controladoria Geral do Municípo: podemos querer (= pegar tudo)
-* Tribunal de Contas do Municípo: podemos querer (= pegar tudo)
-* Aviso Editais e Termos de Contratos > Controladoria Geral do Municípo: podemos querer (= pegar tudo)
-* Aviso Editais e Termos de Contratos > Tribunal de Contas do Municípo: podemos querer (= pegar tudo)
+Queremos:
+* Atos do Prefeito
+    > Decretos N
+* Secretaria Municipal de Saúde
+    > Resolução N
+* Controladoria Geral do Municípo
+    > Resolução N
+        (excluir pasta Despachos)
+* Tribunal de Contas do Municípo
+    > Resolução N
+        (excluir pasta Despachos)
+    > Outros
+        (excluir pasta Despachos)
+* Aviso Editais e Termos de Contratos
+    > Secretaria Municipal de Saúde
+        > Avisos
+        > Outros
+    > Controladoria Geral do Municípo
+        > Resolução N
+            (excluir pasta Despachos)
+    > Tribunal de Contas do Municípo
+        > Outros
+            (excluir pasta Despachos)
+

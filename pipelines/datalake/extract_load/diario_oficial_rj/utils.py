@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 from datetime import datetime
+from itertools import groupby
 from typing import List, Optional
 
 import pytz
@@ -86,6 +87,8 @@ def get_links_for_path(folders: List[BeautifulSoup], path: list) -> List[Beautif
         # Para cada pasta que recebemos
         links = []
         for folder in folders:
+            if folder is None:
+                continue
             # Pega todos os links nela, e guarda junto com os outros
             links.extend(get_all_links_in_folder(folder))
         return links
@@ -99,9 +102,19 @@ def get_links_for_path(folders: List[BeautifulSoup], path: list) -> List[Beautif
         # Confere se bate com o que queremos
         if text == first_folder_name:
             # Se sim, pega somente as pastas dentro dessa
-            subfolders = folder.parent.find_all("span", attrs={"class": "folder"})
+            # subfolders = folder.parent.find_all("span", attrs={"class": "folder"})
+            # Se sim, pega somente descendentes diretos da pasta
+            ## <span class="folder">...</span>  <-- Estamos aqui
+            ## <ul>
+            ##     <li>
+            ##         <div ...></div>
+            ##         <span class="folder">...</span>  <-- Queremos chegar aqui
+            subfolders = [
+                li.find("span", attrs={"class": "folder"})
+                for li in folder.find_next_sibling("ul").find_all("li", recursive=False)
+            ]
             # ...e remove a própria do caminho
-            return get_links_for_path(subfolders, path[1:])
+            return get_links_for_path([folder, *(subfolders or [])], path[1:])
     # Se chegamos aqui, não encontramos a pasta especificada pelo caminho
     return []
 
@@ -120,40 +133,220 @@ def get_links_if_match(folders: List[BeautifulSoup], regex_search_str: str) -> L
     return all_links
 
 
-def string_cleanup(string: str) -> str:
-    return str(string).replace("\xa0", " ").replace("\r", "")
-
-
 def node_cleanup(root: BeautifulSoup) -> BeautifulSoup:
     # Para pegar o conteúdo textual, remove elementos inline
-    for inline_tag in ["a", "b", "i", "em", "span"]:
-        for tag in root.find_all(inline_tag):
-            parent = tag.parent
-            tag.unwrap()  # Remove a tag
-            # Infelizmente isso cria vários nós de texto soltos
-            # Precisamos juntá-los manualmente
-            merged_strings = []
-            # Para cada nó filho
-            for child in parent.children:
-                # Se for uma string solta, salva
-                if isinstance(child, NavigableString):
-                    merged_strings.append(child)
-                # Senão, confere se já temos 2 ou mais strings
-                elif len(merged_strings) >= 2:
-                    # Se sim, junta as strings e cria uma nova
-                    merged_text = "".join(merged_strings)
-                    new_string = NavigableString(merged_text)
-                    merged_strings[0].replace_with(new_string)
-                    # Remove as antigas
-                    for s in merged_strings[1:]:
-                        s.extract()
-                    merged_strings = []
-            # Se ainda tínhamos strings soltas, junta todas
-            if len(merged_strings) > 1:
+    for tag in root.find_all(["a", "b", "i", "em", "span"]):
+        parent = tag.parent
+        tag.unwrap()  # Remove a tag
+        # Infelizmente isso cria vários nós de texto soltos
+        # Precisamos juntá-los manualmente
+        merged_strings = []
+        # Para cada nó filho
+        for child in parent.children:
+            # Se for uma string solta, salva
+            if isinstance(child, NavigableString):
+                merged_strings.append(child)
+            # Senão, confere se já temos 2 ou mais strings
+            elif len(merged_strings) >= 2:
+                # Se sim, junta as strings e cria uma nova
                 merged_text = "".join(merged_strings)
                 new_string = NavigableString(merged_text)
                 merged_strings[0].replace_with(new_string)
+                # Remove as antigas
                 for s in merged_strings[1:]:
-                    s.extract()
+                    s.decompose()
+                merged_strings = []
+            # Se só tínhamos uma string, ela fica como é
+            else:
+                merged_strings = []
+        # Se ainda tínhamos strings soltas, junta todas
+        if len(merged_strings) > 1:
+            merged_text = "".join(merged_strings)
+            new_string = NavigableString(merged_text)
+            merged_strings[0].replace_with(new_string)
+            for s in merged_strings[1:]:
+                s.decompose()
 
     return root
+
+
+def filter_paragraphs(arr: List[str], type: str) -> List[str]:
+    # from itertools import groupby
+    # groups = []
+    # for _, group in groupby(arr, lambda x: len(x) == 0):
+    #     groups.append(list(group))
+    # groups
+
+    # Limpa qualquer string vazia
+    arr = [text for text in arr if len(text)]
+
+    def filter_for_regex(arr: List[str], regex: List[str]) -> List[str]:
+        new_arr = []
+        for text in arr:
+            ignore = False
+            for r in regex:
+                if re.search(r, text, re.IGNORECASE):
+                    ignore = True
+                    break
+            if not ignore:
+                new_arr.append(text)
+        return new_arr
+
+    remove_header = [
+        r"^atos? d[ao]",
+        r"^subsecretaria",
+        r"^superintendência",
+        r"^administração setorial",
+        r"^tribunal de contas do município do rio de janeiro$",
+        r"^controladoria geral do município$",
+        r"^subcontroladoria de",
+        r"^coordenadoria técnica",
+        r"^secretári[ao]",
+        r"^controladora?",
+        r"^rio de janeiro, [0-9]+ de",
+    ]
+    remove_body = [
+        r"^decreta:?$",
+        r"^resolve:?$",
+        r"^rio de janeiro, [0-9]+ de",
+    ]
+    if type == "header":
+        return filter_for_regex(arr, remove_header)
+    return filter_for_regex(arr, remove_body)
+
+
+def parse_do_contents(root: BeautifulSoup) -> List[str]:
+    # TODO: lidar com tabelas
+    for table in root.find_all("table"):
+        # Pega último ancestral; só o [document] tem .new_tag()
+        document = None
+        for parent in root.parents:
+            document = parent
+        p = document.new_tag("p")
+        p.string = "[tabela]"
+        table.replace_with(p)
+        table.decompose()
+
+    def clean_text(text: str):
+        text = str(text).strip()
+        replace_list = [
+            ("\u00A0", " "),  # NO-BREAK SPACE
+            ("\u202F", " "),  # NARROW NO-BREAK SPACE
+            ("\r", ""),
+            ("\n", " "),
+        ]
+        for fro, to in replace_list:
+            text = text.replace(fro, to)
+        return text
+
+    all_ps = root.find_all("p")
+
+    section_index = -1
+    block_index = -1
+    p_index = -1
+    is_in_header = False
+    skip_to_next_header = False
+    new_block = False
+    sections = dict()
+    for p in all_ps:
+        text = clean_text(p.get_text())
+        if len(text) <= 0:
+            new_block = True
+            continue
+        # Substituto de `i` em `for (i, p) in enumerate(...)`
+        # mas ignorando parágrafos vazios
+        p_index += 1
+
+        # Se encontramos um parágrafo centralizado
+        is_centered = (
+            p.attrs.get("align") == "center"
+            or re.search(r"text\-align\s*\:\s*center", p.attrs.get("style") or "") is not None
+        )
+        # Trata o primeiro parágrafo do texto sempre como um cabeçalho
+        if is_centered or p_index == 0:
+            # Então estamos no início ou fim de uma seção
+            # Se já não estávamos numa seção
+            if not is_in_header:
+                # Flag que estamos, incrementa índice
+                is_in_header = True
+                section_index += 1
+                new_block = True
+                block_index = -1
+                sections[section_index] = {"header": [], "body": []}
+            sections[section_index]["header"].append(text)
+            skip_to_next_header = False
+            continue
+
+        is_in_header = False
+
+        if section_index == -1:
+            # Temos corpo sem cabeçalho antecedendo
+            section_index = 0
+        if section_index not in sections:
+            sections[section_index] = {"header": [], "body": []}
+
+        if new_block:
+            block_index += 1
+            new_block = False
+        if block_index == -1:
+            block_index = 0
+        # Garante que body[block_index] é um array
+        while len(sections[section_index]["body"]) < (block_index + 1):
+            sections[section_index]["body"].append([])
+
+        # Se encontramos um parágrafo com margem à esquerda (>=50pt)
+        # "Ah só precisa >90pt" vide 1171545
+        has_left_margin = (
+            re.search(
+                r"margin\-left\s*\:\s*(([1-9][0-9]*)?[5-9][0-9])\b", p.attrs.get("style") or ""
+            )
+            is not None
+        )
+        if has_left_margin:
+            skip_to_next_header = True
+            sections[section_index]["body"][block_index].append(text)
+        # Se já temos tudo que precisamos do corpo, continua
+        elif skip_to_next_header:
+            continue
+        # Senão, não queremos pular nada; salva conteúdo
+        else:
+            sections[section_index]["body"][block_index].append(text)
+
+    # `sections` é algo como:
+    # {
+    #   '0': {
+    #     'header': ['...', ...],
+    #     'body': [
+    #       ['...', ...],
+    #       ['...', ...],
+    #       ...
+    #     ]
+    #   }
+    #   ...
+    # }
+    for section_k in sections.keys():
+        # k = header, body / v = array de parágrafos
+        for area_k, area_v in sections[section_k].items():
+            if len(area_v) <= 0:
+                continue
+            if type(area_v[0]) == str:
+                # Filtra parágrafos pelo que temos interesse
+                sections[section_k][area_k] = filter_paragraphs(area_v, area_k)
+                continue
+            # Estamos no corpo e temos vários blocos, cada um com múltiplos parágrafos
+            # Para cada bloco
+            for i, block in enumerate(area_v):
+                # Filtra parágrafos
+                sections[section_k][area_k][i] = filter_paragraphs(block, area_k)
+        # Se o corpo veio vazio
+        if len(sections[section_k]["body"]) <= 0:
+            # Apaga essa entrada
+            sections[section_k] = None
+        else:
+            # Cabeçalho deve ser uma string
+            sections[section_k]["header"] = "\n".join(sections[section_k]["header"])
+            for i, arr in enumerate(sections[section_k]["body"]):
+                sections[section_k]["body"][i] = [sub_arr for sub_arr in arr if len(sub_arr)]
+
+    return_ = [obj for _, obj in sections.items() if obj is not None]
+    return return_
