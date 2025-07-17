@@ -7,15 +7,16 @@ from typing import List, Optional
 
 import pandas as pd
 import pytz
+from bs4 import BeautifulSoup
 
 from pipelines.datalake.extract_load.diario_oficial_rj.utils import (
     get_links_for_path,
     get_links_if_match,
     get_today,
     node_cleanup,
+    parse_do_contents,
     send_get_request,
     standardize_date_from_string,
-    string_cleanup,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -73,14 +74,23 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
     # De onde queremos extrair `identificador` ou `data-materia-id`
     all_folders = html.find_all("span", attrs={"class": "folder"})
     results = []
-    results.extend(get_links_for_path(all_folders, ["atos do prefeito", "decretos n"]))
-    results.extend(
-        get_links_for_path(
-            all_folders, ["secretaria municipal de saúde", "resoluções", "resolução n"]
-        )
-    )
-    results.extend(get_links_if_match(all_folders, r"^controladoria geral"))
-    results.extend(get_links_if_match(all_folders, r"^tribunal de contas"))
+    paths = [
+        ["atos do prefeito", "decretos n"],
+        ["secretaria municipal de saúde", "resoluções", "resolução n"],
+        ["controladoria geral do município do rio de janeiro", "resoluções", "resolução n"],
+        ["tribunal de contas do município", "resoluções", "resolução n"],
+        ["tribunal de contas do município", "outros"],
+        ["avisos editais e termos de contratos", "secretaria municipal de saúde", "avisos"],
+        ["avisos editais e termos de contratos", "secretaria municipal de saúde", "outros"],
+        [
+            "avisos editais e termos de contratos",
+            "controladoria geral do município do rio de janeiro",
+            "outros",
+        ],
+        ["avisos editais e termos de contratos", "tribunal de contas do município", "outros"],
+    ]
+    for path in paths:
+        results.extend(get_links_for_path(all_folders, path))
 
     # Não temos como garantir que ambos os atributos vão existir sempre;
     # então pegamos o valor do primeiro preenhcido que encontrarmos
@@ -94,11 +104,27 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
                 return val
         return None
 
+    def get_folder_path(tag: BeautifulSoup):
+        path = []
+        while True:
+            tag = tag.parent
+            if tag is None or not tag or tag.attrs.get("id") == "tree":
+                break
+            folder = tag.findChild("span", attrs={"class", "folder"}, recursive=False)
+            if folder is None or not folder:
+                continue
+            path.append(folder.text.strip())
+        return "/".join(reversed(path))
+
     # Cria lista de par (título, ID); título é guardado direto no banco
     # e ID é usado pra pegar o conteúdo textual/HTML do artigo
     filtered_results = list(
         set(
-            (tag.text.strip(), get_any_attribute(tag, ["identificador", "data-materia-id"]))
+            (
+                get_folder_path(tag),
+                tag.text.strip(),
+                get_any_attribute(tag, ["identificador", "data-materia-id"]),
+            )
             for tag in results
         )
     )
@@ -107,10 +133,10 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def get_article_contents(do_tuple: tuple) -> dict:
+def get_article_contents(do_tuple: tuple) -> List[dict]:
     assert len(do_tuple) == 2, "Tuple must be ((do_id, date), (title, id)) pair!"
     (do_id, do_date) = do_tuple[0]
-    (title, id) = do_tuple[1]
+    (folder_path, title, id) = do_tuple[1]
 
     log(f"Getting content of article '{title}' (id '{id}')...")
     URL = f"https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/{id}"
@@ -121,23 +147,39 @@ def get_article_contents(do_tuple: tuple) -> dict:
         return None
     # Registra data/hora da extração
     current_datetime = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-    # Salva o HTML cru do corpo
-    body_html = string_cleanup(html.body)
-    # Remove elementos inline comuns (<b>, <i>, <span>) pra não
-    # atrapalhar o .get_text() com separador de \n abaixo
-    html = node_cleanup(html)
-    # Usa .get_text() para pegar o conteúdo textual da página toda
-    full_text = string_cleanup(html.body.get_text(separator="\n", strip=True))
 
-    log(f"Article '{title}' (id '{id}') has size {len(full_text)} ({len(body_html)} with HTML)")
-    return {
-        "titulo": title,
-        "texto": full_text,
-        "html": body_html,
-        "do_id": do_id,
-        "do_data": do_date,
+    base_result = {
         "_extracted_at": current_datetime,
+        "do_data": do_date,
+        "do_id": do_id,
+        "materia_id": id,
+        "secao": folder_path,
+        "titulo": title,
+        "html": str(html.body),
     }
+
+    # Remove elementos inline comuns (<b>, <i>, <span>)
+    clean_html = node_cleanup(html)
+    # Faz parsing do conteúdo para deixar tudo estruturado
+    content_list = parse_do_contents(clean_html.body)
+
+    log(f"Article '{title}' (id '{id}') has {len(content_list)} block(s)")
+    ret = {
+        **base_result,
+        "sections": [
+            {
+                "secao_indice": section_index,
+                "bloco_indice": block_index,
+                "conteudo_indice": content_index,
+                "cabecalho": content["header"],
+                "conteudo": body,
+            }
+            for section_index, content in enumerate(content_list)
+            for block_index, block in enumerate(content["body"])
+            for content_index, body in enumerate(block)
+        ],
+    }
+    return ret
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
@@ -153,17 +195,50 @@ def upload_results(results_list: List[dict], dataset: str):
         # Pula resultados 'vazios' (i.e. PDFs ao invés de texto, etc)
         if result is None:
             continue
-        # Constrói DataFrame a partir do resultado
-        single_df = pd.DataFrame.from_records([result])
-        # Concatena com os outros resultados
-        main_df = pd.concat([main_df, single_df], ignore_index=True)
+        # Para cada seção no resultado
+        for section in result["sections"]:
+            # Constrói objeto a ser upado com informações base
+            # Remove `html` (vai pra outra tabela) e `sections` (obviamente)
+            remove = set(["html", "sections"])
+            prepped_section = {**{k: v for k, v in result.items() if k not in remove}, **section}
+            # Constrói DataFrame a partir do objeto
+            single_df = pd.DataFrame.from_records([prepped_section])
+            # Concatena com os outros resultados
+            main_df = pd.concat([main_df, single_df], ignore_index=True)
 
-    log(f"Uploading DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
+    log(f"Uploading main DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
     # Chamando a task de upload
     upload_df_to_datalake.run(
         df=main_df,
         dataset_id=dataset,
         table_id="diarios_municipio",
+        partition_column="_extracted_at",
+        if_exists="append",
+        if_storage_data_exists="append",
+        source_format="csv",
+        csv_delimiter=",",
+    )
+
+    # HTML
+    html_df = pd.DataFrame()
+    # Para cada resultado
+    for result in results_list:
+        # Pula resultados 'vazios'
+        if result is None:
+            continue
+        del result["sections"]
+
+        # Constrói DataFrame a partir do objeto
+        single_df = pd.DataFrame.from_records([result])
+        # Concatena com os outros resultados
+        html_df = pd.concat([html_df, single_df], ignore_index=True)
+
+    log(f"Uploading HTML DataFrame: {len(html_df)} rows; columns {list(html_df.columns)}")
+    # Chamando a task de upload
+    upload_df_to_datalake.run(
+        df=html_df,
+        dataset_id=dataset,
+        table_id="diarios_municipio_html",
         partition_column="_extracted_at",
         if_exists="append",
         if_storage_data_exists="append",
