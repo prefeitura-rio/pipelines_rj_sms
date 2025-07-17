@@ -936,6 +936,9 @@ def upload_df_to_datalake(
     os.makedirs(root_folder, exist_ok=True)
     log(f"Using as root folder: {root_folder}")
 
+    if df.empty:
+        raise Exception('Dataframe is empty')
+    
     # All columns as strings
     df = df.astype(str)
     log("Converted all columns to strings")
