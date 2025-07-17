@@ -3,35 +3,37 @@
 # flake8: noqa E501
 from datetime import timedelta
 
-from prefect import Parameter, case, unmapped
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-# from pipelines.utils.flow import Flow
-from prefeitura_rio.pipelines_utils.custom import Flow  # FIXME
-from prefeitura_rio.pipelines_utils.logging import log
+from pipelines.utils.flow import Flow
+from pipelines.utils.prefect import get_current_flow_labels
+from pipelines.utils.state_handlers import handle_flow_state_change
+from pipelines.utils.tasks import get_project_name_from_prefect_environment
 
 from pipelines.constants import constants
+
+##
 from pipelines.datalake.migrate.orquestracao_cdi.constants import (
     constants as flow_constants,
 )
 from pipelines.datalake.migrate.orquestracao_cdi.schedules import schedules
 from pipelines.datalake.migrate.orquestracao_cdi.tasks import create_params_dict
+##
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
-from pipelines.utils.prefect import get_current_flow_labels
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_project_name_from_prefect_environment
+##
 
 with Flow(
     name="DataLake - Agendador de Flows - CDI",
-    # state_handlers=[handle_flow_state_change],
-    # owners=[constants.AVELLAR_ID.value],
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.AVELLAR_ID.value],
 ) as flow_orquestracao_cdi:
 
     #  ┌(1) Flow────────┐     ┌(2) Flow──────────┐
@@ -50,18 +52,22 @@ with Flow(
 
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     DATE = Parameter("date", default=None)
+    # Precisamos usar `authenticated_task()`s, e o Prefect transforma dict()s em
+    # pseudo-tasks, executadas imediatamente -- então passar um dict() como parâmetro
+    # a uma task diretamente dá erro 403 com o Google Cloud. É necessário uma
+    # `authenticated_task()` que retorna um dict(), que então pode ser usado diretamente
     params = create_params_dict(environment=ENVIRONMENT, date=DATE)
 
     project_name = get_project_name_from_prefect_environment()
     current_flow_run_labels = get_current_flow_labels()
 
     # ## (1) DOU
-    # dou_flow_run = create_flow_run(
-    #     flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
-    #     project_name=project_name,
-    #     parameters={"environment": ENVIRONMENT, "date": DATE},
-    #     labels=current_flow_run_labels,
-    # )
+    dou_flow_run = create_flow_run(
+        flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
+        project_name=project_name,
+        parameters=params,
+        labels=current_flow_run_labels,
+    )
 
     # ## (2) DO-RJ
     dorj_flow_run = create_flow_run(
