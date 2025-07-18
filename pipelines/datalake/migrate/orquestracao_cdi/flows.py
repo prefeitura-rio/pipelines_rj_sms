@@ -124,7 +124,9 @@ with Flow(
     )
 
     tcm_flow_runs = create_flow_run.map(
-        flow_name=unmapped("DataLake - Extração e Carga de Dados - Tribunal de Contas do Município"),
+        flow_name=unmapped(
+            "DataLake - Extração e Carga de Dados - Tribunal de Contas do Município"
+        ),
         project_name=unmapped(project_name),
         parameters=tcm_params,
         labels=unmapped(current_flow_run_labels),

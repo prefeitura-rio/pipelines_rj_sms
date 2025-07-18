@@ -5,6 +5,7 @@
 from typing import Optional
 
 from google.cloud import bigquery
+
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_bigquery_project_from_environment
@@ -35,10 +36,7 @@ def create_dbt_params_dict(environment: str = "dev"):
 
 @task
 def create_tcm_params_dict(case_id: str, environment: str = "dev"):
-    return {
-        "environment": environment,
-        "case_id": case_id
-    }
+    return {"environment": environment, "case_id": case_id}
 
 
 @task
