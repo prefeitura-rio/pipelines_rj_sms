@@ -13,6 +13,7 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
     generate_extraction_windows,
+    safe_upload_df_to_datalake,
     transform,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
@@ -91,14 +92,14 @@ with Flow(
 
     solicitacoes_df, exames_df, resultados_df = transform(resultado_xml=resultado_xml)
 
-    solicitacoes_upload_task = upload_df_to_datalake(
+    solicitacoes_upload_task = safe_upload_df_to_datalake(
         df=solicitacoes_df,
         dataset_id=DATASET_ID,
         table_id="solicitacoes",
         source_format="parquet",
         partition_column="datalake_loaded_at",
     )
-    exames_upload_task = upload_df_to_datalake(
+    exames_upload_task = safe_upload_df_to_datalake(
         df=exames_df,
         dataset_id=DATASET_ID,
         table_id="exames",
@@ -106,7 +107,7 @@ with Flow(
         partition_column="datalake_loaded_at",
         upstream_tasks=[solicitacoes_upload_task],
     )
-    resultados_upload_task = upload_df_to_datalake(
+    resultados_upload_task = safe_upload_df_to_datalake(
         df=resultados_df,
         dataset_id=DATASET_ID,
         table_id="resultados",
