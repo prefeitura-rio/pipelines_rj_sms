@@ -15,7 +15,7 @@ from pipelines.utils.tasks import cloud_function_request, upload_df_to_datalake
 from pipelines.utils.time import get_datetime_working_range
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=90))
+@task(max_retries=3, retry_delay=timedelta(minutes=3))
 def authenticate_and_fetch(
     username: str,
     password: str,
