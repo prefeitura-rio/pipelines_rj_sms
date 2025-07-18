@@ -932,116 +932,39 @@ def upload_df_to_datalake(
     biglake_table: bool = True,
     dataset_is_public: bool = False,
 ):
-    log(
-        f"DEBUG: upload_df_to_datalake iniciado. Tamanho do DataFrame de entrada: {df.shape[0]} linhas.",
-        level="info",
-    )
-    log(f"DEBUG: df.empty no início da tarefa: {df.empty}", level="info")
-    if df.empty:
-        log(
-            "DEBUG: DataFrame vazio detectado na verificação inicial. Levandando exceção.",
-            level="error",
-        )
-        raise Exception("Dataframe is empty")
-
     root_folder = f"./data/{uuid.uuid4()}"
     os.makedirs(root_folder, exist_ok=True)
     log(f"Using as root folder: {root_folder}")
 
-    if not os.path.isdir(root_folder):
-        log(
-            f"DEBUG ERROR: O diretório temporário '{root_folder}' NÃO foi criado com sucesso!",
-            level="error",
-        )
-        raise Exception(f"Failed to create temporary directory {root_folder}")
-    try:
-        test_file = os.path.join(root_folder, "test_write.tmp")
-        with open(test_file, "w") as f:
-            f.write("test")
-        os.remove(test_file)
-        log(f"DEBUG: Teste de escrita no diretório '{root_folder}' bem-sucedido.", level="info")
-    except Exception as e:
-        log(
-            f"DEBUG ERROR: Falha no teste de escrita no diretório '{root_folder}': {e}",
-            level="error",
-        )
-        raise Exception(f"Failed to write to temporary directory {root_folder}: {e}")
-
+    if df.empty:
+        raise Exception("Dataframe is empty")
+    
     # All columns as strings
     df = df.astype(str)
     log("Converted all columns to strings")
 
     if partition_column:
         log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
-        log(
-            f"DEBUG: Chamando create_date_partitions. DataFrame possui {df.shape[0]} linhas.",
-            level="info",
-        )
         partition_folder = create_date_partitions.run(
             dataframe=df,
             partition_column=partition_column,
             file_format=source_format,
             root_folder=root_folder,
         )
-        if not os.path.isdir(partition_folder):
-            log(
-                f"DEBUG ERROR: O diretório de partição '{partition_folder}' NÃO foi criado ou não existe após create_date_partitions!",
-                level="error",
-            )
-            raise Exception(f"Partition directory {partition_folder} not found after creation.")
     else:
         log(f"Creating a single partition for a {df.shape[0]} rows dataframe")
         file_path = os.path.join(root_folder, f"{uuid.uuid4()}.{source_format}")
 
         if source_format == "csv":
             log(f"Salvando CSV em {file_path}")
-            log(f"DEBUG: Tentando salvar CSV. DataFrame possui {df.shape[0]} linhas.", level="info")
             df.to_csv(file_path, index=False)
         elif source_format == "parquet":
             log(f"Salvando Parquet em {file_path}")
-            log(
-                f"DEBUG: Tentando salvar Parquet. DataFrame possui {df.shape[0]} linhas.",
-                level="info",
-            )
             safe_export_df_to_parquet.run(df=df, output_path=file_path)
-
-        # ✅ Verificação se o arquivo foi realmente criado
-        if not os.path.exists(file_path):
-            log(
-                f"DEBUG ERROR: Arquivo '{file_path}' NÃO foi criado após a tentativa de escrita!",
-                level="error",
-            )
-            raise FileNotFoundError(f"Arquivo não foi criado em {file_path}")
-        else:
-            log(
-                f"DEBUG: Arquivo '{file_path}' criado com sucesso e encontrado no sistema de arquivos.",
-                level="info",
-            )
-            # Adicionar verificação de tamanho do arquivo
-            file_size = os.path.getsize(file_path)
-            log(f"DEBUG: Tamanho do arquivo '{file_path}': {file_size} bytes.", level="info")
-            if file_size == 0 and df.shape[0] > 0:  # Se o DF não é vazio mas o arquivo é
-                log(
-                    f"DEBUG ERROR: Arquivo '{file_path}' está vazio, mas o DataFrame original possuía {df.shape[0]} linhas!",
-                    level="error",
-                )
 
         partition_folder = root_folder
 
     log(f"Uploading data to partition folder: {partition_folder}")
-    files_in_folder = glob.glob(
-        os.path.join(partition_folder, f"**/*.{source_format}"), recursive=True
-    )
-    log(
-        f"DEBUG: Quantidade de arquivos {source_format} encontrados em '{partition_folder}' ANTES de chamar upload_to_datalake: {len(files_in_folder)}.",
-        level="info",
-    )
-    if len(files_in_folder) == 0 and df.shape[0] > 0:
-        log(
-            "DEBUG ERROR: Nenhum arquivo encontrado para upload, mas o DataFrame não era vazio!",
-            level="error",
-        )
-
     upload_to_datalake.run(
         input_path=partition_folder,
         dataset_id=dataset_id,
