@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
+import re
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-import re
 import pandas as pd
 import prefect
 import pytz

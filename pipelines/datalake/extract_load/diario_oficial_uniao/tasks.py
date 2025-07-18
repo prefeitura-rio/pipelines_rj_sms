@@ -2,9 +2,9 @@
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-import pytz
 
 import pandas as pd
+import pytz
 from prefect import task
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
