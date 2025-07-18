@@ -29,7 +29,6 @@ from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     get_project_name,
     get_secret_key,
-    upload_df_to_datalake,
 )
 from pipelines.utils.time import from_relative_date, get_datetime_working_range
 
