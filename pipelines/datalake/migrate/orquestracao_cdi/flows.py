@@ -62,7 +62,7 @@ with Flow(
     project_name = get_project_name_from_prefect_environment()
     current_flow_run_labels = get_current_flow_labels()
 
-    # ## (1) DOU
+    ## (1) DOU
     dou_flow_run = create_flow_run(
         flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
         project_name=project_name,
@@ -70,7 +70,7 @@ with Flow(
         labels=current_flow_run_labels,
     )
 
-    # ## (2) DO-RJ
+    ## (2) DO-RJ
     dorj_flow_run = create_flow_run(
         flow_name="DataLake - Extração e Carga de Dados - Diário Oficial Municipal",
         project_name=project_name,
@@ -78,9 +78,9 @@ with Flow(
         labels=current_flow_run_labels,
     )
 
-    # ## Agrega (1) e (2)
+    ## Agrega (1) e (2)
     wait_dos = wait_for_flow_run.map(
-        flow_run_id=[dorj_flow_run],
+        flow_run_id=[dou_flow_run, dorj_flow_run],
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),

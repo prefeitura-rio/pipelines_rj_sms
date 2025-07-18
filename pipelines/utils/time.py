@@ -2,9 +2,11 @@
 from datetime import date, datetime, timedelta
 from typing import Optional
 
+import re
 import pandas as pd
 import prefect
 import pytz
+from dateutil import parser
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -112,3 +114,49 @@ def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> li
         minimum_date = date.fromisoformat(minimum_date)
 
     return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
+
+
+@task
+def parse_date_or_today(date: Optional[str]) -> datetime:
+    """
+    Recebe string de data (ex.: "2025-07-18", "30/10/1999")
+    e retorna objeto `datetime` a partir dela. Se receber
+    string vazia ou `None`, retorna `datetime.now`.
+
+    Os formatos esperados são YYYY-MM-DD e DD/MM/YYYY. A
+    função tenta fazer parsing de outros formatos via
+    `parser.parse(date, ignoretz=True, dayfirst=True)` mas,
+    se possível, use um dos formatos esperados.
+
+    Exemplos de uso:
+    ```
+    >>> parse_date_or_today("")
+    datetime.datetime(2025, 7, 18, 0, 0)
+    >>> parse_date_or_today(None)
+    datetime.datetime(2025, 7, 18, 0, 0)
+    >>> parse_date_or_today("2012-01-05")
+    datetime.datetime(2012, 1, 5, 0, 0)
+    >>> parse_date_or_today("05/01/2012")
+    datetime.datetime(2012, 1, 5, 0, 0)
+    >>> parse_date_or_today("05-01-2012")
+    datetime.datetime(2012, 1, 5, 0, 0)
+    ```
+    """
+    # Se não recebeu data nenhuma
+    if date is None or len(date) <= 0:
+        # Retorna a data atual em formato igual ao retornado
+        # pelas funções de parsing
+        return datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(
+            hour=0, minute=0, second=0, microsecond=0, tzinfo=None
+        )
+
+    # Caso contrário, vamos tentar interpretar a string recebida
+    date = date.strip()
+    # Se recebemos o formato ISO 'YYYY-MM-DD'
+    if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", date):
+        return datetime.fromisoformat(date)
+    # Se recebemos o formato 'DD/MM/YYYY'
+    if re.fullmatch(r"[0-9]{2}/[0-9]{2}/[0-9]{4}", date):
+        return datetime.strptime(date, "%d/%m/%Y")
+    # Senão, faz última tentativa de parsing da string, pode dar erro
+    return parser.parse(date, ignoretz=True, dayfirst=True)
