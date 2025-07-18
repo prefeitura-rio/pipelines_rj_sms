@@ -14,9 +14,9 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "url": "https://docs.google.com/spreadsheets/d/1EkYfxuN2bWD_q4OhHL8hJvbmQKmQKFrk0KLf6D7nKS4/edit?usp=sharing",  # noqa: E501
+        "url": "https://docs.google.com/spreadsheets/d/1XySagSMiJs22XaYqq6IY372gqLOr4zA3koCpUf0kjOg/edit?usp=sharing",  # noqa: E501
         "url_type": "google_sheet",
-        "gsheets_sheet_name": "Sheet1",
+        "gsheets_sheet_name": "Estabelecimentos",
         "table_id": "estabelecimento_auxiliar",
         "dataset_id": "brutos_sheets",
         "csv_delimiter": "|",
