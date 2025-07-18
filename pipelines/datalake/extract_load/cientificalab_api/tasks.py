@@ -8,11 +8,11 @@ import pandas as pd
 import pytz
 import requests
 from bs4 import BeautifulSoup
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import cloud_function_request, upload_df_to_datalake
 from pipelines.utils.time import get_datetime_working_range
-from prefeitura_rio.pipelines_utils.logging import log
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
@@ -241,17 +241,12 @@ def build_operator_params(
         for window in windows
     ]
 
+
 @task
-def safe_upload_df_to_datalake(
-    df, 
-    dataset_id, 
-    table_id, 
-    source_format, 
-    partition_column
-    ):
+def safe_upload_df_to_datalake(df, dataset_id, table_id, source_format, partition_column):
     if df.empty:
         log(f"Dataframe vazio para {table_id}. Uploado Ignorado", level="warning")
-        return None  
+        return None
     return upload_df_to_datalake.run(
         df=df,
         dataset_id=dataset_id,
