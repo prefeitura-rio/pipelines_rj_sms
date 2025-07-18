@@ -90,11 +90,6 @@ def authenticate_and_fetch(
 
     resultado_xml = resultado_response["body"]
 
-    # Verifica se a resposta é vazia
-    if not resultado_xml or "<solicitacao>" not in resultado_xml:
-        log(f"Resposta da API é vazia:\n{resultado_xml[:2000]}", level="error")
-        raise Exception("Resposta da API vazia")
-
     return resultado_xml
 
 
