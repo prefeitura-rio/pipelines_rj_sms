@@ -90,8 +90,8 @@ def authenticate_and_fetch(
 
     resultado_xml = resultado_response["body"]
 
-    if "Resultado não disponíveis para data solicitada" in resultado_xml:
-        log(f"Resultado não retornado {resultado_xml}", level="error")
+    if "Resultado não disponíveis para data solicitada" in resultado_xml or "<solicitacoes>" not in resultado_xml:
+        log(f"Resultado não encontrado {resultado_xml}", level="error")
         raise Exception("Dados de resultado não disponíveis para a data solicitada.")
 
     return resultado_xml
