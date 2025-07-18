@@ -938,7 +938,7 @@ def upload_df_to_datalake(
 
     if df.empty:
         raise Exception("Dataframe is empty")
-    
+
     # All columns as strings
     df = df.astype(str)
     log("Converted all columns to strings")
