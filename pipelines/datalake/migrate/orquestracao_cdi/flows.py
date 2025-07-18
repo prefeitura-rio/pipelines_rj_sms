@@ -16,8 +16,8 @@ from pipelines.datalake.migrate.orquestracao_cdi.constants import (
 )
 from pipelines.datalake.migrate.orquestracao_cdi.schedules import schedules
 from pipelines.datalake.migrate.orquestracao_cdi.tasks import (
-    create_DO_params_dict,
     create_dbt_params_dict,
+    create_DO_params_dict,
 )
 
 ##
@@ -97,7 +97,7 @@ with Flow(
         project_name=project_name,
         parameters=dbt_params,
         labels=current_flow_run_labels,
-        upstream_tasks=[wait_dos]
+        upstream_tasks=[wait_dos],
     )
 
     wait_dbt = wait_for_flow_run(

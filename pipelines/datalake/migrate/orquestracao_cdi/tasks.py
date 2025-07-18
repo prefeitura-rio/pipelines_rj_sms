@@ -25,5 +25,5 @@ def create_dbt_params_dict(environment: str = "dev"):
         "command": "build",
         "select": "+tag:cdi+",
         "exclude": None,
-        "flag": None
+        "flag": None,
     }
