@@ -10,8 +10,8 @@ from pipelines.utils.credential_injector import authenticated_task as task
 # Para a justificativa quanto à existência dessa task,
 # vide comentários no arquivo de flows
 @task
-def create_DO_params_dict(environment: str = "dev", date: Optional[str] = None):
-    return {"environment": environment, "date": date}
+def create_params_dict(environment: str = "dev", date: Optional[str] = None):
+    return {"environment": environment, "date": "2025-06-04"}
 
 
 @task
@@ -20,7 +20,7 @@ def create_dbt_params_dict(environment: str = "dev"):
     # $ dbt build --select +tag:cdi+ --target ENV
     return {
         "environment": environment,
-        "rename_flow": False,
+        "rename_flow": True,
         "send_discord_report": False,
         "command": "build",
         "select": "+tag:cdi+",

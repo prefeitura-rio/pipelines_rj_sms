@@ -17,7 +17,7 @@ from pipelines.datalake.migrate.orquestracao_cdi.constants import (
 from pipelines.datalake.migrate.orquestracao_cdi.schedules import schedules
 from pipelines.datalake.migrate.orquestracao_cdi.tasks import (
     create_dbt_params_dict,
-    create_DO_params_dict,
+    create_params_dict,
 )
 
 ##
@@ -60,18 +60,18 @@ with Flow(
     # pseudo-tasks, executadas imediatamente -- então passar um dict() como parâmetro
     # a uma task diretamente dá erro 403 com o Google Cloud. É necessário uma
     # `authenticated_task()` que retorna um dict(), que então pode ser usado diretamente
-    do_params = create_DO_params_dict(environment=ENVIRONMENT, date=DATE)
+    do_params = create_params_dict(environment=ENVIRONMENT, date=DATE)
 
     project_name = get_project_name_from_prefect_environment()
     current_flow_run_labels = get_current_flow_labels()
 
     ## (1) DOU
-    # dou_flow_run = create_flow_run(
-    #     flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
-    #     project_name=project_name,
-    #     parameters=do_params,
-    #     labels=current_flow_run_labels,
-    # )
+    dou_flow_run = create_flow_run(
+        flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
+        project_name=project_name,
+        parameters=do_params,
+        labels=current_flow_run_labels,
+    )
 
     ## (2) DO-RJ
     dorj_flow_run = create_flow_run(
@@ -83,11 +83,12 @@ with Flow(
 
     ## Agrega (1) e (2)
     wait_dos = wait_for_flow_run.map(
-        flow_run_id=[dorj_flow_run],  # [dou_flow_run, dorj_flow_run],
+        # flow_run_id=[dorj_flow_run],
+        flow_run_id=[dou_flow_run, dorj_flow_run],
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
-        max_duration=unmapped(timedelta(minutes=20)),
+        max_duration=unmapped(timedelta(minutes=60)),
     )
 
     ## (3) dbt
