@@ -18,6 +18,8 @@ from pipelines.datalake.migrate.orquestracao_cdi.schedules import schedules
 from pipelines.datalake.migrate.orquestracao_cdi.tasks import (
     create_dbt_params_dict,
     create_params_dict,
+    create_tcm_params_dict,
+    fetch_tcm_cases,
 )
 
 ##
@@ -110,8 +112,33 @@ with Flow(
     )
 
     ## (4) TCM
+    # Espera DBT terminar, pega casos da tabela
+    tcm_cases = fetch_tcm_cases(
+        date=DATE,
+        upstream_tasks=[wait_dbt],
+    )
+    # Cria um dict() de parâmetros para cada caso da tabela
+    tcm_params = create_tcm_params_dict.map(
+        case_id=tcm_cases,
+        environment=unmapped(ENVIRONMENT),
+    )
+
+    tcm_flow_runs = create_flow_run.map(
+        flow_name=unmapped("DataLake - Extração e Carga de Dados - Tribunal de Contas do Município"),
+        project_name=unmapped(project_name),
+        parameters=tcm_params,
+        labels=unmapped(current_flow_run_labels),
+    )
+    wait_tcm = wait_for_flow_run.map(
+        flow_run_id=tcm_flow_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
+        max_duration=unmapped(timedelta(minutes=20)),
+    )
 
     ## (5) Email
+    # ?
 
 
 flow_orquestracao_cdi.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
