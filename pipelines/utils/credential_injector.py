@@ -73,7 +73,6 @@ def authenticated_create_flow_run(**kwargs):
     """
     logger = prefect.context.get("logger")
     logger.debug(f"Created Flow Run with params: {kwargs}")
-    logger.info(kwargs)
     return create_flow_run.run(**kwargs)
 
 

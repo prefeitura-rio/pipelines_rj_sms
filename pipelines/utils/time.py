@@ -116,7 +116,6 @@ def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> li
     return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
 
 
-@task
 def parse_date_or_today(date: Optional[str]) -> datetime:
     """
     Recebe string de data (ex.: "2025-07-18", "30/10/1999")
