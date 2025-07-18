@@ -955,7 +955,7 @@ def upload_df_to_datalake(
         log(f"Creating a single partition for a {df.shape[0]} rows dataframe")
         file_path = os.path.join(root_folder, f"{uuid.uuid4()}.{source_format}")
         if source_format == "csv":
-            log(f"Salvando CSV em {file_path}")
+            df.to_csv(file_path, index=False)
         elif source_format == "parquet":
             safe_export_df_to_parquet.run(df=df, output_path=file_path)
         partition_folder = root_folder
