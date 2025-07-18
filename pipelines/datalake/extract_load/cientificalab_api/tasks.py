@@ -90,6 +90,8 @@ def authenticate_and_fetch(
 
     resultado_xml = resultado_response["body"]
 
+    log(f"Resposta da API:\n{resultado_xml[:2500]}")
+
     return resultado_xml
 
 
