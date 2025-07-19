@@ -940,6 +940,10 @@ def upload_df_to_datalake(
     df = df.astype(str)
     log("Converted all columns to strings")
 
+    if df.empty:
+        log("DataFrame is empty. Skipping upload", level="warning")
+        return
+
     if partition_column:
         log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
         partition_folder = create_date_partitions.run(

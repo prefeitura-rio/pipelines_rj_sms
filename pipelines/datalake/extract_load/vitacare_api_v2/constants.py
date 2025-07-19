@@ -31,6 +31,7 @@ class constants(Enum):
         "posicao": "/reports/pharmacy/stocks",
         "movimento": "/reports/pharmacy/movements",
         "vacina": "/reports/vacinas/listagemvacina",
+        "condicao": "/reports/attendances/attendanceparamcid",
     }
 
     DATASET_ID = "brutos_prontuario_vitacare"
