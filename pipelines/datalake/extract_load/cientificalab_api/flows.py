@@ -13,6 +13,7 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
     generate_extraction_windows,
+    safe_upload_df_to_datalake,
     transform,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
@@ -25,11 +26,7 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import (
-    get_project_name,
-    get_secret_key,
-    upload_df_to_datalake,
-)
+from pipelines.utils.tasks import get_project_name, get_secret_key
 from pipelines.utils.time import from_relative_date, get_datetime_working_range
 
 with Flow(
@@ -91,14 +88,14 @@ with Flow(
 
     solicitacoes_df, exames_df, resultados_df = transform(resultado_xml=resultado_xml)
 
-    solicitacoes_upload_task = upload_df_to_datalake(
+    solicitacoes_upload_task = safe_upload_df_to_datalake(
         df=solicitacoes_df,
         dataset_id=DATASET_ID,
         table_id="solicitacoes",
         source_format="parquet",
         partition_column="datalake_loaded_at",
     )
-    exames_upload_task = upload_df_to_datalake(
+    exames_upload_task = safe_upload_df_to_datalake(
         df=exames_df,
         dataset_id=DATASET_ID,
         table_id="exames",
@@ -106,7 +103,7 @@ with Flow(
         partition_column="datalake_loaded_at",
         upstream_tasks=[solicitacoes_upload_task],
     )
-    resultados_upload_task = upload_df_to_datalake(
+    resultados_upload_task = safe_upload_df_to_datalake(
         df=resultados_df,
         dataset_id=DATASET_ID,
         table_id="resultados",
@@ -156,8 +153,8 @@ flow_cientificalab_operator.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="6Gi",
-    memory_request="6Gi",
+    memory_limit="10Gi",
+    memory_request="10Gi",
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
