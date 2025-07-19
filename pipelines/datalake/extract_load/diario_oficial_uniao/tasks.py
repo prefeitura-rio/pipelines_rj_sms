@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 import pandas as pd
+import pytz
 from prefect import task
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -15,6 +16,7 @@ from pipelines.datalake.extract_load.diario_oficial_uniao.utils import (
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.utils.time import parse_date_or_today
 
 # Configurações do Web Driver
 chrome_options = Options()
@@ -42,8 +44,7 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
     Returns:
         list: Lista de dicionários contendo os dados extraídos de cada ato do DOU.
     """
-    if not date:
-        date = datetime.now()
+    date = parse_date_or_today(date)
 
     items = []  # Lista de dicionários com os metadados e informações de cada ato
     page_count = 1
@@ -144,10 +145,3 @@ def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
         log("✅ Carregamento no datalake finalizado.")
     else:
         log("❌ Não há dados para carregar.")
-
-
-@task
-def parse_date(date_string: str) -> datetime | None:
-    if date_string != "":
-        return datetime.strptime(date_string, "%d/%m/%Y")
-    return None
