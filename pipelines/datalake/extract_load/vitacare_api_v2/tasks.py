@@ -125,4 +125,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
 
         extracted_data.append(requested_data)
 
-    return pd.concat(extracted_data)
+    if len(extracted_data) > 0:
+        return pd.concat(extracted_data)
+    else:
+        return pd.DataFrame()
