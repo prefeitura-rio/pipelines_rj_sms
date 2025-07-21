@@ -79,7 +79,7 @@ routine_flow_parameters = [
         "rename_flow": True,
         "table_id_prefix": "condicao",
         "target_date": "D-7",
-    }
+    },
 ]
 
 routine_clocks = generate_dump_api_schedules(
