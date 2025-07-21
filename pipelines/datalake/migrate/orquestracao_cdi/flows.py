@@ -160,7 +160,7 @@ with Flow(
 
 
 flow_orquestracao_cdi.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_orquestracao_cdi.executor = LocalDaskExecutor(num_workers=1)
+flow_orquestracao_cdi.executor = LocalDaskExecutor(num_workers=10)
 flow_orquestracao_cdi.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
