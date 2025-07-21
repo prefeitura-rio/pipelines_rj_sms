@@ -20,22 +20,33 @@ hci_pacientes_restritos_flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
         "query": """
-        with pacientes as (
-        SELECT distinct
-            id_hci,
-            cpf,
-            clinical_motivation,
-        FROM `rj-sms.app_historico_clinico.episodio_assistencial` as ep
-        where (
-            lower(clinical_motivation) like "%hiv positivo%"
-                or lower(clinical_motivation) like "%soropositivo%"
-                or lower(clinical_motivation) like "%aids%"
-                or lower(clinical_motivation) like "%hiv+%"
-                or lower(clinical_motivation) like "%imunodeficiência%humana%"
-            )
-        and exibicao.paciente_restrito is false
+        with pacientes_suspeita as (
+            SELECT distinct
+                id_hci,
+                cpf,
+                clinical_motivation,
+            FROM `rj-sms.app_historico_clinico.episodio_assistencial` as ep
+            where (
+                lower(clinical_motivation) like "%hiv positivo%"
+                    or lower(clinical_motivation) like "%soropositivo%"
+                    or lower(clinical_motivation) like "%aids%"
+                    or lower(clinical_motivation) like "%hiv+%"
+                    or lower(clinical_motivation) like "%imunodeficiência%humana%"
+                )
+            and exibicao.paciente_restrito is false
+        ),
+        pacientes_rastreados as (
+            SELECT distinct
+                id_hci,
+                cpf,
+            FROM `rj-sms.intermediario_historico_clinico.paciente_restrito` 
         )
-        select * from pacientes
+        select * 
+        from pacientes_suspeita
+        where concat(pacientes_suspeita.id_hci,pacientes_suspeita.cpf) not in (
+        select concat(id_hci,cpf)
+        from pacientes_rastreados
+        )
     """,
     }
 ]
