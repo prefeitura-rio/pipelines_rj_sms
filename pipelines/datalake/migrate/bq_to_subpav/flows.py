@@ -13,18 +13,16 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.migrate.bq_to_subpav.schedules import (
-    bq_to_subpav_combined_schedule
+    bq_to_subpav_combined_schedule,
 )
 from pipelines.datalake.migrate.bq_to_subpav.tasks import (
-    query_bq_table,
     insert_df_into_mysql,
+    query_bq_table,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.tasks import get_secret_key
 
-with Flow(
-    name="DataLake - Migração de Dados - BigQuery para MySQL SUBPAV"
-) as bq_to_subpav_flow:
+with Flow(name="DataLake - Migração de Dados - BigQuery para MySQL SUBPAV") as bq_to_subpav_flow:
     #####################################
     # Parameters
     #####################################
@@ -40,7 +38,6 @@ with Flow(
     PROJECT_ID = Parameter("project_id", required=True)
     SCHEMA = Parameter("db_schema", required=True)
 
-
     # DESTINO MySQL
     IF_EXISTS = Parameter("if_exists", default="append")
     DEST_TABLE = Parameter("dest_table", required=True)  # Nome da tabela destino no MySQL
@@ -55,7 +52,6 @@ with Flow(
             table=TABLE_ID,
         )
 
-
     #####################################
     # Tasks
     #####################################
@@ -68,7 +64,7 @@ with Flow(
 
     insert_df_into_mysql(
         df=df_bq,
-        infisical_path = INFISICAL_PATH,
+        infisical_path=INFISICAL_PATH,
         secret_name=SECRET_NAME,
         db_schema=SCHEMA,
         table_name=DEST_TABLE,

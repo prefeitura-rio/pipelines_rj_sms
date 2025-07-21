@@ -3,17 +3,17 @@
 Tasks para migração de dados do BigQuery para o MySQL da SUBPAV.
 """
 
-from datetime import timedelta
-import pandas as pd
-from typing import Optional, List
 import re
+from datetime import timedelta
+from typing import List, Optional
 
-from sqlalchemy.exc import SQLAlchemyError
+import pandas as pd
 from google.cloud import bigquery
+from sqlalchemy.exc import SQLAlchemyError
 
-from pipelines.utils.logger import log
-from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.datalake.migrate.bq_to_subpav.utils import get_mysql_engine
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=60))
@@ -61,7 +61,11 @@ def query_bq_table(
         return df
 
     except Exception as e:
-        log(f"[{environment.upper()}] Erro ao consultar BigQuery ({full_ref}): {e}", level="error", force_discord_forwarding=True)
+        log(
+            f"[{environment.upper()}] Erro ao consultar BigQuery ({full_ref}): {e}",
+            level="error",
+            force_discord_forwarding=True,
+        )
         raise
 
 
@@ -82,7 +86,6 @@ def insert_df_into_mysql(
         log(f"[{environment.upper()}] Nenhum dado para inserir em {table_name}.", level="info")
         return
 
-
     try:
         engine = get_mysql_engine(
             infisical_path=infisical_path,
@@ -99,7 +102,10 @@ def insert_df_into_mysql(
 
     try:
         if custom_insert_query:
-            log(f"[{environment.upper()}] Inserção custom em lote (batch_size={batch_size})", level="info")
+            log(
+                f"[{environment.upper()}] Inserção custom em lote (batch_size={batch_size})",
+                level="info",
+            )
             cols = set(re.findall(r"%\((\w+)\)s", custom_insert_query))
             missing = cols - set(df.columns)
             if missing:
@@ -115,14 +121,23 @@ def insert_df_into_mysql(
                     conn.commit()
                     inserted += cursor.rowcount
                 except Exception as e:
-                    log(f"[{environment.upper()}] Erro no batch {i}-{i+batch_size}: {e}", level="error")
+                    log(
+                        f"[{environment.upper()}] Erro no batch {i}-{i+batch_size}: {e}",
+                        level="error",
+                    )
                     conn.rollback()
                     errors += len(batch)
 
-            log(f"[{environment.upper()}] Custom insert concluído: inseridos={inserted}, erros={errors}", level="info")
+            log(
+                f"[{environment.upper()}] Insert concluído: inseridos={inserted}, erros={errors}",
+                level="info",
+            )
 
         else:
-            log(f"[{environment.upper()}] Inserção via pandas.to_sql (chunksize={batch_size})", level="info")
+            log(
+                f"[{environment.upper()}] Inserção via pandas.to_sql (chunksize={batch_size})",
+                level="info",
+            )
             df.to_sql(
                 name=table_name,
                 con=engine,

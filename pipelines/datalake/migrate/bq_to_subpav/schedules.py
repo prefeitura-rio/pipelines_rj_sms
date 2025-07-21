@@ -8,8 +8,8 @@ necessários por tabela e gera os agendamentos (clocks) do Prefect.
 """
 
 from datetime import datetime, timedelta
-import pytz
 
+import pytz
 from prefect.schedules import Schedule
 
 from pipelines.constants import constants
@@ -27,12 +27,12 @@ TABELAS_CONFIG = [
         "project_id": "rj-sms-dev",
         "dataset_id": "projeto_subpav",
         "table_id": "subpav_sinanrio__sintomaticos_respiratorios",
-        "db_schema":"teste_dl",
+        "db_schema": "teste_dl",
         "dest_table": "tb_sintomaticos",
         "frequency": "daily",  # Opções: "daily", "weekly", "monthly"
         "if_exists": "append",
-        "infisical_path":"/smsrio",
-        "secret_name": "DB_URL",   
+        "infisical_path": "/smsrio",
+        "secret_name": "DB_URL",
         "custom_insert_query": """
             INSERT INTO tb_sintomaticos (cpf, cns, created_at, nome, idade,origem)
             SELECT %(cpf)s, %(cns)s, NOW(), %(nome)s, %(idade)s, 'P'
@@ -44,6 +44,7 @@ TABELAS_CONFIG = [
         """,
     },
 ]
+
 
 # -------------------------------
 # Funções auxiliares
@@ -65,11 +66,13 @@ def build_param(config: dict) -> dict:
         "custom_insert_query": config.get("custom_insert_query"),
     }
 
+
 def unpack_params(frequency: str) -> list[dict]:
     """
     Filtra e gera os parâmetros de acordo com a frequência desejada.
     """
     return [build_param(config) for config in TABELAS_CONFIG if config["frequency"] == frequency]
+
 
 # -------------------------------
 # Parâmetros por frequência
