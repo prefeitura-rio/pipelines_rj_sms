@@ -16,11 +16,11 @@ from pipelines.datalake.migrate.orquestracao_cdi.constants import (
 )
 from pipelines.datalake.migrate.orquestracao_cdi.schedules import schedules
 from pipelines.datalake.migrate.orquestracao_cdi.tasks import (
+    build_email,
     create_dbt_params_dict,
     create_params_dict,
     create_tcm_params_dict,
     fetch_tcm_cases,
-    build_email,
     send_email,
 )
 
@@ -38,6 +38,7 @@ from pipelines.utils.tasks import (
     get_project_name_from_prefect_environment,
     get_secret_key,
 )
+
 ##
 
 with Flow(

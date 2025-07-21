@@ -3,11 +3,11 @@
 # flake8: noqa E501
 
 import json
-import pytz
-import requests
 from datetime import datetime
 from typing import List, Optional
 
+import pytz
+import requests
 from google.cloud import bigquery
 from prefect.engine.signals import FAIL
 
@@ -85,7 +85,7 @@ WHERE data_publicacao = '{DATE}'
 
     # Pegamos todos os processos do TCM relevantes
     tcm_case_numbers = []
-    for (_, _, voto) in rows:
+    for _, _, voto in rows:
         voto: str
         if not voto or len(voto) <= 0:
             continue
@@ -97,7 +97,7 @@ WHERE data_publicacao = '{DATE}'
         # Pega os votos, se tivermos essa informação
         TCM_DATASET = "brutos_diario_oficial_staging"
         TCM_TABLE = "processos_tcm"
-        TCM_CASES = ", ".join([ f"'{case}'" for case in tcm_case_numbers ])
+        TCM_CASES = ", ".join([f"'{case}'" for case in tcm_case_numbers])
         TCM_QUERY = f"""
 SELECT processo_id, decisao_data, voto_conselheiro
 FROM `{project_name}.{TCM_DATASET}.{TCM_TABLE}`
@@ -107,7 +107,7 @@ WHERE processo_id in ({TCM_CASES})
         tcm_rows = [row.values() for row in client.query(TCM_QUERY).result()]
         log(f"Found {len(tcm_rows)} row(s)")
         # Salva data e URL do voto, mapeado pelo ID
-        for (id, data, voto) in tcm_rows:
+        for id, data, voto in tcm_rows:
             tcm_cases[id] = (data, voto)
 
     # Constrói cada bloco do email
@@ -116,7 +116,7 @@ WHERE processo_id in ({TCM_CASES})
         fonte, content_email, voto = row
         if fonte not in email_blocks:
             email_blocks[fonte] = []
-        
+
         content = content_email
         if voto and voto in tcm_cases:
             (vote_date, vote_url) = tcm_cases[voto]
@@ -125,7 +125,7 @@ WHERE processo_id in ({TCM_CASES})
         email_blocks[fonte].append(content)
 
     final_email_string = ""
-    for (header, body) in email_blocks.items():
+    for header, body in email_blocks.items():
         final_email_string += f"[{header}]"
         for content in body:
             final_email_string += f"{content}\n\n"
@@ -138,22 +138,17 @@ WHERE processo_id in ({TCM_CASES})
 
 @task
 def send_email(endpoint: str, token: str, message: str):
-    request_headers = {
-        "x-api-key": token
-    }
-    request_body = json.dumps({
-        "to_addresses": [
-            "matheus.avellar@dados.rio"
-        ],
-        "cc_addresses": [
-            "pedro.marques@dados.rio",
-            "vitoria.leite@dados.rio"
-        ],
-        "bcc_addresses": [],
-        "subject": "Você Precisa Saber -- teste",
-        "body": message,
-        "is_html_body": False
-    })
+    request_headers = {"x-api-key": token}
+    request_body = json.dumps(
+        {
+            "to_addresses": ["matheus.avellar@dados.rio"],
+            "cc_addresses": ["pedro.marques@dados.rio", "vitoria.leite@dados.rio"],
+            "bcc_addresses": [],
+            "subject": "Você Precisa Saber -- teste",
+            "body": message,
+            "is_html_body": False,
+        }
+    )
 
     response = requests.request("POST", endpoint, headers=request_headers, json=request_body)
     response.raise_for_status()
