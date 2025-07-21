@@ -73,7 +73,8 @@ def build_email(date: Optional[str]) -> str:
 
     DATASET = "projeto_cdi"
     TABLE = "email"
-    DATE = parse_date_or_today(date).strftime("%Y-%m-%d")
+    DO_DATETIME = parse_date_or_today(date)
+    DATE = DO_DATETIME.strftime("%Y-%m-%d")
     TODAY = (
         datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         .replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
@@ -85,7 +86,7 @@ SELECT fonte, content_email, voto
 FROM `{project_name}.{DATASET}.{TABLE}`
 WHERE data_publicacao = '{DATE}'
     """
-    log(f"Querying for email contents for '{DATE}'...")
+    log(f"Querying `{project_name}.{DATASET}.{TABLE}` for email contents for '{DATE}'...")
     rows = [row.values() for row in client.query(QUERY).result()]
     log(f"Found {len(rows)} row(s)")
 
@@ -110,7 +111,7 @@ FROM `{project_name}.{TCM_DATASET}.{TCM_TABLE}`
 WHERE processo_id in ({TCM_CASES})
     and data_particao = '{TODAY}'
         """
-        log(f"Querying for {len(tcm_case_numbers)} TCM case decision(s)...")
+        log(f"Querying `{project_name}.{TCM_DATASET}.{TCM_TABLE}` for {len(tcm_case_numbers)} TCM case decision(s)...")
         tcm_rows = [row.values() for row in client.query(TCM_QUERY).result()]
         log(f"Found {len(tcm_rows)} row(s)")
         # Salva data e URL do voto, mapeado pelo ID
@@ -127,19 +128,63 @@ WHERE processo_id in ({TCM_CASES})
         content = content_email
         if voto and voto in tcm_cases:
             (vote_date, vote_url) = tcm_cases[voto]
-            content += f"\nVoto em {vote_date}: {vote_url}"
+            content += f"<br/>Voto em {vote_date}: {vote_url}"
 
         email_blocks[fonte].append(content)
 
-    final_email_string = f"--- [Você Precisa Saber · {DATE}] ---"
-    for header, body in email_blocks.items():
-        final_email_string += f"[{header}]"
-        for content in body:
-            final_email_string += f"{content}\n\n"
-        final_email_string += "---\n\n"
+    formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
+    final_email_string = f"""
+<font face="sans-serif">
+  <table>
+    <tr style="background-color:#42b9eb">
+      <td style="padding:18px 36px">
+        <h1 style="margin:0;text-align:center">
+          <font color="#fff" size="6">VOCÊ PRECISA SABER</font>
+        </h1>
+      </td>
+    </tr>
+    <tr><td><hr/></td></tr>
+    <tr>
+      <td style="padding:18px 36px">
+        <h2 style="margin:0;text-align:center">
+          <font color="#13335a" size="5">DESTAQUES &ndash; D.O. RIO de {formatted_date}</font>
+        </h2>
+      </td>
+    </tr>
+    """
 
-    timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S %d/%m/%Y")
-    final_email_string += f"Email gerado em: {timestamp}\n"
+    for header, body in email_blocks.items():
+        final_email_string += f"""
+    <tr>
+      <th style="border:2px solid #13335a;padding:9px 18px">
+        <font color="#13335a">{header}</font>
+      </th>
+    </tr>
+        """
+        for content in body:
+            final_email_string += f"""
+    <tr>
+      <td>
+        <font color="#13335a">{content}</font>
+      </td>
+    </tr>
+            """
+
+    timestamp = (
+        datetime
+        .now(tz=pytz.timezone("America/Sao_Paulo"))
+        .strftime("%H:%M:%S &ndash; %d/%m/%Y")
+    )
+    final_email_string += f"""
+    <tr><td><hr/></td></tr>
+    <tr>
+      <td>
+        <font color="#888" size="2">Email gerado em: {timestamp}</font>
+      </td>
+    </tr>
+  </table>
+</font>
+    """
     return final_email_string
 
 
@@ -150,9 +195,9 @@ def send_email(api_base_url: str, token: str, message: str):
         "to_addresses": ["matheus.avellar@dados.rio"],
         "cc_addresses": [],  # ["pedro.marques@dados.rio", "vitoria.leite@dados.rio"],
         "bcc_addresses": [],
-        "subject": "Você Precisa Saber -- teste",
+        "subject": "Você Precisa Saber -- teste HTML",
         "body": message,
-        "is_html_body": False,
+        "is_html_body": True,
     }
 
     if api_base_url.endswith("/"):
