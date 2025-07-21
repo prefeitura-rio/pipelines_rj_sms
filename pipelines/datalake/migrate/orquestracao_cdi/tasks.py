@@ -107,7 +107,7 @@ WHERE data_publicacao = '{DATE}'
 SELECT processo_id, decisao_data, voto_conselheiro
 FROM `{project_name}.{TCM_DATASET}.{TCM_TABLE}`
 WHERE processo_id in ({TCM_CASES})
-    and data_particao = {TODAY}
+    and data_particao = '{TODAY}'
         """
         log(f"Querying for {len(tcm_case_numbers)} TCM case decision(s)...")
         tcm_rows = [row.values() for row in client.query(TCM_QUERY).result()]
