@@ -446,6 +446,7 @@ def cloud_function_request(
     query_params: dict = None,
     env: str = "dev",
     api_type: str = "json",
+    endpoint_for_filename: str = None,
 ):
     """
     Sends a request to an endpoint trough a cloud function.
@@ -477,12 +478,23 @@ def cloud_function_request(
     request = google.auth.transport.requests.Request()
     TOKEN = google.oauth2.id_token.fetch_id_token(request, cloud_function_url)
 
+    # Prepara query_params para incluir o filename_descriptor
+    # Garante que query_params é um dicionário mutável
+    if query_params is None:
+        query_params_for_cf = {}
+    else:
+        query_params_for_cf = query_params.copy()  # Cria uma cópia para não modificar o original
+
+    if endpoint_for_filename:
+        # Adiciona o descritor ao query_params sob uma chave específica
+        query_params_for_cf["_endpoint_for_filename"] = endpoint_for_filename
+
     payload = {
         "tipo_api": api_type,
         "url": url,
         "request_type": request_type,
         "body_params": body_params,
-        "query_params": query_params,
+        "query_params": query_params_for_cf,
         "credential": credential,
     }
 
@@ -500,6 +512,38 @@ def cloud_function_request(
             logger.info("[Cloud Function] Request was Successful")
 
             payload = response.json()
+
+            if "gcs_url" in payload:
+                gcs_url = payload["gcs_url"]
+                logger.info(f"[Cloud Function] GCS URL received. Downloading from: {gcs_url}")
+
+                try:
+                    # Parseia a URL GCS para obter o nome do bucket e do blob
+                    path_parts = gcs_url.replace("gs://", "").split("/", 1)
+                    if len(path_parts) < 2:
+                        raise ValueError(f"Invalid GCS URL format: {gcs_url}")
+                    bucket_name = path_parts[0]
+                    blob_name = path_parts[1]
+
+                    client = storage.Client()
+                    bucket = client.bucket(bucket_name)
+                    blob = bucket.blob(blob_name)
+
+                    # Baixa o conteúdo do GCS
+                    downloaded_content = blob.download_as_text()
+
+                    # Insere o conteúdo baixado de volta na chave 'body'
+                    if api_type == "json":
+                        payload["body"] = json.loads(downloaded_content)
+                    else:
+                        payload["body"] = downloaded_content
+
+                except Exception as gcs_e:
+                    message = (
+                        f"[Cloud Function] Failed to download data from GCS ({gcs_url}): {gcs_e}"
+                    )
+                    logger.error(message)
+                    raise RuntimeError(message) from gcs_e
 
             if payload["status_code"] != 200:
                 logger.error(
@@ -895,6 +939,10 @@ def upload_df_to_datalake(
     # All columns as strings
     df = df.astype(str)
     log("Converted all columns to strings")
+
+    if df.empty:
+        log("DataFrame is empty. Skipping upload", level="warning")
+        return
 
     if partition_column:
         log(f"Creating date partitions for a {df.shape[0]} rows dataframe")

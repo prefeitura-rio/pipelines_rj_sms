@@ -86,6 +86,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
         try:
             response = cloud_function_request.run(
                 url=api_url,
+                endpoint_for_filename=endpoint_name,
                 request_type="GET",
                 query_params={"date": str(endpoint_params["target_date"]), "cnes": cnes},
                 credential={
@@ -110,15 +111,21 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
             )
             continue
 
-        requested_data = json.loads(response["body"])
-        requested_data = pd.DataFrame(requested_data)
-
-        requested_data["_source_cnes"] = cnes
-        requested_data["_source_ap"] = endpoint_params["ap"]
-        requested_data["_target_date"] = endpoint_params["target_date"]
-        requested_data["_endpoint"] = endpoint_name
-        requested_data["_loaded_at"] = now
+        rows = [json.dumps(x) for x in response["body"]]
+        requested_data = pd.DataFrame(
+            {
+                "data": rows,
+                "_source_cnes": cnes,
+                "_source_ap": endpoint_params["ap"],
+                "_target_date": endpoint_params["target_date"],
+                "_endpoint": endpoint_name,
+                "_loaded_at": now,
+            }
+        )
 
         extracted_data.append(requested_data)
 
-    return pd.concat(extracted_data)
+    if len(extracted_data) > 0:
+        return pd.concat(extracted_data)
+    else:
+        return pd.DataFrame()
