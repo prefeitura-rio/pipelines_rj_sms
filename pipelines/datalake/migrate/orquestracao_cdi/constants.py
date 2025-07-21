@@ -7,5 +7,6 @@ from enum import Enum
 class constants(Enum):
 
     EMAIL_PATH = "/datarelay"
-    EMAIL_ENDPOINT = "API_URL"
+    EMAIL_URL = "API_URL"
     EMAIL_TOKEN = "API_TOKEN"
+    EMAIL_ENDPOINT = "/data/mailman"

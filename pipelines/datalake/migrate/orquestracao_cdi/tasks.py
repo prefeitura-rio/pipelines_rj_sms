@@ -11,6 +11,8 @@ import requests
 from google.cloud import bigquery
 from prefect.engine.signals import FAIL
 
+from pipelines.datalake.migrate.orquestracao_cdi.constants import constants
+
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_bigquery_project_from_environment
@@ -145,20 +147,18 @@ WHERE processo_id in ({TCM_CASES})
 @task
 def send_email(api_base_url: str, token: str, message: str):
     request_headers = {"x-api-key": token}
-    request_body = json.dumps(
-        {
-            "to_addresses": ["matheus.avellar@dados.rio"],
-            "cc_addresses": [],  # ["pedro.marques@dados.rio", "vitoria.leite@dados.rio"],
-            "bcc_addresses": [],
-            "subject": "Você Precisa Saber -- teste",
-            "body": message,
-            "is_html_body": False,
-        }
-    )
+    request_body = {
+        "to_addresses": ["matheus.avellar@dados.rio"],
+        "cc_addresses": [],  # ["pedro.marques@dados.rio", "vitoria.leite@dados.rio"],
+        "bcc_addresses": [],
+        "subject": "Você Precisa Saber -- teste",
+        "body": message,
+        "is_html_body": False,
+    }
 
     if api_base_url.endswith("/"):
         api_base_url = api_base_url.rstrip("/?#")
-    endpoint = api_base_url + "/data/mailman"
+    endpoint = api_base_url + constants.EMAIL_ENDPOINT.value
 
     response = requests.request("POST", endpoint, headers=request_headers, json=request_body)
     response.raise_for_status()
