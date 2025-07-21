@@ -73,9 +73,11 @@ def build_email(date: Optional[str]) -> str:
     DATASET = "projeto_cdi"
     TABLE = "email"
     DATE = parse_date_or_today(date).strftime("%Y-%m-%d")
-    TODAY = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(
-        hour=0, minute=0, second=0, microsecond=0, tzinfo=None
-    ).strftime("%Y-%m-%d")
+    TODAY = (
+        datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+        .replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+        .strftime("%Y-%m-%d")
+    )
 
     QUERY = f"""
 SELECT fonte, content_email, voto
@@ -146,7 +148,7 @@ def send_email(endpoint: str, token: str, message: str):
     request_body = json.dumps(
         {
             "to_addresses": ["matheus.avellar@dados.rio"],
-            "cc_addresses": [],  #["pedro.marques@dados.rio", "vitoria.leite@dados.rio"],
+            "cc_addresses": [],  # ["pedro.marques@dados.rio", "vitoria.leite@dados.rio"],
             "bcc_addresses": [],
             "subject": "Você Precisa Saber -- teste",
             "body": message,
