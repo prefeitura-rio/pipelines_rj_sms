@@ -43,7 +43,7 @@ with Flow(
 # Flow configs
 extract_diario_oficial_uniao.schedule = schedule
 extract_diario_oficial_uniao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-extract_diario_oficial_uniao.executor = LocalDaskExecutor(num_workers=1)
+extract_diario_oficial_uniao.executor = LocalDaskExecutor(num_workers=10)
 extract_diario_oficial_uniao.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[

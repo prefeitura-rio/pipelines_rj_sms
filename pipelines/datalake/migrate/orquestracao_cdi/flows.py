@@ -20,6 +20,8 @@ from pipelines.datalake.migrate.orquestracao_cdi.tasks import (
     create_params_dict,
     create_tcm_params_dict,
     fetch_tcm_cases,
+    build_email,
+    send_email,
 )
 
 ##
@@ -32,8 +34,10 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_project_name_from_prefect_environment
-
+from pipelines.utils.tasks import (
+    get_project_name_from_prefect_environment,
+    get_secret_key,
+)
 ##
 
 with Flow(
@@ -140,7 +144,18 @@ with Flow(
     )
 
     ## (5) Email
-    # ?
+    URL = get_secret_key(
+        secret_path=flow_constants.EMAIL_PATH.value,
+        secret_name=flow_constants.EMAIL_ENDPOINT.value,
+        environment=ENVIRONMENT,
+    )
+    TOKEN = get_secret_key(
+        secret_path=flow_constants.EMAIL_PATH.value,
+        secret_name=flow_constants.EMAIL_TOKEN.value,
+        environment=ENVIRONMENT,
+    )
+    message = build_email(date=DATE)
+    send_email(endpoint=URL, token=TOKEN, message=message)
 
 
 flow_orquestracao_cdi.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
