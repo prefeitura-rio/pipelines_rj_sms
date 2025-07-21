@@ -12,7 +12,6 @@ from google.cloud import bigquery
 from prefect.engine.signals import FAIL
 
 from pipelines.datalake.migrate.orquestracao_cdi.constants import constants
-
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_bigquery_project_from_environment
