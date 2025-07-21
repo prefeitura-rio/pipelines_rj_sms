@@ -111,7 +111,9 @@ FROM `{project_name}.{TCM_DATASET}.{TCM_TABLE}`
 WHERE processo_id in ({TCM_CASES})
     and data_particao = '{TODAY}'
         """
-        log(f"Querying `{project_name}.{TCM_DATASET}.{TCM_TABLE}` for {len(tcm_case_numbers)} TCM case decision(s)...")
+        log(
+            f"Querying `{project_name}.{TCM_DATASET}.{TCM_TABLE}` for {len(tcm_case_numbers)} TCM case decision(s)..."
+        )
         tcm_rows = [row.values() for row in client.query(TCM_QUERY).result()]
         log(f"Found {len(tcm_rows)} row(s)")
         # Salva data e URL do voto, mapeado pelo ID
@@ -170,10 +172,8 @@ WHERE processo_id in ({TCM_CASES})
     </tr>
             """
 
-    timestamp = (
-        datetime
-        .now(tz=pytz.timezone("America/Sao_Paulo"))
-        .strftime("%H:%M:%S &ndash; %d/%m/%Y")
+    timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime(
+        "%H:%M:%S &ndash; %d/%m/%Y"
     )
     final_email_string += f"""
     <tr><td><hr/></td></tr>
