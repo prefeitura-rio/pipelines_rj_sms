@@ -103,6 +103,7 @@ def get_patient_code_from_bigquery() -> list:
        SELECT DISTINCT paciente_cpf
         FROM `rj-sms.brutos_sisreg_api.executados`
         WHERE unidade_executante_id IN ('2970627')
+        -- FILTRO TEMPORARIO PARA EXECUCAO AGENDADA - 21/07/2025. REMOVER DEPOIS
         AND DATE(TIMESTAMP(data_marcacao)) = '2025-07-01'
         AND marcacao_executada = '1'
     """
