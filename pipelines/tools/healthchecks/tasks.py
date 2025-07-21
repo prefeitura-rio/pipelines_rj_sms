@@ -8,6 +8,7 @@ from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_secret_key
 
 
+
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
 def vitai_db_health_check(enviroment: str):
 
