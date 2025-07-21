@@ -29,14 +29,24 @@ def extract_decree_details(text_link_href: str) -> dict:
         response = session.get(text_link_href)
         soup = BeautifulSoup(response.text, "html.parser")
 
+        decree_title = soup.find(class_="portlet-title-text border-bottom-0")
         decree_text = soup.find(class_="texto-dou")
+        decree_identifiers = soup.find_all(
+            class_="identifica"
+        )  # Título dentro do texto. Em alguns casos não é igual ao title
         decree_date = soup.find(class_="publicado-dou-data")
         decree_edition = soup.find(class_="edicao-dou-data")
         decree_section = soup.find(class_="secao-dou")
         decree_page = soup.find(class_="secao-dou-data")
         decree_agency = soup.find(class_="orgao-dou-data")
+        decree_signatures = soup.find_all(
+            class_="assina"
+        )  # Quem assina o decreto (Caso haja assinatura)
 
         return {
+            "title": decree_title.text if decree_title else "",
+            "text_title": " ".join([identifier.text for identifier in decree_identifiers]),
+            "signatures": ";".join([signature.text for signature in decree_signatures]),
             "published_at": decree_date.text if decree_date else "",
             "edition": decree_edition.text if decree_edition else "",
             "section": decree_section.text if decree_section else "",
@@ -50,15 +60,5 @@ def extract_decree_details(text_link_href: str) -> dict:
     except Exception as e:
         log(f"Erro durante a extração de {text_link_href}: {str(e)}")
         raise e
-        return {
-            "published_at": f"Erro: {str(e)}",
-            "edition": f"Erro: {str(e)}",
-            "section": f"Erro: {str(e)}",
-            "agency": f"Erro: {str(e)}",
-            "page": f"Erro: {str(e)}",
-            "text": f"Erro: {str(e)}",
-            "html": f"Erro: {str(e)}",
-            "url": text_link_href,
-        }
     finally:
         session.close()
