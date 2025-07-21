@@ -155,7 +155,7 @@ with Flow(
         secret_name=flow_constants.EMAIL_TOKEN.value,
         environment=ENVIRONMENT,
     )
-    message = build_email(date=DATE)
+    message = build_email(date=DATE, upstream_tasks=[wait_tcm])
     send_email(endpoint=URL, token=TOKEN, message=message)
 
 
