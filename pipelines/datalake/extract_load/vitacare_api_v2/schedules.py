@@ -12,6 +12,7 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
+
 routine_flow_parameters = [
     # ------------------------------------------------------------
     # Execuções do Dia
