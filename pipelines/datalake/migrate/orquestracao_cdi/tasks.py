@@ -143,7 +143,7 @@ WHERE processo_id in ({TCM_CASES})
 
 
 @task
-def send_email(endpoint: str, token: str, message: str):
+def send_email(api_base_url: str, token: str, message: str):
     request_headers = {"x-api-key": token}
     request_body = json.dumps(
         {
@@ -155,6 +155,10 @@ def send_email(endpoint: str, token: str, message: str):
             "is_html_body": False,
         }
     )
+
+    if api_base_url.endswith("/"):
+        api_base_url = api_base_url.rstrip("/?#")
+    endpoint = api_base_url + "/data/mailman"
 
     response = requests.request("POST", endpoint, headers=request_headers, json=request_body)
     response.raise_for_status()
