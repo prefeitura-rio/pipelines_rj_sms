@@ -12,7 +12,6 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.medlab_api.constants import medlab_api_constants
-from pipelines.datalake.extract_load.medlab_api.schedules import medlab_api_schedule
 from pipelines.datalake.extract_load.medlab_api.tasks import (
     get_exams_list_and_results,
     get_patient_code_from_bigquery,
@@ -33,8 +32,8 @@ with Flow(
     #####################################
 
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    DT_START = Parameter("dt_start", default="2025-06-01")
-    DT_END = Parameter("dt_end", default="2025-06-30")
+    DT_START = Parameter("dt_start", default="2001-01-01")
+    DT_END = Parameter("dt_end", default="2100-01-01")
 
     INFISICAL_PATH = medlab_api_constants.INFISICAL_PATH.value
 
@@ -81,4 +80,4 @@ flow_medlab_api.run_config = KubernetesRun(
     memory_request="8Gi",
 )
 
-flow_medlab_api.schedule = medlab_api_schedule
+

@@ -79,14 +79,7 @@ def get_exams_list_and_results(
 
         arquivo_b64 = report_data["arquivo"]
 
-        study_date_raw = study.get("date")
-
-        if not study_date_raw:
-            log(f"no studies found for patient {patientcode}, using current date.", level="warning")
-            study_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
-        else:
-            study_date = datetime.fromisoformat(study_date_raw)
-
+        study_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
         study_date_str = study_date.strftime("%Y-%m-%d")
 
         filename = f"laudo_{patientcode}_{current_accession_number}.pdf"
@@ -110,7 +103,6 @@ def get_patient_code_from_bigquery() -> list:
        SELECT DISTINCT paciente_cpf
         FROM `rj-sms.brutos_sisreg_api.executados`
         WHERE unidade_executante_id IN ('2970627')
-        AND PARSE_TIMESTAMP("%Y-%m-%dT%H:%M:%E*SZ", elastic__timestamp) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 14 DAY)
     """
 
     log(f"Fetching patient code: {query}")
