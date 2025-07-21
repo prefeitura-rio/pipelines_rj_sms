@@ -39,9 +39,9 @@ hci_pacientes_restritos_flow_parameters = [
             SELECT distinct
                 id_hci,
                 cpf,
-            FROM `rj-sms.intermediario_historico_clinico.paciente_restrito` 
+            FROM `rj-sms.intermediario_historico_clinico.paciente_restrito`
         )
-        select * 
+        select *
         from pacientes_suspeita
         where concat(pacientes_suspeita.id_hci,pacientes_suspeita.cpf) not in (
         select concat(id_hci,cpf)
