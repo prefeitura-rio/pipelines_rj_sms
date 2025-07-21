@@ -101,7 +101,7 @@ def get_exams_list_and_results(
 def get_patient_code_from_bigquery() -> list:
     query = """
        SELECT DISTINCT paciente_cpf
-        FROM `rj-sms.brutos_sisreg_api.executados`
+        FROM `rj-sms.brutos_sisreg_api.marcacoes`
         WHERE unidade_executante_id IN ('2970627')
         -- FILTRO TEMPORARIO PARA EXECUCAO AGENDADA - 21/07/2025. REMOVER DEPOIS
         AND DATE(TIMESTAMP(data_marcacao)) = '2025-07-01'
