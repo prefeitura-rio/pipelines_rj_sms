@@ -79,5 +79,3 @@ flow_medlab_api.run_config = KubernetesRun(
     memory_limit="8Gi",
     memory_request="8Gi",
 )
-
-
