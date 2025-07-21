@@ -166,8 +166,8 @@ flow_orquestracao_cdi.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="4Gi",
-    memory_limit="4Gi",
+    memory_request="13Gi",
+    memory_limit="13Gi",
 )
 
 # FIXME
