@@ -415,7 +415,7 @@ cases:
     params:
       environment: 'dev'
       dt_start: '2025-07-01'
-      dt_end: '2025-07-017'
+      dt_end: '2025-07-17'
   - case_slug: "datalake-extract-load-vitacare-api-v2"
     flow_path: "pipelines.datalake.extract_load.vitacare_api_v2.flows"
     flow_name: "sms_vitacare_api_v2"
