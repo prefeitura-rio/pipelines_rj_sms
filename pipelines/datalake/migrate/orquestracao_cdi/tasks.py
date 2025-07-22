@@ -225,9 +225,7 @@ WHERE processo_id in ({TCM_CASES})
         # Espaçamento entre seções
         final_email_string += '<tr><td style="padding:9px"></td></tr>'
 
-    timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime(
-        "%H:%M:%S de %d/%m/%Y"
-    )
+    timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")
     final_email_string += f"""
                 <tr><td><hr/></td></tr>
                 <tr>
