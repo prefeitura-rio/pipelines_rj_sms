@@ -192,9 +192,10 @@ WHERE data_publicacao = '{DATE}'
             email_blocks[header] = []
 
         content = content_email
-        if voto and voto in tcm_cases:
-            (vote_date, vote_url) = tcm_cases[voto]
-            content += f"<br/>Voto em {vote_date}: {vote_url}"
+        ## FIXME
+        # if voto and voto in tcm_cases:
+        #     (vote_date, vote_url) = tcm_cases[voto]
+        #     content += f"<br/>Voto em {vote_date}: {vote_url}"
 
         email_blocks[header].append(content)
 
