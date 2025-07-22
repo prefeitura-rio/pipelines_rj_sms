@@ -183,7 +183,12 @@ WHERE data_publicacao = '{DATE}'
         if header not in email_blocks:
             email_blocks[header] = []
 
-        content = content_email
+        # Tentativa fútil de remover algumas entradas errôneas
+        # Estamos tapando buracos no barco com chiclete aqui
+        content = content_email.strip()
+        if content == "Anexo" or content.startswith("•"):
+            continue
+
         if voto and voto in tcm_cases:
             (vote_date, vote_url) = tcm_cases[voto]
             if vote_date and vote_url:
@@ -203,6 +208,7 @@ WHERE data_publicacao = '{DATE}'
                     <td style="padding:18px 0px">
                         <h1 style="margin:0;text-align:center">
                             <font color="#fff" size="6">Você Precisa Saber</font>
+                            <img align="right" style="margin-right:18px" src="{constants.LOGO_SMS.value}" alt="Logomarca SMS - Prefeitura Rio"/>
                         </h1>
                     </td>
                 </tr>
@@ -230,7 +236,7 @@ WHERE data_publicacao = '{DATE}'
         for content in body:
             content: str
             # Remove espaços supérfluos, \n para <br>
-            content.strip().replace("\n", "<br/>")
+            content.replace("\n", "<br/>")
             # Tentativa fútil de remover nomes em assinaturas que
             # às vezes aparecem em cabeçalhos
             content = re.sub(r"^DANIEL SORANZ\s*", "", content)
@@ -272,11 +278,6 @@ WHERE data_publicacao = '{DATE}'
                 <tr>
                     <td>
                         <font color="#888" size="2">Email gerado às {timestamp}</font>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <img src="{constants.LOGO_SMS.value}"/>
                     </td>
                 </tr>
             </table>
