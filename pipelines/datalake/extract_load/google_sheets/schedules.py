@@ -24,6 +24,16 @@ flow_parameters = [
         "rename_flow": True,
     },
     {
+        "url": "https://docs.google.com/spreadsheets/d/1-3sJmuLPfmBjS8vPV1ct8qx5-5YdqnDH3_vD4EYkg9Q/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Mapeamento",
+        "table_id": "usuario_bigquery",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
         "csv_delimiter": "|",
         "dataset_id": "brutos_sheets",
         "environment": "prod",
