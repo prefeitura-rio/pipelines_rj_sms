@@ -284,7 +284,12 @@ WHERE data_publicacao = '{DATE}'
 
 
 @task
-def send_email(api_base_url: str, token: str, message: str, date: Optional[str] = None,):
+def send_email(
+    api_base_url: str,
+    token: str,
+    message: str,
+    date: Optional[str] = None,
+):
     DATE = parse_date_or_today(date).strftime("%d/%m/%Y")
 
     request_headers = {"x-api-key": token}
