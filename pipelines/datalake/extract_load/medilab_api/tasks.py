@@ -8,13 +8,13 @@ import pytz
 import requests
 from google.cloud import bigquery, storage
 
+from pipelines.datalake.extract_load.medilab_api.utils import (
+    get_study_list,
+    get_study_report,
+    get_token,
+)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.datalake.extract_load.medilab_api.utils import (
-    get_token,
-    get_study_list,
-    get_study_report
-)
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
@@ -34,20 +34,9 @@ def get_exams_list_and_results(
     storage_client = storage.Client()
     bucket = storage_client.bucket(gcs_bucket_name)
 
-    token = get_token(
-        api_url, 
-        api_usuario, 
-        api_senha, 
-        api_codacesso
-    )
+    token = get_token(api_url, api_usuario, api_senha, api_codacesso)
 
-    study_list_data = get_study_list(
-        api_url, 
-        token, 
-        dt_start, 
-        dt_end, 
-        patientcode
-    )
+    study_list_data = get_study_list(api_url, token, dt_start, dt_end, patientcode)
 
     if "studies" not in study_list_data or not study_list_data["studies"]:
         log(f"No 'studies' found or list is empty for patient {patientcode}", level="warning")
@@ -60,11 +49,7 @@ def get_exams_list_and_results(
 
         current_accession_number = study["accessionNumber"]
 
-        report_data = get_study_report(
-            api_url, 
-            token, 
-            current_accession_number
-        )
+        report_data = get_study_report(api_url, token, current_accession_number)
 
         if "arquivo" not in report_data or not report_data["arquivo"]:
             log(f"No 'arquivo' (base64 data) found for patient {patientcode}", level="warning")

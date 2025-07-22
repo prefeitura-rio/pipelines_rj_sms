@@ -1,11 +1,17 @@
+# -*- coding: utf-8 -*-
 import requests
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=30, max=120),
-    retry=retry_if_exception_type(Exception), 
+    retry=retry_if_exception_type(Exception),
 )
 def get_token(api_url, usuario, senha, codacesso):
     response = requests.post(
