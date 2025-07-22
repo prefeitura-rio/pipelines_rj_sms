@@ -2,6 +2,7 @@
 # pylint: disable=C0103
 # flake8: noqa E501
 
+import io
 import os
 import re
 from datetime import datetime
@@ -98,8 +99,9 @@ def get_todays_tcm_from_gcs(environment: str = "prod"):
     output_df = pd.DataFrame()
     for blob in blobs:
         log(f"Downloading '{blob.name}'...")
-        data = blob.download_as_bytes()
-        df = pd.read_csv(data, dtype=str, encoding="utf-8")
+        data = blob.download_as_text()
+        pseudofile = io.StringIO(data)
+        df = pd.read_csv(pseudofile, dtype=str, encoding="utf-8")
         df1 = df[["processo_id", "decisao_data", "voto_conselheiro"]]
         log(f"'{blob.name}' has {len(df1)} row(s)")
         output_df = pd.concat([output_df, df1], ignore_index=True)
