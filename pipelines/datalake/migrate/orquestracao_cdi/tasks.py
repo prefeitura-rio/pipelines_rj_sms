@@ -2,12 +2,13 @@
 # pylint: disable=C0103
 # flake8: noqa E501
 
-import json
+import re
+import pytz
+import requests
+
 from datetime import datetime
 from typing import List, Optional
 
-import pytz
-import requests
 from google.cloud import bigquery
 from prefect.engine.signals import FAIL
 
@@ -126,14 +127,14 @@ WHERE processo_id in ({TCM_CASES})
         # Recebemos algo como
         # "AVISOS EDITAIS E TERMOS DE CONTRATOS/TRIBUNAL DE CONTAS DO MUNICÍPIO/OUTROS"
         # E queremos "Tribunal de Contas do Município"
-        return (
-            path.rstrip("/OUTROS")
+        return re.sub(r"\bD([aeo])\b", r"d\1", (
+            path.removeprefix("AVISOS EDITAIS E TERMOS DE CONTRATOS/")
+            .removesuffix("/RESOLUÇÕES/RESOLUÇÃO N")
+            .removesuffix("/DECRETOS N")
+            .removesuffix("/OUTROS")
             .split("/")[-1]
             .title()
-            .replace("De", "de")
-            .replace("Do", "do")
-            .replace("Da", "da")
-        )
+        ))
 
     # Constrói cada bloco do email
     email_blocks = {}
@@ -150,6 +151,10 @@ WHERE processo_id in ({TCM_CASES})
 
         email_blocks[header].append(content)
 
+    # [!] Importante: antes de editar o HTML abaixo, lembre que ele é HTML
+    # para clientes de EMAIL. Assim, muitas (MUITAS) funcionalidades modernas
+    # não estão disponíveis. Confira [https://www.caniemail.com/] para
+    # garantir que suas modificações não quebrarão nada.
     formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
     final_email_string = f"""
 <font face="sans-serif">
@@ -180,6 +185,13 @@ WHERE processo_id in ({TCM_CASES})
     </tr>
         """
         for content in body:
+            # Negrito em decisões de TCM
+            if "nos termos do voto do Relator" in content:
+                content = re.sub(
+                    r"^(.+) nos termos do voto do Relator",
+                    r"<b>\1</b> nos termos do voto do Relator",
+                    content
+                )
             final_email_string += f"""
     <tr>
       <td style="padding:9px 18px">
@@ -187,6 +199,8 @@ WHERE processo_id in ({TCM_CASES})
       </td>
     </tr>
             """
+        # Espaçamento entre seções
+        final_email_string += '<tr><td style="padding:9px"></td></tr>'
 
     timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime(
         "%H:%M:%S &ndash; %d/%m/%Y"
