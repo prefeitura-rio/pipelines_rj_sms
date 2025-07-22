@@ -127,8 +127,7 @@ WHERE processo_id in ({TCM_CASES})
         # "AVISOS EDITAIS E TERMOS DE CONTRATOS/TRIBUNAL DE CONTAS DO MUNICÍPIO/OUTROS"
         # E queremos "Tribunal de Contas do Município"
         return (
-            path
-            .rstrip("/OUTROS")
+            path.rstrip("/OUTROS")
             .split("/")[-1]
             .title()
             .replace("De", "de")
