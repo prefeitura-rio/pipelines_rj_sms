@@ -3,12 +3,11 @@
 # flake8: noqa E501
 
 import re
-import pytz
-import requests
-
 from datetime import datetime
 from typing import List, Optional
 
+import pytz
+import requests
 from google.cloud import bigquery
 from prefect.engine.signals import FAIL
 
@@ -127,14 +126,18 @@ WHERE processo_id in ({TCM_CASES})
         # Recebemos algo como
         # "AVISOS EDITAIS E TERMOS DE CONTRATOS/TRIBUNAL DE CONTAS DO MUNICÍPIO/OUTROS"
         # E queremos "Tribunal de Contas do Município"
-        return re.sub(r"\bD([aeo])\b", r"d\1", (
-            path.removeprefix("AVISOS EDITAIS E TERMOS DE CONTRATOS/")
-            .removesuffix("/RESOLUÇÕES/RESOLUÇÃO N")
-            .removesuffix("/DECRETOS N")
-            .removesuffix("/OUTROS")
-            .split("/")[-1]
-            .title()
-        ))
+        return re.sub(
+            r"\bD([aeo])\b",
+            r"d\1",
+            (
+                path.removeprefix("AVISOS EDITAIS E TERMOS DE CONTRATOS/")
+                .removesuffix("/RESOLUÇÕES/RESOLUÇÃO N")
+                .removesuffix("/DECRETOS N")
+                .removesuffix("/OUTROS")
+                .split("/")[-1]
+                .title()
+            ),
+        )
 
     # Constrói cada bloco do email
     email_blocks = {}
@@ -190,7 +193,7 @@ WHERE processo_id in ({TCM_CASES})
                 content = re.sub(
                     r"^(.+) nos termos do voto do Relator",
                     r"<b>\1</b> nos termos do voto do Relator",
-                    content
+                    content,
                 )
             final_email_string += f"""
     <tr>
