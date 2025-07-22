@@ -160,65 +160,85 @@ WHERE processo_id in ({TCM_CASES})
     # garantir que suas modificações não quebrarão nada.
     formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
     final_email_string = f"""
-<font face="sans-serif">
-  <table>
-    <tr style="background-color:#42b9eb">
-      <td style="padding:18px 0px">
-        <h1 style="margin:0;text-align:center">
-          <font color="#fff" size="6">VOCÊ PRECISA SABER</font>
-        </h1>
-      </td>
-    </tr>
-    <tr><td><hr/></td></tr>
-    <tr>
-      <td style="padding:18px 0px">
-        <h2 style="margin:0;text-align:center">
-          <font color="#13335a" size="5">DESTAQUES &ndash; D.O. RIO de {formatted_date}</font>
-        </h2>
-      </td>
-    </tr>
+        <font face="sans-serif">
+            <table>
+                <tr style="background-color:#42b9eb">
+                    <td style="padding:18px 0px">
+                        <h1 style="margin:0;text-align:center">
+                            <font color="#fff" size="6">VOCÊ PRECISA SABER</font>
+                        </h1>
+                    </td>
+                </tr>
+                <tr><td><hr/></td></tr>
+                <tr>
+                    <td style="padding:18px 0px">
+                        <h2 style="margin:0;text-align:center">
+                            <font color="#13335a" size="5">DESTAQUES &ndash; D.O. RIO de {formatted_date}</font>
+                        </h2>
+                    </td>
+                </tr>
     """
 
     for header, body in email_blocks.items():
         final_email_string += f"""
-    <tr>
-      <th style="border:2px solid #13335a;padding:9px">
-        <font color="#13335a">{header}</font>
-      </th>
-    </tr>
+            <tr>
+                <th style="background-color:#e7e7e7;padding:9px">
+                    <font color="#13335a">{header}</font>
+                </th>
+            </tr>
+            <tr>
+                <td style="padding:9px 18px">
+                    <ul>
         """
         for content in body:
+            content: str
+            # Remove espaços supérfluos, \n para <br>
+            content.strip().replace("\n", "<br/>")
+            # Tentativa fútil de remover nomes em assinaturas que
+            # às vezes aparecem em cabeçalhos
+            content = re.sub(r"^DANIEL SORANZ\s*", "", content)
+
             # Negrito em decisões de TCM
-            if "nos termos do voto do Relator" in content:
-                content = re.sub(
-                    r"^(.+) nos termos do voto do Relator",
-                    r"<b>\1</b> nos termos do voto do Relator",
-                    content,
-                )
+            content = re.sub(
+                r"^(.+) nos termos do voto do Relator",
+                r"<b>\1</b> nos termos do voto do Relator",
+                content,
+            )
+            # Negrito em títulos de decretos/resoluções
+            content = re.sub(
+                r"^[\*\.]*((DECRETO|RESOLUÇÃO) .+ DE 2[0-9]{3})\b",
+                r"<b>\1</b>",
+                content,
+            )
+
             final_email_string += f"""
-    <tr>
-      <td style="padding:9px 18px">
-        <font color="#13335a">{content}</font>
-      </td>
-    </tr>
+                <li>
+                    <font color="#13335a">{content}</font>
+                </li>
             """
+        # /for
+        final_email_string += """
+                    </ul>
+                </td>
+            </tr>
+        """
         # Espaçamento entre seções
         final_email_string += '<tr><td style="padding:9px"></td></tr>'
 
     timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime(
-        "%H:%M:%S &ndash; %d/%m/%Y"
+        "%H:%M:%S de %d/%m/%Y"
     )
     final_email_string += f"""
-    <tr><td><hr/></td></tr>
-    <tr>
-      <td>
-        <font color="#888" size="2">Email gerado em: {timestamp}</font>
-      </td>
-    </tr>
-  </table>
-</font>
+                <tr><td><hr/></td></tr>
+                <tr>
+                    <td>
+                        <font color="#888" size="2">Email gerado às {timestamp}</font>
+                    </td>
+                </tr>
+            </table>
+        </font>
     """
-    return final_email_string
+    return re.sub(r"\s{2,}\<", "<", final_email_string)
 
 
 @task
