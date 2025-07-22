@@ -69,7 +69,7 @@ WHERE voto is not NULL and data_publicacao = '{DATE}'
 
 
 @task
-def get_todays_tcm_from_gcs(environment: str = "prod", date: Optional[str] = None):
+def get_todays_tcm_from_gcs(environment: str = "prod"):
     client = storage.Client()
     project_name = get_bigquery_project_from_environment.run(environment=environment)
     bucket = client.bucket(project_name)
@@ -83,15 +83,15 @@ def get_todays_tcm_from_gcs(environment: str = "prod", date: Optional[str] = Non
     TODAY_STR = TODAY.strftime("%Y-%m-%d")
 
     PATH = (
-        f"{project_name}"
-        f"/staging/brutos_diario_oficial/processos_tcm"
-        f"/ano_particao={YEAR_STR}"
-        f"/mes_particao={MONTH_STR}"
-        f"/data_particao={TODAY_STR}"
+        f"staging/brutos_diario_oficial/processos_tcm/"
+        f"ano_particao={YEAR_STR}/"
+        f"mes_particao={MONTH_STR}/"
+        f"data_particao={TODAY_STR}/"
     )
-
-    blobs = list(bucket.list_blobs(prefix=PATH, match_glob="*.csv"))
+    log(f"Looking for CSV files in '{PATH}'")
+    blobs = list(bucket.list_blobs(prefix=PATH, match_glob="**.csv"))
     log(f"Found {len(blobs)} CSV file(s) for TCM cases")
+    log([blob.name for blob in blobs])
 
     # Arquivos são bem pequenos (<5KB) então vamos baixar direto em
     # memória; a princípio só vamos ter 1 por dia
@@ -110,7 +110,7 @@ def get_todays_tcm_from_gcs(environment: str = "prod", date: Optional[str] = Non
 
 
 @task
-def build_email(environment: str = "prod", date: Optional[str] = None) -> str:
+def build_email(environment: str = "prod", date: Optional[str] = None, tcm_df: pd.DataFrame = None) -> str:
     client = bigquery.Client()
     project_name = get_bigquery_project_from_environment.run(environment=environment)
 
@@ -141,28 +141,18 @@ WHERE data_publicacao = '{DATE}'
             continue
         tcm_case_numbers.append(voto.strip())
 
-    ## FIXME: TCM lido direto do GCS
-    # # Se tivemos algum processo relevante
-    # tcm_cases = dict()
-    # if len(tcm_case_numbers) > 0:
-    #     # Pega os votos, se tivermos essa informação
-    #     TCM_DATASET = "brutos_diario_oficial_staging"
-    #     TCM_TABLE = "processos_tcm"
-    #     TCM_CASES = ", ".join([f"'{case}'" for case in tcm_case_numbers])
-    #     TCM_QUERY = f"""
-    #     SELECT processo_id, decisao_data, voto_conselheiro
-    #     FROM `{project_name}.{TCM_DATASET}.{TCM_TABLE}`
-    #     WHERE processo_id in ({TCM_CASES})
-    #         and data_particao = '{TODAY}'
-    #     """
-    #     log(
-    #         f"Querying `{project_name}.{TCM_DATASET}.{TCM_TABLE}` for {len(tcm_case_numbers)} TCM case decision(s)..."
-    #     )
-    #     tcm_rows = [row.values() for row in client.query(TCM_QUERY).result()]
-    #     log(f"Found {len(tcm_rows)} row(s)")
-    #     # Salva data e URL do voto, mapeado pelo ID
-    #     for id, data, voto in tcm_rows:
-    #         tcm_cases[id] = (data, voto)
+    # Se tivemos algum processo relevante
+    tcm_cases = dict()
+    if len(tcm_case_numbers) > 0:
+        # Pega os votos, se tivermos essa informação
+        relevant_tcm_df = tcm_df[tcm_df["processo_id"].isin(tcm_case_numbers)]
+        relevant_tcm_df = relevant_tcm_df.reset_index()
+        log(f"Found {len(relevant_tcm_df)} case(s)")
+        # Salva data e URL do voto, mapeado pelo ID
+        for _, row in relevant_tcm_df.iterrows():
+            # row => 'processo_id', 'decisao_data', 'voto_conselheiro'
+            pid = str(row["processo_id"]).strip()
+            tcm_cases[pid] = (row["decisao_data"], row["voto_conselheiro"])
 
     def extract_header_from_path(path: str) -> str:
         if not path or len(path) <= 0:
@@ -192,10 +182,10 @@ WHERE data_publicacao = '{DATE}'
             email_blocks[header] = []
 
         content = content_email
-        ## FIXME
-        # if voto and voto in tcm_cases:
-        #     (vote_date, vote_url) = tcm_cases[voto]
-        #     content += f"<br/>Voto em {vote_date}: {vote_url}"
+        if voto and voto in tcm_cases:
+            (vote_date, vote_url) = tcm_cases[voto]
+            if vote_date and vote_url:
+                content += f'<br/><a href="{vote_url}">Voto em {vote_date}</a>'
 
         email_blocks[header].append(content)
 

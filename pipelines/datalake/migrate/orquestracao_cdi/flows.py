@@ -66,7 +66,6 @@ with Flow(
     DATE = Parameter("date", default=None)
     SKIP_TO_EMAIL = Parameter("skip_to_email", default=False)
 
-    get_todays_tcm_from_gcs(environment=ENVIRONMENT, date=DATE)
 
     ## Pipeline completo
     with case(SKIP_TO_EMAIL, False):
@@ -163,8 +162,10 @@ with Flow(
             secret_name=flow_constants.EMAIL_TOKEN.value,
             environment=ENVIRONMENT,
         )
-        message = build_email(environment=ENVIRONMENT, date=DATE, upstream_tasks=[wait_tcm])
+        df = get_todays_tcm_from_gcs(environment=ENVIRONMENT)
+        message = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df, upstream_tasks=[wait_tcm])
         send_email(api_base_url=URL, token=TOKEN, message=message)
+
 
     ## Somente envio de email
     with case(SKIP_TO_EMAIL, True):
