@@ -71,7 +71,7 @@ with Flow(
 # Storage and run configs
 migrate_gdrive_to_gcs.schedule = schedules
 migrate_gdrive_to_gcs.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-migrate_gdrive_to_gcs.executor = LocalDaskExecutor(num_workers=3)
+migrate_gdrive_to_gcs.executor = LocalDaskExecutor(num_workers=2)
 migrate_gdrive_to_gcs.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
