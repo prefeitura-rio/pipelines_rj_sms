@@ -74,20 +74,21 @@ def get_todays_tcm_from_gcs(environment: str = "prod", date: Optional[str] = Non
     project_name = get_bigquery_project_from_environment.run(environment=environment)
     bucket = client.bucket(project_name)
 
-    TODAY = (
-        datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-        .replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    TODAY = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(
+        hour=0, minute=0, second=0, microsecond=0, tzinfo=None
     )
 
     YEAR_STR = TODAY.strftime("%Y")
     MONTH_STR = TODAY.strftime("%m")
     TODAY_STR = TODAY.strftime("%Y-%m-%d")
 
-    PATH = f"{project_name}" \
-        f"/staging/brutos_diario_oficial/processos_tcm" \
-        f"/ano_particao={YEAR_STR}" \
-        f"/mes_particao={MONTH_STR}" \
+    PATH = (
+        f"{project_name}"
+        f"/staging/brutos_diario_oficial/processos_tcm"
+        f"/ano_particao={YEAR_STR}"
+        f"/mes_particao={MONTH_STR}"
         f"/data_particao={TODAY_STR}"
+    )
 
     blobs = list(bucket.list_blobs(prefix=PATH, match_glob="*.csv"))
     log(f"Found {len(blobs)} CSV file(s) for TCM cases")
