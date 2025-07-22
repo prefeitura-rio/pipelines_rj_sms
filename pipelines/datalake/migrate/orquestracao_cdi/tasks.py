@@ -122,11 +122,6 @@ def build_email(
     TABLE = "email"
     DO_DATETIME = parse_date_or_today(date)
     DATE = DO_DATETIME.strftime("%Y-%m-%d")
-    TODAY = (
-        datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-        .replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-        .strftime("%Y-%m-%d")
-    )
 
     QUERY = f"""
 SELECT fonte, content_email, pasta, voto
@@ -205,12 +200,12 @@ WHERE data_publicacao = '{DATE}'
     formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
     final_email_string = f"""
         <font face="sans-serif">
-            <table>
+            <table style="max-width:750px">
                 <tr style="background-color:#42b9eb;background:linear-gradient(90deg,#2a688f,#42b9eb)">
                     <td style="padding:18px 0px">
                         <h1 style="margin:0;text-align:center">
-                            <font color="#fff" size="6">Você Precisa Saber</font>
-                            <img align="right" style="margin-right:18px" src="{constants.LOGO_SMS.value}" alt="Logomarca SMS - Prefeitura Rio"/>
+                            <font color="#fff" size="6" style="vertical-align:middle">Você Precisa Saber</font>
+                            <img align="right" style="margin-right:18px;vertical-align:middle" src="{constants.LOGO_SMS.value}" alt="SMS-Rio"/>
                         </h1>
                     </td>
                 </tr>
@@ -289,13 +284,25 @@ WHERE data_publicacao = '{DATE}'
 
 
 @task
-def send_email(api_base_url: str, token: str, message: str):
+def send_email(api_base_url: str, token: str, message: str, date: Optional[str] = None,):
+    DATE = parse_date_or_today(date).strftime("%d/%m/%Y")
+
     request_headers = {"x-api-key": token}
     request_body = {
-        "to_addresses": ["matheus.avellar@dados.rio"],
-        "cc_addresses": [],  # ["pedro.marques@dados.rio", "vitoria.leite@dados.rio"],
+        "to_addresses": [
+            "pedro.marques@dados.rio",
+            "vitoria.leite@dados.rio",
+            "natachapragana.sms@gmail.com",
+        ],
+        "cc_addresses": [
+            "daniel.lira@dados.rio",
+            "herian.cavalcante@dados.rio",
+            "karen.pacheco@dados.rio",
+            "matheus.avellar@dados.rio",
+            "polianalucena.sms@gmail.com",
+        ],
         "bcc_addresses": [],
-        "subject": "Você Precisa Saber -- teste HTML",
+        "subject": f"Você Precisa Saber ({DATE})",
         "body": message,
         "is_html_body": True,
     }

@@ -9,9 +9,8 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-# FIXME
 parameters = [
-    {"environment": "prod", "select": "tag:cdi"},
+    {"environment": "prod", "date": None},
 ]
 
 clocks = generate_dump_api_schedules(

@@ -165,7 +165,7 @@ with Flow(
         message = build_email(
             environment=ENVIRONMENT, date=DATE, tcm_df=df, upstream_tasks=[wait_tcm]
         )
-        send_email(api_base_url=URL, token=TOKEN, message=message)
+        send_email(date=DATE, api_base_url=URL, token=TOKEN, message=message)
 
     ## Somente envio de email
     with case(SKIP_TO_EMAIL, True):
@@ -180,7 +180,7 @@ with Flow(
             environment=ENVIRONMENT,
         )
         message = build_email(date=DATE)
-        send_email(api_base_url=URL, token=TOKEN, message=message)
+        send_email(date=DATE, api_base_url=URL, token=TOKEN, message=message)
 
 
 flow_orquestracao_cdi.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
@@ -194,5 +194,4 @@ flow_orquestracao_cdi.run_config = KubernetesRun(
     memory_limit="13Gi",
 )
 
-# FIXME
-# flow_orquestracao_cdi.schedule = schedules
+flow_orquestracao_cdi.schedule = schedules
