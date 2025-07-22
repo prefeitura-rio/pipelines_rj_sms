@@ -8,13 +8,14 @@ import pandas as pd
 import pytz
 import requests
 from bs4 import BeautifulSoup
+from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import cloud_function_request
+from pipelines.utils.tasks import cloud_function_request, upload_df_to_datalake
 from pipelines.utils.time import get_datetime_working_range
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=90))
+@task(max_retries=3, retry_delay=timedelta(minutes=3))
 def authenticate_and_fetch(
     username: str,
     password: str,
@@ -87,7 +88,16 @@ def authenticate_and_fetch(
         message = f"Failed to get XML results from Lisnet API: {resultado_response.get('status_code')} - {resultado_response.get('body')}"
         raise Exception(message)
 
-    return resultado_response["body"]
+    resultado_xml = resultado_response["body"]
+
+    if (
+        "Resultado não disponíveis para data solicitada" in resultado_xml
+        or "<solicitacoes>" not in resultado_xml
+    ):
+        log(f"Resultado não encontrado {resultado_xml}", level="error")
+        raise Exception("Dados de resultado não disponíveis para a data solicitada.")
+
+    return resultado_xml
 
 
 @task(nout=3)
@@ -239,3 +249,17 @@ def build_operator_params(
         }
         for window in windows
     ]
+
+
+@task
+def safe_upload_df_to_datalake(df, dataset_id, table_id, source_format, partition_column):
+    if df.empty:
+        log(f"Dataframe vazio para {table_id}. Uploado Ignorado", level="warning")
+        return None
+    return upload_df_to_datalake.run(
+        df=df,
+        dataset_id=dataset_id,
+        table_id=table_id,
+        source_format=source_format,
+        partition_column=partition_column,
+    )
