@@ -82,7 +82,7 @@ def build_email(date: Optional[str]) -> str:
     )
 
     QUERY = f"""
-SELECT fonte, content_email, voto
+SELECT fonte, content_email, pasta, voto
 FROM `{project_name}.{DATASET}.{TABLE}`
 WHERE data_publicacao = '{DATE}'
     """
@@ -92,7 +92,7 @@ WHERE data_publicacao = '{DATE}'
 
     # Pegamos todos os processos do TCM relevantes
     tcm_case_numbers = []
-    for _, _, voto in rows:
+    for _, _, _, voto in rows:
         voto: str
         if not voto or len(voto) <= 0:
             continue
@@ -120,26 +120,43 @@ WHERE processo_id in ({TCM_CASES})
         for id, data, voto in tcm_rows:
             tcm_cases[id] = (data, voto)
 
+    def extract_header_from_path(path: str) -> str:
+        if not path or len(path) <= 0:
+            return None
+        # Recebemos algo como
+        # "AVISOS EDITAIS E TERMOS DE CONTRATOS/TRIBUNAL DE CONTAS DO MUNICÍPIO/OUTROS"
+        # E queremos "Tribunal de Contas do Município"
+        return (
+            path
+            .rstrip("/OUTROS")
+            .split("/")[-1]
+            .title()
+            .replace("De", "de")
+            .replace("Do", "do")
+            .replace("Da", "da")
+        )
+
     # Constrói cada bloco do email
     email_blocks = {}
     for row in rows:
-        fonte, content_email, voto = row
-        if fonte not in email_blocks:
-            email_blocks[fonte] = []
+        fonte, content_email, pasta, voto = row
+        header = extract_header_from_path(pasta) or fonte
+        if header not in email_blocks:
+            email_blocks[header] = []
 
         content = content_email
         if voto and voto in tcm_cases:
             (vote_date, vote_url) = tcm_cases[voto]
             content += f"<br/>Voto em {vote_date}: {vote_url}"
 
-        email_blocks[fonte].append(content)
+        email_blocks[header].append(content)
 
     formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
     final_email_string = f"""
 <font face="sans-serif">
   <table>
     <tr style="background-color:#42b9eb">
-      <td style="padding:18px 36px">
+      <td style="padding:18px 0px">
         <h1 style="margin:0;text-align:center">
           <font color="#fff" size="6">VOCÊ PRECISA SABER</font>
         </h1>
@@ -147,7 +164,7 @@ WHERE processo_id in ({TCM_CASES})
     </tr>
     <tr><td><hr/></td></tr>
     <tr>
-      <td style="padding:18px 36px">
+      <td style="padding:18px 0px">
         <h2 style="margin:0;text-align:center">
           <font color="#13335a" size="5">DESTAQUES &ndash; D.O. RIO de {formatted_date}</font>
         </h2>
@@ -158,7 +175,7 @@ WHERE processo_id in ({TCM_CASES})
     for header, body in email_blocks.items():
         final_email_string += f"""
     <tr>
-      <th style="border:2px solid #13335a;padding:9px 18px">
+      <th style="border:2px solid #13335a;padding:9px">
         <font color="#13335a">{header}</font>
       </th>
     </tr>
@@ -166,7 +183,7 @@ WHERE processo_id in ({TCM_CASES})
         for content in body:
             final_email_string += f"""
     <tr>
-      <td>
+      <td style="padding:9px 18px">
         <font color="#13335a">{content}</font>
       </td>
     </tr>
