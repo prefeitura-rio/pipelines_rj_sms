@@ -2,13 +2,15 @@
 # pylint: disable=C0103
 # flake8: noqa E501
 
+import os
 import re
 from datetime import datetime
 from typing import List, Optional
 
+import pandas as pd
 import pytz
 import requests
-from google.cloud import bigquery
+from google.cloud import bigquery, storage
 from prefect.engine.signals import FAIL
 
 from pipelines.datalake.migrate.orquestracao_cdi.constants import constants
@@ -21,12 +23,12 @@ from pipelines.utils.time import parse_date_or_today
 # Para a justificativa quanto à existência dessa task,
 # vide comentários no arquivo de flows
 @task
-def create_params_dict(environment: str = "dev", date: Optional[str] = None):
+def create_params_dict(environment: str = "prod", date: Optional[str] = None):
     return {"environment": environment, "date": date}
 
 
 @task
-def create_dbt_params_dict(environment: str = "dev"):
+def create_dbt_params_dict(environment: str = "prod"):
     # Queremos executar o seguinte comando:
     # $ dbt build --select +tag:cdi+ --target ENV
     return {
@@ -41,14 +43,14 @@ def create_dbt_params_dict(environment: str = "dev"):
 
 
 @task
-def create_tcm_params_dict(case_id: str, environment: str = "dev"):
+def create_tcm_params_dict(case_id: str, environment: str = "prod"):
     return {"environment": environment, "case_id": case_id}
 
 
 @task
-def fetch_tcm_cases(date: Optional[str]) -> List[str]:
+def fetch_tcm_cases(environment: str = "prod", date: Optional[str] = None) -> List[str]:
     client = bigquery.Client()
-    project_name = get_bigquery_project_from_environment.run(environment="prod")
+    project_name = get_bigquery_project_from_environment.run(environment=environment)
 
     DATASET = "intermediario_cdi"
     TABLE = "diario_rj_filtrado"
@@ -67,9 +69,49 @@ WHERE voto is not NULL and data_publicacao = '{DATE}'
 
 
 @task
-def build_email(date: Optional[str]) -> str:
+def get_todays_tcm_from_gcs(environment: str = "prod", date: Optional[str] = None):
+    client = storage.Client()
+    project_name = get_bigquery_project_from_environment.run(environment=environment)
+    bucket = client.bucket(project_name)
+
+    TODAY = (
+        datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+        .replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    )
+
+    YEAR_STR = TODAY.strftime("%Y")
+    MONTH_STR = TODAY.strftime("%m")
+    TODAY_STR = TODAY.strftime("%Y-%m-%d")
+
+    PATH = f"{project_name}" \
+        f"/staging/brutos_diario_oficial/processos_tcm" \
+        f"/ano_particao={YEAR_STR}" \
+        f"/mes_particao={MONTH_STR}" \
+        f"/data_particao={TODAY_STR}"
+
+    blobs = list(bucket.list_blobs(prefix=PATH, match_glob="*.csv"))
+    log(f"Found {len(blobs)} CSV file(s) for TCM cases")
+
+    # Arquivos são bem pequenos (<5KB) então vamos baixar direto em
+    # memória; a princípio só vamos ter 1 por dia
+    output_df = pd.DataFrame()
+    for blob in blobs:
+        log(f"Downloading '{blob.name}'...")
+        data = blob.download_as_bytes()
+        df = pd.read_csv(data, dtype=str, encoding="utf-8")
+        df1 = df[["processo_id", "decisao_data", "voto_conselheiro"]]
+        log(f"'{blob.name}' has {len(df1)} row(s)")
+        output_df = pd.concat([output_df, df1], ignore_index=True)
+
+    log(f"Final table has {len(output_df)} row(s)")
+    log(output_df)
+    return output_df
+
+
+@task
+def build_email(environment: str = "prod", date: Optional[str] = None) -> str:
     client = bigquery.Client()
-    project_name = get_bigquery_project_from_environment.run(environment="prod")
+    project_name = get_bigquery_project_from_environment.run(environment=environment)
 
     DATASET = "projeto_cdi"
     TABLE = "email"
@@ -98,27 +140,28 @@ WHERE data_publicacao = '{DATE}'
             continue
         tcm_case_numbers.append(voto.strip())
 
-    # Se tivemos algum processo relevante
-    tcm_cases = dict()
-    if len(tcm_case_numbers) > 0:
-        # Pega os votos, se tivermos essa informação
-        TCM_DATASET = "brutos_diario_oficial_staging"
-        TCM_TABLE = "processos_tcm"
-        TCM_CASES = ", ".join([f"'{case}'" for case in tcm_case_numbers])
-        TCM_QUERY = f"""
-SELECT processo_id, decisao_data, voto_conselheiro
-FROM `{project_name}.{TCM_DATASET}.{TCM_TABLE}`
-WHERE processo_id in ({TCM_CASES})
-    and data_particao = '{TODAY}'
-        """
-        log(
-            f"Querying `{project_name}.{TCM_DATASET}.{TCM_TABLE}` for {len(tcm_case_numbers)} TCM case decision(s)..."
-        )
-        tcm_rows = [row.values() for row in client.query(TCM_QUERY).result()]
-        log(f"Found {len(tcm_rows)} row(s)")
-        # Salva data e URL do voto, mapeado pelo ID
-        for id, data, voto in tcm_rows:
-            tcm_cases[id] = (data, voto)
+    ## FIXME: TCM lido direto do GCS
+    # # Se tivemos algum processo relevante
+    # tcm_cases = dict()
+    # if len(tcm_case_numbers) > 0:
+    #     # Pega os votos, se tivermos essa informação
+    #     TCM_DATASET = "brutos_diario_oficial_staging"
+    #     TCM_TABLE = "processos_tcm"
+    #     TCM_CASES = ", ".join([f"'{case}'" for case in tcm_case_numbers])
+    #     TCM_QUERY = f"""
+    #     SELECT processo_id, decisao_data, voto_conselheiro
+    #     FROM `{project_name}.{TCM_DATASET}.{TCM_TABLE}`
+    #     WHERE processo_id in ({TCM_CASES})
+    #         and data_particao = '{TODAY}'
+    #     """
+    #     log(
+    #         f"Querying `{project_name}.{TCM_DATASET}.{TCM_TABLE}` for {len(tcm_case_numbers)} TCM case decision(s)..."
+    #     )
+    #     tcm_rows = [row.values() for row in client.query(TCM_QUERY).result()]
+    #     log(f"Found {len(tcm_rows)} row(s)")
+    #     # Salva data e URL do voto, mapeado pelo ID
+    #     for id, data, voto in tcm_rows:
+    #         tcm_cases[id] = (data, voto)
 
     def extract_header_from_path(path: str) -> str:
         if not path or len(path) <= 0:
@@ -162,10 +205,10 @@ WHERE processo_id in ({TCM_CASES})
     final_email_string = f"""
         <font face="sans-serif">
             <table>
-                <tr style="background-color:#42b9eb">
+                <tr style="background-color:#42b9eb;background:linear-gradient(90deg,#2a688f,#42b9eb)">
                     <td style="padding:18px 0px">
                         <h1 style="margin:0;text-align:center">
-                            <font color="#fff" size="6">VOCÊ PRECISA SABER</font>
+                            <font color="#fff" size="6">Você Precisa Saber</font>
                         </h1>
                     </td>
                 </tr>
@@ -182,7 +225,7 @@ WHERE processo_id in ({TCM_CASES})
     for header, body in email_blocks.items():
         final_email_string += f"""
             <tr>
-                <th style="background-color:#e7e7e7;padding:9px">
+                <th style="background-color:#eceded;padding:9px">
                     <font color="#13335a">{header}</font>
                 </th>
             </tr>
@@ -200,21 +243,25 @@ WHERE processo_id in ({TCM_CASES})
 
             # Negrito em decisões de TCM
             content = re.sub(
-                r"^(.+) nos termos do voto do Relator",
+                r"^(.+)\s+nos\s+termos\s+do\s+voto\s+do\s+Relator",
                 r"<b>\1</b> nos termos do voto do Relator",
+                content,
+            )
+            # (nem todas terminam com "nos termos do voto do Relator")
+            content = re.sub(
+                r"^([^\<a-z][^a-z]+)\s+-\s+Processo\b",
+                r"<b>\1</b> - Processo",
                 content,
             )
             # Negrito em títulos de decretos/resoluções
             content = re.sub(
-                r"^[\*\.]*((DECRETO|RESOLUÇÃO) .+ DE 2[0-9]{3})\b",
+                r"^[\*\.]*((DECRETO|RESOLUÇÃO)\s+.+\s+DE\s+2[0-9]{3})\b",
                 r"<b>\1</b>",
                 content,
             )
 
             final_email_string += f"""
-                <li>
-                    <font color="#13335a">{content}</font>
-                </li>
+                <li style="margin-bottom:9px;color:#13335a">{content}</li>
             """
         # /for
         final_email_string += """
@@ -231,6 +278,11 @@ WHERE processo_id in ({TCM_CASES})
                 <tr>
                     <td>
                         <font color="#888" size="2">Email gerado às {timestamp}</font>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="{constants.LOGO_SMS.value}"/>
                     </td>
                 </tr>
             </table>

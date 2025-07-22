@@ -21,6 +21,7 @@ from pipelines.datalake.migrate.orquestracao_cdi.tasks import (
     create_params_dict,
     create_tcm_params_dict,
     fetch_tcm_cases,
+    get_todays_tcm_from_gcs,
     send_email,
 )
 
@@ -61,9 +62,11 @@ with Flow(
     #                 │  Email  │
     #                 └─────────┘      [via asciiflow.com]
 
-    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    ENVIRONMENT = Parameter("environment", default="prod", required=True)
     DATE = Parameter("date", default=None)
     SKIP_TO_EMAIL = Parameter("skip_to_email", default=False)
+
+    get_todays_tcm_from_gcs(environment=ENVIRONMENT, date=DATE)
 
     ## Pipeline completo
     with case(SKIP_TO_EMAIL, False):
@@ -123,6 +126,7 @@ with Flow(
         ## (4) TCM
         # Espera DBT terminar, pega casos da tabela
         tcm_cases = fetch_tcm_cases(
+            environment=ENVIRONMENT,
             date=DATE,
             upstream_tasks=[wait_dbt],
         )
@@ -159,7 +163,7 @@ with Flow(
             secret_name=flow_constants.EMAIL_TOKEN.value,
             environment=ENVIRONMENT,
         )
-        message = build_email(date=DATE, upstream_tasks=[wait_tcm])
+        message = build_email(environment=ENVIRONMENT, date=DATE, upstream_tasks=[wait_tcm])
         send_email(api_base_url=URL, token=TOKEN, message=message)
 
     ## Somente envio de email
