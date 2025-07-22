@@ -34,6 +34,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     DT_START = Parameter("dt_start", default="2001-01-01")
     DT_END = Parameter("dt_end", default="2100-01-01")
+    DATE_FILTER = Parameter("date_filter", default="2025-07-01")
 
     INFISICAL_PATH = medilab_api_constants.INFISICAL_PATH.value
 
@@ -56,7 +57,7 @@ with Flow(
         secret_path=INFISICAL_PATH, secret_name="API_CODACESSO", environment=ENVIRONMENT
     )
 
-    PATIENTS = get_patient_code_from_bigquery()
+    PATIENTS = get_patient_code_from_bigquery(date_filter=DATE_FILTER)
 
     exam_results = get_exams_list_and_results.map(
         api_url=unmapped(API_URL),
