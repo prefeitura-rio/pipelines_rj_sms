@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103, E1123
 """
-medlab api flows
+medilab api flows
 """
 
 from prefect import Parameter, case, unmapped
@@ -11,8 +11,8 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.medlab_api.constants import medlab_api_constants
-from pipelines.datalake.extract_load.medlab_api.tasks import (
+from pipelines.datalake.extract_load.medilab_api.constants import medilab_api_constants
+from pipelines.datalake.extract_load.medilab_api.tasks import (
     get_exams_list_and_results,
     get_patient_code_from_bigquery,
 )
@@ -22,10 +22,10 @@ from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
 
 with Flow(
-    name="Medlab API - Exames",
+    name="DataLake - Extração e Carga de Dados - Medilab",
     state_handlers=[handle_flow_state_change],
     owners=[constants.DIT_ID.value],
-) as flow_medlab_api:
+) as flow_medilab_api:
 
     #####################################
     # Parameters
@@ -35,10 +35,10 @@ with Flow(
     DT_START = Parameter("dt_start", default="2001-01-01")
     DT_END = Parameter("dt_end", default="2100-01-01")
 
-    INFISICAL_PATH = medlab_api_constants.INFISICAL_PATH.value
+    INFISICAL_PATH = medilab_api_constants.INFISICAL_PATH.value
 
     OUTPUT_DIRECTORY = "output"
-    BUCKET_NAME = medlab_api_constants.GCS_BUCKET_NAME.value
+    BUCKET_NAME = medilab_api_constants.GCS_BUCKET_NAME.value
 
     API_URL = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name="API_URL", environment=ENVIRONMENT
@@ -71,9 +71,9 @@ with Flow(
     )
 
 
-flow_medlab_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_medlab_api.executor = LocalDaskExecutor(num_workers=5)
-flow_medlab_api.run_config = KubernetesRun(
+flow_medilab_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_medilab_api.executor = LocalDaskExecutor(num_workers=5)
+flow_medilab_api.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
     memory_limit="8Gi",
