@@ -180,16 +180,21 @@ cases:
     flow_name: "report_long_running_flows"
     params:
       environment: "prod"
-  - case_slug: "dump-hci"
-    flow_path: "pipelines.datalake.extract_load.historico_clinico_integrado.flows"
-    flow_name: "dump_hci"
+  - case_slug: "extract_load_relational_db"
+    flow_path: "pipelines.datalake.extract_load.relational_db.flows"
+    flow_name: "extract_load_relational_db"
     params:
       environment: "dev"
-      table_id: "user"
-      dataset_id: "brutos_hci_app"
-      schema: "postgres"
-      historical_mode: false
-      reference_datetime_column: "updated_at"
+      rename_flow: True
+      db_url_infisical_key: "PRONTUARIOS_DB_URL"
+      db_url_infisical_path: "/"
+      source_schema_name: "public"
+      source_table_name: "userhistory"
+      source_datetime_column: "timestamp"
+      target_dataset_id: "brutos_aplicacao_hci"
+      target_table_id: "user"
+      relative_datetime: "D-1"
+      historical_mode: True
   - case_slug: "datalake_clone_table"
     flow_path: "pipelines.datalake.extract_load.datalake_bigquery.flows"
     flow_name: "datalake_bigquery_clone"
