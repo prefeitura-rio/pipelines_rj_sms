@@ -22,7 +22,7 @@ flow_parameters = [
         "source_table_name": "userhistory",
         "source_datetime_column": "timestamp",
         "target_dataset_id": "brutos_aplicacao_hci",
-        "target_table_id": "user",
+        "target_table_id": "userhistory",
         "relative_datetime": "D-1",
         "historical_mode": True,
     },
