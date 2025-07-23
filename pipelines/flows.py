@@ -19,6 +19,7 @@ from pipelines.datalake.extract_load.diario_oficial_uniao.flows import *
 from pipelines.datalake.extract_load.google_sheets.flows import *
 from pipelines.datalake.extract_load.medilab_api.flows import *
 from pipelines.datalake.extract_load.minhasaude_mongodb.flows import *
+from pipelines.datalake.extract_load.relational_db.flows import *
 from pipelines.datalake.extract_load.ser_metabase.flows import *
 from pipelines.datalake.extract_load.siscan_web_laudos.flows import *
 from pipelines.datalake.extract_load.sisreg_api.flows import *
@@ -26,7 +27,6 @@ from pipelines.datalake.extract_load.sisreg_web.flows import *
 from pipelines.datalake.extract_load.sisreg_web_v2.flows import *
 from pipelines.datalake.extract_load.smsrio_mysql.flows import *
 from pipelines.datalake.extract_load.subpav_mysql.flows import *
-from pipelines.datalake.extract_load.relational_db.flows import *
 from pipelines.datalake.extract_load.tasks_clickup.flows import *
 from pipelines.datalake.extract_load.tpc_azure_blob.flows import *
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.flows import *

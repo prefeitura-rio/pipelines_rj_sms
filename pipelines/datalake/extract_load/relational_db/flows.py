@@ -11,15 +11,16 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.relational_db.tasks import build_gcp_table, download_from_db
-
+from pipelines.datalake.extract_load.relational_db.schedules import schedules
+from pipelines.datalake.extract_load.relational_db.tasks import (
+    build_gcp_table,
+    download_from_db,
+)
+from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
-from pipelines.utils.time import get_datetime_working_range, from_relative_date
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.datalake.extract_load.relational_db.schedules import schedules
-
+from pipelines.utils.time import from_relative_date, get_datetime_working_range
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Banco de Dados Relacional",
@@ -60,11 +61,8 @@ with Flow(
     with case(RENAME_FLOW, True):
         rename_current_flow_run(environment=ENVIRONMENT, table=TARGET_TABLE_ID)
 
-
     interval_start, interval_end = get_datetime_working_range(
-        start_datetime=from_relative_date(
-            relative_date=RELATIVE_DATETIME
-        ),
+        start_datetime=from_relative_date(relative_date=RELATIVE_DATETIME),
         return_as_str=True,
         timezone="America/Sao_Paulo",
     )
