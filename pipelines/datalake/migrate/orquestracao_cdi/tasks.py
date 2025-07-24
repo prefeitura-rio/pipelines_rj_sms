@@ -260,7 +260,7 @@ WHERE data_publicacao = '{DATE}'
                 <td style="padding:9px 18px">
                     <ul>
         """
-        for content in body:
+        for content in sorted(body, key=str.lower):
             content: str
             # Remove quebras de linha duplicadas, converte para <br>
             content = re.sub(r"\n{2,}", "\n", content.replace("\r", "")).replace("\n", "<br/>")
@@ -333,18 +333,18 @@ def send_email(
 
     request_headers = {"x-api-key": token}
     request_body = {
+        # FIXME: CC não está funcionando; já comunicamos à Iplan
         "to_addresses": [
+            "pedro.marques@dados.rio",
+            "vitoria.leite@dados.rio",
+            "natachapragana.sms@gmail.com",
+            "daniel.lira@dados.rio",
+            "herian.cavalcante@dados.rio",
+            "karen.pacheco@dados.rio",
             "matheus.avellar@dados.rio",
-            # "pedro.marques@dados.rio",
-            # "vitoria.leite@dados.rio",
-            # "natachapragana.sms@gmail.com",
+            "polianalucena.sms@gmail.com",
         ],
-        "cc_addresses": [
-            # "daniel.lira@dados.rio",
-            # "herian.cavalcante@dados.rio",
-            # "karen.pacheco@dados.rio",
-            # "polianalucena.sms@gmail.com",
-        ],
+        "cc_addresses": [],
         "bcc_addresses": [],
         "subject": f"Você Precisa Saber ({DATE})",
         "body": message,
