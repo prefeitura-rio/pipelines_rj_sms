@@ -49,5 +49,5 @@ class vitacare_constants(Enum):
         "TESTESRAPIDOS",
         "TUBERCULOSE",
         "UNIDADE",
-        "VACINAS"
+        "VACINAS",
     ]
