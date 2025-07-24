@@ -12,23 +12,19 @@ from bs4 import BeautifulSoup
 from pipelines.datalake.extract_load.diario_oficial_rj.utils import (
     get_links_for_path,
     get_links_if_match,
-    get_today,
     node_cleanup,
     parse_do_contents,
     send_get_request,
-    standardize_date_from_string,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.utils.time import parse_date_or_today
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[str]:
-    if date is not None:
-        date = standardize_date_from_string(date)
-    else:
-        date = get_today()
+    date = parse_date_or_today(date).strftime("%Y-%m-%d")
 
     # Precisamos pegar o identificador do DO do dia de hoje
     # Para isso, fazemos uma busca na API no formato:

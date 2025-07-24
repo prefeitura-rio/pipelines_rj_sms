@@ -9,7 +9,6 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao.schedules import schedule
 from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     dou_extraction,
-    parse_date,
     upload_to_datalake,
 )
 from pipelines.utils.flow import Flow
@@ -38,8 +37,7 @@ with Flow(
     # Flow
     #####################################
 
-    date = parse_date(date_string=DATE)
-    dou_infos = dou_extraction(date=date, dou_section=DOU_SECTION, max_workers=MAX_WORKERS)
+    dou_infos = dou_extraction(date=DATE, dou_section=DOU_SECTION, max_workers=MAX_WORKERS)
     upload_to_datalake(dou_infos=dou_infos, environment=ENVIRONMENT, dataset=DATASET_ID)
 
 # Flow configs
