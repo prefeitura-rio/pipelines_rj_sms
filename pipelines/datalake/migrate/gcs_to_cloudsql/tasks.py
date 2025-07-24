@@ -171,7 +171,7 @@ def check_for_outdated_backups(most_recent_filenames: list):
     title = ""
     message = ""
     if outdated_cnes_info:
-        title = "🔴 TESTE - Unidades com Backups Desatualizados"
+        title = "🔴 Unidades com Backups Desatualizados"
         message = (
             f"Unidades com backups desatualizados "
             f"A data esperada é: `{most_recent_date_br}`, "
