@@ -63,7 +63,10 @@ FROM `{project_name}.{DATASET}.{TABLE}`
 WHERE voto is not NULL and data_publicacao = '{DATE}'
     """
     log(f"Querying for TCM cases...")
-    rows = [row.values()[0] for row in client.query(QUERY).result()]
+    rows = [
+        str(row.values()[0]).strip()
+        for row in client.query(QUERY).result()
+    ]
     log(f"Found {len(rows)} row(s); sample of 5: {rows[:5]}")
 
     return rows
@@ -143,21 +146,22 @@ WHERE data_publicacao = '{DATE}'
 
     # Se tivemos algum processo relevante
     tcm_cases = dict()
-    if len(tcm_case_numbers) > 0 and len(tcm_df) > 0:
-        # Pega os votos, se tivermos essa informação
-        relevant_tcm_df = tcm_df[tcm_df["processo_id"].isin(tcm_case_numbers)]
-        relevant_tcm_df = relevant_tcm_df.reset_index()
-        log(f"Found {len(relevant_tcm_df)} TCM case(s)")
-        # Salva data e URL do voto, mapeado pelo ID
-        for _, row in relevant_tcm_df.iterrows():
-            # row => 'processo_id', 'decisao_data', 'voto_conselheiro'
-            pid = str(row["processo_id"]).strip()
-            tcm_cases[pid] = (row["decisao_data"], row["voto_conselheiro"])
-    else:
-        if len(tcm_case_numbers) <= 0:
-            log(f"No TCM cases to get")
-        elif len(tcm_df) <= 0:
+    if len(tcm_case_numbers) > 0:
+        log(f"Looking for TCM cases: {tcm_case_numbers}")
+        if len(tcm_df) > 0:
+            # Pega os votos, se tivermos essa informação
+            relevant_tcm_df = tcm_df[tcm_df["processo_id"].isin(tcm_case_numbers)]
+            relevant_tcm_df = relevant_tcm_df.reset_index()
+            log(f"Found {len(relevant_tcm_df)} TCM case(s)")
+            # Salva data e URL do voto, mapeado pelo ID
+            for _, row in relevant_tcm_df.iterrows():
+                # row => 'processo_id', 'decisao_data', 'voto_conselheiro'
+                pid = str(row["processo_id"]).strip()
+                tcm_cases[pid] = (row["decisao_data"], row["voto_conselheiro"])
+        else:
             log(f"Empty TCM DataFrame")
+    else:
+        log(f"No TCM cases to get")
 
     def extract_header_from_path(path: str) -> str:
         if not path or len(path) <= 0:
