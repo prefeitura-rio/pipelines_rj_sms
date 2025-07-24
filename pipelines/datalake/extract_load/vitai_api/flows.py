@@ -6,6 +6,7 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.vitai_api.schedules import schedules
 from pipelines.datalake.extract_load.vitai_api.tasks import (
     extract_data,
     get_all_api_data,
@@ -72,6 +73,7 @@ with Flow(
         partition_column="_loaded_at",
     )
 
+sms_vitai_api.schedule = schedules
 sms_vitai_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_vitai_api.executor = LocalDaskExecutor(num_workers=5)
 sms_vitai_api.run_config = KubernetesRun(
