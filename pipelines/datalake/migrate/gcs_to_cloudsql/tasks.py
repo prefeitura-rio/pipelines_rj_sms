@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import fnmatch
+from collections import Counter
 from datetime import timedelta
 
 from google.cloud import storage
@@ -7,9 +8,7 @@ from google.cloud import storage
 import pipelines.datalake.migrate.gcs_to_cloudsql.utils as utils
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-
 from pipelines.utils.monitor import send_message
-from collections import Counter
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
@@ -116,12 +115,13 @@ def send_sequential_api_requests(
         utils.call_and_wait("POST", f"/instances/{instance_name}/import", json=data)
 
     log("[send_sequential_api_requests] All done!")
-    
+
+
 @task
 def check_for_outdated_backups(most_recent_filenames: list):
     """
     Verifica se existe CNES com backups desatualizados em relação a data mais recente encontrada
-    Envia uma mensagem ao discord 
+    Envia uma mensagem ao discord
 
     Args:
         most_recent_files (list): Lista de filenames (dstrings) dos backups mais recentes por CNES
@@ -132,23 +132,23 @@ def check_for_outdated_backups(most_recent_filenames: list):
         return
 
     cnes_to_latest_date = {}
-    latest_dates = [] 
+    latest_dates = []
 
     for filename in most_recent_filenames:
         info = utils.get_info_from_filename(filename=filename)
         cnes = info["cnes"]
-        date_str = info["date"] 
+        date_str = info["date"]
         cnes_to_latest_date[cnes] = date_str
         latest_dates.append(date_str)
 
-    # 1. Definir a mais rceente data 
+    # 1. Definir a mais rceente data
 
-    ''' 
+    """
     Usando  Counter para verificar a data que mais aparece (a moda)
     Pegando pela data mais recente com max() não considera casos que apenas uma
     ou algumas poucas unidades possuem mais atualizada
     EX: De 10 unidades 9 possuem data 20250720 e apenas 1 20250722
-    '''
+    """
     date_counter = Counter(latest_dates)
     max_freq = max(date_counter.values())
 
@@ -156,13 +156,14 @@ def check_for_outdated_backups(most_recent_filenames: list):
     most_recent_date = max(most_common_dates)
     log(f"[check_for_outdated_backups] Reference date set to: {most_recent_date}")
 
-
     # 2. Identificar unidades nao atualizadas
     outdated_cnes_info = []
     for cnes, latest_date_for_cnes in cnes_to_latest_date.items():
         if latest_date_for_cnes < most_recent_date:
             latest_date_for_cnes_br = f"{latest_date_for_cnes[-2:]}/{latest_date_for_cnes[4:6]}/{latest_date_for_cnes[:4]}"
-            outdated_cnes_info.append(f"- CNES: {cnes}, Data do último backup: `{latest_date_for_cnes_br}`")
+            outdated_cnes_info.append(
+                f"- CNES: {cnes}, Data do último backup: `{latest_date_for_cnes_br}`"
+            )
 
     most_recent_date_br = f"{most_recent_date[-2:]}/{most_recent_date[4:6]}/{most_recent_date[:4]}"
 
@@ -170,22 +171,26 @@ def check_for_outdated_backups(most_recent_filenames: list):
     title = ""
     message = ""
     if outdated_cnes_info:
-        title = "🔴 TESTE - Unidades com Backups Desatualizados" 
+        title = "🔴 TESTE - Unidades com Backups Desatualizados"
         message = (
             f"Unidades com backups desatualizados "
             f"A data esperada é: `{most_recent_date_br}`, "
             f"mas os backups mais recentes para as unidades listadas são de datas anteriores:\n"
             + "\n".join(outdated_cnes_info)
         )
-        log(f"[check_for_outdated_backups] {len(outdated_cnes_info)} outdated CNES found. Sending message")
+        log(
+            f"[check_for_outdated_backups] {len(outdated_cnes_info)} outdated CNES found. Sending message"
+        )
     else:
-        title = "🟢 Unidades com Backups Atualizados" 
+        title = "🟢 Unidades com Backups Atualizados"
         message = (
             f"Todas as unidades estão atualizadas"
             f"A data esperada é: `{most_recent_date_br}` e todas as unidades possuem backup para esse mês"
         )
-        log("[check_for_outdated_backups] All CNES are up to date relative to the reference date. Sending success message")
-    
+        log(
+            "[check_for_outdated_backups] All CNES are up to date relative to the reference date. Sending success message"
+        )
+
     send_message(
         title=title,
         message=message,
