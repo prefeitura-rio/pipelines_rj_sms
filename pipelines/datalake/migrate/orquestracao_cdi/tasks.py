@@ -14,13 +14,13 @@ import requests
 from google.cloud import bigquery, storage
 from prefect.engine.signals import FAIL
 
-from .constants import constants
-from .utils import format_tcm_case
-
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_bigquery_project_from_environment
 from pipelines.utils.time import parse_date_or_today
+
+from .constants import constants
+from .utils import format_tcm_case
 
 
 # Para a justificativa quanto à existência dessa task,

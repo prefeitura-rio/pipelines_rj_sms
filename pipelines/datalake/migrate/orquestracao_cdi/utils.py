@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 import re
+
 
 def format_tcm_case(case_num: str) -> str | None:
     case_num = str(case_num.strip())
