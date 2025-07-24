@@ -932,12 +932,13 @@ def upload_df_to_datalake(
     biglake_table: bool = True,
     dataset_is_public: bool = False,
 ):
+    if df.empty:
+        log(f"Dataframe vazio para {table_id}. Upload Ignorado", level="warning")
+        return None
+
     root_folder = f"./data/{uuid.uuid4()}"
     os.makedirs(root_folder, exist_ok=True)
     log(f"Using as root folder: {root_folder}")
-
-    if df.empty:
-        raise Exception("Dataframe is empty")
 
     # All columns as strings
     df = df.astype(str)
