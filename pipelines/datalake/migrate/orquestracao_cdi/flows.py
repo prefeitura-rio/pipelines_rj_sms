@@ -162,9 +162,7 @@ with Flow(
             environment=ENVIRONMENT,
         )
         df = get_todays_tcm_from_gcs(
-            environment=ENVIRONMENT,
-            skipped=False,
-            upstream_tasks=[wait_tcm]
+            environment=ENVIRONMENT, skipped=False, upstream_tasks=[wait_tcm]
         )
         message = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
         send_email(date=DATE, api_base_url=URL, token=TOKEN, message=message)

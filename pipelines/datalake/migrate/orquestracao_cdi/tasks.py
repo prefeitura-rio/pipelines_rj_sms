@@ -63,10 +63,7 @@ FROM `{project_name}.{DATASET}.{TABLE}`
 WHERE voto is not NULL and data_publicacao = '{DATE}'
     """
     log(f"Querying for TCM cases...")
-    rows = [
-        str(row.values()[0]).strip()
-        for row in client.query(QUERY).result()
-    ]
+    rows = [str(row.values()[0]).strip() for row in client.query(QUERY).result()]
     log(f"Found {len(rows)} row(s); sample of 5: {rows[:5]}")
 
     return rows
