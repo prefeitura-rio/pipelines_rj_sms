@@ -25,10 +25,11 @@ from .utils import (
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30), nout=2)
 def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
-
-    log(f"Fetching '{case_num}'")
+    case_num = str(case_num).strip()
+    log(f"Attempting to fetch '{case_num}'")
 
     (sec, num, year) = split_case_number(case_num)
+    case_num = f"{sec}/{num}/{year}"
 
     if sec is None or num is None or year is None:
         raise RuntimeError(f"Error getting case number: {sec}/{num}/{year}")
