@@ -39,7 +39,7 @@ flow_parameters = [
         "data_final": "now",
         "bq_dataset": "brutos_sisreg_api",
         "bq_table": "marcacoes",
-        "dias_por_faixa": 7,
+        "dias_por_faixa": 5,
         "formato_data": "%Y-%m-%d",
     },
 ]
