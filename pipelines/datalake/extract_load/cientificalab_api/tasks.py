@@ -249,17 +249,3 @@ def build_operator_params(
         }
         for window in windows
     ]
-
-
-@task
-def safe_upload_df_to_datalake(df, dataset_id, table_id, source_format, partition_column):
-    if df.empty:
-        log(f"Dataframe vazio para {table_id}. Uploado Ignorado", level="warning")
-        return None
-    return upload_df_to_datalake.run(
-        df=df,
-        dataset_id=dataset_id,
-        table_id=table_id,
-        source_format=source_format,
-        partition_column=partition_column,
-    )
