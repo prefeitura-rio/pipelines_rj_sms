@@ -161,7 +161,7 @@ with Flow(
             secret_name=flow_constants.EMAIL_TOKEN.value,
             environment=ENVIRONMENT,
         )
-        df = get_todays_tcm_from_gcs(environment=ENVIRONMENT)
+        df = get_todays_tcm_from_gcs(environment=ENVIRONMENT, skipped=False)
         message = build_email(
             environment=ENVIRONMENT, date=DATE, tcm_df=df, upstream_tasks=[wait_tcm]
         )
@@ -179,7 +179,8 @@ with Flow(
             secret_name=flow_constants.EMAIL_TOKEN.value,
             environment=ENVIRONMENT,
         )
-        message = build_email(date=DATE)
+        df = get_todays_tcm_from_gcs(environment=ENVIRONMENT, skipped=True)
+        message = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
         send_email(date=DATE, api_base_url=URL, token=TOKEN, message=message)
 
 

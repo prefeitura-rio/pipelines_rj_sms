@@ -70,7 +70,7 @@ WHERE voto is not NULL and data_publicacao = '{DATE}'
 
 
 @task
-def get_todays_tcm_from_gcs(environment: str = "prod"):
+def get_todays_tcm_from_gcs(environment: str = "prod", skipped: bool = False):
     client = storage.Client()
     project_name = get_bigquery_project_from_environment.run(environment=environment)
     bucket = client.bucket(project_name)
@@ -82,6 +82,8 @@ def get_todays_tcm_from_gcs(environment: str = "prod"):
     YEAR_STR = TODAY.strftime("%Y")
     MONTH_STR = TODAY.strftime("%m")
     TODAY_STR = TODAY.strftime("%Y-%m-%d")
+    if skipped:
+        log(f"[!] Looking for TCM case files created ONLY on '{TODAY_STR}'!", level="warning")
 
     PATH = (
         f"staging/brutos_diario_oficial/processos_tcm/"
@@ -106,8 +108,7 @@ def get_todays_tcm_from_gcs(environment: str = "prod"):
         log(f"'{blob.name}' has {len(df1)} row(s)")
         output_df = pd.concat([output_df, df1], ignore_index=True)
 
-    log(f"Final table has {len(output_df)} row(s)")
-    log(output_df)
+    log(f"Final TCM table has {len(output_df)} row(s)")
     return output_df
 
 
@@ -142,16 +143,22 @@ WHERE data_publicacao = '{DATE}'
 
     # Se tivemos algum processo relevante
     tcm_cases = dict()
-    if len(tcm_case_numbers) > 0:
+    if len(tcm_case_numbers) > 0 and len(tcm_df) > 0:
         # Pega os votos, se tivermos essa informação
         relevant_tcm_df = tcm_df[tcm_df["processo_id"].isin(tcm_case_numbers)]
         relevant_tcm_df = relevant_tcm_df.reset_index()
-        log(f"Found {len(relevant_tcm_df)} case(s)")
+        log(f"Found {len(relevant_tcm_df)} TCM case(s)")
         # Salva data e URL do voto, mapeado pelo ID
         for _, row in relevant_tcm_df.iterrows():
             # row => 'processo_id', 'decisao_data', 'voto_conselheiro'
             pid = str(row["processo_id"]).strip()
             tcm_cases[pid] = (row["decisao_data"], row["voto_conselheiro"])
+    else:
+        if len(tcm_case_numbers) <= 0:
+            log(f"No TCM cases to get")
+        elif len(tcm_df) <= 0:
+            log(f"Empty TCM DataFrame")
+
 
     def extract_header_from_path(path: str) -> str:
         if not path or len(path) <= 0:
@@ -183,7 +190,15 @@ WHERE data_publicacao = '{DATE}'
         # Tentativa fútil de remover algumas entradas errôneas
         # Estamos tapando buracos no barco com chiclete aqui
         content = content_email.strip()
-        if content == "Anexo" or content.startswith("•"):
+        # Chances basicamente nulas de XSS em email, mas isso
+        # pode prevenir problemas de formatação acidental
+        content = content.replace("<", "&lt;").replace(">", "&gt;")
+        if content == "Anexo" or content.startswith(("•", "·")):
+            log(f"`content` is invalid; skipping. Row: {row}", level="warning")
+            continue
+        # Somente grava conteúdo se não estiver vazio
+        if len(content) <= 0:
+            log(f"Empty `content`! Row: {row}", level="warning")
             continue
 
         if article_url is not None and len(article_url) > 0:
@@ -203,12 +218,13 @@ WHERE data_publicacao = '{DATE}'
     formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
     final_email_string = f"""
         <font face="sans-serif">
-            <table style="max-width:750px;min-width:550px">
+            <table style="max-width:650px">
                 <tr style="background-color:#42b9eb;background:linear-gradient(90deg,#2a688f,#42b9eb)">
                     <td style="padding:18px 0px">
                         <h1 style="margin:0;text-align:center">
-                            <font color="#fff" size="6" style="margin:0 25px;vertical-align: middle;line-height: 35px;mso-line-height-rule:exactly">Você Precisa Saber</font>
-                            <img align="right" style="margin-right:18px" src="{constants.LOGO_SMS.value}" alt="SMS-Rio"/>
+                            <font color="#fff" size="6" style="margin:0 25px;vertical-align:middle;line-height:35px;mso-line-height-rule:exactly">Você Precisa Saber</font>
+                            <img align="right" src="{constants.LOGO_SMS.value}" alt="SMS-Rio"
+                                style="margin-right:18px;font-size:12px;color:#fff;font-weight:300"/>
                         </h1>
                     </td>
                 </tr>
@@ -223,6 +239,11 @@ WHERE data_publicacao = '{DATE}'
     """
 
     for header, body in email_blocks.items():
+        # Se não há conteúdo sob esse cabeçalho (ex.: tudo foi filtrado)
+        if len(body) <= 0:
+            continue
+
+        # Escreve cabeçalho, abre lista de conteúdos
         final_email_string += f"""
             <tr>
                 <th style="background-color:#eceded;padding:9px">
@@ -236,10 +257,18 @@ WHERE data_publicacao = '{DATE}'
         for content in body:
             content: str
             # Remove quebras de linha duplicadas, converte para <br>
-            content = re.sub(r"[\n]{2,}", "\n", content).replace("\n", "<br/>")
+            content = re.sub(r"\n{2,}", "\n", content.replace("\r", "")).replace("\n", "<br/>")
+            content = re.sub(r"(<br/>){2,}", "<br/>", content)
             # Tentativa fútil de remover nomes em assinaturas que
             # às vezes aparecem em cabeçalhos
-            content = re.sub(r"^(EDUARDO PAES|DANIEL SORANZ)\s*", "", content)
+            filtered_content = re.sub(r"^((EDUARDO PAES|DANIEL SORANZ|ANEXO)\s*)+", "", content, flags=re.IGNORECASE)
+            # Aqui potencialmente apagamos o conteúdo inteiro; então confere
+            # primeiro antes de sobrescrever a variável final
+            if len(filtered_content) > 0:
+                content = filtered_content
+            else:
+                log(f"Filtering `content` empties it. Value: {content}", level="warning")
+
 
             # Negrito em decisões de TCM
             content = re.sub(
