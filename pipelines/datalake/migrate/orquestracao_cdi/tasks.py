@@ -124,7 +124,7 @@ def build_email(
     DATE = DO_DATETIME.strftime("%Y-%m-%d")
 
     QUERY = f"""
-SELECT fonte, content_email, pasta, voto
+SELECT fonte, content_email, pasta, link, voto
 FROM `{project_name}.{DATASET}.{TABLE}`
 WHERE data_publicacao = '{DATE}'
     """
@@ -134,7 +134,7 @@ WHERE data_publicacao = '{DATE}'
 
     # Pegamos todos os processos do TCM relevantes
     tcm_case_numbers = []
-    for _, _, _, voto in rows:
+    for _, _, _, _, voto in rows:
         voto: str
         if not voto or len(voto) <= 0:
             continue
@@ -175,7 +175,7 @@ WHERE data_publicacao = '{DATE}'
     # Constrói cada bloco do email
     email_blocks = {}
     for row in rows:
-        fonte, content_email, pasta, voto = row
+        fonte, content_email, pasta, article_url, voto = row
         header = extract_header_from_path(pasta) or fonte
         if header not in email_blocks:
             email_blocks[header] = []
@@ -186,10 +186,13 @@ WHERE data_publicacao = '{DATE}'
         if content == "Anexo" or content.startswith("•"):
             continue
 
+        if article_url is not None and len(article_url) > 0:
+            content += f'<br/><a href="{article_url}">Abrir no D.O.</a>'
+
         if voto and voto in tcm_cases:
             (vote_date, vote_url) = tcm_cases[voto]
             if vote_date and vote_url:
-                content += f'<br/><a href="{vote_url}">Voto em {vote_date}</a>'
+                content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
 
         email_blocks[header].append(content)
 
@@ -200,12 +203,12 @@ WHERE data_publicacao = '{DATE}'
     formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
     final_email_string = f"""
         <font face="sans-serif">
-            <table style="max-width:750px">
+            <table style="max-width:750px;min-width:550px">
                 <tr style="background-color:#42b9eb;background:linear-gradient(90deg,#2a688f,#42b9eb)">
                     <td style="padding:18px 0px">
                         <h1 style="margin:0;text-align:center">
-                            <font color="#fff" size="6" style="vertical-align:middle">Você Precisa Saber</font>
-                            <img align="right" style="margin-right:18px;vertical-align:middle" src="{constants.LOGO_SMS.value}" alt="SMS-Rio"/>
+                            <font color="#fff" size="6" style="margin:0 25px;vertical-align: middle;line-height: 35px;mso-line-height-rule:exactly">Você Precisa Saber</font>
+                            <img align="right" style="margin-right:18px" src="{constants.LOGO_SMS.value}" alt="SMS-Rio"/>
                         </h1>
                     </td>
                 </tr>
@@ -232,11 +235,11 @@ WHERE data_publicacao = '{DATE}'
         """
         for content in body:
             content: str
-            # Remove espaços supérfluos, \n para <br>
-            content.replace("\n", "<br/>")
+            # Remove quebras de linha duplicadas, converte para <br>
+            content = re.sub(r"[\n]{2,}", "\n", content).replace("\n", "<br/>")
             # Tentativa fútil de remover nomes em assinaturas que
             # às vezes aparecem em cabeçalhos
-            content = re.sub(r"^DANIEL SORANZ\s*", "", content)
+            content = re.sub(r"^(EDUARDO PAES|DANIEL SORANZ)\s*", "", content)
 
             # Negrito em decisões de TCM
             content = re.sub(
@@ -295,16 +298,16 @@ def send_email(
     request_headers = {"x-api-key": token}
     request_body = {
         "to_addresses": [
-            "pedro.marques@dados.rio",
-            "vitoria.leite@dados.rio",
-            "natachapragana.sms@gmail.com",
+            "matheus.avellar@dados.rio",
+            # "pedro.marques@dados.rio",
+            # "vitoria.leite@dados.rio",
+            # "natachapragana.sms@gmail.com",
         ],
         "cc_addresses": [
-            "daniel.lira@dados.rio",
-            "herian.cavalcante@dados.rio",
-            "karen.pacheco@dados.rio",
-            "matheus.avellar@dados.rio",
-            "polianalucena.sms@gmail.com",
+            # "daniel.lira@dados.rio",
+            # "herian.cavalcante@dados.rio",
+            # "karen.pacheco@dados.rio",
+            # "polianalucena.sms@gmail.com",
         ],
         "bcc_addresses": [],
         "subject": f"Você Precisa Saber ({DATE})",
