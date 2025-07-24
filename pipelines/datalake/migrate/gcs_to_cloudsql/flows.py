@@ -13,6 +13,7 @@ from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
     find_all_filenames_from_pattern,
     get_most_recent_filenames,
     send_sequential_api_requests,
+    check_for_outdated_backups,
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
@@ -40,6 +41,11 @@ with Flow(
     )
 
     most_recent_filenames = get_most_recent_filenames(files=filenames)
+
+    check_for_outdated_backups(
+        most_recent_filenames=most_recent_filenames,
+        upstream_tasks=[most_recent_filenames], 
+    )
 
     send_sequential_api_requests(
         most_recent_files=most_recent_filenames,
