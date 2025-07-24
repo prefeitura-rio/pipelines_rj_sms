@@ -159,7 +159,6 @@ WHERE data_publicacao = '{DATE}'
         elif len(tcm_df) <= 0:
             log(f"Empty TCM DataFrame")
 
-
     def extract_header_from_path(path: str) -> str:
         if not path or len(path) <= 0:
             return None
@@ -261,14 +260,15 @@ WHERE data_publicacao = '{DATE}'
             content = re.sub(r"(<br/>){2,}", "<br/>", content)
             # Tentativa fútil de remover nomes em assinaturas que
             # às vezes aparecem em cabeçalhos
-            filtered_content = re.sub(r"^((EDUARDO PAES|DANIEL SORANZ|ANEXO)\s*)+", "", content, flags=re.IGNORECASE)
+            filtered_content = re.sub(
+                r"^((EDUARDO PAES|DANIEL SORANZ|ANEXO)\s*)+", "", content, flags=re.IGNORECASE
+            )
             # Aqui potencialmente apagamos o conteúdo inteiro; então confere
             # primeiro antes de sobrescrever a variável final
             if len(filtered_content) > 0:
                 content = filtered_content
             else:
                 log(f"Filtering `content` empties it. Value: {content}", level="warning")
-
 
             # Negrito em decisões de TCM
             content = re.sub(
