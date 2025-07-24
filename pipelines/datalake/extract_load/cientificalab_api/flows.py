@@ -15,7 +15,10 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     generate_extraction_windows,
     transform,
 )
-from pipelines.datalake.utils.tasks import rename_current_flow_run, upload_df_to_datalake
+from pipelines.datalake.utils.tasks import (
+    rename_current_flow_run,
+    upload_df_to_datalake,
+)
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
