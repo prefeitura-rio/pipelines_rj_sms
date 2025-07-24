@@ -14,7 +14,9 @@ import requests
 from google.cloud import bigquery, storage
 from prefect.engine.signals import FAIL
 
-from pipelines.datalake.migrate.orquestracao_cdi.constants import constants
+from .constants import constants
+from .utils import format_tcm_case
+
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_bigquery_project_from_environment
@@ -108,6 +110,9 @@ def get_todays_tcm_from_gcs(environment: str = "prod", skipped: bool = False):
         log(f"'{blob.name}' has {len(df1)} row(s)")
         output_df = pd.concat([output_df, df1], ignore_index=True)
 
+    # Padroniza números de processo do TCM
+    output_df["processo_id"] = output_df["processo_id"].apply(format_tcm_case)
+
     log(f"Final TCM table has {len(output_df)} row(s)")
     return output_df
 
@@ -136,10 +141,10 @@ WHERE data_publicacao = '{DATE}'
     # Pegamos todos os processos do TCM relevantes
     tcm_case_numbers = []
     for _, _, _, _, voto in rows:
-        voto: str
-        if not voto or len(voto) <= 0:
+        voto = format_tcm_case(voto)
+        if voto is None:
             continue
-        tcm_case_numbers.append(voto.strip())
+        tcm_case_numbers.append(voto)
 
     # Se tivemos algum processo relevante
     tcm_cases = dict()
@@ -153,7 +158,7 @@ WHERE data_publicacao = '{DATE}'
             # Salva data e URL do voto, mapeado pelo ID
             for _, row in relevant_tcm_df.iterrows():
                 # row => 'processo_id', 'decisao_data', 'voto_conselheiro'
-                pid = str(row["processo_id"]).strip()
+                pid = row["processo_id"]
                 tcm_cases[pid] = (row["decisao_data"], row["voto_conselheiro"])
         else:
             log(f"Empty TCM DataFrame")
@@ -204,7 +209,8 @@ WHERE data_publicacao = '{DATE}'
         if article_url is not None and len(article_url) > 0:
             content += f'<br/><a href="{article_url}">Abrir no D.O.</a>'
 
-        if voto and voto in tcm_cases:
+        voto = format_tcm_case(voto)
+        if len(voto) and voto in tcm_cases:
             (vote_date, vote_url) = tcm_cases[voto]
             if vote_date and vote_url:
                 content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
