@@ -96,6 +96,7 @@ def vitai_api_health_check(enviroment: str):
         secret_name="TOKEN",
         secret_path="/prontuario-vitai",
     )
+    results = []
     for api in all_api:
         start_time = datetime.now()
         try:
@@ -109,7 +110,7 @@ def vitai_api_health_check(enviroment: str):
         except Exception as e:
             final_time = datetime.now()
             log(f"Vitai API Health Check failed: {e}")
-            return [
+            results.append(
                 {
                     "is_healthy": False,
                     "slug": "vitai_api",
@@ -117,11 +118,11 @@ def vitai_api_health_check(enviroment: str):
                     "duration": (final_time - start_time).total_seconds(),
                     "created_at": datetime.now(),
                 }
-            ]
+            )
         else:
             final_time = datetime.now()
             log(f"Vitai API Health Check succeeded: {api['cnes']}")
-            return [
+            results.append(
                 {
                     "is_healthy": True,
                     "slug": f"vitai_api_{api['cnes']}",
@@ -129,8 +130,8 @@ def vitai_api_health_check(enviroment: str):
                     "duration": (final_time - start_time).total_seconds(),
                     "created_at": datetime.now(),
                 }
-            ]
-    pass
+            )
+    return results
 
 
 @task
