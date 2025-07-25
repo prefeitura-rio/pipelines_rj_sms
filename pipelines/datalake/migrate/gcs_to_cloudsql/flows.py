@@ -10,6 +10,7 @@ from prefeitura_rio.pipelines_utils.custom import Flow
 from pipelines.constants import constants
 from pipelines.datalake.migrate.gcs_to_cloudsql.schedules import schedule
 from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
+    check_for_outdated_backups,
     find_all_filenames_from_pattern,
     get_most_recent_filenames,
     send_sequential_api_requests,
@@ -40,6 +41,11 @@ with Flow(
     )
 
     most_recent_filenames = get_most_recent_filenames(files=filenames)
+
+    check_for_outdated_backups(
+        most_recent_filenames=most_recent_filenames,
+        upstream_tasks=[most_recent_filenames],
+    )
 
     send_sequential_api_requests(
         most_recent_files=most_recent_filenames,
