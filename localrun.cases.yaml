@@ -436,3 +436,18 @@ cases:
       dataset_id: "brutos_prontuario_vitacare_api"
       table_id_prefix: "estoque_posicao"
       target_date: "D-0"
+  - case_slug: "flow_healthcheck"
+    flow_path: "pipelines.tools.healthchecks.flows"
+    flow_name: "flow_healthcheck"
+    params:
+      environment: "dev"
+  - case_slug: "sms_vitai_api"
+    flow_path: "pipelines.datalake.extract_load.vitai_api.flows"
+    flow_name: "sms_vitai_api"
+    params:
+      environment: "dev"
+      rename_flow: True
+      endpoint_path: "/v1/atendimento/listByPeriodo"
+      dataset_id: "brutos_prontuario_vitai_api"
+      table_id: "atendimento"
+      relative_target_date: "D-0"
