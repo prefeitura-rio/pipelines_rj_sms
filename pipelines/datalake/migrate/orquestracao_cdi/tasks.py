@@ -332,10 +332,58 @@ WHERE data_publicacao = '{DATE}'
 
 
 @task
+def get_email_recipients(environment: str = "prod") -> dict:
+    client = bigquery.Client()
+    project_name = get_bigquery_project_from_environment.run(environment=environment)
+
+    DATASET = "brutos_sheets"
+    TABLE = "cdi_destinatarios"
+
+    QUERY = f"""
+SELECT email, tipo
+FROM `{project_name}.{DATASET}.{TABLE}`
+    """
+    log(f"Querying `{project_name}.{DATASET}.{TABLE}` for email recipients...")
+    rows = [row.values() for row in client.query(QUERY).result()]
+    log(f"Found {len(rows)} row(s)")
+
+    to_addresses = []
+    cc_addresses = []
+    bcc_addresses = []
+    for email, kind in rows:
+        email = str(email).strip()
+        kind = str(kind).lower().strip()
+        if not email or not kind:
+            continue
+        if "@" not in email:
+            log(f"Email does not contain '@': '{email}'", level="warning")
+            continue
+
+        if kind == "to":
+            to_addresses.append(email)
+        elif kind == "cc":
+            cc_addresses.append(email)
+        elif kind == "bcc":
+            bcc_addresses.append(email)
+        else:
+            log(f"Recipient type '{kind}' not recognized!", level="warning")
+
+    log(
+        f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)"
+    )
+    return {
+        "to_addresses": to_addresses,
+        "cc_addresses": cc_addresses,
+        "bcc_addresses": bcc_addresses,
+    }
+
+
+@task
 def send_email(
     api_base_url: str,
     token: str,
     message: str,
+    recipients: dict,
     date: Optional[str] = None,
 ):
     DATE = parse_date_or_today(date).strftime("%d/%m/%Y")
@@ -352,19 +400,7 @@ Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("
 
     request_headers = {"x-api-key": token}
     request_body = {
-        "to_addresses": [
-            "pedro.marques@dados.rio",
-            "vitoria.leite@dados.rio",
-            "natachapragana.sms@gmail.com",
-        ],
-        "cc_addresses": [
-            "daniel.lira@dados.rio",
-            "herian.cavalcante@dados.rio",
-            "karen.pacheco@dados.rio",
-            "matheus.avellar@dados.rio",
-            "polianalucena.sms@gmail.com",
-        ],
-        "bcc_addresses": [],
+        **recipients,
         "subject": f"Você Precisa Saber ({DATE})",
         "body": message,
         "is_html_body": is_html,
