@@ -368,7 +368,9 @@ FROM `{project_name}.{DATASET}.{TABLE}`
         else:
             log(f"Recipient type '{kind}' not recognized!", level="warning")
 
-    log(f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)")
+    log(
+        f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)"
+    )
     return {
         "to_addresses": to_addresses,
         "cc_addresses": cc_addresses,
