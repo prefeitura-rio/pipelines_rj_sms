@@ -449,5 +449,5 @@ cases:
       rename_flow: True
       endpoint_path: "/v1/atendimento/listByPeriodo"
       dataset_id: "brutos_prontuario_vitai_api"
-      table_id_prefix: "atendimento"
-      target_date: "D-0"
+      table_id: "atendimento"
+      relative_target_date: "D-0"
