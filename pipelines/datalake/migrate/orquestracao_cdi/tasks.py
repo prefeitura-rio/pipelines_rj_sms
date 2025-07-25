@@ -123,6 +123,7 @@ def get_todays_tcm_from_gcs(environment: str = "prod", skipped: bool = False):
 def build_email(
     environment: str = "prod", date: Optional[str] = None, tcm_df: pd.DataFrame = None
 ) -> str:
+    return ""
     client = bigquery.Client()
     project_name = get_bigquery_project_from_environment.run(environment=environment)
 
@@ -190,10 +191,6 @@ WHERE data_publicacao = '{DATE}'
     email_blocks = {}
     for row in rows:
         fonte, content_email, pasta, article_url, voto = row
-        header = extract_header_from_path(pasta) or fonte
-        if header not in email_blocks:
-            email_blocks[header] = []
-
         # Tentativa fútil de remover algumas entradas errôneas
         # Estamos tapando buracos no barco com chiclete aqui
         content = content_email.strip()
@@ -217,7 +214,15 @@ WHERE data_publicacao = '{DATE}'
             if vote_date and vote_url:
                 content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
 
+        header = extract_header_from_path(pasta) or fonte
+        if header not in email_blocks:
+            email_blocks[header] = []
         email_blocks[header].append(content)
+
+    # Confere primeiro se temos algum conteúdo para o email
+    if not email_blocks:
+        # Se não temos, retorna vazio
+        return ""
 
     # [!] Importante: antes de editar o HTML abaixo, lembre que ele é HTML
     # para clientes de EMAIL. Assim, muitas (MUITAS) funcionalidades modernas
@@ -335,6 +340,16 @@ def send_email(
     date: Optional[str] = None,
 ):
     DATE = parse_date_or_today(date).strftime("%d/%m/%Y")
+    is_html = True
+
+    # Caso não haja DO no dia, recebemos um conteúdo vazia
+    if not message or len(message) <= 0:
+        message = f"""
+Nenhuma matéria relevante encontrada nos Diários Oficiais de hoje!
+
+Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
+        """.strip()
+        is_html = False
 
     request_headers = {"x-api-key": token}
     request_body = {
@@ -353,7 +368,7 @@ def send_email(
         "bcc_addresses": [],
         "subject": f"Você Precisa Saber ({DATE})",
         "body": message,
-        "is_html_body": True,
+        "is_html_body": is_html,
     }
 
     if api_base_url.endswith("/"):
