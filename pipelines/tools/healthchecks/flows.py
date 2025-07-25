@@ -11,6 +11,7 @@ from pipelines.tools.healthchecks.tasks import (
     smsrio_db_health_check,
     transform_to_df,
     vitai_db_health_check,
+    vitai_api_health_check,
 )
 from pipelines.utils.tasks import upload_df_to_datalake
 
@@ -20,10 +21,12 @@ with Flow("Tool: Health Check") as flow_healthcheck:
 
     result_vitai_db = vitai_db_health_check(enviroment=ENVIRONMENT)
     result_smsrio_db = smsrio_db_health_check(enviroment=ENVIRONMENT)
+    result_vitai_api = vitai_api_health_check(enviroment=ENVIRONMENT)
 
     results_as_df = transform_to_df(
         results_smsrio=result_smsrio_db,
-        results_vitai=result_vitai_db,
+        results_vitai_db=result_vitai_db,
+        results_vitai_api=result_vitai_api,
     )
 
     upload_df_to_datalake(
