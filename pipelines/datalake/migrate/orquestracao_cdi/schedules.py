@@ -10,7 +10,7 @@ from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 parameters = [
-    {"environment": "prod", "date": None},
+    {"environment": "prod"},
 ]
 
 clocks = generate_dump_api_schedules(
