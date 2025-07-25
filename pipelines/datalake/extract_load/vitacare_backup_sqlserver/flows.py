@@ -3,12 +3,10 @@
 """
 Flows de extração e carga de dados do Vitacare Historic SQL Server para o BigQuery
 """
-from prefect import Parameter, case
-from prefect import unmapped
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants as global_constants
@@ -19,12 +17,12 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
     vitacare_backup_manager_schedule,
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
-    get_tables_to_extract,
-    get_vitacare_cnes_from_bigquery,
-    process_cnes_table,
     build_operator_params,
     consolidate_cnes_table_results,
     create_and_send_final_report,
+    get_tables_to_extract,
+    get_vitacare_cnes_from_bigquery,
+    process_cnes_table,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -48,7 +46,7 @@ with Flow(
         global_constants.DANIEL_ID.value,
     ],
 ) as flow_vitacare_historic_table_operator:
-    
+
     TABLE_NAME = Parameter("TABLE_NAME", required=True)
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
@@ -116,13 +114,11 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="staging")
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
 
-
     tables_to_process = get_tables_to_extract()
 
     project_name = get_project_name(environment=ENVIRONMENT)
 
     current_labels = get_current_flow_labels()
-
 
     operator_parameters = build_operator_params(
         tables=tables_to_process,
@@ -151,7 +147,7 @@ with Flow(
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(False),
-        return_result=unmapped(True), 
+        return_result=unmapped(True),
     )
 
     create_and_send_final_report(all_tables_summaries)

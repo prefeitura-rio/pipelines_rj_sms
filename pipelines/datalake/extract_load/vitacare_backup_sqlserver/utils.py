@@ -7,8 +7,8 @@ import pytz
 
 from pipelines.utils.data_cleaning import remove_columns_accents
 
-
 # --- Funções auxiliares para pré-processamento ---
+
 
 def clean_ut_id(val):
     """

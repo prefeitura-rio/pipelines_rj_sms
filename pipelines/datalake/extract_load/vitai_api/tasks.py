@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
-import requests
+from datetime import datetime, timedelta
 
 import pandas as pd
-from datetime import datetime, timedelta
+import requests
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import (
-    get_secret_key,
-    load_file_from_bigquery,
-)
+from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery
 
 
 @task
@@ -21,11 +18,9 @@ def get_all_api_data(environment: str = "dev") -> str:
         dataset_name="saude_dados_mestres",
         table_name="estabelecimento",
     )
-    df = df[
-        (df['prontuario_versao'] == 'vitai') & (df['prontuario_episodio_tem_dado'] == 'sim')
-    ]
+    df = df[(df["prontuario_versao"] == "vitai") & (df["prontuario_episodio_tem_dado"] == "sim")]
 
-    cnes_list = df['id_cnes'].tolist()
+    cnes_list = df["id_cnes"].tolist()
 
     api_data = []
     for cnes in cnes_list:
@@ -39,33 +34,39 @@ def get_all_api_data(environment: str = "dev") -> str:
             log(f"A URL da API não foi encontrada para o CNES {cnes}")
             continue
 
-        api_data.append({
-            'cnes': cnes,
-            'api_url': api_url,
-        })
+        api_data.append(
+            {
+                "cnes": cnes,
+                "api_url": api_url,
+            }
+        )
 
     return api_data
 
+
 @task
-def extract_data(api_data: str, api_token: str, endpoint_path: str, target_date: str) -> pd.DataFrame:
+def extract_data(
+    api_data: str, api_token: str, endpoint_path: str, target_date: str
+) -> pd.DataFrame:
 
     endpoint_url = f"{api_data['api_url']}{endpoint_path}"
 
-    if 'listByPeriodo' in endpoint_path:
+    if "listByPeriodo" in endpoint_path:
         # Dividir data em lista de 24 janelas de 1h
         windows = []
         for i in range(24):
             windows.append(
                 (
                     (target_date + timedelta(hours=i)).strftime("%d/%m/%Y %H:00:00"),
-                    (target_date + timedelta(hours=i+1)).strftime("%d/%m/%Y %H:00:00"),
+                    (target_date + timedelta(hours=i + 1)).strftime("%d/%m/%Y %H:00:00"),
                 )
             )
 
         responses = []
         for window in windows:
             endpoint_params = {
-                "dataInicial": window[0], "dataFinal": window[1],
+                "dataInicial": window[0],
+                "dataFinal": window[1],
             }
             try:
                 response = requests.get(
