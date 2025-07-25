@@ -4,11 +4,10 @@ from datetime import datetime, timedelta
 import pandas as pd
 import requests
 
+from pipelines.datalake.extract_load.vitai_api.tasks import get_all_api_data
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_secret_key
-
-from pipelines.datalake.extract_load.vitai_api.tasks import get_all_api_data
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
@@ -83,6 +82,7 @@ def smsrio_db_health_check(enviroment: str):
                 "created_at": datetime.now(),
             }
         ]
+
 
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
 def vitai_api_health_check(enviroment: str):
