@@ -226,14 +226,11 @@ WHERE data_publicacao = '{DATE}'
     formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
     final_email_string = f"""
         <font face="sans-serif">
-            <table style="max-width:650px">
-                <tr style="background-color:#42b9eb;background:linear-gradient(90deg,#2a688f,#42b9eb)">
-                    <td style="padding:18px 0px">
-                        <h1 style="margin:0;text-align:center">
-                            <font color="#fff" size="6" style="margin:0 25px;vertical-align:middle;line-height:35px;mso-line-height-rule:exactly">Você Precisa Saber</font>
-                            <img align="right" src="{constants.LOGO_SMS.value}" alt="SMS-Rio"
-                                style="margin-right:18px;font-size:12px;color:#fff;font-weight:300"/>
-                        </h1>
+            <table style="max-width:650px;min-width:300px">
+                <tr>
+                    <td>
+                        <img alt="Você Precisa Saber" width="650" style="width:100%"
+                            src="https://storage.googleapis.com/sms_dit_arquivos_publicos/img/voce-precisa-saber-banner--1300px.png"/>
                     </td>
                 </tr>
                 <tr><td><hr/></td></tr>
@@ -260,7 +257,7 @@ WHERE data_publicacao = '{DATE}'
             </tr>
             <tr>
                 <td style="padding:9px 18px">
-                    <ul>
+                    <ul style="padding-left:9px">
         """
         for content in sorted(body, key=str.lower):
             content: str
@@ -315,7 +312,13 @@ WHERE data_publicacao = '{DATE}'
                 <tr><td><hr/></td></tr>
                 <tr>
                     <td>
-                        <font color="#888" size="2">Email gerado às {timestamp}</font>
+                        <img alt="DIT-SMS" width="100" align="right" style="margin-left:18px;margin-bottom:70px"
+                            src="https://storage.googleapis.com/sms_dit_arquivos_publicos/img/dit-horizontal-colorido--300px.png"/>
+                        <p style="font-size:13px;color:#888;margin:0">
+                            Compilado institucional da <b>Coordenadoria de Demandas Institucionais</b> (CDI),
+                            com apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT),
+                            gerado às {timestamp}.
+                        </p>
                     </td>
                 </tr>
             </table>
@@ -336,16 +339,16 @@ def send_email(
     request_headers = {"x-api-key": token}
     request_body = {
         "to_addresses": [
-            "pedro.marques@dados.rio",
-            "vitoria.leite@dados.rio",
-            "natachapragana.sms@gmail.com",
+            # "pedro.marques@dados.rio",
+            # "vitoria.leite@dados.rio",
+            # "natachapragana.sms@gmail.com",
         ],
         "cc_addresses": [
-            "daniel.lira@dados.rio",
-            "herian.cavalcante@dados.rio",
-            "karen.pacheco@dados.rio",
+            # "daniel.lira@dados.rio",
+            # "herian.cavalcante@dados.rio",
+            # "karen.pacheco@dados.rio",
             "matheus.avellar@dados.rio",
-            "polianalucena.sms@gmail.com",
+            # "polianalucena.sms@gmail.com",
         ],
         "bcc_addresses": [],
         "subject": f"Você Precisa Saber ({DATE})",
