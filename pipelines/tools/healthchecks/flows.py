@@ -10,8 +10,8 @@ from pipelines.tools.healthchecks.schedules import schedule
 from pipelines.tools.healthchecks.tasks import (
     smsrio_db_health_check,
     transform_to_df,
-    vitai_db_health_check,
     vitai_api_health_check,
+    vitai_db_health_check,
 )
 from pipelines.utils.tasks import upload_df_to_datalake
 
