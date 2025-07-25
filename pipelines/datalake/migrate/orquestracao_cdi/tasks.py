@@ -110,8 +110,10 @@ def get_todays_tcm_from_gcs(environment: str = "prod", skipped: bool = False):
         log(f"'{blob.name}' has {len(df1)} row(s)")
         output_df = pd.concat([output_df, df1], ignore_index=True)
 
-    # Padroniza números de processo do TCM
-    output_df["processo_id"] = output_df["processo_id"].apply(format_tcm_case)
+    # Se o dataframe possui a coluna (i.e. não está vazio)
+    if "processo_id" in output_df.columns:
+        # Padroniza números de processo do TCM
+        output_df["processo_id"] = output_df["processo_id"].apply(format_tcm_case)
 
     log(f"Final TCM table has {len(output_df)} row(s)")
     return output_df
