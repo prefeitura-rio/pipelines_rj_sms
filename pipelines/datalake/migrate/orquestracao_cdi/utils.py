@@ -3,7 +3,9 @@ import re
 
 
 def format_tcm_case(case_num: str) -> str | None:
-    case_num = str(case_num.strip())
+    if case_num is None or not case_num:
+        return None
+    case_num = str(case_num).strip()
     if len(case_num) <= 0:
         return None
 
