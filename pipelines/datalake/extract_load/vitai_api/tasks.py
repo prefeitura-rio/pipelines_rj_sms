@@ -67,16 +67,18 @@ def extract_data(api_data: str, api_token: str, endpoint_path: str, target_date:
             endpoint_params = {
                 "dataInicial": window[0], "dataFinal": window[1],
             }
-
-            response = requests.get(
-                endpoint_url,
-                headers={"Authorization": f"Bearer {api_token}"},
-                params=endpoint_params,
-                timeout=90,
-            )
-
-            response.raise_for_status()
-            responses.extend(response.json())
+            try:
+                response = requests.get(
+                    endpoint_url,
+                    headers={"Authorization": f"Bearer {api_token}"},
+                    params=endpoint_params,
+                    timeout=90,
+                )
+                response.raise_for_status()
+                responses.extend(response.json())
+            except Exception as e:
+                log(f"Error extracting data from {endpoint_url}: {e}")
+                continue
 
         return responses
     else:
