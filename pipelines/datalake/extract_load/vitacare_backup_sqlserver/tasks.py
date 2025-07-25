@@ -291,7 +291,7 @@ def create_and_send_final_report(all_tables_summaries: list):
         else:
             report_lines.append(f"**Tabela: {table_name}** - Tudo OK ({total_cnes_for_table} CNES processados com dados).")
             
-        report_lines.append("") # Linha em branco para separar as tabelas no relatório
+        report_lines.append("") 
 
     # --- Resumo Global ---
     overall_status_emoji = "🟢"
@@ -312,12 +312,12 @@ def create_and_send_final_report(all_tables_summaries: list):
         f"  - Vazias: {global_vazia_count}",
         f"  - Com Erros (Banco/Tabela/SQL): {global_banco_nao_encontrado_count + global_tabela_nao_encontrada_count + global_inesperado_count}",
         "\n--- Detalhes por Tabela ---",
-        "" # Espaço antes dos detalhes de cada tabela
+        "" 
     ]
 
     final_report_message = "\n".join(final_message_header + report_lines)
 
-    # ⚠️ Chamar a sua task send_message
+
     send_message(
         title="Status da Extração do Backup Vitacare",
         message=final_report_message,
