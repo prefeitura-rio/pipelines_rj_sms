@@ -10,12 +10,12 @@ from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 parameters = [
-    {"environment": "prod", "date": None},
+    {"environment": "prod"},
 ]
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2025, 7, 1, 5, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2025, 7, 1, 12, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

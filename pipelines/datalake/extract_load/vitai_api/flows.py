@@ -9,12 +9,16 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitai_api.schedules import schedules
 from pipelines.datalake.extract_load.vitai_api.tasks import (
     extract_data,
-    get_all_api_data,
     format_to_upload,
+    get_all_api_data,
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import rename_current_flow_run, upload_df_to_datalake, get_secret_key
+from pipelines.utils.tasks import (
+    get_secret_key,
+    rename_current_flow_run,
+    upload_df_to_datalake,
+)
 from pipelines.utils.time import from_relative_date
 
 with Flow(
