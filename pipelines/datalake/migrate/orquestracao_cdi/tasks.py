@@ -190,10 +190,6 @@ WHERE data_publicacao = '{DATE}'
     email_blocks = {}
     for row in rows:
         fonte, content_email, pasta, article_url, voto = row
-        header = extract_header_from_path(pasta) or fonte
-        if header not in email_blocks:
-            email_blocks[header] = []
-
         # Tentativa fútil de remover algumas entradas errôneas
         # Estamos tapando buracos no barco com chiclete aqui
         content = content_email.strip()
@@ -212,12 +208,20 @@ WHERE data_publicacao = '{DATE}'
             content += f'<br/><a href="{article_url}">Abrir no D.O.</a>'
 
         voto = format_tcm_case(voto)
-        if len(voto) and voto in tcm_cases:
+        if voto is not None and voto in tcm_cases:
             (vote_date, vote_url) = tcm_cases[voto]
             if vote_date and vote_url:
                 content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
 
+        header = extract_header_from_path(pasta) or fonte
+        if header not in email_blocks:
+            email_blocks[header] = []
         email_blocks[header].append(content)
+
+    # Confere primeiro se temos algum conteúdo para o email
+    if not email_blocks:
+        # Se não temos, retorna vazio
+        return ""
 
     # [!] Importante: antes de editar o HTML abaixo, lembre que ele é HTML
     # para clientes de EMAIL. Assim, muitas (MUITAS) funcionalidades modernas
@@ -226,14 +230,11 @@ WHERE data_publicacao = '{DATE}'
     formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
     final_email_string = f"""
         <font face="sans-serif">
-            <table style="max-width:650px">
-                <tr style="background-color:#42b9eb;background:linear-gradient(90deg,#2a688f,#42b9eb)">
-                    <td style="padding:18px 0px">
-                        <h1 style="margin:0;text-align:center">
-                            <font color="#fff" size="6" style="margin:0 25px;vertical-align:middle;line-height:35px;mso-line-height-rule:exactly">Você Precisa Saber</font>
-                            <img align="right" src="{constants.LOGO_SMS.value}" alt="SMS-Rio"
-                                style="margin-right:18px;font-size:12px;color:#fff;font-weight:300"/>
-                        </h1>
+            <table style="max-width:650px;min-width:300px">
+                <tr>
+                    <td>
+                        <img alt="Você Precisa Saber" width="650" style="width:100%"
+                            src="https://storage.googleapis.com/sms_dit_arquivos_publicos/img/voce-precisa-saber-banner--1300px.png"/>
                     </td>
                 </tr>
                 <tr><td><hr/></td></tr>
@@ -260,7 +261,7 @@ WHERE data_publicacao = '{DATE}'
             </tr>
             <tr>
                 <td style="padding:9px 18px">
-                    <ul>
+                    <ul style="padding-left:9px">
         """
         for content in sorted(body, key=str.lower):
             content: str
@@ -315,7 +316,13 @@ WHERE data_publicacao = '{DATE}'
                 <tr><td><hr/></td></tr>
                 <tr>
                     <td>
-                        <font color="#888" size="2">Email gerado às {timestamp}</font>
+                        <img alt="DIT-SMS" width="100" align="right" style="margin-left:18px;margin-bottom:70px"
+                            src="https://storage.googleapis.com/sms_dit_arquivos_publicos/img/dit-horizontal-colorido--300px.png"/>
+                        <p style="font-size:13px;color:#888;margin:0">
+                            Compilado institucional da <b>Coordenadoria de Demandas Institucionais</b> (CDI),
+                            com apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT),
+                            gerado às {timestamp}.
+                        </p>
                     </td>
                 </tr>
             </table>
@@ -332,6 +339,16 @@ def send_email(
     date: Optional[str] = None,
 ):
     DATE = parse_date_or_today(date).strftime("%d/%m/%Y")
+    is_html = True
+
+    # Caso não haja DO no dia, recebemos um conteúdo vazia
+    if not message or len(message) <= 0:
+        message = f"""
+Nenhuma matéria relevante encontrada nos Diários Oficiais de hoje!
+
+Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
+        """.strip()
+        is_html = False
 
     request_headers = {"x-api-key": token}
     request_body = {
@@ -350,7 +367,7 @@ def send_email(
         "bcc_addresses": [],
         "subject": f"Você Precisa Saber ({DATE})",
         "body": message,
-        "is_html_body": True,
+        "is_html_body": is_html,
     }
 
     if api_base_url.endswith("/"):
