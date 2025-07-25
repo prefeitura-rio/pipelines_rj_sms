@@ -335,18 +335,18 @@ def send_email(
 
     request_headers = {"x-api-key": token}
     request_body = {
-        # FIXME: CC não está funcionando; já comunicamos à Iplan
         "to_addresses": [
             "pedro.marques@dados.rio",
             "vitoria.leite@dados.rio",
             "natachapragana.sms@gmail.com",
+        ],
+        "cc_addresses": [
             "daniel.lira@dados.rio",
             "herian.cavalcante@dados.rio",
             "karen.pacheco@dados.rio",
             "matheus.avellar@dados.rio",
             "polianalucena.sms@gmail.com",
         ],
-        "cc_addresses": [],
         "bcc_addresses": [],
         "subject": f"Você Precisa Saber ({DATE})",
         "body": message,
