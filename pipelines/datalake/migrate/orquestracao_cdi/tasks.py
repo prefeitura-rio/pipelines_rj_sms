@@ -212,7 +212,7 @@ WHERE data_publicacao = '{DATE}'
             content += f'<br/><a href="{article_url}">Abrir no D.O.</a>'
 
         voto = format_tcm_case(voto)
-        if len(voto) and voto in tcm_cases:
+        if voto is not None and voto in tcm_cases:
             (vote_date, vote_url) = tcm_cases[voto]
             if vote_date and vote_url:
                 content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
