@@ -21,6 +21,7 @@ from pipelines.datalake.migrate.orquestracao_cdi.tasks import (
     create_params_dict,
     create_tcm_params_dict,
     fetch_tcm_cases,
+    get_email_recipients,
     get_todays_tcm_from_gcs,
     send_email,
 )
@@ -165,7 +166,8 @@ with Flow(
             environment=ENVIRONMENT, skipped=False, upstream_tasks=[wait_tcm]
         )
         message = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
-        send_email(date=DATE, api_base_url=URL, token=TOKEN, message=message)
+        recipients = get_email_recipients(environment=ENVIRONMENT)
+        send_email(date=DATE, api_base_url=URL, token=TOKEN, recipients=recipients, message=message)
 
     ## Somente envio de email
     with case(SKIP_TO_EMAIL, True):
@@ -181,7 +183,8 @@ with Flow(
         )
         df = get_todays_tcm_from_gcs(environment=ENVIRONMENT, skipped=True)
         message = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
-        send_email(date=DATE, api_base_url=URL, token=TOKEN, message=message)
+        recipients = get_email_recipients(environment=ENVIRONMENT)
+        send_email(date=DATE, api_base_url=URL, token=TOKEN, recipients=recipients, message=message)
 
 
 flow_orquestracao_cdi.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
