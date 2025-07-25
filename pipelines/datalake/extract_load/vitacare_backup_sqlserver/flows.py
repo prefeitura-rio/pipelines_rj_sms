@@ -111,7 +111,7 @@ with Flow(
         global_constants.DANIEL_ID.value,
     ],
 ) as flow_vitacare_historic_manager_v2:
-    
+
     ENVIRONMENT = Parameter("environment", default="staging")
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
 
