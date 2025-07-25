@@ -123,7 +123,6 @@ def get_todays_tcm_from_gcs(environment: str = "prod", skipped: bool = False):
 def build_email(
     environment: str = "prod", date: Optional[str] = None, tcm_df: pd.DataFrame = None
 ) -> str:
-    return ""
     client = bigquery.Client()
     project_name = get_bigquery_project_from_environment.run(environment=environment)
 
@@ -354,16 +353,16 @@ Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("
     request_headers = {"x-api-key": token}
     request_body = {
         "to_addresses": [
-            # "pedro.marques@dados.rio",
-            # "vitoria.leite@dados.rio",
-            # "natachapragana.sms@gmail.com",
+            "pedro.marques@dados.rio",
+            "vitoria.leite@dados.rio",
+            "natachapragana.sms@gmail.com",
         ],
         "cc_addresses": [
-            # "daniel.lira@dados.rio",
-            # "herian.cavalcante@dados.rio",
-            # "karen.pacheco@dados.rio",
+            "daniel.lira@dados.rio",
+            "herian.cavalcante@dados.rio",
+            "karen.pacheco@dados.rio",
             "matheus.avellar@dados.rio",
-            # "polianalucena.sms@gmail.com",
+            "polianalucena.sms@gmail.com",
         ],
         "bcc_addresses": [],
         "subject": f"Você Precisa Saber ({DATE})",
