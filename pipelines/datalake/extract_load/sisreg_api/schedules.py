@@ -32,7 +32,7 @@ flow_parameters = [
     {
         "environment": "prod",
         "es_index": "marcacao-ambulatorial-rj",
-        "page_size": 10_000,
+        "page_size": 9_999,
         "scroll_timeout": "2m",
         "filters": {"codigo_central_reguladora": "330455"},
         "data_inicial": "2018-01-01",
