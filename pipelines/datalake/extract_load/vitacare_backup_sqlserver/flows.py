@@ -18,8 +18,6 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules 
 )
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
     build_operator_params,
-    consolidate_cnes_table_results,
-    create_and_send_final_report,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
     process_cnes_table,
@@ -88,7 +86,7 @@ with Flow(
 
     cnes_to_process = get_vitacare_cnes_from_bigquery()
 
-    cnes_processing_statuses = process_cnes_table.map(
+    process_cnes_table.map(
         db_host=unmapped(db_host),
         db_port=unmapped(db_port),
         db_user=unmapped(db_user),
@@ -99,10 +97,6 @@ with Flow(
         partition_column=unmapped(PARTITION_COLUMN),
         cnes_code=cnes_to_process,
     )
-
-    table_summary_result = consolidate_cnes_table_results(cnes_processing_statuses)
-
-    flow_vitacare_historic_table_operator_v2.result = table_summary_result
 
 with Flow(
     "Datalake - Extração e Carga de Dados - Vitacare (Cloud SQL) - Manager V2",
@@ -150,9 +144,6 @@ with Flow(
         raise_final_state=unmapped(False),
         return_result=unmapped(True),
     )
-
-    create_and_send_final_report(all_tables_summaries)
-
 
 flow_vitacare_historic_manager_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
 flow_vitacare_historic_manager_v2.executor = LocalDaskExecutor(num_workers=5)
