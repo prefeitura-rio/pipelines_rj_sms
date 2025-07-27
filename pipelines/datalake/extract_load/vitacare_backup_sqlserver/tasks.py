@@ -58,9 +58,8 @@ def process_cnes_table(
     total_rows = 0
     is_first_chunk = True
 
-
     chunks = pd.read_sql(query, engine, chunksize=500000)
-    data_processed_successfully =  False
+    data_processed_successfully = False
 
     for chunk in chunks:
         dataframe = transform_dataframe(chunk, cnes_code, db_table)
@@ -102,7 +101,6 @@ def process_cnes_table(
             f"[process_cnes_table] Tabela '{db_table}' do CNES {cnes_code} processada com sucesso.",
             level="info",
         )
-
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
@@ -153,4 +151,3 @@ def build_operator_params(tables: list, env: str, schema: str, part_col: str) ->
             }
         )
     return params_list
-
