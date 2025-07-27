@@ -10,13 +10,13 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants as global_constants
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
+from pipelines.datalake.extract_load.vitacare_backup_sqlserver.constants import (
     vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules import (
+from pipelines.datalake.extract_load.vitacare_backup_sqlserver.schedules import (
     vitacare_backup_manager_schedule,
 )
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
+from pipelines.datalake.extract_load.vitacare_backup_sqlserver.tasks import (
     build_operator_params,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
