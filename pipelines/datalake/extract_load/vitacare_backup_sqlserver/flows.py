@@ -137,13 +137,6 @@ with Flow(
         raise_final_state=unmapped(False),
     )
 
-    all_tables_summaries = wait_for_flow_run.map(
-        flow_run_id=created_operator_runs,
-        stream_states=unmapped(True),
-        stream_logs=unmapped(True),
-        raise_final_state=unmapped(False),
-        return_result=unmapped(True),
-    )
 
 flow_vitacare_historic_manager_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
 flow_vitacare_historic_manager_v2.executor = LocalDaskExecutor(num_workers=5)
