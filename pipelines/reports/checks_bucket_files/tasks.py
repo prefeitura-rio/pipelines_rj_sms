@@ -32,7 +32,7 @@ def get_data_from_gcs_bucket(configuration: dict, environment: str):
 def send_report(configurations: list[dict], results: list[int], environment: str):
     base_date_readable = pd.to_datetime(datetime.now()).strftime("%d/%m/%Y")
     title = f"Relatório de arquivos do GCS - {base_date_readable}"
-    
+
     message_lines = []
     for configuration, result in zip(configurations, results):
         if result == 0:

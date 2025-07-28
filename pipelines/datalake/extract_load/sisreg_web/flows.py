@@ -6,8 +6,6 @@ SISREG dumping flows
 from prefect import Parameter, case
 from prefect.run_configs import VertexRun
 from prefect.storage import GCS
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_web.constants import (
@@ -21,6 +19,8 @@ from pipelines.datalake.extract_load.sisreg_web.tasks import (
     transform_data,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
 with Flow(

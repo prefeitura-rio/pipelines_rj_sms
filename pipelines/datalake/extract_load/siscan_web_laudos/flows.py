@@ -10,10 +10,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-# internos
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.siscan_web_laudos.constants import CONFIG
 from pipelines.datalake.extract_load.siscan_web_laudos.schedules import schedule
@@ -26,10 +22,14 @@ from pipelines.datalake.utils.tasks import (
     prepare_df_from_disk,
     upload_from_disk,
 )
+
+# internos
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
 
-
-with Flow(name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos",
+with Flow(
+    name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos",
     state_handlers=[handle_flow_state_change],
     owners=[
         constants.MATHEUS_ID.value,

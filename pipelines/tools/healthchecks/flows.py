@@ -3,8 +3,6 @@ from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.tools.healthchecks.schedules import schedule
@@ -14,6 +12,8 @@ from pipelines.tools.healthchecks.tasks import (
     vitai_api_health_check,
     vitai_db_health_check,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import upload_df_to_datalake
 
 with Flow(
