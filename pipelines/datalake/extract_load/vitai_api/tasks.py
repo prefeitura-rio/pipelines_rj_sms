@@ -82,6 +82,27 @@ def extract_data(
                 continue
 
         return responses
+    elif "{estabelecimento_id}" in endpoint_path:
+        response = requests.get(
+            f"{api_data['api_url']}/v1/estabelecimentos/",
+            headers={"Authorization": f"Bearer {api_token}"},
+            timeout=90,
+        )
+        response.raise_for_status()
+
+        estabelecimento_id_list = [ x["id"] for x in response.json() ]
+
+        responses = []
+        for estabelecimento_id in estabelecimento_id_list:
+            response = requests.get(
+                endpoint_url.format(estabelecimento_id=estabelecimento_id),
+                headers={"Authorization": f"Bearer {api_token}"},
+                timeout=90,
+            )
+            response.raise_for_status()
+            responses.extend(response.json())
+
+        return responses
     else:
         response = requests.get(
             endpoint_url,
