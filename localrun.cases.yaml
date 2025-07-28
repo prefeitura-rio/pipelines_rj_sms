@@ -457,7 +457,6 @@ cases:
     params:
       environment: "dev"
       rename_flow: True
-      endpoint_path: "/v1/atendimento/listByPeriodo"
+      endpoint_path: "/v1/profissionais/findByEstabelecimento/{estabelecimento_id}"
       dataset_id: "brutos_prontuario_vitai_api"
-      table_id: "atendimento"
-      relative_target_date: "D-0"
+      table_id: "profissional"
