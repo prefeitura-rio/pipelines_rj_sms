@@ -11,10 +11,10 @@ from google.cloud import bigquery
 from prefect.engine.signals import SKIP
 from sqlalchemy import create_engine, text
 
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
+from pipelines.datalake.extract_load.vitacare_sqlserver.constants import (
     vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import (
+from pipelines.datalake.extract_load.vitacare_sqlserver.utils import (
     clean_ut_id,
     transform_dataframe,
 )
