@@ -8,7 +8,8 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.smsrio_mysql.schedules import (
@@ -25,6 +26,11 @@ from pipelines.utils.time import from_relative_date
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - SMS Rio Plataforma",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DIT_ID.value,
+        constants.MATHEUS_ID.value,
+    ],
 ) as sms_dump_smsrio:
     #####################################
     # Parameters

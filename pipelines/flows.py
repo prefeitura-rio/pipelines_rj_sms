@@ -28,13 +28,11 @@ from pipelines.datalake.extract_load.sisreg_web.flows import *
 from pipelines.datalake.extract_load.sisreg_web_v2.flows import *
 from pipelines.datalake.extract_load.smsrio_mysql.flows import *
 from pipelines.datalake.extract_load.subpav_mysql.flows import *
-from pipelines.datalake.extract_load.tasks_clickup.flows import *
 from pipelines.datalake.extract_load.tpc_azure_blob.flows import *
 from pipelines.datalake.extract_load.tribunal_de_contas_rj.flows import *
 from pipelines.datalake.extract_load.vitacare_api.flows import *
 from pipelines.datalake.extract_load.vitacare_api_v2.flows import *
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.flows import *
-from pipelines.datalake.extract_load.vitacare_db.flows import *
+from pipelines.datalake.extract_load.vitacare_sqlserver.flows import *
 from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *

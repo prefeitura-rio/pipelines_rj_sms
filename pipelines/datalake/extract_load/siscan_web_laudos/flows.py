@@ -11,7 +11,8 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 # internos
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.siscan_web_laudos.constants import CONFIG
@@ -27,7 +28,13 @@ from pipelines.datalake.utils.tasks import (
 )
 from pipelines.utils.tasks import get_secret_key
 
-with Flow(name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos") as sms_siscan_web:
+
+with Flow(name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.MATHEUS_ID.value,
+    ],
+) as sms_siscan_web:
     # PARAMETROS AMBIENTE ---------------------------
     ENVIRONMENT = Parameter("environment", default="dev")
 

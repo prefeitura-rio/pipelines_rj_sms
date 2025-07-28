@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
-from prefect import Parameter
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.reports.checks_bucket_files.schedules import schedule
@@ -14,25 +15,41 @@ from pipelines.reports.checks_bucket_files.tasks import (
 )
 from pipelines.utils.time import from_relative_date
 
-with Flow(name="Report: Monitoramento de arquivos recorrentes") as report_bucket_files:
+with Flow(
+    name="Report: Monitoramento de arquivos recorrentes",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.HERIAN_ID.value,
+    ],
+) as report_bucket_files:
 
     #####################################
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment")
-    BUCKET_NAME = Parameter("bucket_name")
-    SOURCE_FRESHNESS = Parameter("source_freshness")
+    CONFIGURATIONS = Parameter("configurations", default= [
+            {
+                "bucket_name": "cgcca_cnes",
+                "source_freshness": "M-0",
+                "title": "Base de Dados CNES"
+            }
+        ]
+    )
 
     #####################################
     # Tasks
     #####################################
-    relative_date = from_relative_date(relative_date=SOURCE_FRESHNESS)
 
-    files_count = get_data_from_gcs_bucket(
-        bucket_name=BUCKET_NAME, relative_date=relative_date, environment=ENVIRONMENT
+    results = get_data_from_gcs_bucket.map(
+        configuration=CONFIGURATIONS,
+        environment=unmapped(ENVIRONMENT),
     )
 
-    send_report(bucket_name=BUCKET_NAME, source_freshness=SOURCE_FRESHNESS, len_files=files_count)
+    send_report(
+        configurations=CONFIGURATIONS,
+        results=results,
+        environment=unmapped(ENVIRONMENT),
+    )
 
 
 report_bucket_files.schedule = schedule

@@ -9,7 +9,8 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 # Internos
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
@@ -21,7 +22,12 @@ from pipelines.datalake.extract_load.ser_metabase.tasks import (
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
-with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
+with Flow("SUBGERAL - Extract & Load - SER METABASE",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.MATHEUS_ID.value,
+    ],
+) as ser_metabase_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
     # METABASE ------------------------------

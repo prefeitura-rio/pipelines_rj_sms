@@ -11,7 +11,8 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitacare_api.constants import (
@@ -46,6 +47,10 @@ from pipelines.utils.tasks import (
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DIT_ID.value,
+    ],
 ) as sms_dump_vitacare_estoque:
     #####################################
     # Parameters

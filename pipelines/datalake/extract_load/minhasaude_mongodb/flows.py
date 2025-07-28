@@ -7,7 +7,8 @@ from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.minhasaude_mongodb.schedules import schedule
@@ -19,7 +20,11 @@ from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
 from pipelines.utils.tasks import get_secret_key
 
 with Flow(
-    "SUBGERAL - Extract & Load - MinhaSaude.rio MongoDB (paginado)"
+    "SUBGERAL - Extract & Load - MinhaSaude.rio MongoDB (paginado)",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.MATHEUS_ID.value,
+    ],
 ) as minhasaude_mongodb_flow:
     # Parâmetros -----------------------------------------------------------
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
