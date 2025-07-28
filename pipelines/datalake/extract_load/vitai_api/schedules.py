@@ -32,7 +32,7 @@ routine_flow_parameters = [
     {
         "environment": "prod",
         "rename_flow": True,
-        "endpoint_path": "/v1/paciente/listByPeriodo",
+        "endpoint_path": "/v1/pacientes/listByPeriodo",
         "table_id": "paciente",
         "dataset_id": "brutos_prontuario_vitai_api",
         "relative_target_date": "D-1",
@@ -73,7 +73,7 @@ routine_flow_parameters = [
     {
         "environment": "prod",
         "rename_flow": True,
-        "endpoint_path": "/v1/paciente/listByPeriodo",
+        "endpoint_path": "/v1/pacientes/listByPeriodo",
         "table_id": "paciente",
         "dataset_id": "brutos_prontuario_vitai_api",
         "relative_target_date": "D-7",
@@ -98,7 +98,7 @@ routine_flow_parameters = [
     {
         "environment": "prod",
         "rename_flow": True,
-        "endpoint_path": "/v1/paciente/listByPeriodo",
+        "endpoint_path": "/v1/pacientes/listByPeriodo",
         "table_id": "paciente",
         "dataset_id": "brutos_prontuario_vitai_api",
         "relative_target_date": "D-14",
