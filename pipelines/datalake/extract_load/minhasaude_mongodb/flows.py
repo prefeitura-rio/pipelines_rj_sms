@@ -7,8 +7,6 @@ from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.minhasaude_mongodb.schedules import schedule
@@ -17,6 +15,8 @@ from pipelines.datalake.extract_load.minhasaude_mongodb.tasks import (
     gerar_faixas_de_fatiamento,
     validar_total_documentos,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
 
 with Flow(

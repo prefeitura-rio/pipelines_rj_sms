@@ -16,27 +16,19 @@ flow_parameters = [
     {
         "environment": "prod",
         "configurations": [
-            {
-                "bucket_name": "cgcca_cnes",
-                "source_freshness": "M-0",
-                "title": "Base de Dados CNES"
-            },
-            {
-                "bucket_name": "cgcca_sih",
-                "source_freshness": "Y-0",
-                "title": "Base de Dados SIH"
-            },
+            {"bucket_name": "cgcca_cnes", "source_freshness": "M-0", "title": "Base de Dados CNES"},
+            {"bucket_name": "cgcca_sih", "source_freshness": "Y-0", "title": "Base de Dados SIH"},
             {
                 "bucket_name": "vitacare_informes_mensais_gdrive",
                 "source_freshness": "M-0",
-                "title": "Informações Mensais da Vitacare"
+                "title": "Informações Mensais da Vitacare",
             },
             {
                 "bucket_name": "vitacare_backups_gdrive",
                 "source_freshness": "M-0",
-                "title": "Backups da Vitacare"
+                "title": "Backups da Vitacare",
             },
-        ]
+        ],
     }
 ]
 

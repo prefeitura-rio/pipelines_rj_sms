@@ -4,8 +4,6 @@ from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.reports.checks_bucket_files.schedules import schedule
@@ -13,6 +11,8 @@ from pipelines.reports.checks_bucket_files.tasks import (
     get_data_from_gcs_bucket,
     send_report,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.time import from_relative_date
 
 with Flow(
@@ -27,13 +27,11 @@ with Flow(
     # Parameters
     #####################################
     ENVIRONMENT = Parameter("environment")
-    CONFIGURATIONS = Parameter("configurations", default= [
-            {
-                "bucket_name": "cgcca_cnes",
-                "source_freshness": "M-0",
-                "title": "Base de Dados CNES"
-            }
-        ]
+    CONFIGURATIONS = Parameter(
+        "configurations",
+        default=[
+            {"bucket_name": "cgcca_cnes", "source_freshness": "M-0", "title": "Base de Dados CNES"}
+        ],
     )
 
     #####################################

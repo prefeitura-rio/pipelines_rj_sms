@@ -3,8 +3,6 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.constants import constants
 from pipelines.tools.unschedule_old_flows.schedules import schedule
@@ -14,6 +12,8 @@ from pipelines.tools.unschedule_old_flows.tasks import (
     query_non_archived_flows,
     report_to_discord,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
     "Tool: Desagendador de Flows Fantasmas",
