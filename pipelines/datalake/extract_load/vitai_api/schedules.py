@@ -44,6 +44,13 @@ routine_flow_parameters = [
         "table_id": "estabelecimento",
         "dataset_id": "brutos_prontuario_vitai_api",
     },
+    {
+        "environment": "prod",
+        "rename_flow": True,
+        "endpoint_path": "/v1/profissionais/findByEstabelecimento/{estabelecimento_id}",
+        "table_id": "profissional",
+        "dataset_id": "brutos_prontuario_vitai_api",
+    },
     # ------------------------------------------------------------
     # Execuções de Redundância
     # ------------------------------------------------------------
