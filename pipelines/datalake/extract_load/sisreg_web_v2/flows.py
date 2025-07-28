@@ -8,9 +8,6 @@ from prefect import Parameter
 from prefect.run_configs import VertexRun
 from prefect.storage import GCS
 
-# módulos internos
-from prefeitura_rio.pipelines_utils.custom import Flow
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_web_v2.schedules import (
     sisreg_daily_update_schedule,
@@ -22,9 +19,20 @@ from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
     sisreg_encerrar,
     transform_data,
 )
+
+# módulos internos
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import create_folders, create_partitions, upload_to_datalake
 
-with Flow(name="DataLake - Extração e Carga de Dados - SISREG v.2") as sms_sisreg:
+with Flow(
+    name="DataLake - Extração e Carga de Dados - SISREG v.2",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DIT_ID.value,
+        constants.MATHEUS_ID.value,
+    ],
+) as sms_sisreg:
 
     # ambiente
     ENVIRONMENT = Parameter("environment", default="dev")

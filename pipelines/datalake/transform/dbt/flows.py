@@ -7,7 +7,6 @@ from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.transform.dbt.schedules import dbt_schedules
@@ -21,8 +20,16 @@ from pipelines.datalake.transform.dbt.tasks import (
     rename_current_flow_run_dbt,
     upload_dbt_artifacts_to_gcs,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
-with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
+with Flow(
+    name="DataLake - Transformação - DBT",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DIT_ID.value,
+    ],
+) as sms_execute_dbt:
     #####################################
     # Parameters
     #####################################

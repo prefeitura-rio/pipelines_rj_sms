@@ -22,7 +22,7 @@ from pipelines.utils.time import from_relative_date
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare API v2",
     state_handlers=[handle_flow_state_change],
-    owners=[constants.DIT_ID.value],
+    owners=[constants.PEDRO_ID.value],
 ) as sms_vitacare_api_v2:
     #####################################
     # Parameters

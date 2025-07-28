@@ -3,7 +3,6 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.tools.unschedule_old_flows.schedules import schedule
@@ -13,8 +12,16 @@ from pipelines.tools.unschedule_old_flows.tasks import (
     query_non_archived_flows,
     report_to_discord,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
-with Flow("Tool: Desagendador de Flows Fantasmas") as unscheduler_flow:
+with Flow(
+    "Tool: Desagendador de Flows Fantasmas",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.AVELLAR_ID.value,
+    ],
+) as unscheduler_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
     MODE = Parameter("mode", default="report", required=True)
 

@@ -24,7 +24,7 @@ from pipelines.utils.time import from_relative_date
 with Flow(
     name="DataLake - Extração e Carga de Dados - Vitai API",
     state_handlers=[handle_flow_state_change],
-    owners=[constants.DIT_ID.value],
+    owners=[constants.HERIAN_ID.value],
 ) as sms_vitai_api:
     ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
