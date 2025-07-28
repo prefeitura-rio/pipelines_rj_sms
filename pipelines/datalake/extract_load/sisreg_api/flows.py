@@ -8,9 +8,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-# internos
-from prefeitura_rio.pipelines_utils.custom import Flow
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
 from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
@@ -23,9 +20,19 @@ from pipelines.datalake.utils.tasks import (
     prepare_df_from_disk,
     upload_from_disk,
 )
+
+# internos
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
 
-with Flow(name="SUBGERAL - Extract & Load - SISREG API") as sms_sisreg_api:
+with Flow(
+    name="SUBGERAL - Extract & Load - SISREG API",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.MATHEUS_ID.value,
+    ],
+) as sms_sisreg_api:
     # PARAMETROS AMBIENTE ---------------------------
     ENVIRONMENT = Parameter("environment", default="dev")
 
