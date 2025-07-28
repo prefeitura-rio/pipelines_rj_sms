@@ -36,7 +36,7 @@ def handle_flow_state_change(flow, old_state, new_state):
         "occurrence": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat(),
     }
 
-    if new_state.is_failed():
+    if new_state.is_failed() and environment == "prod":
         message = [
             " ".join([f"<@{owner}>" for owner in flow.get_owners()]),
             f"> Flow Run: [{prefect.context.get('flow_run_name')}](https://pipelines.dados.rio/flow-run/{info['flow_run_id']})",
