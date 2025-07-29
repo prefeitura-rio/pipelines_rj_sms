@@ -2,13 +2,13 @@
 """
 Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
-from collections import defaultdict
+
 from datetime import timedelta
 
 import pandas as pd
 from google.cloud import bigquery
 from sqlalchemy import create_engine
-from sqlalchemy.exc import OperationalError, ProgrammingError
+
 
 from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
     vitacare_constants,
@@ -18,7 +18,6 @@ from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils impo
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.monitor import send_message
 from pipelines.utils.tasks import upload_df_to_datalake
 
 
