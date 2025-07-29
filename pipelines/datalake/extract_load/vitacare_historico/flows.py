@@ -10,13 +10,13 @@ from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants as global_constants
-from pipelines.datalake.extract_load.vitacare_backup_sqlserver.constants import (
+from pipelines.datalake.extract_load.vitacare_historico.constants import (
     vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_backup_sqlserver.schedules import (
-    vitacare_backup_manager_schedule,
+from pipelines.datalake.extract_load.vitacare_historico.schedules import (
+    vitacare_historico_manager_schedule,
 )
-from pipelines.datalake.extract_load.vitacare_backup_sqlserver.tasks import (
+from pipelines.datalake.extract_load.vitacare_historico.tasks import (
     build_operator_params,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
@@ -156,4 +156,4 @@ flow_vitacare_historic_table_operator_v2.run_config = KubernetesRun(
     memory_request="10Gi",
 )
 
-flow_vitacare_historic_manager_v2.schedule = vitacare_backup_manager_schedule
+flow_vitacare_historic_manager_v2.schedule = vitacare_historico_manager_schedule

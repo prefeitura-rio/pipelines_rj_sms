@@ -24,4 +24,4 @@ clocks = generate_dump_api_schedules(
 )
 
 
-vitacare_backup_manager_schedule = Schedule(clocks=untuple_clocks(clocks))
+vitacare_historico_manager_schedule = Schedule(clocks=untuple_clocks(clocks))

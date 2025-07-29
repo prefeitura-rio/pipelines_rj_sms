@@ -10,10 +10,10 @@ from google.cloud import bigquery
 from sqlalchemy import create_engine
 
 
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
+from pipelines.datalake.extract_load.vitacare_historico.constants import (
     vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import (
+from pipelines.datalake.extract_load.vitacare_historico.utils import (
     transform_dataframe,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
