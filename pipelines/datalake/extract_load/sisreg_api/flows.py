@@ -11,7 +11,12 @@ from prefect.storage import GCS
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_api.constants import CONFIG
 from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
-from pipelines.datalake.extract_load.sisreg_api.tasks import full_extract_process
+from pipelines.datalake.extract_load.sisreg_api.tasks import (
+    full_extract_process,
+    make_run_meta,
+    validate_upload
+)
+
 from pipelines.datalake.utils.tasks import (
     delete_file,
     extrair_fim,
@@ -24,7 +29,10 @@ from pipelines.datalake.utils.tasks import (
 # internos
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key
+from pipelines.utils.tasks import (
+    get_secret_key,
+    upload_df_to_datalake
+)
 
 with Flow(
     name="SUBGERAL - Extract & Load - SISREG API",
@@ -70,8 +78,14 @@ with Flow(
     inicio_faixas = extrair_inicio.map(faixa=faixas)
     fim_faixas = extrair_fim.map(faixa=faixas)
 
+
+    # 0) Metadados de execução
+    run_id, as_of = make_run_meta()
+    
     # 1) Extrai e salva cada lote em disco, retorna caminho do parquet
     raw_files = full_extract_process.map(
+        run_id=unmapped(run_id),
+        as_of=unmapped(as_of),
         host=unmapped(CONFIG["host"]),
         port=unmapped(CONFIG["port"]),
         scheme=unmapped(CONFIG["scheme"]),
@@ -105,8 +119,30 @@ with Flow(
     delete_raw = delete_file.map(file_path=raw_files, upstream_tasks=[uploads])
     delete_prepared = delete_file.map(file_path=prepared_files, upstream_tasks=[uploads])
 
+    # 5) Prepara DF de log de validação de finalização de sucesso da run
+    df_validacao = validate_upload(
+        run_id=run_id,
+        as_of=as_of,
+        environment=ENVIRONMENT,
+        bq_table=BQ_TABLE,
+        bq_dataset=BQ_DATASET,
+        data_inicial=DATA_INICIAL,
+        data_final=DATA_FINAL,
+        upstream_tasks=[delete_prepared]
+    )
+
+    # 6) Registra a validação na tabela de log
+    registra_validacao = upload_df_to_datalake(
+        df=df_validacao,
+        table_id=BQ_TABLE,
+        dataset_id="brutos_sisreg_api_log",
+        partition_column="as_of",
+        source_format="parquet",
+    )
+
+
 # Configurações de execução
-sms_sisreg_api.executor = LocalDaskExecutor(num_workers=3)
+sms_sisreg_api.executor = LocalDaskExecutor(num_workers=10)
 sms_sisreg_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_sisreg_api.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
