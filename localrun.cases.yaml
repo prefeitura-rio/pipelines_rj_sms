@@ -451,3 +451,12 @@ cases:
       dataset_id: "brutos_prontuario_vitai_api"
       table_id: "atendimento"
       relative_target_date: "D-0"
+  - case_slug: "vitacare_historico"
+    flow_path: "pipelines.datalake.extract_load.vitacare_historico.flows"
+    flow_name: "flow_vitacare_historic_operator_v2"
+    params:
+      environment: "staging"
+      RENAME_FLOW: False
+      DB_SCHEMA: "dbo"
+      PARTITION_COLUMN: "extracted_at"
+      TABLE_NAME: "UNIDADE"

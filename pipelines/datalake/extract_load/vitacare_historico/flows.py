@@ -43,10 +43,10 @@ with Flow(
     owners=[
         global_constants.DANIEL_ID.value,
     ],
-) as flow_vitacare_historic_table_operator_v2:
+) as flow_vitacare_historic_operator_v2:
 
     TABLE_NAME = Parameter("TABLE_NAME", required=True)
-    ENVIRONMENT = Parameter("environment", default="staging", required=True)
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
     PARTITION_COLUMN = Parameter(
         "PARTITION_COLUMN", default=vitacare_constants.BQ_PARTITION_COLUMN.value
@@ -123,7 +123,7 @@ with Flow(
     )
 
     created_operator_runs = create_flow_run.map(
-        flow_name=unmapped(flow_vitacare_historic_table_operator_v2.name),
+        flow_name=unmapped(flow_vitacare_historic_operator_v2.name),
         project_name=unmapped(project_name),
         parameters=operator_parameters,
         labels=unmapped(current_labels),
@@ -147,9 +147,9 @@ flow_vitacare_historic_manager_v2.run_config = KubernetesRun(
     memory_request="8Gi",
 )
 
-flow_vitacare_historic_table_operator_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
-flow_vitacare_historic_table_operator_v2.executor = LocalDaskExecutor(num_workers=1)
-flow_vitacare_historic_table_operator_v2.run_config = KubernetesRun(
+flow_vitacare_historic_operator_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
+flow_vitacare_historic_operator_v2.executor = LocalDaskExecutor(num_workers=1)
+flow_vitacare_historic_operator_v2.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
     memory_limit="10Gi",
