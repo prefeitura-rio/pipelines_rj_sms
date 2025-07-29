@@ -409,8 +409,18 @@ cases:
     flow_name: 'report_bucket_files'
     params:
       environment: 'dev'
-      bucket_name: 'conectividade_aps'
-      source_freshness: 'D-0'
+      configurations: [
+        {
+          "bucket_name": "vitacare_backups_gdrive",
+          "source_freshness": "M-0",
+          "title": "Arquivos de Backup Vitacare"
+        },
+        {
+          "bucket_name": "cgcca_sih",
+          "source_freshness": "Y-0",
+          "title": "Base de Dados SIH"
+        }
+      ]
   - case_slug: 'dou-extraction'
     flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao.flows'
     flow_name: 'extract_diario_oficial_uniao'
@@ -447,7 +457,6 @@ cases:
     params:
       environment: "dev"
       rename_flow: True
-      endpoint_path: "/v1/atendimento/listByPeriodo"
+      endpoint_path: "/v1/profissionais/findByEstabelecimento/{estabelecimento_id}"
       dataset_id: "brutos_prontuario_vitai_api"
-      table_id: "atendimento"
-      relative_target_date: "D-0"
+      table_id: "profissional"
