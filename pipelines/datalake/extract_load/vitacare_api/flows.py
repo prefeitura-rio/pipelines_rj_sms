@@ -48,9 +48,6 @@ from pipelines.utils.tasks import (
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare",
     state_handlers=[handle_flow_state_change],
-    owners=[
-        constants.DIT_ID.value,
-    ],
 ) as sms_dump_vitacare_estoque:
     #####################################
     # Parameters
