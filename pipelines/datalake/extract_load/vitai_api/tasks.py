@@ -90,7 +90,7 @@ def extract_data(
         )
         response.raise_for_status()
 
-        estabelecimento_id_list = [ x["id"] for x in response.json() ]
+        estabelecimento_id_list = [x["id"] for x in response.json()]
 
         responses = []
         for estabelecimento_id in estabelecimento_id_list:
