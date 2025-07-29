@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 """
-Flows de extração e carga de dados do Vitacare Historic SQL Server para o BigQuery
+Flows de extração e carga de dados do Vitacare Historico SQL Server para o BigQuery
 """
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
