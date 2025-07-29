@@ -13,9 +13,9 @@ from pipelines.datalake.transform.dbt.schedules import dbt_schedules
 from pipelines.datalake.transform.dbt.tasks import (
     check_if_dbt_artifacts_upload_is_needed,
     create_dbt_report,
-    estimate_dbt_costs,
     download_dbt_artifacts_from_gcs,
     download_repository,
+    estimate_dbt_costs,
     execute_dbt,
     get_target_from_environment,
     rename_current_flow_run_dbt,

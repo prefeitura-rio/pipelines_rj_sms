@@ -6,15 +6,15 @@ Tasks for execute_dbt
 """
 
 import os
-import requests
 import shutil
-import pytz
 from datetime import datetime
-from google.cloud import bigquery
 
 import git
 import prefect
+import pytz
+import requests
 from dbt.cli.main import dbtRunner, dbtRunnerResult
+from google.cloud import bigquery
 from prefect.client import Client
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
@@ -131,7 +131,7 @@ def execute_dbt(
         raise FAIL("DBT Run seems not successful. No logs found.")
 
     return {
-        "command": ' '.join(cli_args),
+        "command": " ".join(cli_args),
         "running_result": running_result,
         "execution_time": execution_time,
         "start_time": start_time,
@@ -154,7 +154,7 @@ def estimate_dbt_costs(execution_info: dict, environment: str) -> float:
     end_time = execution_info["end_time"].astimezone(pytz.UTC)
 
     # Query BigQuery to get the costs
-    query_string = "/* {\"app\": \"dbt\",%"
+    query_string = '/* {"app": "dbt",%'
     project_id = "rj-sms" if environment == "prod" else "rj-sms-dev"
     query = f"""
     SELECT
