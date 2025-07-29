@@ -13,6 +13,7 @@ from pipelines.datalake.transform.dbt.schedules import dbt_schedules
 from pipelines.datalake.transform.dbt.tasks import (
     check_if_dbt_artifacts_upload_is_needed,
     create_dbt_report,
+    estimate_dbt_costs,
     download_dbt_artifacts_from_gcs,
     download_repository,
     execute_dbt,
@@ -74,7 +75,7 @@ with Flow(
     # Tasks section #1 - Execute commands in DBT
     #####################################
 
-    running_results = execute_dbt(
+    execution_info = execute_dbt(
         repository_path=download_repository_task,
         state=download_dbt_artifacts_task,
         target=target,
@@ -83,11 +84,18 @@ with Flow(
         exclude=EXCLUDE,
         flag=FLAG,
     )
-    running_results.set_upstream([install_dbt_packages, download_dbt_artifacts_task])
+    execution_info.set_upstream([install_dbt_packages, download_dbt_artifacts_task])
+
+    estimated_total_cost = estimate_dbt_costs(
+        execution_info=execution_info,
+        environment=ENVIRONMENT,
+    )
 
     with case(SEND_DISCORD_REPORT, True):
         create_dbt_report_task = create_dbt_report(
-            running_results=running_results, repository_path=download_repository_task
+            execution_info=execution_info,
+            estimated_total_cost=estimated_total_cost,
+            repository_path=download_repository_task,
         )
 
     ####################################
@@ -107,7 +115,7 @@ with Flow(
         upload_dbt_artifacts_to_gcs_task = upload_dbt_artifacts_to_gcs(
             dbt_path=download_repository_task, environment=ENVIRONMENT
         )
-        upload_dbt_artifacts_to_gcs_task.set_upstream(running_results)
+        upload_dbt_artifacts_to_gcs_task.set_upstream(execution_info)
 
 
 # Storage and run configs
