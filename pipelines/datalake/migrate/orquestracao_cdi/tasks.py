@@ -5,7 +5,7 @@
 import io
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 import pandas as pd
@@ -234,7 +234,7 @@ WHERE data_publicacao = '{DATE}'
                 <tr>
                     <td>
                         <img alt="Você Precisa Saber" width="650" style="width:100%"
-                            src="https://storage.googleapis.com/sms_dit_arquivos_publicos/img/voce-precisa-saber-banner--1300px.png"/>
+                            src="{constants.BANNER_VPS.value}"/>
                     </td>
                 </tr>
                 <tr><td><hr/></td></tr>
@@ -317,7 +317,7 @@ WHERE data_publicacao = '{DATE}'
                 <tr>
                     <td>
                         <img alt="DIT-SMS" width="100" align="right" style="margin-left:18px;margin-bottom:70px"
-                            src="https://storage.googleapis.com/sms_dit_arquivos_publicos/img/dit-horizontal-colorido--300px.png"/>
+                            src="{constants.LOGO_DIT_HORIZONTAL_COLORIDO.value}"/>
                         <p style="font-size:13px;color:#888;margin:0">
                             Compilado institucional da <b>Coordenadoria de Demandas Institucionais</b> (CDI),
                             com apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT),
@@ -331,7 +331,7 @@ WHERE data_publicacao = '{DATE}'
     return re.sub(r"\s{2,}\<", "<", final_email_string)
 
 
-@task
+@task(max_retries=5, retry_delay=timedelta(minutes=3))
 def get_email_recipients(environment: str = "prod") -> dict:
     client = bigquery.Client()
     project_name = get_bigquery_project_from_environment.run(environment=environment)
