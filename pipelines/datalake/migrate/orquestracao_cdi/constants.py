@@ -11,4 +11,5 @@ class constants(Enum):
     EMAIL_TOKEN = "API_TOKEN"
     EMAIL_ENDPOINT = "/data/mailman"
 
-    LOGO_SMS = "https://storage.googleapis.com/sms_dit_arquivos_publicos/img/sms-horizontal-branco-sem-sus--150px.png"
+    BANNER_VPS = "https://storage.googleapis.com/sms_dit_arquivos_publicos/img/voce-precisa-saber-banner--1300px.png"
+    LOGO_DIT_HORIZONTAL_COLORIDO = "https://storage.googleapis.com/sms_dit_arquivos_publicos/img/dit-horizontal-colorido--300px.png"
