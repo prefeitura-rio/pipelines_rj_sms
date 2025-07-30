@@ -54,13 +54,6 @@ with Flow(
     DATASET_ID = vitacare_constants.DATASET_ID.value
     SECRET_PATH = vitacare_constants.INFISICAL_PATH.value
 
-    with case(RENAME_FLOW, True):
-        rename_current_flow_run(
-            name_template="Tabela {table_name} ({env})",
-            table_name=TABLE_NAME,
-            env=ENVIRONMENT,
-        )
-
     db_host = get_secret_key(
         secret_path=SECRET_PATH,
         secret_name=vitacare_constants.INFISICAL_HOST.value,
@@ -81,6 +74,13 @@ with Flow(
         secret_name=vitacare_constants.INFISICAL_PASSWORD.value,
         environment=ENVIRONMENT,
     )
+
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(
+            name_template="Tabela {table_name} ({env})",
+            table_name=TABLE_NAME,
+            env=ENVIRONMENT,
+        )
 
     cnes_to_process = get_vitacare_cnes_from_bigquery()
 

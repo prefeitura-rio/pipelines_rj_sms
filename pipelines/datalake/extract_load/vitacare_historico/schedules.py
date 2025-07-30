@@ -9,9 +9,9 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 manager_flow_params = [
     {
-        "ENVIRONMENT": "prod",
-        "DB_SCHEMA": "dbo",
-        "SKIP_DBT_RUN": False,
+        "environment": "prod",
+        "db_schema": "dbo",
+        "skip_dbt_run": False,
     }
 ]
 
