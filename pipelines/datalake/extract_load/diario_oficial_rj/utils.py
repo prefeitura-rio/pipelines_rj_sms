@@ -106,20 +106,6 @@ def get_links_for_path(folders: List[BeautifulSoup], path: list) -> List[Beautif
     return []
 
 
-def get_links_if_match(folders: List[BeautifulSoup], regex_search_str: str) -> List[BeautifulSoup]:
-    all_links = []
-    for folder in folders:
-        # Pega o 'nome' da pasta
-        text = folder.get_text().strip()
-        # Confere se bate com o que queremos
-        if re.search(regex_search_str, text, re.IGNORECASE | re.MULTILINE):
-            # Pega todos os <a> com atributos que estamos procurando
-            # que estão 'dentro' da pasta
-            all_links.extend(get_all_links_in_folder(folder))
-
-    return all_links
-
-
 def node_cleanup(root: BeautifulSoup) -> BeautifulSoup:
     # Para pegar o conteúdo textual, remove elementos inline
     for tag in root.find_all(["a", "b", "i", "em", "span"]):

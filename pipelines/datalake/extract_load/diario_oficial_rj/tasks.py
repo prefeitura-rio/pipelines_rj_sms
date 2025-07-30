@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 
 from pipelines.datalake.extract_load.diario_oficial_rj.utils import (
     get_links_for_path,
-    get_links_if_match,
     node_cleanup,
     parse_do_contents,
     send_get_request,
@@ -151,7 +150,6 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
         "materia_id": id,
         "secao": folder_path,
         "titulo": title,
-        "html": str(html.body),
     }
 
     # Remove elementos inline comuns (<b>, <i>, <span>)
@@ -194,9 +192,8 @@ def upload_results(results_list: List[dict], dataset: str):
         # Para cada seção no resultado
         for section in result["sections"]:
             # Constrói objeto a ser upado com informações base
-            # Remove `html` (vai pra outra tabela) e `sections` (obviamente)
-            remove = set(["html", "sections"])
-            prepped_section = {**{k: v for k, v in result.items() if k not in remove}, **section}
+            # Remove `sections` (obviamente)
+            prepped_section = {**{k: v for k, v in result.items() if k != "sections"}, **section}
             # Constrói DataFrame a partir do objeto
             single_df = pd.DataFrame.from_records([prepped_section])
             # Concatena com os outros resultados
@@ -208,33 +205,6 @@ def upload_results(results_list: List[dict], dataset: str):
         df=main_df,
         dataset_id=dataset,
         table_id="diarios_municipio",
-        partition_column="_extracted_at",
-        if_exists="append",
-        if_storage_data_exists="append",
-        source_format="csv",
-        csv_delimiter=",",
-    )
-
-    # HTML
-    html_df = pd.DataFrame()
-    # Para cada resultado
-    for result in results_list:
-        # Pula resultados 'vazios'
-        if result is None:
-            continue
-        del result["sections"]
-
-        # Constrói DataFrame a partir do objeto
-        single_df = pd.DataFrame.from_records([result])
-        # Concatena com os outros resultados
-        html_df = pd.concat([html_df, single_df], ignore_index=True)
-
-    log(f"Uploading HTML DataFrame: {len(html_df)} rows; columns {list(html_df.columns)}")
-    # Chamando a task de upload
-    upload_df_to_datalake.run(
-        df=html_df,
-        dataset_id=dataset,
-        table_id="diarios_municipio_html",
         partition_column="_extracted_at",
         if_exists="append",
         if_storage_data_exists="append",
