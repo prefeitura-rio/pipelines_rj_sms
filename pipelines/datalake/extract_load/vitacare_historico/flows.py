@@ -111,7 +111,6 @@ with Flow(
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
     SKIP_DBT_RUN = Parameter("skip_dbt_run", default=True)
 
-
     tables_to_process = get_tables_to_extract()
 
     project_name = get_project_name(environment=ENVIRONMENT)
