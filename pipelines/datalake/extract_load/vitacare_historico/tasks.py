@@ -143,11 +143,11 @@ def build_operator_params(tables: list, env: str, schema: str, part_col: str) ->
     for table in tables:
         params_list.append(
             {
-                "TABLE_NAME": table,
+                "table_name": table,
                 "environment": env,
-                "DB_SCHEMA": schema,
-                "PARTITION_COLUMN": part_col,
-                "RENAME_FLOW": True,
+                "db_schema": schema,
+                "partition_column": part_col,
+                "rename_flow": True,
             }
         )
     return params_list
