@@ -17,11 +17,11 @@ from pipelines.datalake.extract_load.vitacare_historico.schedules import (
     vitacare_historico_manager_schedule,
 )
 from pipelines.datalake.extract_load.vitacare_historico.tasks import (
+    build_dbt_paramns,
     build_operator_params,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
     process_cnes_table,
-    build_dbt_paramns,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,

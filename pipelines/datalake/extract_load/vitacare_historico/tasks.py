@@ -9,13 +9,10 @@ import pandas as pd
 from google.cloud import bigquery
 from sqlalchemy import create_engine
 
-
 from pipelines.datalake.extract_load.vitacare_historico.constants import (
     vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_historico.utils import (
-    transform_dataframe,
-)
+from pipelines.datalake.extract_load.vitacare_historico.utils import transform_dataframe
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
@@ -126,7 +123,7 @@ def get_vitacare_cnes_from_bigquery() -> list:
             return []
         log(f"[get_vitacare_cnes_from_bigquery] Encontrados {len(cnes_list)} unidades no BigQuery.")
         return cnes_list
-    
+
     except Exception as e:
         log(
             f"[get_vitacare_cnes_from_bigquery] Erro ao buscar códigos CNES do BigQuery: {e}",
@@ -154,6 +151,7 @@ def build_operator_params(tables: list, env: str, schema: str, part_col: str) ->
             }
         )
     return params_list
+
 
 @task
 def build_dbt_paramns(env: str):
