@@ -18,10 +18,10 @@ from pipelines.datalake.extract_load.vitacare_sqlserver.schedules import (
     vitacare_backup_manager_schedule,
 )
 from pipelines.datalake.extract_load.vitacare_sqlserver.tasks import (
+    build_dbt_paramns,
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
     process_cnes_table,
-    build_dbt_paramns,
 )
 from pipelines.datalake.extract_load.vitacare_sqlserver.utils import (
     create_and_send_final_report,
@@ -161,7 +161,7 @@ with Flow(
         stream_logs=unmapped(True),
         raise_final_state=unmapped(False),
     )
-    
+
     create_and_send_final_report(operator_run_states=wait_for_operator_runs)
 
     dbt_params = build_dbt_paramns(env=environment)
@@ -173,15 +173,13 @@ with Flow(
         labels=current_labels,
         upstream_tasks=[wait_for_operator_runs],
     )
-    
+
     wait_for_dbt_runs = wait_for_flow_run.map(
         flow_run_id=created_dbt_runs,
         stream_states=True,
         stream_logs=True,
         raise_final_state=False,
     )
-
-
 
 
 flow_vitacare_historic_manager.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
