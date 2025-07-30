@@ -142,7 +142,7 @@ with Flow(
 
     dbt_params = build_dbt_paramns(env=ENVIRONMENT)
 
-    with case(SKIP_DBT_RUN, True):
+    with case(SKIP_DBT_RUN, False):
         created_dbt_runs = create_flow_run(
             flow_name="DataLake - Transformação - DBT",
             project_name=project_name,
@@ -151,7 +151,7 @@ with Flow(
             upstream_tasks=[wait_for_operator_runs],
         )
 
-    with case(SKIP_DBT_RUN, True):
+    with case(SKIP_DBT_RUN, False):
         wait_for_dbt_runs = wait_for_flow_run.map(
             flow_run_id=created_dbt_runs,
             stream_states=True,
