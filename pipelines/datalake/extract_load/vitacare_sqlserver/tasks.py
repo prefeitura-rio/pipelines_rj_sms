@@ -171,3 +171,18 @@ def get_vitacare_cnes_from_bigquery() -> list:
 @task
 def get_tables_to_extract() -> list:
     return vitacare_constants.TABLES_TO_EXTRACT.value
+
+@task
+def build_dbt_paramns(env: str):
+
+    return {
+        "command": "build",
+        "environment": env,
+        "exclude": None,
+        "flag": None,
+        "rename_flow": True,
+        "select": "tag:vitacare_historico",
+        "send_discord_report": False,
+    }
+
+ 
