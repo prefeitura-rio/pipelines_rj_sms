@@ -14,9 +14,8 @@ from pipelines.datalake.extract_load.sisreg_api.schedules import schedule
 from pipelines.datalake.extract_load.sisreg_api.tasks import (
     full_extract_process,
     make_run_meta,
-    validate_upload
+    validate_upload,
 )
-
 from pipelines.datalake.utils.tasks import (
     delete_file,
     extrair_fim,
@@ -29,10 +28,7 @@ from pipelines.datalake.utils.tasks import (
 # internos
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import (
-    get_secret_key,
-    upload_df_to_datalake
-)
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(
     name="SUBGERAL - Extract & Load - SISREG API",
@@ -78,10 +74,9 @@ with Flow(
     inicio_faixas = extrair_inicio.map(faixa=faixas)
     fim_faixas = extrair_fim.map(faixa=faixas)
 
-
     # 0) Metadados de execução
     run_id, as_of = make_run_meta()
-    
+
     # 1) Extrai e salva cada lote em disco, retorna caminho do parquet
     raw_files = full_extract_process.map(
         run_id=unmapped(run_id),
@@ -128,7 +123,7 @@ with Flow(
         bq_dataset=BQ_DATASET,
         data_inicial=DATA_INICIAL,
         data_final=DATA_FINAL,
-        upstream_tasks=[delete_prepared]
+        upstream_tasks=[delete_prepared],
     )
 
     # 6) Registra a validação na tabela de log
