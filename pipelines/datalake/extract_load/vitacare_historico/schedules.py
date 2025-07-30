@@ -11,7 +11,7 @@ manager_flow_params = [
     {
         "ENVIRONMENT": "prod",
         "DB_SCHEMA_MANAGER": "dbo",
-        "RENAME_FLOW_MANAGER": True,
+        "SKIP_DBT_RUN": False,
     }
 ]
 
