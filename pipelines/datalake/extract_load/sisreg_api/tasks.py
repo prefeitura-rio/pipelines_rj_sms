@@ -3,10 +3,11 @@
 Tarefas
 """
 
+from datetime import datetime, timedelta
+from typing import Any, Dict
+
 # Geral
 from uuid import uuid4
-from datetime import timedelta, datetime
-from typing import Any, Dict
 
 import pandas as pd
 from elasticsearch import Elasticsearch, exceptions
@@ -14,13 +15,15 @@ from prefect.engine.signals import SKIP
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
-# Funções auxiliares 
+# Funções auxiliares
 def _processar_registro(registro: Dict[str, Any]) -> Dict[str, Any]:
     fonte = registro.get("_source", {})
     return {**fonte}
+
 
 def _connect_elasticsearch(host, port, scheme, user, password):
     es = Elasticsearch(
@@ -38,6 +41,7 @@ def _connect_elasticsearch(host, port, scheme, user, password):
         log("Falha na conexão com o Elasticsearch: " + str(e))
         raise
     return es
+
 
 def _build_query(page_size, filters, data_inicial, data_final):
     return {
@@ -60,10 +64,11 @@ def _build_query(page_size, filters, data_inicial, data_final):
         },
     }
 
+
 def _initial_search_with_retry(es, index_name, query, scroll_timeout):
     resposta = es.search(index=index_name, body=query, scroll=scroll_timeout)
 
-    # Timeout handling simples na inicial 
+    # Timeout handling simples na inicial
     retry_count = 0
     while resposta.get("timed_out", False):
         retry_count += 1
@@ -79,6 +84,7 @@ def _initial_search_with_retry(es, index_name, query, scroll_timeout):
 
     return resposta
 
+
 def _extract_first_page_metadata(resposta, data_inicial, data_final):
     scroll_id = resposta.get("_scroll_id")
     total_obj = resposta["hits"]["total"]
@@ -92,8 +98,10 @@ def _extract_first_page_metadata(resposta, data_inicial, data_final):
     log(f"Total de registros encontrados ({data_inicial} a {data_final}): {total_registros}")
     return scroll_id, total_registros, hits
 
+
 def _process_hits(hits):
     return [_processar_registro(reg) for reg in hits]
+
 
 def _scroll_paginate(es, scroll_id, scroll_timeout, total_registros, dados_processados):
     # Lógica de paginação / scroll
@@ -119,9 +127,11 @@ def _scroll_paginate(es, scroll_id, scroll_timeout, total_registros, dados_proce
 
     return dados_processados, scroll_ids
 
+
 def _clear_scroll(es, scroll_ids):
     es.options(ignore_status=(404,)).clear_scroll(scroll_id=scroll_ids)
     log("Scroll encerrado com sucesso.")
+
 
 def _validate_count_diff(dados_processados, total_registros):
     # Permite até 5% de diferença (mantido)
@@ -132,6 +142,7 @@ def _validate_count_diff(dados_processados, total_registros):
             f"Esperado: {total_registros}, Obtido: {len(dados_processados)}"
         )
 
+
 def _to_parquet_with_metadata(dados_processados, run_id, as_of, data_inicial, data_final):
     df = pd.DataFrame(dados_processados)
     df["run_id"] = run_id
@@ -140,6 +151,7 @@ def _to_parquet_with_metadata(dados_processados, run_id, as_of, data_inicial, da
     file_path = f"sisreg_extraction_{data_inicial}_{data_final}.parquet"
     df.to_parquet(file_path, index=False)
     return file_path
+
 
 # -----------------------------
 # Função principal
@@ -182,7 +194,7 @@ def full_extract_process(
         resposta, data_inicial, data_final
     )
 
-    # Processa batch inicial 
+    # Processa batch inicial
     dados_processados = _process_hits(hits)
     log(f"Processados {len(dados_processados)}/{total_registros} registros (lote inicial)")
 
@@ -204,12 +216,15 @@ def full_extract_process(
 
     return file_path
 
+
 # -----------------------------
+
 
 @task(nout=2)
 def make_run_meta():
     """Gera metadados da execução."""
     return str(uuid4()), datetime.now().isoformat()
+
 
 @task
 def validate_upload(run_id, as_of, environment, bq_table, bq_dataset, data_inicial, data_final):
@@ -222,8 +237,7 @@ def validate_upload(run_id, as_of, environment, bq_table, bq_dataset, data_inici
         "data_inicial": data_inicial,
         "data_final": data_final,
         "validation_date": datetime.now(),
-        "completed" : True 
+        "completed": True,
     }
     df = pd.DataFrame([row])
     return df
-
