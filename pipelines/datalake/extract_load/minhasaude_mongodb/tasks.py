@@ -224,13 +224,13 @@ def extrair_fatia_para_datalake(
     Retorna quantidade de documentos enviados.
     """
     conn = _build_conn_string(host, port, user, password, authsource)
-    gte, lt = faixa
-    filtro = {**(query or {}), slice_var: {"$gte": gte, "$lt": lt}}
+    gte, lte = faixa
+    filtro = {**(query or {}), slice_var: {"$gte": gte, "$lte": lte}}
 
     documentos_enviados = 0
     buffer: List[Dict[str, Any]] = []
 
-    log(f"Iniciando extração para faixa {gte} -> {lt}…")
+    log(f"Iniciando extração para faixa {gte} -> {lte}…")
     with MongoClient(conn) as cli:
         col = cli[db_name][collection_name]
         cursor = (
