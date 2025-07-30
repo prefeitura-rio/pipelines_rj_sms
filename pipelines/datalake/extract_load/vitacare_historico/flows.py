@@ -99,7 +99,7 @@ with Flow(
     send_table_report(
         process_results_for_one_table=process_cnes_table_results,
         table_name=TABLE_NAME,
-        upstream_tasks=[process_cnes_table_results] 
+        upstream_tasks=[process_cnes_table_results],
     )
 
 with Flow(
