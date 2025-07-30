@@ -111,10 +111,7 @@ def process_cnes_table(
             status = "nao_encontrado"
         else:
             status = "erro_inesperado"
-            log(
-                f"[process_cnes_table] Erro inesperado",
-                level="error"    
-            )
+            log(f"[process_cnes_table] Erro inesperado", level="error")
 
         return {
             "status": status,
