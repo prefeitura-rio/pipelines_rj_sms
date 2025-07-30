@@ -39,11 +39,7 @@ from pipelines.utils.tasks import (
 )
 
 with Flow(
-    "Datalake - Extração e Carga de Dados - Vitacare (Cloud SQL) - Operator V2",
-    state_handlers=[handle_flow_state_change],
-    owners=[
-        global_constants.DANIEL_ID.value,
-    ],
+    "Datalake - Extração e Carga de Dados - Vitacare (Cloud SQL) - Operator V2"
 ) as flow_vitacare_historic_operator_v2:
 
     TABLE_NAME = Parameter("table_name", required=True)
@@ -100,11 +96,7 @@ with Flow(
     )
 
 with Flow(
-    "Datalake - Extração e Carga de Dados - Vitacare (Cloud SQL) - Manager V2",
-    state_handlers=[handle_flow_state_change],
-    owners=[
-        global_constants.DANIEL_ID.value,
-    ],
+    "Datalake - Extração e Carga de Dados - Vitacare (Cloud SQL) - Manager V2"
 ) as flow_vitacare_historic_manager_v2:
 
     ENVIRONMENT = Parameter("environment", default="staging")
