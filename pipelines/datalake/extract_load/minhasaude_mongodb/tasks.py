@@ -225,7 +225,7 @@ def extrair_fatia_para_datalake(
     """
     conn = _build_conn_string(host, port, user, password, authsource)
     gte, lte = faixa
-    filtro = {**(query or {}), slice_var: {"$gte": gte, "$lte": lt}}
+    filtro = {**(query or {}), slice_var: {"$gte": gte, "$lte": lte}}
 
     documentos_enviados = 0
     buffer: List[Dict[str, Any]] = []
