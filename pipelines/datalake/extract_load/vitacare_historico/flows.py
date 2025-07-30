@@ -21,6 +21,7 @@ from pipelines.datalake.extract_load.vitacare_historico.tasks import (
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
     process_cnes_table,
+    build_dbt_paramns,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -137,14 +138,31 @@ with Flow(
         raise_final_state=unmapped(False),
     )
 
+    dbt_params = build_dbt_paramns(env=ENVIRONMENT)
+
+    created_dbt_runs = create_flow_run(
+        flow_name="DataLake - Transformação - DBT",
+        project_name=project_name,
+        parameters=dbt_params,
+        labels=current_labels,
+        upstream_tasks=[wait_for_operator_runs],
+    )
+
+    wait_for_dbt_runs = wait_for_flow_run.map(
+        flow_run_id=created_dbt_runs,
+        stream_states=True,
+        stream_logs=True,
+        raise_final_state=False,
+    )
+
 
 flow_vitacare_historic_manager_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
 flow_vitacare_historic_manager_v2.executor = LocalDaskExecutor(num_workers=4)
 flow_vitacare_historic_manager_v2.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="8Gi",
-    memory_request="8Gi",
+    memory_limit="10Gi",
+    memory_request="10Gi",
 )
 
 flow_vitacare_historic_operator_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
@@ -152,8 +170,8 @@ flow_vitacare_historic_operator_v2.executor = LocalDaskExecutor(num_workers=1)
 flow_vitacare_historic_operator_v2.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="10Gi",
-    memory_request="10Gi",
+    memory_limit="12Gi",
+    memory_request="12Gi",
 )
 
 flow_vitacare_historic_manager_v2.schedule = vitacare_historico_manager_schedule

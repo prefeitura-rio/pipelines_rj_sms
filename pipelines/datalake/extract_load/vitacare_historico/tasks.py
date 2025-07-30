@@ -150,3 +150,16 @@ def build_operator_params(tables: list, env: str, schema: str, part_col: str) ->
             }
         )
     return params_list
+
+@task
+def build_dbt_paramns(env: str):
+
+    return {
+        "command": "build",
+        "environment": env,
+        "exclude": None,
+        "flag": None,
+        "rename_flow": True,
+        "select": "tag:vitacare_historico",
+        "send_discord_report": False,
+    }
