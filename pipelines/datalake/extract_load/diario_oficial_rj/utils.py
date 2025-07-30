@@ -1,28 +1,26 @@
 # -*- coding: utf-8 -*-
-import re
 import datetime
+import re
 from typing import List, Optional
 
 import pandas as pd
 import pytz
 import requests
+from bs4 import BeautifulSoup, NavigableString
 from google.cloud import bigquery
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from bs4 import BeautifulSoup, NavigableString
 
 from pipelines.constants import constants
 from pipelines.utils.logger import log
 from pipelines.utils.time import parse_date_or_today
 
 
-def report_extraction_status(status: bool, date: str, environment: str="dev"):
+def report_extraction_status(status: bool, date: str, environment: str = "dev"):
     date = parse_date_or_today(date).strftime("%Y-%m-%d")
     success = "true" if status else "false"
-    current_datetime = (
-        datetime.datetime
-        .now(tz=pytz.timezone("America/Sao_Paulo"))
-        .replace(tzinfo=None)
+    current_datetime = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(
+        tzinfo=None
     )
 
     if environment is None:
@@ -34,14 +32,16 @@ def report_extraction_status(status: bool, date: str, environment: str="dev"):
 
     log(f"Inserting into {FULL_TABLE_NAME} status of success={success} for date='{date}'...")
     client = bigquery.Client()
-    query_job = client.query(f"""
+    query_job = client.query(
+        f"""
         INSERT INTO {FULL_TABLE_NAME} (
             data_publicacao, tipo_diario, extracao_sucesso, _updated_at
         )
         VALUES (
             '{date}', 'dorj', {success}, '{current_datetime}'
         )
-    """)
+    """
+    )
     query_job.result()  # Wait for the job to complete
     log("Extraction report done!")
 

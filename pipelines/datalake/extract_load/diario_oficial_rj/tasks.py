@@ -12,8 +12,8 @@ from pipelines.datalake.extract_load.diario_oficial_rj.utils import (
     get_links_for_path,
     node_cleanup,
     parse_do_contents,
-    send_get_request,
     report_extraction_status,
+    send_get_request,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -142,7 +142,7 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
 def get_article_contents(do_tuple: tuple) -> List[dict]:
     assert len(do_tuple) == 2, "Tuple must be ((do_id, date), (title, id)) pair!"
 
-    ERR_RESULT = { "error": True }
+    ERR_RESULT = {"error": True}
     # Confere se houve erro na etapa anterior
     if do_tuple[1] == -1:
         # Se sim, retorna objeto de erro para ser detectado posteriormente
