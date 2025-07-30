@@ -46,13 +46,13 @@ with Flow(
     ],
 ) as flow_vitacare_historic_operator_v2:
 
-    TABLE_NAME = Parameter("TABLE_NAME", required=True)
+    TABLE_NAME = Parameter("table_name", required=True)
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
+    DB_SCHEMA = Parameter("db_schema", default=vitacare_constants.DB_SCHEMA.value)
     PARTITION_COLUMN = Parameter(
-        "PARTITION_COLUMN", default=vitacare_constants.BQ_PARTITION_COLUMN.value
+        "partition_column", default=vitacare_constants.BQ_PARTITION_COLUMN.value
     )
-    RENAME_FLOW = Parameter("RENAME_FLOW", default=True)
+    RENAME_FLOW = Parameter("rename_flow", default=True)
 
     DATASET_ID = vitacare_constants.DATASET_ID.value
     SECRET_PATH = vitacare_constants.INFISICAL_PATH.value
@@ -108,7 +108,7 @@ with Flow(
 ) as flow_vitacare_historic_manager_v2:
 
     ENVIRONMENT = Parameter("environment", default="staging")
-    DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
+    DB_SCHEMA = Parameter("db_schema", default=vitacare_constants.DB_SCHEMA.value)
     SKIP_DBT_RUN = Parameter("skip_dbt_run", default=True)
 
     tables_to_process = get_tables_to_extract()
@@ -160,12 +160,12 @@ with Flow(
 
 
 flow_vitacare_historic_manager_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
-flow_vitacare_historic_manager_v2.executor = LocalDaskExecutor(num_workers=4)
+flow_vitacare_historic_manager_v2.executor = LocalDaskExecutor(num_workers=2)
 flow_vitacare_historic_manager_v2.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="10Gi",
-    memory_request="10Gi",
+    memory_limit="2Gi",
+    memory_request="2Gi",
 )
 
 flow_vitacare_historic_operator_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
@@ -173,8 +173,8 @@ flow_vitacare_historic_operator_v2.executor = LocalDaskExecutor(num_workers=1)
 flow_vitacare_historic_operator_v2.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="12Gi",
-    memory_request="12Gi",
+    memory_limit="10Gi",
+    memory_request="10Gi",
 )
 
 flow_vitacare_historic_manager_v2.schedule = vitacare_historico_manager_schedule
