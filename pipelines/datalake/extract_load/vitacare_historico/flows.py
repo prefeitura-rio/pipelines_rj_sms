@@ -109,6 +109,8 @@ with Flow(
 
     ENVIRONMENT = Parameter("environment", default="staging")
     DB_SCHEMA = Parameter("DB_SCHEMA", default=vitacare_constants.DB_SCHEMA.value)
+    SKIP_DBT_RUN = Parameter("skip_dbt_run", default=True)
+
 
     tables_to_process = get_tables_to_extract()
 
@@ -140,20 +142,22 @@ with Flow(
 
     dbt_params = build_dbt_paramns(env=ENVIRONMENT)
 
-    created_dbt_runs = create_flow_run(
-        flow_name="DataLake - Transformação - DBT",
-        project_name=project_name,
-        parameters=dbt_params,
-        labels=current_labels,
-        upstream_tasks=[wait_for_operator_runs],
-    )
+    with case(SKIP_DBT_RUN, True):
+        created_dbt_runs = create_flow_run(
+            flow_name="DataLake - Transformação - DBT",
+            project_name=project_name,
+            parameters=dbt_params,
+            labels=current_labels,
+            upstream_tasks=[wait_for_operator_runs],
+        )
 
-    wait_for_dbt_runs = wait_for_flow_run.map(
-        flow_run_id=created_dbt_runs,
-        stream_states=True,
-        stream_logs=True,
-        raise_final_state=False,
-    )
+    with case(SKIP_DBT_RUN, True):
+        wait_for_dbt_runs = wait_for_flow_run.map(
+            flow_run_id=created_dbt_runs,
+            stream_states=True,
+            stream_logs=True,
+            raise_final_state=False,
+        )
 
 
 flow_vitacare_historic_manager_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
