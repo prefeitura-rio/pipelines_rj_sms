@@ -30,6 +30,7 @@ from pipelines.utils.logger import log
 from pipelines.utils.monitor import send_message
 from pipelines.utils.tasks import get_secret_key
 
+
 @task
 def resolve_notify(project: str, notify_param) -> bool:
     """

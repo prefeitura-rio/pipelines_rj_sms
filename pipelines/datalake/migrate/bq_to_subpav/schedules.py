@@ -63,7 +63,6 @@ TABLES_CONFIG = [
 ]
 
 
-
 def build_param(config: dict) -> dict:
     """
     Constrói um dicionário de parâmetros padronizado para execução do pipeline,
