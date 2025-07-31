@@ -20,7 +20,7 @@ def extract_decree_details(text_link_href: str) -> dict:
 
     """
     session = requests.Session()
-    retries = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504, 104])
+    retries = Retry(total=3, backoff_factor=15, status_forcelist=[500, 502, 503, 504, 104])
     session.mount("https://", HTTPAdapter(max_retries=retries))
 
     decree_text = decree_date = decree_edition = decree_section = decree_page = decree_agency = None
@@ -57,8 +57,8 @@ def extract_decree_details(text_link_href: str) -> dict:
             "url": text_link_href,
             "_extracted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
+
     except Exception as e:
-        log(f"Erro durante a extração de {text_link_href}: {str(e)}")
         raise e
     finally:
         session.close()
