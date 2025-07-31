@@ -4,7 +4,7 @@
 from datetime import datetime, timedelta
 
 import pytz
-from prefect.schedules import Schedule
+from prefect.schedules import Schedule, filters
 
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
@@ -22,4 +22,8 @@ clocks = generate_dump_api_schedules(
     flow_run_parameters=parameters,
 )
 
-schedules = Schedule(clocks=untuple_clocks(clocks))
+schedules = Schedule(
+    clocks=untuple_clocks(clocks),
+    # Só executa em dias úteis
+    filters=[filters.is_weekday],
+)
