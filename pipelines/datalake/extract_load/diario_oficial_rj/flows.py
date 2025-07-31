@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 # flake8: noqa E501
-from prefect import Parameter, flatten
+from prefect import Parameter, flatten, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -44,7 +44,7 @@ with Flow(
     # Para cada par de nome/id, pega o conteúdo do artigo
     article_contents = get_article_contents.map(do_tuple=flatten(do_article_tuple))
 
-    upload_results(results_list=article_contents, dataset=DATASET_ID)
+    upload_results(results_list=article_contents, dataset=DATASET_ID, date=DATE, env=ENVIRONMENT)
 
 
 # Por ora não vamos usar schedule; esse flow será chamado por um orquestrador
