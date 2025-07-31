@@ -111,8 +111,6 @@ def process_cnes_table(
             log(f"[process_cnes_table] Erro inesperado {error_message[:250]}", level="error")
             raise
 
-        
-
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
 def get_vitacare_cnes_from_bigquery() -> list:
