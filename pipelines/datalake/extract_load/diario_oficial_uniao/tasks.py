@@ -10,7 +10,7 @@ from prefect import task
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-
+from selenium.common.exceptions import WebDriverException
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao.utils import (
     extract_decree_details,
@@ -59,11 +59,15 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
     log(
         f"Iniciando extração dos atos oficiais do DOU Seção {str(dou_section)} de {date.strftime('%d/%m/%Y')}"
     )
-
-    driver.get(
-        f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}"
-    )
-
+    
+    try:
+        driver.get(
+            f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}"
+        )
+    except WebDriverException:
+        log('❌ Erro ao acessar o site do DOU.')
+        return [[], False]
+    
     while True:
         # Lógica para evitar a poluição do log
         if page_count == 1 or page_count % 10 == 0:
