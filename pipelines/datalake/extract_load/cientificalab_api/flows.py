@@ -15,7 +15,10 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     generate_extraction_windows,
     transform,
 )
-from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.datalake.utils.tasks import (
+    rename_current_flow_run,
+    upload_df_to_datalake,
+)
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
@@ -25,11 +28,7 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import (
-    get_project_name,
-    get_secret_key,
-    upload_df_to_datalake,
-)
+from pipelines.utils.tasks import get_project_name, get_secret_key
 from pipelines.utils.time import from_relative_date, get_datetime_working_range
 
 with Flow(
@@ -156,8 +155,8 @@ flow_cientificalab_operator.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="6Gi",
-    memory_request="6Gi",
+    memory_limit="10Gi",
+    memory_request="10Gi",
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

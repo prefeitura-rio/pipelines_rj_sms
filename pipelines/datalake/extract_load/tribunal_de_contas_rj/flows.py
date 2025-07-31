@@ -5,9 +5,10 @@ from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 from .constants import constants as flow_constants
 from .tasks import (
@@ -19,6 +20,10 @@ from .tasks import (
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Tribunal de Contas do Município",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.AVELLAR_ID.value,
+    ],
 ) as extract_tribunal_de_contas_rj:
     #####################################
     # Parameters
@@ -45,6 +50,6 @@ extract_tribunal_de_contas_rj.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="13Gi",
-    memory_request="13Gi",
+    memory_limit="7Gi",
+    memory_request="7Gi",
 )

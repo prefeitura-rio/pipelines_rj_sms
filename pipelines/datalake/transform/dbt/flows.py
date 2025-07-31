@@ -7,7 +7,6 @@ from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.transform.dbt.schedules import dbt_schedules
@@ -16,13 +15,22 @@ from pipelines.datalake.transform.dbt.tasks import (
     create_dbt_report,
     download_dbt_artifacts_from_gcs,
     download_repository,
+    estimate_dbt_costs,
     execute_dbt,
     get_target_from_environment,
     rename_current_flow_run_dbt,
     upload_dbt_artifacts_to_gcs,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
-with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
+with Flow(
+    name="DataLake - Transformação - DBT",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DIT_ID.value,
+    ],
+) as sms_execute_dbt:
     #####################################
     # Parameters
     #####################################
@@ -67,7 +75,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
     # Tasks section #1 - Execute commands in DBT
     #####################################
 
-    running_results = execute_dbt(
+    execution_info = execute_dbt(
         repository_path=download_repository_task,
         state=download_dbt_artifacts_task,
         target=target,
@@ -76,11 +84,18 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
         exclude=EXCLUDE,
         flag=FLAG,
     )
-    running_results.set_upstream([install_dbt_packages, download_dbt_artifacts_task])
+    execution_info.set_upstream([install_dbt_packages, download_dbt_artifacts_task])
+
+    estimated_total_cost = estimate_dbt_costs(
+        execution_info=execution_info,
+        environment=ENVIRONMENT,
+    )
 
     with case(SEND_DISCORD_REPORT, True):
         create_dbt_report_task = create_dbt_report(
-            running_results=running_results, repository_path=download_repository_task
+            execution_info=execution_info,
+            estimated_total_cost=estimated_total_cost,
+            repository_path=download_repository_task,
         )
 
     ####################################
@@ -100,7 +115,7 @@ with Flow(name="DataLake - Transformação - DBT") as sms_execute_dbt:
         upload_dbt_artifacts_to_gcs_task = upload_dbt_artifacts_to_gcs(
             dbt_path=download_repository_task, environment=ENVIRONMENT
         )
-        upload_dbt_artifacts_to_gcs_task.set_upstream(running_results)
+        upload_dbt_artifacts_to_gcs_task.set_upstream(execution_info)
 
 
 # Storage and run configs

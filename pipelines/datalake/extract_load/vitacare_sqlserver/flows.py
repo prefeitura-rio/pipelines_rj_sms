@@ -11,18 +11,18 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants as global_constants
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.constants import (
+from pipelines.datalake.extract_load.vitacare_sqlserver.constants import (
     vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.schedules import (
+from pipelines.datalake.extract_load.vitacare_sqlserver.schedules import (
     vitacare_backup_manager_schedule,
 )
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.tasks import (
+from pipelines.datalake.extract_load.vitacare_sqlserver.tasks import (
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
     process_cnes_table,
 )
-from pipelines.datalake.extract_load.vitacare_backup_mensal_sqlserver.utils import (
+from pipelines.datalake.extract_load.vitacare_sqlserver.utils import (
     create_and_send_final_report,
 )
 from pipelines.utils.credential_injector import (
@@ -41,7 +41,7 @@ from pipelines.utils.tasks import (
 )
 
 with Flow(
-    "DataLake - Vitacare Historic - Table Operator",
+    "Datalake - Extração e Carga de Dados - Vitacare (Cloud SQL) - Operator",
     state_handlers=[handle_flow_state_change],
     owners=[
         global_constants.DANIEL_ID.value,
@@ -101,7 +101,7 @@ with Flow(
 
 
 with Flow(
-    "DataLake - Vitacare Historic - Manager",
+    "Datalake - Extração e Carga de Dados - Vitacare (Cloud SQL) - Manager",
     state_handlers=[handle_flow_state_change],
     owners=[
         global_constants.DANIEL_ID.value,

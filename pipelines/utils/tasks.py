@@ -932,6 +932,10 @@ def upload_df_to_datalake(
     biglake_table: bool = True,
     dataset_is_public: bool = False,
 ):
+    if df.empty:
+        log(f"Dataframe vazio para {table_id}. Upload Ignorado", level="warning")
+        return None
+
     root_folder = f"./data/{uuid.uuid4()}"
     os.makedirs(root_folder, exist_ok=True)
     log(f"Using as root folder: {root_folder}")
@@ -939,6 +943,10 @@ def upload_df_to_datalake(
     # All columns as strings
     df = df.astype(str)
     log("Converted all columns to strings")
+
+    if df.empty:
+        log("DataFrame is empty. Skipping upload", level="warning")
+        return
 
     if partition_column:
         log(f"Creating date partitions for a {df.shape[0]} rows dataframe")

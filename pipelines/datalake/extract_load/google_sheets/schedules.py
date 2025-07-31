@@ -14,10 +14,30 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "url": "https://docs.google.com/spreadsheets/d/1EkYfxuN2bWD_q4OhHL8hJvbmQKmQKFrk0KLf6D7nKS4/edit?usp=sharing",  # noqa: E501
+        "url": "https://docs.google.com/spreadsheets/d/1XySagSMiJs22XaYqq6IY372gqLOr4zA3koCpUf0kjOg/edit?usp=sharing",  # noqa: E501
         "url_type": "google_sheet",
-        "gsheets_sheet_name": "Sheet1",
+        "gsheets_sheet_name": "Estabelecimentos",
         "table_id": "estabelecimento_auxiliar",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1C8Fn-c6vwjx3X4nmc7X6V_tFw91rOmojXs9VgUWbQTg/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Destinatários",
+        "table_id": "cdi_destinatarios",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1-3sJmuLPfmBjS8vPV1ct8qx5-5YdqnDH3_vD4EYkg9Q/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Mapeamento",
+        "table_id": "usuarios_bigquery",
         "dataset_id": "brutos_sheets",
         "csv_delimiter": "|",
         "environment": "prod",

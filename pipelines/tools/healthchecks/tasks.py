@@ -2,28 +2,21 @@
 from datetime import datetime, timedelta
 
 import pandas as pd
+import requests
 
-from pipelines.datalake.extract_load.vitacare_api.constants import (
-    constants as vitacare_constants,
-)
+from pipelines.datalake.extract_load.vitai_api.tasks import get_all_api_data
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import cloud_function_request, get_secret_key
-
-
-@task
-def get_ap_list():
-    log("Getting AP list...")
-    ap_list = list(vitacare_constants.BASE_URL.value.keys())
-    log(f"AP list: {ap_list}")
-    return ap_list
+from pipelines.utils.tasks import get_secret_key
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
 def vitai_db_health_check(enviroment: str):
 
     db_url = get_secret_key.run(
-        environment=enviroment, secret_name="DB_URL", secret_path="/prontuario-vitai"
+        environment=enviroment,
+        secret_name="DB_URL",
+        secret_path="/prontuario-vitai",
     )
 
     try:
@@ -92,57 +85,53 @@ def smsrio_db_health_check(enviroment: str):
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=10))
-def vitacare_api_health_check(enviroment: str, ap: str):
-    log(f"Checking Vitacare API health for AP: {ap}")
+def vitai_api_health_check(enviroment: str):
 
-    username = get_secret_key.run(
-        secret_path=vitacare_constants.INFISICAL_PATH.value,
-        secret_name=vitacare_constants.INFISICAL_VITACARE_USERNAME.value,
-        environment=enviroment,
-    )
-    password = get_secret_key.run(
-        secret_path=vitacare_constants.INFISICAL_PATH.value,
-        secret_name=vitacare_constants.INFISICAL_VITACARE_PASSWORD.value,
+    all_api = get_all_api_data.run(
         environment=enviroment,
     )
 
-    api_url = vitacare_constants.BASE_URL.value[ap]
-    log(f"API URL: {api_url}")
-
-    endpoint_url = vitacare_constants.ENDPOINT.value["posicao"]
-    log(f"Endpoint URL: {endpoint_url}")
-
-    try:
+    api_token = get_secret_key.run(
+        environment=enviroment,
+        secret_name="TOKEN",
+        secret_path="/prontuario-vitai",
+    )
+    results = []
+    for api in all_api:
         start_time = datetime.now()
-        cloud_function_request.run(
-            url=f"{api_url}{endpoint_url}",
-            request_type="GET",
-            query_params={"date": str(datetime.now().date()), "cnes": None},
-            credential={"username": username, "password": password},
-            env=enviroment,
-        )
-        final_time = datetime.now()
-    except Exception as e:
-        log(f"Vitacare API Health Check failed: {e}")
-        return [
-            {
-                "is_healthy": False,
-                "slug": f"vitacare_api_{ap.lower()}",
-                "message": f"Vitacare API Health Check failed: {e}",
-                "duration": None,
-                "created_at": datetime.now(),
-            }
-        ]
-    else:
-        return [
-            {
-                "is_healthy": True,
-                "slug": f"vitacare_api_{ap.lower()}",
-                "message": "Vitacare API Health Check succeeded.",
-                "duration": (final_time - start_time).total_seconds(),
-                "created_at": datetime.now(),
-            }
-        ]
+        try:
+            response = requests.get(
+                url=f"{api['api_url']}/v1/atendimento/listByPeriodo",
+                headers={"Authorization": f"Bearer {api_token}"},
+                params={"dataInicial": "23/07/2025 09:00:00", "dataFinal": "23/07/2025 12:00:00"},
+                timeout=90,
+            )
+            response.raise_for_status()
+        except Exception as e:
+            final_time = datetime.now()
+            log(f"Vitai API Health Check failed: {e}")
+            results.append(
+                {
+                    "is_healthy": False,
+                    "slug": "vitai_api",
+                    "message": f"Vitai API Health Check failed: {e}",
+                    "duration": (final_time - start_time).total_seconds(),
+                    "created_at": datetime.now(),
+                }
+            )
+        else:
+            final_time = datetime.now()
+            log(f"Vitai API Health Check succeeded: {api['cnes']}")
+            results.append(
+                {
+                    "is_healthy": True,
+                    "slug": f"vitai_api_{api['cnes']}",
+                    "message": f"Vitai API Health Check succeeded: {api['cnes']}",
+                    "duration": (final_time - start_time).total_seconds(),
+                    "created_at": datetime.now(),
+                }
+            )
+    return results
 
 
 @task
@@ -153,9 +142,9 @@ def print_result(results: list, enviroment: str):
 
 
 @task
-def transform_to_df(results_smsrio: list, results_vitai: list, results_vitacare: list):
+def transform_to_df(results_smsrio: list, results_vitai_db: list, results_vitai_api: list):
     results = []
     results.extend(results_smsrio)
-    results.extend(results_vitai)
-    results.extend(results_vitacare)
+    results.extend(results_vitai_db)
+    results.extend(results_vitai_api)
     return pd.DataFrame(results)

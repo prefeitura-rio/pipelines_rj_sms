@@ -4,17 +4,22 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 import pandas as pd
+import pytz
+from google.cloud import bigquery
 from prefect import task
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 
+from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao.utils import (
     extract_decree_details,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.utils.time import parse_date_or_today
 
 # Configurações do Web Driver
 chrome_options = Options()
@@ -27,7 +32,7 @@ chrome_options.add_argument("--disable-images")
 chrome_options.add_argument("--page-load-strategy=eager")
 
 
-@task
+@task(nout=2)
 def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
     """Tarefa para extração dos dados de atos oficiais do DOU.
 
@@ -37,13 +42,13 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
         date (datetime): Data do diário oficial a ser extraído.
 
     Raises:
-        exc: _description_
+        exc: Máximo de tentativas alcançado na requisição de algum ato oficial.
 
     Returns:
-        list: Lista de dicionários contendo os dados extraídos de cada ato do DOU.
+        list: Lista de dicionários contendo os dados extraídos de cada ato do DOU e a variável que indica que a extração foi bem sucedida.
+
     """
-    if not date:
-        date = datetime.now()
+    date = parse_date_or_today(date)
 
     items = []  # Lista de dicionários com os metadados e informações de cada ato
     page_count = 1
@@ -55,9 +60,14 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
     log(
         f"Iniciando extração dos atos oficiais do DOU Seção {str(dou_section)} de {date.strftime('%d/%m/%Y')}"
     )
-    driver.get(
-        f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}"
-    )
+
+    try:
+        driver.get(
+            f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}"
+        )
+    except WebDriverException:
+        log("❌ Erro ao acessar o site do DOU.")
+        return [[], False]
 
     while True:
         # Lógica para evitar a poluição do log
@@ -90,8 +100,10 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
                     decree_details = future.result()
                     items.append(decree_details)
                 except Exception as exc:
-                    log(f"{url} gerou uma exceção: {exc}")
-                    raise exc
+                    log(
+                        f"❌ A requisição para {url} alcançou o máximo de tentativas na requisição."
+                    )
+                    return [[], False]
 
         # Buscando o botão para a próxima página de pesquisa
         pagination_buttons = driver.find_elements(by=By.CLASS_NAME, value="pagination-button")
@@ -111,24 +123,28 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
 
     driver.quit()
     log("✅ Extração finalizada.")
-
-    return items
+    return [items, True]
 
 
 @task
-def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
-    """Função para realizar a carga dos dados extraídos no datalake.
+def upload_to_datalake(dou_infos: list, dataset: str, environment: str) -> None:
+    """Função para realizar a carga dos dados extraídos no datalake da SMS Rio.
 
     Args:
         dou_infos (dict): Lista com os dicionários contendo os dados extraídos de cada ato do DOU.
         dataset (str): Dataset do BigQuery onde os dados serão carregados.
+        successful (bool): Variável que indica que a extração foi bem sucedida.
         environment (str):
     """
 
     if dou_infos:
+        extracted_at = datetime.now(pytz.timezone("America/Sao_Paulo")).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
         rows = len(dou_infos)
         df = pd.DataFrame(dou_infos)
-        df["extracted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        df["extracted_at"] = extracted_at
         log(f"Realizando upload de {rows} registros no datalake em {dataset}...")
 
         upload_df_to_datalake.run(
@@ -147,7 +163,34 @@ def upload_to_datalake(dou_infos: dict, dataset: str, environment: str) -> None:
 
 
 @task
-def parse_date(date_string: str) -> datetime | None:
-    if date_string != "":
-        return datetime.strptime(date_string, "%d/%m/%Y")
-    return None
+def report_extraction_status(status: bool, date: str, dou_section: int, environment: str = "dev"):
+
+    date = parse_date_or_today(date).strftime("%Y-%m-%d")
+
+    success = "true" if status else "false"
+    current_datetime = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
+    tipo_diario = "dou-sec" + str(dou_section)
+
+    if environment is None:
+        environment = "dev"
+
+    PROJECT = constants.GOOGLE_CLOUD_PROJECT.value[environment]
+    DATASET = "projeto_cdi"
+    TABLE = "extracao_status"
+    FULL_TABLE_NAME = f"`{PROJECT}.{DATASET}.{TABLE}`"
+
+    log(f"Inserting into {FULL_TABLE_NAME} status of success={success} for date='{date}'...")
+
+    client = bigquery.Client()
+    query_job = client.query(
+        f"""
+        INSERT INTO {FULL_TABLE_NAME} (
+            data_publicacao, tipo_diario, extracao_sucesso, _updated_at
+        )
+        VALUES (
+            '{date}', '{tipo_diario}', {success}, '{current_datetime}'
+        )
+    """
+    )
+    query_job.result()
+    log("✅ Status da extração reportado!")

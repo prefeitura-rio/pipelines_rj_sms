@@ -15,29 +15,21 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {
         "environment": "prod",
-        "bucket_name": "cgcca_cnes",
-        "source_freshness": "M-0",
-    },
-    {
-        "environment": "prod",
-        "bucket_name": "cgcca_sih",
-        "source_freshness": "Y-0",
-    },
-    {
-        "environment": "prod",
-        "bucket_name": "conectividade_aps",
-        "source_freshness": "D-0",
-    },
-    {
-        "environment": "prod",
-        "bucket_name": "vitacare_informes_mensais_gdrive",
-        "source_freshness": "M-0",
-    },
-    {
-        "environment": "prod",
-        "bucket_name": "vitacare_backups_gdrive",
-        "source_freshness": "M-0",
-    },
+        "configurations": [
+            {"bucket_name": "cgcca_cnes", "source_freshness": "M-0", "title": "Base de Dados CNES"},
+            {"bucket_name": "cgcca_sih", "source_freshness": "Y-0", "title": "Base de Dados SIH"},
+            {
+                "bucket_name": "vitacare_informes_mensais_gdrive",
+                "source_freshness": "M-0",
+                "title": "Informações Mensais da Vitacare",
+            },
+            {
+                "bucket_name": "vitacare_backups_gdrive",
+                "source_freshness": "M-0",
+                "title": "Backups da Vitacare",
+            },
+        ],
+    }
 ]
 
 clocks = generate_dump_api_schedules(
