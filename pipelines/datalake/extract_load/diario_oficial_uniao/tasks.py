@@ -5,12 +5,13 @@ from datetime import datetime
 
 import pandas as pd
 import pytz
-from prefect import task
 from google.cloud import bigquery
+from prefect import task
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 
+from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao.utils import (
     extract_decree_details,
 )
@@ -18,8 +19,6 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
 from pipelines.utils.time import parse_date_or_today
-from pipelines.constants import constants
-
 
 # Configurações do Web Driver
 chrome_options = Options()
@@ -46,7 +45,7 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
 
     Returns:
         list: Lista de dicionários contendo os dados extraídos de cada ato do DOU e a variável que indica que a extração foi bem sucedida.
-        
+
     """
     date = parse_date_or_today(date)
 
@@ -61,7 +60,9 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
         f"Iniciando extração dos atos oficiais do DOU Seção {str(dou_section)} de {date.strftime('%d/%m/%Y')}"
     )
 
-    driver.get(f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}")
+    driver.get(
+        f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}"
+    )
 
     while True:
         # Lógica para evitar a poluição do log
@@ -94,7 +95,9 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
                     decree_details = future.result()
                     items.append(decree_details)
                 except Exception as exc:
-                    log(f"❌ A requisição para {url} alcançou o máximo de tentativas na requisição.")
+                    log(
+                        f"❌ A requisição para {url} alcançou o máximo de tentativas na requisição."
+                    )
                     return [[], False]
 
         # Buscando o botão para a próxima página de pesquisa
@@ -130,8 +133,10 @@ def upload_to_datalake(dou_infos: list, dataset: str, environment: str) -> None:
     """
 
     if dou_infos:
-        extracted_at = datetime.now(pytz.timezone('America/Sao_Paulo')).strftime("%Y-%m-%d %H:%M:%S")
-        
+        extracted_at = datetime.now(pytz.timezone("America/Sao_Paulo")).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
         rows = len(dou_infos)
         df = pd.DataFrame(dou_infos)
         df["extracted_at"] = extracted_at
@@ -150,39 +155,37 @@ def upload_to_datalake(dou_infos: list, dataset: str, environment: str) -> None:
         log("✅ Carregamento no datalake finalizado.")
     else:
         log("❌ Não há dados para carregar.")
-        
-@task    
-def report_extraction_status(status: bool, date: str, dou_section: int, environment: str="dev"):
-    
+
+
+@task
+def report_extraction_status(status: bool, date: str, dou_section: int, environment: str = "dev"):
+
     date = parse_date_or_today(date).strftime("%Y-%m-%d")
-    
+
     success = "true" if status else "false"
-    current_datetime = (
-        datetime
-        .now(tz=pytz.timezone("America/Sao_Paulo"))
-        .replace(tzinfo=None)
-    )
-    tipo_diario = 'dou-sec' + str(dou_section)
+    current_datetime = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None)
+    tipo_diario = "dou-sec" + str(dou_section)
 
     if environment is None:
         environment = "dev"
-    
+
     PROJECT = constants.GOOGLE_CLOUD_PROJECT.value[environment]
     DATASET = "projeto_cdi"
     TABLE = "extracao_status"
     FULL_TABLE_NAME = f"`{PROJECT}.{DATASET}.{TABLE}`"
 
     log(f"Inserting into {FULL_TABLE_NAME} status of success={success} for date='{date}'...")
-    
-    
+
     client = bigquery.Client()
-    query_job = client.query(f"""
+    query_job = client.query(
+        f"""
         INSERT INTO {FULL_TABLE_NAME} (
             data_publicacao, tipo_diario, extracao_sucesso, _updated_at
         )
         VALUES (
             '{date}', '{tipo_diario}', {success}, '{current_datetime}'
         )
-    """)
+    """
+    )
     query_job.result()
     log("✅ Status da extração reportado!")

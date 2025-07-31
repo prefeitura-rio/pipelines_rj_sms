@@ -57,7 +57,7 @@ def extract_decree_details(text_link_href: str) -> dict:
             "url": text_link_href,
             "_extracted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
-         
+
     except Exception as e:
         raise e
     finally:

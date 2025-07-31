@@ -28,5 +28,3 @@ flow_parameters = [
         "date": "",
     },
 ]
-
-

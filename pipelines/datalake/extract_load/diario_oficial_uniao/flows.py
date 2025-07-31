@@ -8,8 +8,8 @@ from prefect.storage import GCS
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     dou_extraction,
+    report_extraction_status,
     upload_to_datalake,
-    report_extraction_status
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
@@ -37,9 +37,11 @@ with Flow(
     # Flow
     #####################################
 
-    dou_infos, is_successful = dou_extraction(date=DATE, dou_section=DOU_SECTION, max_workers=MAX_WORKERS)
+    dou_infos, is_successful = dou_extraction(
+        date=DATE, dou_section=DOU_SECTION, max_workers=MAX_WORKERS
+    )
     upload_to_datalake(dou_infos=dou_infos, environment=ENVIRONMENT, dataset=DATASET_ID)
-    report_extraction_status(status=is_successful, date='', dou_section=DOU_SECTION)
+    report_extraction_status(status=is_successful, date="", dou_section=DOU_SECTION)
 
 # Flow configs
 extract_diario_oficial_uniao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
