@@ -29,17 +29,4 @@ flow_parameters = [
     },
 ]
 
-# Atos oficiais podem ser publicados no DOU até as 8 a.m de cada dia.
-clocks = generate_dump_api_schedules(
-    interval=timedelta(days=1),
-    start_date=datetime(2025, 6, 12, 8, 5, tzinfo=pytz.timezone("America/Sao_Paulo")),
-    labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
-    ],
-    flow_run_parameters=flow_parameters,
-    runs_interval_minutes=0,
-)
 
-schedule = Schedule(
-    clocks=untuple_clocks(clocks), filters=[filters.between_times(time(8), time(9))]
-)

@@ -6,7 +6,6 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.diario_oficial_uniao.schedules import schedule
 from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     dou_extraction,
     upload_to_datalake,
@@ -43,7 +42,6 @@ with Flow(
     report_extraction_status(status=is_successful, date='', dou_section=DOU_SECTION)
 
 # Flow configs
-extract_diario_oficial_uniao.schedule = schedule
 extract_diario_oficial_uniao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 extract_diario_oficial_uniao.executor = LocalDaskExecutor(num_workers=10)
 extract_diario_oficial_uniao.run_config = KubernetesRun(
