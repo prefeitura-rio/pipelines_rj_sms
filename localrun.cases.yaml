@@ -461,3 +461,12 @@ cases:
       endpoint_path: "/v1/profissionais/findByEstabelecimento/{estabelecimento_id}"
       dataset_id: "brutos_prontuario_vitai_api"
       table_id: "profissional"
+  - case_slug: "vitacare_historico_operator"
+    flow_path: "pipelines.datalake.extract_load.vitacare_historico.flows"
+    flow_name: "flow_vitacare_historic_operator_v2"
+    params:
+      environment: "dev"
+      rename_flow: False
+      table_name: "CURATIVOS"
+      db_schema: "dbo"
+      partition_column: "extracted_at"
