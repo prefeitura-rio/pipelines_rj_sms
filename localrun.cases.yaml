@@ -470,7 +470,7 @@ cases:
       gcs_path_template: "exames_laboratoriais/gal_lacen/tuberculose/*/*/tubb-colzn-*"
       dataset_id: "brutos_gal"
       table_id: "exames_laboratoriais"
-      relative_target_date: "D-7"   
+      relative_target_date: "D-7"
   - case_slug: "datalake-bq-subpav"
     flow_path: "pipelines.datalake.migrate.bq_to_subpav.flows"
     flow_name: "bq_to_subpav_flow"
