@@ -461,3 +461,19 @@ cases:
       endpoint_path: "/v1/profissionais/findByEstabelecimento/{estabelecimento_id}"
       dataset_id: "brutos_prontuario_vitai_api"
       table_id: "profissional"
+  - case_slug: "datalake-bq-subpav"
+    flow_path: "pipelines.datalake.migrate.bq_to_subpav.flows"
+    flow_name: "bq_to_subpav_flow"
+    params:
+      infisical_path: "/smsrio"
+      secret_name: "DB_URL"
+      dataset_id: "brutos_informes_vitacare"
+      table_id: "ficha_c_v2"
+      db_schema: "teste_dl"
+      project: "Teste Custom Query (INSERT + SELECT)"        
+      if_exists: "append"
+      dest_table: "tb_teste_custom"
+      environment: "dev"
+      rename_flow: false
+      notify: true
+      limit: 10000
