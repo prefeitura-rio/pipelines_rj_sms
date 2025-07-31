@@ -147,7 +147,7 @@ with Flow(
             flow_run_id=tcm_flow_runs,
             stream_states=unmapped(True),
             stream_logs=unmapped(True),
-            raise_final_state=unmapped(True),
+            raise_final_state=unmapped(False),
             max_duration=unmapped(timedelta(minutes=20)),
         )
 

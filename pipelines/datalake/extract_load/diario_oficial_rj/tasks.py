@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import datetime
-import re
 import urllib.parse
 from datetime import timedelta
 from typing import List, Optional
@@ -11,9 +10,9 @@ from bs4 import BeautifulSoup
 
 from pipelines.datalake.extract_load.diario_oficial_rj.utils import (
     get_links_for_path,
-    get_links_if_match,
     node_cleanup,
     parse_do_contents,
+    report_extraction_status,
     send_get_request,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -30,16 +29,23 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
     # Para isso, fazemos uma busca na API no formato:
     # https://doweb.rio.rj.gov.br/busca/busca/buscar/query/0/di:2025-06-02/df:2025-06-02/?q=%22rio%22
 
-    BASE = "https://doweb.rio.rj.gov.br/busca/busca/buscar/query/0/"
-    DATE_INTERVAL = f"di:{date}/df:{date}/"
+    BASE = "https://doweb.rio.rj.gov.br/busca/busca/buscar/query/0"
+    DATE_INTERVAL = f"/di:{date}/df:{date}"
     # Precisamos de algum texto de busca, então buscamos
     # por "Secretaria Municipal de Saúde", entre aspas
-    QUERY = "?q=" + urllib.parse.quote('"rio"')
+    QUERY = "/?q=" + urllib.parse.quote('"rio"')
     URL = f"{BASE}{DATE_INTERVAL}{QUERY}"
     log(f"Fetching DO for date '{date}'")
 
     # Faz requisição GET, recebe um JSON
     json = send_get_request(URL, "json")
+    # Confere se houve erro na requisição
+    if isinstance(json, Exception):
+        # Se sim, reporta status de falha na extração para essa data
+        report_extraction_status(False, date, environment=env)
+        # Retorna lista vazia, o que impede a execução das próximas tasks
+        return []
+
     # Resposta é um JSON com todas as instâncias encontradas da busca
     # Porém temos campos de metadadaos que indicam quantas instâncias foram encontradas
     # em cada edição, e isso nos dá os IDs que queremos:
@@ -64,6 +70,10 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
     log(f"Fetching articles for DO ID '{diario_id}'")
     # Faz requisição GET, recebe HTML
     html = send_get_request(URL, "html")
+    # Confere se houve erro na requisição
+    if isinstance(html, Exception):
+        # Se sim, retorna um valor que possamos detectar posteriormente
+        return [(diario_id_date, -1)]
 
     # Precisamos encontrar todas as instâncias relevantes de
     # <a class="linkMateria" identificador="..." pagina="" data-id="..." data-protocolo="..." data-materia-id="...">
@@ -131,6 +141,14 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def get_article_contents(do_tuple: tuple) -> List[dict]:
     assert len(do_tuple) == 2, "Tuple must be ((do_id, date), (title, id)) pair!"
+
+    ERR_RESULT = {"error": True}
+    # Confere se houve erro na etapa anterior
+    if do_tuple[1] == -1:
+        # Se sim, retorna objeto de erro para ser detectado posteriormente
+        return ERR_RESULT
+
+    # Caso contrário, pega dados da etapa anterior
     (do_id, do_date) = do_tuple[0]
     (folder_path, title, id) = do_tuple[1]
 
@@ -141,6 +159,12 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
     # Talvez o resultado não seja HTML (pode ser PDF por exemplo)
     if html is None:
         return None
+
+    # Confere se houve erro na requisição
+    if isinstance(html, Exception):
+        # Se sim, retorna um valor que possamos detectar posteriormente
+        return ERR_RESULT
+
     # Registra data/hora da extração
     current_datetime = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
@@ -151,7 +175,6 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
         "materia_id": id,
         "secao": folder_path,
         "titulo": title,
-        "html": str(html.body),
     }
 
     # Remove elementos inline comuns (<b>, <i>, <span>)
@@ -179,7 +202,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def upload_results(results_list: List[dict], dataset: str):
+def upload_results(results_list: List[dict], dataset: str, date: Optional[str], env: Optional[str]):
     if len(results_list) == 0:
         log(f"Nothing to upload; leaving")
         return
@@ -191,19 +214,25 @@ def upload_results(results_list: List[dict], dataset: str):
         # Pula resultados 'vazios' (i.e. PDFs ao invés de texto, etc)
         if result is None:
             continue
+        # Confere se tivemos erro em alguma requisição
+        if "error" in result:
+            # Se sim, reporta status de falha na extração para essa data
+            report_extraction_status(False, date, environment=env)
+            # E aborta o upload dos resultados
+            return
+
         # Para cada seção no resultado
         for section in result["sections"]:
             # Constrói objeto a ser upado com informações base
-            # Remove `html` (vai pra outra tabela) e `sections` (obviamente)
-            remove = set(["html", "sections"])
-            prepped_section = {**{k: v for k, v in result.items() if k not in remove}, **section}
+            # Remove `sections` (obviamente)
+            prepped_section = {**{k: v for k, v in result.items() if k != "sections"}, **section}
             # Constrói DataFrame a partir do objeto
             single_df = pd.DataFrame.from_records([prepped_section])
             # Concatena com os outros resultados
             main_df = pd.concat([main_df, single_df], ignore_index=True)
 
     log(f"Uploading main DataFrame: {len(main_df)} rows; columns {list(main_df.columns)}")
-    # Chamando a task de upload
+    # Chama a task de upload
     upload_df_to_datalake.run(
         df=main_df,
         dataset_id=dataset,
@@ -215,29 +244,5 @@ def upload_results(results_list: List[dict], dataset: str):
         csv_delimiter=",",
     )
 
-    # HTML
-    html_df = pd.DataFrame()
-    # Para cada resultado
-    for result in results_list:
-        # Pula resultados 'vazios'
-        if result is None:
-            continue
-        del result["sections"]
-
-        # Constrói DataFrame a partir do objeto
-        single_df = pd.DataFrame.from_records([result])
-        # Concatena com os outros resultados
-        html_df = pd.concat([html_df, single_df], ignore_index=True)
-
-    log(f"Uploading HTML DataFrame: {len(html_df)} rows; columns {list(html_df.columns)}")
-    # Chamando a task de upload
-    upload_df_to_datalake.run(
-        df=html_df,
-        dataset_id=dataset,
-        table_id="diarios_municipio_html",
-        partition_column="_extracted_at",
-        if_exists="append",
-        if_storage_data_exists="append",
-        source_format="csv",
-        csv_delimiter=",",
-    )
+    # Se chegamos aqui, reporta status de sucesso na extração para essa data
+    report_extraction_status(True, date, environment=env)
