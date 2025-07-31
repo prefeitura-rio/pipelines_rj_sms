@@ -1,24 +1,19 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=import-error
+
 """
 Funções utilitárias para pipeline de migração BigQuery → MySQL da SUBPAV.
 Inclui helpers de ambiente, validação de query, batch execution, métricas e validação de colunas.
 """
 import re
-import pandas as pd
 import unicodedata
-from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
+
+import pandas as pd
 from sqlalchemy import text
+
 from pipelines.utils.logger import log
 
-def get_project_id(environment: str) -> str:
-    """
-    Retorna o project_id padrão do BigQuery para o ambiente informado.
-    """
-    env = (environment or "").lower()
-    if env in ("prod", "production"):
-        return "rj-sms"
-    return "rj-sms-dev"
 
 def should_notify(project: str = None) -> bool:
     """
@@ -26,7 +21,8 @@ def should_notify(project: str = None) -> bool:
     """
     return bool(project)
 
-def format_query(query: str, allow_upsert: bool = True) -> bool:
+
+def format_query(query: str) -> bool:
     """
     Valida se a query customizada é segura para execução em lote.
     Por padrão, aceita INSERT, UPDATE e REPLACE INTO.
@@ -52,6 +48,7 @@ def format_query(query: str, allow_upsert: bool = True) -> bool:
 
     return True
 
+
 def _execute_batches(
     conn,
     query: str,
@@ -60,7 +57,7 @@ def _execute_batches(
     errors: List[str],
     max_retries: int = 1,
 ) -> Tuple[int, int]:
-    
+
     total = len(records)
     success = 0
     failure = 0
@@ -84,6 +81,7 @@ def _execute_batches(
                         errors.append(msg)
     return success, failure
 
+
 def default_metrics() -> Dict[str, Any]:
     """
     Retorna o template de métricas vazio.
@@ -99,6 +97,7 @@ def default_metrics() -> Dict[str, Any]:
         "run_id": "",
     }
 
+
 def clean_str(s: str) -> str:
     """
     Normaliza string para evitar problemas de acentuação e encoding.
@@ -106,6 +105,7 @@ def clean_str(s: str) -> str:
     if not s:
         return ""
     return unicodedata.normalize("NFKC", str(s))
+
 
 def summarize_error(msg: str, max_length: int = 350) -> str:
     """
@@ -115,12 +115,13 @@ def summarize_error(msg: str, max_length: int = 350) -> str:
     lines = msg.splitlines()
     summary = lines[0]
     # Se tem comando SQL, mostrar só o início da query
-    if 'SQL:' in msg:
-        sql_start = msg.find('SQL:')
-        summary += "\n" + msg[sql_start:sql_start+180] + " ... [truncado]"
+    if "SQL:" in msg:
+        sql_start = msg.find("SQL:")
+        summary += "\n" + msg[sql_start : sql_start + 180] + " ... [truncado]"
     elif len(msg) > max_length:
         summary = msg[:max_length] + " ... [truncado]"
     return summary
+
 
 def validate_bq_columns(bq_columns: Optional[List[str]]) -> List[str]:
     """
@@ -135,16 +136,25 @@ def validate_bq_columns(bq_columns: Optional[List[str]]) -> List[str]:
             valid.append(c)
     return valid
 
-def ensure_dataframe_columns(df: pd.DataFrame, required: List[str], fill_value=None, notes: list = None):
+
+def ensure_dataframe_columns(
+    df: pd.DataFrame, required: List[str], fill_value=None, notes: list = None
+):
+    """
+    Garante que todas as colunas obrigatórias estejam presentes no DataFrame.
+    """
     df = df.copy()
     missing = [col for col in required if col not in df.columns]
     if missing:
-        msg = f"Colunas ausentes no DataFrame: {', '.join(missing)}. Preenchidas com {fill_value!r}."
+        msg = (
+            f"Colunas ausentes no DataFrame: {', '.join(missing)}. Preenchidas com {fill_value!r}."
+        )
         if notes is not None:
             notes.append(msg)
         for col in missing:
             df[col] = fill_value
     return df[required]
+
 
 def extract_query_params(query: str) -> List[str]:
     """
@@ -168,6 +178,7 @@ def extract_query_params(query: str) -> List[str]:
             params.append(p)
     return params
 
+
 def inject_db_schema_in_query(query: str, db_schema: str) -> str:
     """
     Adiciona o schema/database na query customizada caso não esteja presente.
@@ -177,7 +188,9 @@ def inject_db_schema_in_query(query: str, db_schema: str) -> str:
         return query
 
     # Regex para encontrar o nome da tabela após INSERT INTO, UPDATE ou REPLACE INTO
-    pattern = re.compile(r"\b(INSERT\s+INTO|UPDATE|REPLACE\s+INTO)\s+([`]?)(\w+)([`]?)", re.IGNORECASE)
+    pattern = re.compile(
+        r"\b(INSERT\s+INTO|UPDATE|REPLACE\s+INTO)\s+([`]?)(\w+)([`]?)", re.IGNORECASE
+    )
 
     def replacer(match):
         comando = match.group(1)

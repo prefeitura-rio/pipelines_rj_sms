@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=import-error
+
 """
 Flow para migração de dados do BigQuery para o MySQL da SUBPAV.
 """
@@ -6,21 +8,21 @@ Flow para migração de dados do BigQuery para o MySQL da SUBPAV.
 from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
+
 from pipelines.constants import constants
-from pipelines.datalake.utils.tasks import rename_current_flow_run
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.datalake.migrate.bq_to_subpav.tasks import (
-    resolve_project_id,
-    resolve_notify,
-    get_db_uri,
-    insert_df_into_mysql,
-    query_bq_table,
-    generate_report,
-)
 from pipelines.datalake.migrate.bq_to_subpav.schedules import (
     bq_to_subpav_combined_schedule,
 )
+from pipelines.datalake.migrate.bq_to_subpav.tasks import (
+    generate_report,
+    get_db_uri,
+    insert_df_into_mysql,
+    query_bq_table,
+    resolve_notify,
+)
+from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
     name="DataLake - Migration - BigQuery to MySQL SUBPAV",
@@ -46,7 +48,6 @@ with Flow(
     LIMIT = Parameter("limit", required=False, default=None)
     NOTIFY = Parameter("notify", default=None)
 
-    PROJECT_ID = resolve_project_id(environment=ENVIRONMENT)
     NOTIFY_RESOLVED = resolve_notify(project=PROJECT, notify_param=NOTIFY)
 
     with case(RENAME_FLOW, True):
@@ -62,12 +63,11 @@ with Flow(
     result = query_bq_table(
         dataset_id=DATASET_ID,
         table_id=TABLE_ID,
-        project_id=PROJECT_ID,
         environment=ENVIRONMENT,
         bq_columns=BQ_COLUMNS,
         limit=LIMIT,
     )
-    
+
     df_bq = result["df"]
     metrics = result["metrics"]
 
@@ -89,10 +89,7 @@ with Flow(
     )
 
     generate_report(
-        metrics=result, 
-        project=PROJECT, 
-        notify=NOTIFY_RESOLVED,
-        environment=ENVIRONMENT
+        metrics=result, project=PROJECT, notify=NOTIFY_RESOLVED, environment=ENVIRONMENT
     )
 
 #####################################
@@ -106,4 +103,3 @@ bq_to_subpav_flow.run_config = KubernetesRun(
     memory_request="4Gi",
 )
 bq_to_subpav_flow.schedule = bq_to_subpav_combined_schedule
-

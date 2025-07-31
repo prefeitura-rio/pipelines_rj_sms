@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=import-error
 """
 Schedules para o flow de migração do BigQuery para o MySQL da SUBPAV.
 """
@@ -19,39 +20,55 @@ TABLES_CONFIG = [
         "project": "SINANRIO - Sintomáticos respiratórios",
         "dataset_id": "projeto_sinanrio",
         "table_id": "sintomaticos_respiratorios_dia",
-        "bq_columns": [
-            "cpf",
-            "cns as cns",
-            "nome",
-            "data_nascimento as dt_nascimento",
-            "sexo as id_sexo",
-            "raca as id_raca_cor",
-            "telefone",
-            "endereco_cep",
-        ],
         "db_schema": "teste_dl",
         "dest_table": "tb_sintomaticos",
         "frequency": "daily",
         "if_exists": "append",
         "infisical_path": "/smsrio",
         "secret_name": "DB_URL",
-        "limit": 100,
         "notify": True,
         "custom_insert_query": """
-            INSERT INTO tb_sintomaticos (cpf, cns, created_at, nome, dt_nascimento,origem)
-            SELECT %(cpf)s, %(cns)s, NOW(), %(nome)s, %(dt_nascimento)s, 'P'
+            INSERT INTO teste_dl.tb_sintomaticos (
+                cpf,
+                condicoes,
+                soap_subjetivo_motivo,
+                soap_objetivo_descricao,
+                soap_avaliacao_observacoes,
+                datahora_fim,
+                nome,
+                data_nascimento,
+                cids_extraidos,
+                rn,
+                created_at
+            )
+            SELECT
+                :cpf,
+                :condicoes,
+                :soap_subjetivo_motivo,
+                :soap_objetivo_descricao,
+                :soap_avaliacao_observacoes,
+                :datahora_fim,
+                :nome,
+                :data_nascimento,
+                :cids_extraidos,
+                :rn,
+                NOW()
             WHERE NOT EXISTS (
-                SELECT 1 FROM tb_sintomaticos
-                WHERE (cpf = %(cpf)s OR cns = %(cns)s)
+                SELECT 1 FROM teste_dl.tb_sintomaticos
+                WHERE cpf = :cpf
                 AND DATE(created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND CURDATE()
             )
         """,
-        "environment": "dev",
     },
 ]
 
 
+
 def build_param(config: dict) -> dict:
+    """
+    Constrói um dicionário de parâmetros padronizado para execução do pipeline,
+    a partir de uma configuração individual do TABLES_CONFIG.
+    """
     return {
         "dataset_id": config["dataset_id"],
         "table_id": config["table_id"],
@@ -71,6 +88,10 @@ def build_param(config: dict) -> dict:
 
 
 def unpack_params(frequency: str) -> list:
+    """
+    Retorna uma lista de parâmetros prontos para execução do flow,
+    filtrando as configurações de tabela pela frequência informada.
+    """
     return [build_param(config) for config in TABLES_CONFIG if config["frequency"] == frequency]
 
 
