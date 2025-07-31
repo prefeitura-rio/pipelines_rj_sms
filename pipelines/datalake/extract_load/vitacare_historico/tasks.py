@@ -30,7 +30,7 @@ def process_cnes_table(
     cnes_code: str,
     dataset_id: str,
     partition_column: str,
-) -> dict:
+):
 
     bq_table_rename = {
         "ATENDIMENTOS": "acto",
@@ -93,7 +93,6 @@ def process_cnes_table(
                 f"[process_cnes_table] Tabela '{db_table}' do CNES {cnes_code} está vazia",
                 level="warning",
             )
-            return {"status": "tabela_vazia", "cnes": cnes_code, "table": db_table}
 
         else:
             log(
@@ -102,22 +101,17 @@ def process_cnes_table(
             )
     except Exception as e:
         error_message = str(e)
-        log(
-            f"[process_cnes_table] Erro ao processar tabela {db_table} do CNES {cnes_code}",
-            level="warning",
-        )
 
         if "Invalid object name" in error_message:
-            status = "nao_encontrado"
+            log(
+                f"[process_cnes_table] Tabela {db_table} não encontrada para o CNES {cnes_code}",
+                level="warning",
+            )
         else:
-            status = "erro_inesperado"
-            log(f"[process_cnes_table] Erro inesperado", level="error")
+            log(f"[process_cnes_table] Erro inesperado {error_message[:250]}", level="error")
+            raise
 
-        return {
-            "status": status,
-            "cnes": cnes_code,
-            "table": db_table,
-        }
+        
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
@@ -186,68 +180,3 @@ def build_dbt_paramns(env: str):
         "select": "tag:vitacare_historico",
         "send_discord_report": False,
     }
-
-
-@task
-def send_table_report(process_results_for_one_table: list[dict | None], table_name: str):
-
-    tabelas_vazias = {}
-    nao_encontrado = {}
-    erro_inesperado = {}
-
-    for result in process_results_for_one_table:
-        if result is None:
-            continue
-
-        status = result.get("status")
-        cnes = result.get("cnes")
-
-        if status == "tabela_vazia":
-            tabelas_vazias.setdefault(cnes, []).append(table_name)
-        elif status == "nao_encontrado":
-            nao_encontrado.setdefault(cnes, []).append(table_name)
-        elif status == "erro_inesperado":
-            erro_inesperado.setdefault(cnes, []).append(table_name)
-
-    title = ""
-    message = ""
-
-    has_issues = bool(tabelas_vazias or nao_encontrado or erro_inesperado)
-
-    if has_issues:
-        title = f"🟡 Extração de Dados - Tabela `{table_name}` com Alertas"  #
-        message_lines = [
-            f"A extração de dados da tabela `{table_name}` foi concluída. Foram identificados os seguintes problemas:",
-            "",
-        ]
-
-        # Lista de problemas no formato "CNES: [cnes], Tabela: [tabela], Status: [erro]"
-        if nao_encontrado:
-            for cnes in nao_encontrado.keys():  # Itera pelos CNES que deram erro
-                message_lines.append(
-                    f"- CNES: `{cnes}`, Status: Tabela ou banco de dados não encontrado"
-                )
-
-        if tabelas_vazias:
-            for cnes in tabelas_vazias.keys():
-                message_lines.append(f"- CNES: `{cnes}`, Status: Tabela vazia")
-
-        if erro_inesperado:
-            for cnes in erro_inesperado.keys():
-                message_lines.append(f"- CNES: `{cnes}`, Status: Erro inesperado")
-
-        message = "\n".join(message_lines)
-
-    else:
-        title = f"🟢 Extração de Dados - Tabela `{table_name}` com Sucesso"
-        message = (
-            f"A extração de dados da tabela `{table_name}` rodou com sucesso para todas as unidades"
-        )
-
-    send_message(
-        title=title,
-        message=message,
-        monitor_slug="data-ingestion",
-    )
-
-    log(f"[send_table_report] Relatório da tabela '{table_name}' enviado para o Discord.")

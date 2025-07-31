@@ -22,7 +22,6 @@ from pipelines.datalake.extract_load.vitacare_historico.tasks import (
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
     process_cnes_table,
-    send_table_report,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -86,7 +85,7 @@ with Flow(
 
     cnes_to_process = get_vitacare_cnes_from_bigquery()
 
-    process_cnes_table_results = process_cnes_table.map(
+    process_cnes_table.map(
         db_host=unmapped(db_host),
         db_port=unmapped(db_port),
         db_user=unmapped(db_user),
@@ -96,12 +95,6 @@ with Flow(
         dataset_id=unmapped(DATASET_ID),
         partition_column=unmapped(PARTITION_COLUMN),
         cnes_code=cnes_to_process,
-    )
-
-    send_table_report(
-        process_results_for_one_table=process_cnes_table_results,
-        table_name=TABLE_NAME,
-        upstream_tasks=[process_cnes_table_results],
     )
 
 with Flow(
