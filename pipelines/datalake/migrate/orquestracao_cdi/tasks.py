@@ -20,7 +20,7 @@ from pipelines.utils.tasks import get_bigquery_project_from_environment
 from pipelines.utils.time import parse_date_or_today
 
 from .constants import constants
-from .utils import format_tcm_case
+from .utils import format_tcm_case, get_latest_extraction_status
 
 
 # Para a justificativa quanto à existência dessa task,
@@ -124,19 +124,20 @@ def build_email(
     environment: str = "prod", date: Optional[str] = None, tcm_df: pd.DataFrame = None
 ) -> str:
     client = bigquery.Client()
-    project_name = get_bigquery_project_from_environment.run(environment=environment)
-
+    PROJECT = get_bigquery_project_from_environment.run(environment=environment)
     DATASET = "projeto_cdi"
     TABLE = "email"
+    FULL_TABLE = f"`{PROJECT}.{DATASET}.{TABLE}`"
+
     DO_DATETIME = parse_date_or_today(date)
     DATE = DO_DATETIME.strftime("%Y-%m-%d")
 
     QUERY = f"""
 SELECT fonte, content_email, pasta, link, voto
-FROM `{project_name}.{DATASET}.{TABLE}`
+FROM {FULL_TABLE}
 WHERE data_publicacao = '{DATE}'
     """
-    log(f"Querying `{project_name}.{DATASET}.{TABLE}` for email contents for '{DATE}'...")
+    log(f"Querying {FULL_TABLE} for email contents for '{DATE}'...")
     rows = [row.values() for row in client.query(QUERY).result()]
     log(f"Found {len(rows)} row(s)")
 
@@ -167,6 +168,9 @@ WHERE data_publicacao = '{DATE}'
     else:
         log(f"No TCM cases to get")
 
+    # Pega status da última extração de cada
+    extraction_status = get_latest_extraction_status(PROJECT, DATE)
+
     def extract_header_from_path(path: str) -> str:
         if not path or len(path) <= 0:
             return None
@@ -190,6 +194,15 @@ WHERE data_publicacao = '{DATE}'
     email_blocks = {}
     for row in rows:
         fonte, content_email, pasta, article_url, voto = row
+        # Pula diários se a extração não foi bem sucedida
+        # ex. falhou no meio, etc
+        if fonte.startswith("Diário Oficial da União") \
+        and not extraction_status["dou"]:
+            continue
+        if fonte.startswith("Diário Oficial do Município") \
+        and not extraction_status["dorj"]:
+            continue
+
         # Tentativa fútil de remover algumas entradas errôneas
         # Estamos tapando buracos no barco com chiclete aqui
         content = content_email.strip()
@@ -208,10 +221,13 @@ WHERE data_publicacao = '{DATE}'
             content += f'<br/><a href="{article_url}">Abrir no D.O.</a>'
 
         voto = format_tcm_case(voto)
-        if voto is not None and voto in tcm_cases:
-            (vote_date, vote_url) = tcm_cases[voto]
-            if vote_date and vote_url:
-                content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
+        if voto is not None:
+            if voto in tcm_cases:
+                (vote_date, vote_url) = tcm_cases[voto]
+                if vote_date and vote_url:
+                    content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
+            else:
+                content += "<br/><small>Não foi possível obter o voto no TCM</small>"
 
         header = extract_header_from_path(pasta) or fonte
         if header not in email_blocks:
@@ -220,7 +236,22 @@ WHERE data_publicacao = '{DATE}'
 
     # Confere primeiro se temos algum conteúdo para o email
     if not email_blocks:
-        # Se não temos, retorna vazio
+        # Confere se a falta de conteúdo foi por falha na extração
+        if not extraction_status["dou"] and not extraction_status["dorj"]:
+            return f"""
+<font face="sans-serif">
+    <p><b>Desculpe!</b></p>
+    <p>
+        Ocorreu uma falha na extração automática dos Diários Oficiais de hoje.
+        Por favor, confira manualmente.
+    </p>
+    <p>
+        Email gerado às
+        {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
+    </p>
+</font>
+            """
+        # Caso contrário, só não temos artigos relevantes hoje; retorna vazio
         return ""
 
     # [!] Importante: antes de editar o HTML abaixo, lembre que ele é HTML
@@ -252,12 +283,18 @@ WHERE data_publicacao = '{DATE}'
         if len(body) <= 0:
             continue
 
+        s = "" if len(body) < 2 else "s"
         # Escreve cabeçalho, abre lista de conteúdos
         final_email_string += f"""
             <tr>
                 <th style="background-color:#eceded;padding:9px">
                     <font color="#13335a">{header}</font>
                 </th>
+            </tr>
+            <tr>
+                <td>
+                    <small>{len(body)} artigo{s} relevante{s} encontrado{s}:</small>
+                </td>
             </tr>
             <tr>
                 <td style="padding:9px 18px">
@@ -292,11 +329,12 @@ WHERE data_publicacao = '{DATE}'
                 r"<b>\1</b> - Processo",
                 content,
             )
-            # Negrito em títulos de decretos/resoluções
+            # Negrito em títulos de decretos/resoluções/atas
             content = re.sub(
-                r"^[\*\.]*((DECRETO|RESOLUÇÃO)\s+.+\s+DE\s+2[0-9]{3})\b",
+                r"^[\*\.]*((DECRETO|RESOLUÇÃO|ATA|PORTARIA)\s+.+\s+DE\s+2[0-9]{3})\b",
                 r"<b>\1</b>",
                 content,
+                flags=re.IGNORECASE,
             )
 
             final_email_string += f"""
@@ -319,7 +357,7 @@ WHERE data_publicacao = '{DATE}'
                         <img alt="DIT-SMS" width="100" align="right" style="margin-left:18px;margin-bottom:70px"
                             src="{constants.LOGO_DIT_HORIZONTAL_COLORIDO.value}"/>
                         <p style="font-size:13px;color:#888;margin:0">
-                            Compilado institucional da <b>Coordenadoria de Demandas Institucionais</b> (CDI),
+                            Informe diário da <b>Coordenadoria de Demandas Institucionais</b> (CDI),
                             com apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT),
                             gerado às {timestamp}.
                         </p>
@@ -332,7 +370,22 @@ WHERE data_publicacao = '{DATE}'
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def get_email_recipients(environment: str = "prod") -> dict:
+def get_email_recipients(environment: str = "prod", recipients: list=None) -> dict:
+    # Se queremos sobrescrever os recipientes do email
+    # (ex. enviar somente para uma pessoa, para teste)
+    if recipients is not None:
+        if type(recipients) is str:
+            recipients = [recipients]
+        if type(recipients) is list or type(recipients) is tuple:
+            recipients = list(recipients)
+            log(f"Overriding recipients ({len(recipients)}): {recipients}")
+            return {
+                "to_addresses": recipients,
+                "cc_addresses": [],
+                "bcc_addresses": [],
+            }
+        log(f"Unrecognized type for `recipients`: '{type(recipients)}'; ignoring")
+
     client = bigquery.Client()
     project_name = get_bigquery_project_from_environment.run(environment=environment)
 
