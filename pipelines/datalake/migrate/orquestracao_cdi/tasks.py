@@ -237,17 +237,45 @@ WHERE data_publicacao = '{DATE}'
             email_blocks[header] = []
         email_blocks[header].append(content)
 
+    ERRO_DOU = not extraction_status["dou"]
+    ERRO_DORJ = not extraction_status["dorj"]
+    ERRO_AMBOS = ERRO_DOU and ERRO_DORJ
     # Confere primeiro se temos algum conteúdo para o email
-    if not email_blocks:
+    if not email_blocks or ERRO_AMBOS:
         # Confere se a falta de conteúdo foi por falha na extração
-        if not extraction_status["dou"] and not extraction_status["dorj"]:
+        # TODO: pensar em forma mais elegante de fazer isso aqui; fiz meio corrido :x
+        if ERRO_DOU or ERRO_DORJ:
+            error_at = (
+                "dos Diários Oficiais (União e Município)"
+                if ERRO_AMBOS
+                else (
+                    "do Diário Oficial da União"
+                    if ERRO_DOU
+                    else "do Diário Oficial do Município"
+                )
+            )
+            success_at = (
+                ""
+                if ERRO_AMBOS
+                else (
+                    "Diário Oficial da União"
+                    if not ERRO_DOU
+                    else "Diário Oficial do Município"
+                )
+            )
+            if len(success_at) > 0:
+                success_at = f"""
+                <p>A extração do {success_at}, por sua vez, foi bem sucedida,
+                mas ele não possui conteúdo relevante hoje.</p>
+                """
             return f"""
 <font face="sans-serif">
     <p><b>Desculpe!</b></p>
     <p>
-        Ocorreu uma falha na extração automática dos Diários Oficiais de hoje.
+        Ocorreu uma falha na extração automática {error_at} de hoje.
+        É possível que o website estivesse fora do ar na hora da extração.
         Por favor, confira manualmente.
-    </p>
+    </p>{success_at}
     <p>
         Email gerado às
         {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
@@ -256,6 +284,24 @@ WHERE data_publicacao = '{DATE}'
             """
         # Caso contrário, só não temos artigos relevantes hoje; retorna vazio
         return ""
+
+    error_message = ""
+    if ERRO_DOU or ERRO_DORJ:
+        # Se estamos aqui, existe conteúdo relevante, mas um dos diários teve erro
+        # na extração. Então montamos um aviso bonitinho em HTML pra mostrar
+        # após os resultados relevantes
+        error_at = "Diário Oficial da União" if ERRO_DOU else "Diário Oficial do Município"
+        error_message = f"""
+            <tr>
+                <td style="background-color:#fff8d5;color:#512506;padding:9px 14px;border-radius:5px;border-left:5px solid #965604">
+                    <b>Desculpe!</b>
+                    Ocorreu uma falha na extração automática do {error_at} de hoje.
+                    É possível que o website estivesse fora do ar na hora da extração.
+                    Por favor, confira manualmente.
+                </td>
+            </tr>
+            <tr><td style="padding:9px"></td></tr>
+        """
 
     # [!] Importante: antes de editar o HTML abaixo, lembre que ele é HTML
     # para clientes de EMAIL. Assim, muitas (MUITAS) funcionalidades modernas
@@ -343,7 +389,7 @@ WHERE data_publicacao = '{DATE}'
             final_email_string += f"""
                 <li style="margin-bottom:9px;color:#13335a">{content}</li>
             """
-        # /for
+        # /for content in body
         final_email_string += """
                     </ul>
                 </td>
@@ -351,7 +397,12 @@ WHERE data_publicacao = '{DATE}'
         """
         # Espaçamento entre seções
         final_email_string += '<tr><td style="padding:9px"></td></tr>'
+    # /for body in blocks
 
+    # Adiciona mensagem de erro, se houver
+    final_email_string += error_message
+
+    # Rodapé
     timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")
     final_email_string += f"""
                 <tr><td><hr/></td></tr>
