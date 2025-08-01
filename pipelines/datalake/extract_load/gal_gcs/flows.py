@@ -7,8 +7,8 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.gal_gcs.tasks import list_all_files, process_file
 from pipelines.datalake.extract_load.gal_gcs.schedules import schedule
+from pipelines.datalake.extract_load.gal_gcs.tasks import list_all_files, process_file
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 

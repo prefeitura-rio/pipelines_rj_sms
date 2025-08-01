@@ -248,11 +248,7 @@ WHERE data_publicacao = '{DATE}'
             error_at = (
                 "os Diários Oficiais (União e Município)"
                 if ERRO_AMBOS
-                else (
-                    "o Diário Oficial da União"
-                    if ERRO_DOU
-                    else "o Diário Oficial do Município"
-                )
+                else ("o Diário Oficial da União" if ERRO_DOU else "o Diário Oficial do Município")
             )
             success_at = ""
             if not ERRO_AMBOS:
