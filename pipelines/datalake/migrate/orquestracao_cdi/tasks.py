@@ -171,7 +171,7 @@ WHERE data_publicacao = '{DATE}'
     # Pega status da última extração de cada
     extraction_status = get_latest_extraction_status(PROJECT, DATE)
 
-    def extract_header_from_path(path: str) -> str:
+    def extract_header_from_path(path: str) -> str | None:
         if not path or len(path) <= 0:
             return None
         # Recebemos algo como
@@ -191,9 +191,15 @@ WHERE data_publicacao = '{DATE}'
         )
 
     # Constrói cada bloco do email
-    email_blocks = {}
+    email_blocks: dict[str, List] = {}
     for row in rows:
-        fonte, content_email, pasta, article_url, voto = row
+        fonte, content, pasta, article_url, voto = row
+        fonte = str(fonte).strip()
+        content = str(content).strip()
+        pasta = str(pasta).strip()
+        article_url = str(article_url).strip()
+        voto = str(voto).strip()
+
         # Pula diários se a extração não foi bem sucedida
         # ex. falhou no meio, etc
         if fonte.startswith("Diário Oficial da União") \
@@ -203,12 +209,11 @@ WHERE data_publicacao = '{DATE}'
         and not extraction_status["dorj"]:
             continue
 
-        # Tentativa fútil de remover algumas entradas errôneas
-        # Estamos tapando buracos no barco com chiclete aqui
-        content = content_email.strip()
         # Chances basicamente nulas de XSS em email, mas isso
         # pode prevenir problemas de formatação acidental
         content = content.replace("<", "&lt;").replace(">", "&gt;")
+        # Tentativa fútil de remover algumas entradas errôneas;
+        # estamos tapando buracos no barco com chiclete aqui
         if content == "Anexo" or content.startswith(("•", "·")):
             log(f"`content` is invalid; skipping. Row: {row}", level="warning")
             continue
@@ -354,12 +359,20 @@ WHERE data_publicacao = '{DATE}'
                 <tr><td><hr/></td></tr>
                 <tr>
                     <td>
+                        <p style="color:#13335a;margin:0">
+                            <b style="font-size:115%">S/SUBG/CDI/Controle Interno e Externo</b><br/>
+                            Gerência de Atendimento a Demandas de Controle Interno e Externo
+                        </p>
+                    </td>
+                </tr>
+                <tr><td><hr></td></tr>
+                <tr>
+                    <td>
                         <img alt="DIT-SMS" width="100" align="right" style="margin-left:18px;margin-bottom:70px"
                             src="{constants.LOGO_DIT_HORIZONTAL_COLORIDO.value}"/>
                         <p style="font-size:13px;color:#888;margin:0">
-                            Informe diário da <b>Coordenadoria de Demandas Institucionais</b> (CDI),
-                            com apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT),
-                            gerado às {timestamp}.
+                            Apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT).<br/>
+                            Email gerado às {timestamp}.
                         </p>
                     </td>
                 </tr>
@@ -406,10 +419,10 @@ FROM `{project_name}.{DATASET}.{TABLE}`
     for email, kind in rows:
         email = str(email).strip()
         kind = str(kind).lower().strip()
-        if not email or not kind:
+        if not email:
             continue
         if "@" not in email:
-            log(f"Email does not contain '@': '{email}'", level="warning")
+            log(f"Recipient '{email}' does not contain '@'; skipping", level="warning")
             continue
 
         if kind == "to":
@@ -418,8 +431,10 @@ FROM `{project_name}.{DATASET}.{TABLE}`
             cc_addresses.append(email)
         elif kind == "bcc":
             bcc_addresses.append(email)
+        elif kind == "skip":
+            continue
         else:
-            log(f"Recipient type '{kind}' not recognized!", level="warning")
+            log(f"Recipient type '{kind}' (for '{email}') not recognized; skipping", level="warning")
 
     log(
         f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)"
