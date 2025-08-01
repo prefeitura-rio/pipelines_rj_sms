@@ -88,7 +88,6 @@ def build_param(config: dict) -> dict:
     return param
 
 
-
 def unpack_params(frequency: str) -> list:
     """
     Retorna uma lista de parâmetros prontos para execução do flow,
