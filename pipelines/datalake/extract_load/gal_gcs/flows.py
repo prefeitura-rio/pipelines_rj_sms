@@ -7,8 +7,8 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.gal_gcs.tasks import list_all_files, process_file
 from pipelines.datalake.extract_load.gal_gcs.schedules import schedule
+from pipelines.datalake.extract_load.gal_gcs.tasks import list_all_files, process_file
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 
@@ -24,7 +24,9 @@ with Flow(
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     GCS_BUCKET = Parameter("gcs_bucket", default="svs_cie", required=True)
-    GCS_PATH_TEMPLATE = Parameter("gcs_path_template", default="exames_laboratoriais/gal_lacen/tuberculose/*/*/*.zip")
+    GCS_PATH_TEMPLATE = Parameter(
+        "gcs_path_template", default="exames_laboratoriais/gal_lacen/tuberculose/*/*/*.zip"
+    )
     DATASET_ID = Parameter("dataset_id", default="brutos_gal")
     TABLE_ID = Parameter("table_id", default="exames_laboratoriais")
     RELATIVE_TARGET_DATE = Parameter("relative_target_date", default=None)
