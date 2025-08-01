@@ -195,8 +195,8 @@ flow_orquestracao_cdi.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="7Gi",
-    memory_limit="7Gi",
+    memory_request="10Gi",
+    memory_limit="10Gi",
 )
 
 flow_orquestracao_cdi.schedule = schedules
