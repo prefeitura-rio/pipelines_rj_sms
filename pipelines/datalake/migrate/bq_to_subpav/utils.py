@@ -188,8 +188,9 @@ def inject_db_schema_in_query(query: str, db_schema: str) -> str:
         return query
 
     # Regex para encontrar o nome da tabela após INSERT INTO, UPDATE ou REPLACE INTO
+    # Agora aceita nomes como `schema.tabela` ou tabela simples
     pattern = re.compile(
-        r"\b(INSERT\s+INTO|UPDATE|REPLACE\s+INTO)\s+([`]?)(\w+)([`]?)", re.IGNORECASE
+        r"\b(INSERT\s+INTO|UPDATE|REPLACE\s+INTO)\s+([`]?)([\w\.]+)([`]?)", re.IGNORECASE
     )
 
     def replacer(match):
