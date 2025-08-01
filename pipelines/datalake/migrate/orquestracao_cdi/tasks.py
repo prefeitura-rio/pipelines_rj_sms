@@ -249,19 +249,13 @@ WHERE data_publicacao = '{DATE}'
                 "dos Diários Oficiais (União e Município)"
                 if ERRO_AMBOS
                 else (
-                    "do Diário Oficial da União"
-                    if ERRO_DOU
-                    else "do Diário Oficial do Município"
+                    "do Diário Oficial da União" if ERRO_DOU else "do Diário Oficial do Município"
                 )
             )
             success_at = (
                 ""
                 if ERRO_AMBOS
-                else (
-                    "Diário Oficial da União"
-                    if not ERRO_DOU
-                    else "Diário Oficial do Município"
-                )
+                else ("Diário Oficial da União" if not ERRO_DOU else "Diário Oficial do Município")
             )
             if len(success_at) > 0:
                 success_at = f"""
