@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+
 from google.cloud import bigquery
 
 from pipelines.utils.logger import log
@@ -63,7 +64,7 @@ where row_num = 1
     # Presume que foi bem sucedido a não ser que encontre um 'false'
     DOU = True
     DORJ = True
-    for (dotype, success) in rows:
+    for dotype, success in rows:
         dotype: str
         success: str
         if success == "false":
@@ -73,9 +74,6 @@ where row_num = 1
             elif dotype.startswith("dorj"):
                 DORJ = False
 
-    output = {
-        "dorj": DORJ,
-        "dou": DOU
-    }
+    output = {"dorj": DORJ, "dou": DOU}
     log(output)
     return output

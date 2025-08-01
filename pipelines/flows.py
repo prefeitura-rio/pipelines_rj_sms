@@ -16,6 +16,7 @@ from pipelines.datalake.extract_load.datalake_bigquery.flows import *
 from pipelines.datalake.extract_load.datasus_ftp.flows import *
 from pipelines.datalake.extract_load.diario_oficial_rj.flows import *
 from pipelines.datalake.extract_load.diario_oficial_uniao.flows import *
+from pipelines.datalake.extract_load.gal_gcs.flows import *
 from pipelines.datalake.extract_load.google_sheets.flows import *
 from pipelines.datalake.extract_load.medilab_api.flows import *
 from pipelines.datalake.extract_load.minhasaude_mongodb.flows import *
@@ -36,11 +37,11 @@ from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitacare_sqlserver.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
-from pipelines.datalake.extract_load.gal_gcs.flows import *
 
 # ===============================
 # MIGRATE
 # ===============================
+from pipelines.datalake.migrate.bq_to_subpav.flows import *
 from pipelines.datalake.migrate.gcs_to_cloudsql.flows import *
 from pipelines.datalake.migrate.gdrive_to_gcs.flows import *
 from pipelines.datalake.migrate.orquestracao_cdi.flows import *
