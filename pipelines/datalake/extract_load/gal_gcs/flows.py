@@ -8,6 +8,7 @@ from prefect.storage import GCS
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.gal_gcs.tasks import list_all_files, process_file
+from pipelines.datalake.extract_load.gal_gcs.schedules import schedule
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 
@@ -44,6 +45,7 @@ with Flow(
         table=unmapped(TABLE_ID),
     )
 
+extract_gal_gcs.schedule = schedule
 extract_gal_gcs.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 extract_gal_gcs.executor = LocalDaskExecutor(num_workers=1)
 extract_gal_gcs.run_config = KubernetesRun(
