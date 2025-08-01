@@ -64,26 +64,29 @@ TABLES_CONFIG = [
 
 
 def build_param(config: dict) -> dict:
-    """
-    Constrói um dicionário de parâmetros padronizado para execução do pipeline,
-    a partir de uma configuração individual do TABLES_CONFIG.
-    """
-    return {
+    param = {
         "dataset_id": config["dataset_id"],
         "table_id": config["table_id"],
         "db_schema": config["db_schema"],
-        "bq_columns": config.get("bq_columns"),
         "dest_table": config["dest_table"],
         "infisical_path": config["infisical_path"],
         "secret_name": config["secret_name"],
         "rename_flow": True,
         "if_exists": config.get("if_exists", "append"),
-        "custom_insert_query": config.get("custom_insert_query"),
         "project": config.get("project", ""),
-        "limit": config.get("limit"),
-        "notify": config.get("notify"),
         "environment": config.get("environment", "dev"),
     }
+    # Só adiciona se tiver valor!
+    if config.get("bq_columns") is not None:
+        param["bq_columns"] = config["bq_columns"]
+    if config.get("custom_insert_query") is not None:
+        param["custom_insert_query"] = config["custom_insert_query"]
+    if config.get("limit") is not None:
+        param["limit"] = config["limit"]
+    if config.get("notify") is not None:
+        param["notify"] = config["notify"]
+    return param
+
 
 
 def unpack_params(frequency: str) -> list:
