@@ -98,7 +98,7 @@ daily_params = unpack_params("daily")
 weekly_params = unpack_params("weekly")
 monthly_params = unpack_params("monthly")
 
-BASE_START_DATE = datetime(2025, 7, 21, 3, 0, tzinfo=RJ_TZ)
+BASE_START_DATE = datetime(2025, 7, 31, 3, 0, tzinfo=RJ_TZ)
 
 daily_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),

@@ -8,7 +8,7 @@ Flow para migração de dados do BigQuery para o MySQL da SUBPAV.
 from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
-
+from prefect.storage import GCS
 from pipelines.constants import constants
 from pipelines.datalake.migrate.bq_to_subpav.schedules import (
     bq_to_subpav_combined_schedule,
@@ -96,6 +96,7 @@ with Flow(
 # Configuração do Flow
 #####################################
 bq_to_subpav_flow.executor = LocalDaskExecutor(num_workers=10)
+bq_to_subpav_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 bq_to_subpav_flow.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
