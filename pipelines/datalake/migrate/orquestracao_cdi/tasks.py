@@ -246,28 +246,32 @@ WHERE data_publicacao = '{DATE}'
         # TODO: pensar em forma mais elegante de fazer isso aqui; fiz meio corrido :x
         if ERRO_DOU or ERRO_DORJ:
             error_at = (
-                "dos Diários Oficiais (União e Município)"
+                "os Diários Oficiais (União e Município)"
                 if ERRO_AMBOS
                 else (
-                    "do Diário Oficial da União" if ERRO_DOU else "do Diário Oficial do Município"
+                    "o Diário Oficial da União"
+                    if ERRO_DOU
+                    else "o Diário Oficial do Município"
                 )
             )
-            success_at = (
-                ""
-                if ERRO_AMBOS
-                else ("Diário Oficial da União" if not ERRO_DOU else "Diário Oficial do Município")
-            )
-            if len(success_at) > 0:
+            success_at = ""
+            if not ERRO_AMBOS:
                 success_at = f"""
-                <p>A extração do {success_at}, por sua vez, foi bem sucedida,
-                mas ele não possui conteúdo relevante hoje.</p>
+                    <p>
+                        A extração do {
+                            'Diário Oficial da União'
+                            if not ERRO_DOU
+                            else 'Diário Oficial do Município'
+                        }, por sua vez, ocorreu normalmente,
+                        mas ele não possui conteúdo relevante hoje.
+                    </p>
                 """
             return f"""
 <font face="sans-serif">
-    <p><b>Desculpe!</b></p>
     <p>
-        Ocorreu uma falha na extração automática {error_at} de hoje.
-        É possível que o website estivesse fora do ar na hora da extração.
+        <b>Atenção!</b>
+        Não foi possível extrair automaticamente {error_at} de hoje.
+        É possível que o website estivesse fora do ar no momento da extração.
         Por favor, confira manualmente.
     </p>{success_at}
     <p>
@@ -287,10 +291,9 @@ WHERE data_publicacao = '{DATE}'
         error_at = "Diário Oficial da União" if ERRO_DOU else "Diário Oficial do Município"
         error_message = f"""
             <tr>
-                <td style="background-color:#fff8d5;color:#512506;padding:9px 14px;border-radius:5px;border-left:5px solid #965604">
-                    <b>Desculpe!</b>
-                    Ocorreu uma falha na extração automática do {error_at} de hoje.
-                    É possível que o website estivesse fora do ar na hora da extração.
+                <td style="background-color:#ecf5f9;color:#13335a;padding:9px 14px;border-radius:5px;border-left:5px solid #13335a">
+                    <b>Atenção!</b> Não foi possível extrair automaticamente o {error_at} de hoje.
+                    É possível que o website estivesse fora do ar no momento da extração.
                     Por favor, confira manualmente.
                 </td>
             </tr>
@@ -505,7 +508,7 @@ def send_email(
     # Caso não haja DO no dia, recebemos um conteúdo vazia
     if not message or len(message) <= 0:
         message = f"""
-Nenhuma matéria relevante encontrada nos Diários Oficiais de hoje!
+Nenhum conteúdo relevante encontrado nos Diários Oficiais de hoje!
 
 Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
         """.strip()
