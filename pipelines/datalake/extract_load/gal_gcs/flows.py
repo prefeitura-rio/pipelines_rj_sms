@@ -23,7 +23,9 @@ with Flow(
     # Flow
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     GCS_BUCKET = Parameter("gcs_bucket", default="svs_cie", required=True)
-    GCS_PATH_TEMPLATE = Parameter("gcs_path_template", default="exames_laboratoriais/gal_lacen/tuberculose/*/*/*.zip")
+    GCS_PATH_TEMPLATE = Parameter(
+        "gcs_path_template", default="exames_laboratoriais/gal_lacen/tuberculose/*/*/*.zip"
+    )
     DATASET_ID = Parameter("dataset_id", default="brutos_gal")
     TABLE_ID = Parameter("table_id", default="exames_laboratoriais")
     RELATIVE_TARGET_DATE = Parameter("relative_target_date", default=None)
