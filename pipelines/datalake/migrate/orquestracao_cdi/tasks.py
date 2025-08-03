@@ -196,9 +196,11 @@ WHERE data_publicacao = '{DATE}'
         fonte, content_email, pasta, article_url, voto = row
         # Pula diários se a extração não foi bem sucedida
         # ex. falhou no meio, etc
-        if fonte.startswith("Diário Oficial da União") and not extraction_status["dou"]:
+        if fonte.startswith("Diário Oficial da União") \
+        and not extraction_status["dou"]:
             continue
-        if fonte.startswith("Diário Oficial do Município") and not extraction_status["dorj"]:
+        if fonte.startswith("Diário Oficial do Município") \
+        and not extraction_status["dorj"]:
             continue
 
         # Tentativa fútil de remover algumas entradas errôneas
@@ -368,7 +370,7 @@ WHERE data_publicacao = '{DATE}'
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def get_email_recipients(environment: str = "prod", recipients: list = None) -> dict:
+def get_email_recipients(environment: str = "prod", recipients: list=None) -> dict:
     # Se queremos sobrescrever os recipientes do email
     # (ex. enviar somente para uma pessoa, para teste)
     if recipients is not None:
