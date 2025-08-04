@@ -66,6 +66,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="prod", required=True)
     DATE = Parameter("date", default=None)
     SKIP_TO_EMAIL = Parameter("skip_to_email", default=False)
+    OVERRIDE_RECIPIENTS = Parameter("override_recipients", default=None)
 
     ## Pipeline completo
     with case(SKIP_TO_EMAIL, False):
@@ -147,7 +148,7 @@ with Flow(
             flow_run_id=tcm_flow_runs,
             stream_states=unmapped(True),
             stream_logs=unmapped(True),
-            raise_final_state=unmapped(True),
+            raise_final_state=unmapped(False),
             max_duration=unmapped(timedelta(minutes=20)),
         )
 
@@ -166,7 +167,7 @@ with Flow(
             environment=ENVIRONMENT, skipped=False, upstream_tasks=[wait_tcm]
         )
         message = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
-        recipients = get_email_recipients(environment=ENVIRONMENT)
+        recipients = get_email_recipients(environment=ENVIRONMENT, recipients=OVERRIDE_RECIPIENTS)
         send_email(date=DATE, api_base_url=URL, token=TOKEN, recipients=recipients, message=message)
 
     ## Somente envio de email
@@ -183,7 +184,7 @@ with Flow(
         )
         df = get_todays_tcm_from_gcs(environment=ENVIRONMENT, skipped=True)
         message = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
-        recipients = get_email_recipients(environment=ENVIRONMENT)
+        recipients = get_email_recipients(environment=ENVIRONMENT, recipients=OVERRIDE_RECIPIENTS)
         send_email(date=DATE, api_base_url=URL, token=TOKEN, recipients=recipients, message=message)
 
 
@@ -194,8 +195,8 @@ flow_orquestracao_cdi.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="13Gi",
-    memory_limit="13Gi",
+    memory_request="10Gi",
+    memory_limit="10Gi",
 )
 
 flow_orquestracao_cdi.schedule = schedules

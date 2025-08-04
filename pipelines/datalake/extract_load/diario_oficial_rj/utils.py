@@ -1,15 +1,49 @@
 # -*- coding: utf-8 -*-
+import datetime
 import re
-from datetime import datetime
-from itertools import groupby
 from typing import List, Optional
 
+import pandas as pd
 import pytz
 import requests
 from bs4 import BeautifulSoup, NavigableString
-from dateutil import parser
+from google.cloud import bigquery
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
+from pipelines.constants import constants
 from pipelines.utils.logger import log
+from pipelines.utils.time import parse_date_or_today
+
+
+def report_extraction_status(status: bool, date: str, environment: str = "dev"):
+    date = parse_date_or_today(date).strftime("%Y-%m-%d")
+    success = "true" if status else "false"
+    current_datetime = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(
+        tzinfo=None
+    )
+
+    if environment is None:
+        environment = "dev"
+    PROJECT = constants.GOOGLE_CLOUD_PROJECT.value[environment]
+    DATASET = "projeto_cdi"
+    TABLE = "extracao_status"
+    FULL_TABLE_NAME = f"`{PROJECT}.{DATASET}.{TABLE}`"
+
+    log(f"Inserting into {FULL_TABLE_NAME} status of success={success} for date='{date}'...")
+    client = bigquery.Client()
+    query_job = client.query(
+        f"""
+        INSERT INTO {FULL_TABLE_NAME} (
+            data_publicacao, tipo_diario, extracao_sucesso, _updated_at
+        )
+        VALUES (
+            '{date}', 'dorj', {success}, '{current_datetime}'
+        )
+    """
+    )
+    query_job.result()  # Wait for the job to complete
+    log("Extraction report done!")
 
 
 def send_get_request(url: str, type: Optional[str]):
@@ -18,8 +52,20 @@ def send_get_request(url: str, type: Optional[str]):
     else:
         log(f"Sending GET request: {url}")
 
-    res = requests.get(url=url)
-    res.raise_for_status()
+    session = requests.Session()
+    retries = Retry(total=3, backoff_factor=15, status_forcelist=[500, 502, 503, 504])
+    session.mount("https://", HTTPAdapter(max_retries=retries))
+
+    res = None
+    try:
+        res = session.get(url=url)
+        res.raise_for_status()
+    except Exception as exc:
+        if res is not None:
+            log(f"Request returned status HTTP {res.status_code}", level="error")
+        else:
+            log(f"Error requesting URL: {repr(exc)}", level="error")
+        return Exception()
     # [Ref] https://stackoverflow.com/a/52615216/4824627
     res.encoding = res.apparent_encoding
 
@@ -104,20 +150,6 @@ def get_links_for_path(folders: List[BeautifulSoup], path: list) -> List[Beautif
             return get_links_for_path([folder, *(subfolders or [])], path[1:])
     # Se chegamos aqui, não encontramos a pasta especificada pelo caminho
     return []
-
-
-def get_links_if_match(folders: List[BeautifulSoup], regex_search_str: str) -> List[BeautifulSoup]:
-    all_links = []
-    for folder in folders:
-        # Pega o 'nome' da pasta
-        text = folder.get_text().strip()
-        # Confere se bate com o que queremos
-        if re.search(regex_search_str, text, re.IGNORECASE | re.MULTILINE):
-            # Pega todos os <a> com atributos que estamos procurando
-            # que estão 'dentro' da pasta
-            all_links.extend(get_all_links_in_folder(folder))
-
-    return all_links
 
 
 def node_cleanup(root: BeautifulSoup) -> BeautifulSoup:
