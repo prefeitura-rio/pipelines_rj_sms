@@ -348,9 +348,9 @@ WHERE data_publicacao = '{DATE}'
                     <ul style="padding-left:9px">
         """
         for content in sorted(body, key=str.lower):
-            format_relevant_entry(content)
+            filtered_content = format_relevant_entry(content)
             final_email_string += f"""
-                <li style="margin-bottom:9px;color:#13335a">{content}</li>
+                <li style="margin-bottom:9px;color:#13335a">{filtered_content}</li>
             """
         # /for content in body
         final_email_string += """
