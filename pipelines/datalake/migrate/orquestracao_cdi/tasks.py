@@ -376,7 +376,7 @@ WHERE data_publicacao = '{DATE}'
             # - [^\S] = NOT (NOT whitespace) = whitespace
             # - [^\S\n\r] = whitespace, except \n, \r
             content = re.sub(
-                r"^([^\<a-z\n\r][^a-z\n\r\-]+[^a-z\s\-])[^\S\n\r]*-?[^\S\n\r]*Processo\b",
+                r"^([^\<a-z\n\r][^a-z\n\r]+[^a-z\s\-])[^\S\n\r]*-?[^\S\n\r]*Processo\b",
                 r"<b>\1</b> - Processo",
                 content,
             )
