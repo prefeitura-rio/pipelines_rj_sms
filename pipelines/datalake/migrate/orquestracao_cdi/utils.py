@@ -40,10 +40,7 @@ def format_relevant_entry(content: str):
     # Tentativa fútil de remover nomes em assinaturas que
     # às vezes aparecem em cabeçalhos
     filtered_content = re.sub(
-        r"^((EDUARDO PAES|DANIEL SORANZ|ANEXO)\s*)+",
-        "",
-        content,
-        flags=re.IGNORECASE
+        r"^((EDUARDO PAES|DANIEL SORANZ|ANEXO)\s*)+", "", content, flags=re.IGNORECASE
     )
     # Aqui potencialmente apagamos o conteúdo inteiro; então confere
     # primeiro antes de sobrescrever a variável final

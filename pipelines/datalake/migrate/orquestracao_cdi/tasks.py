@@ -20,7 +20,7 @@ from pipelines.utils.tasks import get_bigquery_project_from_environment
 from pipelines.utils.time import parse_date_or_today
 
 from .constants import constants
-from .utils import format_tcm_case, get_latest_extraction_status, format_relevant_entry
+from .utils import format_relevant_entry, format_tcm_case, get_latest_extraction_status
 
 
 # Para a justificativa quanto à existência dessa task,
