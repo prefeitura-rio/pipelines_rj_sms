@@ -171,7 +171,7 @@ WHERE data_publicacao = '{DATE}'
     # Pega status da última extração de cada
     extraction_status = get_latest_extraction_status(PROJECT, DATE)
 
-    def extract_header_from_path(path: str) -> str:
+    def extract_header_from_path(path: str) -> str | None:
         if not path or len(path) <= 0:
             return None
         # Recebemos algo como
@@ -191,9 +191,15 @@ WHERE data_publicacao = '{DATE}'
         )
 
     # Constrói cada bloco do email
-    email_blocks = {}
+    email_blocks: dict[str, List] = {}
     for row in rows:
-        fonte, content_email, pasta, article_url, voto = row
+        fonte, content, pasta, article_url, voto = row
+        fonte = str(fonte).strip()
+        content = str(content).strip()
+        pasta = str(pasta).strip()
+        article_url = str(article_url).strip()
+        voto = str(voto).strip()
+
         # Pula diários se a extração não foi bem sucedida
         # ex. falhou no meio, etc
         if fonte.startswith("Diário Oficial da União") and not extraction_status["dou"]:
@@ -201,12 +207,11 @@ WHERE data_publicacao = '{DATE}'
         if fonte.startswith("Diário Oficial do Município") and not extraction_status["dorj"]:
             continue
 
-        # Tentativa fútil de remover algumas entradas errôneas
-        # Estamos tapando buracos no barco com chiclete aqui
-        content = content_email.strip()
         # Chances basicamente nulas de XSS em email, mas isso
         # pode prevenir problemas de formatação acidental
         content = content.replace("<", "&lt;").replace(">", "&gt;")
+        # Tentativa fútil de remover algumas entradas errôneas;
+        # estamos tapando buracos no barco com chiclete aqui
         if content == "Anexo" or content.startswith(("•", "·")):
             log(f"`content` is invalid; skipping. Row: {row}", level="warning")
             continue
@@ -232,17 +237,39 @@ WHERE data_publicacao = '{DATE}'
             email_blocks[header] = []
         email_blocks[header].append(content)
 
+    ERRO_DOU = not extraction_status["dou"]
+    ERRO_DORJ = not extraction_status["dorj"]
+    ERRO_AMBOS = ERRO_DOU and ERRO_DORJ
     # Confere primeiro se temos algum conteúdo para o email
-    if not email_blocks:
+    if not email_blocks or ERRO_AMBOS:
         # Confere se a falta de conteúdo foi por falha na extração
-        if not extraction_status["dou"] and not extraction_status["dorj"]:
+        # TODO: pensar em forma mais elegante de fazer isso aqui; fiz meio corrido :x
+        if ERRO_DOU or ERRO_DORJ:
+            error_at = (
+                "os Diários Oficiais (União e Município)"
+                if ERRO_AMBOS
+                else ("o Diário Oficial da União" if ERRO_DOU else "o Diário Oficial do Município")
+            )
+            success_at = ""
+            if not ERRO_AMBOS:
+                success_at = f"""
+                    <p>
+                        A extração do {
+                            'Diário Oficial da União'
+                            if not ERRO_DOU
+                            else 'Diário Oficial do Município'
+                        }, por sua vez, ocorreu normalmente,
+                        mas ele não possui conteúdo relevante hoje.
+                    </p>
+                """
             return f"""
 <font face="sans-serif">
-    <p><b>Desculpe!</b></p>
     <p>
-        Ocorreu uma falha na extração automática dos Diários Oficiais de hoje.
+        <b>Atenção!</b>
+        Não foi possível extrair automaticamente {error_at} de hoje.
+        É possível que o website estivesse fora do ar no momento da extração.
         Por favor, confira manualmente.
-    </p>
+    </p>{success_at}
     <p>
         Email gerado às
         {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
@@ -251,6 +278,23 @@ WHERE data_publicacao = '{DATE}'
             """
         # Caso contrário, só não temos artigos relevantes hoje; retorna vazio
         return ""
+
+    error_message = ""
+    if ERRO_DOU or ERRO_DORJ:
+        # Se estamos aqui, existe conteúdo relevante, mas um dos diários teve erro
+        # na extração. Então montamos um aviso bonitinho em HTML pra mostrar
+        # após os resultados relevantes
+        error_at = "Diário Oficial da União" if ERRO_DOU else "Diário Oficial do Município"
+        error_message = f"""
+            <tr>
+                <td style="background-color:#ecf5f9;color:#13335a;padding:9px 14px;border-radius:5px;border-left:5px solid #13335a">
+                    <b>Atenção!</b> Não foi possível extrair automaticamente o {error_at} de hoje.
+                    É possível que o website estivesse fora do ar no momento da extração.
+                    Por favor, confira manualmente.
+                </td>
+            </tr>
+            <tr><td style="padding:9px"></td></tr>
+        """
 
     # [!] Importante: antes de editar o HTML abaixo, lembre que ele é HTML
     # para clientes de EMAIL. Assim, muitas (MUITAS) funcionalidades modernas
@@ -338,7 +382,7 @@ WHERE data_publicacao = '{DATE}'
             final_email_string += f"""
                 <li style="margin-bottom:9px;color:#13335a">{content}</li>
             """
-        # /for
+        # /for content in body
         final_email_string += """
                     </ul>
                 </td>
@@ -346,18 +390,31 @@ WHERE data_publicacao = '{DATE}'
         """
         # Espaçamento entre seções
         final_email_string += '<tr><td style="padding:9px"></td></tr>'
+    # /for body in blocks
 
+    # Adiciona mensagem de erro, se houver
+    final_email_string += error_message
+
+    # Rodapé
     timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")
     final_email_string += f"""
                 <tr><td><hr/></td></tr>
                 <tr>
                     <td>
+                        <p style="color:#13335a;margin:0">
+                            <b style="font-size:115%">S/SUBG/CDI/Controle Interno e Externo</b><br/>
+                            Gerência de Atendimento a Demandas de Controle Interno e Externo
+                        </p>
+                    </td>
+                </tr>
+                <tr><td><hr></td></tr>
+                <tr>
+                    <td>
                         <img alt="DIT-SMS" width="100" align="right" style="margin-left:18px;margin-bottom:70px"
                             src="{constants.LOGO_DIT_HORIZONTAL_COLORIDO.value}"/>
                         <p style="font-size:13px;color:#888;margin:0">
-                            Informe diário da <b>Coordenadoria de Demandas Institucionais</b> (CDI),
-                            com apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT),
-                            gerado às {timestamp}.
+                            Apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT).<br/>
+                            Email gerado às {timestamp}.
                         </p>
                     </td>
                 </tr>
@@ -404,10 +461,10 @@ FROM `{project_name}.{DATASET}.{TABLE}`
     for email, kind in rows:
         email = str(email).strip()
         kind = str(kind).lower().strip()
-        if not email or not kind:
+        if not email:
             continue
         if "@" not in email:
-            log(f"Email does not contain '@': '{email}'", level="warning")
+            log(f"Recipient '{email}' does not contain '@'; skipping", level="warning")
             continue
 
         if kind == "to":
@@ -416,8 +473,12 @@ FROM `{project_name}.{DATASET}.{TABLE}`
             cc_addresses.append(email)
         elif kind == "bcc":
             bcc_addresses.append(email)
+        elif kind == "skip":
+            continue
         else:
-            log(f"Recipient type '{kind}' not recognized!", level="warning")
+            log(
+                f"Recipient type '{kind}' (for '{email}') not recognized; skipping", level="warning"
+            )
 
     log(
         f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)"
@@ -443,7 +504,7 @@ def send_email(
     # Caso não haja DO no dia, recebemos um conteúdo vazia
     if not message or len(message) <= 0:
         message = f"""
-Nenhuma matéria relevante encontrada nos Diários Oficiais de hoje!
+Nenhum conteúdo relevante encontrado nos Diários Oficiais de hoje!
 
 Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
         """.strip()
