@@ -41,7 +41,7 @@ with Flow(
         date=DATE, dou_section=DOU_SECTION, max_workers=MAX_WORKERS
     )
     upload_to_datalake(dou_infos=dou_infos, environment=ENVIRONMENT, dataset=DATASET_ID)
-    report_extraction_status(status=is_successful, date="", dou_section=DOU_SECTION)
+    report_extraction_status(status=is_successful, date=DATE, dou_section=DOU_SECTION)
 
 # Flow configs
 extract_diario_oficial_uniao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
