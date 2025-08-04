@@ -176,7 +176,7 @@ WHERE data_publicacao = '{DATE}'
     # Pega status da última extração de cada
     extraction_status = get_latest_extraction_status(PROJECT, DATE)
 
-    def extract_header_from_path(path: str) -> str | None:
+    def extract_header_from_path(path: Optional[str]) -> str | None:
         if not path or len(path) <= 0:
             return None
         # Recebemos algo como
@@ -195,15 +195,19 @@ WHERE data_publicacao = '{DATE}'
             ),
         )
 
+    def strip_if_not_none(v, default=None):
+        stripped = str(v).strip()
+        return stripped if v is not None and len(stripped) > 0 else default
+
     # Constrói cada bloco do email
     email_blocks: dict[str, List] = {}
     for row in rows:
         fonte, content, pasta, article_url, voto = row
-        fonte = str(fonte).strip()
-        content = str(content).strip()
-        pasta = str(pasta).strip()
-        article_url = str(article_url).strip()
-        voto = str(voto).strip()
+        fonte = strip_if_not_none(fonte, default="Não categorizado")
+        content = strip_if_not_none(content, default="")
+        pasta = strip_if_not_none(pasta)
+        article_url = strip_if_not_none(article_url, default="")
+        voto = strip_if_not_none(voto)
 
         # Pula diários se a extração não foi bem sucedida
         # ex. falhou no meio, etc
@@ -225,7 +229,7 @@ WHERE data_publicacao = '{DATE}'
             log(f"Empty `content`! Row: {row}", level="warning")
             continue
 
-        if article_url is not None and len(article_url) > 0:
+        if len(article_url) > 0:
             content += f'<br/><a href="{article_url}">Abrir no D.O.</a>'
 
         voto = format_tcm_case(voto)
