@@ -28,6 +28,8 @@ from .utils import format_tcm_case, get_latest_extraction_status
 @task
 def create_dorj_params_dict(environment: str = "prod", date: Optional[str] = None):
     return {"environment": environment, "date": date}
+
+
 @task
 def create_dou_params_dict(environment: str = "prod", date: Optional[str] = None, section: int = 3):
     return {"environment": environment, "date": date, "dou_section": section}
