@@ -366,19 +366,23 @@ WHERE data_publicacao = '{DATE}'
 
             # Negrito em decisões de TCM
             content = re.sub(
-                r"^(.+)\s+nos\s+termos\s+do\s+voto\s+do\s+Relator",
+                r"^([^\n\r]+)\s+nos\s+termos\s+do\s+voto\s+do\s+Relator",
                 r"<b>\1</b> nos termos do voto do Relator",
                 content,
             )
             # (nem todas terminam com "nos termos do voto do Relator")
+            # Aqui usamos [^\S\n\r]:
+            # - \S = NOT whitespace
+            # - [^\S] = NOT (NOT whitespace) = whitespace
+            # - [^\S\n\r] = whitespace, except \n, \r
             content = re.sub(
-                r"^([^\<a-z][^a-z]+)\s+-\s+Processo\b",
+                r"^([^\<a-z\n\r][^a-z\n\r\-]+[^a-z\s\-])[^\S\n\r]*-?[^\S\n\r]*Processo\b",
                 r"<b>\1</b> - Processo",
                 content,
             )
             # Negrito em títulos de decretos/resoluções/atas
             content = re.sub(
-                r"^[\*\.]*((DECRETO|RESOLUÇÃO|ATA|PORTARIA)\s+.+\s+DE\s+2[0-9]{3})\b",
+                r"^[\*\.]*((DECRETO|RESOLUÇÃO|ATA|PORTARIA)\b[^\n\r]+\bDE\s+2[0-9]{3})\b",
                 r"<b>\1</b>",
                 content,
                 flags=re.IGNORECASE,
