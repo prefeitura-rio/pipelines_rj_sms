@@ -20,7 +20,7 @@ from pipelines.utils.tasks import get_bigquery_project_from_environment
 from pipelines.utils.time import parse_date_or_today
 
 from .constants import constants
-from .utils import format_tcm_case, get_latest_extraction_status
+from .utils import format_tcm_case, get_latest_extraction_status, format_relevant_entry
 
 
 # Para a justificativa quanto à existência dessa task,
@@ -348,46 +348,7 @@ WHERE data_publicacao = '{DATE}'
                     <ul style="padding-left:9px">
         """
         for content in sorted(body, key=str.lower):
-            content: str
-            # Remove quebras de linha duplicadas, converte para <br>
-            content = re.sub(r"\n{2,}", "\n", content.replace("\r", "")).replace("\n", "<br/>")
-            content = re.sub(r"(<br/>){2,}", "<br/>", content)
-            # Tentativa fútil de remover nomes em assinaturas que
-            # às vezes aparecem em cabeçalhos
-            filtered_content = re.sub(
-                r"^((EDUARDO PAES|DANIEL SORANZ|ANEXO)\s*)+", "", content, flags=re.IGNORECASE
-            )
-            # Aqui potencialmente apagamos o conteúdo inteiro; então confere
-            # primeiro antes de sobrescrever a variável final
-            if len(filtered_content) > 0:
-                content = filtered_content
-            else:
-                log(f"Filtering `content` empties it. Value: {content}", level="warning")
-
-            # Negrito em decisões de TCM
-            content = re.sub(
-                r"^([^\n\r]+)\s+nos\s+termos\s+do\s+voto\s+do\s+Relator",
-                r"<b>\1</b> nos termos do voto do Relator",
-                content,
-            )
-            # (nem todas terminam com "nos termos do voto do Relator")
-            # Aqui usamos [^\S\n\r]:
-            # - \S = NOT whitespace
-            # - [^\S] = NOT (NOT whitespace) = whitespace
-            # - [^\S\n\r] = whitespace, except \n, \r
-            content = re.sub(
-                r"^([^\<a-z\n\r][^a-z\n\r]+[^a-z\s\-])[^\S\n\r]*-?[^\S\n\r]*Processo\b",
-                r"<b>\1</b> - Processo",
-                content,
-            )
-            # Negrito em títulos de decretos/resoluções/atas
-            content = re.sub(
-                r"^[\*\.]*((DECRETO|RESOLUÇÃO|ATA|PORTARIA)\b[^\n\r]+\bDE\s+2[0-9]{3})\b",
-                r"<b>\1</b>",
-                content,
-                flags=re.IGNORECASE,
-            )
-
+            format_relevant_entry(content)
             final_email_string += f"""
                 <li style="margin-bottom:9px;color:#13335a">{content}</li>
             """
