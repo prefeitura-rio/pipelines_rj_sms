@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple, Union
 import requests
 from bs4 import BeautifulSoup
 from unidecode import unidecode
+from urllib3.util.retry import Retry
 
 from pipelines.utils.logger import log
 
@@ -34,7 +35,8 @@ def send_request(
     # Então, usamos um Adapter que tenta vários (Cloudflare, Google, etc)
     # e usa o primeiro IP que encontrar
     session = requests.Session()
-    session.mount("https://", HostHeaderSSLAdapter())
+    retries = Retry(total=3, backoff_factor=15, status_forcelist=[500, 502, 503, 504])
+    session.mount("https://", HostHeaderSSLAdapter(max_retries=retries))
 
     res = None
     if method == "POST":
