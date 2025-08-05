@@ -6,7 +6,7 @@ from datetime import datetime
 import pandas as pd
 import pytz
 from google.cloud import bigquery
-from prefect import task
+
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options
@@ -65,7 +65,8 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
 
     try:
         driver.get(
-            f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}"
+            f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}"
+            f"&secao=do{str(dou_section)}"
         )
     except WebDriverException:
         log("❌ Erro ao acessar o site do DOU.")
@@ -99,7 +100,7 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
                 try:
                     decree_details = future.result()
                     items.append(decree_details)
-                except Exception as exc:
+                except Exception:
                     log(
                         f"❌ A requisição para {url} alcançou o máximo de tentativas na requisição."
                     )
