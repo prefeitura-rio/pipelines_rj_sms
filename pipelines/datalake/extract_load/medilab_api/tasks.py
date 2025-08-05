@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 import base64
-
 from datetime import datetime, timedelta
 
-
 import pytz
-
 from google.cloud import bigquery, storage
 
 from pipelines.datalake.extract_load.medilab_api.utils import (

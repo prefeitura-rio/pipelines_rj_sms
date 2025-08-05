@@ -4,9 +4,7 @@ Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
 from datetime import datetime, timedelta
 
-
 import pandas as pd
-
 from google.cloud import bigquery
 from prefect.engine.signals import SKIP
 from sqlalchemy import create_engine
@@ -14,12 +12,8 @@ from sqlalchemy import create_engine
 from pipelines.datalake.extract_load.vitacare_sqlserver.constants import (
     vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_sqlserver.utils import (
-
-    transform_dataframe,
-)
+from pipelines.datalake.extract_load.vitacare_sqlserver.utils import transform_dataframe
 from pipelines.utils.credential_injector import authenticated_task as task
-
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
 

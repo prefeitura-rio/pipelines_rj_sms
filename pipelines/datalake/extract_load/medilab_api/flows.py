@@ -16,7 +16,6 @@ from pipelines.datalake.extract_load.medilab_api.tasks import (
     get_exams_list_and_results,
     get_patient_code_from_bigquery,
 )
-
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key

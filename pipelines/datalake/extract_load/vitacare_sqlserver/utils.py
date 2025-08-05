@@ -8,7 +8,6 @@ import pytz
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
-
 from pipelines.utils.monitor import send_message
 
 
