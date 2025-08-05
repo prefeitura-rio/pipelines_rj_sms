@@ -138,7 +138,7 @@ with Flow(
     )
 
     wait_for_operator_runs = wait_for_flow_run.map(
-        flow_name=created_operator_runs,
+        flow_run_id=created_operator_runs,
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
