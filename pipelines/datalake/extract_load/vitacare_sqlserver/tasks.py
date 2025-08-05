@@ -2,7 +2,7 @@
 """
 Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pandas as pd
 from google.cloud import bigquery
