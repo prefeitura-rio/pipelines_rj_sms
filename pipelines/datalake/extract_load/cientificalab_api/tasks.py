@@ -6,7 +6,6 @@ from typing import Dict, List
 
 import pandas as pd
 import pytz
-
 from bs4 import BeautifulSoup
 from prefeitura_rio.pipelines_utils.logging import log
 
@@ -42,7 +41,7 @@ def authenticate_and_fetch(
 
     if token_response.get("status_code") != 200:
         message = (
-            f"Failed to get token from Lisnet API: " 
+            f"Failed to get token from Lisnet API: "
             f"{token_response.get('status_code')} - {token_response.get('body')}"
         )
         raise Exception(message)
@@ -92,7 +91,7 @@ def authenticate_and_fetch(
 
     if resultado_response.get("status_code") != 200:
         message = (
-            f"Failed to get XML results from Lisnet API: " 
+            f"Failed to get XML results from Lisnet API: "
             f"{resultado_response.get('status_code')} - {resultado_response.get('body')}"
         )
         raise Exception(message)
