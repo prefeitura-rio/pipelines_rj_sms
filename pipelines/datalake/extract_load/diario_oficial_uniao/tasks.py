@@ -70,9 +70,7 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
         return [[], False]
 
     while True:
-        # Lógica para evitar a poluição do log
-        if page_count == 1 or page_count % 10 == 0:
-            log(f"Extração da página {page_count}")
+        log(f"Extração da página {page_count}")
 
         # Quando não há atos oficias, há um elemento de aviso
         if driver.find_elements(by=By.CLASS_NAME, value="alert.alert-info"):
@@ -127,7 +125,7 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
 
 
 @task
-def upload_to_datalake(dou_infos: list, dataset: str, environment: str) -> None:
+def upload_to_datalake(dou_infos: list, dataset: str) -> None:
     """Função para realizar a carga dos dados extraídos no datalake da SMS Rio.
 
     Args:
