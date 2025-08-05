@@ -38,7 +38,7 @@ def run_siscan_scraper(
         log(f"Iniciando coleta de dados do SISCaN de {start_date} a {end_date}.")
 
         pacientes = run_scraper(
-            email=email, password=password, start_date=start_date, end_date=end_date, headless=True
+            email=email, password=password, start_date=start_date, end_date=end_date, headless=False
         )
         df = pd.DataFrame(pacientes)
 
@@ -57,3 +57,16 @@ def run_siscan_scraper(
     except Exception as e:
         log(f"Erro durante a execução do scraper: {e}", level="error")
         raise
+
+@task
+def build_operator_parameters(start_dates: tuple, end_dates: tuple, bq_table: str, bq_dataset: str, environment: str = 'dev'):
+    return [
+        {
+            "environment": environment,
+            "data_inicial": start,
+            "data_final": end,
+            "bq_dataset": bq_dataset,
+            "bq_table": bq_table,
+        }
+        for start, end in zip(start_dates, end_dates)
+    ]
