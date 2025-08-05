@@ -61,15 +61,13 @@ def run_siscan_scraper(
 
 @task
 def build_operator_parameters(
-    start_dates: tuple, end_dates: tuple, bq_table: str, bq_dataset: str, environment: str = "dev"
+    start_dates: tuple, end_dates: tuple, environment: str = "dev"
 ):
     return [
         {
             "environment": environment,
             "data_inicial": start,
-            "data_final": end,
-            "bq_dataset": bq_dataset,
-            "bq_table": bq_table,
+            "data_final": end
         }
         for start, end in zip(start_dates, end_dates)
     ]
