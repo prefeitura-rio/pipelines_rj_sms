@@ -27,7 +27,9 @@ from pipelines.datalake.utils.tasks import (
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
-    authenticated_wait_for_flow_run as wait_for_flow_run
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
 )
 
 # internos
