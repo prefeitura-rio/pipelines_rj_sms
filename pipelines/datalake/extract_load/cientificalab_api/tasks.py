@@ -6,12 +6,12 @@ from typing import Dict, List
 
 import pandas as pd
 import pytz
-import requests
+
 from bs4 import BeautifulSoup
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import cloud_function_request, upload_df_to_datalake
+from pipelines.utils.tasks import cloud_function_request
 from pipelines.utils.time import get_datetime_working_range
 
 
@@ -42,7 +42,7 @@ def authenticate_and_fetch(
 
     if token_response.get("status_code") != 200:
         message = (
-            f"Failed to get token from Lisnet API:"
+            f"Failed to get token from Lisnet API: " 
             f"{token_response.get('status_code')} - {token_response.get('body')}"
         )
         raise Exception(message)
@@ -51,7 +51,10 @@ def authenticate_and_fetch(
     token_data = json.loads(token_data_string)
 
     if token_data.get("status") != 200:
-        message = f"Lisnet API returned error for token: {token_data.get('status')} - {token_data.get('mensagem')}"
+        message = (
+            f"Lisnet API returned error for token: "
+            f"{token_data.get('status')} - {token_data.get('mensagem')}"
+        )
         raise Exception(message)
 
     token = token_data.get("token")
@@ -89,7 +92,7 @@ def authenticate_and_fetch(
 
     if resultado_response.get("status_code") != 200:
         message = (
-            f"Failed to get XML results from Lisnet API:"
+            f"Failed to get XML results from Lisnet API: " 
             f"{resultado_response.get('status_code')} - {resultado_response.get('body')}"
         )
         raise Exception(message)
