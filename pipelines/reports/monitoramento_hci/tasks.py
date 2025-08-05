@@ -123,7 +123,7 @@ def send_report(data):
     # TODO: Testar requisição à API diretamente
 
     ####################################
-    ## Notificações
+    # Notificações
     ####################################
 
     HTTP_STATUS = {
@@ -183,7 +183,7 @@ def send_report(data):
         )
 
     ####################################
-    ## Alertas
+    # Alertas
     ####################################
     ROLE_ID = "1224334248345862164"
     ROLE_MENTION = f"<@&{ROLE_ID}>"
