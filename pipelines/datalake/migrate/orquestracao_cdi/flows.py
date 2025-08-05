@@ -18,7 +18,8 @@ from pipelines.datalake.migrate.orquestracao_cdi.schedules import schedules
 from pipelines.datalake.migrate.orquestracao_cdi.tasks import (
     build_email,
     create_dbt_params_dict,
-    create_params_dict,
+    create_dorj_params_dict,
+    create_dou_params_dict,
     create_tcm_params_dict,
     fetch_tcm_cases,
     get_email_recipients,
@@ -74,16 +75,24 @@ with Flow(
         # pseudo-tasks, executadas imediatamente -- então passar um dict() como parâmetro
         # a uma task diretamente dá erro 403 com o Google Cloud. É necessário uma
         # `authenticated_task()` que retorna um dict(), que então pode ser usado diretamente
-        do_params = create_params_dict(environment=ENVIRONMENT, date=DATE)
+        dorj_params = create_dorj_params_dict(environment=ENVIRONMENT, date=DATE)
+        dou1_params = create_dou_params_dict(environment=ENVIRONMENT, date=DATE, section=1)
+        dou3_params = create_dou_params_dict(environment=ENVIRONMENT, date=DATE, section=3)
 
         project_name = get_project_name_from_prefect_environment()
         current_flow_run_labels = get_current_flow_labels()
 
         ## (1) DOU
-        dou_flow_run = create_flow_run(
+        dou1_flow_run = create_flow_run(
             flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
             project_name=project_name,
-            parameters=do_params,
+            parameters=dou1_params,
+            labels=current_flow_run_labels,
+        )
+        dou3_flow_run = create_flow_run(
+            flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
+            project_name=project_name,
+            parameters=dou3_params,
             labels=current_flow_run_labels,
         )
 
@@ -91,14 +100,14 @@ with Flow(
         dorj_flow_run = create_flow_run(
             flow_name="DataLake - Extração e Carga de Dados - Diário Oficial Municipal",
             project_name=project_name,
-            parameters=do_params,
+            parameters=dorj_params,
             labels=current_flow_run_labels,
         )
 
         ## Agrega (1) e (2)
         wait_dos = wait_for_flow_run.map(
             # flow_run_id=[dorj_flow_run],
-            flow_run_id=[dou_flow_run, dorj_flow_run],
+            flow_run_id=[dou1_flow_run, dou3_flow_run, dorj_flow_run],
             stream_states=unmapped(True),
             stream_logs=unmapped(True),
             raise_final_state=unmapped(True),

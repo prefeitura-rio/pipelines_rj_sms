@@ -34,6 +34,50 @@ def format_tcm_case(case_num: str) -> str | None:
     return f"{sec}/{num}/{year}"
 
 
+def format_relevant_entry(content: str):
+    # Remove quebras de linha duplicadas
+    content = re.sub(r"\n{2,}", "\n", content.replace("\r", "")).strip()
+    # Tentativa fútil de remover nomes em assinaturas que
+    # às vezes aparecem em cabeçalhos
+    filtered_content = re.sub(
+        r"^((EDUARDO PAES|DANIEL SORANZ|ANEXO)\s*)+", "", content, flags=re.IGNORECASE
+    )
+    # Aqui potencialmente apagamos o conteúdo inteiro; então confere
+    # primeiro antes de sobrescrever a variável final
+    if len(filtered_content) > 0:
+        content = filtered_content
+    else:
+        log(f"Filtering `content` empties it. Value: '{content}'", level="warning")
+
+    # Negrito em decisões de TCM
+    content = re.sub(
+        r"^([^\n\r]+)\s+nos\s+termos\s+do\s+voto\s+do\s+Relator",
+        r"<b>\1</b> nos termos do voto do Relator",
+        content,
+    )
+    # (nem todas terminam com "nos termos do voto do Relator")
+    # Aqui usamos [^\S\n\r]:
+    # - \S = NOT whitespace
+    # - [^\S] = NOT (NOT whitespace) = whitespace
+    # - [^\S\n\r] = whitespace, except \n, \r
+    content = re.sub(
+        r"^([^\<a-z\n\r][^a-z\n\r]+[^a-z\s\-])[^\S\n\r]*-?[^\S\n\r]*Processo\b",
+        r"<b>\1</b> - Processo",
+        content,
+    )
+    # Negrito em títulos de decretos/resoluções/atas
+    content = re.sub(
+        r"^[\*\.]*((DECRETO|RESOLUÇÃO|ATA|PORTARIA)\b[^\n\r]+\bDE\s+2[0-9]{3})\b",
+        r"<b>\1</b>",
+        content,
+        flags=re.IGNORECASE,
+    )
+
+    # Finalmente, substitui quebras de linha por <br/>
+    content = re.sub(r"(<br[ ]*/>){2,}", "<br/>", content.replace("\n", "<br/>"))
+    return content
+
+
 def get_latest_extraction_status(project: str, do_date: str):
     client = bigquery.Client()
 
