@@ -109,7 +109,8 @@ with Flow(
     RELATIVE_DATE = Parameter("relative_date", default="D-1")
     DIAS_POR_FAIXA = Parameter("range", default=7)
 
-    start_date, end_date = get_datetime_working_range(start_datetime=RELATIVE_DATE)
+    data_filter = from_relative_date(RELATIVE_DATE)
+    start_date, end_date = get_datetime_working_range(start_datetime=data_filter)
 
     faixas = gerar_faixas_de_data(
         data_inicial=start_date,
