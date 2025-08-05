@@ -2,7 +2,7 @@
 import re
 from datetime import datetime, timedelta
 from time import sleep
-from typing import Optional
+from typing import List, Optional
 
 import pandas as pd
 import pytz
@@ -23,7 +23,7 @@ from .utils import (
 )
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30), nout=2)
+@task(nout=2)
 def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
     case_num = str(case_num).strip()
     log(f"Attempting to fetch '{case_num}'")
@@ -32,7 +32,7 @@ def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
     case_num = f"{sec}/{num}/{year}"
 
     if sec is None or num is None or year is None:
-        raise RuntimeError(f"Error getting case number: {sec}/{num}/{year}")
+        raise RuntimeError(f"Error getting case number: {case_num}")
 
     # Precisamos mandar um POST enviando o seguinte FormData
     # : Sec=xxx&Num=xxxxxx&Ano=xxxx&TipoConsulta=PorNumero
@@ -82,7 +82,7 @@ def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
     return (case_obj, html)
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task()
 def get_latest_vote(ctid: str):
     if not ctid:
         log("Received no ctid; skipping vote", level="warning")
@@ -167,9 +167,13 @@ def get_latest_vote(ctid: str):
             table_contents.append(values)
         return table_contents
 
-    contents = get_table_contents_from_h5_text(
-        html, r"^peças do processo", throw="Unable to find case pieces in page"
-    )
+    contents = get_table_contents_from_h5_text(html, r"^peças do processo")
+    if contents is None:
+        # Alguns casos possuem arquivos mas não são o que a gente espera
+        # Ex.: https://etcm.tcmrio.tc.br/InteiroTeor/Arquivos?ctid=422431
+        # Avisa e retorna só o /Index mesmo
+        log("Unable to find case pieces in page", level="warning")
+        return f"{HOST}/InteiroTeor/Index?ctid={ctid}"
 
     for row in contents:
         # [ Ordem, Descrição, Extensão, Tamanho, Download ]
@@ -192,7 +196,7 @@ def get_latest_vote(ctid: str):
     return None
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task()
 def scrape_case_info_from_page(case_tuple: tuple) -> dict:
     assert len(case_tuple) == 2, f"Expected 2 parameters; got {len(case_tuple)}"
     # Extrai os parâmetros reais da tupla recebida
@@ -263,7 +267,7 @@ def scrape_case_info_from_page(case_tuple: tuple) -> dict:
         return rows
 
     # Pega data e decisão a partir de linha de tabela
-    def get_row_contents(row: BeautifulSoup):
+    def get_row_contents(row: BeautifulSoup) -> List[str]:
         values = []
         # Filhos são algo como: ["\n", <td>, "\n", <td>, "\n"]
         for child in row.children:
@@ -290,12 +294,13 @@ def scrape_case_info_from_page(case_tuple: tuple) -> dict:
         part = get_row_contents(row)
         if len(part) < 2:
             continue
-        if part[0].lower() == "parte":
+        part_name = part[0].lower()
+        if part_name == "parte":
             parts.append(part[1])
-        elif part[0].lower().startswith("advogado"):
+        elif part_name.startswith("advogado") or part_name.startswith("procurador"):
             prosecutors.append(part[1])
         else:
-            log(f"Unknown part {part}; ignoring", level="warning")
+            log(f"Unknown part '{part}'; ignoring", level="warning")
 
     case_obj["partes"] = ";".join(parts) if len(parts) > 0 else None
     case_obj["procuradores"] = ";".join(prosecutors) if len(prosecutors) > 0 else None
@@ -303,7 +308,7 @@ def scrape_case_info_from_page(case_tuple: tuple) -> dict:
     return case_obj
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task()
 def upload_results(main_result: dict, latest_vote: str, dataset: str):
     # Remove propriedade de apoio
     del main_result["_ctid"]
