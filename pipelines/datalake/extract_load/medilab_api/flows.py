@@ -4,7 +4,7 @@
 medilab api flows
 """
 
-from prefect import Parameter, case, unmapped
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -16,7 +16,7 @@ from pipelines.datalake.extract_load.medilab_api.tasks import (
     get_exams_list_and_results,
     get_patient_code_from_bigquery,
 )
-from pipelines.datalake.utils.tasks import rename_current_flow_run
+
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
