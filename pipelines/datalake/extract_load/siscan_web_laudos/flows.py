@@ -13,8 +13,10 @@ from prefect.storage import GCS
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.siscan_web_laudos.constants import CONFIG
 from pipelines.datalake.extract_load.siscan_web_laudos.schedules import schedule
-from pipelines.datalake.extract_load.siscan_web_laudos.tasks import run_siscan_scraper, build_operator_parameters
-from pipelines.utils.time import from_relative_date, get_datetime_working_range
+from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
+    build_operator_parameters,
+    run_siscan_scraper,
+)
 from pipelines.datalake.utils.tasks import (
     delete_file,
     extrair_fim,
@@ -23,20 +25,19 @@ from pipelines.datalake.utils.tasks import (
     prepare_df_from_disk,
     upload_from_disk,
 )
+from pipelines.utils.credential_injector import (
+    authenticated_create_flow_run as create_flow_run,
+)
+from pipelines.utils.credential_injector import (
+    authenticated_wait_for_flow_run as wait_for_flow_run,
+)
 
+# internos
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, get_secret_key
 from pipelines.utils.time import from_relative_date, get_datetime_working_range
-from pipelines.utils.credential_injector import (
-    authenticated_create_flow_run as create_flow_run,
-    authenticated_wait_for_flow_run as wait_for_flow_run,
-)
-# internos
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key
 
 with Flow(
     name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos (Operator)",
@@ -45,7 +46,6 @@ with Flow(
         constants.MATHEUS_ID.value,
         constants.HERIAN_ID.value,
     ],
-    
 ) as sms_siscan_web_operator:
     # PARAMETROS AMBIENTE ---------------------------
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -65,7 +65,7 @@ with Flow(
     # PARAMETROS BQ ----------------------------------
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
     BQ_TABLE = Parameter("bq_table", default="laudos")
-     
+
     # 1) Extrai e salva cada lote em disco, retorna caminho do parquet
     raw_files = run_siscan_scraper(
         email=user,
@@ -111,39 +111,39 @@ with Flow(
     BQ_TABLE = Parameter("bq_table", default="laudos")
     DIAS_POR_FAIXA = Parameter("dias_por_faixa", default=7)
     FORMATO_DATA = Parameter("formato_data", default="%d/%m/%Y")
-        
+
     start_date, end_date = get_datetime_working_range(start_datetime=RELATIVE_DATE)
-    
+
     faixas = gerar_faixas_de_data(
         data_inicial=start_date,
         data_final=end_date,
         dias_por_faixa=DIAS_POR_FAIXA,
         date_format=FORMATO_DATA,
     )
-    
+
     inicio_faixas = extrair_inicio.map(faixas)
     fim_faixas = extrair_fim.map(faixas)
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
     current_labels = get_current_flow_labels()
-    
+
     operator_params = build_operator_parameters(
-        start_dates = inicio_faixas,
-        end_dates = fim_faixas,
-        bq_dataset = BQ_DATASET,
-        bq_table = BQ_TABLE,
-        environment = ENVIRONMENT,
+        start_dates=inicio_faixas,
+        end_dates=fim_faixas,
+        bq_dataset=BQ_DATASET,
+        bq_table=BQ_TABLE,
+        environment=ENVIRONMENT,
     )
-    
+
     created_operator_runs = create_flow_run.map(
-        flow_name = unmapped('SUBGERAL - Extract & Load - SISCAN WEB - Laudos - Operator'),
-        project_name = unmapped(prefect_project_name),
-        labels = unmapped(current_labels),
-        parameters = operator_params,
-        run_name = unmapped(None)
+        flow_name=unmapped("SUBGERAL - Extract & Load - SISCAN WEB - Laudos - Operator"),
+        project_name=unmapped(prefect_project_name),
+        labels=unmapped(current_labels),
+        parameters=operator_params,
+        run_name=unmapped(None),
     )
 
     wait_runs_task = wait_for_flow_run.map(
-        flow_name = unmapped(sms_siscan_web_operator.name),
+        flow_name=unmapped(sms_siscan_web_operator.name),
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
@@ -171,4 +171,3 @@ sms_siscan_web_manager.run_config = KubernetesRun(
     memory_limit="2Gi",
     memory_request="2Gi",
 )
-

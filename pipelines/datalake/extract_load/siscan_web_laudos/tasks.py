@@ -58,8 +58,11 @@ def run_siscan_scraper(
         log(f"Erro durante a execução do scraper: {e}", level="error")
         raise
 
+
 @task
-def build_operator_parameters(start_dates: tuple, end_dates: tuple, bq_table: str, bq_dataset: str, environment: str = 'dev'):
+def build_operator_parameters(
+    start_dates: tuple, end_dates: tuple, bq_table: str, bq_dataset: str, environment: str = "dev"
+):
     return [
         {
             "environment": environment,
