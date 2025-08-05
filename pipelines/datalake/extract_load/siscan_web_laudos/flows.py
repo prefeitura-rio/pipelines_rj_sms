@@ -27,9 +27,7 @@ from pipelines.datalake.utils.tasks import (
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
-)
-from pipelines.utils.credential_injector import (
-    authenticated_wait_for_flow_run as wait_for_flow_run,
+    authenticated_wait_for_flow_run as wait_for_flow_run
 )
 
 # internos
@@ -130,15 +128,15 @@ with Flow(
     )
 
     created_operator_runs = create_flow_run.map(
-        flow_name=unmapped("SUBGERAL - Extract & Load - SISCAN WEB - Laudos - Operator"),
+        flow_name=unmapped(sms_siscan_web_operator.name),
         project_name=unmapped(prefect_project_name),
         labels=unmapped(current_labels),
         parameters=operator_params,
         run_name=unmapped(None),
     )
 
-    wait_runs_task = wait_for_flow_run.map(
-        flow_name=unmapped(sms_siscan_web_operator.name),
+    wait_for_operator_runs = wait_for_flow_run.map(
+        flow_name=created_operator_runs,
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
@@ -160,9 +158,7 @@ sms_siscan_web_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_siscan_web_manager.executor = LocalDaskExecutor(num_workers=6)
 sms_siscan_web_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
-    labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
-    ],
+    labels=[constants.RJ_SMS_AGENT_LABEL.value],
     memory_limit="2Gi",
     memory_request="2Gi",
 )
