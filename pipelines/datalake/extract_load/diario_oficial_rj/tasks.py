@@ -76,7 +76,8 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
         return [(diario_id_date, -1)]
 
     # Precisamos encontrar todas as instâncias relevantes de
-    # <a class="linkMateria" identificador="..." pagina="" data-id="..." data-protocolo="..." data-materia-id="...">
+    # <a class="linkMateria" identificador="..." pagina="" data-id="..." 
+    # data-protocolo="..." data-materia-id="...">
     # De onde queremos extrair `identificador` ou `data-materia-id`
     all_folders = html.find_all("span", attrs={"class": "folder"})
     results = []
@@ -204,7 +205,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def upload_results(results_list: List[dict], dataset: str, date: Optional[str], env: Optional[str]):
     if len(results_list) == 0:
-        log(f"Nothing to upload; leaving")
+        log("Nothing to upload; leaving")
         return
 
     main_df = pd.DataFrame()

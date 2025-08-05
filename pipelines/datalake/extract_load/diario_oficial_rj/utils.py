@@ -3,7 +3,7 @@ import datetime
 import re
 from typing import List, Optional
 
-import pandas as pd
+
 import pytz
 import requests
 from bs4 import BeautifulSoup, NavigableString
@@ -137,11 +137,11 @@ def get_links_for_path(folders: List[BeautifulSoup], path: list) -> List[Beautif
             # Se sim, pega somente as pastas dentro dessa
             # subfolders = folder.parent.find_all("span", attrs={"class": "folder"})
             # Se sim, pega somente descendentes diretos da pasta
-            ## <span class="folder">...</span>  <-- Estamos aqui
-            ## <ul>
-            ##     <li>
-            ##         <div ...></div>
-            ##         <span class="folder">...</span>  <-- Queremos chegar aqui
+            # <span class="folder">...</span>  <-- Estamos aqui
+            # <ul>
+            #     <li>
+            #         <div ...></div>
+            #         <span class="folder">...</span>  <-- Queremos chegar aqui
             subfolders = [
                 li.find("span", attrs={"class": "folder"})
                 for li in folder.find_next_sibling("ul").find_all("li", recursive=False)
