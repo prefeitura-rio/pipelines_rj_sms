@@ -160,9 +160,7 @@ def check_for_outdated_backups(most_recent_filenames: list):
     outdated_cnes_info = []
     for cnes, latest_date_for_cnes in cnes_to_latest_date.items():
         if latest_date_for_cnes < most_recent_date:
-            latest_date_for_cnes_br = (
-                f"{latest_date_for_cnes[-2:]}/{latest_date_for_cnes[4:6]}/{latest_date_for_cnes[:4]}"
-            )
+            latest_date_for_cnes_br = f"{latest_date_for_cnes[-2:]}/{latest_date_for_cnes[4:6]}/{latest_date_for_cnes[:4]}"
             outdated_cnes_info.append(
                 f"- CNES: {cnes}, Data do último backup: `{latest_date_for_cnes_br}`"
             )
