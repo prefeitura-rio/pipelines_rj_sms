@@ -64,7 +64,7 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
 def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
     assert len(diario_id_date) == 2, "Tuple must be (id, date) pair!"
     diario_id = diario_id_date[0]
-    diario_date = diario_id_date[1]
+
 
     URL = f"https://doweb.rio.rj.gov.br/portal/visualizacoes/view_html_diario/{diario_id}"
     log(f"Fetching articles for DO ID '{diario_id}'")

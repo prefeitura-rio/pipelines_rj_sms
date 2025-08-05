@@ -347,7 +347,7 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         for area_k, area_v in sections[section_k].items():
             if len(area_v) <= 0:
                 continue
-            if type(area_v[0]) == str:
+            if isinstance(area_v[0], str):
                 # Filtra parágrafos pelo que temos interesse
                 sections[section_k][area_k] = filter_paragraphs(area_v, area_k)
                 continue
