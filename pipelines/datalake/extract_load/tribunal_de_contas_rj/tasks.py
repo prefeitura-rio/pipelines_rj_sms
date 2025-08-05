@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 import re
 from datetime import datetime
-
 from typing import List, Optional
 
 import pandas as pd
 import pytz
 from bs4 import BeautifulSoup
-
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log

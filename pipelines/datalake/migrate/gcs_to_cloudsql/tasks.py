@@ -194,7 +194,7 @@ def check_for_outdated_backups(most_recent_filenames: list):
             "unidades possuem backup para esse mês"
         )
         log(
-            "[check_for_outdated_backups] All CNES are up to date relative to the reference date. " 
+            "[check_for_outdated_backups] All CNES are up to date relative to the reference date. "
             "Sending success message"
         )
 

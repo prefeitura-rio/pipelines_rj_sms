@@ -6,7 +6,6 @@ from datetime import datetime
 import pandas as pd
 import pytz
 from google.cloud import bigquery
-
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options
