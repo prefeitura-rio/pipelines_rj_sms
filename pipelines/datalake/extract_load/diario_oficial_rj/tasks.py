@@ -76,7 +76,7 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
         return [(diario_id_date, -1)]
 
     # Precisamos encontrar todas as instâncias relevantes de
-    # <a class="linkMateria" identificador="..." pagina="" data-id="..." 
+    # <a class="linkMateria" identificador="..." pagina="" data-id="..."
     # data-protocolo="..." data-materia-id="...">
     # De onde queremos extrair `identificador` ou `data-materia-id`
     all_folders = html.find_all("span", attrs={"class": "folder"})

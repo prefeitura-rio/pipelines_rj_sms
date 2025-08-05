@@ -7,8 +7,6 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 
-
-
 def extract_decree_details(text_link_href: str) -> dict:
     """
     Função para extrair detalhes de um decreto a partir do link do texto.

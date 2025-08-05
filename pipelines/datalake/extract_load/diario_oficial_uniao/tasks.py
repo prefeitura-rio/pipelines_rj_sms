@@ -45,7 +45,7 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
         exc: Máximo de tentativas alcançado na requisição de algum ato oficial.
 
     Returns:
-        list: Lista de dicionários contendo os dados extraídos de cada ato do DOU 
+        list: Lista de dicionários contendo os dados extraídos de cada ato do DOU
         e a variável que indica que a extração foi bem sucedida.
 
     """
@@ -119,8 +119,8 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
             page_count += 1
             time.sleep(0.5)
         else:
-            break  # Não há o botão para a próxima paǵina. 
-                   # Chegou na última página da seção, fim da extração
+            break  # Não há o botão para a próxima paǵina.
+            # Chegou na última página da seção, fim da extração
 
     driver.quit()
     log("✅ Extração finalizada.")

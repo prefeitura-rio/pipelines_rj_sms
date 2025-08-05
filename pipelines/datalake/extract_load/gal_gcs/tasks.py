@@ -12,7 +12,6 @@ import pytz
 from google.cloud import storage
 
 from pipelines.utils.credential_injector import authenticated_task as task
-
 from pipelines.utils.tasks import upload_df_to_datalake
 from pipelines.utils.time import from_relative_date
 

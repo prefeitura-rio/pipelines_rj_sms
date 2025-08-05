@@ -5,13 +5,6 @@ Schedules
 """
 
 
-
-
-
-
-
-
-
 flow_parameters = [
     {
         "environment": "prod",

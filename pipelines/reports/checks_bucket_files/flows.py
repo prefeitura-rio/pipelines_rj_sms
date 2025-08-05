@@ -14,7 +14,6 @@ from pipelines.reports.checks_bucket_files.tasks import (
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 
-
 with Flow(
     name="Report: Monitoramento de arquivos recorrentes",
     state_handlers=[handle_flow_state_change],

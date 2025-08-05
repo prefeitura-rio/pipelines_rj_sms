@@ -3,7 +3,6 @@ import datetime
 import re
 from typing import List, Optional
 
-
 import pytz
 import requests
 from bs4 import BeautifulSoup, NavigableString
