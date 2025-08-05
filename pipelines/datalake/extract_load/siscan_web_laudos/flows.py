@@ -107,10 +107,7 @@ with Flow(
     # Parâmetros
     ENVIRONMENT = Parameter("environment", default="dev")
     RELATIVE_DATE = Parameter("relative_date", default="D-1")
-    BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
-    BQ_TABLE = Parameter("bq_table", default="laudos")
-    DIAS_POR_FAIXA = Parameter("dias_por_faixa", default=7)
-    FORMATO_DATA = Parameter("formato_data", default="%d/%m/%Y")
+    DIAS_POR_FAIXA = Parameter("range", default=7)
 
     start_date, end_date = get_datetime_working_range(start_datetime=RELATIVE_DATE)
 
@@ -118,19 +115,16 @@ with Flow(
         data_inicial=start_date,
         data_final=end_date,
         dias_por_faixa=DIAS_POR_FAIXA,
-        date_format=FORMATO_DATA,
     )
 
-    inicio_faixas = extrair_inicio.map(faixas)
-    fim_faixas = extrair_fim.map(faixas)
+    inicio_faixas = extrair_inicio.map(faixa=faixas)
+    fim_faixas = extrair_fim.map(faixa=faixas)
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
     current_labels = get_current_flow_labels()
 
     operator_params = build_operator_parameters(
         start_dates=inicio_faixas,
         end_dates=fim_faixas,
-        bq_dataset=BQ_DATASET,
-        bq_table=BQ_TABLE,
         environment=ENVIRONMENT,
     )
 
