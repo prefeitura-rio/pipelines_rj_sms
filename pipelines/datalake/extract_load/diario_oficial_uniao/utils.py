@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from pipelines.utils.logger import log
+
 
 
 def extract_decree_details(text_link_href: str) -> dict:
