@@ -16,8 +16,8 @@ from pipelines.datalake.extract_load.siscan_web_laudos.constants import CONFIG
 from pipelines.datalake.extract_load.siscan_web_laudos.schedules import schedule
 from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
     build_operator_parameters,
+    generate_extraction_windows,
     run_siscan_scraper,
-    generate_extraction_windows
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,
@@ -114,16 +114,18 @@ with Flow(
     relative_date = from_relative_date(relative_date=RELATIVE_DATE)
     today = datetime.now()
 
-    windows = generate_extraction_windows(start_date=relative_date, end_date=today, interval=DIAS_POR_FAIXA)
+    windows = generate_extraction_windows(
+        start_date=relative_date, end_date=today, interval=DIAS_POR_FAIXA
+    )
     interval_starts = extrair_inicio.map(faixa=windows)
     interval_ends = extrair_fim.map(faixa=windows)
-    
+
     print(interval_starts)
     print(interval_ends)
-    
+
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
     current_labels = get_current_flow_labels()
-    
+
     operator_params = build_operator_parameters(
         start_dates=interval_starts,
         end_dates=interval_ends,
