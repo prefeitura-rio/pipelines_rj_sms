@@ -58,6 +58,32 @@ def run_siscan_scraper(
         log(f"Erro durante a execução do scraper: {e}", level="error")
         raise
 
+@task
+def generate_extraction_windows(start_date:datetime, end_date:datetime , interval: int) -> list: 
+    """Gera janelas de extração de dados com base em um intervalo de datas e um intervalo de dias.
+    
+    Args:
+        start_date (datetime): Data inicial
+        end_date (datetime): Data final
+        interval (int): Número de dias por janela
+
+    Returns:
+        list: Lista de tuplas com as datas de início e fim de cada janela
+    """
+    intervals = []
+
+    while start_date <= end_date:
+        end_interval = start_date + timedelta(days=interval - 1)
+        if end_interval > end_date:
+            end_interval = end_date
+        intervals.append((
+            start_date.strftime("%d/%m/%Y"),
+            end_interval.strftime("%d/%m/%Y")
+        ))
+        start_date = end_interval + timedelta(days=1)
+    
+    return intervals
+
 
 @task
 def build_operator_parameters(start_dates: tuple, end_dates: tuple, environment: str = "dev"):

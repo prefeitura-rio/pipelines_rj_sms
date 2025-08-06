@@ -4,6 +4,7 @@ Fluxo
 """
 
 # TO DO: PARALELIZAR
+from datetime import datetime
 
 from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
@@ -16,6 +17,7 @@ from pipelines.datalake.extract_load.siscan_web_laudos.schedules import schedule
 from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
     build_operator_parameters,
     run_siscan_scraper,
+    generate_extraction_windows
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,
@@ -109,23 +111,22 @@ with Flow(
     RELATIVE_DATE = Parameter("relative_date", default="D-1")
     DIAS_POR_FAIXA = Parameter("range", default=7)
 
-    data_filter = from_relative_date(relative_date=RELATIVE_DATE)
-    start_date, end_date = get_datetime_working_range(start_datetime=data_filter)
+    relative_date = from_relative_date(relative_date=RELATIVE_DATE)
+    today = datetime.now()
 
-    faixas = gerar_faixas_de_data(
-        data_inicial=start_date,
-        data_final=end_date,
-        dias_por_faixa=DIAS_POR_FAIXA,
-    )
-
-    inicio_faixas = extrair_inicio.map(faixa=faixas)
-    fim_faixas = extrair_fim.map(faixa=faixas)
+    windows = generate_extraction_windows(start_date=relative_date, end_date=today, interval=DIAS_POR_FAIXA)
+    interval_starts = extrair_inicio.map(faixa=windows)
+    interval_ends = extrair_fim.map(faixa=windows)
+    
+    print(interval_starts)
+    print(interval_ends)
+    
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
     current_labels = get_current_flow_labels()
-
+    
     operator_params = build_operator_parameters(
-        start_dates=inicio_faixas,
-        end_dates=fim_faixas,
+        start_dates=interval_starts,
+        end_dates=interval_ends,
         environment=ENVIRONMENT,
     )
 
