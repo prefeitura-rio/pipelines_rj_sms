@@ -32,7 +32,7 @@ def get_all_api_data(environment: str = "dev") -> str:
             )
         except Exception as e:
             log(f"A URL da API não foi encontrada para o CNES {cnes}")
-            log(f'Erro: {e}')
+            log(f"Erro: {e}")
             continue
 
         api_data.append(
