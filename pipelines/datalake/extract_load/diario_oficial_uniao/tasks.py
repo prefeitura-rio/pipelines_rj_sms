@@ -63,7 +63,8 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
 
     try:
         driver.get(
-            f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}"
+            f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}"\
+            f"&secao=do{str(dou_section)}"
         )
     except WebDriverException:
         log("❌ Erro ao acessar o site do DOU.")
@@ -101,8 +102,8 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
                     log(
                         f"❌ A requisição para {url} alcançou o máximo de tentativas na requisição."
                     )
+                    log(f"❌ Erro: {exc}") 
                     return [[], False]
-
         # Buscando o botão para a próxima página de pesquisa
         pagination_buttons = driver.find_elements(by=By.CLASS_NAME, value="pagination-button")
         next_btn = None
