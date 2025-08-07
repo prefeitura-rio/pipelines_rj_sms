@@ -66,7 +66,7 @@ def check_records(file_path: str) -> bool:
 
     if df.empty:
         log("⚠️ Não há registros para processar.")
-        delete_file(file_path=file_path)
+        delete_file.run(file_path=file_path)
         log("⚠️ O arquivo vazio foi excluído.")
         return False
 
