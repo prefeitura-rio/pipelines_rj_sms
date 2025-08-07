@@ -121,7 +121,7 @@ with Flow(
     ###########################
     ENVIRONMENT = Parameter("environment", default="dev")
     RELATIVE_DATE = Parameter("relative_date", default="D-1")
-    DIAS_POR_FAIXA = Parameter("range", default=7)
+    DIAS_POR_FAIXA = Parameter("range", default=1)
     RENAME_FLOW = Parameter("rename_flow", default=True)
 
     with case(RENAME_FLOW, True):
