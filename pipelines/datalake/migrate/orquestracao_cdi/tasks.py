@@ -244,11 +244,17 @@ WHERE data_publicacao = '{DATE}'
                         content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
                     # Se temos URL, mas não data (não sei se é possível, mas não custa testar)
                     else:
-                        log(f"Vote missing date: '{tcm_case_id}' (url: '{vote_url}')", level="warning")
+                        log(
+                            f"Vote missing date: '{tcm_case_id}' (url: '{vote_url}')",
+                            level="warning",
+                        )
                         content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a>'
                 # Voto existe e temos alguma informação, mas não o URL
                 else:
-                    log(f"Not enough information for vote: vote_date: '{vote_date}', vote_url: '{vote_url}'", level="warning")
+                    log(
+                        f"Not enough information for vote: vote_date: '{vote_date}', vote_url: '{vote_url}'",
+                        level="warning",
+                    )
                     content += f"{do_link}<br/><small>Não foi possível obter o voto no TCM</small>"
             # Voto existe, mas não temos nada sobre
             else:
