@@ -207,7 +207,7 @@ WHERE data_publicacao = '{DATE}'
         content = strip_if_not_none(content, default="")
         pasta = strip_if_not_none(pasta)
         article_url = strip_if_not_none(article_url, default="")
-        voto = strip_if_not_none(voto)
+        tcm_case_id = strip_if_not_none(voto)
 
         # Pula diários se a extração não foi bem sucedida
         # ex. falhou no meio, etc
@@ -229,17 +229,36 @@ WHERE data_publicacao = '{DATE}'
             log(f"Empty `content`! Row: {row}", level="warning")
             continue
 
-        if len(article_url) > 0:
-            content += f'<br/><a href="{article_url}">Abrir no D.O.</a>'
-
-        voto = format_tcm_case(voto)
-        if voto is not None:
-            if voto in tcm_cases:
-                (vote_date, vote_url) = tcm_cases[voto]
-                if vote_date and vote_url:
-                    content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
+        # Demanda: só adicionar link do DO se não tivermos voto do TCM
+        do_link = f'<br/><a href="{article_url}">Abrir no D.O.</a>' if len(article_url) > 0 else ""
+        tcm_case_id = format_tcm_case(tcm_case_id)
+        # Se existe voto
+        if tcm_case_id is not None:
+            # Se temos o voto
+            if tcm_case_id in tcm_cases:
+                (vote_date, vote_url) = tcm_cases[tcm_case_id]
+                # Se voto não está vazio
+                if vote_url:
+                    # Se temos todas as informações
+                    if vote_date:
+                        content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a> ({vote_date})'
+                    # Se temos URL, mas não data (não sei se é possível, mas não custa testar)
+                    else:
+                        log(f"Vote missing date: '{tcm_case_id}' (url: '{vote_url}')", level="warning")
+                        content += f'<br/><a href="{vote_url}">Abrir voto no TCM</a>'
+                # Voto existe e temos alguma informação, mas não o URL
+                else:
+                    log(f"Not enough information for vote: vote_date: '{vote_date}', vote_url: '{vote_url}'", level="warning")
+                    content += f"{do_link}<br/><small>Não foi possível obter o voto no TCM</small>"
+            # Voto existe, mas não temos nada sobre
             else:
-                content += "<br/><small>Não foi possível obter o voto no TCM</small>"
+                # Adiciona link do DO e justificativa para falta de voto
+                log(f"Valid TCM case but we don't have it: '{tcm_case_id}'", level="warning")
+                content += f"{do_link}<br/><small>Não foi possível obter o voto no TCM</small>"
+        # Não existe voto
+        else:
+            # Adiciona somente link do DO
+            content += do_link
 
         header = extract_header_from_path(pasta) or fonte
         if header not in email_blocks:
