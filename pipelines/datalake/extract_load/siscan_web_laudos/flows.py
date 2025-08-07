@@ -5,7 +5,7 @@ Fluxo
 
 from datetime import datetime
 
-from prefect import Parameter, unmapped, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -15,17 +15,17 @@ from pipelines.datalake.extract_load.siscan_web_laudos.constants import CONFIG
 from pipelines.datalake.extract_load.siscan_web_laudos.schedules import schedule
 from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
     build_operator_parameters,
+    check_records,
     generate_extraction_windows,
     run_siscan_scraper,
-    check_records
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,
     extrair_fim,
     extrair_inicio,
     prepare_df_from_disk,
+    rename_current_flow_run,
     upload_from_disk,
-    rename_current_flow_run
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -49,7 +49,7 @@ with Flow(
         constants.HERIAN_ID.value,
     ],
 ) as sms_siscan_web_operator:
-    
+
     ###########################
     # Parâmetros
     ###########################
@@ -84,7 +84,7 @@ with Flow(
     )
 
     any_records = check_records(file_path=raw_files)
-    
+
     with case(task=any_records, value=True):
         # 2) Prepara cada arquivo (lê e gera outro parquet)
         prepared_files = prepare_df_from_disk(
@@ -115,27 +115,26 @@ with Flow(
         constants.HERIAN_ID.value,
     ],
 ) as sms_siscan_web_manager:
-    
+
     ###########################
     # Parâmetros
     ###########################
     ENVIRONMENT = Parameter("environment", default="dev")
     RELATIVE_DATE = Parameter("relative_date", default="D-1")
     DIAS_POR_FAIXA = Parameter("range", default=7)
-    RENAME_FLOW = Parameter('rename_flow', default=True)
-    
+    RENAME_FLOW = Parameter("rename_flow", default=True)
+
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
             relative_date=RELATIVE_DATE,
             range=DIAS_POR_FAIXA,
         )
-    
-    
+
     ###########################
     # Flow
     ###########################
-    
+
     # Gera data relativa e a data atual
     relative_date = from_relative_date(relative_date=RELATIVE_DATE)
     today = datetime.now()
@@ -156,7 +155,7 @@ with Flow(
         end_dates=interval_ends,
         environment=ENVIRONMENT,
     )
-    
+
     # Cria e espera a execução das flow runs
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(sms_siscan_web_operator.name),
@@ -165,15 +164,14 @@ with Flow(
         parameters=operator_params,
         run_name=unmapped(None),
     )
-    
+
     wait_for_operator_runs = wait_for_flow_run.map(
         flow_run_id=created_operator_runs,
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
     )
-    
-    
+
 
 # Configurações de execução
 sms_siscan_web_operator.executor = LocalDaskExecutor(num_workers=3)

@@ -13,8 +13,8 @@ import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.siscan_web_laudos.scraper import run_scraper
-from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.datalake.utils.tasks import delete_file
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
@@ -63,11 +63,11 @@ def run_siscan_scraper(
 @task
 def check_records(file_path: str) -> bool:
     df = pd.read_parquet(file_path)
-    
+
     if df.empty:
-        log('⚠️ Não há registros para processar.')
+        log("⚠️ Não há registros para processar.")
         delete_file(file_path=file_path)
-        log('⚠️ O arquivo vazio foi excluído.')
+        log("⚠️ O arquivo vazio foi excluído.")
         return False
 
     return True
@@ -98,16 +98,18 @@ def generate_extraction_windows(start_date: datetime, end_date: datetime, interv
 
 
 @task
-def build_operator_parameters(start_dates: tuple, end_dates: tuple, environment: str = "dev") -> list:
+def build_operator_parameters(
+    start_dates: tuple, end_dates: tuple, environment: str = "dev"
+) -> list:
     """Gera lista de parâmetros para o(s) operator(s).
-    
+
     Args:
         start_dates (tuple): Data inicial da extração
         end_dates (tuple): Data final da extração
         environment (str, optional): Ambiente de execução. Defaults to 'dev'.
 
     Returns:
-        List[dict]: Lista com os parâmetros do(s) operator(s). 
+        List[dict]: Lista com os parâmetros do(s) operator(s).
     """
     return [
         {"environment": environment, "data_inicial": start, "data_final": end}

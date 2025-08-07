@@ -1,10 +1,10 @@
-# -- coding: utf-8 --
+# -*- coding: utf-8 -*-
 """
 Agendamentos
 """
 
 # Geral
-from datetime import datetime, timedelta, time
+from datetime import datetime, time, timedelta
 
 import pytz
 
@@ -26,16 +26,8 @@ operator_flow_parameters = [
 ]
 
 manager_flow_parameters = [
-    {
-        "environment": "prod",
-        "relative_date": "M-1",
-        "range": 1
-    }, 
-    {
-        "environment": "prod",
-        "relative_date": "D-1",
-        "range": 1
-    }
+    {"environment": "prod", "relative_date": "M-1", "range": 1},
+    {"environment": "prod", "relative_date": "D-1", "range": 1},
 ]
 
 monthly_manager_clock = generate_dump_api_schedules(
@@ -61,6 +53,5 @@ daily_manager_clock = generate_dump_api_schedules(
 manager_clocks = daily_manager_clock + monthly_manager_clock
 
 schedule = Schedule(
-    clocks=untuple_clocks(manager_clocks), 
-    filters=[filters.between_times(time(19), time(23))]
+    clocks=untuple_clocks(manager_clocks), filters=[filters.between_times(time(19), time(23))]
 )
