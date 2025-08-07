@@ -379,17 +379,22 @@ cases:
       target_date: "D-1"
       dataset_id: "brutos_api_vitacare"
       table_id_prefix: "estoque_posicao"
-  - case_slug: "siscan_web_laudos"
+  - case_slug: "siscan_web_laudos_operator"
     flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
-    flow_name: "sms_siscan_web"
+    flow_name: "sms_siscan_web_operator"
     params:
       environment: "dev"
-      data_inicial: "26/01/2025"
-      data_final: "26/01/2025"
+      data_inicial: "03/08/2025"
+      data_final: "03/08/2025"
       bq_dataset: "brutos_siscan_web"
       bq_table: "laudos"
-      dias_por_faixa: 15
-      formato_data: "%d/%m/%Y"
+  - case_slug: "siscan_web_laudos_manager"
+    flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
+    flow_name: "sms_siscan_web_manager"
+    params:
+      environment: "dev"
+      relative_date: 'D-7'
+      range: 7
   - case_slug: "datalake-extract-subpav"
     flow_path: "pipelines.datalake.extract_load.subpav_mysql.flows"
     flow_name: "sms_dump_subpav"
