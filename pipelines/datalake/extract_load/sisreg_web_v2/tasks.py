@@ -141,8 +141,7 @@ def nome_arquivo_adicionar_data(arquivo_original: str, diretorio_destino: str = 
         log(msg, level="error")
         raise FAIL(msg)
 
-    # define o diretório de destino: se informado, usa-o:
-    # caso contrário, mantém o diretório original
+    # define o diretório de destino: se informado, usa-o; caso contrário, mantém o diretório original # noqa
     novo_diretorio = diretorio_destino if diretorio_destino else os.path.dirname(arquivo_original)
 
     data_sufixo = datetime.now().strftime("%Y-%m-%d")

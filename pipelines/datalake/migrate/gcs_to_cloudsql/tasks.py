@@ -160,11 +160,7 @@ def check_for_outdated_backups(most_recent_filenames: list):
     outdated_cnes_info = []
     for cnes, latest_date_for_cnes in cnes_to_latest_date.items():
         if latest_date_for_cnes < most_recent_date:
-            latest_date_for_cnes_br = (
-                f"{latest_date_for_cnes[-2:]}/"
-                f"{latest_date_for_cnes[4:6]}/"
-                f"{latest_date_for_cnes[:4]}"
-            )
+            latest_date_for_cnes_br = f"{latest_date_for_cnes[-2:]}/{latest_date_for_cnes[4:6]}/{latest_date_for_cnes[:4]}" # noqa
             outdated_cnes_info.append(
                 f"- CNES: {cnes}, Data do último backup: `{latest_date_for_cnes_br}`"
             )
@@ -183,19 +179,16 @@ def check_for_outdated_backups(most_recent_filenames: list):
             + "\n".join(outdated_cnes_info)
         )
         log(
-            f"[check_for_outdated_backups] {len(outdated_cnes_info)} outdated CNES found. "
-            "Sending message"
+            f"[check_for_outdated_backups] {len(outdated_cnes_info)} outdated CNES found. Sending message" # noqa
         )
     else:
         title = "🟢 Unidades com Backups Atualizados"
         message = (
             f"Todas as unidades estão atualizadas"
-            f"A data esperada é: `{most_recent_date_br}` e todas as "
-            "unidades possuem backup para esse mês"
+            f"A data esperada é: `{most_recent_date_br}` e todas as unidades possuem backup para esse mês" # noqa
         )
         log(
-            "[check_for_outdated_backups] All CNES are up to date relative to the reference date. "
-            "Sending success message"
+            "[check_for_outdated_backups] All CNES are up to date relative to the reference date. Sending success message" # noqa
         )
 
     send_message(
