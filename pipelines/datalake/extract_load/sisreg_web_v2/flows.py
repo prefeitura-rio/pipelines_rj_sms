@@ -9,7 +9,7 @@ from prefect.run_configs import VertexRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.sisreg_web_v2.schedules import (  # noqa
+from pipelines.datalake.extract_load.sisreg_web_v2.schedules import (
     sisreg_daily_update_schedule,
 )
 from pipelines.datalake.extract_load.sisreg_web_v2.tasks import (
