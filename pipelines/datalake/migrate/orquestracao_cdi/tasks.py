@@ -218,9 +218,15 @@ WHERE data_publicacao = '{DATE}'
 
         # Chances basicamente nulas de XSS em email, mas isso
         # pode prevenir problemas de formatação acidental
-        content = content.replace("<", "&lt;").replace(">", "&gt;")
+        content = (
+            content
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
         # Tentativa fútil de remover algumas entradas errôneas;
         # estamos tapando buracos no barco com chiclete aqui
+        content = content.replace("[tabela]", "").strip()
         if content == "Anexo" or content.startswith(("•", "·")):
             log(f"`content` is invalid; skipping. Row: {row}", level="warning")
             continue
