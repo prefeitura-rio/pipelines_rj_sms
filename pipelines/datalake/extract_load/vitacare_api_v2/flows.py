@@ -4,7 +4,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitacare_api_v2.constants import (
     constants as flow_constants,

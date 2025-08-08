@@ -9,7 +9,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.medilab_api.constants import medilab_api_constants
 from pipelines.datalake.extract_load.medilab_api.tasks import (

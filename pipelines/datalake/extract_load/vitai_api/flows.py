@@ -4,7 +4,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitai_api.schedules import schedules
 from pipelines.datalake.extract_load.vitai_api.tasks import (
