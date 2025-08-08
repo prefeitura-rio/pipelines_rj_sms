@@ -22,7 +22,7 @@ from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.core.sisreg import (
     Sisreg,
 )
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.path_utils import ( # noqa
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.path_utils import (  # noqa
     definir_caminho_absoluto,
 )
 from pipelines.datalake.utils.data_transformations import (
