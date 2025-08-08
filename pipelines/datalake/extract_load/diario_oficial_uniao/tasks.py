@@ -57,12 +57,12 @@ def dou_extraction(dou_section: int, max_workers: int, date: datetime) -> list:
     driver = webdriver.Chrome(options=chrome_options)
     log("🤖 Iniciando o webdriver...")
     log(
-        f"Iniciando extração dos atos oficiais do DOU Seção {str(dou_section)} de {date.strftime('%d/%m/%Y')}" # noqa
+        f"Iniciando extração dos atos oficiais do DOU Seção {str(dou_section)} de {date.strftime('%d/%m/%Y')}"  # noqa
     )
 
     try:
         driver.get(
-            f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}" # noqa
+            f"https://www.in.gov.br/leiturajornal?data={day}-{month}-{year}&secao=do{str(dou_section)}"  # noqa
         )
     except WebDriverException:
         log("❌ Erro ao acessar o site do DOU.")

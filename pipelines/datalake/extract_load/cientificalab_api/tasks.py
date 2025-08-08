@@ -40,14 +40,14 @@ def authenticate_and_fetch(
     )
 
     if token_response.get("status_code") != 200:
-        message = f"Failed to get token from Lisnet API: {token_response.get('status_code')} - {token_response.get('body')}" # noqa
+        message = f"Failed to get token from Lisnet API: {token_response.get('status_code')} - {token_response.get('body')}"  # noqa
         raise Exception(message)
 
     token_data_string = token_response.get("body")
     token_data = json.loads(token_data_string)
 
     if token_data.get("status") != 200:
-        message = f"Lisnet API returned error for token: {token_data.get('status')} - {token_data.get('mensagem')}" # noqa
+        message = f"Lisnet API returned error for token: {token_data.get('status')} - {token_data.get('mensagem')}"  # noqa
         raise Exception(message)
 
     token = token_data.get("token")
@@ -84,7 +84,7 @@ def authenticate_and_fetch(
     )
 
     if resultado_response.get("status_code") != 200:
-        message = f"Failed to get XML results from Lisnet API: {resultado_response.get('status_code')} - {resultado_response.get('body')}" # noqa
+        message = f"Failed to get XML results from Lisnet API: {resultado_response.get('status_code')} - {resultado_response.get('body')}"  # noqa
         raise Exception(message)
 
     resultado_xml = resultado_response["body"]

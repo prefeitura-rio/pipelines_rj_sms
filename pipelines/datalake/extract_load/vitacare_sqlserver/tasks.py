@@ -80,12 +80,12 @@ def process_cnes_table(
             # Se nenhum chunk foi processado (tabela vazia), loga e retorna skipped
             if total_rows == 0:
                 log(
-                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando." # noqa
+                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando."  # noqa
                 )
                 return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
 
             log(
-                f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída. Total de linhas: {total_rows}." # noqa
+                f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída. Total de linhas: {total_rows}."  # noqa
             )
             return {"cnes": cnes_code, "status": "success", "rows_loaded": total_rows}
 
@@ -96,7 +96,7 @@ def process_cnes_table(
 
             if df.empty:
                 log(
-                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando." # noqa
+                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando."  # noqa
                 )
                 return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
 
