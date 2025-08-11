@@ -115,3 +115,7 @@ def build_operator_parameters(
         {"environment": environment, "data_inicial": start, "data_final": end}
         for start, end in zip(start_dates, end_dates)
     ]
+
+@task
+def parse_date(date: str) -> datetime:
+    return datetime.strptime(date, "%d/%m/%Y")

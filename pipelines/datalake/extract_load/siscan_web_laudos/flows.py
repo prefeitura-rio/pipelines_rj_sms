@@ -18,6 +18,7 @@ from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
     check_records,
     generate_extraction_windows,
     run_siscan_scraper,
+    parse_date
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,
@@ -39,7 +40,7 @@ from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, get_secret_key
-from pipelines.utils.time import from_relative_date, parse_date_or_today
+from pipelines.utils.time import from_relative_date
 
 with Flow(
     name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos (Operator)",
@@ -201,8 +202,8 @@ with Flow(
     # Flow
     ###########################
 
-    start_date = parse_date_or_today(START_DATE)
-    end_date = parse_date_or_today(END_DATE)
+    start_date = parse_date(START_DATE)
+    end_date = parse_date(END_DATE)
 
     # Gera as janelas de extração com base no interval
     windows = generate_extraction_windows(
