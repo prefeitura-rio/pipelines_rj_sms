@@ -98,7 +98,7 @@ with Flow(
     delete_prepared = delete_file.map(file_path=prepared_files, upstream_tasks=[uploads])
 
 # Configurações de execução
-sms_siscan_web.executor = LocalDaskExecutor(num_workers=3)
+sms_siscan_web.executor = LocalDaskExecutor(num_workers=30)
 sms_siscan_web.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_siscan_web.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,

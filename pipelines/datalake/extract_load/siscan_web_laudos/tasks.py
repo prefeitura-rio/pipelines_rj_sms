@@ -16,7 +16,7 @@ from pipelines.datalake.extract_load.siscan_web_laudos.scraper import run_scrape
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
-@task(max_retries=5, retry_delay=timedelta(minutes=3))
+@task(timeout=3600, max_retries=5, retry_delay=timedelta(minutes=5))
 def run_siscan_scraper(
     email: str, password: str, start_date: str, end_date: str, output_dir: str = "."
 ):
