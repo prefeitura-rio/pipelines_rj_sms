@@ -17,8 +17,8 @@ from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
     build_operator_parameters,
     check_records,
     generate_extraction_windows,
-    parse_date,
     run_siscan_scraper,
+    parse_date
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,
@@ -202,8 +202,8 @@ with Flow(
     # Flow
     ###########################
 
-    start_date = parse_date(START_DATE)
-    end_date = parse_date(END_DATE)
+    start_date = parse_date(date=START_DATE)
+    end_date = parse_date(date=END_DATE)
 
     # Gera as janelas de extração com base no interval
     windows = generate_extraction_windows(
