@@ -249,8 +249,8 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
     def clean_text(text: str):
         text = str(text).strip()
         replace_list = [
-            ("\u00A0", " "),  # NO-BREAK SPACE
-            ("\u202F", " "),  # NARROW NO-BREAK SPACE
+            ("\u00a0", " "),  # NO-BREAK SPACE
+            ("\u202f", " "),  # NARROW NO-BREAK SPACE
             ("\r", ""),
             ("\n", " "),
         ]
