@@ -37,18 +37,6 @@ def format_tcm_case(case_num: str) -> str | None:
 def format_relevant_entry(content: str):
     # Remove quebras de linha duplicadas
     content = re.sub(r"\n{2,}", "\n", content.replace("\r", "")).strip()
-    # Tentativa fútil de remover nomes em assinaturas que
-    # às vezes aparecem em cabeçalhos
-    filtered_content = re.sub(
-        r"^((EDUARDO PAES|DANIEL SORANZ|ANEXO)\s*)+", "", content, flags=re.IGNORECASE
-    )
-    # Aqui potencialmente apagamos o conteúdo inteiro; então confere
-    # primeiro antes de sobrescrever a variável final
-    if len(filtered_content) > 0:
-        content = filtered_content
-    else:
-        log(f"Filtering `content` empties it. Value: '{content}'", level="warning")
-
     # Negrito em decisões de TCM
     content = re.sub(
         r"^([^\n\r]+)\s+nos\s+termos\s+do\s+voto\s+do\s+Relator",
