@@ -4,7 +4,7 @@ Constantes
 """
 
 CONFIG = {
-    "flow_name": "SISREG WEB - Laudos",
+    "flow_name": "SISCAN - Laudos",
     "flow_owner": "matheusmiloski",
     "partition_column": "data_extracao",
     "source_format": "parquet",

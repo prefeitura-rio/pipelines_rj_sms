@@ -44,7 +44,7 @@ def init_firefox(*, headless: bool | None = None) -> Firefox:
     opcoes.set_preference("browser.download.dir", str(DIRETORIO_DOWNLOADS))
     opcoes.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/json")
 
-    servico = FirefoxService(GeckoDriverManager().install())
+    servico = FirefoxService()
     driver = Firefox(service=servico, options=opcoes)
     driver.set_page_load_timeout(TEMPO_ESPERA_PADRAO)
     LOGGER.info("Driver Firefox inicializado (headless=%s).", headless)
