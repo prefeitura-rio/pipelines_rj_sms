@@ -41,6 +41,8 @@ from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, get_secret_key
 from pipelines.utils.time import from_relative_date
 
+
+
 with Flow(
     name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos (Operator)",
     state_handlers=[handle_flow_state_change],
@@ -171,9 +173,78 @@ with Flow(
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
     )
+    
+with Flow(
+    name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos - Histórico",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.MATHEUS_ID.value,
+        constants.HERIAN_ID.value,
+    ],
+) as sms_siscan_web_historical:
+    
+    ###########################
+    # Parâmetros
+    ###########################
+    ENVIRONMENT = Parameter("environment", default="dev")
+    DIAS_POR_FAIXA = Parameter("range", default=1)
+    RENAME_FLOW = Parameter("rename_flow", default=True)
+    START_DATE = Parameter('start_date', default='01/01/2025')
+    END_DATE = Parameter('end_date', default='31/01/2025')
+    
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(
+            environment=ENVIRONMENT,
+            relative_date=RELATIVE_DATE,
+            range=DIAS_POR_FAIXA,
+        )
+
+    ###########################
+    # Flow
+    ###########################
+    
+    start_date = datetime.strptime(START_DATE, '%d/%m/%Y')
+    end_date = datetime.strptime(END_DATE, '%d/%m/%Y')
+
+    # Gera as janelas de extração com base no interval
+    windows = generate_extraction_windows(
+        start_date=start_date, end_date=end_date, interval=DIAS_POR_FAIXA
+    )
+    interval_starts = extrair_inicio.map(faixa=windows)
+    interval_ends = extrair_fim.map(faixa=windows)
+
+    # Monta os parâmetros de cada operator
+    prefect_project_name = get_project_name(environment=ENVIRONMENT)
+    current_labels = get_current_flow_labels()
+
+    operator_params = build_operator_parameters(
+        start_dates=interval_starts,
+        end_dates=interval_ends,
+        environment=ENVIRONMENT,
+    )
+
+    # Cria e espera a execução das flow runs
+    created_operator_runs = create_flow_run.map(
+        flow_name=unmapped(sms_siscan_web_operator.name),
+        project_name=unmapped(prefect_project_name),
+        labels=unmapped(current_labels),
+        parameters=operator_params,
+        run_name=unmapped(None),
+    )
+
+    wait_for_operator_runs = wait_for_flow_run.map(
+        flow_run_id=created_operator_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
+    )
 
 
-# Configurações de execução
+###########################
+# Configurações
+###########################
+
+# Operator
 sms_siscan_web_operator.executor = LocalDaskExecutor(num_workers=3)
 sms_siscan_web_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_siscan_web_operator.run_config = KubernetesRun(
@@ -183,6 +254,7 @@ sms_siscan_web_operator.run_config = KubernetesRun(
     memory_limit=CONFIG["memory_limit"],
 )
 
+# Manager
 sms_siscan_web_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_siscan_web_manager.executor = LocalDaskExecutor(num_workers=6)
 sms_siscan_web_manager.run_config = KubernetesRun(
@@ -192,3 +264,13 @@ sms_siscan_web_manager.run_config = KubernetesRun(
     memory_request="2Gi",
 )
 sms_siscan_web_manager.schedule = schedule
+
+# Histórico
+sms_siscan_web_historical.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_siscan_web_historical.executor = LocalDaskExecutor(num_workers=6)
+sms_siscan_web_historical.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[constants.RJ_SMS_AGENT_LABEL.value],
+    memory_limit="2Gi",
+    memory_request="2Gi",
+)
