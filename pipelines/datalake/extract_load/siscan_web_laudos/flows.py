@@ -27,6 +27,7 @@ from pipelines.datalake.utils.tasks import (
     rename_current_flow_run,
     upload_from_disk,
 )
+from pipelines.utils.time import parse_date_or_today
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
@@ -201,8 +202,8 @@ with Flow(
     # Flow
     ###########################
 
-    start_date = datetime.strptime(START_DATE, "%d/%m/%Y")
-    end_date = datetime.strptime(END_DATE, "%d/%m/%Y")
+    start_date = parse_date_or_today(START_DATE)
+    end_date = parse_date_or_today(END_DATE)
 
     # Gera as janelas de extração com base no interval
     windows = generate_extraction_windows(
