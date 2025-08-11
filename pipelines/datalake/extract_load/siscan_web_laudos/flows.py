@@ -27,7 +27,6 @@ from pipelines.datalake.utils.tasks import (
     rename_current_flow_run,
     upload_from_disk,
 )
-from pipelines.utils.time import parse_date_or_today
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
@@ -40,7 +39,7 @@ from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, get_secret_key
-from pipelines.utils.time import from_relative_date
+from pipelines.utils.time import from_relative_date, parse_date_or_today
 
 with Flow(
     name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos (Operator)",
