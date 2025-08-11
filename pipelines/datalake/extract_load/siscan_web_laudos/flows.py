@@ -41,8 +41,6 @@ from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, get_secret_key
 from pipelines.utils.time import from_relative_date
 
-
-
 with Flow(
     name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos (Operator)",
     state_handlers=[handle_flow_state_change],
@@ -173,7 +171,7 @@ with Flow(
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
     )
-    
+
 with Flow(
     name="SUBGERAL - Extract & Load - SISCAN WEB - Laudos - Histórico",
     state_handlers=[handle_flow_state_change],
@@ -182,16 +180,16 @@ with Flow(
         constants.HERIAN_ID.value,
     ],
 ) as sms_siscan_web_historical:
-    
+
     ###########################
     # Parâmetros
     ###########################
     ENVIRONMENT = Parameter("environment", default="dev")
     DIAS_POR_FAIXA = Parameter("range", default=1)
     RENAME_FLOW = Parameter("rename_flow", default=True)
-    START_DATE = Parameter('start_date', default='01/01/2025')
-    END_DATE = Parameter('end_date', default='31/01/2025')
-    
+    START_DATE = Parameter("start_date", default="01/01/2025")
+    END_DATE = Parameter("end_date", default="31/01/2025")
+
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
@@ -202,9 +200,9 @@ with Flow(
     ###########################
     # Flow
     ###########################
-    
-    start_date = datetime.strptime(START_DATE, '%d/%m/%Y')
-    end_date = datetime.strptime(END_DATE, '%d/%m/%Y')
+
+    start_date = datetime.strptime(START_DATE, "%d/%m/%Y")
+    end_date = datetime.strptime(END_DATE, "%d/%m/%Y")
 
     # Gera as janelas de extração com base no interval
     windows = generate_extraction_windows(
