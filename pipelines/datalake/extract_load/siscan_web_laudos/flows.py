@@ -193,7 +193,7 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
-            environment=ENVIRONMENT,   
+            environment=ENVIRONMENT,
             start_date=START_DATE,
             end_date=END_DATE,
             range=DIAS_POR_FAIXA,
