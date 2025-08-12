@@ -111,7 +111,7 @@ def process_cnes_table(
             log(
                 f"[process_cnes_table] Banco de dados {db_name} não encontrado para o CNES {cnes_code}",
                 level="warning",
-        )
+            )
         else:
             log(f"[process_cnes_table] Erro inesperado {error_message[:250]}", level="error")
             raise
