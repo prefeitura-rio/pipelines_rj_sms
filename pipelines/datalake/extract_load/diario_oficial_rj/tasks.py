@@ -64,7 +64,6 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
 def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
     assert len(diario_id_date) == 2, "Tuple must be (id, date) pair!"
     diario_id = diario_id_date[0]
-    diario_date = diario_id_date[1]
 
     URL = f"https://doweb.rio.rj.gov.br/portal/visualizacoes/view_html_diario/{diario_id}"
     log(f"Fetching articles for DO ID '{diario_id}'")
@@ -76,7 +75,7 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
         return [(diario_id_date, -1)]
 
     # Precisamos encontrar todas as instâncias relevantes de
-    # <a class="linkMateria" identificador="..." pagina="" data-id="..." data-protocolo="..." data-materia-id="...">
+    # <a class="linkMateria" identificador="..." pagina="" data-id="..." data-protocolo="..." data-materia-id="..."> # noqa
     # De onde queremos extrair `identificador` ou `data-materia-id`
     all_folders = html.find_all("span", attrs={"class": "folder"})
     results = []
@@ -204,7 +203,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def upload_results(results_list: List[dict], dataset: str, date: Optional[str], env: Optional[str]):
     if len(results_list) == 0:
-        log(f"Nothing to upload; leaving")
+        log("Nothing to upload; leaving")
         return
 
     main_df = pd.DataFrame()

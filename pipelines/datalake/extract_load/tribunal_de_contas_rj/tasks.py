@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 import re
-from datetime import datetime, timedelta
-from time import sleep
+from datetime import datetime
 from typing import List, Optional
 
 import pandas as pd
 import pytz
 from bs4 import BeautifulSoup
-from requests import HTTPError
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -56,7 +54,7 @@ def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
         # A página retorna uma tabela com o processo na primeira linha e as
         # referências nas linhas seguintes
         # Pegamos o primeiro 'a[href^="/processo/Ficha?Ctid="]' da página
-        a = html.find("a", attrs={"href": re.compile("^/processo/Ficha\?Ctid=")})
+        a = html.find("a", attrs={"href": re.compile(r"^/processo/Ficha\?Ctid=")})
         if a is None or not a:
             h5 = html.find("h5")
             if h5 is not None:
