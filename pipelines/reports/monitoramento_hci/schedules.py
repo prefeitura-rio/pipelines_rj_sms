@@ -4,7 +4,7 @@
 Schedules
 """
 
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 
 import pytz
 from prefect.schedules import Schedule, filters
