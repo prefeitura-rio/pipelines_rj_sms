@@ -22,7 +22,7 @@ from pipelines.datalake.extract_load.sisreg_web_v2.constants import (
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.core.sisreg import (
     Sisreg,
 )
-from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.path_utils import (
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.utils.path_utils import (  # noqa
     definir_caminho_absoluto,
 )
 from pipelines.datalake.utils.data_transformations import (
@@ -84,7 +84,7 @@ def raspar_pagina(sisreg: Sisreg, caminho_download: str, metodo: str) -> str:
     Args:
         sisreg (Sisreg): Instância do SISREG.
         caminho_download (str): Diretório absoluto onde os dados serão baixados.
-        metodo (str): Nome do método na classe Sisreg a ser chamado (ex: 'baixar_oferta_programada').
+        metodo (str): Nome do método na classe Sisreg a ser chamado (ex: 'baixar_oferta_programada')
 
     Returns:
         str: Caminho do arquivo CSV gerado (ex: oferta_programada.csv).
@@ -141,7 +141,7 @@ def nome_arquivo_adicionar_data(arquivo_original: str, diretorio_destino: str = 
         log(msg, level="error")
         raise FAIL(msg)
 
-    # define o diretório de destino: se informado, usa-o; caso contrário, mantém o diretório original
+    # define o diretório de destino: se informado, usa-o; caso contrário, mantém o diretório original # noqa
     novo_diretorio = diretorio_destino if diretorio_destino else os.path.dirname(arquivo_original)
 
     data_sufixo = datetime.now().strftime("%Y-%m-%d")
