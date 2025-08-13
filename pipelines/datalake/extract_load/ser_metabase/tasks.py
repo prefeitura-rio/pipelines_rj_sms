@@ -45,7 +45,7 @@ def query_slice_limit(
     database_id: int,
     table_id: int,
     which: Literal["min", "max"]
-):
+) -> int | datetime:
     column_id = SLICE_COLUMNS[database_id][table_id]
 
     log(
@@ -65,7 +65,11 @@ def query_slice_limit(
             "source-table": table_id,
             "aggregation": [[
                 which,
-                ["field", column_id, {"base-type": "type/Text"}]
+                ["+", [
+                    "-", [
+                        "field", column_id, {"base-type": "type/Text"}
+                    ], 1
+                ], 1]
             ]]
         },
         "parameters": [],
@@ -81,6 +85,7 @@ def query_slice_limit(
     )
 
     res = int(re.search(r'\n(\d+)', response.text).group(1))
+    log(f"O valor {which!r} para a coluna usada é '{res}'")
 
     return res
 
@@ -162,6 +167,10 @@ def query_database_slice(
     csv_file = io.StringIO(response.content.decode("utf-8"))
 
     df = pd.read_csv(csv_file)
+
+    if len(df) == 1_000_000:
+        log("Consulta possivelmente truncada")
+        raise Exception("Consulta possivelmente truncada")
 
     log("Consulta ao banco de dados concluída.")
 
