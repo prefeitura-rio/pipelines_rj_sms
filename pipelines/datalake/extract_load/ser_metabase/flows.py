@@ -44,6 +44,13 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
         required=True
     )
 
+    # SLICING -------------------------------
+    SLICE_SIZE = Parameter(
+        "slice_size",
+        default=900_000,
+        required=False
+    )
+
     # CREDENTIALS ------------------------------
     user = get_secret_key(
         environment=ENVIRONMENT,
@@ -81,13 +88,15 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     slices_min = calculate_slices(
         min_value=min_value,
         max_value=max_value,
-        which='min'
+        which='min',
+        slice_size=SLICE_SIZE,
     )
     # Task 5 - Calculate list of final values for each slice
     slices_max = calculate_slices(
         min_value=min_value,
         max_value=max_value,
-        which='max'
+        which='max',
+        slice_size=SLICE_SIZE,
     )
 
     # Task 6 - Queries the data for each slice determined
