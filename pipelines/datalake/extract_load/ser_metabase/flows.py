@@ -22,7 +22,7 @@ from pipelines.datalake.extract_load.ser_metabase.tasks import (
     query_database_slice,
     join_slices,
 )
-# from pipelines.datalake.utils.tasks import handle_columns_to_bq
+from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
@@ -114,11 +114,14 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     )
 
     # Task 8 - Verify Database length
-    df_columns_ok = interrupt_if_empty(
+    df_verified = interrupt_if_empty(
         df=df
     )
 
-    # Task 9 - Upload to Big Query
+    # Task 9 - Transform Data Frame columns
+    df_columns_ok = handle_columns_to_bq(df=df_verified)
+
+    # Task 10 - Upload to Big Query
     upload_df_to_datalake(
         df=df_columns_ok,
         table_id=BQ_TABLE_ID,
