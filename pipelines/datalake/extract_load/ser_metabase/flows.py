@@ -16,11 +16,11 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
-    interrupt_if_empty,
     calculate_slices,
-    query_slice_limit,
-    query_database_slice,
+    interrupt_if_empty,
     join_slices,
+    query_database_slice,
+    query_slice_limit,
 )
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
@@ -33,34 +33,16 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     TABLE_ID = Parameter("table_id", default=3255, required=True)
 
     # BIGQUERY ------------------------------
-    BQ_DATASET_ID = Parameter(
-        "bq_dataset_id",
-        default="brutos_ser_metabase",
-        required=True
-    )
-    BQ_TABLE_ID = Parameter(
-        "bq_table_id",
-        default="FATO_AMBULATORIO",
-        required=True
-    )
+    BQ_DATASET_ID = Parameter("bq_dataset_id", default="brutos_ser_metabase", required=True)
+    BQ_TABLE_ID = Parameter("bq_table_id", default="FATO_AMBULATORIO", required=True)
 
     # SLICING -------------------------------
-    SLICE_SIZE = Parameter(
-        "slice_size",
-        default=900_000,
-        required=False
-    )
+    SLICE_SIZE = Parameter("slice_size", default=900_000, required=False)
 
     # CREDENTIALS ------------------------------
-    user = get_secret_key(
-        environment=ENVIRONMENT,
-        secret_name="USER",
-        secret_path="/metabase"
-    )
+    user = get_secret_key(environment=ENVIRONMENT, secret_name="USER", secret_path="/metabase")
     password = get_secret_key(
-        environment=ENVIRONMENT,
-        secret_name="PASSWORD",
-        secret_path="/metabase"
+        environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/metabase"
     )
 
     # Task 1 - Authenticate in Metabase
@@ -71,31 +53,25 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
 
     # Task 2 - Calculate minimal value for data slicing
     min_value = query_slice_limit(
-        token=token,
-        database_id=DATABASE_ID,
-        table_id=TABLE_ID,
-        which='min'
+        token=token, database_id=DATABASE_ID, table_id=TABLE_ID, which="min"
     )
     # Task 3 - Calculate maximal value for data slicing
     max_value = query_slice_limit(
-        token=token,
-        database_id=DATABASE_ID,
-        table_id=TABLE_ID,
-        which='max'
+        token=token, database_id=DATABASE_ID, table_id=TABLE_ID, which="max"
     )
 
     # Task 4 - Calculate list of inital values for each slice
     slices_min = calculate_slices(
         min_value=min_value,
         max_value=max_value,
-        which='min',
+        which="min",
         slice_size=SLICE_SIZE,
     )
     # Task 5 - Calculate list of final values for each slice
     slices_max = calculate_slices(
         min_value=min_value,
         max_value=max_value,
-        which='max',
+        which="max",
         slice_size=SLICE_SIZE,
     )
 
@@ -109,14 +85,10 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     )
 
     # Task 7 - Concats the dataframes resulted from the previous tasks
-    df = join_slices(
-        dfs=dfs
-    )
+    df = join_slices(dfs=dfs)
 
     # Task 8 - Verify Database length
-    df_verified = interrupt_if_empty(
-        df=df
-    )
+    df_verified = interrupt_if_empty(df=df)
 
     # Task 9 - Transform Data Frame columns
     df_columns_ok = handle_columns_to_bq(df=df_verified)
