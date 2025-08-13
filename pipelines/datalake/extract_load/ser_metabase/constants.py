@@ -17,7 +17,7 @@ DATABASE_IDS = {
             },
             "FATO_AMBULATORIO": {
                 "id": 3255,  # Solicitações ambulatoriais
-                "slice_column": ""
+                "slice_column": "solicitacao_id"
             },
             "FATO_HISTORICO_SOLICITACAO": {
                 "id": 3260,  # Lista os eventos de todas as solicitações
@@ -63,7 +63,7 @@ DATABASE_IDS = {
             },
             "TB_SOLICITACOES": {
                 "id": 5783,
-                "slice_column": ""
+                "slice_column": "solicitacao_id"
             },
         },
     },
@@ -72,8 +72,11 @@ DATABASE_IDS = {
 
 SLICE_COLUMNS: int = {
     173: {
-        5783: 51407
+        5783: 51407,
     },
+    178: {
+        3255: 30429,
+    }
 }
 """
 dict[int, dict[int, int]]
