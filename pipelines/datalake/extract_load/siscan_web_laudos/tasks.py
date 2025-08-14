@@ -62,6 +62,15 @@ def run_siscan_scraper(
 
 @task
 def check_records(file_path: str) -> bool:
+    """Checa se há registros no arquivo parquet.
+
+
+    Args:
+        file_path (str): caminho do arquivo
+
+    Returns:
+        bool: indicador se há ou não registros.
+    """
     df = pd.read_parquet(file_path)
 
     if df.empty:
