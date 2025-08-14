@@ -27,7 +27,7 @@ operator_flow_parameters = [
 
 
 monthly_manager_parameters = [
-    {"environment": "prod", "relative_date": "M-1", "range": 1}
+    {"environment": "prod", "relative_date": "M-1", "range": 7}
 ]
 daily_flow_parameters = [
     {"environment": "prod", "relative_date": "D-1", "range": 1},
