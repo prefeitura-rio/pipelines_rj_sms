@@ -5,7 +5,9 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.cientificalab_api.constants import cientificalab_constants
+from pipelines.datalake.extract_load.cientificalab_api.constants import (
+    cientificalab_constants,
+)
 from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
 from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
@@ -68,7 +70,9 @@ with Flow(
     )
 
     # BIG QUERY
-    DATASET_ID = Parameter("dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False)
+    DATASET_ID = Parameter(
+        "dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False
+    )
 
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=DT_INICIO,
