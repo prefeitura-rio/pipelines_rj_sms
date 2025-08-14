@@ -15,7 +15,6 @@ from pipelines.datalake.extract_load.vitacare_historico.constants import (
 from pipelines.datalake.extract_load.vitacare_historico.utils import transform_dataframe
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-
 from pipelines.utils.tasks import upload_df_to_datalake
 
 
@@ -64,7 +63,7 @@ def process_cnes_table(
 
             if dataframe.empty:
                 log(
-                    f"[process_cnes_table] Tabela '{db_table}' do CNES {cnes_code} vazia. Upload ignorado", # noqa
+                    f"[process_cnes_table] Tabela '{db_table}' do CNES {cnes_code} vazia. Upload ignorado",  # noqa
                     level="warning",
                 )
                 continue
@@ -96,7 +95,7 @@ def process_cnes_table(
 
         else:
             log(
-                f"[process_cnes_table] Tabela '{db_table}' do CNES {cnes_code} processada com sucesso.", # noqa
+                f"[process_cnes_table] Tabela '{db_table}' do CNES {cnes_code} processada com sucesso.",  # noqa
                 level="info",
             )
     except Exception as e:
@@ -109,7 +108,7 @@ def process_cnes_table(
             )
         elif "Cannot open database" in error_message or "(4060)" in error_message:
             log(
-                f"[process_cnes_table] Banco de dados {db_name} não encontrado para o CNES {cnes_code}", # noqa
+                f"[process_cnes_table] Banco de dados {db_name} não encontrado para o CNES {cnes_code}",  # noqa
                 level="warning",
             )
         else:

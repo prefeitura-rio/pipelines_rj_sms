@@ -8,7 +8,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-
 from pipelines.constants import constants as global_constants
 from pipelines.datalake.extract_load.vitacare_historico.constants import (
     vitacare_constants,
