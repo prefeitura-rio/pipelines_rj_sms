@@ -9,6 +9,7 @@ import pytz
 from bs4 import BeautifulSoup
 from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.datalake.extract_load.cientificalab_api.constants import cientificalab_constants
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import cloud_function_request
 from pipelines.utils.time import get_datetime_working_range
@@ -19,6 +20,7 @@ def authenticate_and_fetch(
     username: str,
     password: str,
     apccodigo: str,
+    identificador_lis: str,
     dt_inicio: str = "2025-01-21T10:00:00-0300",
     dt_fim: str = "2025-01-21T11:30:00-0300",
     environment: str = "dev",
@@ -56,7 +58,7 @@ def authenticate_and_fetch(
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <lote>
             <codigoLis>1</codigoLis>
-            <identificadorLis>1021</identificadorLis>
+            <identificadorLis>{identificador_lis}</identificadorLis>
             <origemLis>1</origemLis>
             <dataResultado>
                 <inicial>{dt_inicio}</inicial>
@@ -187,7 +189,7 @@ def transform(resultado_xml: str):
 @task
 def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]]:
     """
-    Gera janelas de extração de 8 horas por dia a partir de start_date até ontem.
+    Gera janelas de extração de 3 horas por dia a partir de start_date até ontem.
     Retorna lista de dicionários com dt_inicio e dt_fim formatados (ex: YYYY-MM-DDTHH:MM:SS-0300)
     """
 
@@ -205,12 +207,14 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
     current_date = start_date
     while current_date <= end_date:
         for hour_ranges in [
-            ("00:00:01", "04:00:00"),
-            ("04:00:01", "08:00:00"),
-            ("08:00:01", "12:00:00"),
-            ("12:00:01", "16:00:00"),
-            ("16:00:01", "20:00:00"),
-            ("20:00:01", "23:59:59"),
+            ("00:00:01", "03:00:00"),
+            ("03:00:01", "06:00:00"),
+            ("06:00:01", "09:00:00"),
+            ("09:00:01", "12:00:00"),
+            ("12:00:01", "15:00:00"),
+            ("15:00:01", "18:59:59"),
+            ("18:00:01", "21:59:59"),
+            ("21:00:01", "23:59:59"),
         ]:
             start_time = f"{current_date.date()} {hour_ranges[0]}"
             end_time = f"{current_date.date()} {hour_ranges[1]}"
@@ -234,17 +238,26 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
 
     return windows
 
+@task
+def get_identificador_lis() -> list:
+    return cientificalab_constants.IDENTIFICADORES_LIS.value
 
 @task
 def build_operator_params(
     windows: List[Dict[str, str]],
     env: str,
+    identificadores_lis: List[str],
 ) -> List[Dict[str, str]]:
-    return [
-        {
-            "dt_inicio": window["dt_inicio"],
-            "dt_fim": window["dt_fim"],
-            "environment": env,
-        }
-        for window in windows
-    ]
+    params = []
+
+    for identificador_lis in identificadores_lis:
+        for window in windows:
+            params.append(
+                {
+                    "identificador_lis": identificador_lis,
+                    "dt_inicio": window["dt_inicio"],
+                    "dt_fim": window["dt_fim"],
+                    "environment": env,
+                }
+            )
+    return params

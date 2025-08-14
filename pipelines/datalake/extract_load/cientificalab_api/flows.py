@@ -5,14 +5,13 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.cientificalab_api.constants import (
-    constants as cientificalab_constants,
-)
+from pipelines.datalake.extract_load.cientificalab_api.constants import cientificalab_constants
 from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
 from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
     generate_extraction_windows,
+    get_identificador_lis,
     transform,
 )
 from pipelines.datalake.utils.tasks import (
@@ -41,13 +40,15 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     DT_FIM = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
+    IDENTIFICADOR_LIS = Parameter("identificador_lis", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=True)
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
-            environment=ENVIRONMENT,
+            identificador_lis=IDENTIFICADOR_LIS,
             dt_inicio=DT_INICIO,
             dt_fim=DT_FIM,
+            environment=ENVIRONMENT,
         )
 
     # INFISICAL
@@ -67,9 +68,7 @@ with Flow(
     )
 
     # BIG QUERY
-    DATASET_ID = Parameter(
-        "dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False
-    )
+    DATASET_ID = Parameter("dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False)
 
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=DT_INICIO,
@@ -83,6 +82,7 @@ with Flow(
         username=username_secret,
         password=password_secret,
         apccodigo=apccodigo_secret,
+        identificador_lis=IDENTIFICADOR_LIS,
         dt_inicio=start_datetime,
         dt_fim=end_datetime,
         environment=ENVIRONMENT,
@@ -129,9 +129,13 @@ with Flow(
     current_labels = get_current_flow_labels()
 
     date_filter = from_relative_date(relative_date=relative_date_filter)
+
+    identificador_lis = get_identificador_lis()
     windows = generate_extraction_windows(start_date=date_filter)
 
-    operator_parameters = build_operator_params(windows=windows, env=environment)
+    operator_parameters = build_operator_params(
+        windows=windows, env=environment, identificadores_lis=identificador_lis
+    )
 
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(flow_cientificalab_operator.name),
@@ -149,18 +153,18 @@ with Flow(
     )
 
 flow_cientificalab_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=3)
+flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=4)
 flow_cientificalab_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="10Gi",
-    memory_request="10Gi",
+    memory_limit="8Gi",
+    memory_request="8Gi",
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=6)
+flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=4)
 flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
