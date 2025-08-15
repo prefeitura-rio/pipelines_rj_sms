@@ -364,7 +364,7 @@ cases:
       environment: 'dev'
       dt_inicio: '2025-08-13T07:00:01-03:00'
       dt_fim: '2025-08-13T11:00:00-03:00'
-      identificador_lis: '1024'
+      cnes: '2273349'
       rename_flow: False
   - case_slug: "cientificalab_api_manager"
     flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"

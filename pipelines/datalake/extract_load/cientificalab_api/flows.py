@@ -15,6 +15,7 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
     generate_extraction_windows,
+    get_identificador_lis,
     transform,
 )
 from pipelines.datalake.utils.tasks import (
@@ -79,8 +80,7 @@ with Flow(
         "dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False
     )
 
-    codigo_lis_dict = json.loads(codigo_lis_secret)
-    identificador_lis = codigo_lis_dict.get(CNES)
+    identificador_lis = get_identificador_lis(secret_json=codigo_lis_secret, cnes=CNES)
 
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=DT_INICIO,
