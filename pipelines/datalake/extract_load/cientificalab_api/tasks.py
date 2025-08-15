@@ -240,6 +240,7 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
 
     return windows
 
+
 @task
 def get_identificador_lis(secret_json: str, cnes: str) -> str:
     data_dict = json.loads(secret_json)
