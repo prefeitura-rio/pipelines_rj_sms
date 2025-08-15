@@ -51,7 +51,7 @@ with Flow(
             cnes=CNES,
             dt_inicio=DT_INICIO,
             dt_fim=DT_FIM,
-            environment=ENVIRONMENT
+            environment=ENVIRONMENT,
         )
 
     # INFISICAL
