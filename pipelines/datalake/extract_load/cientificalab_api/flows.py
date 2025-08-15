@@ -164,7 +164,6 @@ flow_cientificalab_operator.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="8Gi",
-    memory_request="8Gi",
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
@@ -175,7 +174,6 @@ flow_cientificalab_manager.run_config = KubernetesRun(
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="2Gi",
-    memory_request="2Gi",
 )
 
 flow_cientificalab_manager.schedule = schedule
