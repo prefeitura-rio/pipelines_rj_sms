@@ -47,10 +47,10 @@ with Flow(
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
+            name_template="cnes: {cnes} dt_ini: {dt_inicio} dt_fim: {dt_fim}",
             cnes=CNES,
             dt_inicio=DT_INICIO,
             dt_fim=DT_FIM,
-            environment=ENVIRONMENT,
         )
 
     # INFISICAL
