@@ -9,9 +9,7 @@ import pytz
 from bs4 import BeautifulSoup
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.datalake.extract_load.cientificalab_api.constants import (
-    cientificalab_constants,
-)
+
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import cloud_function_request
 from pipelines.utils.time import get_datetime_working_range
@@ -242,8 +240,8 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
 
 
 @task
-def get_identificador_lis() -> list:
-    return cientificalab_constants.IDENTIFICADORES_LIS.value
+def get_identificador_lis(cnes_lis) -> dict:
+    return cnes_lis
 
 
 @task
