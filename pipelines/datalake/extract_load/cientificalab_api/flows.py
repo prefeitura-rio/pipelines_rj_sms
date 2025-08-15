@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+import json
+
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-import json
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.cientificalab_api.constants import (
