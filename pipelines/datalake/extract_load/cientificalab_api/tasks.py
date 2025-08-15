@@ -59,7 +59,7 @@ def authenticate_and_fetch(
     data = f"""
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <lote>
-            <codigoLis>1</codigoLis>
+            <codigoLis></codigoLis>
             <identificadorLis>{identificador_lis}</identificadorLis>
             <origemLis>1</origemLis>
             <dataResultado>
