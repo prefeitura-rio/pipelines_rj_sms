@@ -16,28 +16,3 @@ class cientificalab_constants(Enum):
     INFISICAL_PASSWORD = "PASSWORD"
     INFISICAL_APCCODIGO = "APCCODIGO"
     DATASET_ID = "brutos_cientificalab"
-
-    IDENTIFICADORES_LIS = [
-        "1021",
-        "1022",
-        "1024",
-        "1025",
-        "1026",
-        "1027",
-        "1028",
-        "1029",
-        "1030",
-        "1031",
-        "1032",
-        "1033",
-        "1034",
-        "1035",
-        "1036",
-        "1037",
-        "1038",
-        "1039",
-        "1040",
-        "1041",
-        "1042",
-        "1043",
-    ]
