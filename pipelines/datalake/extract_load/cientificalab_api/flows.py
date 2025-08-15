@@ -58,6 +58,7 @@ with Flow(
     INFISICAL_USERNAME = cientificalab_constants.INFISICAL_USERNAME.value
     INFISICAL_PASSWORD = cientificalab_constants.INFISICAL_PASSWORD.value
     INFISICAL_APCCODIGO = cientificalab_constants.INFISICAL_APCCODIGO.value
+    INFISICAL_CODIGOLIS = cientificalab_constants.INFISICAL_CODIGOLIS.value
 
     username_secret = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_USERNAME, environment=ENVIRONMENT
@@ -67,6 +68,10 @@ with Flow(
     )
     apccodigo_secret = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_APCCODIGO, environment=ENVIRONMENT
+    )
+
+    codigo_lis_secret = get_secret_key(
+        secret_path=INFISICAL_PATH, secret_name=INFISICAL_CODIGOLIS, environment=ENVIRONMENT
     )
 
     # BIG QUERY
