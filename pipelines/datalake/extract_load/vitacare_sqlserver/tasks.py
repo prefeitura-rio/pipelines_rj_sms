@@ -2,24 +2,18 @@
 """
 Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
-from datetime import datetime, timedelta
-from typing import List
+from datetime import timedelta
 
 import pandas as pd
-import pytz
 from google.cloud import bigquery
 from prefect.engine.signals import SKIP
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 from pipelines.datalake.extract_load.vitacare_sqlserver.constants import (
     vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_sqlserver.utils import (
-    clean_ut_id,
-    transform_dataframe,
-)
+from pipelines.datalake.extract_load.vitacare_sqlserver.utils import transform_dataframe
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
 
@@ -86,12 +80,12 @@ def process_cnes_table(
             # Se nenhum chunk foi processado (tabela vazia), loga e retorna skipped
             if total_rows == 0:
                 log(
-                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando."
+                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando."  # noqa
                 )
                 return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
 
             log(
-                f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída. Total de linhas: {total_rows}."
+                f"Carga do CNES {cnes_code} para a tabela '{bq_table_id}' concluída. Total de linhas: {total_rows}."  # noqa
             )
             return {"cnes": cnes_code, "status": "success", "rows_loaded": total_rows}
 
@@ -102,7 +96,7 @@ def process_cnes_table(
 
             if df.empty:
                 log(
-                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando."
+                    f"Nenhum dado retornado para a tabela '{db_table}' do CNES {cnes_code}. Pulando."  # noqa
                 )
                 return {"cnes": cnes_code, "status": "skipped", "reason": "No data extracted"}
 

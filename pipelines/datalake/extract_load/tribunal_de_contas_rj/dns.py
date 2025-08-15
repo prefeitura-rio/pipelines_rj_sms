@@ -74,7 +74,7 @@ class HostHeaderSSLAdapter(requests.adapters.HTTPAdapter):
 
 ########################################################################
 # Daqui pra baixo é um lookup de DNS simples
-# [Ref] https://github.com/1ocalhost/py_cheat/blob/dd1eca597371c5dcf05f980b5cb6bb298f373cc0/dns_lookup.py
+# [Ref] https://github.com/1ocalhost/py_cheat/blob/dd1eca597371c5dcf05f980b5cb6bb298f373cc0/dns_lookup.py # noqa
 
 
 def parse_dns_string(reader, data):
