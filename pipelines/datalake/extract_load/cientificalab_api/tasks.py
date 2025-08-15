@@ -242,8 +242,8 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
 
 
 @task
-def get_identificador_lis(codigo_lis_secret: str) -> list:
-    data = json.loads(codigo_lis_secret)
+def get_identificador_lis(cnes_lis: str) -> list:
+    data = json.loads(cnes_lis)
     identificadores = [data[cnes] for cnes in cientificalab_constants.CNES.value]
     return identificadores
 
@@ -252,15 +252,15 @@ def get_identificador_lis(codigo_lis_secret: str) -> list:
 def build_operator_params(
     windows: List[Dict[str, str]],
     env: str,
-    identificadores_lis: List[str],
+    cnes_list: List[str],
 ) -> List[Dict[str, str]]:
     params = []
 
-    for identificador_lis in identificadores_lis:
+    for cnes in cnes_list:
         for window in windows:
             params.append(
                 {
-                    "identificador_lis": identificador_lis,
+                    "identificador_lis": cnes,
                     "dt_inicio": window["dt_inicio"],
                     "dt_fim": window["dt_fim"],
                     "environment": env,
