@@ -70,7 +70,7 @@ with Flow(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_APCCODIGO, environment=ENVIRONMENT
     )
     codigo_lis_secret = get_secret_key(
-        secret_path=INFISICAL_PATH,secret_name=INFISICAL_CODIGOLIS, environment=ENVIRONMENT
+        secret_path=INFISICAL_PATH, secret_name=INFISICAL_CODIGOLIS, environment=ENVIRONMENT
     )
 
     # BIG QUERY
