@@ -3,6 +3,7 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+import json
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.cientificalab_api.constants import (
@@ -13,7 +14,6 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
     generate_extraction_windows,
-    get_identificador_lis,
     transform,
 )
 from pipelines.datalake.utils.tasks import (
@@ -78,6 +78,9 @@ with Flow(
         "dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False
     )
 
+    codigo_lis_dict = json.loads(codigo_lis_secret)
+    identificador_lis = codigo_lis_dict.get(CNES)
+
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=DT_INICIO,
         end_datetime=DT_FIM,
@@ -86,13 +89,11 @@ with Flow(
         timezone="America/Sao_Paulo",
     )
 
-    IDENTIFICADOR_LIS = get_identificador_lis(cnes_lis=codigo_lis_secret)
-
     resultado_xml = authenticate_and_fetch(
         username=username_secret,
         password=password_secret,
         apccodigo=apccodigo_secret,
-        identificador_lis=IDENTIFICADOR_LIS,
+        identificador_lis=identificador_lis,
         dt_inicio=start_datetime,
         dt_fim=end_datetime,
         environment=ENVIRONMENT,

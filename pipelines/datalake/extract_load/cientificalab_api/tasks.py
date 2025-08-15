@@ -17,7 +17,7 @@ from pipelines.utils.tasks import cloud_function_request
 from pipelines.utils.time import get_datetime_working_range
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=1))
+@task(max_retries=2, retry_delay=timedelta(minutes=1))
 def authenticate_and_fetch(
     username: str,
     password: str,
@@ -239,13 +239,6 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
         current_date += timedelta(days=1)
 
     return windows
-
-
-@task
-def get_identificador_lis(cnes_lis: str) -> list:
-    data = json.loads(cnes_lis)
-    identificadores = [data[cnes] for cnes in cientificalab_constants.CNES.value]
-    return identificadores
 
 
 @task
