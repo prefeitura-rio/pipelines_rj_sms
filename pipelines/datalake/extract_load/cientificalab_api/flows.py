@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import json
-
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -176,7 +174,7 @@ flow_cientificalab_operator.run_config = KubernetesRun(
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=8)
+flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=5)
 flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
