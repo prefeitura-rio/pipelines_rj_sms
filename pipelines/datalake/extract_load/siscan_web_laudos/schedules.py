@@ -25,18 +25,19 @@ operator_flow_parameters = [
     }
 ]
 
-manager_flow_parameters = [
-    {"environment": "prod", "relative_date": "M-1", "range": 1},
+
+monthly_manager_parameters = [{"environment": "prod", "relative_date": "M-1", "range": 7}]
+daily_flow_parameters = [
     {"environment": "prod", "relative_date": "D-1", "range": 1},
 ]
 
 monthly_manager_clock = generate_dump_api_schedules(
-    interval=timedelta(days=25),
+    interval=timedelta(weeks=4),
     start_date=datetime(2025, 8, 6, 0, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    flow_run_parameters=manager_flow_parameters,
+    flow_run_parameters=monthly_manager_parameters,
     runs_interval_minutes=0,
 )
 
@@ -46,7 +47,7 @@ daily_manager_clock = generate_dump_api_schedules(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    flow_run_parameters=manager_flow_parameters,
+    flow_run_parameters=daily_flow_parameters,
     runs_interval_minutes=0,
 )
 

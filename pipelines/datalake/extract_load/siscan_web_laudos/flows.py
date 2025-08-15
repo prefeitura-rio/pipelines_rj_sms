@@ -105,7 +105,7 @@ with Flow(
 
     # 4) Exclui os arquivos após o upload
     delete_raw = delete_file(file_path=raw_files, upstream_tasks=[uploads])
-    delete_prepared = delete_file(file_path=prepared_files, upstream_tasks=[uploads])
+    delete_prepared = delete_file(file_path=prepared_files, upstream_tasks=[delete_raw])
 
 
 with Flow(
