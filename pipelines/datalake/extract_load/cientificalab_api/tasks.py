@@ -260,7 +260,7 @@ def build_operator_params(
         for window in windows:
             params.append(
                 {
-                    "identificador_lis": cnes,
+                    "cnes": cnes,
                     "dt_inicio": window["dt_inicio"],
                     "dt_fim": window["dt_fim"],
                     "environment": env,
