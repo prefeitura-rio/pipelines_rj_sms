@@ -8,7 +8,7 @@ import pandas as pd
 import pytz
 from bs4 import BeautifulSoup
 from prefeitura_rio.pipelines_utils.logging import log
-
+from pipelines.datalake.extract_load.cientificalab_api.constants import cientificalab_constants # noqa
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import cloud_function_request
@@ -240,8 +240,10 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
 
 
 @task
-def get_identificador_lis(cnes_lis) -> dict:
-    return cnes_lis
+def get_identificador_lis(codigo_lis_secret: str) -> list:
+    data = json.loads(codigo_lis_secret)
+    identificadores = [data[cnes] for cnes in cientificalab_constants.CNES.value]
+    return identificadores
 
 
 @task
