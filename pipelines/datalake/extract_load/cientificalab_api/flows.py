@@ -6,13 +6,14 @@ from prefect.storage import GCS
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.cientificalab_api.constants import (
-    constants as cientificalab_constants,
+    cientificalab_constants,
 )
 from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
 from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
     generate_extraction_windows,
+    get_identificador_lis,
     transform,
 )
 from pipelines.datalake.utils.tasks import (
@@ -41,13 +42,16 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     DT_INICIO = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     DT_FIM = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
+    CNES = Parameter("cnes", required=True)
     RENAME_FLOW = Parameter("rename_flow", default=True)
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
-            environment=ENVIRONMENT,
+            name_template="cnes: {cnes} dt_ini: {dt_inicio} dt_fim: {dt_fim} ({environment})",
+            cnes=CNES,
             dt_inicio=DT_INICIO,
             dt_fim=DT_FIM,
+            environment=ENVIRONMENT,
         )
 
     # INFISICAL
@@ -55,6 +59,7 @@ with Flow(
     INFISICAL_USERNAME = cientificalab_constants.INFISICAL_USERNAME.value
     INFISICAL_PASSWORD = cientificalab_constants.INFISICAL_PASSWORD.value
     INFISICAL_APCCODIGO = cientificalab_constants.INFISICAL_APCCODIGO.value
+    INFISICAL_CODIGOLIS = cientificalab_constants.INFISICAL_CODIGOLIS.value
 
     username_secret = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_USERNAME, environment=ENVIRONMENT
@@ -65,11 +70,16 @@ with Flow(
     apccodigo_secret = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_APCCODIGO, environment=ENVIRONMENT
     )
+    codigo_lis_secret = get_secret_key(
+        secret_path=INFISICAL_PATH, secret_name=INFISICAL_CODIGOLIS, environment=ENVIRONMENT
+    )
 
     # BIG QUERY
     DATASET_ID = Parameter(
         "dataset_id", default=cientificalab_constants.DATASET_ID.value, required=False
     )
+
+    identificador_lis = get_identificador_lis(secret_json=codigo_lis_secret, cnes=CNES)
 
     start_datetime, end_datetime = get_datetime_working_range(
         start_datetime=DT_INICIO,
@@ -83,6 +93,7 @@ with Flow(
         username=username_secret,
         password=password_secret,
         apccodigo=apccodigo_secret,
+        identificador_lis=identificador_lis,
         dt_inicio=start_datetime,
         dt_fim=end_datetime,
         environment=ENVIRONMENT,
@@ -124,14 +135,19 @@ with Flow(
     environment = Parameter("environment", default="dev")
     relative_date_filter = Parameter("relative_date", default="D-1")
 
+    cnes_list = cientificalab_constants.CNES.value
+
     prefect_project_name = get_project_name(environment=environment)
 
     current_labels = get_current_flow_labels()
 
     date_filter = from_relative_date(relative_date=relative_date_filter)
+
     windows = generate_extraction_windows(start_date=date_filter)
 
-    operator_parameters = build_operator_params(windows=windows, env=environment)
+    operator_parameters = build_operator_params(
+        windows=windows, env=environment, cnes_list=cnes_list
+    )
 
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(flow_cientificalab_operator.name),
@@ -155,19 +171,17 @@ flow_cientificalab_operator.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="10Gi",
-    memory_request="10Gi",
+    memory_limit="5Gi",
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=6)
+flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=5)
 flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     memory_limit="2Gi",
-    memory_request="2Gi",
 )
 
 flow_cientificalab_manager.schedule = schedule
