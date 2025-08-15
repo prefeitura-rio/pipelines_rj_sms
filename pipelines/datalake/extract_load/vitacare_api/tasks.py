@@ -334,7 +334,8 @@ def create_parameter_list(
             | (table_data["retry_status"] == "in progress")
         ]
 
-        results = results[(results["data"] >= datetime.strptime("2024-08-15", "%Y-%m-%d").date())]
+        data_limite = (datetime.now() - timedelta(days=7)).date()
+        results = results[results["data"] >= data_limite]
 
         results["data"] = results.data.apply(lambda x: x.strftime("%Y-%m-%d"))
 
