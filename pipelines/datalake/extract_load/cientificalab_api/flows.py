@@ -59,7 +59,6 @@ with Flow(
     INFISICAL_PASSWORD = cientificalab_constants.INFISICAL_PASSWORD.value
     INFISICAL_APCCODIGO = cientificalab_constants.INFISICAL_APCCODIGO.value
 
-
     username_secret = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_USERNAME, environment=ENVIRONMENT
     )
@@ -69,7 +68,6 @@ with Flow(
     apccodigo_secret = get_secret_key(
         secret_path=INFISICAL_PATH, secret_name=INFISICAL_APCCODIGO, environment=ENVIRONMENT
     )
-
 
     # BIG QUERY
     DATASET_ID = Parameter(
@@ -129,12 +127,12 @@ with Flow(
 ) as flow_cientificalab_manager:
     environment = Parameter("environment", default="dev")
     relative_date_filter = Parameter("relative_date", default="D-1")
-    
+
     INFISICAL_CODIGOLIS = cientificalab_constants.INFISICAL_CODIGOLIS.value
     codigo_lis_secret = get_secret_key(
-        secret_path=cientificalab_constants.INFISICAL_PATH.value, 
-        secret_name=INFISICAL_CODIGOLIS, 
-        environment=environment
+        secret_path=cientificalab_constants.INFISICAL_PATH.value,
+        secret_name=INFISICAL_CODIGOLIS,
+        environment=environment,
     )
 
     prefect_project_name = get_project_name(environment=environment)
