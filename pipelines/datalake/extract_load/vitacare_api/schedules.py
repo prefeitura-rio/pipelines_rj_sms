@@ -71,12 +71,12 @@ reprocess_flow_parameters = [
 
 reprocess_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 1, 1, 12, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
     flow_run_parameters=reprocess_flow_parameters,
-    runs_interval_minutes=45,
+    runs_interval_minutes=60,
 )
 
 vitacare_clocks = routine_clocks + reprocess_clocks
