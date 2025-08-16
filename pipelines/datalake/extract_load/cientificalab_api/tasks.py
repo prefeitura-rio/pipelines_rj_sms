@@ -61,7 +61,7 @@ def authenticate_and_fetch(
         <lote>
             <codigoLis></codigoLis>
             <identificadorLis>{identificador_lis}</identificadorLis>
-            <origemLis>1</origemLis>
+            <origemLis></origemLis>
             <dataResultado>
                 <inicial>{dt_inicio}</inicial>
                 <final>{dt_fim}</final>
