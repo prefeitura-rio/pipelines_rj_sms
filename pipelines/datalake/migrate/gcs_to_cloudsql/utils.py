@@ -175,7 +175,11 @@ def get_instance_status(instance_name: str):
 
     # Resposta é (deveria ser) um json; queremos saber o `state`
     res_json = response.json()
-    if "state" not in res_json or "settings" not in res_json or "activationPolicy" not in res_json["settings"]:
+    if (
+        "state" not in res_json
+        or "settings" not in res_json
+        or "activationPolicy" not in res_json["settings"]
+    ):
         log(
             f"[get_instance_status] Cannot find running state for instance '{instance_name}'",
             level="warning",
@@ -193,5 +197,5 @@ def get_instance_status(instance_name: str):
     wrong_policy = activation_policy not in ("ALWAYS", "NEVER")
     log(
         f"[get_instance_status] Instance is in running state '{state}', activation policy '{activation_policy}'",
-        level=("warning" if wrong_state or wrong_policy else "info")
+        level=("warning" if wrong_state or wrong_policy else "info"),
     )

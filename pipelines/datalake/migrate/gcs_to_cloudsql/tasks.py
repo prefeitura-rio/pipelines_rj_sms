@@ -66,12 +66,9 @@ def send_sequential_api_requests(
     # retorna HTTP 412 Precondition Failed
     # https://cloud.google.com/sql/docs/postgres/start-stop-restart-instance#rest-v1beta4
     log("[send_sequential_api_requests] Guaranteeing instance is running")
-    always_on = {
-        "settings": { "activationPolicy": "ALWAYS" }
-    }
+    always_on = {"settings": {"activationPolicy": "ALWAYS"}}
     utils.call_and_wait("PATCH", f"/instances/{instance_name}", json=always_on)
     utils.get_instance_status(instance_name)
-
 
     # Requisições precisam ser sequenciais porque a API só permite uma operação por vez
     # Caso contrário, dá erro HTTP 409 'Conflict'
@@ -99,7 +96,9 @@ def send_sequential_api_requests(
             database_name = "_".join([info["name"], info["cnes"]])
 
             log("-" * 20)
-            log(f"[send_sequential_api_requests] Attempting to delete database '{database_name}'...")
+            log(
+                f"[send_sequential_api_requests] Attempting to delete database '{database_name}'..."
+            )
             # Erro se o nome da database for inválido/esquisito
             utils.check_db_name(database_name)
 
@@ -128,9 +127,7 @@ def send_sequential_api_requests(
     finally:
         # Desliga a instância de novo após a importação
         log("[send_sequential_api_requests] Stopping instance...")
-        always_off = {
-            "settings": { "activationPolicy": "NEVER" }
-        }
+        always_off = {"settings": {"activationPolicy": "NEVER"}}
         utils.call_and_wait("PATCH", f"/instances/{instance_name}", json=always_off)
         utils.get_instance_status(instance_name)
 
