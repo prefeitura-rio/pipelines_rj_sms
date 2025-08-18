@@ -62,6 +62,17 @@ def send_sequential_api_requests(
     file_count = len(most_recent_files)
     log(f"[send_sequential_api_requests] Received {file_count} filename(s)")
 
+    # Garante que a instância está executando, senão a importação logo abaixo
+    # retorna HTTP 412 Precondition Failed
+    # https://cloud.google.com/sql/docs/postgres/start-stop-restart-instance#rest-v1beta4
+    log("[send_sequential_api_requests] Guaranteeing instance is running")
+    always_on = {
+        "settings": { "activationPolicy": "ALWAYS" }
+    }
+    utils.call_and_wait("PATCH", f"/instances/{instance_name}", json=always_on)
+    utils.get_instance_status(instance_name)
+
+
     # Requisições precisam ser sequenciais porque a API só permite uma operação por vez
     # Caso contrário, dá erro HTTP 409 'Conflict'
     # https://cloud.google.com/sql/docs/troubleshooting#import-export
@@ -76,43 +87,52 @@ def send_sequential_api_requests(
     #   - Rodar /import (e esperar concluir);
     #   - Torcer pra não dar nenhum erro, porque apagamos o backup anterior
 
-    for i, file in enumerate(most_recent_files):
-        if file is None or len(file) <= 0:
-            log(f"[send_sequential_api_requests] Skipping file {i+1}/{file_count} (empty name)")
-            continue
+    try:
+        for i, file in enumerate(most_recent_files):
+            if file is None or len(file) <= 0:
+                log(f"[send_sequential_api_requests] Skipping file {i+1}/{file_count} (empty name)")
+                continue
 
-        # Prepara parâmetros da requisição
-        full_file_uri = f"gs://{bucket_name}/{file}"
-        info = utils.get_info_from_filename(filename=file)
-        database_name = "_".join([info["name"], info["cnes"]])
+            # Prepara parâmetros da requisição
+            full_file_uri = f"gs://{bucket_name}/{file}"
+            info = utils.get_info_from_filename(filename=file)
+            database_name = "_".join([info["name"], info["cnes"]])
 
-        log("-" * 20)
-        log(f"[send_sequential_api_requests] Attempting to delete database '{database_name}'...")
-        # Erro se o nome da database for inválido/esquisito
-        utils.check_db_name(database_name)
+            log("-" * 20)
+            log(f"[send_sequential_api_requests] Attempting to delete database '{database_name}'...")
+            # Erro se o nome da database for inválido/esquisito
+            utils.check_db_name(database_name)
 
-        # Garante que não existe database com esse nome
-        # https://cloud.google.com/sql/docs/sqlserver/create-manage-databases#delete
-        # Chama a API e espera a operação terminar
-        utils.call_and_wait("DELETE", f"/instances/{instance_name}/databases/{database_name}")
+            # Garante que não existe database com esse nome
+            # https://cloud.google.com/sql/docs/sqlserver/create-manage-databases#delete
+            # Se já não existir, vai dar o seguinte warning (mas ainda HTTP 200):
+            # > ERROR_SQL_SERVER_EXTERNAL_WARNING: Warn: database vitacare_historic_xxxx doesn't exist
+            # Chama a API e espera a operação terminar
+            utils.call_and_wait("DELETE", f"/instances/{instance_name}/databases/{database_name}")
 
-        log(
-            "[send_sequential_api_requests] "
-            + f"Attempting to import file {i+1}/{file_count}: "
-            + f"'{full_file_uri}' (db '{database_name}')"
-        )
-
-        # Fazer o pedido de importação
-        data = {
-            "importContext": {
-                "fileType": "BAK",
-                "uri": full_file_uri,
-                "database": database_name,
-                "sqlServerImportOptions": {},
+            log(
+                "[send_sequential_api_requests] "
+                + f"Attempting to import file {i+1}/{file_count}: "
+                + f"'{full_file_uri}' (db '{database_name}')"
+            )
+            # Faz o pedido de importação
+            data = {
+                "importContext": {
+                    "fileType": "BAK",
+                    "uri": full_file_uri,
+                    "database": database_name,
+                }
             }
+            # Chama a API e espera a operação terminar
+            utils.call_and_wait("POST", f"/instances/{instance_name}/import", json=data)
+    finally:
+        # Desliga a instância de novo após a importação
+        log("[send_sequential_api_requests] Stopping instance...")
+        always_off = {
+            "settings": { "activationPolicy": "NEVER" }
         }
-        # Chama a API e espera a operação terminar
-        utils.call_and_wait("POST", f"/instances/{instance_name}/import", json=data)
+        utils.call_and_wait("PATCH", f"/instances/{instance_name}", json=always_off)
+        utils.get_instance_status(instance_name)
 
     log("[send_sequential_api_requests] All done!")
 

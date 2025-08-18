@@ -69,7 +69,7 @@ def call_and_wait(method: str, url_path: str, json=None):
     API_URL = f"{constants.API_BASE.value}{url_path}"
 
     # Envia a requisição
-    if method == "POST":
+    if json is not None:
         response = requests.request(method, API_URL, headers=headers, json=json)
     else:
         response = requests.request(method, API_URL, headers=headers)
@@ -77,11 +77,7 @@ def call_and_wait(method: str, url_path: str, json=None):
     # Confere se foi bem sucedida
     status = response.status_code
     log(f"[call_and_wait] API responded with status {status}")
-
-    if status >= 500:
-        raise ConnectionError(f"[call_and_wait] API responded with status {status}")
-    if status >= 400:
-        raise PermissionError(f"[call_and_wait] API responded with status {status}")
+    response.raise_for_status()
 
     # Resposta é (deveria ser) uma instância de 'Operation'
     # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations
@@ -90,7 +86,7 @@ def call_and_wait(method: str, url_path: str, json=None):
     # "`name` (string): An identifier that uniquely identifies the operation"
     if "name" not in res_json:
         raise KeyError(
-            "[call_and_wait] Google API's JSON response dont contain 'name' Operation identifier"
+            "[call_and_wait] Google API's JSON response doesn't contain 'name' Operation identifier"
         )
     # Pega o identificador da operação que precisamos esperar
     operation_id = res_json["name"]
@@ -156,3 +152,46 @@ def call_and_wait(method: str, url_path: str, json=None):
             + "Possible HTTP 409 'Conflict' error coming.",
             level="warning",
         )
+
+
+def get_instance_status(instance_name: str):
+    # Cabeçalhos da requisição são sempre os mesmos
+    access_token = get_access_token()
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+
+    url_path = f"/instances/{instance_name}"
+    log(f"[get_instance_status] GET {url_path}")
+    API_URL = f"{constants.API_BASE.value}{url_path}"
+
+    response = requests.request("GET", API_URL, headers=headers)
+
+    # Confere se foi bem sucedida
+    status = response.status_code
+    log(f"[get_instance_status] API responded with status {status}")
+    response.raise_for_status()
+
+    # Resposta é (deveria ser) um json; queremos saber o `state`
+    res_json = response.json()
+    if "state" not in res_json or "settings" not in res_json or "activationPolicy" not in res_json["settings"]:
+        log(
+            f"[get_instance_status] Cannot find running state for instance '{instance_name}'",
+            level="warning",
+        )
+        return
+
+    # `RUNNABLE: The instance is running, or has been stopped by owner.`
+    # [Ref] https://cloud.google.com/sql/docs/postgres/admin-api/rest/v1beta4/instances#SqlInstanceState
+    state = res_json["state"]
+    # ALWAYS (running), NEVER (stopped)
+    # [Ref] https://cloud.google.com/sql/docs/postgres/admin-api/rest/v1beta4/instances#sqlactivationpolicy
+    activation_policy = res_json["settings"]["activationPolicy"]
+
+    wrong_state = state != "RUNNABLE"
+    wrong_policy = activation_policy not in ("ALWAYS", "NEVER")
+    log(
+        f"[get_instance_status] Instance is in running state '{state}', activation policy '{activation_policy}'",
+        level=("warning" if wrong_state or wrong_policy else "info")
+    )
