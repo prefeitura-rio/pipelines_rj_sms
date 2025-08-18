@@ -33,7 +33,7 @@ daily_flow_parameters = [
 
 monthly_manager_clock = generate_dump_api_schedules(
     interval=timedelta(weeks=4),
-    start_date=datetime(2025, 8, 6, 19, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2025, 8, 6, hour=20, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
@@ -43,7 +43,7 @@ monthly_manager_clock = generate_dump_api_schedules(
 
 daily_manager_clock = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2025, 6, 12, 19, 5, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2025, 6, 12, hour=20, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
