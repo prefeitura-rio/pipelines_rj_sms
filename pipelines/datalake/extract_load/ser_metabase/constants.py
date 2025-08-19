@@ -2,6 +2,8 @@
 """
 Constants
 """
+from typing import Literal
+
 DATABASE_IDS = {
     "DWH": {
         "id": 178,  # Banco novo: Novas tabelas com diversos schemas que apresentam aparentes
@@ -21,11 +23,11 @@ DATABASE_IDS = {
             },
             "FATO_HISTORICO_SOLICITACAO": {
                 "id": 3260,  # Lista os eventos de todas as solicitações
-                "slice_column": ""
+                "slice_column": "solicitacao_id"
             },
             "FATO_INTERNACAO": {
                 "id": 3259,  # Solicitações de Internação
-                "slice_column": ""
+                "slice_column": "solicitacao_id"
             },
             "FATO_MAPA_LEITOS": {
                 "id": 3258,  # (Descrição ausente)
@@ -70,23 +72,62 @@ DATABASE_IDS = {
 }
 
 
-SLICE_COLUMNS: dict[int, dict[int, int]] = {
+QUERY_COLUMNS: dict[
+    int,
+    dict[
+        int,
+        dict[
+            Literal[
+                'slice_column',
+                'slice_column_unique',
+                'date_column',
+                'slice_column_type'
+            ],
+            any
+        ]
+    ]
+] = {
     173: {
-        5783: 51407,
+        5783: {
+            'slice_column': 51407,
+            'slice_column_unique': True,
+            'date_column': 51409,
+            'slice_column_type': 'String',
+        }
     },
     178: {
-        3255: 30429,
-        3259: 30513,
+        3255: {
+            'slice_column': 30429,
+            'slice_column_unique': True,
+            'date_column': 30452,
+            'slice_column_type': 'String',
+        },
+        3259: {
+            'slice_column': 30513,
+            'slice_column_unique': True,
+            'date_column': 30522,
+            'slice_column_type': 'String',
+        },
+        3260: {
+            'slice_column': 30539,
+            'slice_column_unique': False,
+            'date_column': 30545,
+            'slice_column_type': 'Integer',
+        },
     }
 }
 """
-dict[int, dict[int, int]]
-
-indexado por `database_id` e `table_id`
-
-uso:
+indexado por `database_id` e `table_id`, e tem como chaves:
+- `slice_column`: o ID da coluna que será utilizada para o slice
+- `slice_column_unique`: se a coluna é única ou não
+- `date_column`: o ID da coluna de data, se existir
+- `slice_column_type`: o tipo da coluna de slice, se necessário
+Exemplo de uso:
     database_id = 173
     table_id = 5783
 
-    column_id = SLICE_COLUMNS[database_id][table_id]
+    slice_column_id = QUERY_COLUMNS[database_id][table_id]['slice_column']
+    is_unique = QUERY_COLUMNS[database_id][table_id]['slice_column_unique']
+    date_column_id = QUERY_COLUMNS[database_id][table_id]['date_column']
+    slice_column_type = QUERY_COLUMNS[database_id][table_id]['slice_column_type']
 """

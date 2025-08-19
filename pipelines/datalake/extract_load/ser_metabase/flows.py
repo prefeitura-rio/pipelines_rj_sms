@@ -44,6 +44,18 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
         required=True
     )
 
+    # DATE LIMITS ---------------------------
+    DATE_START = Parameter(
+        "date_start",
+        default=None,
+        required=False,
+    )
+    DATE_END = Parameter(
+        "date_end",
+        default=None,
+        required=False,
+    )
+
     # SLICING -------------------------------
     SLICE_SIZE = Parameter(
         "slice_size",
@@ -74,29 +86,43 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
         token=token,
         database_id=DATABASE_ID,
         table_id=TABLE_ID,
-        which='min'
+        which='min',
+        date_start=DATE_START,
+        date_end=DATE_END,
     )
     # Task 3 - Calculate maximal value for data slicing
     max_value = query_slice_limit(
         token=token,
         database_id=DATABASE_ID,
         table_id=TABLE_ID,
-        which='max'
+        which='max',
+        date_start=DATE_START,
+        date_end=DATE_END,
     )
 
     # Task 4 - Calculate list of inital values for each slice
     slices_min = calculate_slices(
+        token=token,
+        database_id=DATABASE_ID,
+        table_id=TABLE_ID,
         min_value=min_value,
         max_value=max_value,
         which='min',
         slice_size=SLICE_SIZE,
+        date_start=DATE_START,
+        date_end=DATE_END,
     )
     # Task 5 - Calculate list of final values for each slice
     slices_max = calculate_slices(
+        token=token,
+        database_id=DATABASE_ID,
+        table_id=TABLE_ID,
         min_value=min_value,
         max_value=max_value,
         which='max',
         slice_size=SLICE_SIZE,
+        date_start=DATE_START,
+        date_end=DATE_END,
     )
 
     # Task 6 - Queries the data for each slice determined
