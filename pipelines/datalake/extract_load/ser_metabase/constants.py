@@ -44,18 +44,9 @@ DATABASE_IDS = {
         # Banco com tabelas que estavam sendo utilizadas, mas apresentam
         # diversos problemas como inconsistência e falta de informações.
         "tables": {
-            "TB_HISTORICO_SOLICITACAO_METRO1_CAPITAL": {
-                "id": 3262,
-                "slice_column": ""
-            },
-            "TB_QUANTIDADE_SOLICITACOES": {
-                "id": 3261,
-                "slice_column": ""
-            },
-            "TB_SOLICITACOES": {
-                "id": 5783,
-                "slice_column": "solicitacao_id"
-            },
+            "TB_HISTORICO_SOLICITACAO_METRO1_CAPITAL": {"id": 3262, "slice_column": ""},
+            "TB_QUANTIDADE_SOLICITACOES": {"id": 3261, "slice_column": ""},
+            "TB_SOLICITACOES": {"id": 5783, "slice_column": "solicitacao_id"},
         },
     },
 }

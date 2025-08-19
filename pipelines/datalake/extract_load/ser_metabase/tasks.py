@@ -7,8 +7,8 @@ import json
 
 # Geral
 import re
-from typing import Literal
 from datetime import datetime, timedelta
+from typing import Literal
 
 import pandas as pd
 import requests
@@ -16,9 +16,7 @@ import requests
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.datalake.extract_load.ser_metabase.constants import (
-    QUERY_COLUMNS,
-)
+from pipelines.datalake.extract_load.ser_metabase.constants import QUERY_COLUMNS
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import upload_df_to_datalake
 
@@ -50,15 +48,9 @@ def query_slice_limit(
     column_id = QUERY_COLUMNS[database_id][table_id]["slice_column"]
     date_column = QUERY_COLUMNS[database_id][table_id]["date_column"]
 
-    log(
-        f"Consultando {which!r} na tabela '{table_id}'"
-        f"e banco '{database_id}'"
-    )
+    log(f"Consultando {which!r} na tabela '{table_id}'" f"e banco '{database_id}'")
     url = "https://metabase.saude.rj.gov.br/api/dataset/csv"
-    headers = {
-        "X-Metabase-Session": token,
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
+    headers = {"X-Metabase-Session": token, "Content-Type": "application/x-www-form-urlencoded"}
 
     if date_start is not None and date_end is not None:
         filter = [
@@ -88,12 +80,7 @@ def query_slice_limit(
 
     form_data = {"query": json.dumps(dataset_query, ensure_ascii=False)}
 
-    response = requests.post(
-        url,
-        headers=headers,
-        data=form_data,
-        verify=False
-    )
+    response = requests.post(url, headers=headers, data=form_data, verify=False)
 
     res = int(re.search(r"\n(\d+)", response.text).group(1))
     log(f"O valor {which!r} para a coluna usada é '{res}'")
@@ -161,8 +148,7 @@ def calculate_slices(
         log(f"Este dataset possui {count} linhas e uma relação de " f"{lines_per_id} linhas por id")
 
     slices = [
-        i + (0 if which == "min" else slice_size)
-        for i in range(min_value, max_value, slice_size)
+        i + (0 if which == "min" else slice_size) for i in range(min_value, max_value, slice_size)
     ]
     log(f"Contagem de slices gerados: {len(slices)}")
     return slices
@@ -189,10 +175,7 @@ def query_database_slice(
         f"Table ID: {table_id}, onde: {slice_min} <= valor < {slice_max}"
     )
     url = "https://metabase.saude.rj.gov.br/api/dataset/csv"
-    headers = {
-        "X-Metabase-Session": token,
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
+    headers = {"X-Metabase-Session": token, "Content-Type": "application/x-www-form-urlencoded"}
 
     dataset_query = {
         "type": "query",
@@ -218,12 +201,7 @@ def query_database_slice(
 
     form_data = {"query": json.dumps(dataset_query, ensure_ascii=False)}
 
-    response = requests.post(
-        url,
-        headers=headers,
-        data=form_data,
-        verify=False
-    )
+    response = requests.post(url, headers=headers, data=form_data, verify=False)
     csv_file = io.StringIO(response.content.decode("utf-8"))
 
     df = pd.read_csv(csv_file)
