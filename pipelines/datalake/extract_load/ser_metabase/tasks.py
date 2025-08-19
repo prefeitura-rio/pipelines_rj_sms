@@ -250,8 +250,6 @@ def upload_df_to_datalake_wrapper(
     table_id: str,
     dataset_id: str,
 ):
-    input(df)
-    return
     if not df.empty:
         upload_df_to_datalake.run(
             df=df,
