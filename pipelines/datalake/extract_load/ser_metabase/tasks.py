@@ -16,12 +16,11 @@ import requests
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.datalake.extract_load.ser_metabase.constants import (
+    QUERY_COLUMNS,
+)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import upload_df_to_datalake
-
-from pipelines.datalake.extract_load.ser_metabase.constants import (
-    QUERY_COLUMNS
-)
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
@@ -64,29 +63,13 @@ def query_slice_limit(
     if date_start is not None and date_end is not None:
         filter = [
             "and",
-            [
-                ">=",
-                ["field", date_column, {"base-type": "type/DateTime"}],
-                f"{date_start}"
-            ],
-            [
-                "<",
-                ["field", date_column, {"base-type": "type/DateTime"}],
-                f"{date_end}"
-            ]
+            [">=", ["field", date_column, {"base-type": "type/DateTime"}], f"{date_start}"],
+            ["<", ["field", date_column, {"base-type": "type/DateTime"}], f"{date_end}"],
         ]
     elif date_start is not None:
-        filter = [
-            ">=",
-            ["field", date_column, {"base-type": "type/DateTime"}],
-            f"{date_start}"
-        ]
+        filter = [">=", ["field", date_column, {"base-type": "type/DateTime"}], f"{date_start}"]
     elif date_end is not None:
-        filter = [
-            "<",
-            ["field", date_column, {"base-type": "type/DateTime"}],
-            f"{date_end}"
-        ]
+        filter = ["<", ["field", date_column, {"base-type": "type/DateTime"}], f"{date_end}"]
     else:
         filter = []
 
@@ -95,14 +78,9 @@ def query_slice_limit(
         "database": database_id,
         "query": {
             "source-table": table_id,
-            "aggregation": [[
-                which,
-                ["+", [
-                    "-", [
-                        "field", column_id, {"base-type": "type/Text"}
-                    ], 1
-                ], 1]
-            ]],
+            "aggregation": [
+                [which, ["+", ["-", ["field", column_id, {"base-type": "type/Text"}], 1], 1]]
+            ],
             "filter": filter,
         },
         "parameters": [],
@@ -141,43 +119,21 @@ def calculate_slices(
     baseados no valor de `which`
     """
     if not QUERY_COLUMNS[database_id][table_id]["slice_column_unique"]:
-        log(
-            f"Realizando contagem da tabela '{table_id}' "
-            f"e banco '{database_id}'"
-        )
+        log(f"Realizando contagem da tabela '{table_id}' " f"e banco '{database_id}'")
         url = "https://metabase.saude.rj.gov.br/api/dataset/csv"
-        headers = {
-            "X-Metabase-Session": token,
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
+        headers = {"X-Metabase-Session": token, "Content-Type": "application/x-www-form-urlencoded"}
         date_column = QUERY_COLUMNS[database_id][table_id]["date_column"]
 
         if date_start is not None and date_end is not None:
             filter = [
                 "and",
-                [
-                    ">=",
-                    ["field", date_column, {"base-type": "type/DateTime"}],
-                    f"{date_start}"
-                ],
-                [
-                    "<",
-                    ["field", date_column, {"base-type": "type/DateTime"}],
-                    f"{date_end}"
-                ]
+                [">=", ["field", date_column, {"base-type": "type/DateTime"}], f"{date_start}"],
+                ["<", ["field", date_column, {"base-type": "type/DateTime"}], f"{date_end}"],
             ]
         elif date_start is not None:
-            filter = [
-                ">=",
-                ["field", date_column, {"base-type": "type/DateTime"}],
-                f"{date_start}"
-            ]
+            filter = [">=", ["field", date_column, {"base-type": "type/DateTime"}], f"{date_start}"]
         elif date_end is not None:
-            filter = [
-                "<",
-                ["field", date_column, {"base-type": "type/DateTime"}],
-                f"{date_end}"
-            ]
+            filter = ["<", ["field", date_column, {"base-type": "type/DateTime"}], f"{date_end}"]
         else:
             filter = []
 
@@ -194,23 +150,15 @@ def calculate_slices(
 
         form_data = {"query": json.dumps(dataset_query, ensure_ascii=False)}
 
-        response = requests.post(
-            url,
-            headers=headers,
-            data=form_data,
-            verify=False
-        )
+        response = requests.post(url, headers=headers, data=form_data, verify=False)
 
-        count = int(re.search(r'\n(\d+)', response.text).group(1))
+        count = int(re.search(r"\n(\d+)", response.text).group(1))
         lines_per_id = count // slice_size
 
         slice_size /= lines_per_id
         slice_size = int(slice_size)
 
-        log(
-            f"Este dataset possui {count} linhas e uma relação de "
-            f"{lines_per_id} linhas por id"
-        )
+        log(f"Este dataset possui {count} linhas e uma relação de " f"{lines_per_id} linhas por id")
 
     slices = [
         i + (0 if which == "min" else slice_size)
@@ -233,8 +181,8 @@ def query_database_slice(
     Faz a consulta ao metabase no intervalo ditado por `slice_min` e
     `slice_max`
     """
-    column_id = QUERY_COLUMNS[database_id][table_id]['slice_column']
-    column_type = QUERY_COLUMNS[database_id][table_id]['slice_column_type']
+    column_id = QUERY_COLUMNS[database_id][table_id]["slice_column"]
+    column_type = QUERY_COLUMNS[database_id][table_id]["slice_column_type"]
 
     log(
         f"Iniciando consulta ao banco de dados. Database ID: {database_id}, "
@@ -256,14 +204,14 @@ def query_database_slice(
                 [
                     ">=",
                     ["field", column_id, {"base-type": f"type/{column_type}"}],
-                    (slice_min if column_type == "Integer" else f"{slice_min}")
+                    (slice_min if column_type == "Integer" else f"{slice_min}"),
                 ],
                 [
                     "<",
                     ["field", column_id, {"base-type": f"type/{column_type}"}],
-                    (slice_max if column_type == "Integer" else f"{slice_max}")
+                    (slice_max if column_type == "Integer" else f"{slice_max}"),
                 ],
-            ]
+            ],
         },
         "parameters": [],
     }

@@ -82,7 +82,7 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
         token=token,
         database_id=DATABASE_ID,
         table_id=TABLE_ID,
-        which='min',
+        which="min",
         date_start=DATE_START,
         date_end=DATE_END,
     )
@@ -91,7 +91,7 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
         token=token,
         database_id=DATABASE_ID,
         table_id=TABLE_ID,
-        which='max',
+        which="max",
         date_start=DATE_START,
         date_end=DATE_END,
     )
