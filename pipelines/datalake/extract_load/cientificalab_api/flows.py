@@ -182,7 +182,7 @@ flow_cientificalab_manager.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi",
+    memory_limit="4Gi",
 )
 
 flow_cientificalab_manager.schedule = schedule
