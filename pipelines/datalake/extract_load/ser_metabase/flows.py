@@ -33,8 +33,16 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     TABLE_ID = Parameter("table_id", default=3255, required=True)
 
     # BIGQUERY ------------------------------
-    BQ_DATASET_ID = Parameter("bq_dataset_id", default="brutos_ser_metabase", required=True)
-    BQ_TABLE_ID = Parameter("bq_table_id", default="FATO_AMBULATORIO", required=True)
+    BQ_DATASET_ID = Parameter(
+        "bq_dataset_id",
+        default="brutos_ser_metabase",
+        required=True
+    )
+    BQ_TABLE_ID = Parameter(
+        "bq_table_id",
+        default="FATO_AMBULATORIO",
+        required=True
+    )
 
     # DATE LIMITS ---------------------------
     DATE_START = Parameter(
@@ -52,9 +60,15 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     SLICE_SIZE = Parameter("slice_size", default=900_000, required=False)
 
     # CREDENTIALS ------------------------------
-    user = get_secret_key(environment=ENVIRONMENT, secret_name="USER", secret_path="/metabase")
+    user = get_secret_key(
+        environment=ENVIRONMENT,
+        secret_name="USER",
+        secret_path="/metabase"
+    )
     password = get_secret_key(
-        environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/metabase"
+        environment=ENVIRONMENT,
+        secret_name="PASSWORD",
+        secret_path="/metabase"
     )
 
     # Task 1 - Authenticate in Metabase

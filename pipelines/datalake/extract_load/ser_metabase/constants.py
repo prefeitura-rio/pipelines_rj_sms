@@ -6,11 +6,14 @@ from typing import Literal
 
 DATABASE_IDS = {
     "DWH": {
-        "id": 178,  # Banco novo: Novas tabelas com diversos schemas que apresentam aparentes
-        # melhoras nos dados disponibilizados.
+        "id": 178,
+        # Banco novo: Novas tabelas com diversos schemas que apresentam
+        # aparentes melhoras nos dados disponibilizados.
         "tables": {
-            "DIM_RECURSO": {"id": 3476, "slice_column": ""},  # Lista dos recursos cadastrados
-            "DIM_UNIDADE": {"id": 3477, "slice_column": ""},  # Lista das unidades cadastradas
+            # Lista dos recursos cadastrados
+            "DIM_RECURSO": {"id": 3476, "slice_column": ""},
+            # Lista das unidades cadastradas
+            "DIM_UNIDADE": {"id": 3477, "slice_column": ""},
             "FATO_AMBULATORIO": {
                 "id": 3255,  # Solicitações ambulatoriais
                 "slice_column": "solicitacao_id",
@@ -46,12 +49,22 @@ DATABASE_IDS = {
         },
     },
     "REGULACAO_METRO1_CAPITAL": {
-        "id": 173,  # Banco com tabelas que estavam sendo utilizadas, mas apresentam
+        "id": 173,
+        # Banco com tabelas que estavam sendo utilizadas, mas apresentam
         # diversos problemas como inconsistência e falta de informações.
         "tables": {
-            "TB_HISTORICO_SOLICITACAO_METRO1_CAPITAL": {"id": 3262, "slice_column": ""},
-            "TB_QUANTIDADE_SOLICITACOES": {"id": 3261, "slice_column": ""},
-            "TB_SOLICITACOES": {"id": 5783, "slice_column": "solicitacao_id"},
+            "TB_HISTORICO_SOLICITACAO_METRO1_CAPITAL": {
+                "id": 3262,
+                "slice_column": ""
+            },
+            "TB_QUANTIDADE_SOLICITACOES": {
+                "id": 3261,
+                "slice_column": ""
+            },
+            "TB_SOLICITACOES": {
+                "id": 5783,
+                "slice_column": "solicitacao_id"
+            },
         },
     },
 }
@@ -107,12 +120,14 @@ indexado por `database_id` e `table_id`, e tem como chaves:
 - `slice_column_unique`: se a coluna é única ou não
 - `date_column`: o ID da coluna de data, se existir
 - `slice_column_type`: o tipo da coluna de slice, se necessário
-Exemplo de uso:
-    database_id = 173
-    table_id = 5783
 
-    slice_column_id = QUERY_COLUMNS[database_id][table_id]['slice_column']
-    is_unique = QUERY_COLUMNS[database_id][table_id]['slice_column_unique']
-    date_column_id = QUERY_COLUMNS[database_id][table_id]['date_column']
-    slice_column_type = QUERY_COLUMNS[database_id][table_id]['slice_column_type']
+Exemplo de uso:
+
+database_id = 173
+table_id = 5783
+
+slice_column_id = QUERY_COLUMNS[database_id][table_id]['slice_column']
+is_unique = QUERY_COLUMNS[database_id][table_id]['slice_column_unique']
+date_column_id = QUERY_COLUMNS[database_id][table_id]['date_column']
+slice_column_type = QUERY_COLUMNS[database_id][table_id]['slice_column_type']
 """
