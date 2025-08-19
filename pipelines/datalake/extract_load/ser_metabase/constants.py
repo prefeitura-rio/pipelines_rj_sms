@@ -17,24 +17,15 @@ DATABASE_IDS = {
             },
             "FATO_HISTORICO_SOLICITACAO": {
                 "id": 3260,  # Lista os eventos de todas as solicitações
-                "slice_column": "solicitacao_id"
+                "slice_column": "solicitacao_id",
             },
             "FATO_INTERNACAO": {
                 "id": 3259,  # Solicitações de Internação
-                "slice_column": "solicitacao_id"
+                "slice_column": "solicitacao_id",
             },
-            "FATO_MAPA_LEITOS": {
-                "id": 3258,  # (Descrição ausente)
-                "slice_column": ""
-            },
-            "FATO_FILA_MENSAL": {
-                "id": 5872,  # (Descrição ausente)
-                "slice_column": ""
-            },
-            "FATO_FILA_MENSAL_DATALAKE": {
-                "id": 5873,  # (Descrição ausente)
-                "slice_column": ""
-            },
+            "FATO_MAPA_LEITOS": {"id": 3258, "slice_column": ""},  # (Descrição ausente)
+            "FATO_FILA_MENSAL": {"id": 5872, "slice_column": ""},  # (Descrição ausente)
+            "FATO_FILA_MENSAL_DATALAKE": {"id": 5873, "slice_column": ""},  # (Descrição ausente)
             "TB_RELATORIO_MEDICAMENTOS": {
                 "id": 3478,  # (Descrição ausente)
                 "slice_column": "",
@@ -62,42 +53,36 @@ QUERY_COLUMNS: dict[
     dict[
         int,
         dict[
-            Literal[
-                'slice_column',
-                'slice_column_unique',
-                'date_column',
-                'slice_column_type'
-            ],
-            any
-        ]
-    ]
+            Literal["slice_column", "slice_column_unique", "date_column", "slice_column_type"], any
+        ],
+    ],
 ] = {
     173: {
         5783: {
-            'slice_column': 51407,
-            'slice_column_unique': True,
-            'date_column': 51409,
-            'slice_column_type': 'String',
+            "slice_column": 51407,
+            "slice_column_unique": True,
+            "date_column": 51409,
+            "slice_column_type": "String",
         }
     },
     178: {
         3255: {
-            'slice_column': 30429,
-            'slice_column_unique': True,
-            'date_column': 30452,
-            'slice_column_type': 'String',
+            "slice_column": 30429,
+            "slice_column_unique": True,
+            "date_column": 30452,
+            "slice_column_type": "String",
         },
         3259: {
-            'slice_column': 30513,
-            'slice_column_unique': True,
-            'date_column': 30522,
-            'slice_column_type': 'String',
+            "slice_column": 30513,
+            "slice_column_unique": True,
+            "date_column": 30522,
+            "slice_column_type": "String",
         },
         3260: {
-            'slice_column': 30539,
-            'slice_column_unique': False,
-            'date_column': 30545,
-            'slice_column_type': 'Integer',
+            "slice_column": 30539,
+            "slice_column_unique": False,
+            "date_column": 30545,
+            "slice_column_type": "Integer",
         },
     },
 }
