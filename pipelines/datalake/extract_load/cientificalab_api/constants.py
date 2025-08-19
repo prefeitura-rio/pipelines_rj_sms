@@ -40,5 +40,5 @@ class cientificalab_constants(Enum):
         "7027397",
         "2269481",
         "2291266",
-        "2277301",
+        "2277301"
     ]
