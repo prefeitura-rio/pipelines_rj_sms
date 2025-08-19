@@ -17,10 +17,10 @@ from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
     calculate_slices,
-    query_slice_limit,
-    query_database_slice,
     get_extraction_datetime,
-    upload_df_to_datalake_wrapper
+    query_database_slice,
+    query_slice_limit,
+    upload_df_to_datalake_wrapper,
 )
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key
@@ -33,16 +33,8 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     TABLE_ID = Parameter("table_id", default=3255, required=True)
 
     # BIGQUERY ------------------------------
-    BQ_DATASET_ID = Parameter(
-        "bq_dataset_id",
-        default="brutos_ser_metabase",
-        required=True
-    )
-    BQ_TABLE_ID = Parameter(
-        "bq_table_id",
-        default="FATO_AMBULATORIO",
-        required=True
-    )
+    BQ_DATASET_ID = Parameter("bq_dataset_id", default="brutos_ser_metabase", required=True)
+    BQ_TABLE_ID = Parameter("bq_table_id", default="FATO_AMBULATORIO", required=True)
 
     # DATE LIMITS ---------------------------
     DATE_START = Parameter(
@@ -57,22 +49,12 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     )
 
     # SLICING -------------------------------
-    SLICE_SIZE = Parameter(
-        "slice_size",
-        default=900_000,
-        required=False
-    )
+    SLICE_SIZE = Parameter("slice_size", default=900_000, required=False)
 
     # CREDENTIALS ------------------------------
-    user = get_secret_key(
-        environment=ENVIRONMENT,
-        secret_name="USER",
-        secret_path="/metabase"
-    )
+    user = get_secret_key(environment=ENVIRONMENT, secret_name="USER", secret_path="/metabase")
     password = get_secret_key(
-        environment=ENVIRONMENT,
-        secret_name="PASSWORD",
-        secret_path="/metabase"
+        environment=ENVIRONMENT, secret_name="PASSWORD", secret_path="/metabase"
     )
 
     # Task 1 - Authenticate in Metabase
@@ -107,7 +89,7 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
         table_id=TABLE_ID,
         min_value=min_value,
         max_value=max_value,
-        which='min',
+        which="min",
         slice_size=SLICE_SIZE,
         date_start=DATE_START,
         date_end=DATE_END,
@@ -119,7 +101,7 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
         table_id=TABLE_ID,
         min_value=min_value,
         max_value=max_value,
-        which='max',
+        which="max",
         slice_size=SLICE_SIZE,
         date_start=DATE_START,
         date_end=DATE_END,
