@@ -15,6 +15,7 @@ from pipelines.datalake.extract_load.sisreg_api.tasks import (
     full_extract_process,
     make_run_meta,
     validate_upload,
+    gera_data_inicial
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,
@@ -53,7 +54,7 @@ with Flow(
     PAGE_SIZE = Parameter("page_size", default=10_000)
     SCROLL_TIMEOUT = Parameter("scroll_timeout", default="2m")
     FILTERS = Parameter("filters", default={"codigo_central_reguladora": "330455"})
-    DATA_INICIAL = Parameter("data_inicial", default="2025-01-01")
+    DATA_INICIAL = Parameter("data_inicial", default="")
     DATA_FINAL = Parameter("data_final", default="2025-01-31")
 
     # PARAMETROS PARA DEFINIR TAMANHO DOS LOTES ------
@@ -64,8 +65,10 @@ with Flow(
     BQ_DATASET = Parameter("bq_dataset", default="brutos_sisreg_api")
     BQ_TABLE = Parameter("bq_table", default="solicitacoes")
 
+    data_inicial = gera_data_inicial(data_inicio=DATA_INICIAL,data_fim=DATA_FINAL)
+
     faixas = gerar_faixas_de_data(
-        data_inicial=DATA_INICIAL,
+        data_inicial=data_inicial,
         data_final=DATA_FINAL,
         dias_por_faixa=DIAS_POR_FAIXA,
         date_format=FORMATO_DATA,
