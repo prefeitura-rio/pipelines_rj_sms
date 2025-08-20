@@ -56,7 +56,7 @@ def authenticate_and_fetch(
             f"{base_url}/APOIO/DTL/resultado", headers=results_headers, json=request_body
         )
 
-        log(f"(authenticate_and_fetch) Response body: {results_response.text}",level="info")
+        log(f"(authenticate_and_fetch) Response body: {results_response.text}", level="info")
 
         results_response.raise_for_status()
 
