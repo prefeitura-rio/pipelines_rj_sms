@@ -164,10 +164,11 @@ def gera_data_inicial(data_inicio, data_fim):
     Se data_inicio for fornecida, retorna ela.
     """
     if data_inicio == "":
-        data_inicio_calculada = pd.to_datetime(data_fim) - timedelta(days=6*30)
+        data_inicio_calculada = pd.to_datetime(data_fim) - timedelta(days=6 * 30)
     else:
         data_inicio_calculada = data_inicio
     return data_inicio_calculada
+
 
 @task(max_retries=5, retry_delay=timedelta(seconds=30))
 def full_extract_process(
