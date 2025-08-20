@@ -67,7 +67,7 @@ def authenticate_and_fetch(
 
         results = results_response.json()
 
-        if 'status' in results["lote"] and results["lote"]['status'] != 200:
+        if "status" in results["lote"] and results["lote"]["status"] != 200:
             message = f"(authenticate_and_fetch) Failed to get results: Status: {results['lote']['status']} Message: {results['lote']['mensagem']}"
             raise Exception(message)
 
