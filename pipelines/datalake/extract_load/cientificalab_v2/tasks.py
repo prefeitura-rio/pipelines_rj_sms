@@ -56,9 +56,20 @@ def authenticate_and_fetch(
             f"{base_url}/APOIO/DTL/resultado", headers=results_headers, json=request_body
         )
 
+        log(f"(authenticate_and_fetch) Response body: {results_response.text}",level="info")
+
         results_response.raise_for_status()
 
         results = results_response.json()
+
+        solicitacoes = results.get("lote", {}).get("solicitacoes", {}).get("solicitacao", [])
+        if not solicitacoes:
+            log(
+                f"(authenticate_and_fetch) Resposta recebida, mas sem solicitações de resultado. "
+                f"Resposta completa: {results}",
+                level="warning",
+            )
+            raise ValueError("Nenhum resultado encontrado para o período solicitado.")
 
         log("(authenticate_and_fetch) Successfully fetched results", level="info")
 
