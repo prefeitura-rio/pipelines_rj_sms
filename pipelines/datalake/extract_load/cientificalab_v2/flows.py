@@ -45,30 +45,32 @@ with Flow(
     dt_fim = Parameter("data_fim", default="2025-01-21T11:30:00-0300")
     cnes = Parameter("cnes", required=True)
     rename_flow = Parameter("rename_flow", default=True)
-    dataset_id = Parameter("dataset", default=cientificalab_constants.DATASET_ID.value, required=False) # noqa
+    dataset_id = Parameter(
+        "dataset", default=cientificalab_constants.DATASET_ID.value, required=False
+    )  # noqa
 
     # INFISICAL
     INFISICAL_PATH = cientificalab_constants.INFISICAL_PATH.value
-    
+
     username_secret = get_secret_key(
         secret_path=INFISICAL_PATH,
-        secret_name=cientificalab_constants.INFISICAL_USERNAME.value, 
-        environment=environment
+        secret_name=cientificalab_constants.INFISICAL_USERNAME.value,
+        environment=environment,
     )
     password_secret = get_secret_key(
         secret_path=INFISICAL_PATH,
         secret_name=cientificalab_constants.INFISICAL_PASSWORD.value,
-        environment=environment
+        environment=environment,
     )
     apccodigo_secret = get_secret_key(
         secret_path=INFISICAL_PATH,
         secret_name=cientificalab_constants.INFISICAL_APCCODIGO.value,
-        environment=environment
+        environment=environment,
     )
     codigo_lis_secret = get_secret_key(
         secret_path=INFISICAL_PATH,
         secret_name=cientificalab_constants.INFISICAL_CODIGOLIS.value,
-        environment=environment
+        environment=environment,
     )
 
     with case(rename_flow, True):
@@ -124,13 +126,13 @@ with Flow(
         constants.DANIEL_ID.value,
     ],
 ) as flow_cientificalab_manager_v2:
-    
+
     environment = Parameter("environment", default="dev")
     relative_date_filter = Parameter("intervalo", default="D-1")
 
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
-    
+
     cnes_list = cientificalab_constants.CNES.value
 
     start_date = from_relative_date(relative_date=relative_date_filter)
@@ -138,9 +140,7 @@ with Flow(
     windows = generate_daily_windows(start_date=start_date)
 
     operator_parameters = build_operator_params(
-        windows=windows, 
-        env=environment, 
-        cnes_list=cnes_list
+        windows=windows, env=environment, cnes_list=cnes_list
     )
 
     created_operator_runs = create_flow_run.map(
