@@ -33,6 +33,7 @@ with Flow(
     INSTANCE_NAME = Parameter("instance_name", default="vitacare")
     FILE_PATTERN = Parameter("file_pattern", default=None, required=True)
     LIMIT_FILES = Parameter("limit_files", default=None)
+    CONTINUE_FROM = Parameter("continue_from", default=None)
 
     filenames = find_all_filenames_from_pattern(
         environment=ENVIRONMENT,
@@ -52,6 +53,7 @@ with Flow(
         bucket_name=BUCKET_NAME,
         instance_name=INSTANCE_NAME,
         limit_files=LIMIT_FILES,
+        start_from=CONTINUE_FROM,
     )
 
 

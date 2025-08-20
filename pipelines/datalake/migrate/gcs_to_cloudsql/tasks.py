@@ -50,24 +50,54 @@ def get_most_recent_filenames(files):
     return most_recent_filenames
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task()
 def send_sequential_api_requests(
-    most_recent_files: list, bucket_name: str, instance_name: str, limit_files: int
+    most_recent_files: list, bucket_name: str,
+    instance_name: str, limit_files: int,
+    start_from: int = 0
 ):
-    # Caso queira limitar o número de arquivos para teste
-    if limit_files is not None and limit_files > 0:
-        log(f"[send_sequential_api_requests] Limiting to {limit_files} files")
-        most_recent_files = most_recent_files[:limit_files]
+    # Garante ordem consistente de arquivos
+    most_recent_files.sort()
 
     file_count = len(most_recent_files)
     log(f"[send_sequential_api_requests] Received {file_count} filename(s)")
+
+    start_from = int(start_from or 0)
+    if start_from < 0 or start_from > file_count - 1:
+        log(
+            f"[send_sequential_api_requests] Received '{start_from}' for CONTINUE_FROM,"
+            f"must be between 0 and {file_count-1}; ignoring",
+            level="warning"
+        )
+        start_from = 0
+
+    if start_from != 0:
+        most_recent_files = most_recent_files[start_from:]
+        file_count = len(most_recent_files)
+        log(
+            f"[send_sequential_api_requests] Starting from file #{start_from} "
+            f"('{most_recent_files[0]}'); now dealing with {file_count} file(s)"
+        )
+
+    # Caso queira limitar o número de arquivos para teste
+    limit_files = int(limit_files or 0)
+    if limit_files > 0:
+        most_recent_files = most_recent_files[:limit_files]
+        file_count = len(most_recent_files)
+        log(
+            f"[send_sequential_api_requests] Limiting to {limit_files} file(s); "
+            f"now dealing with {file_count} file(s)"
+        )
+
+    utils.wait_for_operations(instance_name, label="pre-import")
 
     # Garante que a instância está executando, senão a importação logo abaixo
     # retorna HTTP 412 Precondition Failed
     # https://cloud.google.com/sql/docs/postgres/start-stop-restart-instance#rest-v1beta4
     log("[send_sequential_api_requests] Guaranteeing instance is running")
     always_on = {"settings": {"activationPolicy": "ALWAYS"}}
-    utils.call_and_wait("PATCH", f"/instances/{instance_name}", json=always_on)
+    utils.call_api("PATCH", f"/instances/{instance_name}", json=always_on)
+    utils.wait_for_operations(instance_name, label="turning on")
     utils.get_instance_status(instance_name)
 
     # Requisições precisam ser sequenciais porque a API só permite uma operação por vez
@@ -107,7 +137,8 @@ def send_sequential_api_requests(
             # Se já não existir, vai dar o seguinte warning (mas ainda HTTP 200):
             # > ERROR_SQL_SERVER_EXTERNAL_WARNING: Warn: database vitacare_historic_xxxx doesn't exist
             # Chama a API e espera a operação terminar
-            utils.call_and_wait("DELETE", f"/instances/{instance_name}/databases/{database_name}")
+            utils.call_api("DELETE", f"/instances/{instance_name}/databases/{database_name}")
+            utils.wait_for_operations(instance_name, label="DELETE")
 
             log(
                 "[send_sequential_api_requests] "
@@ -123,12 +154,16 @@ def send_sequential_api_requests(
                 }
             }
             # Chama a API e espera a operação terminar
-            utils.call_and_wait("POST", f"/instances/{instance_name}/import", json=data)
+            utils.call_api("POST", f"/instances/{instance_name}/import", json=data)
+            utils.wait_for_operations(instance_name, label="import")
     finally:
         # Desliga a instância de novo após a importação
+        utils.wait_for_operations(instance_name, label="post-import")
+        log("-" * 20)
         log("[send_sequential_api_requests] Stopping instance...")
         always_off = {"settings": {"activationPolicy": "NEVER"}}
-        utils.call_and_wait("PATCH", f"/instances/{instance_name}", json=always_off)
+        utils.call_api("PATCH", f"/instances/{instance_name}", json=always_off)
+        utils.wait_for_operations(instance_name, label="turning off")
         utils.get_instance_status(instance_name)
 
     log("[send_sequential_api_requests] All done!")

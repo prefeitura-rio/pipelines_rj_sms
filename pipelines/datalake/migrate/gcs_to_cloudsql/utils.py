@@ -53,7 +53,107 @@ def check_db_name(name: str):
     return
 
 
-def call_and_wait(method: str, url_path: str, json=None):
+def wait_for_operations(instance_name: str, label: str = ""):
+    if len(label) > 0:
+        label = f"wait_for_operations ({label})"
+    else:
+        label = "wait_for_operations"
+
+    # Cabeçalhos da requisição são sempre os mesmos
+    access_token = get_access_token()
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+
+    # Pegamos só 1 (`maxResults=1`) pra saber o status da operação mais recente
+    # "reverse chronological order of the start time"
+    # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations/list
+    url_path = f"/operations?instance={instance_name}&maxResults=1"
+    API_URL = f"{constants.API_BASE.value}{url_path}"
+
+    # Definições de quantas vezes vamos conferir o status
+    # 40 * 15 = 600s = 10min
+    MAX_ATTEMPTS = 40
+    SLEEP_TIME_SECS = 15
+    succeeded = False
+    for i in range(MAX_ATTEMPTS):
+        log(f"[{label}] Polling for operations...")
+        response = requests.request("GET", API_URL, headers=headers)
+
+        # Confere se requisição foi bem sucedida
+        status = response.status_code
+        if status != 200:
+            log(f"[{label}] API responded with status {status}")
+        if status >= 400:
+            log(response.content.decode("utf-8"), level="error")
+        response.raise_for_status()
+
+        res_json = response.json()
+        if "items" not in res_json:
+            log(f"[{label}] 'items' field not in API response; skipping check", level="warning")
+            return
+
+        operations = res_json["items"]
+        if len(operations) <= 0:
+            log(f"[{label}] No operations returned!")
+            return
+        operation = operations[0]
+
+        # Obtém UUID da operação
+        operation_id = "(unknown ID)"
+        if "name" in operation:
+            operation_id = operation["name"]
+
+        # Confere se houve algum erro
+        if (
+            "error" in operation
+            and "errors" in operation["error"]
+            and len(operation["error"]["errors"]) > 0
+        ):
+            # Às vezes os "erros" são na verdade warnings, então não precisa morrer por isso
+            error_count = len(operation["error"]["errors"])
+            log(
+                f"[{label}] API reported {error_count} error(s) for operation '{operation_id}'",
+                level="warning",
+            )
+            for err in operation["error"]["errors"]:
+                log(f"{err['code']}: {err['message']}", level="warning")
+
+        # Confere o status atual da operação
+        # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations#sqloperationstatus
+        status = "?"
+        if "status" in operation:
+            status = operation["status"]
+            log(f"[{label}] Latest operation '{operation_id}' has status {status}")
+            if status == "DONE":
+                succeeded = True
+                break
+        else:
+            log(operation)
+            log(
+                f"[{label}] 'status' not present in JSON response for operation '{operation_id}'!",
+                level="warning",
+            )
+
+        # Última coisa antes de tentar de novo: dorme para não marretar a API
+        log(f"[{label}] Sleeping for {SLEEP_TIME_SECS}s ({i+1}/{MAX_ATTEMPTS})...")
+        sleep(SLEEP_TIME_SECS)
+
+    if not succeeded:
+        log(
+            f"[{label}] Max wait attempts reached; "
+            + "Possible HTTP 409 'Conflict' error coming.",
+            level="warning",
+        )
+
+    # Percebemos que, às vezes, mesmo após um status "DONE"
+    # a API responde com 409 Conflict; então, por via das dúvidas,
+    # damos mais uma última dormida rápida pra tentar evitar isso
+    sleep(10)
+
+
+def call_api(method: str, url_path: str, json=None):
     if not method or len(method) <= 0:
         method = "GET"
     method = method.upper()
@@ -65,7 +165,7 @@ def call_and_wait(method: str, url_path: str, json=None):
         "Content-Type": "application/json",
     }
 
-    log(f"[call_and_wait] {method} {url_path}")
+    log(f"[call_api] {method} {url_path}")
     API_URL = f"{constants.API_BASE.value}{url_path}"
 
     # Envia a requisição
@@ -76,89 +176,11 @@ def call_and_wait(method: str, url_path: str, json=None):
 
     # Confere se foi bem sucedida
     status = response.status_code
-    log(f"[call_and_wait] API responded with status {status}")
+    if status != 200:
+        log(f"[call_api] API responded with status {status}")
     if status >= 400:
         log(response.content.decode("utf-8"), level="error")
     response.raise_for_status()
-
-    # Resposta é (deveria ser) uma instância de 'Operation'
-    # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations
-    res_json = response.json()
-
-    # "`name` (string): An identifier that uniquely identifies the operation"
-    if "name" not in res_json:
-        raise KeyError(
-            "[call_and_wait] Google API's JSON response doesn't contain 'name' Operation identifier"
-        )
-    # Pega o identificador da operação que precisamos esperar
-    operation_id = res_json["name"]
-
-    # Dorme por 5 segundinhos só pra ter uma chance de
-    # já estar DONE no primeiro teste
-    sleep(5)
-
-    # Definições de quantas vezes vamos conferir o status
-    # 40 * 15 = 600s = 10min
-    MAX_ATTEMPTS = 40
-    SLEEP_TIME_SECS = 15
-    succeeded = False
-    for i in range(MAX_ATTEMPTS):
-        # Constrói a URL da API para essa operação
-        API_BASE = constants.API_BASE.value
-        API_OPERATION = f"/operations/{operation_id}"
-        API_POLL = f"{API_BASE}{API_OPERATION}"
-
-        log(f"[call_and_wait] Polling for '{operation_id}'...")
-
-        # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations/get
-        response = requests.get(API_POLL, headers=headers)
-        poll_json = response.json()
-        # Confere se houve algum erro
-        if (
-            "error" in poll_json
-            and "errors" in poll_json["error"]
-            and len(poll_json["error"]["errors"]) > 0
-        ):
-            # Às vezes os "erros" são na verdade warnings, então não precisa morrer por isso
-            error_count = len(poll_json["error"]["errors"])
-            log(
-                f"[call_and_wait] API reported {error_count} error(s)",
-                level="warning",
-            )
-            for err in poll_json["error"]["errors"]:
-                log(f"{err['code']}: {err['message']}", level="warning")
-
-        # Confere o status atual da operação
-        # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations#sqloperationstatus
-        status = "?"
-        if "status" in poll_json:
-            status = poll_json["status"]
-            log(f"[call_and_wait] Operation status: {status}")
-            if status == "DONE":
-                succeeded = True
-                break
-        else:
-            log(poll_json)
-            log(
-                "[call_and_wait] 'status' not present in JSON response!",
-                level="warning",
-            )
-
-        # Última coisa antes de tentar de novo: dorme para não marretar a API
-        log(f"[call_and_wait] Sleeping for {SLEEP_TIME_SECS}s ({i+1}/{MAX_ATTEMPTS})...")
-        sleep(SLEEP_TIME_SECS)
-
-    if not succeeded:
-        log(
-            f"[call_and_wait] Operation '{operation_id}' is not done! "
-            + "Possible HTTP 409 'Conflict' error coming.",
-            level="warning",
-        )
-
-    # Percebemos que, às vezes, mesmo após um status "DONE"
-    # a API responde com 409 Conflict; então, por via das dúvidas,
-    # damos mais uma última dormida rápida pra tentar evitar isso
-    sleep(15)
 
 
 def get_instance_status(instance_name: str):
@@ -177,7 +199,8 @@ def get_instance_status(instance_name: str):
 
     # Confere se foi bem sucedida
     status = response.status_code
-    log(f"[get_instance_status] API responded with status {status}")
+    if status != 200:
+        log(f"[get_instance_status] API responded with status {status}")
     response.raise_for_status()
 
     # Resposta é (deveria ser) um json; queremos saber o `state`
