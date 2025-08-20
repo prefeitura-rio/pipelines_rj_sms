@@ -155,6 +155,11 @@ def call_and_wait(method: str, url_path: str, json=None):
             level="warning",
         )
 
+    # Percebemos que, às vezes, mesmo após um status "DONE"
+    # a API responde com 409 Conflict; então, por via das dúvidas,
+    # damos mais uma última dormida rápida pra tentar evitar isso
+    sleep(15)
+
 
 def get_instance_status(instance_name: str):
     # Cabeçalhos da requisição são sempre os mesmos
