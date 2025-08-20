@@ -9,6 +9,11 @@ import pytz
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.datalake.extract_load.cientificalab_v2.utils import (
+    achatar_dicionario,
+    garantir_lista,
+)
+
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
@@ -22,22 +27,25 @@ def authenticate_and_fetch(
     base_url = "https://cielab.lisnet.com.br/lisnetws"
 
     try:
-        token_response = requests.get(f"{base_url}/tokenlisnet/apccodigo", headers=auth_headers)
+        token_response = requests.get(
+            f"{base_url}/tokenlisnet/apccodigo", 
+            headers=auth_headers
+        )
 
         token_response.raise_for_status()
 
         token_data = token_response.json()
 
-        if token_data.get("status") != 200:
-            message = f"Error getting token: {token_data.get('status')} - {token_data.get('mensagem')}"  # noqa
+        if token_data['status'] != 200:
+            message = f"(authenticate_and_fetch) Error getting token: {token_data['status']} - {token_data['mensagem']}"  # noqa
             raise Exception(message)
 
-        token = token_data.get("token")
+        token = token_data['token']
 
         if not token:
-            raise ValueError("Authentication successful, but no token found in response")
+            raise ValueError("(authenticate_and_fetch) Authentication successful, but no token found in response") # noqa
 
-        log("(authenticate_and_fetch) Token retrived successfully")
+        log("(authenticate_and_fetch) Authentication successful")
 
         results_headers = {"codigo": apccodigo, "token": token}
 
@@ -48,28 +56,28 @@ def authenticate_and_fetch(
                 "parametros": {
                     "retorno": "ESTRUTURADO",
                     "parcial": "N",
+                    "sigiloso": "S",
                 },
             }
         }
 
         results_response = requests.post(
-            f"{base_url}/APOIO/DTL/resultado", headers=results_headers, json=request_body
+            f"{base_url}/APOIO/DTL/resultado", 
+            headers=results_headers, 
+            json=request_body
         )
-
-        log(f"(authenticate_and_fetch) Response body: {results_response.text}", level="info")
 
         results_response.raise_for_status()
 
         results = results_response.json()
 
-        solicitacoes = results.get("lote", {}).get("solicitacoes", {}).get("solicitacao", [])
-        if not solicitacoes:
-            log(
-                f"(authenticate_and_fetch) Resposta recebida, mas sem solicitações de resultado. "
-                f"Resposta completa: {results}",
-                level="warning",
-            )
-            raise ValueError("Nenhum resultado encontrado para o período solicitado.")
+        if results['lote']['status'] != 200:
+            message = f"(authenticate_and_fetch) Failed to get results: Status: {results['lote']['status']} Message: {results['lote']['mensagem']}"
+            raise Exception(message)
+
+        if 'solicitacoes' not in results['lote']:
+            message = f"(authenticate_and_fetch) Failed to get results. No data available, message: {results['lote']['mensagem']}"
+            raise Exception(message)
 
         log("(authenticate_and_fetch) Successfully fetched results", level="info")
 
@@ -88,61 +96,56 @@ def transform(resultado_json: dict) -> pd.DataFrame:
     resultados_rows = []
 
     lote = resultado_json.get("lote", {})
+    # Extrai informações do lote para adicionar a cada solicitação
     lote_info = {f"lote_{k}": v for k, v in lote.items() if k != "solicitacoes"}
 
-    solicitacoes = lote.get("solicitacoes", {}).get("solicitacao", [])
-    if not isinstance(solicitacoes, list):
-        solicitacoes = [solicitacoes]
+    solicitacoes = garantir_lista(lote.get("solicitacoes", {}).get("solicitacao"))
 
     for s in solicitacoes:
-        exames_data = s.pop("exames", {}).get("exame", [])
-        if not isinstance(exames_data, list):
-            exames_data = [exames_data]
+        # Usamos .pop() para extrair o dicionário aninhado e removê-lo da fonte ao mesmo tempo
+        dados_paciente = achatar_dicionario(s.pop("paciente", {}), "paciente")
+        dados_resp_tec = achatar_dicionario(s.pop("responsaveltecnico", {}), "responsaveltecnico")
+        exames_data = s.pop("exames", {}).get("exame")
 
-        paciente_data = {f"paciente_{k}": v for k, v in s.pop("paciente", {}).items()}
-        resp_tec_data = {
-            f"responsaveltecnico_{k}": v for k, v in s.pop("responsaveltecnico", {}).items()
-        }  # noqa
+        # Monta a linha da solicitação com os dados achatados
+        solicitacao_row = {**s, **dados_paciente, **dados_resp_tec, **lote_info}
 
-        solicitacao_row = {**s, **paciente_data, **resp_tec_data, **lote_info}
         solicitacao_id = str(
             uuid.uuid5(
                 uuid.NAMESPACE_DNS,
-                f"{solicitacao_row.get('codigoLis', '')}|{solicitacao_row.get('dataPedido', '')}|{solicitacao_row.get('paciente_nome', '')}",  # noqa
+                f"{solicitacao_row.get('codigoLis', '')}|{solicitacao_row.get('dataPedido', '')}|{solicitacao_row.get('paciente_nome', '')}",
             )
-        )  # noqa
+        )
         solicitacao_row["id"] = solicitacao_id
         solicitacoes_rows.append(solicitacao_row)
 
-        for e in exames_data:
-            resultados_data = e.pop("resultados", {}).get("resultado", [])
-            if not isinstance(resultados_data, list):
-                resultados_data = [resultados_data]
+        for e in garantir_lista(exames_data):
+            dados_solicitante = achatar_dicionario(e.pop("solicitante", {}), "solicitante")
+            resultados_data = e.pop("resultados", {}).get("resultado")
 
-            solicitante_data = {f"solicitante_{k}": v for k, v in e.pop("solicitante", {}).items()}
+            exame_row = {**e, **dados_solicitante}
+            exame_row["solicitacao_id"] = solicitacao_id
 
-            exame_row = {**e, **solicitante_data}
             exame_id = str(
                 uuid.uuid5(
                     uuid.NAMESPACE_DNS,
-                    f"{solicitacao_id}|{exame_row.get('codigoApoio', '')}|{exame_row.get('dataAssinatura', '')}",  # noqa
+                    f"{solicitacao_id}|{exame_row.get('codigoApoio', '')}|{exame_row.get('dataAssinatura', '')}",
                 )
-            )  # noqa
+            )
             exame_row["id"] = exame_id
-            exame_row["solicitacao_id"] = solicitacao_id
             exames_rows.append(exame_row)
 
-            for r in resultados_data:
+            for r in garantir_lista(resultados_data):
                 resultado_row = r.copy()
-                resultado_row["resultado"] = resultado_row.get("resultado", "")
+                resultado_row["exame_id"] = exame_id
+
                 resultado_id = str(
                     uuid.uuid5(
                         uuid.NAMESPACE_DNS,
-                        f"{exame_id}|{resultado_row.get('codigoApoio', '')}|{resultado_row.get('descricaoApoio', '')}",  # noqa
+                        f"{exame_id}|{resultado_row.get('codigoApoio', '')}|{resultado_row.get('descricaoApoio', '')}",
                     )
-                )  # noqa
+                )
                 resultado_row["id"] = resultado_id
-                resultado_row["exame_id"] = exame_id
                 resultados_rows.append(resultado_row)
 
     now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
@@ -152,12 +155,8 @@ def transform(resultado_json: dict) -> pd.DataFrame:
     resultados_df = pd.DataFrame(resultados_rows)
 
     for df in [solicitacoes_df, exames_df, resultados_df]:
-        df["datalake_loaded_at"] = now
-
-    exames_df = exames_df.drop(columns=["resultados"], errors="ignore")
-    solicitacoes_df = solicitacoes_df.drop(
-        columns=["paciente", "responsaveltecnico"], errors="ignore"
-    )  # noqa
+        if not df.empty:
+            df["datalake_loaded_at"] = now
 
     return solicitacoes_df, exames_df, resultados_df
 

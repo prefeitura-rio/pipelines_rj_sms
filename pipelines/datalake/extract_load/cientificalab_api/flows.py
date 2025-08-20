@@ -100,7 +100,7 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    solicitacoes_df, exames_df, resultados_df = transform(resultado_xml=resultado_xml)
+    solicitacoes_df, exames_df, resultados_df = transform(json_result=resultado_xml)
 
     solicitacoes_upload_task = upload_df_to_datalake(
         df=solicitacoes_df,
