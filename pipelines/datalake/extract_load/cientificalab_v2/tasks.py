@@ -13,7 +13,6 @@ from pipelines.datalake.extract_load.cientificalab_v2.utils import (
     achatar_dicionario,
     garantir_lista,
 )
-
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
@@ -27,23 +26,22 @@ def authenticate_and_fetch(
     base_url = "https://cielab.lisnet.com.br/lisnetws"
 
     try:
-        token_response = requests.get(
-            f"{base_url}/tokenlisnet/apccodigo", 
-            headers=auth_headers
-        )
+        token_response = requests.get(f"{base_url}/tokenlisnet/apccodigo", headers=auth_headers)
 
         token_response.raise_for_status()
 
         token_data = token_response.json()
 
-        if token_data['status'] != 200:
+        if token_data["status"] != 200:
             message = f"(authenticate_and_fetch) Error getting token: {token_data['status']} - {token_data['mensagem']}"  # noqa
             raise Exception(message)
 
-        token = token_data['token']
+        token = token_data["token"]
 
         if not token:
-            raise ValueError("(authenticate_and_fetch) Authentication successful, but no token found in response") # noqa
+            raise ValueError(
+                "(authenticate_and_fetch) Authentication successful, but no token found in response"
+            )  # noqa
 
         log("(authenticate_and_fetch) Authentication successful")
 
@@ -62,20 +60,18 @@ def authenticate_and_fetch(
         }
 
         results_response = requests.post(
-            f"{base_url}/APOIO/DTL/resultado", 
-            headers=results_headers, 
-            json=request_body
+            f"{base_url}/APOIO/DTL/resultado", headers=results_headers, json=request_body
         )
 
         results_response.raise_for_status()
 
         results = results_response.json()
 
-        if results['lote']['status'] != 200:
+        if results["lote"]["status"] != 200:
             message = f"(authenticate_and_fetch) Failed to get results: Status: {results['lote']['status']} Message: {results['lote']['mensagem']}"
             raise Exception(message)
 
-        if 'solicitacoes' not in results['lote']:
+        if "solicitacoes" not in results["lote"]:
             message = f"(authenticate_and_fetch) Failed to get results. No data available, message: {results['lote']['mensagem']}"
             raise Exception(message)
 
