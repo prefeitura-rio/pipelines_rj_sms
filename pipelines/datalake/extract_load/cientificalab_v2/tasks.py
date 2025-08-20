@@ -97,7 +97,7 @@ def transform(resultado_json: dict) -> pd.DataFrame:
         solicitacao_id = str(
             uuid.uuid5(
                 uuid.NAMESPACE_DNS,
-                f"{solicitacao_row.get('codigoLis', '')}|{solicitacao_row.get('dataPedido', '')}|{solicitacao_row.get('paciente_nome', '')}", # noqa
+                f"{solicitacao_row.get('codigoLis', '')}|{solicitacao_row.get('dataPedido', '')}|{solicitacao_row.get('paciente_nome', '')}",  # noqa
             )
         )  # noqa
         solicitacao_row["id"] = solicitacao_id
@@ -114,7 +114,7 @@ def transform(resultado_json: dict) -> pd.DataFrame:
             exame_id = str(
                 uuid.uuid5(
                     uuid.NAMESPACE_DNS,
-                    f"{solicitacao_id}|{exame_row.get('codigoApoio', '')}|{exame_row.get('dataAssinatura', '')}", # noqa
+                    f"{solicitacao_id}|{exame_row.get('codigoApoio', '')}|{exame_row.get('dataAssinatura', '')}",  # noqa
                 )
             )  # noqa
             exame_row["id"] = exame_id
@@ -127,7 +127,7 @@ def transform(resultado_json: dict) -> pd.DataFrame:
                 resultado_id = str(
                     uuid.uuid5(
                         uuid.NAMESPACE_DNS,
-                        f"{exame_id}|{resultado_row.get('codigoApoio', '')}|{resultado_row.get('descricaoApoio', '')}", # noqa
+                        f"{exame_id}|{resultado_row.get('codigoApoio', '')}|{resultado_row.get('descricaoApoio', '')}",  # noqa
                     )
                 )  # noqa
                 resultado_row["id"] = resultado_id
