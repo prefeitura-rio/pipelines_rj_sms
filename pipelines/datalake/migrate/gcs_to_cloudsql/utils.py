@@ -77,6 +77,8 @@ def call_and_wait(method: str, url_path: str, json=None):
     # Confere se foi bem sucedida
     status = response.status_code
     log(f"[call_and_wait] API responded with status {status}")
+    if status >= 400:
+        log(response.content.decode("utf-8"), level="error")
     response.raise_for_status()
 
     # Resposta é (deveria ser) uma instância de 'Operation'
