@@ -41,8 +41,8 @@ with Flow(
     ],
 ) as flow_cientificalab_operator_v2:
     environment = Parameter("environment", default="dev")
-    dt_inicio = Parameter("data_inicio", default="2025-01-21T10:00:00-0300")
-    dt_fim = Parameter("data_fim", default="2025-01-21T11:30:00-0300")
+    dt_inicio = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
+    dt_fim = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
     cnes = Parameter("cnes", required=True)
     rename_flow = Parameter("rename_flow", default=True)
     dataset_id = Parameter(
