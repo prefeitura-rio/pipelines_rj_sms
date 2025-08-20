@@ -142,8 +142,7 @@ def wait_for_operations(instance_name: str, label: str = ""):
 
     if not succeeded:
         log(
-            f"[{label}] Max wait attempts reached; "
-            + "Possible HTTP 409 'Conflict' error coming.",
+            f"[{label}] Max wait attempts reached; " + "Possible HTTP 409 'Conflict' error coming.",
             level="warning",
         )
 

@@ -52,9 +52,11 @@ def get_most_recent_filenames(files):
 
 @task()
 def send_sequential_api_requests(
-    most_recent_files: list, bucket_name: str,
-    instance_name: str, limit_files: int,
-    start_from: int = 0
+    most_recent_files: list,
+    bucket_name: str,
+    instance_name: str,
+    limit_files: int,
+    start_from: int = 0,
 ):
     # Garante ordem consistente de arquivos
     most_recent_files.sort()
@@ -67,7 +69,7 @@ def send_sequential_api_requests(
         log(
             f"[send_sequential_api_requests] Received '{start_from}' for CONTINUE_FROM,"
             f"must be between 0 and {file_count-1}; ignoring",
-            level="warning"
+            level="warning",
         )
         start_from = 0
 
