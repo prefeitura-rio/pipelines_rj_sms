@@ -486,3 +486,8 @@ cases:
       table_name: "CURATIVOS"
       db_schema: "dbo"
       partition_column: "extracted_at"
+  - case_slug: "report-alerta-jobs-caros"
+    flow_path: "pipelines.reports.alerta_jobs_caros.flows"
+    flow_name: "report_alerta_jobs_caros"
+    params:
+      environment: "dev"
