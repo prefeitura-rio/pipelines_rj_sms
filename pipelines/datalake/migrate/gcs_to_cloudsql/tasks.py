@@ -118,16 +118,17 @@ def send_sequential_api_requests(
 
     try:
         for i, file in enumerate(most_recent_files):
+            log("-" * 20)
             if file is None or len(file) <= 0:
                 log(f"[send_sequential_api_requests] Skipping file {i+1}/{file_count} (empty name)")
                 continue
+            log(f"[send_sequential_api_requests] Processing file {i+1}/{file_count}")
 
             # Prepara parâmetros da requisição
             full_file_uri = f"gs://{bucket_name}/{file}"
             info = utils.get_info_from_filename(filename=file)
             database_name = "_".join([info["name"], info["cnes"]])
 
-            log("-" * 20)
             log(
                 f"[send_sequential_api_requests] Attempting to delete database '{database_name}'..."
             )
@@ -143,9 +144,8 @@ def send_sequential_api_requests(
             utils.wait_for_operations(instance_name, label="DELETE")
 
             log(
-                "[send_sequential_api_requests] "
-                + f"Attempting to import file {i+1}/{file_count}: "
-                + f"'{full_file_uri}' (db '{database_name}')"
+                f"[send_sequential_api_requests] Attempting to import file "
+                f"'{full_file_uri}' (db '{database_name}')"
             )
             # Faz o pedido de importação
             data = {

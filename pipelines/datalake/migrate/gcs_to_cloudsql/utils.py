@@ -122,7 +122,6 @@ def wait_for_operations(instance_name: str, label: str = ""):
 
         # Confere o status atual da operação
         # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations#sqloperationstatus
-        status = "?"
         if "status" in operation:
             status = operation["status"]
             log(f"[{label}] Latest operation '{operation_id}' has status {status}")
@@ -142,7 +141,7 @@ def wait_for_operations(instance_name: str, label: str = ""):
 
     if not succeeded:
         log(
-            f"[{label}] Max wait attempts reached; " + "Possible HTTP 409 'Conflict' error coming.",
+            f"[{label}] Max wait attempts reached; possible HTTP 409 'Conflict' error coming.",
             level="warning",
         )
 
@@ -164,22 +163,41 @@ def call_api(method: str, url_path: str, json=None):
         "Content-Type": "application/json",
     }
 
-    log(f"[call_api] {method} {url_path}")
     API_URL = f"{constants.API_BASE.value}{url_path}"
+    MAX_ATTEMPTS = 10
+    SLEEP_TIME_SECS = 15
+    for i in range(MAX_ATTEMPTS):
+        # Envia a requisição
+        log(f"[call_api] {method} {url_path}")
+        if json is not None:
+            response = requests.request(method, API_URL, headers=headers, json=json)
+        else:
+            response = requests.request(method, API_URL, headers=headers)
 
-    # Envia a requisição
-    if json is not None:
-        response = requests.request(method, API_URL, headers=headers, json=json)
-    else:
-        response = requests.request(method, API_URL, headers=headers)
+        # Confere se foi bem sucedida
+        status = response.status_code
+        if status < 400:
+            return
 
-    # Confere se foi bem sucedida
-    status = response.status_code
-    if status != 200:
+        # Se chegamos aqui, não foi bem sucedida
         log(f"[call_api] API responded with status {status}")
-    if status >= 400:
+
+        # Caso especial: se deu HTTP 409 Conflict, só
+        # precisamos tentar de novo em alguns segundos
+        if status == 409:
+            log(f"[call_api] Retrying in {SLEEP_TIME_SECS}s ({i+1}/{MAX_ATTEMPTS})...")
+            sleep(SLEEP_TIME_SECS)
+            continue
+
+        # Se chegamos aqui, tivemos um error real; printa o corpo
+        # da resposta e dá erro
         log(response.content.decode("utf-8"), level="error")
-    response.raise_for_status()
+        response.raise_for_status()
+
+    # Se chegamos aqui, tentamos `MAX_ATTEMPTS` vezes
+    # e em TODAS tivemos erro 409; acho que a opção
+    # menos pior é dar erro pra essa situação ser visível
+    raise PermissionError(f"Failed to call API successfully; too many '409 Conflict's")
 
 
 def get_instance_status(instance_name: str):
