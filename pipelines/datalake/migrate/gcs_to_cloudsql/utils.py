@@ -55,12 +55,13 @@ def check_db_name(name: str):
 
 # Arquivo: utils.py
 
+# Em utils.py, substitua a função inteira por esta:
+
 def call_and_wait(method: str, url_path: str, json=None):
     if not method or len(method) <= 0:
         method = "GET"
     method = method.upper()
 
-    # Cabeçalhos da requisição são sempre os mesmos
     access_token = get_access_token()
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -70,76 +71,52 @@ def call_and_wait(method: str, url_path: str, json=None):
     log(f"[call_and_wait] {method} {url_path}")
     API_URL = f"{constants.API_BASE.value}{url_path}"
 
-    # Envia a requisição
-    if method == "POST":
-        response = requests.request(method, API_URL, headers=headers, json=json)
-    else:
-        response = requests.request(method, API_URL, headers=headers)
+    # ===== INÍCIO DA CORREÇÃO =====
+    # Unifica a chamada para garantir que o payload `json` seja sempre enviado,
+    # independentemente do método (POST, PATCH, etc.)
+    response = requests.request(method, API_URL, headers=headers, json=json)
+    # ===== FIM DA CORREÇÃO =====
 
-    # Confere se foi bem sucedida
     status = response.status_code
     log(f"[call_and_wait] API responded with status {status}")
 
     if status >= 500:
         raise ConnectionError(f"[call_and_wait] API responded with status {status}")
 
-    # ===== INÍCIO DA ALTERAÇÃO =====
     if status >= 400:
-        # Para a operação DELETE, um erro 4xx geralmente significa que o banco de dados
-        # não foi encontrado, o que é um resultado aceitável para nós.
         if method == "DELETE":
             log(
                 f"API returned status {status} on DELETE. Assuming database did not exist. Continuing.",
                 level="info",
             )
-            return  # Considera a operação um sucesso e sai da função.
+            return
 
-        # Para qualquer outro método (como POST), um erro 4xx ainda é um erro real.
         log(f"API error details: {response.text}", level="error")
         raise PermissionError(f"[call_and_wait] API responded with status {status}")
-    # ===== FIM DA ALTERAÇÃO =====
 
-    # Resposta é (deveria ser) uma instância de 'Operation'
-    # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations
     res_json = response.json()
 
-    # "`name` (string): An identifier that uniquely identifies the operation"
     if "name" not in res_json:
-        # Se a resposta não for uma operação (ex: GET em um database), pode não ter 'name'
-        # e a função pode terminar aqui, se for o caso.
         log("[call_and_wait] Response is not an Operation object. No need to wait.", level="info")
         return
 
-    # Pega o identificador da operação que precisamos esperar
     operation_id = res_json["name"]
-
-    # Dorme por 5 segundinhos só pra ter uma chance de
-    # já estar DONE no primeiro teste
     sleep(5)
 
-    # Definições de quantas vezes vamos conferir o status
-    # 40 * 15 = 600s = 10min
     MAX_ATTEMPTS = 40
     SLEEP_TIME_SECS = 15
     succeeded = False
     for i in range(MAX_ATTEMPTS):
-        # Constrói a URL da API para essa operação
-        API_BASE = constants.API_BASE.value
-        API_OPERATION = f"/operations/{operation_id}"
-        API_POLL = f"{API_BASE}{API_OPERATION}"
-
+        API_POLL = f"{constants.API_BASE.value}/operations/{operation_id}"
         log(f"[call_and_wait] Polling for '{operation_id}'...")
+        poll_response = requests.get(API_POLL, headers=headers)
+        poll_json = poll_response.json()
 
-        # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations/get
-        response = requests.get(API_POLL, headers=headers)
-        poll_json = response.json()
-        # Confere se houve algum erro
         if (
             "error" in poll_json
             and "errors" in poll_json["error"]
             and len(poll_json["error"]["errors"]) > 0
         ):
-            # Às vezes os "erros" são na verdade warnings, então não precisa morrer por isso
             error_count = len(poll_json["error"]["errors"])
             log(
                 f"[call_and_wait] API reported {error_count} error(s)",
@@ -148,23 +125,19 @@ def call_and_wait(method: str, url_path: str, json=None):
             for err in poll_json["error"]["errors"]:
                 log(f"{err['code']}: {err['message']}", level="warning")
 
-        # Confere o status atual da operação
-        # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations#sqloperationstatus
-        status = "?"
         if "status" in poll_json:
-            status = poll_json["status"]
-            log(f"[call_and_wait] Operation status: {status}")
-            if status == "DONE":
+            op_status = poll_json["status"]
+            log(f"[call_and_wait] Operation status: {op_status}")
+            if op_status == "DONE":
                 succeeded = True
                 break
         else:
-            log(poll_json)
+            log(poll_json, level="warning")
             log(
                 "[call_and_wait] 'status' not present in JSON response!",
                 level="warning",
             )
 
-        # Última coisa antes de tentar de novo: dorme para não marretar a API
         log(f"[call_and_wait] Sleeping for {SLEEP_TIME_SECS}s ({i+1}/{MAX_ATTEMPTS})...")
         sleep(SLEEP_TIME_SECS)
 
@@ -174,3 +147,15 @@ def call_and_wait(method: str, url_path: str, json=None):
             + "Possible HTTP 409 'Conflict' error coming.",
             level="warning",
         )
+
+
+def get_instance(instance_name: str) -> dict:
+    """Busca e retorna o objeto de configuração completo de uma instância."""
+    access_token = get_access_token()
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"{constants.API_BASE.value}/instances/{instance_name}"
+
+    log(f"[get_instance] GET {url}")
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()  # Levanta erro se a requisição falhar
+    return response.json()

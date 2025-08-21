@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
-# flake8: noqa E501
 from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -8,12 +7,15 @@ from prefect.storage import GCS
 
 from pipelines.constants import constants
 from pipelines.datalake.migrate.gcs_to_cloudsql.schedules import schedule
+# Importando as novas tasks
 from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
     check_for_outdated_backups,
     find_all_filenames_from_pattern,
     get_most_recent_filenames,
     limit_files_task,
     process_single_database_backup,
+    start_instance,
+    stop_instance,
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
@@ -23,16 +25,15 @@ with Flow(
     state_handlers=[handle_flow_state_change],
     owners=[constants.DIT_ID.value],
 ) as migrate_gcs_to_cloudsql:
-    #####################################
-    # Parameters
-    #####################################
 
+    # Parâmetros
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     BUCKET_NAME = Parameter("bucket_name", default="vitacare_backups_gdrive")
     INSTANCE_NAME = Parameter("instance_name", default="vitacare")
     FILE_PATTERN = Parameter("file_pattern", default=None, required=True)
     LIMIT_FILES = Parameter("limit_files", default=None)
 
+    # Lógica do fluxo
     filenames = find_all_filenames_from_pattern(
         environment=ENVIRONMENT,
         file_pattern=FILE_PATTERN,
@@ -43,7 +44,6 @@ with Flow(
 
     check_for_outdated_backups(
         most_recent_filenames=most_recent_filenames,
-        upstream_tasks=[most_recent_filenames],
     )
 
     limited_filenames = limit_files_task(
@@ -51,14 +51,23 @@ with Flow(
         limit=LIMIT_FILES,
     )
 
-    process_task = process_single_database_backup.map(
+    # 1. LIGA a instância
+    start_op = start_instance(instance_name=INSTANCE_NAME)
+
+    # 2. PROCESSA todos os bancos de dados, com retry individual.
+    #    Só começa depois que a instância estiver ligada (upstream_tasks).
+    process_op = process_single_database_backup.map(
         file=limited_filenames,
         bucket_name=unmapped(BUCKET_NAME),
         instance_name=unmapped(INSTANCE_NAME),
+        upstream_tasks=[unmapped(start_op)],
     )
 
+    # 3. DESLIGA a instância, mas somente depois que TODOS os processos terminarem.
+    stop_instance(instance_name=INSTANCE_NAME, upstream_tasks=[process_op])
 
-# Storage and run configs
+
+# Configurações de schedule, storage e executor (inalteradas)
 migrate_gcs_to_cloudsql.schedule = schedule
 migrate_gcs_to_cloudsql.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 migrate_gcs_to_cloudsql.executor = LocalDaskExecutor(num_workers=1)
