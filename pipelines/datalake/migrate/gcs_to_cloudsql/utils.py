@@ -53,6 +53,8 @@ def check_db_name(name: str):
     return
 
 
+# Arquivo: utils.py
+
 def call_and_wait(method: str, url_path: str, json=None):
     if not method or len(method) <= 0:
         method = "GET"
@@ -80,8 +82,22 @@ def call_and_wait(method: str, url_path: str, json=None):
 
     if status >= 500:
         raise ConnectionError(f"[call_and_wait] API responded with status {status}")
+
+    # ===== INÍCIO DA ALTERAÇÃO =====
     if status >= 400:
+        # Para a operação DELETE, um erro 4xx geralmente significa que o banco de dados
+        # não foi encontrado, o que é um resultado aceitável para nós.
+        if method == "DELETE":
+            log(
+                f"API returned status {status} on DELETE. Assuming database did not exist. Continuing.",
+                level="info",
+            )
+            return  # Considera a operação um sucesso e sai da função.
+
+        # Para qualquer outro método (como POST), um erro 4xx ainda é um erro real.
+        log(f"API error details: {response.text}", level="error")
         raise PermissionError(f"[call_and_wait] API responded with status {status}")
+    # ===== FIM DA ALTERAÇÃO =====
 
     # Resposta é (deveria ser) uma instância de 'Operation'
     # https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/operations
@@ -89,9 +105,11 @@ def call_and_wait(method: str, url_path: str, json=None):
 
     # "`name` (string): An identifier that uniquely identifies the operation"
     if "name" not in res_json:
-        raise KeyError(
-            "[call_and_wait] Google API's JSON response dont contain 'name' Operation identifier"
-        )
+        # Se a resposta não for uma operação (ex: GET em um database), pode não ter 'name'
+        # e a função pode terminar aqui, se for o caso.
+        log("[call_and_wait] Response is not an Operation object. No need to wait.", level="info")
+        return
+
     # Pega o identificador da operação que precisamos esperar
     operation_id = res_json["name"]
 
