@@ -52,7 +52,7 @@ def send_discord_alert(environment: str, results: pd.DataFrame):
     for i, row in results.iterrows():
         time = row.creation_time.strftime("%H:%M:%S")
         custo = f"R$ {row.custo_real_estimado:.2f}"
-        link = f"https://console.cloud.google.com/bigquery?project={row.project_id}&j=bq:US:{row.job_id}&page=queryresults" # noqa: E501
+        link = f"https://console.cloud.google.com/bigquery?project={row.project_id}&j=bq:US:{row.job_id}&page=queryresults"  # noqa: E501
         user = row.email.split("@")[0] + "@..."
         if not row.dataset_id:
             if len(row.table_id) > 20:
