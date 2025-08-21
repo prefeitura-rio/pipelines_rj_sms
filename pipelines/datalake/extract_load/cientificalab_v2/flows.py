@@ -84,7 +84,7 @@ with Flow(
 
     identificador_lis = get_identificador_lis(secret_json=codigo_lis_secret, cnes=cnes)
 
-    resultado_json = authenticate_and_fetch(
+    results = authenticate_and_fetch(
         username=username_secret,
         password=password_secret,
         apccodigo=apccodigo_secret,
@@ -93,7 +93,7 @@ with Flow(
         dt_end=dt_fim,
     )
 
-    solicitacoes_df, exames_df, resultados_df = transform(resultado_json=resultado_json)
+    solicitacoes_df, exames_df, resultados_df = transform(json_result=results)
 
     solicitacoes_upload_task = upload_df_to_datalake(
         df=solicitacoes_df,

@@ -86,7 +86,7 @@ def authenticate_and_fetch(
 
 
 @task(nout=3)
-def transform(data: dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def transform(json_result: dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     solicitacoes_list = []
     exames_list = []
     resultados_list = []
@@ -94,7 +94,7 @@ def transform(data: dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     # timestamp para todas as tabelas
     now = datetime.now(pytz.timezone("America/Sao_Paulo"))
 
-    lote_info = data.get("lote", {})
+    lote_info = json_result.get("lote", {})
     lote_meta = {f"lote_{k}": v for k, v in lote_info.items() if k != "solicitacoes"}
 
     solicitacoes = ensure_list(lote_info.get("solicitacoes", {}).get("solicitacao", []))
