@@ -100,7 +100,7 @@ def transform(data: dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     solicitacoes = ensure_list(lote_info.get("solicitacoes", {}).get("solicitacao", []))
 
     for solicitacao in solicitacoes:
-        solicitacao_dict = {**solicitacao}  
+        solicitacao_dict = {**solicitacao}
 
         paciente = solicitacao_dict.pop("paciente", {})
         resptec = solicitacao_dict.pop("responsaveltecnico", {})
@@ -116,7 +116,7 @@ def transform(data: dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
                 f"{solicitacao.get('codigoLis','')}"
                 f"{solicitacao.get('dataPedido','')}"
                 f"{paciente.get('nome','')}"
-                f"{paciente.get('cpf','')}"
+                f"{paciente.get('cpf','')}",
             )
         )
         solicitacao_dict["id"] = id_solicitacao
@@ -134,7 +134,7 @@ def transform(data: dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
             id_exame = str(
                 uuid.uuid5(
                     uuid.NAMESPACE_DNS,
-                    f"{id_solicitacao}{exame.get('codigoApoio','')}{exame.get('amostraApoio','')}"
+                    f"{id_solicitacao}{exame.get('codigoApoio','')}{exame.get('amostraApoio','')}",
                 )
             )
             exame_dict["id"] = id_exame
@@ -146,10 +146,7 @@ def transform(data: dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
                 resultado_dict = {**resultado}
                 resultado_dict["exame_id"] = id_exame
                 id_resultado = str(
-                    uuid.uuid5(
-                        uuid.NAMESPACE_DNS,
-                        f"{id_exame}{resultado.get('codigoApoio','')}"
-                    )
+                    uuid.uuid5(uuid.NAMESPACE_DNS, f"{id_exame}{resultado.get('codigoApoio','')}")
                 )
                 resultado_dict["id"] = id_resultado
                 resultados_list.append({**resultado_dict, "datalake_loaded_at": now})
