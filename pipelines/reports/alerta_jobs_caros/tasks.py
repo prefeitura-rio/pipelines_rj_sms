@@ -71,7 +71,7 @@ def send_discord_alert(environment: str, results: pd.DataFrame):
         lines.append(line)
 
     send_message(
-        title=f"Alerta de Jobs Caros no BigQuery nas últimas 24h",
+        title="Alerta de Jobs Caros no BigQuery nas últimas 24h",
         message="\n".join(lines),
         monitor_slug="custo_jobs",
         suppress_embeds=True,
