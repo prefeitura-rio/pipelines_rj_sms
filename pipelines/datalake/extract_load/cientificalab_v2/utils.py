@@ -1,21 +1,23 @@
-# -*- coding: utf-8 -*-
+from typing import Any, Dict, List
 
 
-def garantir_lista(item):
-    """Garante que o item de entrada seja sempre uma lista para iteração segura."""
-    if item is None:
+def ensure_list(obj: Any) -> List[Dict]:
+    """
+    Garante que o objeto seja uma lista.
+    Se for None ou vazio, retorna lista vazia.
+    Se for dict, transforma em lista de um elemento.
+    """
+    if obj is None:
         return []
-    if isinstance(item, list):
-        return item
-    return [item]
+    if isinstance(obj, list):
+        return obj
+    if isinstance(obj, dict):
+        return [obj]
+    return []
 
 
-def achatar_dicionario(dicionario_aninhado: dict, prefixo: str) -> dict:
+def flatten_dict(d: Dict[str, Any], prefix: str) -> Dict[str, Any]:
     """
-    'Achata' um dicionário aninhado, adicionando um prefixo
-    Ex: {'nome': 'Ana'}, 'paciente' -> {'paciente_nome': 'Ana'}
+    "Achata" um dicionário, prefixando suas chaves.
     """
-    if not isinstance(dicionario_aninhado, dict):
-        return {}
-
-    return {f"{prefixo}_{chave}": valor for chave, valor in dicionario_aninhado.items()}
+    return {f"{prefix}_{k}": v for k, v in d.items()}

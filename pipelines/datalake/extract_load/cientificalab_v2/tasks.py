@@ -2,7 +2,7 @@
 import json
 import uuid
 from datetime import datetime, time, timedelta
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import pandas as pd
 import pytz
@@ -10,8 +10,8 @@ import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.cientificalab_v2.utils import (
-    achatar_dicionario,
-    garantir_lista,
+    ensure_list,
+    flatten_dict,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 
@@ -86,73 +86,77 @@ def authenticate_and_fetch(
 
 
 @task(nout=3)
-def transform(resultado_json: dict) -> pd.DataFrame:
-    solicitacoes_rows = []
-    exames_rows = []
-    resultados_rows = []
+def transform(data: dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    solicitacoes_list = []
+    exames_list = []
+    resultados_list = []
 
-    lote = resultado_json.get("lote", {})
-    # Extrai informações do lote para adicionar a cada solicitação
-    lote_info = {f"lote_{k}": v for k, v in lote.items() if k != "solicitacoes"}
+    # timestamp para todas as tabelas
+    now = datetime.now(pytz.timezone("America/Sao_Paulo"))
 
-    solicitacoes = garantir_lista(lote.get("solicitacoes", {}).get("solicitacao"))
+    lote_info = data.get("lote", {})
+    lote_meta = {f"lote_{k}": v for k, v in lote_info.items() if k != "solicitacoes"}
 
-    for s in solicitacoes:
-        # Usamos .pop() para extrair o dicionário aninhado e removê-lo da fonte ao mesmo tempo
-        dados_paciente = achatar_dicionario(s.pop("paciente", {}), "paciente")
-        dados_resp_tec = achatar_dicionario(s.pop("responsaveltecnico", {}), "responsaveltecnico")
-        exames_data = s.pop("exames", {}).get("exame")
+    solicitacoes = ensure_list(lote_info.get("solicitacoes", {}).get("solicitacao", []))
 
-        # Monta a linha da solicitação com os dados achatados
-        solicitacao_row = {**s, **dados_paciente, **dados_resp_tec, **lote_info}
+    for solicitacao in solicitacoes:
+        solicitacao_dict = {**solicitacao}  
 
-        solicitacao_id = str(
+        paciente = solicitacao_dict.pop("paciente", {})
+        resptec = solicitacao_dict.pop("responsaveltecnico", {})
+
+        solicitacao_dict.update(flatten_dict(paciente, "paciente"))
+        solicitacao_dict.update(flatten_dict(resptec, "responsaveltecnico"))
+        solicitacao_dict.update(lote_meta)
+
+        # Gerar ID determinístico
+        id_solicitacao = str(
             uuid.uuid5(
                 uuid.NAMESPACE_DNS,
-                f"{solicitacao_row.get('codigoLis', '')}|{solicitacao_row.get('dataPedido', '')}|{solicitacao_row.get('paciente_nome', '')}",
+                f"{solicitacao.get('codigoLis','')}"
+                f"{solicitacao.get('dataPedido','')}"
+                f"{paciente.get('nome','')}"
+                f"{paciente.get('cpf','')}"
             )
         )
-        solicitacao_row["id"] = solicitacao_id
-        solicitacoes_rows.append(solicitacao_row)
+        solicitacao_dict["id"] = id_solicitacao
 
-        for e in garantir_lista(exames_data):
-            dados_solicitante = achatar_dicionario(e.pop("solicitante", {}), "solicitante")
-            resultados_data = e.pop("resultados", {}).get("resultado")
+        exames = ensure_list(solicitacao_dict.pop("exames", {}).get("exame", []))
 
-            exame_row = {**e, **dados_solicitante}
-            exame_row["solicitacao_id"] = solicitacao_id
+        solicitacoes_list.append({**solicitacao_dict, "datalake_loaded_at": now})
 
-            exame_id = str(
+        for exame in exames:
+            exame_dict = {**exame}
+            solicitante = exame_dict.pop("solicitante", {})
+            exame_dict.update(flatten_dict(solicitante, "solicitante"))
+
+            exame_dict["solicitacao_id"] = id_solicitacao
+            id_exame = str(
                 uuid.uuid5(
                     uuid.NAMESPACE_DNS,
-                    f"{solicitacao_id}|{exame_row.get('codigoApoio', '')}|{exame_row.get('dataAssinatura', '')}",
+                    f"{id_solicitacao}{exame.get('codigoApoio','')}{exame.get('amostraApoio','')}"
                 )
             )
-            exame_row["id"] = exame_id
-            exames_rows.append(exame_row)
+            exame_dict["id"] = id_exame
 
-            for r in garantir_lista(resultados_data):
-                resultado_row = r.copy()
-                resultado_row["exame_id"] = exame_id
+            resultados = ensure_list(exame_dict.pop("resultados", {}).get("resultado", []))
+            exames_list.append({**exame_dict, "datalake_loaded_at": now})
 
-                resultado_id = str(
+            for resultado in resultados:
+                resultado_dict = {**resultado}
+                resultado_dict["exame_id"] = id_exame
+                id_resultado = str(
                     uuid.uuid5(
                         uuid.NAMESPACE_DNS,
-                        f"{exame_id}|{resultado_row.get('codigoApoio', '')}|{resultado_row.get('descricaoApoio', '')}",
+                        f"{id_exame}{resultado.get('codigoApoio','')}"
                     )
                 )
-                resultado_row["id"] = resultado_id
-                resultados_rows.append(resultado_row)
+                resultado_dict["id"] = id_resultado
+                resultados_list.append({**resultado_dict, "datalake_loaded_at": now})
 
-    now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-
-    solicitacoes_df = pd.DataFrame(solicitacoes_rows)
-    exames_df = pd.DataFrame(exames_rows)
-    resultados_df = pd.DataFrame(resultados_rows)
-
-    for df in [solicitacoes_df, exames_df, resultados_df]:
-        if not df.empty:
-            df["datalake_loaded_at"] = now
+    solicitacoes_df = pd.DataFrame(solicitacoes_list)
+    exames_df = pd.DataFrame(exames_list)
+    resultados_df = pd.DataFrame(resultados_list)
 
     return solicitacoes_df, exames_df, resultados_df
 
