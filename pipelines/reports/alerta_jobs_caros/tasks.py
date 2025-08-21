@@ -36,7 +36,7 @@ def get_recent_bigquery_jobs(
 
     ontem = (datetime.now() - timedelta(days=1)).strftime("%m-%d-%Y")
     response = requests.get(
-        url=f"https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)?@dataCotacao='{ontem}'&$format=json" # noqa: E501
+        url=f"https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)?@dataCotacao='{ontem}'&$format=json"  # noqa: E501
     )
     response.raise_for_status()
     usd_to_brl_rate = response.json()["value"][0]["cotacaoCompra"]
@@ -67,7 +67,7 @@ def send_discord_alert(environment: str, results: pd.DataFrame):
         else:
             emoji = ""
 
-        line = f"""- [{time}] {emoji} **{custo}** por `{user}` para {destination}. [Ver detalhes do job]({link})""" # noqa: E501
+        line = f"""- [{time}] {emoji} **{custo}** por `{user}` para {destination}. [Ver detalhes do job]({link})"""  # noqa: E501
         lines.append(line)
 
     send_message(
