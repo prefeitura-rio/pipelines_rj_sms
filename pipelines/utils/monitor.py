@@ -16,6 +16,7 @@ async def send_discord_webhook(
     text_content: str,
     file_path: str = None,
     username: str = None,
+    suppress_embeds: bool = False,
     monitor_slug: str = Literal[
         "endpoint-health", "dbt-runs", "data-ingestion", "warning", "hci_status"
     ],
@@ -36,6 +37,8 @@ async def send_discord_webhook(
 
     async with aiohttp.ClientSession() as session:
         kwargs = {"content": text_content, "allowed_mentions": AllowedMentions(users=True)}
+        if suppress_embeds:
+            kwargs["suppress_embeds"] = True
         if username:
             kwargs["username"] = username
         if file_path:
@@ -90,7 +93,9 @@ async def send_discord_embed(
             raise ValueError(f"Error sending message to Discord webhook: {webhook_url}")
 
 
-def send_message(title, message, monitor_slug, file_path=None, username=None):
+def send_message(
+    title, message, monitor_slug, file_path=None, username=None, suppress_embeds=False
+):
     """
     Sends a message with the given title and content to a webhook.
 
@@ -146,6 +151,7 @@ def send_message(title, message, monitor_slug, file_path=None, username=None):
                 file_path=file_path,
                 username=username,
                 monitor_slug=monitor_slug,
+                suppress_embeds=suppress_embeds,
             )
 
     asyncio.run(main(message_contents))
