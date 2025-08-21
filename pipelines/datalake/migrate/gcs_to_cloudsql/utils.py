@@ -57,6 +57,7 @@ def check_db_name(name: str):
 
 # Em utils.py, substitua a função inteira por esta:
 
+
 def call_and_wait(method: str, url_path: str, json=None):
     if not method or len(method) <= 0:
         method = "GET"

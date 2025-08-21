@@ -6,6 +6,7 @@ from datetime import timedelta
 from google.cloud import storage
 
 import pipelines.datalake.migrate.gcs_to_cloudsql.utils as utils
+
 # Mantendo o decorador customizado original
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log

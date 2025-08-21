@@ -7,6 +7,7 @@ from prefect.storage import GCS
 
 from pipelines.constants import constants
 from pipelines.datalake.migrate.gcs_to_cloudsql.schedules import schedule
+
 # Importando as novas tasks
 from pipelines.datalake.migrate.gcs_to_cloudsql.tasks import (
     check_for_outdated_backups,
