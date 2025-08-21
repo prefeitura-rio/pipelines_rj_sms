@@ -1,7 +1,8 @@
-import requests
-import pandas as pd
-
+# -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
+
+import pandas as pd
+import requests
 from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -10,7 +11,9 @@ from pipelines.utils.monitor import send_message
 
 
 @task
-def get_recent_bigquery_jobs(environment: str, cost_threshold: float = 0.5, time_threshold: int = 24):
+def get_recent_bigquery_jobs(
+    environment: str, cost_threshold: float = 0.5, time_threshold: int = 24
+):
     query = f"""
     SELECT
         user.email,
@@ -43,6 +46,7 @@ def get_recent_bigquery_jobs(environment: str, cost_threshold: float = 0.5, time
 
     return results
 
+
 @task
 def send_discord_alert(environment: str, results: pd.DataFrame):
     lines = []
@@ -50,7 +54,7 @@ def send_discord_alert(environment: str, results: pd.DataFrame):
         time = row.creation_time.strftime("%H:%M:%S")
         custo = f"R$ {row.custo_real_estimado:.2f}"
         link = f"https://console.cloud.google.com/bigquery?project={row.project_id}&j=bq:US:{row.job_id}&page=queryresults"
-        user = row.email.split("@")[0] + "@..." 
+        user = row.email.split("@")[0] + "@..."
         if not row.dataset_id:
             if len(row.table_id) > 20:
                 destination = f"`{row.table_id[:20]}...`"

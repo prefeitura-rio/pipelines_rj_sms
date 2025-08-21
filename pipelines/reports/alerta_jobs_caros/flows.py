@@ -21,17 +21,10 @@ with Flow(
     ],
 ) as report_alerta_jobs_caros:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
-    
-    jobs = get_recent_bigquery_jobs(
-        environment=ENVIRONMENT,
-        cost_threshold=0.5,
-        time_threshold=24
-    )
 
-    send_discord_alert(
-        environment=ENVIRONMENT,
-        results=jobs
-    )
+    jobs = get_recent_bigquery_jobs(environment=ENVIRONMENT, cost_threshold=0.5, time_threshold=24)
+
+    send_discord_alert(environment=ENVIRONMENT, results=jobs)
 
 report_alerta_jobs_caros.executor = LocalDaskExecutor(num_workers=1)
 report_alerta_jobs_caros.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

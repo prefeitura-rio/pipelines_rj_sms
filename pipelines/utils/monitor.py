@@ -93,7 +93,9 @@ async def send_discord_embed(
             raise ValueError(f"Error sending message to Discord webhook: {webhook_url}")
 
 
-def send_message(title, message, monitor_slug, file_path=None, username=None, suppress_embeds=False):
+def send_message(
+    title, message, monitor_slug, file_path=None, username=None, suppress_embeds=False
+):
     """
     Sends a message with the given title and content to a webhook.
 
