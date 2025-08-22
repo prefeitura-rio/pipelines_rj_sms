@@ -126,7 +126,7 @@ def send_sequential_api_requests(
             current_step = f"{i+1}/{working_file_count}"
             if working_file_count != original_file_count:
                 current_step += f" ({i+1 + start_from}/{original_file_count})"
-    
+
             if file is None or len(file) <= 0:
                 log(f"[send_sequential_api_requests] Skipping file {current_step}: empty name")
                 continue
