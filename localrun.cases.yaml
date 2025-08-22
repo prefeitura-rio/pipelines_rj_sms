@@ -322,6 +322,7 @@ cases:
       instance_name: "vitacare"
       file_pattern: "HISTÓRICO_PEPVITA_RJ/AP*/vitacare_historic_*_*_*.bak"
       limit_files: -1
+      continue_from: 0
   - case_slug: "datalake-extract-smsrio"
     flow_path: "pipelines.datalake.extract_load.smsrio_mysql.flows"
     flow_name: "sms_dump_smsrio"
