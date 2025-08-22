@@ -164,7 +164,8 @@ def call_api(method: str, url_path: str, json=None):
     }
 
     API_URL = f"{constants.API_BASE.value}{url_path}"
-    MAX_ATTEMPTS = 10
+    # 25 * 15 = 375s ~ 6min
+    MAX_ATTEMPTS = 25
     SLEEP_TIME_SECS = 15
     for i in range(MAX_ATTEMPTS):
         # Envia a requisição

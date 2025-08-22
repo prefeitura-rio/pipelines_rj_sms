@@ -61,34 +61,38 @@ def send_sequential_api_requests(
     # Garante ordem consistente de arquivos
     most_recent_files.sort()
 
-    file_count = len(most_recent_files)
-    log(f"[send_sequential_api_requests] Received {file_count} filename(s)")
+    original_file_count = len(most_recent_files)
+    log(f"[send_sequential_api_requests] Received {original_file_count} filename(s)")
 
     start_from = int(start_from or 0)
-    if start_from < 0 or start_from > file_count - 1:
+    if start_from < 1 or start_from > original_file_count:
         log(
             f"[send_sequential_api_requests] Received '{start_from}' for CONTINUE_FROM,"
-            f"must be between 0 and {file_count-1}; ignoring",
+            f"must be between 1 and {original_file_count}; ignoring",
             level="warning",
         )
-        start_from = 0
+        start_from = 1
+
+    # 0-index
+    start_from = start_from - 1
+    working_file_count = original_file_count
 
     if start_from != 0:
         most_recent_files = most_recent_files[start_from:]
-        file_count = len(most_recent_files)
+        working_file_count = len(most_recent_files)
         log(
-            f"[send_sequential_api_requests] Starting from file #{start_from} "
-            f"('{most_recent_files[0]}'); now dealing with {file_count} file(s)"
+            f"[send_sequential_api_requests] Starting from file #{start_from+1} "
+            f"('{most_recent_files[0]}'); now dealing with {working_file_count} file(s)"
         )
 
     # Caso queira limitar o número de arquivos para teste
     limit_files = int(limit_files or 0)
     if limit_files > 0:
         most_recent_files = most_recent_files[:limit_files]
-        file_count = len(most_recent_files)
+        working_file_count = len(most_recent_files)
         log(
             f"[send_sequential_api_requests] Limiting to {limit_files} file(s); "
-            f"now dealing with {file_count} file(s)"
+            f"now dealing with {working_file_count} file(s)"
         )
 
     utils.wait_for_operations(instance_name, label="pre-import")
@@ -119,10 +123,14 @@ def send_sequential_api_requests(
     try:
         for i, file in enumerate(most_recent_files):
             log("-" * 20)
+            current_step = f"{i+1}/{working_file_count}"
+            if working_file_count != original_file_count:
+                current_step += f" ({i+1 + start_from}/{original_file_count})"
+    
             if file is None or len(file) <= 0:
-                log(f"[send_sequential_api_requests] Skipping file {i+1}/{file_count} (empty name)")
+                log(f"[send_sequential_api_requests] Skipping file {current_step}: empty name")
                 continue
-            log(f"[send_sequential_api_requests] Processing file {i+1}/{file_count}")
+            log(f"[send_sequential_api_requests] Processing file {current_step}")
 
             # Prepara parâmetros da requisição
             full_file_uri = f"gs://{bucket_name}/{file}"

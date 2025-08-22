@@ -60,11 +60,11 @@ with Flow(
 # Storage and run configs
 migrate_gcs_to_cloudsql.schedule = schedule
 migrate_gcs_to_cloudsql.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-migrate_gcs_to_cloudsql.executor = LocalDaskExecutor(num_workers=10)
+migrate_gcs_to_cloudsql.executor = LocalDaskExecutor(num_workers=1)
 migrate_gcs_to_cloudsql.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="10Gi",
+    memory_limit="3Gi",
 )
