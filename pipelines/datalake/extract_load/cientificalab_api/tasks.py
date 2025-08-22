@@ -32,7 +32,7 @@ def authenticate_and_fetch(
         token_response = cloud_function_request.run(
             url=f"{base_url}/tokenlisnet/apccodigo",
             request_type="GET",
-            query_params=auth_headers,
+            header_params=auth_headers,
             api_type="json",
             env=environment,
             endpoint_for_filename="cientificalab_token",
@@ -70,7 +70,7 @@ def authenticate_and_fetch(
         results_response = cloud_function_request.run(
             url=f"{base_url}/APOIO/DTL/resultado",
             request_type="POST",
-            query_params=results_headers,
+            header_params=results_headers,
             body_params=request_body,
             api_type="json",
             env=environment,
