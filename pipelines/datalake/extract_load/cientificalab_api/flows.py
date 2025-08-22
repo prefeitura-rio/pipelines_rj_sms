@@ -12,8 +12,7 @@ from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
 from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
-    generate_daily_windows,
-    get_identificador_lis,
+    generate_time_windows,
     transform,
 )
 from pipelines.datalake.utils.tasks import upload_df_to_datalake
@@ -43,7 +42,6 @@ with Flow(
     environment = Parameter("environment", default="dev")
     dt_inicio = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     dt_fim = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
-    cnes = Parameter("cnes", required=True)
     rename_flow = Parameter("rename_flow", default=True)
     dataset_id = Parameter(
         "dataset", default=cientificalab_constants.DATASET_ID.value, required=False
@@ -67,22 +65,15 @@ with Flow(
         secret_name=cientificalab_constants.INFISICAL_APCCODIGO.value,
         environment=environment,
     )
-    codigo_lis_secret = get_secret_key(
-        secret_path=INFISICAL_PATH,
-        secret_name=cientificalab_constants.INFISICAL_CODIGOLIS.value,
-        environment=environment,
-    )
+    identificador_lis = 'VITCR'
 
     with case(rename_flow, True):
         rename_current_flow_run(
-            name_template="cnes: {cnes} dt_ini: {dt_inicio} dt_fim: {dt_fim} ({environment})",
-            cnes=cnes,
+            name_template="dt_ini: {dt_inicio} dt_fim: {dt_fim} ({environment})",
             dt_inicio=dt_inicio,
             dt_fim=dt_fim,
             environment=environment,
         )
-
-    identificador_lis = get_identificador_lis(secret_json=codigo_lis_secret, cnes=cnes)
 
     results = authenticate_and_fetch(
         username=username_secret,
@@ -138,10 +129,10 @@ with Flow(
 
     start_date = from_relative_date(relative_date=relative_date_filter)
 
-    windows = generate_daily_windows(start_date=start_date)
+    windows = generate_time_windows(start_date=start_date)
 
     operator_parameters = build_operator_params(
-        windows=windows, env=environment, cnes_list=cnes_list
+        windows=windows, env=environment
     )
 
     created_operator_runs = create_flow_run.map(
@@ -160,23 +151,23 @@ with Flow(
     )
 
 flow_cientificalab_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=3)
+flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=1)
 flow_cientificalab_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="6Gi",
+    memory_limit="5Gi",
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=6)
+flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=3)
 flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi",
+    memory_limit="3Gi",
 )
 
 flow_cientificalab_manager.schedule = schedule

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-import json
 import uuid
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from typing import Dict, List
 
 import pandas as pd
@@ -201,64 +200,63 @@ def transform(json_result: dict):
 
 
 @task
-def generate_daily_windows(start_date: pd.Timestamp) -> List[Dict[str, str]]:
+def generate_time_windows(
+    start_date: pd.Timestamp,
+    hours_per_window: int = 4
+) -> List[Dict[str, str]]:
     """
-    Gera janelas de extração diárias de 00:00:00 a 23:59:59
+    Gera janelas de extração de X horas a partir de uma data de início.
+    Ex: Para 4 horas, gera janelas de 00:00-03:59, 04:00-07:59, etc.
     """
-
     tz = pytz.timezone("America/Sao_Paulo")
 
     if start_date.tzinfo is None:
         start_date = tz.localize(start_date)
 
-    # A data fim sempre vai ser ontem para pegar dia completo
+    # A data fim sempre vai ser ontem para pegar o último dia completo
     end_date = pd.Timestamp.now(tz) - pd.Timedelta(days=1)
 
-    current_date = start_date.normalize()
-    last_date = end_date.normalize()
+    # Itera dia a dia, do início ao fim
+    current_day = start_date.normalize()
+    last_day = end_date.normalize()
 
     windows = []
-    log(f"Gerando janelas de {current_date.date()} até {last_date.date()}")
+    log(f"Gerando janelas de {hours_per_window} horas de {current_day.date()} até {last_day.date()}") # noqa
 
-    while current_date <= last_date:
-        window_start = tz.localize(datetime.combine(current_date.date(), time.min))
-        window_end = tz.localize(datetime.combine(current_date.date(), time.max))
+    # Loop principal para iterar sobre os dias
+    while current_day <= last_day:
+        # Loop secundário para criar as janelas dentro de um dia
+        for hour_start in range(0, 24, hours_per_window):
+            window_start = current_day.replace(hour=hour_start, minute=0, second=0)
 
-        windows.append(
-            {
+            # O fim da janela é X horas depois, menos 1 segundo
+            window_end = window_start + timedelta(hours=hours_per_window, seconds=-1)
+
+            windows.append({
                 "dt_inicio": window_start.strftime("%Y-%m-%d %H:%M:%S%z"),
                 "dt_fim": window_end.strftime("%Y-%m-%d %H:%M:%S%z"),
-            }
-        )
+            })
 
-        current_date += pd.Timedelta(days=1)
+        # Avança para o próximo dia
+        current_day += timedelta(days=1)
 
-    log("janelas geradas com sucesso.")
+    log(f"{len(windows)} janelas geradas com sucesso.")
     return windows
-
-
-@task
-def get_identificador_lis(secret_json: str, cnes: str) -> str:
-    data_dict = json.loads(secret_json)
-    return data_dict[cnes]
 
 
 @task
 def build_operator_params(
     windows: List[Dict[str, str]],
-    env: str,
-    cnes_list: List[str],
+    env: str
 ) -> List[Dict[str, str]]:
     params = []
 
-    for cnes in cnes_list:
-        for window in windows:
-            params.append(
-                {
-                    "cnes": cnes,
-                    "dt_inicio": window["dt_inicio"],
-                    "dt_fim": window["dt_fim"],
-                    "environment": env,
-                }
-            )
+    for window in windows:
+        params.append(
+            {
+                "dt_inicio": window["dt_inicio"],
+                "dt_fim": window["dt_fim"],
+                "environment": env,
+            }
+        )
     return params
