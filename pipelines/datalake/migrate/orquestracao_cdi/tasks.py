@@ -294,7 +294,8 @@ WHERE data_publicacao = '{DATE}'
                             if not ERRO_DOU
                             else 'Diário Oficial do Município'
                         }, por sua vez, ocorreu normalmente,
-                        mas ele não possui conteúdo relevante hoje.
+                        mas não foram localizadas publicações
+                        de interesse para a SMS-RJ.
                     </p>
                 """
             return f"""
@@ -504,7 +505,7 @@ def send_email(
     # Caso não haja DO no dia, recebemos um conteúdo vazia
     if not message or len(message) <= 0:
         message = f"""
-Nenhum conteúdo relevante encontrado nos Diários Oficiais de hoje!
+Nos Diários Oficiais de hoje, não foram localizadas publicações de interesse para a SMS-RJ.
 
 Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
         """.strip()
