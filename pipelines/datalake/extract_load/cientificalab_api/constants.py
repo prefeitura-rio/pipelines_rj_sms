@@ -18,7 +18,6 @@ class cientificalab_constants(Enum):
     INFISICAL_CODIGOLIS = "MAPEAMENTO_CNES_LIS"
     DATASET_ID = "brutos_cientificalab"
 
-    # lista de cnes utilizados para pegar codigo lis do infisical
     CNES = [
         "2273489",
         "6507409",

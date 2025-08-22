@@ -1,181 +1,164 @@
 # -*- coding: utf-8 -*-
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from typing import Dict, List
 
 import pandas as pd
 import pytz
-from bs4 import BeautifulSoup
+import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.datalake.extract_load.cientificalab_api.constants import (  # noqa
-    cientificalab_constants,
-)
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import cloud_function_request
-from pipelines.utils.time import get_datetime_working_range
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
 def authenticate_and_fetch(
-    username: str,
-    password: str,
-    apccodigo: str,
-    identificador_lis: str,
-    dt_inicio: str = "2025-01-21T10:00:00-0300",
-    dt_fim: str = "2025-01-21T11:30:00-0300",
-    environment: str = "dev",
-):
-    token_response = cloud_function_request.run(
-        url="https://cielab.lisnet.com.br/lisnetws/tokenlisnet/apccodigo",
-        request_type="GET",
-        query_params={
-            "Content-Type": "application/json",
-            "apccodigo": apccodigo,
-            "emissor": username,
-            "pass": password,
-        },
-        body_params="",
-        api_type="xml",
-        env=environment,
-        credential=None,
-        endpoint_for_filename="lab_token",
-    )
+    username: str, apccodigo: str, password: str, identificador_lis: str, dt_start: str, dt_end: str
+) -> dict:
 
-    if token_response.get("status_code") != 200:
-        message = f"Failed to get token from Lisnet API: {token_response.get('status_code')} - {token_response.get('body')}"  # noqa
-        raise Exception(message)
+    auth_headers = {"emissor": username, "apccodigo": apccodigo, "pass": password}
 
-    token_data_string = token_response.get("body")
-    token_data = json.loads(token_data_string)
+    base_url = "https://cielab.lisnet.com.br/lisnetws"
 
-    if token_data.get("status") != 200:
-        message = f"Lisnet API returned error for token: {token_data.get('status')} - {token_data.get('mensagem')}"  # noqa
-        raise Exception(message)
+    try:
+        token_response = requests.get(f"{base_url}/tokenlisnet/apccodigo", headers=auth_headers)
 
-    token = token_data.get("token")
+        token_response.raise_for_status()
 
-    data = f"""
-        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <lote>
-            <codigoLis></codigoLis>
-            <identificadorLis>{identificador_lis}</identificadorLis>
-            <origemLis></origemLis>
-            <dataResultado>
-                <inicial>{dt_inicio}</inicial>
-                <final>{dt_fim}</final>
-            </dataResultado>
-            <parametros>
-                <parcial>N</parcial>
-                <retorno>ESTRUTURADO</retorno>
-            </parametros>
-        </lote>
-        """.strip()
+        token_data = token_response.json()
 
-    resultado_response = cloud_function_request.run(
-        url="https://cielab.lisnet.com.br/lisnetws/APOIO/DTL/resultado",
-        request_type="GET",
-        query_params={
-            "codigo": apccodigo,
-            "token": token,
-        },
-        body_params=data,
-        api_type="xml",
-        env=environment,
-        credential=None,
-        endpoint_for_filename="lab_exames",
-    )
+        if token_data["status"] != 200:
+            message = f"(authenticate_and_fetch) Error getting token: {token_data['status']} - {token_data['mensagem']}"  # noqa
+            raise Exception(message)
 
-    if resultado_response.get("status_code") != 200:
-        message = f"Failed to get XML results from Lisnet API: {resultado_response.get('status_code')} - {resultado_response.get('body')}"  # noqa
-        raise Exception(message)
+        token = token_data["token"]
 
-    resultado_xml = resultado_response["body"]
+        if not token:
+            raise ValueError(
+                "(authenticate_and_fetch) Authentication successful, but no token found in response"
+            )  # noqa
 
-    if (
-        "Resultado não disponíveis para data solicitada" in resultado_xml
-        or "<solicitacoes>" not in resultado_xml
-    ):
-        log(f"Resultado não encontrado {resultado_xml}", level="error")
-        raise Exception("Dados de resultado não disponíveis para a data solicitada.")
+        log("(authenticate_and_fetch) Authentication successful")
 
-    return resultado_xml
+        results_headers = {"codigo": apccodigo, "token": token}
+
+        request_body = {
+            "lote": {
+                "identificadorLis": identificador_lis,
+                "dataResultado": {"inicial": dt_start, "final": dt_end},
+                "parametros": {
+                    "retorno": "ESTRUTURADO",
+                    "parcial": "N",
+                    "sigiloso": "S",
+                },
+            }
+        }
+
+        results_response = requests.post(
+            f"{base_url}/APOIO/DTL/resultado", headers=results_headers, json=request_body
+        )
+
+        results_response.raise_for_status()
+
+        results = results_response.json()
+
+        if "status" in results["lote"] and results["lote"]["status"] != 200:
+            message = f"(authenticate_and_fetch) Failed to get results: Status: {results['lote']['status']} Message: {results['lote']['mensagem']}"
+            raise Exception(message)
+
+        if "solicitacoes" not in results["lote"]:
+            message = f"(authenticate_and_fetch) Failed to get results. No data available, message: {results['lote']['mensagem']}"
+            raise Exception(message)
+
+        log("(authenticate_and_fetch) Successfully fetched results", level="info")
+
+        return results
+
+    except Exception as e:
+        error_message = str(e)
+        log(f"(authenticate_and_fetch) Unexpected error: {error_message}", level="error")
+        raise
 
 
 @task(nout=3)
-def transform(resultado_xml: str):
-    soup = BeautifulSoup(resultado_xml, "xml")
+def transform(json_result: dict):
 
     solicitacoes_rows = []
     exames_rows = []
     resultados_rows = []
 
-    lote = soup.find("lote")
+    lote = json_result.get('lote')
 
-    for solicitacao in lote.find_all("solicitacao"):
-        solicitacoes_row = solicitacao.attrs
+    if not lote:
+        message = '(transform) lote not found in json response'
+        raise ValueError(message)
+    
+    solicitacoes = lote.get('solicitacoes', {}).get('solicitacao', [])
+
+    if isinstance(solicitacoes, dict):
+        solicitacoes = [solicitacoes]
+
+    lote_attrs = {f"lote_{k}": v for k, v in lote.items() if not isinstance(v, dict)}
+
+    for solicitacao in solicitacoes:
+        solicitacoes_row = {k: v for k, v in solicitacao.items() if not isinstance(v, (dict, list))}
+
+        solicitacoes_row.update(lote_attrs)
 
         for entidade_suporte in ["responsaveltecnico", "paciente"]:
-            for key, value in solicitacao.find(entidade_suporte).attrs.items():
+            nested_dict = solicitacao.get(entidade_suporte, {})
+            for key, value in nested_dict.items():
                 solicitacoes_row[f"{entidade_suporte}_{key}"] = value
-
-        for key, value in lote.attrs.items():
-            solicitacoes_row[f"lote_{key}"] = value
-
-        solicitacao_id = str(
-            uuid.uuid5(
-                uuid.NAMESPACE_DNS,
-                f"{solicitacoes_row.get('codigoLis', '')}|"
-                f"{solicitacoes_row.get('codigoApoio', '')}|"
-                f"{solicitacoes_row.get('dataPedido', '')}|"
-                f"{solicitacoes_row.get('paciente_nome', '')}|"
-                f"{solicitacoes_row.get('paciente_cpf', '')}",
-            )
-        )
+        
+        solicitacao_id = str(uuid.uuid5(
+            uuid.NAMESPACE_DNS,
+            f"{solicitacoes_row.get('codigoLis', '')}|{solicitacoes_row.get('codigoApoio', '')}|"
+            f"{solicitacoes_row.get('dataPedido', '')}|{solicitacoes_row.get('paciente_nome', '')}|"
+            f"{solicitacoes_row.get('paciente_cpf', '')}"
+        ))
         solicitacoes_row["id"] = solicitacao_id
         solicitacoes_rows.append(solicitacoes_row)
 
-        for exame in solicitacao.find_all("exame"):
-            exames_row = exame.attrs
+        exames = solicitacao.get('exames', {}).get('exame', [])
 
-            exame_id = str(
-                uuid.uuid5(
-                    uuid.NAMESPACE_DNS,
-                    f"{solicitacao_id}|"
-                    f"{exames_row.get('codigoExame', '')}|"
-                    f"{exames_row.get('codApoio', '')}|"
-                    f"{exames_row.get('dataAssinatura', '')}",
-                )
-            )
+        if isinstance(exames, dict):
+            exames = [exames]
 
-            exames_row["id"] = exame_id
+        for exame in exames:
+            exames_row = {k: v for k, v in exame.items() if not isinstance(v, (dict, list))}
             exames_row["solicitacao_id"] = solicitacao_id
 
-            for entidade_suporte in ["solicitante"]:
-                for key, value in solicitacao.find(entidade_suporte).attrs.items():
-                    exames_row[f"{entidade_suporte}_{key}"] = value
+            solicitante_dict = exame.get('solicitante', {})
+            for key, value in solicitante_dict.items():
+                exames_row[f"solicitante_{key}"] = value
 
+            exame_id = str(uuid.uuid5(
+                uuid.NAMESPACE_DNS,
+                f"{solicitacao_id}|{exames_row.get('codigoExame', '')}|"
+                f"{exames_row.get('codigoApoio', '')}|{exames_row.get('dataAssinatura', '')}"
+            ))
+            exames_row["id"] = exame_id
             exames_rows.append(exames_row)
 
-            for resultado in exame.find_all("resultado"):
-                resultado_row = resultado.attrs
+            resultados = exame.get('resultados', {}).get('resultado', [])
 
-                # Gerando ID determinístico para o resultado
-                resultado_id = str(
-                    uuid.uuid5(
-                        uuid.NAMESPACE_DNS,
-                        f"{resultado_row.get('codigoApoio', '')}|"
-                        f"{resultado_row.get('descricaoApoio', '')}|"
-                        f"{exame_id}",
-                    )
-                )
+            if isinstance(resultados, dict):
+                resultados = [resultados]
 
-                resultado_row["id"] = resultado_id
-                resultado_row["exame_id"] = exame_id
-                resultados_rows.append(resultado_row)
-
-    # Convertendo para DataFrames
+            for resultado in resultados:
+                resultados_row = {k: v for k, v in resultado.items()}
+                resultados_row["exame_id"] = exame_id
+                
+                resultado_id = str(uuid.uuid5(
+                    uuid.NAMESPACE_DNS,
+                    f"{resultados_row.get('codigoApoio', '')}|"
+                    f"{resultados_row.get('descricaoApoio', '')}|"
+                    f"{exame_id}"
+                ))
+                resultados_row["id"] = resultado_id
+                resultados_rows.append(resultados_row)
+        
     now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
     solicitacoes_df = pd.DataFrame(solicitacoes_rows)
@@ -183,16 +166,16 @@ def transform(resultado_xml: str):
     resultados_df = pd.DataFrame(resultados_rows)
 
     for df in [solicitacoes_df, exames_df, resultados_df]:
-        df["datalake_loaded_at"] = now
+        if not df.empty:
+            df["datalake_loaded_at"] = now
 
     return solicitacoes_df, exames_df, resultados_df
 
 
 @task
-def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]]:
+def generate_daily_windows(start_date: pd.Timestamp) -> List[Dict[str, str]]:
     """
-    Gera janelas de extração de 3 horas por dia a partir de start_date até ontem.
-    Retorna lista de dicionários com dt_inicio e dt_fim formatados (ex: YYYY-MM-DDTHH:MM:SS-0300)
+    Gera janelas de extração diárias de 00:00:00 a 23:59:59
     """
 
     tz = pytz.timezone("America/Sao_Paulo")
@@ -200,44 +183,29 @@ def generate_extraction_windows(start_date: pd.Timestamp) -> List[Dict[str, str]
     if start_date.tzinfo is None:
         start_date = tz.localize(start_date)
 
-    end_date = tz.localize(
-        datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    ) - timedelta(seconds=1)
+    # A data fim sempre vai ser ontem para pegar dia completo
+    end_date = pd.Timestamp.now(tz) - pd.Timedelta(days=1)
+
+    current_date = start_date.normalize()
+    last_date = end_date.normalize()
 
     windows = []
+    log(f"Gerando janelas de {current_date.date()} até {last_date.date()}")
 
-    current_date = start_date
-    while current_date <= end_date:
-        for hour_ranges in [
-            ("00:00:01", "03:00:00"),
-            ("03:00:01", "06:00:00"),
-            ("06:00:01", "09:00:00"),
-            ("09:00:01", "12:00:00"),
-            ("12:00:01", "15:00:00"),
-            ("15:00:01", "18:00:00"),
-            ("18:00:01", "21:00:00"),
-            ("21:00:01", "23:59:59"),
-        ]:
-            start_time = f"{current_date.date()} {hour_ranges[0]}"
-            end_time = f"{current_date.date()} {hour_ranges[1]}"
+    while current_date <= last_date:
+        window_start = tz.localize(datetime.combine(current_date.date(), time.min))
+        window_end = tz.localize(datetime.combine(current_date.date(), time.max))
 
-            dt_inicio, dt_fim = get_datetime_working_range.run(
-                start_datetime=start_time,
-                end_datetime=end_time,
-                interval=1,
-                return_as_str=True,
-                timezone="America/Sao_Paulo",
-            )
+        windows.append(
+            {
+                "dt_inicio": window_start.strftime("%Y-%m-%d %H:%M:%S%z"),
+                "dt_fim": window_end.strftime("%Y-%m-%d %H:%M:%S%z"),
+            }
+        )
 
-            windows.append(
-                {
-                    "dt_inicio": dt_inicio,
-                    "dt_fim": dt_fim,
-                }
-            )
+        current_date += pd.Timedelta(days=1)
 
-        current_date += timedelta(days=1)
-
+    log("janelas geradas com sucesso.")
     return windows
 
 

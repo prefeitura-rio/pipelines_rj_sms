@@ -11,7 +11,6 @@ Imports all flows for every project so we can register all of them.
 # ===============================
 from pipelines.datalake.extract_load.centralregulacao_mysql.flows import *
 from pipelines.datalake.extract_load.cientificalab_api.flows import *
-from pipelines.datalake.extract_load.cientificalab_v2.flows import *
 from pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows import *
 from pipelines.datalake.extract_load.datalake_bigquery.flows import *
 from pipelines.datalake.extract_load.datasus_ftp.flows import *
