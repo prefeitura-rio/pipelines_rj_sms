@@ -106,6 +106,7 @@ def transform(json_result: dict):
 
         solicitacoes_row.update(lote_attrs)
 
+        # cria os campos com o prefixo da key. EX: paciente_nome
         for entidade_suporte in ["responsaveltecnico", "paciente"]:
             nested_dict = solicitacao.get(entidade_suporte, {})
             for key, value in nested_dict.items():
@@ -114,8 +115,12 @@ def transform(json_result: dict):
         solicitacao_id = str(
             uuid.uuid5(
                 uuid.NAMESPACE_DNS,
-                f"{solicitacoes_row.get('codigoLis', '')}|{solicitacoes_row.get('codigoApoio', '')}|"
-                f"{solicitacoes_row.get('dataPedido', '')}|{solicitacoes_row.get('paciente_nome', '')}|"
+                f"{solicitacoes_row.get('codigoLis', '')}|"
+                f"{solicitacoes_row.get('codigoApoio', '')}|"
+                f"{solicitacoes_row.get('dataPedido', '')}|"
+                f"{solicitacoes_row.get('paciente_nome', '')}|"
+                f"{solicitacoes_row.get('codunidade', '')}|"
+                f"{solicitacoes_row.get('origem', '')}|"
                 f"{solicitacoes_row.get('paciente_cpf', '')}",
             )
         )
@@ -131,6 +136,7 @@ def transform(json_result: dict):
             exames_row = {k: v for k, v in exame.items() if not isinstance(v, (dict, list))}
             exames_row["solicitacao_id"] = solicitacao_id
 
+            # cria os campos com o prefixo da key. EX: solicitante_nome
             solicitante_dict = exame.get("solicitante", {})
             for key, value in solicitante_dict.items():
                 exames_row[f"solicitante_{key}"] = value
