@@ -361,8 +361,8 @@ cases:
     params:
       dataset: 'brutos_cientificalab'
       environment: 'dev'
-      dt_inicio: '2025-08-20T00:00:00-03:00'
-      dt_fim: '2025-08-20T23:59:59-03:00'
+      dt_inicio: '2025-08-19T00:00:00-03:00'
+      dt_fim: '2025-08-19T23:59:59-03:00'
       cnes: '2277301'
       rename_flow: False
   - case_slug: "datalake-extract-vitacare_gdrive"

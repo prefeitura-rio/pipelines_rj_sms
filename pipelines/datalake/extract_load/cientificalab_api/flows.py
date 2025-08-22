@@ -91,6 +91,7 @@ with Flow(
         identificador_lis=identificador_lis,
         dt_start=dt_inicio,
         dt_end=dt_fim,
+        environment=environment,
     )
 
     solicitacoes_df, exames_df, resultados_df = transform(json_result=results)

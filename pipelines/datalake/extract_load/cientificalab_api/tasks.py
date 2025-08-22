@@ -8,13 +8,14 @@ import pandas as pd
 import pytz
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
+from pipelines.utils.tasks import cloud_function_request
 
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
 @task(max_retries=2, retry_delay=timedelta(minutes=1))
 def authenticate_and_fetch(
-    username: str, apccodigo: str, password: str, identificador_lis: str, dt_start: str, dt_end: str
+    username: str, apccodigo: str, password: str, identificador_lis: str, dt_start: str, dt_end: str, environment: str
 ) -> dict:
 
     auth_headers = {"emissor": username, "apccodigo": apccodigo, "pass": password}
@@ -22,15 +23,21 @@ def authenticate_and_fetch(
     base_url = "https://cielab.lisnet.com.br/lisnetws"
 
     try:
-        token_response = requests.get(f"{base_url}/tokenlisnet/apccodigo", headers=auth_headers)
+        token_response = cloud_function_request.run(
+            url=f'{base_url}/tokenlisnet/apccodigo',
+            request_type='GET',
+            query_params=auth_headers,
+            api_type="json",
+            env=environment,
+            endpoint_for_filename="cientificalab_token",
+            credential=None
+        )
 
-        token_response.raise_for_status()
-
-        token_data = token_response.json()
-
+        token_data = token_response['body']
         if token_data["status"] != 200:
             message = f"(authenticate_and_fetch) Error getting token: {token_data['status']} - {token_data['mensagem']}"  # noqa
             raise Exception(message)
+        
 
         token = token_data["token"]
 
@@ -42,6 +49,7 @@ def authenticate_and_fetch(
         log("(authenticate_and_fetch) Authentication successful")
 
         results_headers = {"codigo": apccodigo, "token": token}
+
 
         request_body = {
             "lote": {
@@ -55,13 +63,18 @@ def authenticate_and_fetch(
             }
         }
 
-        results_response = requests.post(
-            f"{base_url}/APOIO/DTL/resultado", headers=results_headers, json=request_body
+        results_response = cloud_function_request.run(
+            url=f"{base_url}/APOIO/DTL/resultado",
+            request_type='POST',
+            query_params=results_headers,  
+            body_params=request_body,      
+            api_type="json",
+            env=environment,
+            endpoint_for_filename="cientificalab_results",
+            credential=None
         )
 
-        results_response.raise_for_status()
-
-        results = results_response.json()
+        results = results_response['body']
 
         if "status" in results["lote"] and results["lote"]["status"] != 200:
             message = f"(authenticate_and_fetch) Failed to get results: Status: {results['lote']['status']} Message: {results['lote']['mensagem']}"  # noqa
