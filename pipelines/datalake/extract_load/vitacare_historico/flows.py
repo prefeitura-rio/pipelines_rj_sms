@@ -155,16 +155,16 @@ with Flow(
 
 
 flow_vitacare_historic_manager_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
-flow_vitacare_historic_manager_v2.executor = LocalDaskExecutor(num_workers=5)
+flow_vitacare_historic_manager_v2.executor = LocalDaskExecutor(num_workers=6)
 flow_vitacare_historic_manager_v2.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="2Gi",
-    memory_request="2Gi",
+    memory_limit="3Gi",
+    memory_request="3Gi",
 )
 
 flow_vitacare_historic_operator_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
-flow_vitacare_historic_operator_v2.executor = LocalDaskExecutor(num_workers=2)
+flow_vitacare_historic_operator_v2.executor = LocalDaskExecutor(num_workers=1)
 flow_vitacare_historic_operator_v2.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
