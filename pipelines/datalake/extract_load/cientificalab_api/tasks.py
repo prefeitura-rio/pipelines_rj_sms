@@ -6,7 +6,6 @@ from typing import Dict, List
 
 import pandas as pd
 import pytz
-import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.utils.credential_injector import authenticated_task as task
