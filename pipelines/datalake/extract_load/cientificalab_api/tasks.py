@@ -201,8 +201,7 @@ def transform(json_result: dict):
 
 @task
 def generate_time_windows(
-    start_date: pd.Timestamp,
-    hours_per_window: int = 4
+    start_date: pd.Timestamp, hours_per_window: int = 4
 ) -> List[Dict[str, str]]:
     """
     Gera janelas de extração de X horas a partir de uma data de início.
@@ -221,7 +220,9 @@ def generate_time_windows(
     last_day = end_date.normalize()
 
     windows = []
-    log(f"Gerando janelas de {hours_per_window} horas de {current_day.date()} até {last_day.date()}") # noqa
+    log(
+        f"Gerando janelas de {hours_per_window} horas de {current_day.date()} até {last_day.date()}"
+    )  # noqa
 
     # Loop principal para iterar sobre os dias
     while current_day <= last_day:
@@ -232,10 +233,12 @@ def generate_time_windows(
             # O fim da janela é X horas depois, menos 1 segundo
             window_end = window_start + timedelta(hours=hours_per_window, seconds=-1)
 
-            windows.append({
-                "dt_inicio": window_start.strftime("%Y-%m-%d %H:%M:%S%z"),
-                "dt_fim": window_end.strftime("%Y-%m-%d %H:%M:%S%z"),
-            })
+            windows.append(
+                {
+                    "dt_inicio": window_start.strftime("%Y-%m-%d %H:%M:%S%z"),
+                    "dt_fim": window_end.strftime("%Y-%m-%d %H:%M:%S%z"),
+                }
+            )
 
         # Avança para o próximo dia
         current_day += timedelta(days=1)
@@ -245,10 +248,7 @@ def generate_time_windows(
 
 
 @task
-def build_operator_params(
-    windows: List[Dict[str, str]],
-    env: str
-) -> List[Dict[str, str]]:
+def build_operator_params(windows: List[Dict[str, str]], env: str) -> List[Dict[str, str]]:
     params = []
 
     for window in windows:

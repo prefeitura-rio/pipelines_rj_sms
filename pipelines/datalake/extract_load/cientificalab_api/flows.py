@@ -65,7 +65,7 @@ with Flow(
         secret_name=cientificalab_constants.INFISICAL_APCCODIGO.value,
         environment=environment,
     )
-    identificador_lis = 'VITCR'
+    identificador_lis = "VITCR"
 
     with case(rename_flow, True):
         rename_current_flow_run(
@@ -131,9 +131,7 @@ with Flow(
 
     windows = generate_time_windows(start_date=start_date)
 
-    operator_parameters = build_operator_params(
-        windows=windows, env=environment
-    )
+    operator_parameters = build_operator_params(windows=windows, env=environment)
 
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(flow_cientificalab_operator.name),
