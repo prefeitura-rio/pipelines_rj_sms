@@ -361,16 +361,10 @@ cases:
     params:
       dataset_id: 'brutos_cientificalab'
       environment: 'dev'
-      dt_inicio: '2025-08-13T07:00:01-03:00'
-      dt_fim: '2025-08-13T11:00:00-03:00'
+      dt_inicio: '2025-08-20T00:00:00-03:00'
+      dt_fim: '2025-08-20T23:59:00-03:00'
       cnes: '2273349'
       rename_flow: False
-  - case_slug: "cientificalab_api_manager"
-    flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
-    flow_name: "flow_cientificalab_manager"
-    params:
-      environment: 'dev'
-      relative_date: 'D-1'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"

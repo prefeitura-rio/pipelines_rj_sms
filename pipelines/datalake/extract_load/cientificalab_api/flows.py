@@ -5,11 +5,11 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.cientificalab_v2.constants import (
+from pipelines.datalake.extract_load.cientificalab_api.constants import (
     cientificalab_constants,
 )
-from pipelines.datalake.extract_load.cientificalab_v2.schedules import schedule
-from pipelines.datalake.extract_load.cientificalab_v2.tasks import (
+from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
+from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
     generate_daily_windows,
@@ -34,12 +34,12 @@ from pipelines.utils.tasks import (
 from pipelines.utils.time import from_relative_date
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - CientificaLab (Operator) V2",
+    name="DataLake - Extração e Carga de Dados - CientificaLab (Operator)",
     state_handlers=[handle_flow_state_change],
     owners=[
         constants.DANIEL_ID.value,
     ],
-) as flow_cientificalab_operator_v2:
+) as flow_cientificalab_operator:
     environment = Parameter("environment", default="dev")
     dt_inicio = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     dt_fim = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
@@ -120,12 +120,12 @@ with Flow(
     )
 
 with Flow(
-    "DataLake - Extração e Carga de Dados - CientificaLab (Manager) V2",
+    "DataLake - Extração e Carga de Dados - CientificaLab (Manager)",
     state_handlers=[handle_flow_state_change],
     owners=[
         constants.DANIEL_ID.value,
     ],
-) as flow_cientificalab_manager_v2:
+) as flow_cientificalab_manager:
 
     environment = Parameter("environment", default="dev")
     relative_date_filter = Parameter("intervalo", default="D-1")
@@ -144,7 +144,7 @@ with Flow(
     )
 
     created_operator_runs = create_flow_run.map(
-        flow_name=unmapped(flow_cientificalab_operator_v2.name),
+        flow_name=unmapped(flow_cientificalab_operator.name),
         project_name=unmapped(prefect_project_name),
         parameters=operator_parameters,
         labels=unmapped(current_labels),
@@ -158,9 +158,9 @@ with Flow(
         raise_final_state=unmapped(False),
     )
 
-flow_cientificalab_operator_v2.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_operator_v2.executor = LocalDaskExecutor(num_workers=3)
-flow_cientificalab_operator_v2.run_config = KubernetesRun(
+flow_cientificalab_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=3)
+flow_cientificalab_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -168,9 +168,9 @@ flow_cientificalab_operator_v2.run_config = KubernetesRun(
     memory_limit="6Gi",
 )
 
-flow_cientificalab_manager_v2.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_manager_v2.executor = LocalDaskExecutor(num_workers=6)
-flow_cientificalab_manager_v2.run_config = KubernetesRun(
+flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=6)
+flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -178,4 +178,4 @@ flow_cientificalab_manager_v2.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-flow_cientificalab_manager_v2.schedule = schedule
+flow_cientificalab_manager.schedule = schedule
