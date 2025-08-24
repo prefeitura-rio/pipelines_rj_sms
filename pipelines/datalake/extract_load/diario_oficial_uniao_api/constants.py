@@ -11,7 +11,7 @@ class constants(Enum):
 
     LOGIN_URL = "https://inlabs.in.gov.br/logar.php"
     DOWNLOAD_BASE_URL = "https://inlabs.in.gov.br/index.php?p="
-    OUTPUT_DIR = './output'
-    DOWNLOAD_DIR = './download'
-    EMAIL = 'herian.cavalcante@dados.rio'
-    PASSWORD = '28102810'
+    OUTPUT_DIR = "./output"
+    DOWNLOAD_DIR = "./download"
+    EMAIL = "herian.cavalcante@dados.rio"
+    PASSWORD = "28102810"
