@@ -82,7 +82,7 @@ with Flow(
         upstream_tasks=[upload_status, upload_status],
     )
 
-    delete_dirs(upstream_tasks=[parquet_file])
+    delete_dirs(upstream_tasks=[parquet_file, upload_status])
 
 
 # Flow configs
