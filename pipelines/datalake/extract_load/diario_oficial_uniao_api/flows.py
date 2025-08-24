@@ -76,7 +76,10 @@ with Flow(
 
     # Reportando status da extração
     report_extraction_status(
-        status=upload_status, date=DATE, environment=ENVIRONMENT, upstream_tasks=[upload_status]
+        status=upload_status, 
+        date=DATE, 
+        environment=ENVIRONMENT, 
+        upstream_tasks=[upload_status, upload_status]
     )
 
     delete_dirs(upstream_tasks=[parquet_file])
