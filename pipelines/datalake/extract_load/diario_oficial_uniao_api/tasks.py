@@ -172,7 +172,7 @@ def get_xml_files(xml_dir: str) -> str:
                 pub_date = soup_xml.find("article")["pubDate"]
                 art_category = soup_xml.find("article")["artCategory"]
                 html = soup_html.prettify()
-                text = soup_html.text
+                text = "\n".join(p.get_text() for p in soup_html.find_all("p"))
                 assina = soup_html.find_all(class_="assina")
                 cargos = soup_html.find_all(class_="cargo")
                 identifica = soup_xml.find_all("Identifica")
