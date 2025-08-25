@@ -31,8 +31,8 @@ def create_dorj_params_dict(environment: str = "prod", date: Optional[str] = Non
 
 
 @task
-def create_dou_params_dict(environment: str = "prod", date: Optional[str] = None, section: int = 3):
-    return {"environment": environment, "date": date, "dou_section": section}
+def create_dou_params_dict(environment: str = "prod", date: Optional[str] = None):
+    return {"environment": environment, "date": date}
 
 
 @task
