@@ -17,8 +17,9 @@ from pipelines.datalake.extract_load.diario_oficial_uniao_api.constants import (
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import upload_df_to_datalake, get_secret_key
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import parse_date_or_today
+
 
 @task
 def create_dirs():
@@ -35,17 +36,17 @@ def parse_date(date: str) -> datetime:
 
 @task
 def login(enviroment: str = "dev"):
-    
-    password =  get_secret_key.run(
-        secret_path=flow_constants.INFISICAL_PATH.value, 
-        secret_name=flow_constants.INFISICAL_PASSWORD.value, 
-        environment=enviroment
-        )
+
+    password = get_secret_key.run(
+        secret_path=flow_constants.INFISICAL_PATH.value,
+        secret_name=flow_constants.INFISICAL_PASSWORD.value,
+        environment=enviroment,
+    )
     email = get_secret_key.run(
-        secret_path=flow_constants.INFISICAL_PATH.value, 
-        secret_name=flow_constants.INFISICAL_USERNAME.value, 
-        environment=enviroment
-        )
+        secret_path=flow_constants.INFISICAL_PATH.value,
+        secret_name=flow_constants.INFISICAL_USERNAME.value,
+        environment=enviroment,
+    )
 
     """Inicia uma sessão e faz o login no sistema da INLABS para obter os cookies.
 
@@ -53,12 +54,14 @@ def login(enviroment: str = "dev"):
         requests.Session: Instância de Session da biblioteca requests contém os cookies da sessão.
     """
     login_url = flow_constants.LOGIN_URL.value
-    
+
     payload = {"email": email, "password": password}
 
     session = requests.Session()
     try:
-        response = session.request("POST", login_url, data=payload, headers=flow_constants.HEADERS.value)
+        response = session.request(
+            "POST", login_url, data=payload, headers=flow_constants.HEADERS.value
+        )
         return session
     except requests.exceptions.ConnectionError:
         log("⚠️ Erro de coneção. Tentando novamente...")
@@ -119,7 +122,7 @@ def download_files(
             return
 
     log(f"✅ Download finalizado.")
-    
+
     return files
 
 
@@ -140,6 +143,7 @@ def unpack_zip(zip_files: list, output_path: str) -> None:
             with zipfile.ZipFile(file, "r") as zip_ref:
                 zip_ref.extractall(output_path)
     return
+
 
 @task
 def get_xml_files(xml_dir: str) -> str:

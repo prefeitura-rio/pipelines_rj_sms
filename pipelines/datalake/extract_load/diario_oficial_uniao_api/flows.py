@@ -22,7 +22,6 @@ from pipelines.datalake.extract_load.diario_oficial_uniao_api.tasks import (
     upload_to_datalake,
 )
 from pipelines.utils.flow import Flow
-
 from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
