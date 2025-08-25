@@ -12,17 +12,13 @@ from bs4 import BeautifulSoup
 from google.cloud import bigquery
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
-    report_extraction_status,
-)
 from pipelines.datalake.extract_load.diario_oficial_uniao_api.constants import (
     constants as flow_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.utils.tasks import upload_df_to_datalake, get_secret_key
 from pipelines.utils.time import parse_date_or_today
-
 
 @task
 def create_dirs():
@@ -38,23 +34,31 @@ def parse_date(date: str) -> datetime:
 
 
 @task
-def login():
+def login(enviroment: str = "dev"):
+    
+    password =  get_secret_key.run(
+        secret_path=flow_constants.INFISICAL_PATH.value, 
+        secret_name=flow_constants.INFISICAL_PASSWORD.value, 
+        environment=enviroment
+        )
+    email = get_secret_key.run(
+        secret_path=flow_constants.INFISICAL_PATH.value, 
+        secret_name=flow_constants.INFISICAL_USERNAME.value, 
+        environment=enviroment
+        )
+
     """Inicia uma sessão e faz o login no sistema da INLABS para obter os cookies.
 
     Returns:
         requests.Session: Instância de Session da biblioteca requests contém os cookies da sessão.
     """
     login_url = flow_constants.LOGIN_URL.value
-    payload = {"email": flow_constants.EMAIL.value, "password": flow_constants.PASSWORD.value}
-
-    HEADERS = {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    }
+    
+    payload = {"email": email, "password": password}
 
     session = requests.Session()
     try:
-        response = session.request("POST", login_url, data=payload, headers=HEADERS)
+        response = session.request("POST", login_url, data=payload, headers=flow_constants.HEADERS.value)
         return session
     except requests.exceptions.ConnectionError:
         log("⚠️ Erro de coneção. Tentando novamente...")
@@ -110,17 +114,17 @@ def download_files(
                 file.write(response.content)
                 files.append(file_path)
                 log(f"📁 Arquivo {file_name} salvo.")
-            del response
-            del file
         elif response.status_code == 404:
             log(f"❌ Arquivo não encontrado: {date_to_extract + '-' + dou_section + '.zip'}")
             return
 
+    log(f"✅ Download finalizado.")
+    
     return files
 
 
 @task
-def unpack_zip(zip_path: str, output_path: str) -> None:
+def unpack_zip(zip_files: list, output_path: str) -> None:
     """Descompacta os arquivos .zip baixados.
 
     Args:
@@ -130,15 +134,12 @@ def unpack_zip(zip_path: str, output_path: str) -> None:
 
     """
     log("⬇️ Iniciando descompactação dos arquivos .zip")
-
-    for file in os.listdir(zip_path):
-        if file.endswith(".zip"):
-            file_path = os.path.join(zip_path, file)
-            log(f"Extraindo arquivos de: {file_path}")
-        with zipfile.ZipFile(file_path, "r") as zip_ref:
-            zip_ref.extractall(output_path)
-        return
-
+    if zip_files:
+        for file in zip_files:
+            log(f"Extraindo arquivos de: {file}")
+            with zipfile.ZipFile(file, "r") as zip_ref:
+                zip_ref.extractall(output_path)
+    return
 
 @task
 def get_xml_files(xml_dir: str) -> str:
@@ -183,7 +184,7 @@ def get_xml_files(xml_dir: str) -> str:
                     "section": pubname,
                     "html": html,
                     "signatures": "/".join([signature.text for signature in assina]),
-                    "role": "/".join([cargo.text for cargo in cargos]),
+                    "role": " / ".join([cargo.text for cargo in cargos]),
                 }
                 acts.append(extracted_data)
 

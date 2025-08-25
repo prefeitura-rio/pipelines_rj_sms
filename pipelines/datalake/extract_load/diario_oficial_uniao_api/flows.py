@@ -21,8 +21,8 @@ from pipelines.datalake.extract_load.diario_oficial_uniao_api.tasks import (
     unpack_zip,
     upload_to_datalake,
 )
-from pipelines.datalake.utils.tasks import delete_file
 from pipelines.utils.flow import Flow
+
 from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
@@ -52,7 +52,7 @@ with Flow(
     parsed_date = parse_date(date=DATE)
 
     # Realiza o login
-    session = login(upstream_tasks=[parsed_date])
+    session = login(enviroment=ENVIRONMENT, upstream_tasks=[parsed_date])
 
     # Faz o download dos arquivos .zip com os atos oficiais de cada seção
     zip_files = download_files(
@@ -61,7 +61,7 @@ with Flow(
 
     # Descompacta os arquivos .zip
     flag = unpack_zip(
-        zip_path=flow_constants.DOWNLOAD_DIR.value,
+        zip_files=zip_files,
         output_path=flow_constants.OUTPUT_DIR.value,
         upstream_tasks=[zip_files],
     )

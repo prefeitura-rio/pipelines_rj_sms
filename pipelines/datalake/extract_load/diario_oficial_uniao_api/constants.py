@@ -13,5 +13,10 @@ class constants(Enum):
     DOWNLOAD_BASE_URL = "https://inlabs.in.gov.br/index.php?p="
     OUTPUT_DIR = "./output"
     DOWNLOAD_DIR = "./download"
-    EMAIL = "herian.cavalcante@dados.rio"
-    PASSWORD = "28102810"
+    INFISICAL_PASSWORD = 'PASSWORD'
+    INFISICAL_USERNAME = 'USERNAME'
+    INFISICAL_PATH = '/inlabs'
+    HEADERS = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
