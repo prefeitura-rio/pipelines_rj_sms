@@ -66,7 +66,9 @@ with Flow(
     )
 
     # Pega as informações dos xml de cada ato oficial
-    parquet_file = get_xml_files(xml_dir=flow_constants.OUTPUT_DIR.value, upstream_tasks=[flag, create_dirs])
+    parquet_file = get_xml_files(
+        xml_dir=flow_constants.OUTPUT_DIR.value, upstream_tasks=[flag, create_dirs]
+    )
 
     # Faz o upload para o bigquery
     upload_status = upload_to_datalake(
