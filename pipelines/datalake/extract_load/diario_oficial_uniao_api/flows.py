@@ -51,7 +51,7 @@ with Flow(
     parsed_date = parse_date(date=DATE)
 
     # Realiza o login
-    session = login(enviroment=ENVIRONMENT, upstream_tasks=[parsed_date])
+    session = login(enviroment=ENVIRONMENT, upstream_tasks=[parsed_date, create_dirs])
 
     # Faz o download dos arquivos .zip com os atos oficiais de cada seção
     zip_files = download_files(
@@ -62,11 +62,11 @@ with Flow(
     flag = unpack_zip(
         zip_files=zip_files,
         output_path=flow_constants.OUTPUT_DIR.value,
-        upstream_tasks=[zip_files],
+        upstream_tasks=[zip_files, create_dirs],
     )
 
     # Pega as informações dos xml de cada ato oficial
-    parquet_file = get_xml_files(xml_dir=flow_constants.OUTPUT_DIR.value, upstream_tasks=[flag])
+    parquet_file = get_xml_files(xml_dir=flow_constants.OUTPUT_DIR.value, upstream_tasks=[flag, create_dirs])
 
     # Faz o upload para o bigquery
     upload_status = upload_to_datalake(
