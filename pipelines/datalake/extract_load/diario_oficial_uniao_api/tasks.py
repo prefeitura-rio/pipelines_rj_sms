@@ -176,11 +176,11 @@ def get_xml_files(xml_dir: str) -> str:
                 assina = soup_html.find_all(class_="assina")
                 cargos = soup_html.find_all(class_="cargo")
                 identifica = soup_xml.find_all("Identifica")
-                text_title = soup_html.find_all(class_='identifica')
+                text_title = soup_html.find_all(class_="identifica")
 
                 extracted_data = {
                     "title": " ".join([title.text for title in identifica]),
-                    'text_title': " ".join(title.get_text() for title in text_title),
+                    "text_title": " ".join(title.get_text() for title in text_title),
                     "published_at": pub_date,
                     "agency": art_category,
                     "text": text,
