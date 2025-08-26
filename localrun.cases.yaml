@@ -350,7 +350,6 @@ cases:
       page_size: 5_000
       scroll_timeout: '10m'
       filters: {"codigo_central_reguladora": "330455"}
-      data_inicial: '2025-05-29'
       data_final: 'now'
       bq_dataset: 'brutos_sisreg_api'
       bq_table: 'marcacoes'
@@ -485,3 +484,8 @@ cases:
       table_name: "CURATIVOS"
       db_schema: "dbo"
       partition_column: "extracted_at"
+  - case_slug: "report-alerta-jobs-caros"
+    flow_path: "pipelines.reports.alerta_jobs_caros.flows"
+    flow_name: "report_alerta_jobs_caros"
+    params:
+      environment: "dev"
