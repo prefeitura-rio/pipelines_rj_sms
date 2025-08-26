@@ -54,6 +54,16 @@ flow_parameters = [
         "url_type": "google_sheet",
     },
     {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Encaminhamentos SER",
+        "rename_flow": True,
+        "table_id": "encaminhamentos_ser",
+        "url": "https://docs.google.com/spreadsheets/d/1hpTi-pwJlYqOcdor__v4ONg6yH-2H73qClesdTmGyeo/edit",  # noqa: E501
+        "url_type": "google_sheet",
+    },
+    {
         "url": "https://docs.google.com/spreadsheets/d/176u8I3xlAW7mFN3M0QADZ2b6jU0iUAfWs4CvKd5rhJU/edit?usp=sharing",  # noqa: E501
         "url_type": "google_sheet",
         "gsheets_sheet_name": "Municipios",
