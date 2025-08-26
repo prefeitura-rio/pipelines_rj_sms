@@ -94,6 +94,6 @@ dou_extraction.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="4Gi",
-    memory_request="4Gi",
+    memory_limit="2Gi",
+    memory_request="2Gi",
 )
