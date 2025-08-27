@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 import json
-import requests
 from datetime import datetime
-from markdown_it import MarkdownIt
+
 import pandas as pd
 import pytz
+import requests
+from markdown_it import MarkdownIt
 from pandas import Timestamp
 
 from pipelines.datalake.extract_load.vitacare_api_v2.constants import (
     constants as flow_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.monitor import send_email
 from pipelines.utils.logger import log
+from pipelines.utils.monitor import send_email
 from pipelines.utils.tasks import (
     cloud_function_request,
     get_secret_key,
@@ -69,7 +70,9 @@ def generate_endpoint_params(
 
 
 @task()
-def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "dev", timeout: int = 30) -> dict:
+def extract_data(
+    endpoint_params: dict, endpoint_name: str, environment: str = "dev", timeout: int = 30
+) -> dict:
     log(
         f"Extracting data from API: {endpoint_params['ap']} {endpoint_name}."
         + f" There are {len(endpoint_params['cnes_list'])} CNES to extract."
@@ -85,7 +88,9 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
 
     extraction_logs, extracted_data = [], []
     for cnes in endpoint_params["cnes_list"][:5]:
-        current_datetime = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M:%S")
+        current_datetime = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime(
+            "%d/%m/%Y %H:%M:%S"
+        )
         log(
             f"Extracting data from API: ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
         )
@@ -112,7 +117,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                     "endpoint_url": api_url,
                     "datetime": current_datetime,
                     "success": False,
-                    "result": f"Timeout after {timeout} seconds"
+                    "result": f"Timeout after {timeout} seconds",
                 }
             )
             log(
@@ -130,7 +135,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                     "endpoint_url": api_url,
                     "datetime": current_datetime,
                     "success": False,
-                    "result": f"Unexpected error: {e}"
+                    "result": f"Unexpected error: {e}",
                 }
             )
             log(
@@ -150,7 +155,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                     "endpoint_url": api_url,
                     "datetime": current_datetime,
                     "success": False,
-                    "result": f"Status Code {response['status_code']}: {response['body']}"
+                    "result": f"Status Code {response['status_code']}: {response['body']}",
                 }
             )
             log(
@@ -169,7 +174,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                 "endpoint_url": api_url,
                 "datetime": current_datetime,
                 "success": True,
-                "result": f"Status Code {response['status_code']}"
+                "result": f"Status Code {response['status_code']}",
             }
         )
 
@@ -188,15 +193,10 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
         extracted_data.append(requested_data)
 
     if len(extracted_data) > 0:
-        return {
-            "data": pd.concat(extracted_data),
-            "logs": extraction_logs
-        }
+        return {"data": pd.concat(extracted_data), "logs": extraction_logs}
     else:
-        return {
-            "data": pd.DataFrame(),
-            "logs": extraction_logs
-        }
+        return {"data": pd.DataFrame(), "logs": extraction_logs}
+
 
 @task
 def send_email_notification(logs: list, endpoint: str, environment: str, target_date: str):
@@ -208,8 +208,18 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
         if logs_df.shape[0] == 0:
             return 0, 0, 0
         success_rate = logs_df[logs_df["success"] == True].shape[0] / logs_df.shape[0]
-        delay_rate = logs_df[(logs_df["success"] == False) & (logs_df["result"].str.contains("404"))].shape[0] / logs_df.shape[0]
-        error_rate = logs_df[(logs_df["success"] == False) & (logs_df["result"].str.contains("503"))].shape[0] / logs_df.shape[0]
+        delay_rate = (
+            logs_df[(logs_df["success"] == False) & (logs_df["result"].str.contains("404"))].shape[
+                0
+            ]
+            / logs_df.shape[0]
+        )
+        error_rate = (
+            logs_df[(logs_df["success"] == False) & (logs_df["result"].str.contains("503"))].shape[
+                0
+            ]
+            / logs_df.shape[0]
+        )
         other_error_rate = 1 - success_rate - delay_rate - error_rate
         return success_rate * 100, delay_rate * 100, error_rate * 100, other_error_rate * 100
 
@@ -229,7 +239,9 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
     message += "### Por Estabelecimento\n"
     for i, row in logs_df.iterrows():
         if not row["success"]:
-            message += f"- [{row['ap']}] CNES: {row['cnes']} às {row['datetime']}: `{row['result']}`\n"
+            message += (
+                f"- [{row['ap']}] CNES: {row['cnes']} às {row['datetime']}: `{row['result']}`\n"
+            )
 
     md = MarkdownIt()
 
