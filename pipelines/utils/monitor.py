@@ -4,7 +4,9 @@ from typing import List, Literal
 
 import aiohttp
 import prefect
+import requests
 from discord import AllowedMentions, Embed, File, Webhook
+from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
 
@@ -155,3 +157,40 @@ def send_message(
             )
 
     asyncio.run(main(message_contents))
+
+
+def send_email(
+    subject: str,
+    message: str,
+    recipients: dict,
+):
+    environment = get_environment()
+    URL = get_secret(secret_name="API_URL", path="/datarelay", environment=environment).get(
+        "API_URL"
+    )
+    TOKEN = get_secret(secret_name="API_TOKEN", path="/datarelay", environment=environment).get(
+        "API_TOKEN"
+    )
+
+    request_headers = {"x-api-key": TOKEN}
+    request_body = {
+        **recipients,
+        "subject": subject,
+        "body": message,
+        "is_html_body": True,
+    }
+
+    if URL.endswith("/"):
+        URL = URL.rstrip("/?#")
+
+    endpoint = URL + "/data/mailman"
+
+    response = requests.request("POST", endpoint, headers=request_headers, json=request_body)
+    response.raise_for_status()
+    # [Ref] https://stackoverflow.com/a/52615216/4824627
+    response.encoding = response.apparent_encoding
+    resp_json = response.json()
+    if "success" in resp_json and resp_json["success"]:
+        return
+
+    raise FAIL(f"Email delivery failed: {resp_json}")
