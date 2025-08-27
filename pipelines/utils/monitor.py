@@ -4,6 +4,7 @@ from typing import List, Literal
 import requests
 import aiohttp
 import prefect
+from prefect.engine.signals import FAIL
 from discord import AllowedMentions, Embed, File, Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
