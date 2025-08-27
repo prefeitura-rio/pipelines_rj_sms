@@ -52,8 +52,8 @@ def generate_endpoint_params(
     params = []
     table_names = []
     for ap, df in estabelecimentos.iterrows():
-        if ap not in ["21", "51"]:
-            continue
+        # if ap not in ["21", "51"]:
+        #     continue
         params.append(
             {
                 "ap": f"AP{ap}",
