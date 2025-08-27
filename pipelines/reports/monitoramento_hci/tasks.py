@@ -56,7 +56,13 @@ def send_report(data):
     # Damos leniência de 15 min antes ou depois
     start_time = current_time.replace(hour=7, minute=45)
     end_time = current_time.replace(hour=19, minute=15)
-    IS_WORKDAY = current_time >= start_time and current_time <= end_time
+    DURING_WORK_HOURS = current_time >= start_time and current_time <= end_time
+
+    # Seg=0, Ter=1, Qua=2, Qui=3, Sex=4, Sab=5, Dom=6
+    DURING_WORK_DAYS = current_time.weekday() < 5
+
+    IS_WORKDAY = DURING_WORK_HOURS and DURING_WORK_DAYS
+
     INTERVAL = "30min" if IS_WORKDAY else "1h"
 
     # Fora de horas úteis, queremos só executar de 1 em 1 hora
