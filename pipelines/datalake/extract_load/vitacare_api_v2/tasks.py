@@ -206,7 +206,7 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
 
     def calculate_metrics(logs_df: pd.DataFrame):
         if logs_df.shape[0] == 0:
-            return 0, 0, 0
+            return 0, 0, 0, 0
         success_rate = logs_df[logs_df["success"]].shape[0] / logs_df.shape[0]
         delay_rate = (
             logs_df[(not logs_df["success"]) & (logs_df["result"].str.contains("404"))].shape[
