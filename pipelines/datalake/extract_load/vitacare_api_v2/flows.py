@@ -14,10 +14,10 @@ from pipelines.datalake.extract_load.vitacare_api_v2.tasks import (
     generate_endpoint_params,
     send_email_notification,
 )
+from pipelines.utils.basics import get_property_from_dict
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import rename_current_flow_run, upload_df_to_datalake
-from pipelines.utils.basics import get_property_from_dict
 from pipelines.utils.time import from_relative_date
 
 with Flow(

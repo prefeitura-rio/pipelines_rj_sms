@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import asyncio
 from typing import List, Literal
-import requests
+
 import aiohttp
 import prefect
+import requests
 from discord import AllowedMentions, Embed, File, Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
@@ -163,8 +164,12 @@ def send_email(
     recipients: dict,
 ):
     environment = get_environment()
-    URL = get_secret(secret_name="API_URL", path="/datarelay", environment=environment).get("API_URL")
-    TOKEN = get_secret(secret_name="API_TOKEN", path="/datarelay", environment=environment).get("API_TOKEN")
+    URL = get_secret(secret_name="API_URL", path="/datarelay", environment=environment).get(
+        "API_URL"
+    )
+    TOKEN = get_secret(secret_name="API_TOKEN", path="/datarelay", environment=environment).get(
+        "API_TOKEN"
+    )
 
     request_headers = {"x-api-key": TOKEN}
     request_body = {
