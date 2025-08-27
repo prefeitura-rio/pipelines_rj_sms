@@ -69,7 +69,7 @@ def generate_endpoint_params(
 
 @task()
 def extract_data(
-    endpoint_params: dict, endpoint_name: str, environment: str = "dev", timeout: int = 45
+    endpoint_params: dict, endpoint_name: str, environment: str = "dev", timeout: int = 90
 ) -> dict:
     log(
         f"Extracting data from API: {endpoint_params['ap']} {endpoint_name}."
