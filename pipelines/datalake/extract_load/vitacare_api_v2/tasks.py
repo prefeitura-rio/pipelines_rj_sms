@@ -53,8 +53,6 @@ def generate_endpoint_params(
     params = []
     table_names = []
     for ap, df in estabelecimentos.iterrows():
-        # if ap not in ["21", "51"]:
-        #     continue
         params.append(
             {
                 "ap": f"AP{ap}",
@@ -71,7 +69,7 @@ def generate_endpoint_params(
 
 @task()
 def extract_data(
-    endpoint_params: dict, endpoint_name: str, environment: str = "dev", timeout: int = 30
+    endpoint_params: dict, endpoint_name: str, environment: str = "dev", timeout: int = 45
 ) -> dict:
     log(
         f"Extracting data from API: {endpoint_params['ap']} {endpoint_name}."
@@ -87,7 +85,7 @@ def extract_data(
     now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
     extraction_logs, extracted_data = [], []
-    for cnes in endpoint_params["cnes_list"][:5]:
+    for cnes in endpoint_params["cnes_list"]:
         current_datetime = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime(
             "%d/%m/%Y %H:%M:%S"
         )
