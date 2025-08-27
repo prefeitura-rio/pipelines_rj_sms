@@ -447,6 +447,7 @@ def cloud_function_request(
     env: str = "dev",
     api_type: str = "json",
     endpoint_for_filename: str = None,
+    timeout: int = 90,
 ):
     """
     Sends a request to an endpoint trough a cloud function.
@@ -505,7 +506,7 @@ def cloud_function_request(
 
     try:
         response = requests.request(
-            "POST", cloud_function_url, headers=headers, data=json.dumps(payload)
+            "POST", cloud_function_url, headers=headers, data=json.dumps(payload), timeout=timeout
         )
 
         if response.status_code == 200:
