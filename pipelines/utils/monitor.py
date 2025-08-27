@@ -4,9 +4,9 @@ from typing import List, Literal
 
 import aiohttp
 import prefect
-from prefect.engine.signals import FAIL
 import requests
 from discord import AllowedMentions, Embed, File, Webhook
+from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
 
