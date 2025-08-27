@@ -7,6 +7,12 @@ import pytz
 
 from pipelines.utils.data_cleaning import remove_columns_accents
 
+from google.auth.transport import requests as google_requests
+from google.oauth2 import service_account
+from pipelines.datalake.extract_load.vitacare_historico.constants import vitacare_constants
+from pipelines.utils.logger import log
+import requests
+
 # --- Funções auxiliares para pré-processamento ---
 
 
@@ -43,3 +49,39 @@ def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.D
         df[col] = df[col].astype(str).str.replace(r"[\n\r\t\x00]+", " ", regex=True)
 
     return df
+
+def get_access_token(scopes: list = None) -> str:
+    if scopes is None:
+        scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+
+    credentials = service_account.Credentials.from_service_account_file(
+        vitacare_constants.SERVICE_ACCOUNT_FILE.value, scopes=scopes
+    )
+    credentials.refresh(google_requests.Request())
+    return credentials.token
+
+def change_cloudsql_state(action: str) -> dict:
+    """
+    Ativa ou desativa a instância do Cloud SQL
+    """
+    token = get_access_token()
+    url = f"{vitacare_constants.API_BASE.value}/instances/{vitacare_constants.INSTANCE_ID.value}/{action}"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+    log(f"(change_cloudsql_state) Enviando requisição {action} para {url}")
+    response = requests.post(url, headers=headers)
+
+    if not response.ok:
+        log(
+            f"(change_cloudsql_state) Erro ao {action} instância: {response.status_code} - {response.text}",
+            level="error",
+        )
+        response.raise_for_status()
+
+    return response.json()
+
+

@@ -21,6 +21,12 @@ class vitacare_constants(Enum):
     DB_SCHEMA = "dbo"
     BQ_PARTITION_COLUMN = "extracted_at"
 
+    # CloudSQL activate & deactivat einstance
+    SERVICE_ACCOUNT_FILE = "/tmp/credentials.json"
+    PROJECT_ID = "rj-sms-dev"
+    API_BASE = "https://sqladmin.googleapis.com/sql/v1beta4/projects/rj-sms-dev" 
+    INSTANCE_ID = 'vitacare'
+
     TABLES_TO_EXTRACT = [
         "AGENDAMENTOS",
         "ALERGIAS",
