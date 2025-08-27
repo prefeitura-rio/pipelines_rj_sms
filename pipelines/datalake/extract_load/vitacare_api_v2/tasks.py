@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import json
+import requests
 from datetime import datetime
 from markdown_it import MarkdownIt
-
 import pandas as pd
 import pytz
 from pandas import Timestamp
@@ -102,7 +102,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                 env=environment,
                 timeout=timeout,
             )
-        except requests.exceptions.Timeout:
+        except requests.exceptions.ReadTimeout:
             extraction_logs.append(
                 {
                     "ap": endpoint_params["ap"],
