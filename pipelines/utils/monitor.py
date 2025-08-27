@@ -7,6 +7,8 @@ import prefect
 from discord import AllowedMentions, Embed, File, Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
+from pipelines.utils.logger import log
+
 
 def get_environment():
     return prefect.context.get("parameters").get("environment")
