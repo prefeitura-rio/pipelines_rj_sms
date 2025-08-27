@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 from datetime import datetime
+from markdown_it import MarkdownIt
 
 import pandas as pd
 import pytz
@@ -10,6 +11,7 @@ from pipelines.datalake.extract_load.vitacare_api_v2.constants import (
     constants as flow_constants,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.monitor import send_email
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import (
     cloud_function_request,
@@ -50,6 +52,8 @@ def generate_endpoint_params(
     params = []
     table_names = []
     for ap, df in estabelecimentos.iterrows():
+        if ap not in ["21", "51"]:
+            continue
         params.append(
             {
                 "ap": f"AP{ap}",
@@ -64,22 +68,23 @@ def generate_endpoint_params(
     return params, table_names
 
 
-@task
+@task()
 def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "dev") -> dict:
-
     log(
         f"Extracting data from API: {endpoint_params['ap']} {endpoint_name}."
         + f" There are {len(endpoint_params['cnes_list'])} CNES to extract."
     )
-    api_url = (
-        flow_constants.BASE_URL.value[endpoint_params["ap"]]
-        + flow_constants.ENDPOINT.value[endpoint_name]
+    base_url = get_secret_key.run(
+        secret_path=flow_constants.INFISICAL_PATH.value,
+        secret_name="API_URL_JSON",
+        environment=environment,
     )
+    base_url = json.loads(base_url)
+    api_url = base_url[endpoint_params["ap"]] + flow_constants.ENDPOINT.value[endpoint_name]
     now = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
-    extracted_data = []
-
-    for cnes in endpoint_params["cnes_list"]:
+    extraction_logs, extracted_data = [], []
+    for cnes in endpoint_params["cnes_list"][:5]:
         log(
             f"Extracting data from API: ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
         )
@@ -94,8 +99,19 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                     "password": endpoint_params["password"],
                 },
                 env=environment,
+                timeout=30,
             )
         except Exception as e:
+            extraction_logs.append(
+                {
+                    "ap": endpoint_params["ap"],
+                    "cnes": cnes,
+                    "target_date": endpoint_params["target_date"],
+                    "endpoint_name": endpoint_name,
+                    "success": False,
+                    "result": str(e)
+                }
+            )
             log(
                 "Error extracting data from API:"
                 + f" ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
@@ -104,12 +120,33 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
             continue
 
         if response["status_code"] != 200:
+            extraction_logs.append(
+                {
+                    "ap": endpoint_params["ap"],
+                    "cnes": cnes,
+                    "target_date": endpoint_params["target_date"],
+                    "endpoint_name": endpoint_name,
+                    "success": False,
+                    "result": f"Status Code {response['status_code']}"
+                }
+            )
             log(
                 "Error extracting data from API:"
                 + f" ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
                 + f" {response['status_code']}"
             )
             continue
+
+        extraction_logs.append(
+            {
+                "ap": endpoint_params["ap"],
+                "cnes": cnes,
+                "target_date": endpoint_params["target_date"],
+                "endpoint_name": endpoint_name,
+                "success": True,
+                "result": f"Status Code {response['status_code']}"
+            }
+        )
 
         rows = [json.dumps(x) for x in response["body"]]
         requested_data = pd.DataFrame(
@@ -126,6 +163,62 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
         extracted_data.append(requested_data)
 
     if len(extracted_data) > 0:
-        return pd.concat(extracted_data)
+        return {
+            "data": pd.concat(extracted_data),
+            "logs": extraction_logs
+        }
     else:
-        return pd.DataFrame()
+        return {
+            "data": pd.DataFrame(),
+            "logs": extraction_logs
+        }
+
+@task
+def send_email_notification(logs: list, endpoint: str, environment: str, target_date: str):
+    logs = [log for sublist in logs for log in sublist]
+    logs_df = pd.DataFrame(logs)
+
+    def calculate_metrics(logs_df: pd.DataFrame):
+        if logs_df.shape[0] == 0:
+            return 0, 0, 0
+        success_rate = logs_df[logs_df["success"] == True].shape[0] / logs_df.shape[0]
+        delay_rate = logs_df[(logs_df["success"] == False) & (logs_df["result"].str.contains("404"))].shape[0] / logs_df.shape[0]
+        error_rate = logs_df[(logs_df["success"] == False) & (logs_df["result"].str.contains("503"))].shape[0] / logs_df.shape[0]
+        other_error_rate = 1 - success_rate - delay_rate - error_rate
+        return success_rate * 100, delay_rate * 100, error_rate * 100, other_error_rate * 100
+
+    current_date = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M:%S")
+
+    success_rate, delay_rate, error_rate, other_error_rate = calculate_metrics(logs_df)
+
+    message = f"# Resultados de Extração - Endpoint `{endpoint}` às {current_date}\n"
+    message += f"- 👍 Taxa Geral de Sucesso: {success_rate:.2f}% \n"
+    message += f"- 🔄 Taxa Geral de Atraso de Replicação: {delay_rate:.2f}% \n"
+    message += f"- 🚫 Taxa Geral de Indisponibilidade: {error_rate:.2f}% \n"
+    message += f"- ❌ Taxa Geral de Outros Erros: {other_error_rate:.2f}% \n"
+
+    message += "### Por Área Programática\n"
+    for ap, ap_logs in logs_df.groupby("ap"):
+        success_rate, delay_rate, error_rate, other_error_rate = calculate_metrics(ap_logs)
+        message += f"- **{ap}** - 👍 {success_rate:.2f}% | 🔄 {delay_rate:.2f}% | 🚫 {error_rate:.2f}% | ❌ {other_error_rate:.2f}%\n"
+
+    md = MarkdownIt()
+
+    target_emails = get_secret_key.run(
+        secret_path=flow_constants.INFISICAL_PATH.value,
+        secret_name="REPORT_TARGET_EMAILS",
+        environment=environment,
+    )
+    target_emails = json.loads(target_emails)
+
+    send_email(
+        subject=f"Resultados de Extração - Endpoint `{endpoint}` às {current_date}",
+        message=md.render(message),
+        recipients={
+            "to_addresses": target_emails,
+            "cc_addresses": [],
+            "bcc_addresses": [],
+        },
+    )
+
+    return

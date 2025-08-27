@@ -54,3 +54,7 @@ def from_relative_date(relative_date: Optional[str] = None):
 @task()
 def is_null_or_empty(value):
     return (value is None) or (value == "")
+
+@task()
+def get_property_from_dict(dict: dict, key: str):
+    return dict[key]

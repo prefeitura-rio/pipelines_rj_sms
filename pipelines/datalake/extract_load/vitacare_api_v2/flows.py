@@ -12,10 +12,12 @@ from pipelines.datalake.extract_load.vitacare_api_v2.schedules import schedules
 from pipelines.datalake.extract_load.vitacare_api_v2.tasks import (
     extract_data,
     generate_endpoint_params,
+    send_email_notification,
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import rename_current_flow_run, upload_df_to_datalake
+from pipelines.utils.basics import get_property_from_dict
 from pipelines.utils.time import from_relative_date
 
 with Flow(
@@ -57,10 +59,19 @@ with Flow(
         table_id_prefix=TABLE_ID_PREFIX,
     )
 
-    extracted_data = extract_data.map(
+    extraction_results = extract_data.map(
         endpoint_params=endpoint_params,
         endpoint_name=unmapped(ENDPOINT),
         environment=unmapped(ENVIRONMENT),
+    )
+
+    extracted_data = get_property_from_dict.map(
+        dict=extraction_results,
+        key=unmapped("data"),
+    )
+    logs = get_property_from_dict.map(
+        dict=extraction_results,
+        key=unmapped("logs"),
     )
 
     upload_df_to_datalake.map(
@@ -71,6 +82,13 @@ with Flow(
         source_format=unmapped("parquet"),
         if_exists=unmapped("append"),
         dump_mode=unmapped("append"),
+    )
+
+    send_email_notification(
+        logs=logs,
+        endpoint=ENDPOINT,
+        environment=ENVIRONMENT,
+        target_date=target_date,
     )
 
 
