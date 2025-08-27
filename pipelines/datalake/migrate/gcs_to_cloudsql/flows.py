@@ -33,6 +33,7 @@ with Flow(
     INSTANCE_NAME = Parameter("instance_name", default="vitacare")
     FILE_PATTERN = Parameter("file_pattern", default=None, required=True)
     LIMIT_FILES = Parameter("limit_files", default=None)
+    CONTINUE_FROM = Parameter("continue_from", default=None)
 
     filenames = find_all_filenames_from_pattern(
         environment=ENVIRONMENT,
@@ -52,17 +53,18 @@ with Flow(
         bucket_name=BUCKET_NAME,
         instance_name=INSTANCE_NAME,
         limit_files=LIMIT_FILES,
+        start_from=CONTINUE_FROM,
     )
 
 
 # Storage and run configs
 migrate_gcs_to_cloudsql.schedule = schedule
 migrate_gcs_to_cloudsql.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-migrate_gcs_to_cloudsql.executor = LocalDaskExecutor(num_workers=10)
+migrate_gcs_to_cloudsql.executor = LocalDaskExecutor(num_workers=1)
 migrate_gcs_to_cloudsql.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="10Gi",
+    memory_limit="3Gi",
 )
