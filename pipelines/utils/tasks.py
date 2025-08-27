@@ -470,7 +470,7 @@ def cloud_function_request(
     logger = prefect.context.get("logger")
 
     if env in ["prod", "local-prod"]:
-        cloud_function_url = "https://us-central1-rj-sms.cloudfunctions.net/vitacare"
+        cloud_function_url = "https://us-central1-rj-sms-dev.cloudfunctions.net/vitacare"
     elif env in ["dev", "staging"]:
         cloud_function_url = "https://us-central1-rj-sms-dev.cloudfunctions.net/vitacare"
     else:
