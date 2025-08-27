@@ -205,18 +205,27 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
     logs_df.sort_values(by=["ap", "datetime"], inplace=True)
 
     def calculate_metrics(logs_df: pd.DataFrame):
+        # nada para calcular
         if logs_df.shape[0] == 0:
             return 0, 0, 0, 0
-        success_rate = logs_df[logs_df["success"]].shape[0] / logs_df.shape[0]
-        delay_rate = (
-            logs_df[(not logs_df["success"]) & (logs_df["result"].str.contains("404"))].shape[0]
-            / logs_df.shape[0]
-        )
-        error_rate = (
-            logs_df[(not logs_df["success"]) & (logs_df["result"].str.contains("503"))].shape[0]
-            / logs_df.shape[0]
-        )
-        other_error_rate = 1 - success_rate - delay_rate - error_rate
+
+        # garanta os tipos esperados
+        success = logs_df["success"].astype(bool)
+        result_str = logs_df["result"].astype(str)
+
+        total = float(len(logs_df))  # evita divisão inteira
+
+        # máscaras
+        delayed_mask = (~success) & (result_str.str.contains("404", na=False))
+        error_mask   = (~success) & (result_str.str.contains("503", na=False))
+
+        # taxas
+        success_rate = success.sum() / total
+        delay_rate   = delayed_mask.sum() / total
+        error_rate   = error_mask.sum() / total
+        other_error_rate = max(0.0, 1.0 - success_rate - delay_rate - error_rate)
+
+        # em %
         return success_rate * 100, delay_rate * 100, error_rate * 100, other_error_rate * 100
 
     success_rate, delay_rate, error_rate, other_error_rate = calculate_metrics(logs_df)
