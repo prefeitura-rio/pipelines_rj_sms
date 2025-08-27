@@ -48,6 +48,15 @@ def get_recent_bigquery_jobs(
 
 @task
 def send_discord_alert(environment: str, results: pd.DataFrame):
+    if results.empty:
+        send_message(
+            title="Alerta de Jobs Caros no BigQuery nas últimas 24h",
+            message="Nenhum job caro encontrado nas últimas 24h",
+            monitor_slug="custo_jobs",
+            suppress_embeds=True,
+        )
+        return
+
     lines = []
     for i, row in results.iterrows():
         time = row.creation_time.strftime("%H:%M:%S")
