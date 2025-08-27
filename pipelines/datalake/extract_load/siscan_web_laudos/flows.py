@@ -245,13 +245,13 @@ with Flow(
 ###########################
 
 # Operator
-sms_siscan_web_operator.executor = LocalDaskExecutor(num_workers=3)
+sms_siscan_web_operator.executor = LocalDaskExecutor(num_workers=1)
 sms_siscan_web_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_siscan_web_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
-    memory_request=CONFIG["memory_request"],
-    memory_limit=CONFIG["memory_limit"],
+    memory_request='1Gi',
+    memory_limit='1Gi',
 )
 
 # Manager
