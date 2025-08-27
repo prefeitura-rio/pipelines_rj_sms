@@ -7,8 +7,6 @@ import prefect
 from discord import AllowedMentions, Embed, File, Webhook
 from prefeitura_rio.pipelines_utils.infisical import get_secret
 
-from pipelines.utils.logger import log
-
 
 def get_environment():
     return prefect.context.get("parameters").get("environment")
@@ -187,7 +185,6 @@ def send_email(
     response.encoding = response.apparent_encoding
     resp_json = response.json()
     if "success" in resp_json and resp_json["success"]:
-        log("Email delivery requested successfully")
         return
 
     raise FAIL(f"Email delivery failed: {resp_json}")

@@ -69,7 +69,7 @@ def generate_endpoint_params(
 
 
 @task()
-def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "dev") -> dict:
+def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "dev", timeout: int = 30) -> dict:
     log(
         f"Extracting data from API: {endpoint_params['ap']} {endpoint_name}."
         + f" There are {len(endpoint_params['cnes_list'])} CNES to extract."
@@ -85,6 +85,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
 
     extraction_logs, extracted_data = [], []
     for cnes in endpoint_params["cnes_list"][:5]:
+        current_datetime = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M:%S")
         log(
             f"Extracting data from API: ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
         )
@@ -99,8 +100,26 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                     "password": endpoint_params["password"],
                 },
                 env=environment,
-                timeout=30,
+                timeout=timeout,
             )
+        except requests.exceptions.Timeout:
+            extraction_logs.append(
+                {
+                    "ap": endpoint_params["ap"],
+                    "cnes": cnes,
+                    "target_date": endpoint_params["target_date"],
+                    "endpoint_name": endpoint_name,
+                    "endpoint_url": api_url,
+                    "datetime": current_datetime,
+                    "success": False,
+                    "result": f"Timeout after {timeout} seconds"
+                }
+            )
+            log(
+                "Timeout extracting data from API:"
+                + f" ({cnes}, {endpoint_params['target_date']}, {endpoint_name})"
+            )
+            continue
         except Exception as e:
             extraction_logs.append(
                 {
@@ -108,8 +127,10 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                     "cnes": cnes,
                     "target_date": endpoint_params["target_date"],
                     "endpoint_name": endpoint_name,
+                    "endpoint_url": api_url,
+                    "datetime": current_datetime,
                     "success": False,
-                    "result": str(e)
+                    "result": f"Unexpected error: {e}"
                 }
             )
             log(
@@ -126,8 +147,10 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                     "cnes": cnes,
                     "target_date": endpoint_params["target_date"],
                     "endpoint_name": endpoint_name,
+                    "endpoint_url": api_url,
+                    "datetime": current_datetime,
                     "success": False,
-                    "result": f"Status Code {response['status_code']}"
+                    "result": f"Status Code {response['status_code']}: {response['body']}"
                 }
             )
             log(
@@ -143,6 +166,8 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
                 "cnes": cnes,
                 "target_date": endpoint_params["target_date"],
                 "endpoint_name": endpoint_name,
+                "endpoint_url": api_url,
+                "datetime": current_datetime,
                 "success": True,
                 "result": f"Status Code {response['status_code']}"
             }
@@ -177,6 +202,7 @@ def extract_data(endpoint_params: dict, endpoint_name: str, environment: str = "
 def send_email_notification(logs: list, endpoint: str, environment: str, target_date: str):
     logs = [log for sublist in logs for log in sublist]
     logs_df = pd.DataFrame(logs)
+    logs_df.sort_values(by=["ap", "datetime"], inplace=True)
 
     def calculate_metrics(logs_df: pd.DataFrame):
         if logs_df.shape[0] == 0:
@@ -187,11 +213,9 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
         other_error_rate = 1 - success_rate - delay_rate - error_rate
         return success_rate * 100, delay_rate * 100, error_rate * 100, other_error_rate * 100
 
-    current_date = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M:%S")
-
     success_rate, delay_rate, error_rate, other_error_rate = calculate_metrics(logs_df)
 
-    message = f"# Resultados de Extração - Endpoint `{endpoint}` às {current_date}\n"
+    message = f"## Extração de `{endpoint}`\n"
     message += f"- 👍 Taxa Geral de Sucesso: {success_rate:.2f}% \n"
     message += f"- 🔄 Taxa Geral de Atraso de Replicação: {delay_rate:.2f}% \n"
     message += f"- 🚫 Taxa Geral de Indisponibilidade: {error_rate:.2f}% \n"
@@ -201,6 +225,11 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
     for ap, ap_logs in logs_df.groupby("ap"):
         success_rate, delay_rate, error_rate, other_error_rate = calculate_metrics(ap_logs)
         message += f"- **{ap}** - 👍 {success_rate:.2f}% | 🔄 {delay_rate:.2f}% | 🚫 {error_rate:.2f}% | ❌ {other_error_rate:.2f}%\n"
+
+    message += "### Por Estabelecimento\n"
+    for i, row in logs_df.iterrows():
+        if not row["success"]:
+            message += f"- [{row['ap']}] CNES: {row['cnes']} às {row['datetime']}: `{row['result']}`\n"
 
     md = MarkdownIt()
 
@@ -212,7 +241,7 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
     target_emails = json.loads(target_emails)
 
     send_email(
-        subject=f"Resultados de Extração - Endpoint `{endpoint}` às {current_date}",
+        subject=f"Resultados de Extração - Endpoint {endpoint}",
         message=md.render(message),
         recipients={
             "to_addresses": target_emails,
