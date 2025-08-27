@@ -215,12 +215,12 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
 
         # máscaras
         delayed_mask = (~success) & (result_str.str.contains("404", na=False))
-        error_mask   = (~success) & (result_str.str.contains("503", na=False))
+        error_mask = (~success) & (result_str.str.contains("503", na=False))
 
         # taxas
         success_rate = success.sum() / total
-        delay_rate   = delayed_mask.sum() / total
-        error_rate   = error_mask.sum() / total
+        delay_rate = delayed_mask.sum() / total
+        error_rate = error_mask.sum() / total
         other_error_rate = max(0.0, 1.0 - success_rate - delay_rate - error_rate)
 
         # em %
