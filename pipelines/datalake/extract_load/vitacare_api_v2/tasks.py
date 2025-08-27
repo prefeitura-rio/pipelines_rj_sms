@@ -209,15 +209,11 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
             return 0, 0, 0, 0
         success_rate = logs_df[logs_df["success"]].shape[0] / logs_df.shape[0]
         delay_rate = (
-            logs_df[(not logs_df["success"]) & (logs_df["result"].str.contains("404"))].shape[
-                0
-            ]
+            logs_df[(not logs_df["success"]) & (logs_df["result"].str.contains("404"))].shape[0]
             / logs_df.shape[0]
         )
         error_rate = (
-            logs_df[(not logs_df["success"]) & (logs_df["result"].str.contains("503"))].shape[
-                0
-            ]
+            logs_df[(not logs_df["success"]) & (logs_df["result"].str.contains("503"))].shape[0]
             / logs_df.shape[0]
         )
         other_error_rate = 1 - success_rate - delay_rate - error_rate
@@ -234,7 +230,7 @@ def send_email_notification(logs: list, endpoint: str, environment: str, target_
     message += "### Por Área Programática\n"
     for ap, ap_logs in logs_df.groupby("ap"):
         success_rate, delay_rate, error_rate, other_error_rate = calculate_metrics(ap_logs)
-        message += f"- **{ap}** - 👍 {success_rate:.2f}% | 🔄 {delay_rate:.2f}% | 🚫 {error_rate:.2f}% | ❌ {other_error_rate:.2f}%\n" # noqa: E501
+        message += f"- **{ap}** - 👍 {success_rate:.2f}% | 🔄 {delay_rate:.2f}% | 🚫 {error_rate:.2f}% | ❌ {other_error_rate:.2f}%\n"  # noqa: E501
 
     message += "### Por Estabelecimento\n"
     for i, row in logs_df.iterrows():
