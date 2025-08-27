@@ -50,17 +50,61 @@ def get_most_recent_filenames(files):
     return most_recent_filenames
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task()
 def send_sequential_api_requests(
-    most_recent_files: list, bucket_name: str, instance_name: str, limit_files: int
+    most_recent_files: list,
+    bucket_name: str,
+    instance_name: str,
+    limit_files: int,
+    start_from: int = 0,
 ):
-    # Caso queira limitar o número de arquivos para teste
-    if limit_files is not None and limit_files > 0:
-        log(f"[send_sequential_api_requests] Limiting to {limit_files} files")
-        most_recent_files = most_recent_files[:limit_files]
+    # Garante ordem consistente de arquivos
+    most_recent_files.sort()
 
-    file_count = len(most_recent_files)
-    log(f"[send_sequential_api_requests] Received {file_count} filename(s)")
+    original_file_count = len(most_recent_files)
+    log(f"[send_sequential_api_requests] Received {original_file_count} filename(s)")
+
+    start_from = int(start_from or 0)
+    if start_from < 1 or start_from > original_file_count:
+        log(
+            f"[send_sequential_api_requests] Received '{start_from}' for CONTINUE_FROM,"
+            f"must be between 1 and {original_file_count}; ignoring",
+            level="warning",
+        )
+        start_from = 1
+
+    # 0-index
+    start_from = start_from - 1
+    working_file_count = original_file_count
+
+    if start_from != 0:
+        most_recent_files = most_recent_files[start_from:]
+        working_file_count = len(most_recent_files)
+        log(
+            f"[send_sequential_api_requests] Starting from file #{start_from+1} "
+            f"('{most_recent_files[0]}'); now dealing with {working_file_count} file(s)"
+        )
+
+    # Caso queira limitar o número de arquivos para teste
+    limit_files = int(limit_files or 0)
+    if limit_files > 0:
+        most_recent_files = most_recent_files[:limit_files]
+        working_file_count = len(most_recent_files)
+        log(
+            f"[send_sequential_api_requests] Limiting to {limit_files} file(s); "
+            f"now dealing with {working_file_count} file(s)"
+        )
+
+    utils.wait_for_operations(instance_name, label="pre-import")
+
+    # Garante que a instância está executando, senão a importação logo abaixo
+    # retorna HTTP 412 Precondition Failed
+    # https://cloud.google.com/sql/docs/postgres/start-stop-restart-instance#rest-v1beta4
+    log("[send_sequential_api_requests] Guaranteeing instance is running")
+    always_on = {"settings": {"activationPolicy": "ALWAYS"}}
+    utils.call_api("PATCH", f"/instances/{instance_name}", json=always_on)
+    utils.wait_for_operations(instance_name, label="turning on")
+    utils.get_instance_status(instance_name)
 
     # Requisições precisam ser sequenciais porque a API só permite uma operação por vez
     # Caso contrário, dá erro HTTP 409 'Conflict'
@@ -76,43 +120,61 @@ def send_sequential_api_requests(
     #   - Rodar /import (e esperar concluir);
     #   - Torcer pra não dar nenhum erro, porque apagamos o backup anterior
 
-    for i, file in enumerate(most_recent_files):
-        if file is None or len(file) <= 0:
-            log(f"[send_sequential_api_requests] Skipping file {i+1}/{file_count} (empty name)")
-            continue
+    try:
+        for i, file in enumerate(most_recent_files):
+            log("-" * 20)
+            current_step = f"{i+1}/{working_file_count}"
+            if working_file_count != original_file_count:
+                current_step += f" ({i+1 + start_from}/{original_file_count})"
 
-        # Prepara parâmetros da requisição
-        full_file_uri = f"gs://{bucket_name}/{file}"
-        info = utils.get_info_from_filename(filename=file)
-        database_name = "_".join([info["name"], info["cnes"]])
+            if file is None or len(file) <= 0:
+                log(f"[send_sequential_api_requests] Skipping file {current_step}: empty name")
+                continue
+            log(f"[send_sequential_api_requests] Processing file {current_step}")
 
-        log("-" * 20)
-        log(f"[send_sequential_api_requests] Attempting to delete database '{database_name}'...")
-        # Erro se o nome da database for inválido/esquisito
-        utils.check_db_name(database_name)
+            # Prepara parâmetros da requisição
+            full_file_uri = f"gs://{bucket_name}/{file}"
+            info = utils.get_info_from_filename(filename=file)
+            database_name = "_".join([info["name"], info["cnes"]])
 
-        # Garante que não existe database com esse nome
-        # https://cloud.google.com/sql/docs/sqlserver/create-manage-databases#delete
-        # Chama a API e espera a operação terminar
-        utils.call_and_wait("DELETE", f"/instances/{instance_name}/databases/{database_name}")
+            log(
+                f"[send_sequential_api_requests] Attempting to delete database '{database_name}'..."
+            )
+            # Erro se o nome da database for inválido/esquisito
+            utils.check_db_name(database_name)
 
-        log(
-            "[send_sequential_api_requests] "
-            + f"Attempting to import file {i+1}/{file_count}: "
-            + f"'{full_file_uri}' (db '{database_name}')"
-        )
+            # Garante que não existe database com esse nome
+            # https://cloud.google.com/sql/docs/sqlserver/create-manage-databases#delete
+            # Se já não existir, vai dar o seguinte warning (mas ainda HTTP 200):
+            # > ERROR_SQL_SERVER_EXTERNAL_WARNING: Warn: database vitacare_historic_xxxx doesn't exist
+            # Chama a API e espera a operação terminar
+            utils.call_api("DELETE", f"/instances/{instance_name}/databases/{database_name}")
+            utils.wait_for_operations(instance_name, label="DELETE")
 
-        # Fazer o pedido de importação
-        data = {
-            "importContext": {
-                "fileType": "BAK",
-                "uri": full_file_uri,
-                "database": database_name,
-                "sqlServerImportOptions": {},
+            log(
+                f"[send_sequential_api_requests] Attempting to import file "
+                f"'{full_file_uri}' (db '{database_name}')"
+            )
+            # Faz o pedido de importação
+            data = {
+                "importContext": {
+                    "fileType": "BAK",
+                    "uri": full_file_uri,
+                    "database": database_name,
+                }
             }
-        }
-        # Chama a API e espera a operação terminar
-        utils.call_and_wait("POST", f"/instances/{instance_name}/import", json=data)
+            # Chama a API e espera a operação terminar
+            utils.call_api("POST", f"/instances/{instance_name}/import", json=data)
+            utils.wait_for_operations(instance_name, label="import")
+    finally:
+        # Desliga a instância de novo após a importação
+        utils.wait_for_operations(instance_name, label="post-import")
+        log("-" * 20)
+        log("[send_sequential_api_requests] Stopping instance...")
+        always_off = {"settings": {"activationPolicy": "NEVER"}}
+        utils.call_api("PATCH", f"/instances/{instance_name}", json=always_off)
+        utils.wait_for_operations(instance_name, label="turning off")
+        utils.get_instance_status(instance_name)
 
     log("[send_sequential_api_requests] All done!")
 
