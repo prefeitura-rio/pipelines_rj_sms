@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 
-from prefect import Parameter
+from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
@@ -58,8 +58,8 @@ with Flow(
         session=session, sections=DOU_SECTION, date=parsed_date, upstream_tasks=[session]
     )
 
-    # Descompacta os arquivos .zip
-    flag = unpack_zip(
+    # Descompacta os arquivos .zip (Se não houver atos oficiais para descompactar, retorna False)
+    extraction_status = unpack_zip(
         zip_files=zip_files,
         output_path=flow_constants.OUTPUT_DIR.value,
         upstream_tasks=[zip_files, create_dirs],
@@ -67,7 +67,7 @@ with Flow(
 
     # Pega as informações dos xml de cada ato oficial
     parquet_file = get_xml_files(
-        xml_dir=flow_constants.OUTPUT_DIR.value, upstream_tasks=[flag, create_dirs]
+        xml_dir=flow_constants.OUTPUT_DIR.value, upstream_tasks=[extraction_status, create_dirs]
     )
 
     # Faz o upload para o bigquery
@@ -80,7 +80,7 @@ with Flow(
         status=upload_status,
         date=DATE,
         environment=ENVIRONMENT,
-        upstream_tasks=[upload_status, upload_status],
+        upstream_tasks=[upload_status],
     )
 
     delete_dirs(upstream_tasks=[parquet_file, upload_status])

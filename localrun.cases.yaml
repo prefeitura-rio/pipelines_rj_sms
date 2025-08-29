@@ -495,5 +495,5 @@ cases:
     params:
       environment: 'dev'
       dou_section: 'DO1 DO2 DO3'
-      date: "22/08/2025"
+      date: "29/08/2025"
       dataset_id: "brutos_diario_oficial"

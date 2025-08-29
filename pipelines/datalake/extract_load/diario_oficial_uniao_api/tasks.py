@@ -2,7 +2,7 @@
 import datetime
 import os
 import shutil
-import time
+from datetime import timedelta
 import zipfile
 
 import pandas as pd
@@ -30,11 +30,11 @@ def create_dirs():
 
 
 @task
-def parse_date(date: str) -> datetime:
+def parse_date(date: str) -> datetime.datetime:
     return parse_date_or_today(date)
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def login(enviroment: str = "dev"):
 
     password = get_secret_key.run(
@@ -68,7 +68,7 @@ def login(enviroment: str = "dev"):
         login()
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=30))
 def download_files(
     session: requests.Session, sections: str, date: datetime.datetime
 ) -> list | None:
@@ -94,7 +94,7 @@ def download_files(
 
     files = []
 
-    log("⏳️ Realizando download do arquivo ...")
+    log("⏳️ Realizando requisições ao INLABS...")
     for dou_section in sections.split(" "):
         final_url = (
             download_base_url
@@ -112,16 +112,14 @@ def download_files(
         if response.status_code == 200:
             file_name = date_to_extract + "-" + dou_section + ".zip"
             file_path = os.path.join(flow_constants.DOWNLOAD_DIR.value, file_name)
-
             with open(file_path, "wb") as file:
                 file.write(response.content)
                 files.append(file_path)
-                log(f"📁 Arquivo {file_name} salvo.")
         elif response.status_code == 404:
             log(f"❌ Arquivo não encontrado: {date_to_extract + '-' + dou_section + '.zip'}")
             return
 
-    log(f"✅ Download finalizado.")
+    log(f"✅ Requisições feitas com sucesso.")
 
     return files
 
@@ -136,14 +134,19 @@ def unpack_zip(zip_files: list, output_path: str) -> None:
 
 
     """
-    log("⬇️ Iniciando descompactação dos arquivos .zip")
-    if zip_files:
-        for file in zip_files:
-            log(f"Extraindo arquivos de: {file}")
-            with zipfile.ZipFile(file, "r") as zip_ref:
-                zip_ref.extractall(output_path)
-    return
-
+    try:
+        log("⬇️ Iniciando descompactação dos arquivos .zip")
+        if zip_files:
+            for file in zip_files:
+                log(f"Extraindo arquivos de: {file}")
+                with zipfile.ZipFile(file, "r") as zip_ref:
+                    zip_ref.extractall(output_path)
+        return True
+    except:
+        log('⚠️ Não há atos oficias para descompactar')
+        return False
+    
+    
 
 @task
 def get_xml_files(xml_dir: str) -> str:
@@ -156,56 +159,61 @@ def get_xml_files(xml_dir: str) -> str:
         str: Caminho do arquivo parquet gerado após o processamento das informações.
     """
     log("📋️ Iniciando processamento dos arquivos .xml...")
+    try:
+        acts = []
+        for file in os.listdir(xml_dir):
+            if file.endswith(".xml"):
+                with open(os.path.join(xml_dir, file), "r", encoding="utf-8") as f:
+                    xml_data = f.read()
+                    soup_xml = BeautifulSoup(xml_data, "xml")
+                    soup_html = BeautifulSoup(soup_xml.find("Texto").text, "html.parser")
 
-    acts = []
-    for file in os.listdir(xml_dir):
-        if file.endswith(".xml"):
-            with open(os.path.join(xml_dir, file), "r", encoding="utf-8") as f:
-                xml_data = f.read()
-                soup_xml = BeautifulSoup(xml_data, "xml")
-                soup_html = BeautifulSoup(soup_xml.find("Texto").text, "html.parser")
+                    pdf_page = soup_xml.find("article")["pdfPage"]
+                    edition = soup_xml.find("article")["editionNumber"]
+                    pubname = soup_xml.find("article")["pubName"]
+                    number_page = soup_xml.find("article")["numberPage"]
+                    pub_date = soup_xml.find("article")["pubDate"]
+                    art_category = soup_xml.find("article")["artCategory"]
+                    html = soup_html.prettify()
+                    text = "\n".join(p.get_text() for p in soup_html.find_all("p"))
+                    assina = soup_html.find_all(class_="assina")
+                    cargos = soup_html.find_all(class_="cargo")
+                    identifica = soup_xml.find_all("Identifica")
+                    text_title = soup_html.find_all(class_="identifica")
 
-                pdf_page = soup_xml.find("article")["pdfPage"]
-                edition = soup_xml.find("article")["editionNumber"]
-                pubname = soup_xml.find("article")["pubName"]
-                number_page = soup_xml.find("article")["numberPage"]
-                pub_date = soup_xml.find("article")["pubDate"]
-                art_category = soup_xml.find("article")["artCategory"]
-                html = soup_html.prettify()
-                text = "\n".join(p.get_text() for p in soup_html.find_all("p"))
-                assina = soup_html.find_all(class_="assina")
-                cargos = soup_html.find_all(class_="cargo")
-                identifica = soup_xml.find_all("Identifica")
-                text_title = soup_html.find_all(class_="identifica")
+                    extracted_data = {
+                        "title": " ".join([title.text for title in identifica]),
+                        "text_title": " ".join(title.get_text() for title in text_title),
+                        "published_at": pub_date,
+                        "agency": art_category,
+                        "text": text,
+                        "url": pdf_page,
+                        "number_page": number_page,
+                        "edition": edition,
+                        "section": pubname,
+                        "html": html,
+                        "signatures": "/".join([signature.text for signature in assina]),
+                        "role": " / ".join([cargo.text for cargo in cargos]),
+                    }
+                    acts.append(extracted_data)
 
-                extracted_data = {
-                    "title": " ".join([title.text for title in identifica]),
-                    "text_title": " ".join(title.get_text() for title in text_title),
-                    "published_at": pub_date,
-                    "agency": art_category,
-                    "text": text,
-                    "url": pdf_page,
-                    "number_page": number_page,
-                    "edition": edition,
-                    "section": pubname,
-                    "html": html,
-                    "signatures": "/".join([signature.text for signature in assina]),
-                    "role": " / ".join([cargo.text for cargo in cargos]),
-                }
-                acts.append(extracted_data)
+        df = pd.DataFrame(acts)
+        df["extracted_at"] = datetime.datetime.now(pytz.timezone("America/Sao_Paulo")).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        
+        
+        file_name = f"dou-extraction-{datetime.datetime.now().isoformat(sep='-')}.parquet"
+        file_path = os.path.join(flow_constants.OUTPUT_DIR.value, file_name)
+        
+        if df.empty:
+            return ''
+        df.to_parquet(file_path, index=False)
+        log(f"📁 Arquivo {file_name} salvo.")
+        return file_path
 
-    df = pd.DataFrame(acts)
-    df["extracted_at"] = datetime.datetime.now(pytz.timezone("America/Sao_Paulo")).strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
-
-    print(df.sample(5).to_string())
-    file_name = f"dou-extraction-{datetime.datetime.now().isoformat(sep='-')}.parquet"
-    file_path = os.path.join(flow_constants.OUTPUT_DIR.value, file_name)
-
-    df.to_parquet(file_path, index=False)
-    log(f"📁 Arquivo {file_name} salvo.")
-    return file_path
+    except:
+        return ''
 
 
 @task
@@ -218,12 +226,15 @@ def upload_to_datalake(parquet_path: str, dataset: str):
     Returns:
         bool: True se o upload for bem-sucedido, False caso contrário.
     """
-
+    if parquet_path == '':
+        log("⚠️ Não há registros para enviar ao datalake.")
+        return False 
+    
     df = pd.read_parquet(parquet_path)
     log(f"⬆️ Realizando upload de {len(df)} registros para o datalake...")
 
     if df.empty:
-        log("⚠️ Não há registros para processar.")
+        log("⚠️ Não há registros para renviar ao datalake.")
         return False
 
     upload_df_to_datalake.run(
