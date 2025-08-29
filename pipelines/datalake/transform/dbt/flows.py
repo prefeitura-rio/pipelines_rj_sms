@@ -44,6 +44,7 @@ with Flow(
     SELECT = Parameter("select", default=None, required=False)
     EXCLUDE = Parameter("exclude", default=None, required=False)
     FLAG = Parameter("flag", default=None, required=False)
+    TARGET = Parameter("target", default=None, required=False)
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -51,7 +52,7 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    target = get_target_from_environment(environment=ENVIRONMENT)
+    target = get_target_from_environment(environment=ENVIRONMENT, requested_target=TARGET)
 
     with case(RENAME_FLOW, True):
         rename_flow_task = rename_current_flow_run_dbt(
