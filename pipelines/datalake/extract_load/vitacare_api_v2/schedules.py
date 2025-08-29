@@ -34,14 +34,6 @@ routine_flow_parameters = [
     },
     {
         "dataset_id": "brutos_prontuario_vitacare_api_centralizadora",
-        "endpoint": "condicao",
-        "environment": "prod",
-        "rename_flow": True,
-        "table_id_prefix": "condicao",
-        "target_date": "D-1",
-    },
-    {
-        "dataset_id": "brutos_prontuario_vitacare_api_centralizadora",
         "endpoint": "vacina",
         "environment": "prod",
         "rename_flow": True,
@@ -66,17 +58,6 @@ routine_flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
         "table_id_prefix": "vacinacao",
-        "target_date": "D-7",
-    },
-    # ------------------------------------------------------------
-    # Execuções de Redundância
-    # ------------------------------------------------------------
-    {
-        "dataset_id": "brutos_prontuario_vitacare_api_centralizadora",
-        "endpoint": "condicao",
-        "environment": "prod",
-        "rename_flow": True,
-        "table_id_prefix": "condicao",
         "target_date": "D-7",
     },
 ]
