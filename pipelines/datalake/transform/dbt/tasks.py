@@ -302,7 +302,7 @@ def rename_current_flow_run_dbt(
 
 
 @task()
-def get_target_from_environment(environment: str):
+def get_target_from_environment(environment: str, requested_target: str = None):
     """
     Retrieves the target environment based on the given environment parameter.
     """
@@ -313,8 +313,21 @@ def get_target_from_environment(environment: str):
         "local-staging": "dev",
         "dev": "dev",
     }
-    return converter.get(environment, "dev")
 
+    if requested_target is None or len(requested_target) <= 0:
+        return converter.get(environment, "dev")
+
+    # https://github.com/prefeitura-rio/queries-rj-sms/blob/master/profiles.yml
+    allowed_targets = [
+        "prod", # rj-sms     (dataset.table)
+        "dev",  # rj-sms-dev (username__dataset.table)
+        "ci",   # rj-sms-dev (dataset.table)
+        "sandbox"  # rj-sms-sandbox (dataset.table)
+    ]
+    if requested_target in allowed_targets:
+        return requested_target
+    log(f"Requested target '{requested_target}' is invalid; defaulting to 'dev'", level="warning")
+    return "dev"
 
 @task
 def download_dbt_artifacts_from_gcs(dbt_path: str, environment: str):
