@@ -403,8 +403,8 @@ WHERE data_publicacao = '{DATE}'
                 <tr>
                     <td>
                         <p style="color:#13335a;margin:0">
-                            <b>S/SUBG/CDI/Gerência de Atendimento a Demandas de Controle Interno e Externo</b><br/>
-                            Coordenadoria de Demandas Institucionais
+                            Coordenadoria de Demandas Institucionais<br/>
+                            <b>S/SUBG/CDI/Gerência de Atendimento a Demandas de Controle Interno e Externo</b>
                         </p>
                     </td>
                 </tr>
