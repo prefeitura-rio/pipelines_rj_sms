@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
 import re
+from datetime import datetime
 
-from google.cloud import bigquery
 import pytz
+from google.cloud import bigquery
 
 from pipelines.utils.logger import log
 
@@ -154,18 +154,11 @@ def get_current_edition(current_date: datetime = None):
     first_date = datetime(2025, 8, 28, tzinfo=pytz.timezone("America/Sao_Paulo"))
     # Queremos saber a edição dessa data
     last_date = current_date or datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-    # Calculamos dias entre 
+    # Calculamos dias entre
     diff_days = (last_date - first_date).days
 
     # [Ref] https://stackoverflow.com/a/24494462/4824627
     since_weekday = first_date.isoweekday() + 1
     return first_edition + len(
-        [
-            x
-            for x in range(
-                since_weekday,
-                since_weekday + diff_days
-            )
-            if x % 7 not in [0, 6]
-        ]
+        [x for x in range(since_weekday, since_weekday + diff_days) if x % 7 not in [0, 6]]
     )

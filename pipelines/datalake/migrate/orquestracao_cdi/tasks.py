@@ -20,11 +20,11 @@ from pipelines.utils.time import parse_date_or_today
 
 from .constants import constants
 from .utils import (
-  format_relevant_entry,
-  format_tcm_case,
-  get_current_edition,
-  get_current_year,
-  get_latest_extraction_status
+    format_relevant_entry,
+    format_tcm_case,
+    get_current_edition,
+    get_current_year,
+    get_latest_extraction_status,
 )
 
 
