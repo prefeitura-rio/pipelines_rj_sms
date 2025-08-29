@@ -3,7 +3,6 @@
 # flake8: noqa E501
 
 import io
-import os
 import re
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -20,7 +19,13 @@ from pipelines.utils.tasks import get_bigquery_project_from_environment
 from pipelines.utils.time import parse_date_or_today
 
 from .constants import constants
-from .utils import format_relevant_entry, format_tcm_case, get_latest_extraction_status
+from .utils import (
+  format_relevant_entry,
+  format_tcm_case,
+  get_current_edition,
+  get_current_year,
+  get_latest_extraction_status
+)
 
 
 # Para a justificativa quanto à existência dessa task,
@@ -136,6 +141,9 @@ def build_email(
 
     DO_DATETIME = parse_date_or_today(date)
     DATE = DO_DATETIME.strftime("%Y-%m-%d")
+
+    CURRENT_YEAR = get_current_year()
+    CURRENT_VPS_EDITION = get_current_edition()
 
     QUERY = f"""
 SELECT fonte, content_email, pasta, link, voto
@@ -300,6 +308,11 @@ WHERE data_publicacao = '{DATE}'
                 """
             return f"""
 <font face="sans-serif">
+    <p style="font-size:12px;color:#888;margin:0">
+        <span style="margin-right:2px">Edição nº{CURRENT_VPS_EDITION}</span>
+        &middot;
+        <span style="margin-left:2px">Ano {CURRENT_YEAR}</span>
+    </p>
     <p>
         <b>Atenção!</b>
         Não foi possível extrair automaticamente {error_at} de hoje.
@@ -344,6 +357,15 @@ WHERE data_publicacao = '{DATE}'
                     <td>
                         <img alt="Você Precisa Saber" width="650" style="width:100%"
                             src="{constants.BANNER_VPS.value}"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <p style="font-size:12px;color:#888;margin:0">
+                            <span style="margin-right:6px">Edição nº{CURRENT_VPS_EDITION}</span>
+                            &middot;
+                            <span style="margin-left:6px">Ano {CURRENT_YEAR}</span>
+                        </p>
                     </td>
                 </tr>
                 <tr><td><hr/></td></tr>
@@ -500,11 +522,16 @@ def send_email(
     date: Optional[str] = None,
 ):
     DATE = parse_date_or_today(date).strftime("%d/%m/%Y")
+    CURRENT_YEAR = get_current_year()
+    CURRENT_VPS_EDITION = get_current_edition()
+
     is_html = True
 
     # Caso não haja DO no dia, recebemos um conteúdo vazia
     if not message or len(message) <= 0:
         message = f"""
+Edição nº{CURRENT_VPS_EDITION} · Ano {CURRENT_YEAR}
+
 Nos Diários Oficiais de hoje, não foram localizadas publicações de interesse para a SMS-RJ.
 
 Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
@@ -514,7 +541,7 @@ Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("
     request_headers = {"x-api-key": token}
     request_body = {
         **recipients,
-        "subject": f"Você Precisa Saber ({DATE})",
+        "subject": f"Você Precisa Saber - Edição {CURRENT_VPS_EDITION}ª - {DATE}",
         "body": message,
         "is_html_body": is_html,
     }
