@@ -54,7 +54,7 @@ def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.D
 
 def get_access_token(scopes: list = None) -> dict:
     if scopes is None:
-        scopes = ["https://www.googleapis.com/auth/sqlservice.admin"]
+        scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 
     credentials = service_account.Credentials.from_service_account_file(
         vitacare_constants.SERVICE_ACCOUNT_FILE.value, scopes=scopes
