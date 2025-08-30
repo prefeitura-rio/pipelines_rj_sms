@@ -16,6 +16,7 @@ from pipelines.datalake.extract_load.datalake_bigquery.flows import *
 from pipelines.datalake.extract_load.datasus_ftp.flows import *
 from pipelines.datalake.extract_load.diario_oficial_rj.flows import *
 from pipelines.datalake.extract_load.diario_oficial_uniao.flows import *
+from pipelines.datalake.extract_load.diario_oficial_uniao_api.flows import *
 from pipelines.datalake.extract_load.gal_gcs.flows import *
 from pipelines.datalake.extract_load.google_sheets.flows import *
 from pipelines.datalake.extract_load.medilab_api.flows import *
@@ -33,7 +34,6 @@ from pipelines.datalake.extract_load.tribunal_de_contas_rj.flows import *
 from pipelines.datalake.extract_load.vitacare_api_v2.flows import *
 from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitacare_historico.flows import *
-from pipelines.datalake.extract_load.vitacare_sqlserver.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
 
