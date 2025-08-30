@@ -10,10 +10,10 @@ from prefect.storage import GCS
 
 from pipelines.constants import constants as global_constants
 from pipelines.datalake.extract_load.vitacare_historico.constants import (
-    vitacare_constants,
+    vitacare_constants
 )
 from pipelines.datalake.extract_load.vitacare_historico.schedules import (
-    vitacare_historico_manager_schedule,
+    vitacare_historico_manager_schedule
 )
 from pipelines.datalake.extract_load.vitacare_historico.tasks import (
     build_dbt_paramns,
@@ -21,6 +21,9 @@ from pipelines.datalake.extract_load.vitacare_historico.tasks import (
     get_tables_to_extract,
     get_vitacare_cnes_from_bigquery,
     process_cnes_table,
+    start_cloudsql_instance,
+    wait_for_instance_runnable,
+    stop_cloudsql_instance
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -106,7 +109,13 @@ with Flow(
     DB_SCHEMA = Parameter("db_schema", default=vitacare_constants.DB_SCHEMA.value)
     SKIP_DBT_RUN = Parameter("skip_dbt_run", default=True)
 
-    tables_to_process = get_tables_to_extract()
+    start_instance = start_cloudsql_instance()
+
+    wait_for_instance = wait_for_instance_runnable(
+        upstream_tasks=[start_instance]
+    )
+
+    tables_to_process = get_tables_to_extract(upstream_tasks=[wait_for_instance])
 
     project_name = get_project_name(environment=ENVIRONMENT)
 
@@ -152,6 +161,8 @@ with Flow(
             stream_logs=True,
             raise_final_state=False,
         )
+
+    stop_instance = stop_cloudsql_instance(upstream_tasks=[wait_for_operator_runs])
 
 
 flow_vitacare_historic_manager_v2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
