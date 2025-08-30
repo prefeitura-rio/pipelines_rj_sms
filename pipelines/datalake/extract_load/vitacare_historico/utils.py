@@ -4,14 +4,15 @@ from datetime import datetime
 
 import pandas as pd
 import pytz
-
-from pipelines.utils.data_cleaning import remove_columns_accents
-
+import requests
 from google.auth.transport import requests as google_requests
 from google.oauth2 import service_account
-from pipelines.datalake.extract_load.vitacare_historico.constants import vitacare_constants
+
+from pipelines.datalake.extract_load.vitacare_historico.constants import (
+    vitacare_constants,
+)
+from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
-import requests
 
 # --- Funções auxiliares para pré-processamento ---
 
@@ -50,6 +51,7 @@ def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.D
 
     return df
 
+
 def get_access_token(scopes: list = None) -> dict:
     if scopes is None:
         scopes = ["https://www.googleapis.com/auth/sqlservice.admin"]
@@ -61,18 +63,22 @@ def get_access_token(scopes: list = None) -> dict:
     token = credentials.token
     return {"Authorization": f"Bearer {token}"}
 
+
 def get_instance_status() -> str:
     """
     Verifica o status atual da instância do Cloud SQL
     """
     project_id = vitacare_constants.PROJECT_ID.value
     instance_id = vitacare_constants.INSTANCE_ID.value
-    url = f"https://sqladmin.googleapis.com/sql/v1beta4/projects/{project_id}/instances/{instance_id}"
+    url = (
+        f"https://sqladmin.googleapis.com/sql/v1beta4/projects/{project_id}/instances/{instance_id}"
+    )
 
     headers = get_access_token()
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json().get("state")
+
 
 def set_instance_activation_policy(policy: str):
     """
@@ -81,11 +87,16 @@ def set_instance_activation_policy(policy: str):
     """
     project_id = vitacare_constants.PROJECT_ID.value
     instance_id = vitacare_constants.INSTANCE_ID.value
-    url = f"https://sqladmin.googleapis.com/sql/v1beta4/projects/{project_id}/instances/{instance_id}"
+    url = (
+        f"https://sqladmin.googleapis.com/sql/v1beta4/projects/{project_id}/instances/{instance_id}"
+    )
 
     headers = get_access_token()
     data = {"settings": {"activationPolicy": policy}}
 
     response = requests.patch(url, headers=headers, json=data)
     response.raise_for_status()
-    log(f"Política de ativação da instância '{instance_id}' definida para '{policy}'. Operação iniciada.", level="info")
+    log(
+        f"Política de ativação da instância '{instance_id}' definida para '{policy}'. Operação iniciada.",
+        level="info",
+    )

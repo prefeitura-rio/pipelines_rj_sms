@@ -3,8 +3,9 @@
 Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
 
-from datetime import timedelta
 import time
+from datetime import timedelta
+
 import pandas as pd
 from google.cloud import bigquery
 from sqlalchemy import create_engine
@@ -13,9 +14,9 @@ from pipelines.datalake.extract_load.vitacare_historico.constants import (
     vitacare_constants,
 )
 from pipelines.datalake.extract_load.vitacare_historico.utils import (
-    transform_dataframe,
     get_instance_status,
     set_instance_activation_policy,
+    transform_dataframe,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -209,7 +210,7 @@ def wait_for_instance_runnable(max_wait_minutes: int = 10):
         if status == "RUNNABLE":
             log("Instância ativada", level="info")
             return
-        time.sleep(30)  
+        time.sleep(30)
 
     raise TimeoutError(f"A instância não atingiu o estado RUNNABLE em {max_wait_minutes} minutos.")
 
