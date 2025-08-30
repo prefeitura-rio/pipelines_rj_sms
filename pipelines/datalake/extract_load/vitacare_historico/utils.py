@@ -77,7 +77,11 @@ def get_instance_status() -> str:
     headers = get_access_token()
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    return response.json().get("state")
+    data = response.json()
+    return {
+        "state": data.get("state"),
+        "activationPolicy": data.get("settings", {}).get("activationPolicy"),
+    }
 
 
 def set_instance_activation_policy(policy: str):

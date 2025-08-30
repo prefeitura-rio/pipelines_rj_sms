@@ -191,8 +191,9 @@ def build_dbt_paramns(env: str):
 
 @task(max_retries=2, retry_delay=timedelta(seconds=30))
 def start_cloudsql_instance():
+    status = get_instance_status()
     log("Iniciando a instância do Cloud SQL...")
-    if get_instance_status() == "RUNNABLE":
+    if status == "RUNNABLE" and status["activationPolicy"] == "ALWAYS":
         log("Instância já está no estado RUNNABLE.", level="info")
         return
     set_instance_activation_policy("ALWAYS")
@@ -207,7 +208,7 @@ def wait_for_instance_runnable(max_wait_minutes: int = 10):
     while time.time() - start_time < timeout:
         status = get_instance_status()
         log(f"Status atual da instância: {status}")
-        if status == "RUNNABLE":
+        if status == "RUNNABLE" and status["activationPolicy"] == "ALWAYS":
             log("Instância ativada", level="info")
             return
         time.sleep(30)
