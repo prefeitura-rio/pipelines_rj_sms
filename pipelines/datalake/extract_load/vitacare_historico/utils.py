@@ -50,38 +50,42 @@ def transform_dataframe(df: pd.DataFrame, cnes_code: str, db_table: str) -> pd.D
 
     return df
 
-def get_access_token(scopes: list = None) -> str:
+def get_access_token(scopes: list = None) -> dict:
     if scopes is None:
-        scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+        scopes = ["https://www.googleapis.com/auth/sqlservice.admin"]
 
     credentials = service_account.Credentials.from_service_account_file(
         vitacare_constants.SERVICE_ACCOUNT_FILE.value, scopes=scopes
     )
     credentials.refresh(google_requests.Request())
-    return credentials.token
+    token = credentials.token
+    return {"Authorization": f"Bearer {token}"}
 
-def change_cloudsql_state(action: str) -> dict:
+def get_instance_status() -> str:
     """
-    Ativa ou desativa a instância do Cloud SQL
+    Verifica o status atual da instância do Cloud SQL
     """
-    token = get_access_token()
-    url = f"{vitacare_constants.API_BASE.value}/instances/{vitacare_constants.INSTANCE_ID.value}/{action}"
+    project_id = vitacare_constants.PROJECT_ID.value
+    instance_id = vitacare_constants.INSTANCE_ID.value
+    url = f"https://sqladmin.googleapis.com/sql/v1beta4/projects/{project_id}/instances/{instance_id}"
 
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }
+    headers = get_access_token()
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json().get("state")
 
-    log(f"(change_cloudsql_state) Enviando requisição {action} para {url}")
-    response = requests.post(url, headers=headers)
+def set_instance_activation_policy(policy: str):
+    """
+    Define a política de ativação da instância do Cloud SQL
+    'ALWAYS' para ligar, 'NEVER' para desligar
+    """
+    project_id = vitacare_constants.PROJECT_ID.value
+    instance_id = vitacare_constants.INSTANCE_ID.value
+    url = f"https://sqladmin.googleapis.com/sql/v1beta4/projects/{project_id}/instances/{instance_id}"
 
-    if not response.ok:
-        log(
-            f"(change_cloudsql_state) Erro ao {action} instância: {response.status_code} - {response.text}",
-            level="error",
-        )
-        response.raise_for_status()
+    headers = get_access_token()
+    data = {"settings": {"activationPolicy": policy}}
 
-    return response.json()
-
-
+    response = requests.patch(url, headers=headers, json=data)
+    response.raise_for_status()
+    log(f"Política de ativação da instância '{instance_id}' definida para '{policy}'. Operação iniciada.", level="info")
