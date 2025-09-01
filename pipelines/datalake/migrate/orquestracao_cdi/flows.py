@@ -76,23 +76,16 @@ with Flow(
         # a uma task diretamente dá erro 403 com o Google Cloud. É necessário uma
         # `authenticated_task()` que retorna um dict(), que então pode ser usado diretamente
         dorj_params = create_dorj_params_dict(environment=ENVIRONMENT, date=DATE)
-        dou1_params = create_dou_params_dict(environment=ENVIRONMENT, date=DATE, section=1)
-        dou3_params = create_dou_params_dict(environment=ENVIRONMENT, date=DATE, section=3)
+        dou_params = create_dou_params_dict(environment=ENVIRONMENT, date=DATE)
 
         project_name = get_project_name_from_prefect_environment()
         current_flow_run_labels = get_current_flow_labels()
 
         ## (1) DOU
-        dou1_flow_run = create_flow_run(
-            flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
+        dou_flow_run = create_flow_run(
+            flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União (API)",
             project_name=project_name,
-            parameters=dou1_params,
-            labels=current_flow_run_labels,
-        )
-        dou3_flow_run = create_flow_run(
-            flow_name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
-            project_name=project_name,
-            parameters=dou3_params,
+            parameters=dou_params,
             labels=current_flow_run_labels,
         )
 
@@ -106,8 +99,7 @@ with Flow(
 
         ## Agrega (1) e (2)
         wait_dos = wait_for_flow_run.map(
-            # flow_run_id=[dorj_flow_run],
-            flow_run_id=[dou1_flow_run, dou3_flow_run, dorj_flow_run],
+            flow_run_id=[dou_flow_run, dorj_flow_run],
             stream_states=unmapped(True),
             stream_logs=unmapped(True),
             raise_final_state=unmapped(True),
@@ -204,8 +196,7 @@ flow_orquestracao_cdi.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="10Gi",
-    memory_limit="10Gi",
+    memory_limit="4Gi",
 )
 
 flow_orquestracao_cdi.schedule = schedules
