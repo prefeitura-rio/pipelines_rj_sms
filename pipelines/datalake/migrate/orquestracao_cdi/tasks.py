@@ -143,7 +143,9 @@ def build_email(
     DATE = DO_DATETIME.strftime("%Y-%m-%d")
 
     CURRENT_YEAR = get_current_year()
-    CURRENT_VPS_EDITION = get_current_edition(current_date=DO_DATETIME)
+    CURRENT_VPS_EDITION = get_current_edition(
+        current_date=DO_DATETIME.replace(tzinfo=pytz.timezone("America/Sao_Paulo"))
+    )
 
     QUERY = f"""
 SELECT fonte, content_email, pasta, link, voto
@@ -524,7 +526,9 @@ def send_email(
     DO_DATETIME = parse_date_or_today(date)
     DATE = DO_DATETIME.strftime("%d/%m/%Y")
     CURRENT_YEAR = get_current_year()
-    CURRENT_VPS_EDITION = get_current_edition(current_date=DO_DATETIME)
+    CURRENT_VPS_EDITION = get_current_edition(
+        current_date=DO_DATETIME.replace(tzinfo=pytz.timezone("America/Sao_Paulo"))
+    )
 
     is_html = True
 
