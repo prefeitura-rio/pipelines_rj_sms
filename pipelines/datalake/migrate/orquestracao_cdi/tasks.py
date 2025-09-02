@@ -42,16 +42,18 @@ def create_dou_params_dict(environment: str = "prod", date: Optional[str] = None
 
 @task
 def create_dbt_params_dict(environment: str = "prod"):
-    # Queremos executar o seguinte comando:
-    # $ dbt build --select +tag:cdi+ --target ENV
+    # Queremos buildar:
+    # - +tag:cdi+ (comando que a Vitoria usa(va))
+    # - raw_sheets__cdi_destinatarios (tabela de destinatários extraída diariamente do Sheets)
     return {
         "environment": environment,
         "rename_flow": True,
         "send_discord_report": False,
         "command": "build",
-        "select": "+tag:cdi+",
+        "select": "+tag:cdi+ raw_sheets__cdi_destinatarios",
         "exclude": None,
         "flag": None,
+        "target": "prod" if environment == "prod" else "ci",
     }
 
 
