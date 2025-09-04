@@ -167,7 +167,7 @@ def get_xml_files(xml_dir: str) -> str:
                     xml_data = f.read()
                     soup_xml = BeautifulSoup(xml_data, "xml")
                     soup_html = BeautifulSoup(soup_xml.find("Texto").text, "html.parser")
-                    
+
                     id = soup_xml.find("article")["id"]
                     act_id = soup_xml.find("article")["idOficio"]
                     pdf_page = soup_xml.find("article")["pdfPage"]
