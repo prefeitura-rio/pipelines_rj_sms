@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 import pytz
 from discord import Embed
@@ -32,10 +32,14 @@ def get_data(dataset_name: str, table_name: str, environment: str):
 
     def get_query(interval: str = "30 MINUTE", denom: Optional[int] = 1):
         return f"""
-SELECT tipo_evento, resultado, (COUNT(*) / ({denom})) AS cnt
+SELECT
+    tipo_evento,
+    resultado,
+    JSON_VALUE(parametros_adicionais.params[0].page) as pagina,
+    (COUNT(*) / ({denom})) AS qtd
 FROM `{project_name}.{dataset_name}.{table_name}`
 WHERE created_at >= DATETIME_SUB(CURRENT_DATETIME("America/Sao_Paulo"), INTERVAL {interval})
-GROUP BY 1, 2
+GROUP BY 1, 2, 3
         """
 
     QUERY_RECENT = get_query(interval=interval)
@@ -50,7 +54,7 @@ GROUP BY 1, 2
 
 
 @task
-def send_report(data):
+def send_report(data, environment: str):
     current_time = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
     # Só queremos avisos em horas úteis (8:00–19:00)
     # Damos leniência de 15 min antes ou depois
@@ -87,7 +91,8 @@ def send_report(data):
     for event in data_recent:
         evt_type: str = event[0]
         status: str = event[1]
-        amount: float = event[2]
+        page: int = int(event[2] or 0)
+        amount: float = event[3]
         if amount <= 0:
             continue
         if "desenvolvimento" in evt_type.lower():
@@ -96,37 +101,40 @@ def send_report(data):
         average = next(
             (
                 average
-                for (endpoint_7d, status_7d, average) in data_7d
+                for (endpoint_7d, status_7d, _, average) in data_7d
                 if endpoint_7d == evt_type and status_7d == status
             ),
             0,
         )
         section = "others"
-        if evt_type.startswith("Login") or evt_type.startswith("Termos"):
+        if evt_type.startswith("Login") or evt_type.startswith("Termos") or evt_type.startswith("Dados do usuário"):
             section = "access"
         elif evt_type.startswith("Busca") or evt_type.startswith("Consulta"):
             section = "use"
 
-        s = "" if amount < 2 else "s"
         if status == "500" and not evt_type.startswith("("):
             warnings.append(f"🚨 HTTP 500 em {evt_type}")
 
         if evt_type not in sections[section]:
-            sections[section][evt_type] = []
+            sections[section][evt_type] = dict()
+        if page not in sections[section][evt_type]:
+            sections[section][evt_type][page] = []
 
-        sections[section][evt_type].append(
-            (status, f"**{amount:.0f}** ocorrência{s} (média: {average:.2f})")
+        s = "" if amount < 2 else "s"
+        amount_str = (
+            f"[p.{page}] **{amount:.0f}** ocorrência{s}"
+            if page > 0
+            else f"**{amount:.0f}** ocorrência{s} (média: {average:.2f})"
         )
+        sections[section][evt_type][page].append((status, amount_str))
 
     # Além disso:
     # - Verifica se só temos logins/buscas/etc, mas não consultas
-    types = [evt_type.lower() for (evt_type, status, _) in data_recent if status == "200"]
+    types: List[str] = [evt_type.lower() for (evt_type, status, _, _) in data_recent if status == "200"]
     actual_usage_count = len([t for t in types if t.startswith("consulta")])
     if actual_usage_count <= 0:
         emoji = "🚨" if IS_WORKDAY else "⚠️"
         warnings.append(f"{emoji} Nenhuma consulta no último intervalo de {INTERVAL}!")
-
-    # TODO: Testar requisição à API diretamente
 
     ####################################
     # Notificações
@@ -140,32 +148,34 @@ def send_report(data):
         "500": "⚠️ Erro interno",
     }
 
-    def create_section(title, obj):
+    def create_section(title, events):
         embed = None
         if IS_WORKDAY:
             embed = Embed(title=title, color=0xDBDBE5, timestamp=current_time)
         else:
             embed = Embed(title=f"💤 {title}", color=0x95A7C9, timestamp=current_time)
 
-        keys = list(obj.keys())
-        keys.sort()
-        for key in keys:
+        event_types = sorted(list(events.keys()))
+        for evt_type in event_types:
+            pages = sorted(list(events[evt_type].keys()))
             outstr = ""
-            for status_code, text in obj[key]:
-                # O Discord faz um .strip() em textos, então pra fazer
-                # espaçamento customizado é preciso burlar com caracteres
-                # esquisitos:
-                # -> U+034F COMBINING GRAPHEME JOINER
-                # -> U+2003 EM SPACE
-                outstr += "\u034f \u2003 "
-                if status_code == "200":
-                    outstr += text
-                elif status_code in HTTP_STATUS.keys():
-                    outstr += text + f" [**{status_code}**: {HTTP_STATUS[status_code]}]"
-                else:
-                    outstr += text + f" [**{status_code}**: ❗ Status inesperado]"
-                outstr += "\n"
-            embed.add_field(name=f"📄 {key}", value=outstr, inline=False)
+            for page in pages:
+                for status_code, text in events[evt_type][page]:
+                    # O Discord faz um .strip() em textos, então pra fazer
+                    # espaçamento customizado é preciso burlar com caracteres
+                    # esquisitos:
+                    # -> U+034F COMBINING GRAPHEME JOINER
+                    # -> U+2003 EM SPACE
+                    outstr += "\u034f \u2003 "
+                    if status_code == "200":
+                        outstr += text
+                    elif status_code in HTTP_STATUS.keys():
+                        outstr += text + f" [**{status_code}**: {HTTP_STATUS[status_code]}]"
+                    else:
+                        outstr += text + f" [**{status_code}**: ❗ Status inesperado]"
+                    outstr += "\n"
+            log(f"'📄 {evt_type}'; '{outstr}'")
+            embed.add_field(name=f"📄 {evt_type}", value=outstr, inline=False)
 
         interval_text = "meia" if IS_WORKDAY else "1"
         embed.set_footer(text=f"Última {interval_text} hora (vs. média semanal)")
@@ -192,9 +202,9 @@ def send_report(data):
     # Alertas
     ####################################
     ROLE_ID = "1224334248345862164"
-    ROLE_MENTION = f"<@&{ROLE_ID}>"
+    ROLE_MENTION = f"<@&{ROLE_ID}>" if environment == "prod" else "@(dev)"
     if len(warnings) > 0:
-        log(f"Sending warnings:{warnings}", level="warning")
+        log(f"Sending warnings: {warnings}", level="warning")
         message = ""
         if IS_WORKDAY:
             message = f"**Alertas** ({ROLE_MENTION}):\n"
