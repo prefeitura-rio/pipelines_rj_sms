@@ -107,7 +107,11 @@ def send_report(data, environment: str):
             0,
         )
         section = "others"
-        if evt_type.startswith("Login") or evt_type.startswith("Termos") or evt_type.startswith("Dados do usuário"):
+        if (
+            evt_type.startswith("Login")
+            or evt_type.startswith("Termos")
+            or evt_type.startswith("Dados do usuário")
+        ):
             section = "access"
         elif evt_type.startswith("Busca") or evt_type.startswith("Consulta"):
             section = "use"
@@ -130,7 +134,9 @@ def send_report(data, environment: str):
 
     # Além disso:
     # - Verifica se só temos logins/buscas/etc, mas não consultas
-    types: List[str] = [evt_type.lower() for (evt_type, status, _, _) in data_recent if status == "200"]
+    types: List[str] = [
+        evt_type.lower() for (evt_type, status, _, _) in data_recent if status == "200"
+    ]
     actual_usage_count = len([t for t in types if t.startswith("consulta")])
     if actual_usage_count <= 0:
         emoji = "🚨" if IS_WORKDAY else "⚠️"
