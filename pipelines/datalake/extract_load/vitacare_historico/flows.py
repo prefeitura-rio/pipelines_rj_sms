@@ -82,7 +82,7 @@ with Flow(
             env=ENVIRONMENT,
         )
 
-    cnes_to_process = cnes_to_process = ["5154197_20250902_175554"]
+    cnes_to_process = ["5154197_20250902_175554"]
 
     process_cnes_table.map(
         db_host=unmapped(db_host),
