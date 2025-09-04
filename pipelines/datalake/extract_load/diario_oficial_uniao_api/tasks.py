@@ -2,8 +2,8 @@
 import datetime
 import os
 import shutil
-from datetime import timedelta
 import zipfile
+from datetime import timedelta
 
 import pandas as pd
 import pytz
@@ -143,10 +143,9 @@ def unpack_zip(zip_files: list, output_path: str) -> None:
                     zip_ref.extractall(output_path)
         return True
     except:
-        log('⚠️ Não há atos oficias para descompactar')
+        log("⚠️ Não há atos oficias para descompactar")
         return False
-    
-    
+
 
 @task
 def get_xml_files(xml_dir: str) -> str:
@@ -205,19 +204,18 @@ def get_xml_files(xml_dir: str) -> str:
         df["extracted_at"] = datetime.datetime.now(pytz.timezone("America/Sao_Paulo")).strftime(
             "%Y-%m-%d %H:%M:%S"
         )
-        
-        
+
         file_name = f"dou-extraction-{datetime.datetime.now().isoformat(sep='-')}.parquet"
         file_path = os.path.join(flow_constants.OUTPUT_DIR.value, file_name)
-        
+
         if df.empty:
-            return ''
+            return ""
         df.to_parquet(file_path, index=False)
         log(f"📁 Arquivo {file_name} salvo.")
         return file_path
 
     except:
-        return ''
+        return ""
 
 
 @task
@@ -230,10 +228,10 @@ def upload_to_datalake(parquet_path: str, dataset: str):
     Returns:
         bool: True se o upload for bem-sucedido, False caso contrário.
     """
-    if parquet_path == '':
+    if parquet_path == "":
         log("⚠️ Não há registros para enviar ao datalake.")
-        return False 
-    
+        return False
+
     df = pd.read_parquet(parquet_path)
     log(f"⬆️ Realizando upload de {len(df)} registros para o datalake...")
 
