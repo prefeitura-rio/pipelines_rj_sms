@@ -168,8 +168,17 @@ with Flow(
             environment=ENVIRONMENT, skipped=False, upstream_tasks=[wait_tcm]
         )
         (edition, error, message) = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
-        recipients = get_email_recipients(environment=ENVIRONMENT, recipients=OVERRIDE_RECIPIENTS, error=error)
-        send_email(date=DATE, api_base_url=URL, token=TOKEN, recipients=recipients, edition=edition, message=message)
+        recipients = get_email_recipients(
+            environment=ENVIRONMENT, recipients=OVERRIDE_RECIPIENTS, error=error
+        )
+        send_email(
+            date=DATE,
+            api_base_url=URL,
+            token=TOKEN,
+            recipients=recipients,
+            edition=edition,
+            message=message,
+        )
 
     ## Somente envio de email
     with case(SKIP_TO_EMAIL, True):
@@ -185,8 +194,17 @@ with Flow(
         )
         df = get_todays_tcm_from_gcs(environment=ENVIRONMENT, skipped=True)
         (edition, error, message) = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
-        recipients = get_email_recipients(environment=ENVIRONMENT, recipients=OVERRIDE_RECIPIENTS, error=error)
-        send_email(date=DATE, api_base_url=URL, token=TOKEN, recipients=recipients, edition=edition, message=message)
+        recipients = get_email_recipients(
+            environment=ENVIRONMENT, recipients=OVERRIDE_RECIPIENTS, error=error
+        )
+        send_email(
+            date=DATE,
+            api_base_url=URL,
+            token=TOKEN,
+            recipients=recipients,
+            edition=edition,
+            message=message,
+        )
 
 
 flow_orquestracao_cdi.storage = GCS(constants.GCS_FLOWS_BUCKET.value)

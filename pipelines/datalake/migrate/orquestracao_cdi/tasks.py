@@ -326,7 +326,7 @@ WHERE data_publicacao = '{DATE}'
         {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
     </p>
 </font>
-                """
+                """,
             )
         # Caso contrário, só não temos artigos relevantes hoje; retorna vazio
         return (CURRENT_VPS_EDITION, True, "")
@@ -447,15 +447,13 @@ WHERE data_publicacao = '{DATE}'
             </table>
         </font>
     """
-    return (
-        CURRENT_VPS_EDITION,
-        False,
-        re.sub(r"\s{2,}\<", "<", final_email_string)
-    )
+    return (CURRENT_VPS_EDITION, False, re.sub(r"\s{2,}\<", "<", final_email_string))
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def get_email_recipients(environment: str = "prod", recipients: list = None, error: bool = False) -> dict:
+def get_email_recipients(
+    environment: str = "prod", recipients: list = None, error: bool = False
+) -> dict:
     # Se queremos sobrescrever os recipientes do email
     # (ex. enviar somente para uma pessoa, para teste)
     if recipients is not None:
@@ -510,7 +508,8 @@ FROM `{project_name}.{DATASET}.{TABLE}`
                 continue
             else:
                 log(
-                    f"Recipient type '{kind}' (for '{email}') not recognized; skipping", level="warning"
+                    f"Recipient type '{kind}' (for '{email}') not recognized; skipping",
+                    level="warning",
                 )
         else:
             log(f"Skipping recipient '{email}' because they are not configured to receive errors")
@@ -557,7 +556,7 @@ Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("
         """.strip()
         is_html = False
 
-    edition_string =  f"- Edição {CURRENT_VPS_EDITION}ª " if CURRENT_VPS_EDITION else ""
+    edition_string = f"- Edição {CURRENT_VPS_EDITION}ª " if CURRENT_VPS_EDITION else ""
 
     request_headers = {"x-api-key": token}
     request_body = {
