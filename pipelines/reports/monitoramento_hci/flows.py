@@ -39,6 +39,5 @@ report_uso_hci.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="2Gi",
     memory_limit="2Gi",
 )
