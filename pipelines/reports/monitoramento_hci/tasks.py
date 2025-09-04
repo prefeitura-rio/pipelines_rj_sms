@@ -49,8 +49,23 @@ GROUP BY 1, 2, 3
     QUERY_7D = get_query(interval="7 DAY", denom=denom)
     rows_7d = [row.values() for row in client.query(QUERY_7D).result()]
     log(f"Query for `tipo_evento`, `resultado` (7 DAY) returned {len(rows_7d)} row(s)")
-    # Retorna duas listas de tuplas (evento, quantidade)
-    return (rows_recent, rows_7d)
+
+    cpf_count = [
+        # Trata casos de [] e [None] -> 0
+        (row.values() or [0])[0] or 0
+        for row in client.query(f"""
+SELECT
+    count(distinct autor_cpf)
+FROM `{project_name}.{dataset_name}.{table_name}`
+WHERE created_at >= DATETIME_SUB(CURRENT_DATETIME("America/Sao_Paulo"), INTERVAL {interval})
+        """).result()
+    ][0]
+
+    return {
+        "unique_users": cpf_count,
+        "30min": rows_recent,  # Listas de tuplas (evento, quantidade)
+        "7d": rows_7d
+    }
 
 
 @task
@@ -79,8 +94,9 @@ def send_report(data, environment: str):
             )
             return
 
-    data_recent = data[0]
-    data_7d = data[1]
+    unique_users = data["unique_users"]
+    data_recent = data["30min"]
+    data_7d = data["7d"]
 
     log(f"Últimos {INTERVAL}:\n{data_recent}")
     log(f"Últimos 7 dias (média):\n{data_7d}")
@@ -194,6 +210,22 @@ def send_report(data, environment: str):
         all_embeds.append(create_section("Uso", sections["use"]))
     if len(sections["others"]):
         all_embeds.append(create_section("Outros", sections["others"]))
+
+    ####################################
+    # Informações
+    ####################################
+    usercount = unique_users if unique_users > 0 else "Nenhum"
+    s = "" if unique_users < 2 else "s"
+    interval_text = "meia" if IS_WORKDAY else "1"
+    usage_report_str = f"{usercount} pessoa{s} us{'ou' if unique_users < 2 else 'aram'} o HCI na última {interval_text} hora"
+    log(usage_report_str)
+    asyncio.run(
+        send_discord_webhook(
+            text_content=usage_report_str,
+            username="Monitoramento HCI",
+            monitor_slug="hci_status",
+        )
+    )
 
     if len(all_embeds) > 0:
         asyncio.run(
