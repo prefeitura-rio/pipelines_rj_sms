@@ -156,6 +156,20 @@ def _to_parquet_with_metadata(dados_processados, run_id, as_of, data_inicial, da
 # -----------------------------
 # Função principal
 # -----------------------------
+@task
+def gera_data_inicial(data_inicio, data_fim):
+    """
+    Gera a data inicial para o processamento, considerando o intervalo de 6 meses
+    caso não seja fornecida.
+    Se data_inicio for fornecida, retorna ela.
+    """
+    if data_inicio == "":
+        data_inicio_calculada = pd.to_datetime(data_fim) - timedelta(days=6 * 30)
+    else:
+        data_inicio_calculada = data_inicio
+    return data_inicio_calculada
+
+
 @task(max_retries=5, retry_delay=timedelta(seconds=30))
 def full_extract_process(
     run_id,

@@ -41,7 +41,7 @@ def send_report(configurations: list[dict], results: list[int], environment: str
             emoji = "🟢"
 
         source = configuration["title"]
-        subtitle = f"{source} (`gs://{configuration['bucket_name']}` - `{configuration['source_freshness']}`)"
+        subtitle = f"{source} (`gs://{configuration['bucket_name']}` - `{configuration['source_freshness']}`)"  # noqa
         message_lines.append(f"- {emoji} {subtitle}: {result} arquivos.")
 
     log(f"[{environment}] Sending message with {len(message_lines)} line(s).")

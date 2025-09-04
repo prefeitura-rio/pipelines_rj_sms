@@ -13,7 +13,6 @@ from pipelines.reports.checks_bucket_files.tasks import (
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.time import from_relative_date
 
 with Flow(
     name="Report: Monitoramento de arquivos recorrentes",

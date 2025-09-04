@@ -30,7 +30,7 @@ def get_all_api_data(environment: str = "dev") -> str:
                 secret_name=f"API_URL_{cnes}",
                 secret_path="/prontuario-vitai",
             )
-        except Exception as e:
+        except Exception:
             log(f"A URL da API não foi encontrada para o CNES {cnes}")
             continue
 

@@ -9,15 +9,14 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 manager_flow_params = [
     {
-        "ENVIRONMENT": "prod",
-        "DB_SCHEMA_MANAGER": "dbo",
-        "RENAME_FLOW_MANAGER": True,
+        "environment": "prod",
+        "db_schema": "dbo",
+        "skip_dbt_run": False,
     }
 ]
 
-
 clocks = generate_dump_api_schedules(
-    interval=timedelta(days=20),
+    interval=timedelta(days=30),
     start_date=datetime(2023, 1, 1, 5, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
     flow_run_parameters=manager_flow_params,
@@ -26,3 +25,4 @@ clocks = generate_dump_api_schedules(
 
 
 vitacare_backup_manager_schedule = Schedule(clocks=untuple_clocks(clocks))
+vitacare_historico_manager_schedule = Schedule(clocks=untuple_clocks(clocks))

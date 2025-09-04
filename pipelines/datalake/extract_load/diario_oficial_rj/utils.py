@@ -3,7 +3,6 @@ import datetime
 import re
 from typing import List, Optional
 
-import pandas as pd
 import pytz
 import requests
 from bs4 import BeautifulSoup, NavigableString
@@ -137,11 +136,11 @@ def get_links_for_path(folders: List[BeautifulSoup], path: list) -> List[Beautif
             # Se sim, pega somente as pastas dentro dessa
             # subfolders = folder.parent.find_all("span", attrs={"class": "folder"})
             # Se sim, pega somente descendentes diretos da pasta
-            ## <span class="folder">...</span>  <-- Estamos aqui
-            ## <ul>
-            ##     <li>
-            ##         <div ...></div>
-            ##         <span class="folder">...</span>  <-- Queremos chegar aqui
+            # <span class="folder">...</span>  <-- Estamos aqui
+            # <ul>
+            #     <li>
+            #         <div ...></div>
+            #         <span class="folder">...</span>  <-- Queremos chegar aqui
             subfolders = [
                 li.find("span", attrs={"class": "folder"})
                 for li in folder.find_next_sibling("ul").find_all("li", recursive=False)
@@ -348,7 +347,7 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         for area_k, area_v in sections[section_k].items():
             if len(area_v) <= 0:
                 continue
-            if type(area_v[0]) == str:
+            if isinstance(area_v[0], str):
                 # Filtra parágrafos pelo que temos interesse
                 sections[section_k][area_k] = filter_paragraphs(area_v, area_k)
                 continue

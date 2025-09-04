@@ -322,6 +322,7 @@ cases:
       instance_name: "vitacare"
       file_pattern: "HISTÓRICO_PEPVITA_RJ/AP*/vitacare_historic_*_*_*.bak"
       limit_files: -1
+      continue_from: 0
   - case_slug: "datalake-extract-smsrio"
     flow_path: "pipelines.datalake.extract_load.smsrio_mysql.flows"
     flow_name: "sms_dump_smsrio"
@@ -350,7 +351,6 @@ cases:
       page_size: 5_000
       scroll_timeout: '10m'
       filters: {"codigo_central_reguladora": "330455"}
-      data_inicial: '2025-05-29'
       data_final: 'now'
       bq_dataset: 'brutos_sisreg_api'
       bq_table: 'marcacoes'
@@ -476,51 +476,25 @@ cases:
       dataset_id: "brutos_gal"
       table_id: "exames_laboratoriais"
       relative_target_date: "D-7"
-  - case_slug: "datalake-bq-subpav"
-    flow_path: "pipelines.datalake.migrate.bq_to_subpav.flows"
-    flow_name: "bq_to_subpav_flow"
+  - case_slug: "vitacare_historico_operator"
+    flow_path: "pipelines.datalake.extract_load.vitacare_historico.flows"
+    flow_name: "flow_vitacare_historic_operator_v2"
     params:
-      infisical_path: "/smsrio"
-      secret_name: "DB_URL"
-      dataset_id: "projeto_sinanrio"
-      table_id: "sintomaticos_respiratorios_dia"
-      db_schema: "teste_dl"
-      dest_table: "tb_sintomaticos"
-      project: "SINANRIO - Sintomáticos respiratórios"
-      if_exists: "append"
-      notify: true
-      rename_flow: false
-      bq_columns: null
-      custom_insert_query: |
-        INSERT INTO tb_sintomaticos (
-          cpf,
-          condicoes,
-          soap_subjetivo_motivo,
-          soap_objetivo_descricao,
-          soap_avaliacao_observacoes,
-          datahora_fim,
-          nome,
-          data_nascimento,
-          cids_extraidos,
-          rn,
-          created_at
-        )
-        SELECT
-          :cpf,
-          :condicoes,
-          :soap_subjetivo_motivo,
-          :soap_objetivo_descricao,
-          :soap_avaliacao_observacoes,
-          :datahora_fim,
-          :nome,
-          :data_nascimento,
-          :cids_extraidos,
-          :rn,
-          NOW()
-        WHERE NOT EXISTS (
-          SELECT 1 FROM teste_dl.tb_sintomaticos
-          WHERE cpf = :cpf
-            AND DATE(created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND CURDATE()
-        )
-
-
+      environment: "dev"
+      rename_flow: False
+      table_name: "CURATIVOS"
+      db_schema: "dbo"
+      partition_column: "extracted_at"
+  - case_slug: "report-alerta-jobs-caros"
+    flow_path: "pipelines.reports.alerta_jobs_caros.flows"
+    flow_name: "report_alerta_jobs_caros"
+    params:
+      environment: "dev"
+  - case_slug: 'dou-extraction-api'
+    flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao_api.flows'
+    flow_name: 'dou_extraction'
+    params:
+      environment: 'dev'
+      dou_section: 'DO1 DO2 DO3'
+      date: "29/08/2025"
+      dataset_id: "brutos_diario_oficial"
