@@ -167,7 +167,9 @@ def get_xml_files(xml_dir: str) -> str:
                     xml_data = f.read()
                     soup_xml = BeautifulSoup(xml_data, "xml")
                     soup_html = BeautifulSoup(soup_xml.find("Texto").text, "html.parser")
-
+                    
+                    id = soup_xml.find("article")["id"]
+                    act_id = soup_xml.find("article")["idOficio"]
                     pdf_page = soup_xml.find("article")["pdfPage"]
                     edition = soup_xml.find("article")["editionNumber"]
                     pubname = soup_xml.find("article")["pubName"]
@@ -183,6 +185,8 @@ def get_xml_files(xml_dir: str) -> str:
 
                     extracted_data = {
                         "title": " ".join([title.text for title in identifica]),
+                        "id": id,
+                        "act_id": act_id,
                         "text_title": " ".join(title.get_text() for title in text_title),
                         "published_at": pub_date,
                         "agency": art_category,
