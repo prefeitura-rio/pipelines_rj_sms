@@ -28,7 +28,7 @@ with Flow(
     # Tasks
     #####################################
     data = get_data(dataset_name=DATASET, table_name=TABLE, environment=ENVIRONMENT)
-    send_report(data=data)
+    send_report(data=data, environment=ENVIRONMENT)
 
 
 report_uso_hci.schedule = schedule
@@ -39,6 +39,5 @@ report_uso_hci.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="2Gi",
     memory_limit="2Gi",
 )
