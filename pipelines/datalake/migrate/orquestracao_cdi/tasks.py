@@ -5,7 +5,7 @@
 import io
 import re
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 import pytz
@@ -129,10 +129,10 @@ def get_todays_tcm_from_gcs(environment: str = "prod", skipped: bool = False):
     return output_df
 
 
-@task
+@task(nout=3)
 def build_email(
     environment: str = "prod", date: Optional[str] = None, tcm_df: pd.DataFrame = None
-) -> List[int, bool, str]:
+) -> Tuple[int, bool, str]:
     client = bigquery.Client()
     PROJECT = get_bigquery_project_from_environment.run(environment=environment)
     DATASET = "projeto_cdi"
