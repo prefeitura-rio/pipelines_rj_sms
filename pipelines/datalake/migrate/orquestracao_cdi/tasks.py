@@ -211,7 +211,7 @@ WHERE data_publicacao = '{DATE}'
     email_blocks: dict[str, List] = {}
     for row in rows:
         edicao, fonte, content, pasta, article_url, voto = row
-        CURRENT_VPS_EDITION = int(edicao or 0)
+        CURRENT_VPS_EDITION = int(edicao or CURRENT_VPS_EDITION)
         fonte = strip_if_not_none(fonte, default="Não categorizado")
         content = strip_if_not_none(content, default="")
         pasta = strip_if_not_none(pasta)
