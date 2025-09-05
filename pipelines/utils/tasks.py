@@ -444,6 +444,7 @@ def cloud_function_request(
     request_type: str = "GET",
     body_params: any = None,
     query_params: dict = None,
+    header_params: dict = None,
     env: str = "dev",
     api_type: str = "json",
     endpoint_for_filename: str = None,
@@ -496,6 +497,7 @@ def cloud_function_request(
         "request_type": request_type,
         "body_params": body_params,
         "query_params": query_params_for_cf,
+        "header_params": header_params,
         "credential": credential,
     }
 
