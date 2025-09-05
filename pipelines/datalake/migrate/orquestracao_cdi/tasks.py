@@ -312,9 +312,6 @@ WHERE data_publicacao = '{DATE}'
                 True,
                 f"""
 <font face="sans-serif">
-    <p style="font-size:12px;color:#888;margin:0">
-        <span style="margin-left:2px">Ano {CURRENT_YEAR}</span>
-    </p>
     <p>
         <b>Atenção!</b>
         Não foi possível extrair automaticamente {error_at} de hoje.
@@ -362,6 +359,9 @@ WHERE data_publicacao = '{DATE}'
                             src="{constants.BANNER_VPS.value}"/>
                     </td>
                 </tr>
+    """
+    if CURRENT_VPS_EDITION > 0:
+        final_email_string += f"""
                 <tr>
                     <td>
                         <p style="font-size:12px;color:#888;margin:0">
@@ -371,6 +371,8 @@ WHERE data_publicacao = '{DATE}'
                         </p>
                     </td>
                 </tr>
+        """
+    final_email_string += f"""
                 <tr><td><hr/></td></tr>
                 <tr>
                     <td style="padding:18px 0px">
@@ -548,7 +550,7 @@ def send_email(
     # Caso não haja DO no dia, recebemos um conteúdo vazia
     if not message or len(message) <= 0:
         message = f"""
-{ f"Edição nº{CURRENT_VPS_EDITION} · " if CURRENT_VPS_EDITION else "" }Ano {CURRENT_YEAR}
+{ f"Edição nº{CURRENT_VPS_EDITION} · Ano {CURRENT_YEAR}" if CURRENT_VPS_EDITION else "" }
 
 Nos Diários Oficiais de hoje, não foram localizadas publicações de interesse para a SMS-RJ.
 
@@ -556,12 +558,12 @@ Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("
         """.strip()
         is_html = False
 
-    edition_string = f"- Edição {CURRENT_VPS_EDITION}ª " if CURRENT_VPS_EDITION else ""
+    subject_edition_string = f"- Edição {CURRENT_VPS_EDITION}ª " if CURRENT_VPS_EDITION else ""
 
     request_headers = {"x-api-key": token}
     request_body = {
         **recipients,
-        "subject": f"Você Precisa Saber {edition_string}- {DATE}",
+        "subject": f"Você Precisa Saber {subject_edition_string}- {DATE}",
         "body": message,
         "is_html_body": is_html,
     }
