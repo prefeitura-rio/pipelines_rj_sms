@@ -132,7 +132,7 @@ def get_todays_tcm_from_gcs(environment: str = "prod", skipped: bool = False):
 @task
 def build_email(
     environment: str = "prod", date: Optional[str] = None, tcm_df: pd.DataFrame = None
-) -> str:
+) -> List[int, bool, str]:
     client = bigquery.Client()
     PROJECT = get_bigquery_project_from_environment.run(environment=environment)
     DATASET = "projeto_cdi"
