@@ -5,7 +5,7 @@
 import io
 import re
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 import pytz
@@ -129,10 +129,10 @@ def get_todays_tcm_from_gcs(environment: str = "prod", skipped: bool = False):
     return output_df
 
 
-@task
+@task(nout=3)
 def build_email(
     environment: str = "prod", date: Optional[str] = None, tcm_df: pd.DataFrame = None
-) -> str:
+) -> Tuple[int, bool, str]:
     client = bigquery.Client()
     PROJECT = get_bigquery_project_from_environment.run(environment=environment)
     DATASET = "projeto_cdi"
@@ -143,12 +143,9 @@ def build_email(
     DATE = DO_DATETIME.strftime("%Y-%m-%d")
 
     CURRENT_YEAR = get_current_year()
-    CURRENT_VPS_EDITION = get_current_edition(
-        current_date=DO_DATETIME.replace(tzinfo=pytz.timezone("America/Sao_Paulo"))
-    )
 
     QUERY = f"""
-SELECT fonte, content_email, pasta, link, voto
+SELECT edicao, fonte, content_email, pasta, link, voto
 FROM {FULL_TABLE}
 WHERE data_publicacao = '{DATE}'
     """
@@ -158,7 +155,7 @@ WHERE data_publicacao = '{DATE}'
 
     # Pegamos todos os processos do TCM relevantes
     tcm_case_numbers = []
-    for _, _, _, _, voto in rows:
+    for _, _, _, _, _, voto in rows:
         voto = format_tcm_case(voto)
         if voto is None:
             continue
@@ -209,10 +206,12 @@ WHERE data_publicacao = '{DATE}'
         stripped = str(v).strip()
         return stripped if v is not None and len(stripped) > 0 else default
 
+    CURRENT_VPS_EDITION = 0
     # Constrói cada bloco do email
     email_blocks: dict[str, List] = {}
     for row in rows:
-        fonte, content, pasta, article_url, voto = row
+        edicao, fonte, content, pasta, article_url, voto = row
+        CURRENT_VPS_EDITION = int(edicao or CURRENT_VPS_EDITION)
         fonte = strip_if_not_none(fonte, default="Não categorizado")
         content = strip_if_not_none(content, default="")
         pasta = strip_if_not_none(pasta)
@@ -308,13 +307,11 @@ WHERE data_publicacao = '{DATE}'
                         de interesse para a SMS-RJ.
                     </p>
                 """
-            return f"""
+            return (
+                CURRENT_VPS_EDITION,
+                True,
+                f"""
 <font face="sans-serif">
-    <p style="font-size:12px;color:#888;margin:0">
-        <span style="margin-right:2px">Edição nº{CURRENT_VPS_EDITION}</span>
-        &middot;
-        <span style="margin-left:2px">Ano {CURRENT_YEAR}</span>
-    </p>
     <p>
         <b>Atenção!</b>
         Não foi possível extrair automaticamente {error_at} de hoje.
@@ -326,9 +323,10 @@ WHERE data_publicacao = '{DATE}'
         {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
     </p>
 </font>
-            """
+                """,
+            )
         # Caso contrário, só não temos artigos relevantes hoje; retorna vazio
-        return ""
+        return (CURRENT_VPS_EDITION, True, "")
 
     error_message = ""
     if ERRO_DOU or ERRO_DORJ:
@@ -361,6 +359,9 @@ WHERE data_publicacao = '{DATE}'
                             src="{constants.BANNER_VPS.value}"/>
                     </td>
                 </tr>
+    """
+    if CURRENT_VPS_EDITION > 0:
+        final_email_string += f"""
                 <tr>
                     <td>
                         <p style="font-size:12px;color:#888;margin:0">
@@ -370,6 +371,8 @@ WHERE data_publicacao = '{DATE}'
                         </p>
                     </td>
                 </tr>
+        """
+    final_email_string += f"""
                 <tr><td><hr/></td></tr>
                 <tr>
                     <td style="padding:18px 0px">
@@ -427,8 +430,8 @@ WHERE data_publicacao = '{DATE}'
                 <tr>
                     <td>
                         <p style="color:#13335a;margin:0">
-                            Coordenadoria de Demandas Institucionais<br/>
-                            <b>S/SUBG/CDI/Gerência de Atendimento a Demandas de Controle Interno e Externo</b>
+                            <b style="font-size:15px">Coordenadoria de Demandas Institucionais</b><br/>
+                            S/SUBG/CDI/Gerência de Atendimento a Demandas de Controle Interno e Externo
                         </p>
                     </td>
                 </tr>
@@ -446,11 +449,13 @@ WHERE data_publicacao = '{DATE}'
             </table>
         </font>
     """
-    return re.sub(r"\s{2,}\<", "<", final_email_string)
+    return (CURRENT_VPS_EDITION, False, re.sub(r"\s{2,}\<", "<", final_email_string))
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def get_email_recipients(environment: str = "prod", recipients: list = None) -> dict:
+def get_email_recipients(
+    environment: str = "prod", recipients: list = None, error: bool = False
+) -> dict:
     # Se queremos sobrescrever os recipientes do email
     # (ex. enviar somente para uma pessoa, para teste)
     if recipients is not None:
@@ -473,7 +478,7 @@ def get_email_recipients(environment: str = "prod", recipients: list = None) -> 
     TABLE = "cdi_destinatarios"
 
     QUERY = f"""
-SELECT email, tipo
+SELECT email, tipo, recebe_erro
 FROM `{project_name}.{DATASET}.{TABLE}`
     """
     log(f"Querying `{project_name}.{DATASET}.{TABLE}` for email recipients...")
@@ -483,31 +488,42 @@ FROM `{project_name}.{DATASET}.{TABLE}`
     to_addresses = []
     cc_addresses = []
     bcc_addresses = []
-    for email, kind in rows:
+    for email, kind, gets_errors in rows:
         email = str(email).strip()
         kind = str(kind).lower().strip()
+        gets_errors = str(gets_errors).lower().strip() == "true"
         if not email:
             continue
         if "@" not in email:
             log(f"Recipient '{email}' does not contain '@'; skipping", level="warning")
             continue
 
-        if kind == "to":
-            to_addresses.append(email)
-        elif kind == "cc":
-            cc_addresses.append(email)
-        elif kind == "bcc":
-            bcc_addresses.append(email)
-        elif kind == "skip":
-            continue
+        should_get = (error and gets_errors) or not error
+        if should_get:
+            if kind == "to":
+                to_addresses.append(email)
+            elif kind == "cc":
+                cc_addresses.append(email)
+            elif kind == "bcc":
+                bcc_addresses.append(email)
+            elif kind == "skip":
+                continue
+            else:
+                log(
+                    f"Recipient type '{kind}' (for '{email}') not recognized; skipping",
+                    level="warning",
+                )
         else:
-            log(
-                f"Recipient type '{kind}' (for '{email}') not recognized; skipping", level="warning"
-            )
+            log(f"Skipping recipient '{email}' because they are not configured to receive errors")
 
     log(
         f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)"
     )
+    # Fallback caso por algum motivo não tenha nenhum destinatário
+    if len(to_addresses) + len(cc_addresses) + len(bcc_addresses) <= 0:
+        log(f"No recipient left! Defaulting to maintainer", level="warning")
+        to_addresses.append("matheus.avellar@dados.rio")
+
     return {
         "to_addresses": to_addresses,
         "cc_addresses": cc_addresses,
@@ -519,6 +535,7 @@ FROM `{project_name}.{DATASET}.{TABLE}`
 def send_email(
     api_base_url: str,
     token: str,
+    edition: int,
     message: str,
     recipients: dict,
     date: Optional[str] = None,
@@ -526,16 +543,14 @@ def send_email(
     DO_DATETIME = parse_date_or_today(date)
     DATE = DO_DATETIME.strftime("%d/%m/%Y")
     CURRENT_YEAR = get_current_year()
-    CURRENT_VPS_EDITION = get_current_edition(
-        current_date=DO_DATETIME.replace(tzinfo=pytz.timezone("America/Sao_Paulo"))
-    )
+    CURRENT_VPS_EDITION = edition or 0
 
     is_html = True
 
     # Caso não haja DO no dia, recebemos um conteúdo vazia
     if not message or len(message) <= 0:
         message = f"""
-Edição nº{CURRENT_VPS_EDITION} · Ano {CURRENT_YEAR}
+{ f"Edição nº{CURRENT_VPS_EDITION} · Ano {CURRENT_YEAR}" if CURRENT_VPS_EDITION else "" }
 
 Nos Diários Oficiais de hoje, não foram localizadas publicações de interesse para a SMS-RJ.
 
@@ -543,10 +558,12 @@ Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("
         """.strip()
         is_html = False
 
+    subject_edition_string = f"- Edição {CURRENT_VPS_EDITION}ª " if CURRENT_VPS_EDITION else ""
+
     request_headers = {"x-api-key": token}
     request_body = {
         **recipients,
-        "subject": f"Você Precisa Saber - Edição {CURRENT_VPS_EDITION}ª - {DATE}",
+        "subject": f"Você Precisa Saber {subject_edition_string}- {DATE}",
         "body": message,
         "is_html_body": is_html,
     }
