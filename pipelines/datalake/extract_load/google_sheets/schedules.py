@@ -203,6 +203,16 @@ flow_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1jwp5rV3Rwr2NGQy60YQgF47PSFuTcVpE8uKhcrODnRs/edit",  # noqa: E501
         "url_type": "google_sheet",
     },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "caps",
+        "rename_flow": True,
+        "table_id": "contatos_caps",
+        "url": "https://docs.google.com/spreadsheets/d/18yQ7o8CRnt-i4nPym0WyzMtVXdd96GvWbQwMQxAHlLM",  # noqa: E501
+        "url_type": "google_sheet",
+    },
 ]
 
 
