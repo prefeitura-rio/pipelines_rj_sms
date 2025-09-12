@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -14,8 +15,8 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
     generate_time_windows,
+    parse_identificador,
     transform,
-    parse_identificador
 )
 from pipelines.datalake.utils.tasks import upload_df_to_datalake
 from pipelines.utils.credential_injector import (
@@ -82,7 +83,9 @@ with Flow(
             environment=environment,
         )
 
-    identificador_lis = parse_identificador(identificador=identificador_lis_secret, ap=area_programatica) #noqa
+    identificador_lis = parse_identificador(
+        identificador=identificador_lis_secret, ap=area_programatica
+    )  # noqa
 
     results = authenticate_and_fetch(
         username=username_secret,
