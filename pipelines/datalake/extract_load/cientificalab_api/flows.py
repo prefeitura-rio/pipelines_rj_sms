@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -14,6 +15,7 @@ from pipelines.datalake.extract_load.cientificalab_api.tasks import (
     build_operator_params,
     generate_time_windows,
     transform,
+    parse_identificador
 )
 from pipelines.datalake.utils.tasks import upload_df_to_datalake
 from pipelines.utils.credential_injector import (
@@ -43,6 +45,7 @@ with Flow(
     dt_inicio = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     dt_fim = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
     rename_flow = Parameter("rename_flow", default=True)
+    area_programatica = Parameter("ap", default="AP10")
     dataset_id = Parameter(
         "dataset", default=cientificalab_constants.DATASET_ID.value, required=False
     )  # noqa
@@ -65,7 +68,11 @@ with Flow(
         secret_name=cientificalab_constants.INFISICAL_APCCODIGO.value,
         environment=environment,
     )
-    identificador_lis = "VITCR"
+    identificador_lis_secret = get_secret_key(
+        secret_path=INFISICAL_PATH,
+        secret_name=cientificalab_constants.INFISICAL_AP_LIS.value,
+        environment=environment,
+    )
 
     with case(rename_flow, True):
         rename_current_flow_run(
@@ -74,6 +81,8 @@ with Flow(
             dt_fim=dt_fim,
             environment=environment,
         )
+
+    identificador_lis = parse_identificador(identificador=identificador_lis_secret, ap=area_programatica) #noqa
 
     results = authenticate_and_fetch(
         username=username_secret,

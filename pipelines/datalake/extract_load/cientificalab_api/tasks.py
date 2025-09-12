@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List
 
+import json
 import pandas as pd
 import pytz
 from prefeitura_rio.pipelines_utils.logging import log
@@ -260,3 +261,8 @@ def build_operator_params(windows: List[Dict[str, str]], env: str) -> List[Dict[
             }
         )
     return params
+
+@task
+def parse_identificador(identificador: str, ap: str) -> str:
+    identificador_dict = json.loads(identificador) 
+    return identificador_dict[ap]

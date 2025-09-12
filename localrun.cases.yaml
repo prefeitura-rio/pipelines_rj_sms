@@ -365,6 +365,7 @@ cases:
       dt_inicio: '2025-08-17T00:00:00-03:00'
       dt_fim: '2025-08-17T03:59:59-03:00'
       rename_flow: False
+      ap: 'AP10'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
