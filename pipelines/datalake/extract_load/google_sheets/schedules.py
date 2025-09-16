@@ -230,7 +230,7 @@ daily_clocks = generate_dump_api_schedules(
 )
 
 weekly_clocks = generate_dump_api_schedules(
-    interval=timedelta(days=7), 
+    interval=timedelta(days=7),
     #                   2025-09-14 foi domingo
     start_date=datetime(2025, 9, 14, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
