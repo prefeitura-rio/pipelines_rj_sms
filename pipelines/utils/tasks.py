@@ -911,9 +911,7 @@ def upload_to_datalake(
                     log(f"MODE OVERWRITE: Sucessfully DELETED TABLE:\n{table_staging}\n")
                 else:
                     deleted_tables = [
-                        tb.table_full_name[key]
-                        for key in tb.table_full_name.keys()
-                        if key != "all"
+                        tb.table_full_name[key] for key in tb.table_full_name.keys() if key != "all"
                     ]
                     log(f"MODE OVERWRITE: Sucessfully DELETED TABLES:\n{deleted_tables}\n")
 
