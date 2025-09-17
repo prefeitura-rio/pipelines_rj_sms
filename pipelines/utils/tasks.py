@@ -812,6 +812,7 @@ def upload_to_datalake(
     dataset_id: str,
     table_id: str,
     dump_mode: str = "append",
+    delete_mode: str = "all",
     source_format: str = "csv",
     csv_delimiter: str = ";",
     if_exists: str = "replace",
@@ -828,12 +829,16 @@ def upload_to_datalake(
         dataset_id (str): The ID of the BigQuery dataset.
         table_id (str): The ID of the BigQuery table.
         dump_mode (str, optional): The dump mode for the table. Defaults to "append". Accepted values are "append" and "overwrite".
+        delete_mode (str, optional): Whether to delete both `_staging` and prod tables ("all"), or only `_staging` ("staging").
+            Defaults to "all".
         source_format (str, optional): The format of the input data. Defaults to "csv". Accepted values are "csv" and "parquet".
         csv_delimiter (str, optional): The delimiter used in the CSV file. Defaults to ";".
         if_exists (str, optional): The behavior if the table already exists. Defaults to "replace".
         if_storage_data_exists (str, optional): The behavior if the storage data already exists. Defaults to "replace".
         biglake_table (bool, optional): Whether the table is a BigLake table. Defaults to True.
         dataset_is_public (bool, optional): Whether the dataset is public. Defaults to False.
+        exception_on_missing_input_file (bool, optional): If True, raises `FileNotFoundError` if `input_path` is an empty string or
+            directory with no files. Defaults to False.
 
     Raises:
         RuntimeError: If an error occurs during the upload process.
@@ -901,10 +906,14 @@ def upload_to_datalake(
                     f"{storage_path}\n"
                     f"{storage_path_link}"
                 )  # pylint: disable=C0301
-                tb.delete(mode="all")
-                log(
-                    "MODE OVERWRITE: Sucessfully DELETED TABLE:\n" f"{table_staging}\n"
-                )  # pylint: disable=C0301
+                tb.delete(mode=(delete_mode if delete_mode in ["staging", "all"] else "all"))
+                if delete_mode == "staging":
+                    log(f"MODE OVERWRITE: Sucessfully DELETED TABLE:\n{table_staging}\n")
+                else:
+                    deleted_tables = [
+                        tb.table_full_name[key] for key in tb.table_full_name.keys() if key != "all"
+                    ]
+                    log(f"MODE OVERWRITE: Sucessfully DELETED TABLES:\n{deleted_tables}\n")
 
                 tb.create(
                     path=input_path,
