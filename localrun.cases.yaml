@@ -498,3 +498,16 @@ cases:
       dou_section: 'DO1 DO2 DO3'
       date: "29/08/2025"
       dataset_id: "brutos_diario_oficial"
+
+  - case_slug: "sisreg_web_solicitacoes"
+    flow_path: "pipelines.datalake.extract_load.sisreg_web_solicitacoes.flows"
+    flow_name: "sisreg_web_sol"
+    params:
+      dt_inicial: "02/06/2025"
+      dt_final: "02/06/2025"
+      situacao: "1"
+      tipo_periodo: "S"
+      page_size: 0
+      ordenacao: "2"
+      max_pages: "None"
+      wait: 0.5
