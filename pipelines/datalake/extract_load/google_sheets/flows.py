@@ -89,6 +89,7 @@ with Flow(
         if_exists="replace",
         csv_delimiter=CSV_DELIMITER,
         dump_mode="overwrite",
+        delete_mode="staging",
         if_storage_data_exists="replace",
         biglake_table=True,
         dataset_is_public=False,
