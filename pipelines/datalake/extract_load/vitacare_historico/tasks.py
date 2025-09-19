@@ -40,7 +40,7 @@ def process_cnes_table(
     full_table_name = f"{db_schema}.{db_table}"
     log(f"[process_cnes_table] Iniciando extração para tabela {db_table} do CNES: {cnes_code}")
 
-    db_name = f"vitacare_historic_{cnes_code}"
+    db_name = f"5154197_{cnes_code}"
 
     connection_string = (
         f"mssql+pyodbc://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"

@@ -82,7 +82,7 @@ with Flow(
             env=ENVIRONMENT,
         )
 
-    cnes_to_process = get_vitacare_cnes_from_bigquery()
+    cnes_to_process = ['20250916_150337']
 
     process_cnes_table.map(
         db_host=unmapped(db_host),

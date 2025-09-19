@@ -17,7 +17,7 @@ class vitacare_constants(Enum):
     INFISICAL_HOST = "DATABASE_HOST"
     INFISICAL_USERNAME = "DATABASE_USER"
     INFISICAL_PASSWORD = "DATABASE_PASSWORD"
-    DATASET_ID = "brutos_prontuario_vitacare_historico"
+    DATASET_ID = "brutos_prontuario_vitacare_historico_5154197_09_16"
     DB_SCHEMA = "dbo"
     BQ_PARTITION_COLUMN = "extracted_at"
 
