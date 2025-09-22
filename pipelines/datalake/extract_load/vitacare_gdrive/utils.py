@@ -296,11 +296,11 @@ def filter_bad_chars(row: str) -> str:
     EMPTY = ""
     SPACE = " "
     replace_pairs = [
-        ("\u00AD", EMPTY),  # Soft Hyphen
-        ("\u200C", EMPTY),  # Zero Width Non-Joiner
+        ("\u00ad", EMPTY),  # Soft Hyphen
+        ("\u200c", EMPTY),  # Zero Width Non-Joiner
         ("\t", SPACE),  # Tab
         ("\n", SPACE),  # Line feed
-        ("\u00A0", SPACE),  # No-Break Space
+        ("\u00a0", SPACE),  # No-Break Space
     ]
     for pair in replace_pairs:
         row = row.replace(pair[0], pair[1])
