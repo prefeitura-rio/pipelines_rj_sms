@@ -261,7 +261,7 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         # Strings somente de pontos/espaços
         # Normalmente aparece em casos de alteração de legislação
         # Ex.: 1200504
-        if re.match(r'^[\.\s]+$', text) is not None:
+        if re.match(r"^[\.\s]+$", text) is not None:
             return True
         return False
 
