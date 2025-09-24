@@ -263,7 +263,6 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
     block_index = -1
     p_index = -1
     is_in_header = False
-    skip_to_next_header = False
     new_block = False
     sections = dict()
     for p in all_ps:
@@ -292,7 +291,6 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
                 block_index = -1
                 sections[section_index] = {"header": [], "body": []}
             sections[section_index]["header"].append(text)
-            skip_to_next_header = False
             continue
 
         is_in_header = False
@@ -312,23 +310,7 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         while len(sections[section_index]["body"]) < (block_index + 1):
             sections[section_index]["body"].append([])
 
-        # Se encontramos um parágrafo com margem à esquerda (>=50pt)
-        # "Ah só precisa >90pt" vide 1171545
-        has_left_margin = (
-            re.search(
-                r"margin\-left\s*\:\s*(([1-9][0-9]*)?[5-9][0-9])\b", p.attrs.get("style") or ""
-            )
-            is not None
-        )
-        if has_left_margin:
-            skip_to_next_header = True
-            sections[section_index]["body"][block_index].append(text)
-        # Se já temos tudo que precisamos do corpo, continua
-        elif skip_to_next_header:
-            continue
-        # Senão, não queremos pular nada; salva conteúdo
-        else:
-            sections[section_index]["body"][block_index].append(text)
+        sections[section_index]["body"][block_index].append(text)
 
     # `sections` é algo como:
     # {
