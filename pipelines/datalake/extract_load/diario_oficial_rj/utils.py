@@ -257,6 +257,14 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
             text = text.replace(fro, to)
         return text
 
+    def is_text_irrelevant(text: str):
+        # Strings somente de pontos/espaços
+        # Normalmente aparece em casos de alteração de legislação
+        # Ex.: 1200504
+        if re.match(r'^[\.\s]+$', text) is not None:
+            return True
+        return False
+
     all_ps = root.find_all("p")
 
     section_index = -1
@@ -269,6 +277,10 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
         text = clean_text(p.get_text())
         if len(text) <= 0:
             new_block = True
+            continue
+        # Confere linhas que não indicam novo bloco,
+        # mas que não precisamos adicionar ao banco de dados
+        if is_text_irrelevant(text):
             continue
         # Substituto de `i` em `for (i, p) in enumerate(...)`
         # mas ignorando parágrafos vazios
