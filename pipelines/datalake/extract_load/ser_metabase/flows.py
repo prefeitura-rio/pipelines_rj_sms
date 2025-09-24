@@ -126,8 +126,8 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     # Task 9 - Upload to Big Query
     upload_df_to_datalake_wrapper.map(
         df=dfs_columns_ok,
-        table_id=BQ_TABLE_ID,
-        dataset_id=BQ_DATASET_ID,
+        table_id=unmapped(BQ_TABLE_ID),
+        dataset_id=unmapped(BQ_DATASET_ID),
     )
 
 # ------------------------------------
