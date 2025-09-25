@@ -15,10 +15,10 @@ Inicia o loop:
         https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1162123
 
     Parágrafo com margem à esquerda
-    - Margem de pelo menos 90pt
-        https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1171162
-    - É só o que precisa, salva e fim da seção; volta a procurar centralizados
-        https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1170454
+    - Antigamente, se existisse, pegava somente esses e pulava até próximo "cabeçalho"
+    - Esbarramos em contraexeplo que cita SMS no texto mas não nesse "resumo":
+        https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/1200504
+    - São tratados como qualquer outro parágrafo agora
 
     Parágrafos normais
     - Elimina os que não queremos ("RESOLVE" etc)
