@@ -261,4 +261,3 @@ def build_operator_params(windows: List[Dict[str, str]], env: str) -> List[Dict[
             }
         )
     return params
-

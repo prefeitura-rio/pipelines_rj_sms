@@ -7,9 +7,7 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.biomega_api.constants import (
-    biomega_constants,
-)
+from pipelines.datalake.extract_load.biomega_api.constants import biomega_constants
 from pipelines.datalake.extract_load.biomega_api.schedules import schedule
 from pipelines.datalake.extract_load.biomega_api.tasks import (
     authenticate_and_fetch,
@@ -130,7 +128,6 @@ with Flow(
 
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
-
 
     start_date = from_relative_date(relative_date=relative_date_filter)
 
