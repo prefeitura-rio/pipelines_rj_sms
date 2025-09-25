@@ -67,7 +67,7 @@ with Flow(
     )
     identificador_lis_secret = get_secret_key(
         secret_path=INFISICAL_PATH,
-        secret_name=biomega_constants.INFISICAL_AP_LIS.value,
+        secret_name=biomega_constants.INFISICAL_IDENTIFICADOR_LIS.value,
         environment=environment,
     )
 
