@@ -161,7 +161,7 @@ flow_biomega_operator.run_config = KubernetesRun(
 )
 
 flow_biomega_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_biomega_manager.executor = LocalDaskExecutor(num_workers=5)
+flow_biomega_manager.executor = LocalDaskExecutor(num_workers=6)
 flow_biomega_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
