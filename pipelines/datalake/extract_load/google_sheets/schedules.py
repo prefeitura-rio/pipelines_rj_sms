@@ -203,6 +203,36 @@ daily_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1jwp5rV3Rwr2NGQy60YQgF47PSFuTcVpE8uKhcrODnRs/edit",  # noqa: E501
         "url_type": "google_sheet",
     },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Historico",
+        "rename_flow": True,
+        "table_id": "projeto_odontologia_historico",
+        "url": "https://docs.google.com/spreadsheets/d/1Af1SvIhQgvRr_da22Qpveb9VNvwLZai_KR69v8eJ1a8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+    },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "historico_ap",
+        "rename_flow": True,
+        "table_id": "projeto_odontologia_historico_ap",
+        "url": "https://docs.google.com/spreadsheets/d/1Af1SvIhQgvRr_da22Qpveb9VNvwLZai_KR69v8eJ1a8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+    },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "sigtap_odo",
+        "rename_flow": True,
+        "table_id": "projeto_odontologia_sigtap_odo",
+        "url": "https://docs.google.com/spreadsheets/d/1Af1SvIhQgvRr_da22Qpveb9VNvwLZai_KR69v8eJ1a8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+    },
 ]
 
 weekly_parameters = [
