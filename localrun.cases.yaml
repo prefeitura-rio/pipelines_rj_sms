@@ -494,3 +494,11 @@ cases:
       dou_section: 'DO1 DO2 DO3'
       date: "29/08/2025"
       dataset_id: "brutos_diario_oficial"
+  - case_slug: "report-alerta-atualizacao-tabelas"
+    flow_path: "pipelines.reports.alerta_atualizacao_tabelas.flows"
+    flow_name: "report_alerta_atualizacao_tabelas"
+    params:
+      environment: "dev"
+      table_ids:
+        "rj-sms.projeto_whatsapp.telefones_validos": ["IplanRio - E Aí?"]
+        "rj-sms.projeto_gestacoes.temp_correlacao_prenatal_20250831_192404": ["S/SUBPAV/SAP - BI de Gestantes"]
