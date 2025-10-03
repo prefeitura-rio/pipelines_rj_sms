@@ -8,10 +8,10 @@ from datetime import timedelta
 import pandas as pd
 import pytz
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 from google.cloud import bigquery
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.diario_oficial_uniao_api.constants import (
@@ -62,7 +62,9 @@ def login(enviroment: str = "dev"):
     log("😚 Tentando fazer login...")
     # Caso algum erro 5xx ocorra, retenta automaticamente 3 vezes
     session = requests.Session()
-    retries = Retry(total=3, backoff_factor=15, status_forcelist=[500, 502, 503, 504], allowed_methods=False)
+    retries = Retry(
+        total=3, backoff_factor=15, status_forcelist=[500, 502, 503, 504], allowed_methods=False
+    )
     session.mount("https://", HTTPAdapter(max_retries=retries))
     try:
         response = session.request(
