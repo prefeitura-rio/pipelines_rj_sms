@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 
-import pytz
 import pandas as pd
+import pytz
 import requests
 from google.cloud import bigquery
 
@@ -18,17 +18,24 @@ def verify_tables_freshness(environment: str, table_ids: dict):
 
         today_americas = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
 
-        last_updated = table_metadata.modified if table_metadata.modified is not None else table_metadata.created
+        last_updated = (
+            table_metadata.modified
+            if table_metadata.modified is not None
+            else table_metadata.created
+        )
         last_updated_americas = last_updated.astimezone(pytz.timezone("America/Sao_Paulo"))
 
-        results.append({
-            "table_id": table_id,
-            "last_updated": last_updated_americas,
-            "was_updated_today": last_updated_americas.date() == today_americas.date(),
-            "affected_projects": projects
-        })
+        results.append(
+            {
+                "table_id": table_id,
+                "last_updated": last_updated_americas,
+                "was_updated_today": last_updated_americas.date() == today_americas.date(),
+                "affected_projects": projects,
+            }
+        )
 
     return results
+
 
 @task
 def send_discord_alert(environment: str, results: list):
@@ -40,8 +47,10 @@ def send_discord_alert(environment: str, results: list):
 
         affected_projects.extend(result["affected_projects"])
 
-        last_updated = result['last_updated'].astimezone(pytz.timezone("America/Sao_Paulo"))
-        lines.append(f"- 🔴 `{result['table_id']}` *Última Modificação: {last_updated.strftime('%d/%m/%Y %H:%M:%S')}*")
+        last_updated = result["last_updated"].astimezone(pytz.timezone("America/Sao_Paulo"))
+        lines.append(
+            f"- 🔴 `{result['table_id']}` *Última Modificação: {last_updated.strftime('%d/%m/%Y %H:%M:%S')}*"
+        )
 
     if len(lines) == 0:
         send_message(
@@ -64,4 +73,3 @@ def send_discord_alert(environment: str, results: list):
         monitor_slug="freshness",
         suppress_embeds=True,
     )
-

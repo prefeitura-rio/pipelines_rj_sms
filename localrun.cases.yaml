@@ -432,7 +432,7 @@ cases:
           "title": "Base de Dados SIH"
         }
       ]
-  - case_slug: 'dou-extraction'
+  - case_slug: 'dou-extraction'  # [!] Flow antigo! Prefira o -api
     flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao.flows'
     flow_name: 'extract_diario_oficial_uniao'
     params:
@@ -440,6 +440,14 @@ cases:
       dou_section: 3
       max_workers: 10
       date: ""
+  - case_slug: 'dou-extraction-api'
+    flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao_api.flows'
+    flow_name: 'dou_extraction'
+    params:
+      environment: 'dev'
+      dou_section: 'DO1 DO2 DO3'
+      date: "29/08/2025"
+      dataset_id: "brutos_diario_oficial"
   - case_slug: 'medilab_api'
     flow_path: 'pipelines.datalake.extract_load.medilab_api.flows'
     flow_name: 'flow_medilab_api'
@@ -495,14 +503,6 @@ cases:
     flow_name: "report_alerta_jobs_caros"
     params:
       environment: "dev"
-  - case_slug: 'dou-extraction-api'
-    flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao_api.flows'
-    flow_name: 'dou_extraction'
-    params:
-      environment: 'dev'
-      dou_section: 'DO1 DO2 DO3'
-      date: "29/08/2025"
-      dataset_id: "brutos_diario_oficial"
   - case_slug: "report-alerta-atualizacao-tabelas"
     flow_path: "pipelines.reports.alerta_atualizacao_tabelas.flows"
     flow_name: "report_alerta_atualizacao_tabelas"
