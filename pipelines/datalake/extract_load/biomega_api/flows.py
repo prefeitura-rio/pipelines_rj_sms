@@ -7,15 +7,12 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.cientificalab_api.constants import (
-    cientificalab_constants,
-)
-from pipelines.datalake.extract_load.cientificalab_api.schedules import schedule
-from pipelines.datalake.extract_load.cientificalab_api.tasks import (
+from pipelines.datalake.extract_load.biomega_api.constants import biomega_constants
+from pipelines.datalake.extract_load.biomega_api.schedules import schedule
+from pipelines.datalake.extract_load.biomega_api.tasks import (
     authenticate_and_fetch,
     build_operator_params,
     generate_time_windows,
-    parse_identificador,
     transform,
 )
 from pipelines.datalake.utils.tasks import upload_df_to_datalake
@@ -36,42 +33,41 @@ from pipelines.utils.tasks import (
 from pipelines.utils.time import from_relative_date
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - CientificaLab (Operator)",
+    name="DataLake - Extração e Carga de Dados - Biomega (Operator)",
     state_handlers=[handle_flow_state_change],
     owners=[
         constants.DANIEL_ID.value,
     ],
-) as flow_cientificalab_operator:
+) as flow_biomega_operator:
     environment = Parameter("environment", default="dev")
     dt_inicio = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     dt_fim = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
     rename_flow = Parameter("rename_flow", default=True)
-    area_programatica = Parameter("ap", default="AP10")
     dataset_id = Parameter(
-        "dataset", default=cientificalab_constants.DATASET_ID.value, required=False
+        "dataset", default=biomega_constants.DATASET_ID.value, required=False
     )  # noqa
 
     # INFISICAL
-    INFISICAL_PATH = cientificalab_constants.INFISICAL_PATH.value
+    INFISICAL_PATH = biomega_constants.INFISICAL_PATH.value
 
     username_secret = get_secret_key(
         secret_path=INFISICAL_PATH,
-        secret_name=cientificalab_constants.INFISICAL_USERNAME.value,
+        secret_name=biomega_constants.INFISICAL_USERNAME.value,
         environment=environment,
     )
     password_secret = get_secret_key(
         secret_path=INFISICAL_PATH,
-        secret_name=cientificalab_constants.INFISICAL_PASSWORD.value,
+        secret_name=biomega_constants.INFISICAL_PASSWORD.value,
         environment=environment,
     )
     apccodigo_secret = get_secret_key(
         secret_path=INFISICAL_PATH,
-        secret_name=cientificalab_constants.INFISICAL_APCCODIGO.value,
+        secret_name=biomega_constants.INFISICAL_APCCODIGO.value,
         environment=environment,
     )
     identificador_lis_secret = get_secret_key(
         secret_path=INFISICAL_PATH,
-        secret_name=cientificalab_constants.INFISICAL_AP_LIS.value,
+        secret_name=biomega_constants.INFISICAL_IDENTIFICADOR_LIS.value,
         environment=environment,
     )
 
@@ -83,15 +79,11 @@ with Flow(
             environment=environment,
         )
 
-    identificador_lis = parse_identificador(
-        identificador=identificador_lis_secret, ap=area_programatica
-    )  # noqa
-
     results = authenticate_and_fetch(
         username=username_secret,
         password=password_secret,
         apccodigo=apccodigo_secret,
-        identificador_lis=identificador_lis,
+        identificador_lis=identificador_lis_secret,
         dt_start=dt_inicio,
         dt_end=dt_fim,
         environment=environment,
@@ -124,20 +116,18 @@ with Flow(
     )
 
 with Flow(
-    "DataLake - Extração e Carga de Dados - CientificaLab (Manager)",
+    "DataLake - Extração e Carga de Dados - Biomega (Manager)",
     state_handlers=[handle_flow_state_change],
     owners=[
         constants.DANIEL_ID.value,
     ],
-) as flow_cientificalab_manager:
+) as flow_biomega_manager:
 
     environment = Parameter("environment", default="dev")
     relative_date_filter = Parameter("intervalo", default="D-1")
 
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
-
-    cnes_list = cientificalab_constants.CNES.value
 
     start_date = from_relative_date(relative_date=relative_date_filter)
 
@@ -146,7 +136,7 @@ with Flow(
     operator_parameters = build_operator_params(windows=windows, env=environment)
 
     created_operator_runs = create_flow_run.map(
-        flow_name=unmapped(flow_cientificalab_operator.name),
+        flow_name=unmapped(flow_biomega_operator.name),
         project_name=unmapped(prefect_project_name),
         parameters=operator_parameters,
         labels=unmapped(current_labels),
@@ -160,9 +150,9 @@ with Flow(
         raise_final_state=unmapped(False),
     )
 
-flow_cientificalab_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_operator.executor = LocalDaskExecutor(num_workers=1)
-flow_cientificalab_operator.run_config = KubernetesRun(
+flow_biomega_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_biomega_operator.executor = LocalDaskExecutor(num_workers=1)
+flow_biomega_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -170,9 +160,9 @@ flow_cientificalab_operator.run_config = KubernetesRun(
     memory_limit="2Gi",
 )
 
-flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=5)
-flow_cientificalab_manager.run_config = KubernetesRun(
+flow_biomega_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+flow_biomega_manager.executor = LocalDaskExecutor(num_workers=6)
+flow_biomega_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -180,4 +170,4 @@ flow_cientificalab_manager.run_config = KubernetesRun(
     memory_limit="4Gi",
 )
 
-flow_cientificalab_manager.schedule = schedule
+flow_biomega_manager.schedule = schedule
