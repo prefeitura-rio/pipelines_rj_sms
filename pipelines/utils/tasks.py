@@ -5,9 +5,9 @@
 General utilities for SMS pipelines
 """
 
+import csv
 import ftplib
 import glob
-import csv
 import json
 import os
 import re
@@ -430,7 +430,9 @@ def download_from_url(  # pylint: disable=too-many-arguments
         dataframe.columns = remove_columns_accents(dataframe)
         log(f">>>>> Dataframe columns after treatment: {dataframe.columns}")
 
-        dataframe.to_csv(filepath, index=False, sep=csv_delimiter, encoding="utf-8", quoting=csv.QUOTE_ALL)
+        dataframe.to_csv(
+            filepath, index=False, sep=csv_delimiter, encoding="utf-8", quoting=csv.QUOTE_ALL
+        )
     else:
         raise ValueError("Invalid URL type. Please set values to `url_type` parameter")
 

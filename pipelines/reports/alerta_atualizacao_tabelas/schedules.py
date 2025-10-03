@@ -12,17 +12,19 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-flow_parameters = [{
-    "environment": "prod",
-    "table_ids": {
-        "rj-sms.app_historico_clinico.episodio_assistencial" : ["DIT - HCI"],
-        "rj-sms.app_historico_clinico.paciente" : ["DIT - HCI"],
-        "rj-sms.projeto_gestacoes.linha_tempo" : ["S/SUBPAV/SAP - BI de Gestantes"],
-        "rj-sms.projeto_gestacoes.encaminhamentos" : ["S/SUBPAV/SAP - BI de Gestantes"],
-        "rj-sms.projeto_estoque.estoque_posicao_atual": ["DIT - BI de Farmácia"],
-        "rj-sms.projeto_whatsapp.telefones_validos": ["IplanRio - E Aí?"],
+flow_parameters = [
+    {
+        "environment": "prod",
+        "table_ids": {
+            "rj-sms.app_historico_clinico.episodio_assistencial": ["DIT - HCI"],
+            "rj-sms.app_historico_clinico.paciente": ["DIT - HCI"],
+            "rj-sms.projeto_gestacoes.linha_tempo": ["S/SUBPAV/SAP - BI de Gestantes"],
+            "rj-sms.projeto_gestacoes.encaminhamentos": ["S/SUBPAV/SAP - BI de Gestantes"],
+            "rj-sms.projeto_estoque.estoque_posicao_atual": ["DIT - BI de Farmácia"],
+            "rj-sms.projeto_whatsapp.telefones_validos": ["IplanRio - E Aí?"],
+        },
     }
-}]
+]
 
 
 clocks = generate_dump_api_schedules(
