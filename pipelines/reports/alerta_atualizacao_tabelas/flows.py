@@ -7,8 +7,8 @@ from prefect.storage import GCS
 from pipelines.constants import constants
 from pipelines.reports.alerta_atualizacao_tabelas.schedules import schedule
 from pipelines.reports.alerta_atualizacao_tabelas.tasks import (
-    verify_tables_freshness,
     send_discord_alert,
+    verify_tables_freshness,
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
