@@ -8,6 +8,8 @@ from datetime import timedelta
 import pandas as pd
 import pytz
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 from google.cloud import bigquery
 
@@ -34,7 +36,7 @@ def parse_date(date: str) -> datetime.datetime:
     return parse_date_or_today(date)
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task(max_retries=1, retry_delay=timedelta(minutes=20))
 def login(enviroment: str = "dev"):
 
     password = get_secret_key.run(
@@ -57,18 +59,32 @@ def login(enviroment: str = "dev"):
 
     payload = {"email": email, "password": password}
 
+    log("😚 Tentando fazer login...")
+    # Caso algum erro 5xx ocorra, retenta automaticamente 3 vezes
     session = requests.Session()
+    retries = Retry(total=3, backoff_factor=15, status_forcelist=[500, 502, 503, 504], allowed_methods=False)
+    session.mount("https://", HTTPAdapter(max_retries=retries))
     try:
         response = session.request(
             "POST", login_url, data=payload, headers=flow_constants.HEADERS.value
         )
-        return session
-    except requests.exceptions.ConnectionError:
-        log("⚠️ Erro de coneção. Tentando novamente...")
-        login()
+        response.raise_for_status()
+    # Se, mesmo após as retentativas automáticas, ainda assim esteja recebendo erro,
+    # o retry da @task entra em jogo, e o processo inteiro é retentado em ~20min
+    except Exception as exc:
+        session.close()
+        log("⚠️ Erro de conexão. Tentando novamente...")
+        raise exc
+
+    # Se saímos do login sem cookie de sessão, dá erro para retentativa
+    if not session.cookies.get("inlabs_session_cookie"):
+        session.close()
+        raise Exception("⚠️ Falha ao obter cookie. Tentando novamente...")
+
+    return session
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task(max_retries=1, retry_delay=timedelta(minutes=20))
 def download_files(
     session: requests.Session, sections: str, date: datetime.datetime
 ) -> list | None:
@@ -84,11 +100,7 @@ def download_files(
     """
     download_base_url = flow_constants.DOWNLOAD_BASE_URL.value
 
-    if session.cookies.get("inlabs_session_cookie"):
-        cookie = session.cookies.get("inlabs_session_cookie")
-    else:
-        log("❌ Falha ao obter cookie. Verifique suas credenciais")
-        return
+    cookie = session.cookies.get("inlabs_session_cookie")
 
     date_to_extract = date.strftime("%Y-%m-%d")
 
@@ -131,8 +143,6 @@ def unpack_zip(zip_files: list, output_path: str) -> None:
     Args:
         zip_path (str): Caminho para o diretório onde os arquivos .zip estão armazenados.
         output_path (str): Caminho para o diretório onde os arquivos .xml serão armazenados.
-
-
     """
     try:
         log("⬇️ Iniciando descompactação dos arquivos .zip")
@@ -236,7 +246,7 @@ def upload_to_datalake(parquet_path: str, dataset: str):
     log(f"⬆️ Realizando upload de {len(df)} registros para o datalake...")
 
     if df.empty:
-        log("⚠️ Não há registros para renviar ao datalake.")
+        log("⚠️ Não há registros para enviar ao datalake.")
         return False
 
     upload_df_to_datalake.run(

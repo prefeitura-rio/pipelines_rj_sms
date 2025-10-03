@@ -102,7 +102,7 @@ with Flow(
             flow_run_id=[dou_flow_run, dorj_flow_run],
             stream_states=unmapped(True),
             stream_logs=unmapped(True),
-            raise_final_state=unmapped(True),
+            raise_final_state=unmapped(False),
             max_duration=unmapped(timedelta(minutes=60)),
         )
 

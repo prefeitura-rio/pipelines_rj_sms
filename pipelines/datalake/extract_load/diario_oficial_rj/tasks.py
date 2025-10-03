@@ -21,7 +21,7 @@ from pipelines.utils.tasks import upload_df_to_datalake
 from pipelines.utils.time import parse_date_or_today
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task(max_retries=1, retry_delay=timedelta(minutes=20))
 def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[str]:
     date = parse_date_or_today(date).strftime("%Y-%m-%d")
 
@@ -43,8 +43,8 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
     if isinstance(json, Exception):
         # Se sim, reporta status de falha na extração para essa data
         report_extraction_status(False, date, environment=env)
-        # Retorna lista vazia, o que impede a execução das próximas tasks
-        return []
+        # Dá erro; task vai ser retentada daqui a N minutos
+        raise json
 
     # Resposta é um JSON com todas as instâncias encontradas da busca
     # Porém temos campos de metadadaos que indicam quantas instâncias foram encontradas
@@ -60,7 +60,7 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
     return result
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task(max_retries=1, retry_delay=timedelta(minutes=20))
 def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
     assert len(diario_id_date) == 2, "Tuple must be (id, date) pair!"
     diario_id = diario_id_date[0]
@@ -71,8 +71,8 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
     html = send_get_request(URL, "html")
     # Confere se houve erro na requisição
     if isinstance(html, Exception):
-        # Se sim, retorna um valor que possamos detectar posteriormente
-        return [(diario_id_date, -1)]
+        # Dá erro; task vai ser retentada daqui a N minutos
+        raise html
 
     # Precisamos encontrar todas as instâncias relevantes de
     # <a class="linkMateria" identificador="..." pagina="" data-id="..." data-protocolo="..." data-materia-id="..."> # noqa
@@ -141,12 +141,6 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
 def get_article_contents(do_tuple: tuple) -> List[dict]:
     assert len(do_tuple) == 2, "Tuple must be ((do_id, date), (title, id)) pair!"
 
-    ERR_RESULT = {"error": True}
-    # Confere se houve erro na etapa anterior
-    if do_tuple[1] == -1:
-        # Se sim, retorna objeto de erro para ser detectado posteriormente
-        return ERR_RESULT
-
     # Caso contrário, pega dados da etapa anterior
     (do_id, do_date) = do_tuple[0]
     (folder_path, title, id) = do_tuple[1]
@@ -162,7 +156,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
     # Confere se houve erro na requisição
     if isinstance(html, Exception):
         # Se sim, retorna um valor que possamos detectar posteriormente
-        return ERR_RESULT
+        return {"error": True}
 
     # Registra data/hora da extração
     current_datetime = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
@@ -200,7 +194,7 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
     return ret
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=30))
+@task(max_retries=1, retry_delay=timedelta(seconds=30))
 def upload_results(results_list: List[dict], dataset: str, date: Optional[str], env: Optional[str]):
     if len(results_list) == 0:
         log("Nothing to upload; leaving")
