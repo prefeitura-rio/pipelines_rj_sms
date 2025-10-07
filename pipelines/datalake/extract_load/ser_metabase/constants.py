@@ -11,15 +11,9 @@ DATABASE_IDS = {
         # aparentes melhoras nos dados disponibilizados.
         "tables": {
             # Lista dos recursos cadastrados
-            "DIM_RECURSO": {
-                "id": 3476,
-                "slice_column": "recurso_id"
-            },
+            "DIM_RECURSO": {"id": 3476, "slice_column": "recurso_id"},
             # Lista das unidades cadastradas
-            "DIM_UNIDADE": {
-                "id": 3477,
-                "slice_column": "UNIDADE_ID"
-            },
+            "DIM_UNIDADE": {"id": 3477, "slice_column": "UNIDADE_ID"},
             # Solicitações ambulatoriais
             "FATO_AMBULATORIO": {
                 "id": 3255,
@@ -56,15 +50,9 @@ DATABASE_IDS = {
                 "slice_column": "",
             },
             # (Descrição ausente)
-            "fato_fila_mensal": {
-                "id": 5872,
-                "slice_column": ""
-            },
+            "fato_fila_mensal": {"id": 5872, "slice_column": ""},
             # (Descrição ausente)
-            "fato_fila_mensal_datalake": {
-                "id": 5873,
-                "slice_column": ""
-            },
+            "fato_fila_mensal_datalake": {"id": 5873, "slice_column": ""},
             # (Descrição ausente)
             "TB_RELATORIO_MEDICAMENTOS": {
                 "id": 3478,
@@ -82,18 +70,9 @@ DATABASE_IDS = {
         # Banco com tabelas que estavam sendo utilizadas, mas apresentam
         # diversos problemas como inconsistência e falta de informações.
         "tables": {
-            "TB_HISTORICO_SOLICITACAO_METRO1_CAPITAL": {
-                "id": 3262,
-                "slice_column": ""
-            },
-            "TB_QUANTIDADE_SOLICITACOES": {
-                "id": 3261,
-                "slice_column": ""
-            },
-            "TB_SOLICITACOES": {
-                "id": 5783,
-                "slice_column": "solicitacao_id"
-            },
+            "TB_HISTORICO_SOLICITACAO_METRO1_CAPITAL": {"id": 3262, "slice_column": ""},
+            "TB_QUANTIDADE_SOLICITACOES": {"id": 3261, "slice_column": ""},
+            "TB_SOLICITACOES": {"id": 5783, "slice_column": "solicitacao_id"},
         },
     },
 }
@@ -104,13 +83,8 @@ QUERY_COLUMNS: dict[
     dict[
         int,
         dict[
-            Literal[
-                "slice_column",
-                "slice_column_unique",
-                "date_column",
-                "slice_column_type"
-            ],
-            int | str | bool
+            Literal["slice_column", "slice_column_unique", "date_column", "slice_column_type"],
+            int | str | bool,
         ],
     ],
 ] = {
