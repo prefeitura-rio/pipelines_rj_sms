@@ -46,7 +46,6 @@ with Flow(
     dt_inicio = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     dt_fim = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
     rename_flow = Parameter("rename_flow", default=True)
-    area_programatica = Parameter("ap", default="AP10")
     dataset_id = Parameter(
         "dataset", default=cientificalab_constants.DATASET_ID.value, required=False
     )  # noqa
@@ -84,17 +83,17 @@ with Flow(
         )
 
     identificador_lis = parse_identificador(
-        identificador=identificador_lis_secret, ap=area_programatica
+        identificador=identificador_lis_secret
     )  # noqa
 
-    results = authenticate_and_fetch(
-        username=username_secret,
-        password=password_secret,
-        apccodigo=apccodigo_secret,
+    results = authenticate_and_fetch.map(
+        username=unmapped(username_secret),
+        password=unmapped(password_secret),
+        apccodigo=unmapped(apccodigo_secret),
         identificador_lis=identificador_lis,
-        dt_start=dt_inicio,
-        dt_end=dt_fim,
-        environment=environment,
+        dt_start=unmapped(dt_inicio),
+        dt_end=unmapped(dt_fim),
+        environment=unmapped(environment),
     )
 
     solicitacoes_df, exames_df, resultados_df = transform(json_result=results)
@@ -137,7 +136,6 @@ with Flow(
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
 
-    cnes_list = cientificalab_constants.CNES.value
 
     start_date = from_relative_date(relative_date=relative_date_filter)
 
