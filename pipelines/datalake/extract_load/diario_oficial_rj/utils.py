@@ -64,7 +64,7 @@ def send_get_request(url: str, type: Optional[str]):
             log(f"Request returned status HTTP {res.status_code}", level="error")
         else:
             log(f"Error requesting URL: {repr(exc)}", level="error")
-        return Exception()
+        return exc
     # [Ref] https://stackoverflow.com/a/52615216/4824627
     res.encoding = res.apparent_encoding
 

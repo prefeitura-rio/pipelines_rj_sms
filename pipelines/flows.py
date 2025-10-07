@@ -53,6 +53,7 @@ from pipelines.datalake.transform.dbt.flows import *
 # GEMINI
 # ===============================
 from pipelines.datalake.transform.gemini.pacientes_restritos.flows import *
+from pipelines.reports.alerta_atualizacao_tabelas.flows import *
 from pipelines.reports.alerta_jobs_caros.flows import *
 from pipelines.reports.checks_bucket_files.flows import *
 
