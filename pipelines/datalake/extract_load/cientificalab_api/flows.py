@@ -140,7 +140,9 @@ with Flow(
 
     identificadores = parse_identificador(identificador=identificador_lis_secret)
 
-    operator_parameters = build_operator_params(windows=windows, env=environment, identificadores=identificadores)  # noqa
+    operator_parameters = build_operator_params(
+        windows=windows, env=environment, identificadores=identificadores
+    )  # noqa
 
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(flow_cientificalab_operator.name),
