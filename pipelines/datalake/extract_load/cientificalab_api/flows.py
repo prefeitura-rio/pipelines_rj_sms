@@ -162,17 +162,17 @@ flow_cientificalab_operator.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="5Gi",
+    memory_limit="2Gi",
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=3)
+flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=6)
 flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="3Gi",
+    memory_limit="4Gi",
 )
 
 flow_cientificalab_manager.schedule = schedule
