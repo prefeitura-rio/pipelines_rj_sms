@@ -82,9 +82,7 @@ with Flow(
             environment=environment,
         )
 
-    identificador_lis = parse_identificador(
-        identificador=identificador_lis_secret
-    )  # noqa
+    identificador_lis = parse_identificador(identificador=identificador_lis_secret)  # noqa
 
     results = authenticate_and_fetch.map(
         username=unmapped(username_secret),
@@ -135,7 +133,6 @@ with Flow(
 
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
-
 
     start_date = from_relative_date(relative_date=relative_date_filter)
 
