@@ -502,3 +502,8 @@ cases:
       table_ids:
         "rj-sms.projeto_whatsapp.telefones_validos": ["IplanRio - E Aí?"]
         "rj-sms.projeto_gestacoes.temp_correlacao_prenatal_20250831_192404": ["S/SUBPAV/SAP - BI de Gestantes"]
+  - case_slug: report_informes_seguranca
+    flow_path: pipelines.reports.informes_seguranca.flows
+    flow_name: report_informes_seguranca
+    params:
+      environment: "dev"
