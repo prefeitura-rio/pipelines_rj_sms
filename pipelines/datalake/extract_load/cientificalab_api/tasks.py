@@ -39,7 +39,6 @@ def authenticate_and_fetch(
         )
 
         token_data = token_response["body"]
-        print(token_data)
         if token_data["status"] != 200:
             message = f"(authenticate_and_fetch) Error getting token: {token_data['status']} - {token_data['mensagem']}"  # noqa
             raise Exception(message)
@@ -79,8 +78,6 @@ def authenticate_and_fetch(
         )
 
         results = results_response["body"]
-
-        print(results)
 
         if "status" in results["lote"] and results["lote"]["status"] != 200:
             message = f"(authenticate_and_fetch) Failed to get results: Status: {results['lote']['status']} Message: {results['lote']['mensagem']}"  # noqa
@@ -268,5 +265,6 @@ def build_operator_params(windows: List[Dict[str, str]], env: str) -> List[Dict[
 
 @task
 def parse_identificador(identificador: str) -> List[str]:
-    identificador_dict = json.loads(identificador)
+    identificador_corrigido = identificador.replace("“", '"').replace("”", '"')
+    identificador_dict = json.loads(identificador_corrigido)
     return list(identificador_dict.values())
