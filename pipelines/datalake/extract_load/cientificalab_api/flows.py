@@ -49,6 +49,7 @@ with Flow(
     dataset_id = Parameter(
         "dataset", default=cientificalab_constants.DATASET_ID.value, required=False
     )  # noqa
+    identificador_lis = Parameter("identificador_lis", required=True)
 
     # INFISICAL
     INFISICAL_PATH = cientificalab_constants.INFISICAL_PATH.value
@@ -68,11 +69,6 @@ with Flow(
         secret_name=cientificalab_constants.INFISICAL_APCCODIGO.value,
         environment=environment,
     )
-    identificador_lis_secret = get_secret_key(
-        secret_path=INFISICAL_PATH,
-        secret_name=cientificalab_constants.INFISICAL_AP_LIS.value,
-        environment=environment,
-    )
 
     with case(rename_flow, True):
         rename_current_flow_run(
@@ -82,16 +78,14 @@ with Flow(
             environment=environment,
         )
 
-    identificador_lis = parse_identificador(identificador=identificador_lis_secret)  # noqa
-
-    results = authenticate_and_fetch.map(
-        username=unmapped(username_secret),
-        password=unmapped(password_secret),
-        apccodigo=unmapped(apccodigo_secret),
+    results = authenticate_and_fetch(
+        username=username_secret,
+        password=password_secret,
+        apccodigo=apccodigo_secret,
         identificador_lis=identificador_lis,
-        dt_start=unmapped(dt_inicio),
-        dt_end=unmapped(dt_fim),
-        environment=unmapped(environment),
+        dt_start=dt_inicio,
+        dt_end=dt_fim,
+        environment=environment,
     )
 
     solicitacoes_df, exames_df, resultados_df = transform(json_result=results)
@@ -138,7 +132,15 @@ with Flow(
 
     windows = generate_time_windows(start_date=start_date)
 
-    operator_parameters = build_operator_params(windows=windows, env=environment)
+    identificador_lis_secret = get_secret_key(
+        secret_path=cientificalab_constants.INFISICAL_PATH.value,
+        secret_name=cientificalab_constants.INFISICAL_AP_LIS.value,
+        environment=environment,
+    )
+
+    identificadores = parse_identificador(identificador=identificador_lis_secret)
+
+    operator_parameters = build_operator_params(windows=windows, env=environment, identificadores=identificadores)  # noqa
 
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(flow_cientificalab_operator.name),

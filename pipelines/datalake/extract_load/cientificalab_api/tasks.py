@@ -249,17 +249,21 @@ def generate_time_windows(
 
 
 @task
-def build_operator_params(windows: List[Dict[str, str]], env: str) -> List[Dict[str, str]]:
+def build_operator_params(
+    windows: List[Dict[str, str]], identificadores: List[str], env: str
+) -> List[Dict[str, str]]:
     params = []
 
     for window in windows:
-        params.append(
-            {
-                "dt_inicio": window["dt_inicio"],
-                "dt_fim": window["dt_fim"],
-                "environment": env,
-            }
-        )
+        for identificador in identificadores:
+            params.append(
+                {
+                    "dt_inicio": window["dt_inicio"],
+                    "dt_fim": window["dt_fim"],
+                    "identificador_lis": identificador,
+                    "environment": env,
+                }
+            )
     return params
 
 
