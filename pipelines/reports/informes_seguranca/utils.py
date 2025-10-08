@@ -5,11 +5,20 @@
 from datetime import datetime
 
 MONTH = [
-    "jan", "fev", "mar",
-    "abr", "maio", "jun",
-    "jul", "ago", "set",
-    "out", "nov", "dec",
+    "jan",
+    "fev",
+    "mar",
+    "abr",
+    "maio",
+    "jun",
+    "jul",
+    "ago",
+    "set",
+    "out",
+    "nov",
+    "dec",
 ]
+
 
 def format_datetime(dt: datetime | None) -> str | None:
     if not dt:

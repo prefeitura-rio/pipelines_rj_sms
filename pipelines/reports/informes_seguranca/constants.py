@@ -4,6 +4,7 @@
 
 from enum import Enum
 
+
 class informes_seguranca_constants(Enum):
 
     EMAIL_PATH = "/datarelay"
@@ -25,12 +26,10 @@ class informes_seguranca_constants(Enum):
         "W34",  # W34 Discharge from other and unspecified firearms
         # -- W35-W43
         "W44",  # W44 Foreign body entering into or through eye or natural orifice
-
         # W50-W64 Exposure to animate mechanical forces
         "W50",  # W50 Hit, struck, kicked, twisted, bitten or scratched by another person
         "W51",  # W51 Striking against or bumped into by another person
         "W52",  # W52 Crushed, pushed or stepped on by crowd or human stampede
-
         # X00-X09 Exposure to smoke, fire and flames
         "X00",  # W00 Exposure to smoke, fire and flames
         "X01",  # X01 Exposure to uncontrolled fire, not in building or structure
@@ -41,27 +40,22 @@ class informes_seguranca_constants(Enum):
         "X06",  # X06 Exposure to ignition or melting of other clothing and apparel
         "X08",  # X08 Exposure to other specified smoke, fire and flames
         "X09",  # X09 Exposure to unspecified smoke, fire and flames
-
         # X40-X49 Accidental poisoning by and exposure to noxious substances
         "X4",  # X4x
-
         # X50-X57 Overexertion, travel and privation
         "X53",  # X53 Lack of food
         "X54",  # X54 Lack of water
         "X57",  # X57 Unspecified privation
-
         # X58-X59 Accidental exposure to other and unspecified factors
         "X58",  # X58 Exposure to other specified factors
         "X59",  # X59 Exposure to unspecified factor
-
         # X60-X84 Intentional self-harm
         "X6",  # X6x Intentional self-poisoning by and exposure to (...)
         "X7",  # X7x Intentional self-harm by (...)
         "X8",  # X8x Intentional self-harm by jumping from a high place
         # X85-Y09 Assault
-        #...,  # X8x Assault by (...)
+        # ...,  # X8x Assault by (...)
         "X9",  # X90 Assault by (...)
-
         "Y00",  # Y00 Assault by blunt object
         "Y01",  # Y01 Assault by pushing from high place
         "Y02",  # Y02 Assault by pushing or placing victim before moving object
@@ -83,7 +77,6 @@ class informes_seguranca_constants(Enum):
         "Y079",  # Y07.9 By unspecified person
         "Y08",  # Y08 Assault by other specified means
         "Y09",  # Y09 Assault by unspecified means
-
         # Y10-Y34 Event of undetermined intent
         "Y1",  # Y1x Poisoning by and exposure to (...)
         "Y2",  # Y2x Hanging; drowning; firearm discharge; explosive; steam; sharp/blunt object
@@ -92,7 +85,6 @@ class informes_seguranca_constants(Enum):
         "Y32",  # Y32 Crashing of motor vehicle, undetermined intent
         "Y33",  # Y33 Other specified events, undetermined intent
         "Y34",  # Y34 Unspecified event, undetermined intent
-
         # Y35-Y36 Legal intervention and operations of war
         ## Y35 Legal intervention
         "Y350",  # Y35.0 Legal intervention involving firearm discharge
@@ -105,12 +97,10 @@ class informes_seguranca_constants(Enum):
         "Y357",  # Y35.7 Legal intervention, means unspecified
         ## Y36 Operations of war
         "Y36",  # Y36x
-
         # Y40-Y84 Complications of medical and surgical care
         ## Y40-Y59 Drugs, medicaments and biological substances causing adverse effects in therapeutic use
         ### Y40 Systemic antibiotics
         "Y400",  # Y40.0 Penicillins
-
         # Y85-Y89 Sequelae of external causes of morbidity and mortality
         ## Y87 Sequelae of intentional self-harm, assault and events of undetermined intent
         "Y870",  # Y87.0 Sequelae of intentional self-harm
@@ -121,16 +111,16 @@ class informes_seguranca_constants(Enum):
     ]
 
     CID_groups = [
-        [ "W20", "W49", "Exposição a forças mecânicas inanimadas" ],
-        [ "W50", "W64", "Exposição a forças mecânicas animadas" ],
-        [ "X00", "X09", "Exposição à fumaça, ao fogo e às chamas" ],
-        [ "X40", "X49", "Intoxicação acidental por e exposição a substâncias nocivas" ],
-        [ "X50", "X57", "Excesso de esforços, viagens e privações" ],
-        [ "X58", "X59", "Exposição acidental a outros fatores e aos não especificados" ],
-        [ "X60", "X84", "Lesões autoprovocadas intencionalmente" ],
-        [ "X85", "Y09", "Agressões" ],
-        [ "Y10", "Y34", "Eventos cuja intenção é indeterminada" ],
-        [ "Y35", "Y36", "Intervenções legais e operações de guerra" ],
-        [ "Y40", "Y84", "Complicações de assistência médica e cirúrgica" ],
-        [ "Y85", "Y89", "Sequelas de causas externas de morbidade e de mortalidade" ],
+        ["W20", "W49", "Exposição a forças mecânicas inanimadas"],
+        ["W50", "W64", "Exposição a forças mecânicas animadas"],
+        ["X00", "X09", "Exposição à fumaça, ao fogo e às chamas"],
+        ["X40", "X49", "Intoxicação acidental por e exposição a substâncias nocivas"],
+        ["X50", "X57", "Excesso de esforços, viagens e privações"],
+        ["X58", "X59", "Exposição acidental a outros fatores e aos não especificados"],
+        ["X60", "X84", "Lesões autoprovocadas intencionalmente"],
+        ["X85", "Y09", "Agressões"],
+        ["Y10", "Y34", "Eventos cuja intenção é indeterminada"],
+        ["Y35", "Y36", "Intervenções legais e operações de guerra"],
+        ["Y40", "Y84", "Complicações de assistência médica e cirúrgica"],
+        ["Y85", "Y89", "Sequelas de causas externas de morbidade e de mortalidade"],
     ]

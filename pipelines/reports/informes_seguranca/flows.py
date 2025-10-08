@@ -7,19 +7,14 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
 
-# from .schedules import schedule
-from .tasks import (
-    build_email,
-    fetch_cids,
-    get_email_recipients,
-    send_email
-)
 from .constants import informes_seguranca_constants
+
+# from .schedules import schedule
+from .tasks import build_email, fetch_cids, get_email_recipients, send_email
 
 with Flow(
     name="Report: Informes de Segurança",
@@ -40,10 +35,7 @@ with Flow(
     # Tasks
     #####################################
 
-    results = fetch_cids(
-        environment=ENVIRONMENT,
-        date=DATE
-    )
+    results = fetch_cids(environment=ENVIRONMENT, date=DATE)
 
     message = build_email(cids=results)
 

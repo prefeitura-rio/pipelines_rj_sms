@@ -116,7 +116,9 @@ def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> li
     return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
 
 
-def parse_date_or_today(date: Optional[str], subtract_days_from_today: Optional[int] = None) -> datetime:
+def parse_date_or_today(
+    date: Optional[str], subtract_days_from_today: Optional[int] = None
+) -> datetime:
     """
     Recebe string de data (ex.: "2025-07-18", "30/10/1999")
     e retorna objeto `datetime` a partir dela. Se receber
@@ -210,7 +212,7 @@ def get_age_from_birthdate(birthdate: str, today: str = None) -> int | None:
     if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", birthdate):
         log(f"Expected date in format `YYYY-MM-DD`; got {repr(birthdate)}", level="warning")
         return None
-    
+
     if today is not None and not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", today):
         log(f"Expected reference date in format `YYYY-MM-DD`; got {repr(today)}", level="warning")
         return None
@@ -223,4 +225,8 @@ def get_age_from_birthdate(birthdate: str, today: str = None) -> int | None:
     dt_born = datetime.fromisoformat(birthdate)
 
     # [Ref] https://stackoverflow.com/a/9754466/4824627
-    return dt_today.year - dt_born.year - int((dt_today.month, dt_today.day) < (dt_born.month, dt_born.day))
+    return (
+        dt_today.year
+        - dt_born.year
+        - int((dt_today.month, dt_today.day) < (dt_born.month, dt_born.day))
+    )

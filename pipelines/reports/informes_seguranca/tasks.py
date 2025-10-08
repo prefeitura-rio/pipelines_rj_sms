@@ -2,23 +2,22 @@
 # pylint: disable=C0103
 # flake8: noqa E501
 
+from datetime import datetime
+from typing import Optional
+
 import pandas as pd
 import pytz
 import requests
-
-from datetime import datetime
-from typing import Optional
 from google.cloud import bigquery
 from google.cloud.bigquery.table import RowIterator
+from prefect.engine.signals import FAIL
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.time import get_age_from_birthdate, parse_date_or_today
 
-from prefect.engine.signals import FAIL
-
-from .constants import informes_seguranca_constants
 from . import utils as utils
+from .constants import informes_seguranca_constants
 
 
 @task
@@ -88,6 +87,7 @@ def build_email(cids: RowIterator):
     # - cid_descricao -- descrição em português do CID específico
     # - cid_situacao -- status do CID reportado; pode ser "ATIVO", "RESOLVIDO" ou "NAO ESPECIFICADO"
     log(cids)
+
     def isoformat_if(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt else None
 
@@ -98,17 +98,15 @@ def build_email(cids: RowIterator):
         cnes = row["cnes"]
         estabelecimento = row["estabelecimento"]
         cpf = row["cpf"]
-        nome = (
-            f"{row['nome_social']} ({row['nome']})"
-            if row['nome_social']
-            else row['nome']
-        )
+        nome = f"{row['nome_social']} ({row['nome']})" if row["nome_social"] else row["nome"]
         age = get_age_from_birthdate(isoformat_if(row["data_nascimento"]))
         cid = row["cid"]
         cid_descricao = row["cid_descricao"]
         cid_situacao = row["cid_situacao"]
 
-        log(f"{estabelecimento} ({cnes}) [{dt_entrada} | {dt_saida}] {nome} ({age} ano(s); CPF {cpf}): {cid} ({cid_situacao})")
+        log(
+            f"{estabelecimento} ({cnes}) [{dt_entrada} | {dt_saida}] {nome} ({age} ano(s); CPF {cpf}): {cid} ({cid_situacao})"
+        )
 
     email_string = f"""
 <table style="font-family:sans-serif;max-width:650px;min-width:300px">
@@ -210,7 +208,7 @@ def get_email_recipients(recipients: Optional[list | str] = None):
         log(f"Unrecognized type for `recipients`: '{type(recipients)}'; ignoring")
 
     return {
-        "to_addresses": [ "matheus.avellar@dados.rio" ],
+        "to_addresses": ["matheus.avellar@dados.rio"],
         "cc_addresses": [],
         "bcc_addresses": [],
     }
