@@ -202,7 +202,7 @@ def transform(json_result: dict):
 
 @task
 def generate_time_windows(
-    start_date: pd.Timestamp, hours_per_window: int = 12
+    start_date: pd.Timestamp, hours_per_window: int = 2
 ) -> List[Dict[str, str]]:
     """
     Gera janelas de extração de X horas a partir de uma data de início.
