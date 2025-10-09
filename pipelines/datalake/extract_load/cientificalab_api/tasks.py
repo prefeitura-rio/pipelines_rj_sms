@@ -59,7 +59,7 @@ def authenticate_and_fetch(
                 "identificadorLis": identificador_lis,
                 "dataResultado": {"inicial": dt_start, "final": dt_end},
                 "parametros": {
-                    "retorno": "ESTRUTURADO",
+                    "retorno": "ESTRUTURADO/LINK",
                     "parcial": "N",
                     "sigiloso": "S",
                 },
