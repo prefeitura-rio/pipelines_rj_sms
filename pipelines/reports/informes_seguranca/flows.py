@@ -9,12 +9,12 @@ from prefect.storage import GCS
 from pipelines.constants import constants
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key
+from pipelines.utils.tasks import get_email_recipients, get_secret_key
 
 from .constants import informes_seguranca_constants
 
 # from .schedules import schedule
-from .tasks import build_email, fetch_cids, get_email_recipients, send_email
+from .tasks import build_email, fetch_cids, send_email
 
 with Flow(
     name="Report: Informes de Segurança",
@@ -39,7 +39,13 @@ with Flow(
 
     message = build_email(cids=results)
 
-    recipients = get_email_recipients(recipients=OVERRIDE_RECIPIENTS)
+    recipients = get_email_recipients(
+        environment=ENVIRONMENT,
+        dataset="brutos_sheets",
+        table="seguranca_destinatarios",
+        recipients=OVERRIDE_RECIPIENTS,
+        error=False,
+    )
 
     URL = get_secret_key(
         secret_path=informes_seguranca_constants.EMAIL_PATH.value,
@@ -52,6 +58,7 @@ with Flow(
         environment=ENVIRONMENT,
     )
     send_email(api_base_url=URL, token=TOKEN, message=message, recipients=recipients)
+
 
 ## TODO: schedules; task retries; email
 

@@ -91,85 +91,156 @@ def build_email(cids: RowIterator):
     def isoformat_if(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt else None
 
+    occurrences = dict()
+    descriptions = dict()
+    cpfs_with_occurrence = set()
+    unknown_patients = 0
     for row in cids:
+        record_id = row["id_prontuario"]
+
         dt_entrada = utils.format_datetime(row["entrada"])
         dt_saida = utils.format_datetime(row["saida"])
 
         cnes = row["cnes"]
-        estabelecimento = row["estabelecimento"]
+        estabelecimento = str(row["estabelecimento"] or "").strip() or "<i>Sem informação da unidade</i>"
+        health_unit_str = f"""
+        <span style='font-size:70%'>
+            <a href='https://cnes.datasus.gov.br/pages/estabelecimentos/consulta.jsp?search={cnes}'>{estabelecimento}</a>
+            (CNES {cnes})
+        </span>
+        """
+
         cpf = row["cpf"]
-        nome = f"{row['nome_social']} ({row['nome']})" if row["nome_social"] else row["nome"]
+        cpfs_with_occurrence.add(cpf)
+        if cpf is None or not cpf:
+            unknown_patients += 1
+
+        nome = row["nome"]
+        nome_social = row["nome_social"]
+        name_str = utils.build_name_string(cpf, nome, nome_social)
+
         age = get_age_from_birthdate(isoformat_if(row["data_nascimento"]))
         cid = row["cid"]
         cid_descricao = row["cid_descricao"]
         cid_situacao = row["cid_situacao"]
 
-        log(
-            f"{estabelecimento} ({cnes}) [{dt_entrada} | {dt_saida}] {nome} ({age} ano(s); CPF {cpf}): {cid} ({cid_situacao})"
-        )
+        if cid not in occurrences:
+            occurrences[cid] = []
 
+        occurrence_obj = {
+            "id": record_id,
+            "name": name_str,
+            "age": f", {age} ano{'' if age < 2 else 's'}" if age else "",
+            "health_unit": health_unit_str,
+            "entry": dt_entrada,
+            "exit": dt_saida,
+            "status": cid_situacao
+        }
+        occurrences[cid].append(occurrence_obj)
+        log(occurrence_obj)
+
+        if cid in descriptions and cid_descricao != descriptions[cid]:
+            log(f"Mismatched descriptions for CID '{cid}':\n\t'{descriptions[cid]}';\n\t'{cid_descricao}'", level="warning")
+        descriptions[cid] = cid_descricao
+
+    # Começa construção do email
+    # FIXME: data
     email_string = f"""
 <table style="font-family:sans-serif;max-width:650px;min-width:300px">
     <tr>
         <td style="padding:18px 0">
-            <h2 style="margin:0;text-align:center">
-                <font color="#13335a" size="5">Informe de Segurança 08/10/2025</font>
+            <h2 style="margin:0;text-align:center;color:#13335a;font-size:24px">
+                Informe de Segurança 08/10/2025
             </h2>
         </td>
     </tr>
     """
 
-    email_string += f"""
-    <tr>
-        <th style="background-color:#e6f1fe;padding:9px;color:#13335a;text-align:left">
-            <span style="font-size:85%">X60–X84:</span>
-            Lesões autoprovocadas intencionalmente
-        </th>
-    </tr>
-    """
+    unique_cpfs = len(cpfs_with_occurrence)
+    unique_cpf_string = unique_cpfs
+    if unknown_patients > 0:
+        s = "" if unknown_patients < 2 else "s"
+        unique_cpf_string = f"{unique_cpfs-1} <span style='font-size:80%'>(+{unknown_patients} paciente{s} não identificado{s})</span>"
 
+    unique_cids = len(occurrences.keys())
     email_string += f"""
     <tr>
-        <th style="background-color:#eff1f3;padding:9px;color:#13335a;font-size:90%;text-align:left">
-            <span style="font-size:80%;background-color:#fff;border-radius:4px;padding:2px 4px;margin-right:4px;display:inline-block">X649</span>
-            Auto-intoxicação por e exposição, intencional, a outras drogas, medicamentos e substâncias biológicas e às não especificadas - local não especificado
-        </th>
-    </tr>
-    """
-
-    email_string += f"""
-    <tr>
-        <td style="padding:9px 18px">
-            <ul style="padding-left:9px">
-                <li style="margin-bottom:9px;color:#13335a">
-                  <p style="margin:0">
-                    Franciso José Maria Silva (37 anos), CPF 705.852.431-90
-                  </p>
-                  <p style="margin:0">
-                    Hospital Municipal Salgado Filho <span style="font-size:70%">(CNES 2296306)</span>
-                  </p>
-                  <p style="margin:0">
-                    <span style="font-size:80%;padding:2px 4px;background-color:#f1f1f1;border-radius:2px">Entrada: 06/out 20:22:15</span>
-                    <span style="font-size:80%;padding:2px 4px;background-color:#f1f1f1;border-radius:2px">Saída: 06/out 23:24:15</span>
-                  </p>
-                </li>
-                <li style="margin-bottom:9px;color:#13335a">
-                  <p style="margin:0">
-                    Joana Fernandes Carvalho (23 anos), CPF 987.654.321-00
-                  </p>
-                  <p style="margin:0">
-                    CF Medalhista Olímpico Ricardo Lucarelli Souza <span style="font-size:70%">(CNES 9080163)</span>
-                  </p>
-                  <p style="margin:0">
-                    <span style="font-size:80%;padding:2px 4px;background-color:#f1f1f1;border-radius:2px">Entrada: 06/out</span>
-                  </p>
-                </li>
-            </ul>
+        <td>
+            <p style="margin:0;color:#788087;font-size:85%">Resumo:</p>
+            <p style="margin:0;color:#13335a">
+                <b>Total de CPFs:</b> {unique_cpf_string}<br>
+                <b>Total de atendimentos:</b> {cids.total_rows}<br>
+                <b>CIDs distintos:</b> {unique_cids}
+            </p>
         </td>
     </tr>
     """
 
-    email_string += "<tr><td><hr></td></tr>"
+    group_range = None
+    for cid in sorted(occurrences.keys()):
+        # Cabeçalho de grupo de CIDs
+        (current_group_range, current_group_description) = utils.get_cid_group(cid)
+        # Se temos uma nova categoria de CIDs
+        if current_group_range != group_range:
+            # Adiciona categoria
+            email_string += f"""
+            <tr><td><hr></td></tr>
+            <tr>
+                <th style="background-color:#e6f1fe;padding:9px;color:#13335a;text-align:left">
+                    <span style="font-size:85%">{current_group_range}:</span>
+                    {current_group_description}
+                </th>
+            </tr>
+            """
+            # Atualiza categoria atual
+            group_range = current_group_range
+
+        # Cabeçalho de CID
+        email_string += f"""
+        <tr>
+            <th style="background-color:#eff1f3;padding:9px;color:#13335a;font-size:90%;text-align:left">
+                <span style="font-size:80%;background-color:#fff;border-radius:4px;padding:2px 4px;margin-right:4px;display:inline-block">
+                    {cid}
+                </span>
+                {descriptions[cid]}
+            </th>
+        </tr>
+        """
+
+        email_string += """
+        <tr>
+            <td style="padding:9px 0px 9px 18px">
+                <ul style="padding-left:9px">
+        """
+        # Pacientes com CID especificado
+        for patient in occurrences[cid]:
+            # TODO: ficou de fora por ora: patient["status"] (status do CID)
+            email_string += f"""
+            <li style="margin-bottom:6px;padding:4px 8px;background-color:#fafafa;color:#13335a">
+                <p style="margin:0">{patient["name"]}{patient["age"]}</p>
+                <p style="margin:0">{patient["health_unit"]}</p>
+                <p style="margin:0;margin-top:2px">
+                    <span style="font-size:80%;padding:2px 4px;background-color:#f1f1f1;border-radius:2px;margin-right:4px">Entrada: {
+                        patient["entry"]
+                    }</span>
+            """
+            if patient["exit"]:
+                email_string += f"""
+                    <span style="font-size:80%;padding:2px 4px;background-color:#f1f1f1;border-radius:2px;margin-right:4px">Saída: {
+                        patient["exit"]
+                    }</span>
+                """
+
+            email_string += f"""
+                    <span style="font-size:70%;color:#788087">Prontuário [{patient["id"]}]</span>
+                </p>
+            </li>
+            """
+        email_string += """
+                </ul>
+            </td>
+        </tr>
+        """
 
     timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")
     email_string += f"""
@@ -177,7 +248,9 @@ def build_email(cids: RowIterator):
     <tr><td><hr></td></tr>
     <tr>
         <td>
-            <img style="margin-left:18px;margin-bottom:70px" width="100" align="right" src="dit-horizontal-colorido--300px.png" alt="DIT-SMS"/>
+            <img style="margin-left:18px;margin-bottom:70px" width="100" align="right" src="{
+                informes_seguranca_constants.LOGO_DIT_HORIZONTAL_COLORIDO.value
+            }" alt="DIT-SMS"/>
             <p style="font-size:13px;color:#888;margin:0">
               Apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT),
               parte da <b>Secretaria Municipal de Saúde</b> (SMS).
@@ -187,6 +260,12 @@ def build_email(cids: RowIterator):
     </tr>
 </table>
     """
+
+    email_string = utils.compress_message_whitespace(email_string)
+    # FIXME
+    with open("abc.html", "w") as f:
+        f.write(email_string)
+
     return email_string
 
 
