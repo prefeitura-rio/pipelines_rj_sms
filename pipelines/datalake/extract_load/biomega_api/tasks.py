@@ -25,7 +25,7 @@ def authenticate_and_fetch(
 
     auth_headers = {"emissor": username, "apccodigo": apccodigo, "pass": password}
 
-    base_url = "https://cielab.lisnet.com.br/lisnetws"
+    base_url = "https://biomega-api.lisnet.com.br/lisnetws"
 
     try:
         token_response = cloud_function_request.run(
@@ -34,7 +34,7 @@ def authenticate_and_fetch(
             header_params=auth_headers,
             api_type="json",
             env=environment,
-            endpoint_for_filename="cientificalab_token",
+            endpoint_for_filename="biomega_token",
             credential=None,
         )
 
@@ -73,15 +73,24 @@ def authenticate_and_fetch(
             body_params=request_body,
             api_type="json",
             env=environment,
-            endpoint_for_filename="cientificalab_results",
+            endpoint_for_filename="biomega_results",
             credential=None,
         )
 
         results = results_response["body"]
 
         if "status" in results["lote"] and results["lote"]["status"] != 200:
-            message = f"(authenticate_and_fetch) Failed to get results: Status: {results['lote']['status']} Message: {results['lote']['mensagem']}"  # noqa
-            raise Exception(message)
+            mensagem = results["lote"].get("mensagem", "").lower()
+
+            if mensagem.startswith("resultado não disponíveis para a data"):
+                log(
+                    "(authenticate_and_fetch) Resultados não disponíveis para a data solicitada.",
+                    level="warning",
+                )
+                return
+            else:
+                message = f"(authenticate_and_fetch) Failed to get results: Status: {results['lote']['status']} Message: {results['lote']['mensagem']}"  # noqa
+                raise Exception(message)
 
         if "solicitacoes" not in results["lote"]:
             message = f"(authenticate_and_fetch) Failed to get results. No data available, message: {results['lote']['mensagem']}"  # noqa
@@ -261,9 +270,3 @@ def build_operator_params(windows: List[Dict[str, str]], env: str) -> List[Dict[
             }
         )
     return params
-
-
-@task
-def parse_identificador(identificador: str, ap: str) -> str:
-    identificador_dict = json.loads(identificador)
-    return identificador_dict[ap]
