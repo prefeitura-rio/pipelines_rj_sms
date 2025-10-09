@@ -11,10 +11,18 @@ from pipelines.utils.logger import log
 from .constants import informes_seguranca_constants
 
 MONTH = [
-    "jan", "fev", "mar",  #
-    "abr", "maio", "jun",  #
-    "jul", "ago", "set",  #
-    "out", "nov", "dec",  #
+    "jan",
+    "fev",
+    "mar",  #
+    "abr",
+    "maio",
+    "jun",  #
+    "jul",
+    "ago",
+    "set",  #
+    "out",
+    "nov",
+    "dec",  #
 ]
 
 
@@ -63,7 +71,7 @@ def build_name_string(cpf: str | None, name: str | None, social_name: str | None
 def get_cid_group(cid: str) -> Tuple[str, str]:
     groups = informes_seguranca_constants.CID_groups.value
 
-    for (start, end, description) in groups:
+    for start, end, description in groups:
         # Nosso fim é inclusivo; por exemplo, Y891 é parte do grupo Y85-Y89
         # Porém, Y891 > Y89, então falha na comparação
         # Adicionando \uffff, não existe caso plausível em que Y89[x] > Y89[\uffff]
@@ -75,4 +83,4 @@ def get_cid_group(cid: str) -> Tuple[str, str]:
 
 
 def compress_message_whitespace(message: str) -> str:
-    return re.sub(r'\s{2,}', " ", message)
+    return re.sub(r"\s{2,}", " ", message)

@@ -1296,7 +1296,7 @@ def get_email_recipients(
     dataset: str | None = None,
     table: str | None = None,
     recipients: List[str] | str | None = None,
-    error: bool | None = False
+    error: bool | None = False,
 ) -> dict:
     """
     Args:

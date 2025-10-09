@@ -102,7 +102,9 @@ def build_email(cids: RowIterator):
         dt_saida = utils.format_datetime(row["saida"])
 
         cnes = row["cnes"]
-        estabelecimento = str(row["estabelecimento"] or "").strip() or "<i>Sem informação da unidade</i>"
+        estabelecimento = (
+            str(row["estabelecimento"] or "").strip() or "<i>Sem informação da unidade</i>"
+        )
         health_unit_str = f"""
         <span style='font-size:70%'>
             <a href='https://cnes.datasus.gov.br/pages/estabelecimentos/consulta.jsp?search={cnes}'>{estabelecimento}</a>
@@ -134,13 +136,16 @@ def build_email(cids: RowIterator):
             "health_unit": health_unit_str,
             "entry": dt_entrada,
             "exit": dt_saida,
-            "status": cid_situacao
+            "status": cid_situacao,
         }
         occurrences[cid].append(occurrence_obj)
         log(occurrence_obj)
 
         if cid in descriptions and cid_descricao != descriptions[cid]:
-            log(f"Mismatched descriptions for CID '{cid}':\n\t'{descriptions[cid]}';\n\t'{cid_descricao}'", level="warning")
+            log(
+                f"Mismatched descriptions for CID '{cid}':\n\t'{descriptions[cid]}';\n\t'{cid_descricao}'",
+                level="warning",
+            )
         descriptions[cid] = cid_descricao
 
     # Começa construção do email
