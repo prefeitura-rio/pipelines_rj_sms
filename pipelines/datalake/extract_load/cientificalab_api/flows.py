@@ -46,10 +46,10 @@ with Flow(
     dt_inicio = Parameter("dt_inicio", default="2025-01-21T10:00:00-0300")
     dt_fim = Parameter("dt_fim", default="2025-01-21T11:30:00-0300")
     rename_flow = Parameter("rename_flow", default=True)
-    area_programatica = Parameter("ap", default="AP10")
     dataset_id = Parameter(
         "dataset", default=cientificalab_constants.DATASET_ID.value, required=False
     )  # noqa
+    identificador_lis = Parameter("identificador_lis", required=True)
 
     # INFISICAL
     INFISICAL_PATH = cientificalab_constants.INFISICAL_PATH.value
@@ -69,11 +69,6 @@ with Flow(
         secret_name=cientificalab_constants.INFISICAL_APCCODIGO.value,
         environment=environment,
     )
-    identificador_lis_secret = get_secret_key(
-        secret_path=INFISICAL_PATH,
-        secret_name=cientificalab_constants.INFISICAL_AP_LIS.value,
-        environment=environment,
-    )
 
     with case(rename_flow, True):
         rename_current_flow_run(
@@ -82,10 +77,6 @@ with Flow(
             dt_fim=dt_fim,
             environment=environment,
         )
-
-    identificador_lis = parse_identificador(
-        identificador=identificador_lis_secret, ap=area_programatica
-    )  # noqa
 
     results = authenticate_and_fetch(
         username=username_secret,
@@ -137,13 +128,21 @@ with Flow(
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
 
-    cnes_list = cientificalab_constants.CNES.value
-
     start_date = from_relative_date(relative_date=relative_date_filter)
 
     windows = generate_time_windows(start_date=start_date)
 
-    operator_parameters = build_operator_params(windows=windows, env=environment)
+    identificador_lis_secret = get_secret_key(
+        secret_path=cientificalab_constants.INFISICAL_PATH.value,
+        secret_name=cientificalab_constants.INFISICAL_AP_LIS.value,
+        environment=environment,
+    )
+
+    identificadores = parse_identificador(identificador=identificador_lis_secret)
+
+    operator_parameters = build_operator_params(
+        windows=windows, env=environment, identificadores=identificadores
+    )  # noqa
 
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(flow_cientificalab_operator.name),
@@ -167,17 +166,17 @@ flow_cientificalab_operator.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="5Gi",
+    memory_limit="2Gi",
 )
 
 flow_cientificalab_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=3)
+flow_cientificalab_manager.executor = LocalDaskExecutor(num_workers=6)
 flow_cientificalab_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="3Gi",
+    memory_limit="4Gi",
 )
 
 flow_cientificalab_manager.schedule = schedule
