@@ -80,14 +80,12 @@ def authenticate_and_fetch(
         results = results_response["body"]
 
         if "status" in results["lote"] and results["lote"]["status"] != 200:
-            mensagem = results["lote"]["mensagem"].lower()
+            mensagem = results["lote"].get("mensagem", "").lower()
 
-            if mensagem.startswith("resultado não disponíveis"):
-                log(
-                    "(authenticate_and_fetch) Aviso: resultados não disponíveis no momento.",
-                    level="warning",
-                )
-                return
+
+            if mensagem.startswith("resultado não disponíveis para a data"):
+                log("(authenticate_and_fetch) Resultados não disponíveis para a data solicitada.", level="warning")
+                return  
             else:
                 message = f"(authenticate_and_fetch) Failed to get results: Status: {results['lote']['status']} Message: {results['lote']['mensagem']}"  # noqa
                 raise Exception(message)
