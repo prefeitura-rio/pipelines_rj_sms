@@ -59,7 +59,7 @@ def authenticate_and_fetch(
                 "identificadorLis": identificador_lis,
                 "dataResultado": {"inicial": dt_start, "final": dt_end},
                 "parametros": {
-                    "retorno": "ESTRUTURADO",
+                    "retorno": "ESTRUTURADO/LINK",
                     "parcial": "N",
                     "sigiloso": "S",
                 },
@@ -249,21 +249,26 @@ def generate_time_windows(
 
 
 @task
-def build_operator_params(windows: List[Dict[str, str]], env: str) -> List[Dict[str, str]]:
+def build_operator_params(
+    windows: List[Dict[str, str]], identificadores: List[str], env: str
+) -> List[Dict[str, str]]:
     params = []
 
     for window in windows:
-        params.append(
-            {
-                "dt_inicio": window["dt_inicio"],
-                "dt_fim": window["dt_fim"],
-                "environment": env,
-            }
-        )
+        for identificador in identificadores:
+            params.append(
+                {
+                    "dt_inicio": window["dt_inicio"],
+                    "dt_fim": window["dt_fim"],
+                    "identificador_lis": identificador,
+                    "environment": env,
+                }
+            )
     return params
 
 
 @task
-def parse_identificador(identificador: str, ap: str) -> str:
-    identificador_dict = json.loads(identificador)
-    return identificador_dict[ap]
+def parse_identificador(identificador: str) -> List[str]:
+    identificador_corrigido = identificador.replace("“", '"').replace("”", '"')
+    identificador_dict = json.loads(identificador_corrigido)
+    return list(identificador_dict.values())
