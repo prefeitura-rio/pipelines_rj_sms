@@ -233,6 +233,16 @@ daily_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1Af1SvIhQgvRr_da22Qpveb9VNvwLZai_KR69v8eJ1a8/edit?usp=sharing",  # noqa: E501
         "url_type": "google_sheet",
     },
+    {
+        "csv_delimiter": ",",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Equipe JR",
+        "rename_flow": True,
+        "table_id": "judicial_residual",
+        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8/edit?gid=403471709#gid=403471709",
+        "url_type": "google_sheet",
+    },
 ]
 
 weekly_parameters = [
