@@ -18,7 +18,8 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = []
 for dataset_name, dataset_config in DATABASE_IDS.items():
     db_id = dataset_config["id"]
-    for table_name, table_id in dataset_config["tables"].items():
+    for table_name, table_data in dataset_config["tables"].items():
+        table_id = table_data["id"]
         flow_parameters.append(
             {
                 "environment": "prod",
