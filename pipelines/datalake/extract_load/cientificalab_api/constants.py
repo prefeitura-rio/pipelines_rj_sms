@@ -16,4 +16,4 @@ class cientificalab_constants(Enum):
     INFISICAL_PASSWORD = "CIELAB_PASSWORD"
     INFISICAL_APCCODIGO = "CIELAB_APCCODIGO"
     INFISICAL_AP_LIS = "MAPEAMENTO_AP_LIS"
-    DATASET_ID = "brutos_cientificalab"
+    DATASET_ID = "brutos_cientificalab_new"
