@@ -227,7 +227,9 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
     unique_cpf_string = unique_cpfs
     if unknown_patients > 0:
         s = "" if unknown_patients < 2 else "s"
-        unique_cpf_string = f"{unique_cpfs-1} <small>(+{unknown_patients} paciente{s} não identificado{s})</small>"
+        unique_cpf_string = (
+            f"{unique_cpfs-1} <small>(+{unknown_patients} paciente{s} não identificado{s})</small>"
+        )
 
     unique_cids = len(occurrences.keys())
     email_string += f"""
@@ -300,7 +302,11 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
                 custom_margin = "margin:0 0 1em"
 
             has_exit_dt = bool(patient["exit"])
-            id_is_uuid4 = bool(re.fullmatch(r"[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+", str(patient["id"])))
+            id_is_uuid4 = bool(
+                re.fullmatch(
+                    r"[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+", str(patient["id"])
+                )
+            )
 
             # TODO: ficou de fora por ora: patient["status"] (status do CID)
             email_string += f"""
