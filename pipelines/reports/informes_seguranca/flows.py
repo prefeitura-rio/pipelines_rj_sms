@@ -13,7 +13,7 @@ from pipelines.utils.tasks import get_email_recipients, get_secret_key
 
 from .constants import informes_seguranca_constants
 
-# from .schedules import schedule
+from .schedules import schedule
 from .tasks import build_email, fetch_cids, send_email
 
 with Flow(
@@ -35,16 +35,16 @@ with Flow(
     # Tasks
     #####################################
 
-    results = fetch_cids(environment=ENVIRONMENT, date=DATE)
+    results, fetch_error = fetch_cids(environment=ENVIRONMENT, date=DATE)
 
-    message = build_email(cids=results)
+    message, build_error = build_email(cids=results, date=DATE, error=fetch_error)
 
     recipients = get_email_recipients(
         environment=ENVIRONMENT,
         dataset="brutos_sheets",
         table="seguranca_destinatarios",
         recipients=OVERRIDE_RECIPIENTS,
-        error=False,
+        error=(fetch_error or build_error),
     )
 
     URL = get_secret_key(
@@ -57,12 +57,17 @@ with Flow(
         secret_name=informes_seguranca_constants.EMAIL_TOKEN.value,
         environment=ENVIRONMENT,
     )
-    send_email(api_base_url=URL, token=TOKEN, message=message, recipients=recipients)
+    send_email(
+        api_base_url=URL,
+        token=TOKEN,
+        message=message,
+        recipients=recipients,
+        error=(fetch_error or build_error),
+        date=DATE,
+    )
 
 
-## TODO: schedules; task retries; email
-
-# report_informes_seguranca.schedule = schedule
+report_informes_seguranca.schedule = schedule
 report_informes_seguranca.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 report_informes_seguranca.executor = LocalDaskExecutor(num_workers=1)
 report_informes_seguranca.run_config = KubernetesRun(

@@ -2,10 +2,10 @@
 # pylint: disable=C0103
 # flake8: noqa E501
 
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timedelta
+import re
+from typing import Optional, Tuple
 
-import pandas as pd
 import pytz
 import requests
 from google.cloud import bigquery
@@ -20,19 +20,24 @@ from . import utils as utils
 from .constants import informes_seguranca_constants
 
 
-@task
-def fetch_cids(environment: str, date: str):
-    # Ou pega a data recebida, ou pega a data de ontem
-    date = parse_date_or_today(date, subtract_days_from_today=1)
-
+@task(nout=2)
+def fetch_cids(environment: str, date: str) -> Tuple[RowIterator | str, bool]:
     # Aqui temos duas opções para filtar em SQL pelos CIDs desejados:
     # - ~70 `starts_with()`s seguidos, em uma corrente de `or`;
     # - um regexp_contains recebendo `^(cid1|cid2|cid3|....)`.
-    # Acho que em termos de custo ambos dao no mesmo, mas o RegEx é mais
+    # Acho que em termos de custo ambos dão no mesmo, mas o RegEx é mais
     # limpinho arrumadinho então vamos com ele
     CIDs = informes_seguranca_constants.CIDS.value
     regex = f"^({'|'.join(CIDs)})"
 
+    project = "rj-sms"
+    dataset = "saude_historico_clinico"
+    episode_table = "episodio_assistencial"
+    patient_table = "paciente"
+
+    # Se requisitou data específica, usa; senão, pega data de ontem
+    requested_dt = parse_date_or_today(date, subtract_days_from_today=1)
+    formatted_date = requested_dt.strftime("%Y-%m-%d")
     query = f"""
         select distinct
             ep.prontuario.id_prontuario_global as id_prontuario,
@@ -51,31 +56,48 @@ def fetch_cids(environment: str, date: str):
             condicao.id as cid,
             condicao.descricao as cid_descricao,
             condicao.situacao as cid_situacao
-        from `rj-sms.saude_historico_clinico.episodio_assistencial` ep,
+        from `{project}.{dataset}.{episode_table}` ep,
             unnest(ep.condicoes) condicao
-        left join `rj-sms.saude_historico_clinico.paciente` pac
+        left join `{project}.{dataset}.{patient_table}` pac
             on safe_cast(ep.paciente_cpf as INT64) = pac.cpf_particao
-        where data_particao = "2025-10-06"
+        where data_particao = "{formatted_date}"
             and regexp_contains(condicao.id, r'{regex}')
         qualify row_number() over (
             partition by entrada, cnes, cpf, cid
             order by saida desc
         ) = 1
-        order by cid asc, coalesce(nome_social, nome) asc
+        order by
+            cid asc,
+            coalesce(nome_social, nome) asc nulls last
     """
     log(f"Running query:\n{query}")
 
     try:
         client = bigquery.Client()
         query_job = client.query(query)
-        return query_job.result()
+        return (query_job.result(), False)
     except Exception as e:
         log(f"Error fetching from BigQuery: {repr(e)}", level="error")
-        raise e
+        return (e, True)
 
 
-@task
-def build_email(cids: RowIterator):
+@task(nout=2)
+def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple[str, bool]:
+    # Data de geração do email
+    timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")
+
+    if error:
+        log(f"Received error flag from previous task; returning error message", level="warning")
+        return (
+            f"""
+            Erro ao obter dados do BigQuery: {repr(cids)}.
+            Email gerado às {timestamp}.
+            """,
+            True
+        )
+
+    requested_dt = parse_date_or_today(date, subtract_days_from_today=1)
+    formatted_date = requested_dt.strftime("%d/%m/%Y")
     # Aqui temos as seguintes colunas:
     # - id_prontuario -- ID ou no formato "<CNES>.<número>", ou UUID4
     # - entrada, saida -- data/hora no formato 'YYYY-MM-DDThh:mm:ss'; saída pode ser null
@@ -86,7 +108,17 @@ def build_email(cids: RowIterator):
     # - cid -- formato [A-Z][0-9]{2,3}
     # - cid_descricao -- descrição em português do CID específico
     # - cid_situacao -- status do CID reportado; pode ser "ATIVO", "RESOLVIDO" ou "NAO ESPECIFICADO"
-    log(cids)
+    log(f"Got {cids.total_rows} total occurrence(s)")
+
+    if cids.total_rows <= 0:
+        log("No occurrences found with the specified CIDs", level="warning")
+        return (
+            f"""
+            Nenhum atendimento encontrado com os CIDs solicitados para o dia {formatted_date}.
+            Email gerado às {timestamp}.
+            """,
+            True
+        )
 
     def isoformat_if(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt else None
@@ -139,23 +171,28 @@ def build_email(cids: RowIterator):
             "status": cid_situacao,
         }
         occurrences[cid].append(occurrence_obj)
-        log(occurrence_obj)
 
         if cid in descriptions and cid_descricao != descriptions[cid]:
             log(
                 f"Mismatched descriptions for CID '{cid}':\n\t'{descriptions[cid]}';\n\t'{cid_descricao}'",
                 level="warning",
             )
-        descriptions[cid] = cid_descricao
+            # Aqui temos zero possibilidade de saber qual o correto
+            # Ao invés disso, tentamos pegar o mais 'completo'
+            # Ex.: "forca" é pior que "força"
+            if len(re.findall(r'[çãáàéõóíú]', cid_descricao, re.IGNORECASE) or []) \
+                > len(re.findall(r'[çãáàéõóíú]', descriptions[cid], re.IGNORECASE) or []):
+                descriptions[cid] = cid_descricao
+        else:
+            descriptions[cid] = cid_descricao
 
     # Começa construção do email
-    # FIXME: data
     email_string = f"""
 <table style="font-family:sans-serif;max-width:650px;min-width:300px">
     <tr>
         <td style="padding:18px 0">
             <h2 style="margin:0;text-align:center;color:#13335a;font-size:24px">
-                Informe de Segurança 08/10/2025
+                Informe de Segurança – {formatted_date}
             </h2>
         </td>
     </tr>
@@ -188,12 +225,18 @@ def build_email(cids: RowIterator):
         # Se temos uma nova categoria de CIDs
         if current_group_range != group_range:
             # Adiciona categoria
+            # OBS: Opções de cor aqui:
+            # - Azul:     bg: #e6f1fe; borda: #007fff
+            # - Vermelho: bg: #fee6e6; borda: #f16363
+            # - Laranja marca da Prefeitura:
+            #             bg: #ffeae5; borda: #f06949
             email_string += f"""
-            <tr><td><hr></td></tr>
+            <tr><td style="padding:9px"></td></tr>
             <tr>
-                <th style="background-color:#e6f1fe;padding:9px;color:#13335a;text-align:left">
+                <th style="background-color:#fee6e6;border-top:2px solid #f16363;
+                padding:4px 8px;color:#13335a;text-align:left">
                     <span style="font-size:85%">{current_group_range}:</span>
-                    {current_group_description}
+                    {utils.filter_CID_group(current_group_description)}
                 </th>
             </tr>
             """
@@ -203,7 +246,7 @@ def build_email(cids: RowIterator):
         # Cabeçalho de CID
         email_string += f"""
         <tr>
-            <th style="background-color:#eff1f3;padding:9px;color:#13335a;font-size:90%;text-align:left">
+            <th style="background-color:#eff1f3;padding:4px 8px;color:#13335a;font-size:90%;text-align:left">
                 <span style="font-size:80%;background-color:#fff;border-radius:4px;padding:2px 4px;margin-right:4px;display:inline-block">
                     {cid}
                 </span>
@@ -214,14 +257,14 @@ def build_email(cids: RowIterator):
 
         email_string += """
         <tr>
-            <td style="padding:9px 0px 9px 18px">
-                <ul style="padding-left:9px">
+            <td style="padding:2px 0px 9px 18px">
+                <ul style="padding-left:9px;margin:0">
         """
         # Pacientes com CID especificado
         for patient in occurrences[cid]:
             # TODO: ficou de fora por ora: patient["status"] (status do CID)
             email_string += f"""
-            <li style="margin-bottom:6px;padding:4px 8px;background-color:#fafafa;color:#13335a">
+            <li style="margin-bottom:4px;padding:4px 8px;background-color:#fafafa;color:#13335a">
                 <p style="margin:0">{patient["name"]}{patient["age"]}</p>
                 <p style="margin:0">{patient["health_unit"]}</p>
                 <p style="margin:0;margin-top:2px">
@@ -247,7 +290,6 @@ def build_email(cids: RowIterator):
         </tr>
         """
 
-    timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")
     email_string += f"""
     <tr><td style="padding:9px"></td></tr>
     <tr><td><hr></td></tr>
@@ -271,31 +313,7 @@ def build_email(cids: RowIterator):
     with open("abc.html", "w") as f:
         f.write(email_string)
 
-    return email_string
-
-
-@task
-def get_email_recipients(recipients: Optional[list | str] = None):
-    # Se queremos sobrescrever os recipientes do email
-    # (ex. enviar somente para uma pessoa, para teste)
-    if recipients is not None:
-        if type(recipients) is str:
-            recipients = [recipients]
-        if type(recipients) is list or type(recipients) is tuple:
-            recipients = list(recipients)
-            log(f"Overriding recipients ({len(recipients)}): {recipients}")
-            return {
-                "to_addresses": recipients,
-                "cc_addresses": [],
-                "bcc_addresses": [],
-            }
-        log(f"Unrecognized type for `recipients`: '{type(recipients)}'; ignoring")
-
-    return {
-        "to_addresses": ["matheus.avellar@dados.rio"],
-        "cc_addresses": [],
-        "bcc_addresses": [],
-    }
+    return (email_string, False)
 
 
 @task
@@ -304,17 +322,18 @@ def send_email(
     token: str,
     message: str,
     recipients: dict,
+    error: bool,
     date: Optional[str] = None,
 ):
-    DO_DATETIME = parse_date_or_today(date)
-    DATE = DO_DATETIME.strftime("%d/%m/%Y")
+    requested_dt = parse_date_or_today(date, subtract_days_from_today=1)
+    formatted_date = requested_dt.strftime("%d/%m/%Y")
 
     request_headers = {"x-api-key": token}
     request_body = {
         **recipients,
-        "subject": f"Informes de Segurança - {DATE}",
+        "subject": f"Informes de Segurança – {formatted_date}",
         "body": message,
-        "is_html_body": True,
+        "is_html_body": not error,
     }
 
     if api_base_url.endswith("/"):

@@ -13,16 +13,16 @@ from .constants import informes_seguranca_constants
 MONTH = [
     "jan",
     "fev",
-    "mar",  #
+    "mar",
     "abr",
     "maio",
-    "jun",  #
+    "jun",
     "jul",
     "ago",
-    "set",  #
+    "set",
     "out",
     "nov",
-    "dec",  #
+    "dec",
 ]
 
 
@@ -82,5 +82,22 @@ def get_cid_group(cid: str) -> Tuple[str, str]:
     return ("?", "Grupo desconhecido")
 
 
+def filter_CID_group(text: str) -> str:
+    from_to = [
+        (r"\|", ""),
+        (r"\[.+\]", ""),
+        (r"ü", "u"),
+
+        (r"\s{2,}", " ")
+    ]
+    for fro, to in from_to:
+        text = re.sub(fro, to, text)
+    return text
+
+
 def compress_message_whitespace(message: str) -> str:
-    return re.sub(r"\s{2,}", " ", message)
+    return re.sub(
+        r"\s{2,}",
+        " ",
+        re.sub(r">\s+<", "><", message)
+    )
