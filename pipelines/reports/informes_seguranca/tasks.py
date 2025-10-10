@@ -21,7 +21,7 @@ from .constants import informes_seguranca_constants
 
 
 @task(nout=2)
-def fetch_cids(environment: str, date: str) -> Tuple[RowIterator | str, bool]:
+def fetch_cids(environment: str, date: str) -> Tuple[list | str, bool]:
     # Aqui temos duas opções para filtar em SQL pelos CIDs desejados:
     # - ~70 `starts_with()`s seguidos, em uma corrente de `or`;
     # - um regexp_contains recebendo `^(cid1|cid2|cid3|....)`.
@@ -75,14 +75,14 @@ def fetch_cids(environment: str, date: str) -> Tuple[RowIterator | str, bool]:
     try:
         client = bigquery.Client()
         query_job = client.query(query)
-        return (query_job.result(), False)
+        return ([row for row in query_job.result()], False)
     except Exception as e:
         log(f"Error fetching from BigQuery: {repr(e)}", level="error")
         return (e, True)
 
 
 @task(nout=2)
-def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple[str, bool]:
+def build_email(cids: list | str, date: str | None, error: bool) -> Tuple[str, bool]:
     # Data de geração do email
     timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")
 
@@ -108,9 +108,9 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
     # - cid -- formato [A-Z][0-9]{2,3}
     # - cid_descricao -- descrição em português do CID específico
     # - cid_situacao -- status do CID reportado; pode ser "ATIVO", "RESOLVIDO" ou "NAO ESPECIFICADO"
-    log(f"Got {cids.total_rows} total occurrence(s)")
+    log(f"Got {len(cids)} total occurrence(s)")
 
-    if cids.total_rows <= 0:
+    if len(cids) <= 0:
         log("No occurrences found with the specified CIDs", level="warning")
         return (
             f"""
@@ -237,7 +237,7 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
         <td>
             <div>
                 <b>Total de CPFs:</b> {unique_cpf_string}<br>
-                <b>Total de atendimentos:</b> {cids.total_rows}<br>
+                <b>Total de atendimentos:</b> {len(cids)}<br>
                 <b>CIDs distintos:</b> {unique_cids}
     </tr>
     """
