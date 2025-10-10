@@ -4,7 +4,7 @@
 
 import re
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import pytz
 import requests
@@ -137,11 +137,12 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
         estabelecimento = (
             str(row["estabelecimento"] or "").strip() or "<i>Sem informação da unidade</i>"
         )
+
+        # `<a href="esse link enorme aí">...</a>` é muito byte, precisei tirar :\
+        # url = f"https://cnes.datasus.gov.br/pages/estabelecimentos/consulta.jsp?search={cnes}"
         health_unit_str = f"""
-        <span style='font-size:70%'>
-            <a href='https://cnes.datasus.gov.br/pages/estabelecimentos/consulta.jsp?search={cnes}'>{estabelecimento}</a>
-            (CNES {cnes})
-        </span>
+        <small>{estabelecimento} (CNES {cnes})
+        </small>
         """
 
         cpf = row["cpf"]
@@ -187,15 +188,38 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
         else:
             descriptions[cid] = cid_descricao
 
+    # Nosso problema:
+    # - Gmail tem um limite de ~100KB para uma mensagem antes de cortar ela
+    #   (não queremos bater nesse limite);
+    # - Poderíamos usar classes e <style> para diminuir significativamente o
+    #   tamanho do HTML resultante. Porém, pelo que eu investiguei:
+    #   - No cliente do Gmail, um <style> só funciona dentro de um <head>;
+    #   - Ao receber um email, o cliente do Gmail:
+    #     - Puxa o <style> do <head> do email para o <head> da página;
+    #     - Remove o <head> do HTML do email.
+    #   - Ao encaminhar o email recebido, por alguma idiotice cósmica, o cliente
+    #     só encaminha o HTML do corpo, e esquece de mandar também o <style> que
+    #     ele mesmo arrancou fora da mensagem.
+    # - Ou seja, precisamos usar estilos inline, `style="..."`, mas com mais de
+    #   100 atendimentos em um dia, precisamos ir a extremos pra não bater no
+    #   limite de ~100KB (eba codegolfing):
+    #   - Remover basicamente todo o whitespace possível;
+    #   - Remover estilos que eu usaria em um mundo ideal, mas que não valem os bytes;
+    #   - Usar <div> ao invés de <p style="margin:0">;
+    #   - Converter cores pro mais próximo possível que caiba em 3 bytes
+    #     (por exemplo, #788087 -> #778 = #777788; #f1f1f1 -> #eee);
+    #   - <small> em tudo que precisar de textos pequenos, nada de font-size;
+    #     - Podemos economizar +1B usando <font size=2 color="#778">...</font>
+    #       ao invés do equivalente       <small style="color:#778">...</small>
+    #   - "18px" (4B)? Você quis dizer "1em" (3B) = 16px;
+    #   - "margin-bottom:1em" (17B) -> "margin:0 0 1em" (14B);
+    #   - Fechar tags? Nesse mundo tão corrido, por que você faria isso
+
     # Começa construção do email
     email_string = f"""
-<table style="font-family:sans-serif;max-width:650px;min-width:300px">
+<table style="font-family:sans-serif;max-width:41em;min-width:19em;color:#13335a">
     <tr>
-        <td style="padding:18px 0">
-            <h2 style="margin:0;text-align:center;color:#13335a;font-size:24px">
-                Informe de Segurança – {formatted_date}
-            </h2>
-        </td>
+        <th><h2>Comunicação de CIDs – {formatted_date}
     </tr>
     """
 
@@ -203,107 +227,128 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
     unique_cpf_string = unique_cpfs
     if unknown_patients > 0:
         s = "" if unknown_patients < 2 else "s"
-        unique_cpf_string = f"{unique_cpfs-1} <span style='font-size:80%'>(+{unknown_patients} paciente{s} não identificado{s})</span>"
+        unique_cpf_string = f"{unique_cpfs-1} <small>(+{unknown_patients} paciente{s} não identificado{s})</small>"
 
     unique_cids = len(occurrences.keys())
     email_string += f"""
     <tr>
         <td>
-            <p style="margin:0;color:#788087;font-size:85%">Resumo:</p>
-            <p style="margin:0;color:#13335a">
+            <div>
                 <b>Total de CPFs:</b> {unique_cpf_string}<br>
                 <b>Total de atendimentos:</b> {cids.total_rows}<br>
                 <b>CIDs distintos:</b> {unique_cids}
-            </p>
-        </td>
     </tr>
     """
 
     group_range = None
-    for cid in sorted(occurrences.keys()):
+    all_cids: List[str] = sorted(occurrences.keys())
+    for i, cid in enumerate(all_cids):
         # Cabeçalho de grupo de CIDs
         (current_group_range, current_group_description) = utils.get_cid_group(cid)
         # Se temos uma nova categoria de CIDs
         if current_group_range != group_range:
             # Adiciona categoria
-            # OBS: Opções de cor aqui:
-            # - Azul:     bg: #e6f1fe; borda: #007fff
-            # - Vermelho: bg: #fee6e6; borda: #f16363
-            # - Laranja marca da Prefeitura:
-            #             bg: #ffeae5; borda: #f06949
             email_string += f"""
-            <tr><td style="padding:9px"></td></tr>
             <tr>
-                <th style="background-color:#fee6e6;border-top:2px solid #f16363;
-                padding:4px 8px;color:#13335a;text-align:left">
-                    <span style="font-size:85%">{current_group_range}:</span>
+                <th style="background:#fee;border-top:2px solid#e66;padding:4px 8px;text-align:left">
+                    <small>{current_group_range}:</small>
                     {utils.filter_CID_group(current_group_description)}
-                </th>
             </tr>
             """
             # Atualiza categoria atual
             group_range = current_group_range
 
+        # Se a próxima iteração é uma nova categoria de CIDs
+        do_space_bottom = False
+        if i + 1 < len(all_cids):
+            next_cid = all_cids[i + 1]
+            (next_group_range, _) = utils.get_cid_group(next_cid)
+            if next_group_range != group_range:
+                # Ativa flag para espaçamento no fim da lista
+                do_space_bottom = True
+
         # Cabeçalho de CID
         email_string += f"""
         <tr>
-            <th style="background-color:#eff1f3;padding:4px 8px;color:#13335a;font-size:90%;text-align:left">
-                <span style="font-size:80%;background-color:#fff;border-radius:4px;padding:2px 4px;margin-right:4px;display:inline-block">
-                    {cid}
-                </span>
-                {descriptions[cid]}
-            </th>
+            <th style="background:#eee;padding:4px 8px;text-align:left">
+                <small style="background:#fff;border-radius:4px;padding:2px 4px">{cid}</small>
+                {utils.filter_CID_group(descriptions[cid])}
         </tr>
         """
 
+        # Número de ocorrências de cada CID
+        # Devido às restrições agressivas de tamanho, só mostramos se count > 3
+        cid_occurrences_count = len(occurrences[cid])
+        if cid_occurrences_count > 3:
+            email_string += f"<tr><td><small>{cid_occurrences_count} ocorrências</tr>"
+
         email_string += """
         <tr>
-            <td style="padding:2px 0px 9px 18px">
-                <ul style="padding-left:9px;margin:0">
+            <td style="padding:0 0 1em">
+                <ul style="padding:0 2em;margin:0">
         """
         # Pacientes com CID especificado
-        for patient in occurrences[cid]:
+        for j, patient in enumerate(occurrences[cid]):
+            is_last_child = j == len(occurrences[cid]) - 1
+            custom_margin = "margin:0"
+            if j > 0:
+                if not do_space_bottom or not is_last_child:
+                    custom_margin = "margin:4px 0"
+                else:
+                    custom_margin = "margin:4px 0 1em"
+            elif do_space_bottom and is_last_child:
+                custom_margin = "margin:0 0 1em"
+
+            has_exit_dt = bool(patient["exit"])
+            id_is_uuid4 = bool(re.fullmatch(r"[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+", str(patient["id"])))
+
             # TODO: ficou de fora por ora: patient["status"] (status do CID)
             email_string += f"""
-            <li style="margin-bottom:4px;padding:4px 8px;background-color:#fafafa;color:#13335a">
-                <p style="margin:0">{patient["name"]}{patient["age"]}</p>
-                <p style="margin:0">{patient["health_unit"]}</p>
-                <p style="margin:0;margin-top:2px">
-                    <span style="font-size:80%;padding:2px 4px;background-color:#f1f1f1;border-radius:2px;margin-right:4px">Entrada: {
+            <li style="{custom_margin};padding:4px 8px;background:#fafafa">
+                <div>{patient["name"]}{patient["age"]}</div>
+                <div>{patient["health_unit"]}</div>
+                <div>
+                    <small style="padding:2px 4px;background:#eee{
+                        ";margin-right:4px" if has_exit_dt or not id_is_uuid4 else ""
+                    }">Entrada: {
                         patient["entry"]
-                    }</span>
+                    }</small>
             """
             if patient["exit"]:
                 email_string += f"""
-                    <span style="font-size:80%;padding:2px 4px;background-color:#f1f1f1;border-radius:2px;margin-right:4px">Saída: {
+                    <small style="padding:2px 4px;background:#eee{
+                        ";margin-right:4px" if not id_is_uuid4 else ""
+                    }">Entrada: {
                         patient["exit"]
-                    }</span>
+                    }</small>
                 """
 
+            # Para economizar espaço, vamos ignorar supostos IDs de prontuários Vitai, que
+            # vêm como UUIDv4. Ex.: ABCDEF01-1234-4ABC-DEF0-ABCDEF012345
+            if not id_is_uuid4:
+                email_string += f"""<font size=1 color="#778">Prontuário [{patient["id"]}]</font>"""
+
             email_string += f"""
-                    <span style="font-size:70%;color:#788087">Prontuário [{patient["id"]}]</span>
-                </p>
+                </div>
             </li>
             """
+
         email_string += """
-                </ul>
-            </td>
         </tr>
         """
 
     email_string += f"""
-    <tr><td style="padding:9px"></td></tr>
-    <tr><td><hr></td></tr>
+    <tr style="height:2em"><td><hr></tr>
     <tr>
         <td>
-            <img style="margin-left:18px;margin-bottom:70px" width="100" align="right" src="{
+            <img width="100" align="right" src="{
                 informes_seguranca_constants.LOGO_DIT_HORIZONTAL_COLORIDO.value
-            }" alt="DIT-SMS"/>
-            <p style="font-size:13px;color:#888;margin:0">
+            }" alt="DIT-SMS" style="margin-left:1em;margin-bottom:4em"/>
+            <div style="font-size:13px;color:#888">
               Apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT),
               parte da <b>Secretaria Municipal de Saúde</b> (SMS).
               Email gerado às {timestamp}.
-            </p>
+            </div>
         </td>
     </tr>
 </table>
@@ -332,7 +377,7 @@ def send_email(
     request_headers = {"x-api-key": token}
     request_body = {
         **recipients,
-        "subject": f"Informes de Segurança – {formatted_date}",
+        "subject": f"Comunicação de CIDs – {formatted_date}",
         "body": message,
         "is_html_body": not error,
     }

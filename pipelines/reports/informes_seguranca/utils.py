@@ -63,9 +63,9 @@ def build_name_string(cpf: str | None, name: str | None, social_name: str | None
 
     # Se não temos somente nome social, retorna "nome (cpf)"
     if social_name is None:
-        return f"{name} <span style='font-size:70%'>(CPF {cpf})</span>"
+        return f"{name} <small>(CPF {cpf})</small>"
 
-    return f"{social_name} <span style='font-size:70%'>({name}; CPF {cpf})</span>"
+    return f"{social_name} <small>({name}; CPF {cpf})</small>"
 
 
 def get_cid_group(cid: str) -> Tuple[str, str]:
@@ -83,11 +83,11 @@ def get_cid_group(cid: str) -> Tuple[str, str]:
 
 
 def filter_CID_group(text: str) -> str:
-    from_to = [(r"\|", ""), (r"\[.+\]", ""), (r"ü", "u"), (r"\s{2,}", " ")]
+    from_to = [(r"\|", ""), (r"\[[^\]]+\]", ""), (r"ü", "u"), (r"\s{2,}", " ")]
     for fro, to in from_to:
         text = re.sub(fro, to, text)
     return text
 
 
 def compress_message_whitespace(message: str) -> str:
-    return re.sub(r"\s{2,}", " ", re.sub(r">\s+<", "><", message))
+    return re.sub(r"}\s+", "}", re.sub(r"\s{2,}", " ", re.sub(r">\s+<", "><", message))).strip()
