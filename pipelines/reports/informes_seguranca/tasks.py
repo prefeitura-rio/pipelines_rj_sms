@@ -2,8 +2,8 @@
 # pylint: disable=C0103
 # flake8: noqa E501
 
-from datetime import datetime, timedelta
 import re
+from datetime import datetime, timedelta
 from typing import Optional, Tuple
 
 import pytz
@@ -93,7 +93,7 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
             Erro ao obter dados do BigQuery: {repr(cids)}.
             Email gerado às {timestamp}.
             """,
-            True
+            True,
         )
 
     requested_dt = parse_date_or_today(date, subtract_days_from_today=1)
@@ -117,7 +117,7 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
             Nenhum atendimento encontrado com os CIDs solicitados para o dia {formatted_date}.
             Email gerado às {timestamp}.
             """,
-            True
+            True,
         )
 
     def isoformat_if(dt: datetime | None) -> str | None:
@@ -180,8 +180,9 @@ def build_email(cids: RowIterator | str, date: str | None, error: bool) -> Tuple
             # Aqui temos zero possibilidade de saber qual o correto
             # Ao invés disso, tentamos pegar o mais 'completo'
             # Ex.: "forca" é pior que "força"
-            if len(re.findall(r'[çãáàéõóíú]', cid_descricao, re.IGNORECASE) or []) \
-                > len(re.findall(r'[çãáàéõóíú]', descriptions[cid], re.IGNORECASE) or []):
+            if len(re.findall(r"[çãáàéõóíú]", cid_descricao, re.IGNORECASE) or []) > len(
+                re.findall(r"[çãáàéõóíú]", descriptions[cid], re.IGNORECASE) or []
+            ):
                 descriptions[cid] = cid_descricao
         else:
             descriptions[cid] = cid_descricao

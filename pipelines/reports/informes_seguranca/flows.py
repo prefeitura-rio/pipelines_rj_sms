@@ -12,7 +12,6 @@ from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_email_recipients, get_secret_key
 
 from .constants import informes_seguranca_constants
-
 from .schedules import schedule
 from .tasks import build_email, fetch_cids, send_email
 

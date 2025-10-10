@@ -83,21 +83,11 @@ def get_cid_group(cid: str) -> Tuple[str, str]:
 
 
 def filter_CID_group(text: str) -> str:
-    from_to = [
-        (r"\|", ""),
-        (r"\[.+\]", ""),
-        (r"ü", "u"),
-
-        (r"\s{2,}", " ")
-    ]
+    from_to = [(r"\|", ""), (r"\[.+\]", ""), (r"ü", "u"), (r"\s{2,}", " ")]
     for fro, to in from_to:
         text = re.sub(fro, to, text)
     return text
 
 
 def compress_message_whitespace(message: str) -> str:
-    return re.sub(
-        r"\s{2,}",
-        " ",
-        re.sub(r">\s+<", "><", message)
-    )
+    return re.sub(r"\s{2,}", " ", re.sub(r">\s+<", "><", message))
