@@ -324,7 +324,7 @@ def build_email(cids: list | str, date: str | None, error: bool) -> Tuple[str, b
                 email_string += f"""
                     <small style="padding:2px 4px;background:#eee{
                         ";margin-right:4px" if not id_is_uuid4 else ""
-                    }">Entrada: {
+                    }">Saída: {
                         patient["exit"]
                     }</small>
                 """
