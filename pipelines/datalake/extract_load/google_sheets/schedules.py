@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103,C0301
 """
-Schedules for the smsrio dump url
+Schedules for the Google Sheets extraction flows
 """
 
 from datetime import datetime, timedelta
@@ -24,10 +24,20 @@ daily_parameters = [
         "rename_flow": True,
     },
     {
-        "url": "https://docs.google.com/spreadsheets/d/1C8Fn-c6vwjx3X4nmc7X6V_tFw91rOmojXs9VgUWbQTg/edit?usp=sharing",  # noqa: E501
+        "url": "https://docs.google.com/spreadsheets/d/1C8Fn-c6vwjx3X4nmc7X6V_tFw91rOmojXs9VgUWbQTg/",  # noqa: E501
         "url_type": "google_sheet",
-        "gsheets_sheet_name": "Destinatários",
+        "gsheets_sheet_name": "cdi-vps",
         "table_id": "cdi_destinatarios",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1C8Fn-c6vwjx3X4nmc7X6V_tFw91rOmojXs9VgUWbQTg/",  # noqa: E501
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "segurança",
+        "table_id": "seguranca_destinatarios",
         "dataset_id": "brutos_sheets",
         "csv_delimiter": "|",
         "environment": "prod",

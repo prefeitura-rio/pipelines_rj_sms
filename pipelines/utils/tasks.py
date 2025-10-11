@@ -20,7 +20,7 @@ from ftplib import FTP
 from io import StringIO
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 import basedosdados as bd
 import google.auth.transport.requests
@@ -1288,3 +1288,109 @@ def create_date_partitions(
             safe_export_df_to_parquet.run(df=dataframe, output_path=file_folder)
 
     return root_folder
+
+
+@task(max_retries=1, retry_delay=timedelta(minutes=3))
+def get_email_recipients(
+    environment: str | None = None,
+    dataset: str | None = None,
+    table: str | None = None,
+    recipients: List[str] | str | None = None,
+    error: bool | None = False,
+) -> dict:
+    """
+    Args:
+        environment(str): Current working environment: `"prod"`, `"dev"`, etc. Used to get\
+            appropriate project name, i.e. `rj-sms`, `rj-sms-dev`. Can be skipped if \
+            `recipients` is used instead.
+        dataset(str?): Dataset to look for the table in. Defaults to `"brutos_sheets"`. \
+            Can be skipped if `recipients` is used instead.
+        table(str): Table name containing recipients. Code will therefore look for recipients \
+            at `rj-sms(-dev).{dataset}.{table}`. Can be skipped if `recipients` is used instead.
+        recipients(str | str[]?): Optional override of recipients. Skips reading the database. \
+            Either a single email address, or a list of them.
+        error(bool?): Optional flag indicating this is an error report. Only recipients marked \
+            specifically as error recipients in the sheet will be returned.
+
+    Returns:
+        recipients(dict): Recipients of the email, in the format used by Iplan's API. \
+            A dictionary with the following three keys, containing (possibly empty) lists of email \
+            addresses (strings): `"to_addresses"`, `"cc_addresses"` and `"bcc_addresses"`. These\
+            refer to the TO, CC and BCC header fields of the email to be sent, respectively.
+    """
+
+    # Se queremos sobrescrever os recipientes do email
+    # (ex. enviar somente para uma pessoa, para teste)
+    if recipients is not None:
+        if type(recipients) is str:
+            recipients = [recipients]
+        if type(recipients) is list or type(recipients) is tuple:
+            recipients = list(recipients)
+            log(f"Overriding recipients ({len(recipients)}): {recipients}")
+            return {
+                "to_addresses": recipients,
+                "cc_addresses": [],
+                "bcc_addresses": [],
+            }
+        log(f"Unrecognized type for `recipients`: '{type(recipients)}'; ignoring")
+
+    client = bigquery.Client()
+
+    PROJECT = get_bigquery_project_from_environment.run(environment=environment)
+    DATASET = dataset or "brutos_sheets"
+    if not table or not isinstance(table, str) or len(table) == 0:
+        raise ValueError(f"Parameter `table` must be valid table name; got {repr(table)}")
+    TABLE = table
+
+    QUERY = f"""
+SELECT email, tipo, recebe_erro
+FROM `{PROJECT}.{DATASET}.{TABLE}`
+    """
+    log(f"Querying `{PROJECT}.{DATASET}.{TABLE}` for email recipients...")
+    rows = [row.values() for row in client.query(QUERY).result()]
+    log(f"Found {len(rows)} row(s)")
+
+    to_addresses = []
+    cc_addresses = []
+    bcc_addresses = []
+    for email, kind, gets_errors in rows:
+        email = str(email).strip()
+        kind = str(kind).lower().strip()
+        gets_errors = str(gets_errors).lower().strip() == "true"
+        if not email:
+            continue
+        if "@" not in email:
+            log(f"Recipient '{email}' does not contain '@'; skipping", level="warning")
+            continue
+
+        should_get = (error and gets_errors) or not error
+        if should_get:
+            if kind == "to":
+                to_addresses.append(email)
+            elif kind == "cc":
+                cc_addresses.append(email)
+            elif kind == "bcc":
+                bcc_addresses.append(email)
+            elif kind == "skip":
+                continue
+            else:
+                log(
+                    f"Recipient type '{kind}' (for '{email}') not recognized; skipping",
+                    level="warning",
+                )
+        else:
+            log(f"Skipping recipient '{email}' because they are not configured to receive errors")
+
+    log(
+        f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)"
+    )
+    # Fallback caso por algum motivo não tenha nenhum destinatário
+    if len(to_addresses) + len(cc_addresses) + len(bcc_addresses) <= 0:
+        log(f"No recipient left! Defaulting to maintainer", level="warning")
+        to_addresses.append("matheus.avellar@dados.rio")
+
+    return {
+        "to_addresses": to_addresses,
+        "cc_addresses": cc_addresses,
+        "bcc_addresses": bcc_addresses,
+    }
