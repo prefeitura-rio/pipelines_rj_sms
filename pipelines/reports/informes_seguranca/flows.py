@@ -26,7 +26,7 @@ with Flow(
     #####################################
     # Parameters
     #####################################
-    ENVIRONMENT = Parameter("environment")
+    ENVIRONMENT = Parameter("environment", default="dev")
     DATE = Parameter("date", default=None)
     OVERRIDE_RECIPIENTS = Parameter("override_recipients", default=None)
 
