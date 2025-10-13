@@ -12,6 +12,7 @@ class informes_seguranca_constants(Enum):
     EMAIL_TOKEN = "API_TOKEN"
     EMAIL_ENDPOINT = "/data/mailman"
     LOGO_DIT_HORIZONTAL_COLORIDO = "https://storage.googleapis.com/sms_dit_arquivos_publicos/img/dit-horizontal-colorido--300px.png"
+    LOGO_SMS_HORIZONTAL_COLORIDO = "https://storage.googleapis.com/sms_dit_arquivos_publicos/img/sms-horizontal-gradiente-sem-sus--150px.png"
 
     # Lista de CIDs desejados, especificados em documento de 39(!) páginas
     # Descrições a partir da lista da OMS

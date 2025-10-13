@@ -219,7 +219,11 @@ def build_email(cids: list | str, date: str | None, error: bool) -> Tuple[str, b
     email_string = f"""
 <table style="font-family:sans-serif;max-width:41em;min-width:19em;color:#13335a">
     <tr>
-        <th><h2>Comunicação de CIDs – {formatted_date}
+        <td>
+            <img width="100" align="right" src="{
+                informes_seguranca_constants.LOGO_SMS_HORIZONTAL_COLORIDO.value
+            }" alt="SMS"/>
+            <h2 style="margin-top:0">Comunicação de CIDs – {formatted_date}
     </tr>
     """
 
