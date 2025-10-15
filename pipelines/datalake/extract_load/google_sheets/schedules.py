@@ -253,6 +253,16 @@ daily_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8/edit?gid=403471709#gid=403471709",
         "url_type": "google_sheet",
     },
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1gCVtBz0udlcgFKtKJHvjsGwI0wA8kQyNU_bUSGHN8Hw",
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "cids",
+        "table_id": "seguranca_cids",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
 ]
 
 weekly_parameters = [
