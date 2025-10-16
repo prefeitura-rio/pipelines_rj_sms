@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import hashlib
-import pandas as pd
 
+import pandas as pd
 from google.cloud import bigquery
 
 # [ Conteúdo adaptado do .ipynb da Vitoria 🪦🥀 ]
@@ -31,16 +31,11 @@ for gdb_table, bq_table in gdb_to_bigquery_tables.items():
     df = pd.read_csv(csv_path, dtype="unicode", na_filter=False)
 
     # Algumas tabelas requerem um `id_profissional_sus`
-    if bq_table in ( "vinculo", "profissional", "equipe_vinculo" ):
+    if bq_table in ("vinculo", "profissional", "equipe_vinculo"):
         # Vitoria que descobriu como funciona isso aqui
         df["id_profissional_sus"] = df["PROF_ID"].apply(
-            lambda x: (
-                hashlib.md5(x.encode("utf-8")).hexdigest()
-            ).upper()[0:16]
+            lambda x: (hashlib.md5(x.encode("utf-8")).hexdigest()).upper()[0:16]
         )
 
     # TODO: Garantir que o método de upload apaga as tabelas antes
-    client.load_table_from_dataframe(
-        df,
-        f"rj-sms.brutos_cnes_gdb_staging.{bq_table}"
-    )
+    client.load_table_from_dataframe(df, f"rj-sms.brutos_cnes_gdb_staging.{bq_table}")
