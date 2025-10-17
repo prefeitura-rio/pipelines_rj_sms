@@ -198,7 +198,7 @@ def call_api(method: str, url_path: str, json=None):
     # Se chegamos aqui, tentamos `MAX_ATTEMPTS` vezes
     # e em TODAS tivemos erro 409; acho que a opção
     # menos pior é dar erro pra essa situação ser visível
-    raise PermissionError(f"Failed to call API successfully; too many '409 Conflict's")
+    raise PermissionError("Failed to call API successfully; too many '409 Conflict's")
 
 
 def get_instance_status(instance_name: str):
@@ -235,15 +235,16 @@ def get_instance_status(instance_name: str):
         return
 
     # `RUNNABLE: The instance is running, or has been stopped by owner.`
-    # [Ref] https://cloud.google.com/sql/docs/postgres/admin-api/rest/v1beta4/instances#SqlInstanceState
+    # [Ref] https://cloud.google.com/sql/docs/postgres/admin-api/rest/v1beta4/instances#SqlInstanceState  # noqa: E501
     state = res_json["state"]
     # ALWAYS (running), NEVER (stopped)
-    # [Ref] https://cloud.google.com/sql/docs/postgres/admin-api/rest/v1beta4/instances#sqlactivationpolicy
+    # [Ref] https://cloud.google.com/sql/docs/postgres/admin-api/rest/v1beta4/instances#sqlactivationpolicy  # noqa: E501
     activation_policy = res_json["settings"]["activationPolicy"]
 
     wrong_state = state != "RUNNABLE"
     wrong_policy = activation_policy not in ("ALWAYS", "NEVER")
     log(
-        f"[get_instance_status] Instance is in running state '{state}', activation policy '{activation_policy}'",
+        f"[get_instance_status] Instance is in running state '{state}', "
+        f"activation policy '{activation_policy}'",
         level=("warning" if wrong_state or wrong_policy else "info"),
     )

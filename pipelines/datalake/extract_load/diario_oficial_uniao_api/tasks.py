@@ -93,7 +93,8 @@ def download_files(
     """Faz o download dos arquivos .zip com os atos oficiais de cada seção para um dia específico.
 
     Args:
-        session (requests.Session): Instância de Session da biblioteca requests contém os cookies da sessão.
+        session (requests.Session): Instância de Session da biblioteca requests
+            que contém os cookies da sessão.
         sections (str): Seções do DOU a serem extraídas (DO1, DO2 e DO3)
         date (datetime.datetime): Data do diário oficial a ser extraído.
 
@@ -133,7 +134,7 @@ def download_files(
             log(f"❌ Arquivo não encontrado: {date_to_extract + '-' + dou_section + '.zip'}")
             return
 
-    log(f"✅ Requisições feitas com sucesso.")
+    log("✅ Requisições feitas com sucesso.")
 
     return files
 
@@ -154,7 +155,7 @@ def unpack_zip(zip_files: list, output_path: str) -> None:
                 with zipfile.ZipFile(file, "r") as zip_ref:
                     zip_ref.extractall(output_path)
         return True
-    except:
+    except Exception:
         log("⚠️ Não há atos oficias para descompactar")
         return False
 
@@ -226,7 +227,7 @@ def get_xml_files(xml_dir: str) -> str:
         log(f"📁 Arquivo {file_name} salvo.")
         return file_path
 
-    except:
+    except Exception:
         return ""
 
 
