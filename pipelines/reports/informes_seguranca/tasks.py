@@ -340,7 +340,7 @@ Mismatched descriptions for CID '{cid}':
 
     email_string = utils.compress_message_whitespace(email_string)
 
-    email_kb = len(email_string)/1000
+    email_kb = len(email_string) / 1000
     log(f"Final HTML is ~{email_kb:.2f} KB", level="warning" if email_kb > 100 else "info")
     return (email_string, False)
 
@@ -353,7 +353,7 @@ def send_email(
     recipients: dict,
     error: bool,
     date: Optional[str] = None,
-    write_to_file_instead: bool = False
+    write_to_file_instead: bool = False,
 ):
     requested_dt = parse_date_or_today(date, subtract_days_from_today=1)
     formatted_date = requested_dt.strftime("%d/%m/%Y")
