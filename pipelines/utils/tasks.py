@@ -1096,8 +1096,27 @@ def query_table_from_bigquery(sql_query: str, env: str = "dev") -> pd.DataFrame:
 
 
 @task()
-def is_equal(value, target):
-    return value == target
+def is_equal(a, b):
+    """
+    Returns `a == b`
+    """
+    return a == b
+
+
+@task()
+def OR(a: bool, b: bool) -> bool:
+    """
+    Returns `a or b`
+    """
+    return a or b
+
+
+@task()
+def AND(a: bool, b: bool) -> bool:
+    """
+    Returns `a and b`
+    """
+    return a and b
 
 
 @task
@@ -1384,10 +1403,9 @@ FROM `{PROJECT}.{DATASET}.{TABLE}`
     log(
         f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)"
     )
-    # Fallback caso por algum motivo não tenha nenhum destinatário
+    # Erro caso por algum motivo não tenha nenhum destinatário
     if len(to_addresses) + len(cc_addresses) + len(bcc_addresses) <= 0:
-        log(f"No recipient left! Defaulting to maintainer", level="warning")
-        to_addresses.append("matheus.avellar@dados.rio")
+        raise ValueError("Email has no recipients!")
 
     return {
         "to_addresses": to_addresses,

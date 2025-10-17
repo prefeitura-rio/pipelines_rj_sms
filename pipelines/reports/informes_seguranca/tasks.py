@@ -3,17 +3,17 @@
 # flake8: noqa E501
 
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Tuple
 
 import pytz
 import requests
 from google.cloud import bigquery
-from google.cloud.bigquery.table import RowIterator
 from prefect.engine.signals import FAIL
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
+from pipelines.utils.tasks import get_bigquery_project_from_environment
 from pipelines.utils.time import get_age_from_birthdate, parse_date_or_today
 
 from . import utils as utils
@@ -22,50 +22,33 @@ from .constants import informes_seguranca_constants
 
 @task(nout=2)
 def fetch_cids(environment: str, date: str) -> Tuple[list | str, bool]:
-    # Aqui temos duas opções para filtar em SQL pelos CIDs desejados:
-    # - ~70 `starts_with()`s seguidos, em uma corrente de `or`;
-    # - um regexp_contains recebendo `^(cid1|cid2|cid3|....)`.
-    # Acho que em termos de custo ambos dão no mesmo, mas o RegEx é mais
-    # limpinho arrumadinho então vamos com ele
-    CIDs = informes_seguranca_constants.CIDS.value
-    regex = f"^({'|'.join(CIDs)})"
-
-    project = "rj-sms"
-    dataset = "saude_historico_clinico"
-    episode_table = "episodio_assistencial"
-    patient_table = "paciente"
+    project = get_bigquery_project_from_environment.run(environment=environment)
+    dataset = informes_seguranca_constants.DATASET.value
+    episode_table = informes_seguranca_constants.TABLE.value
 
     # Se requisitou data específica, usa; senão, pega data de ontem
     requested_dt = parse_date_or_today(date, subtract_days_from_today=1)
     formatted_date = requested_dt.strftime("%Y-%m-%d")
     query = f"""
-        select distinct
-            ep.prontuario.id_prontuario_global as id_prontuario,
+        select
+            paciente.cpf,
+            paciente.nome,
+            paciente.nome_social,
+            paciente.data_nascimento,
+
             entrada_datahora as entrada,
             saida_datahora as saida,
+
             estabelecimento.id_cnes as cnes,
             estabelecimento.nome as estabelecimento,
-            case
-                when paciente_cpf is null or paciente_cpf in ("", "None")
-                then null
-                else paciente_cpf
-            end as cpf,
-            pac.dados.nome as nome,
-            pac.dados.nome_social as nome_social,
-            paciente.data_nascimento as data_nascimento,
-            condicao.id as cid,
-            condicao.descricao as cid_descricao,
-            condicao.situacao as cid_situacao
-        from `{project}.{dataset}.{episode_table}` ep,
-            unnest(ep.condicoes) condicao
-        left join `{project}.{dataset}.{patient_table}` pac
-            on safe_cast(ep.paciente_cpf as INT64) = pac.cpf_particao
+
+            prontuario.id_prontuario_local as id_prontuario,
+            prontuario.fornecedor as fornecedor,
+
+            cid.id as cid,
+            cid.descricao as cid_descricao
+        from `{project}.{dataset}.{episode_table}`
         where data_particao = "{formatted_date}"
-            and regexp_contains(condicao.id, r'{regex}')
-        qualify row_number() over (
-            partition by entrada, cnes, cpf, cid
-            order by saida desc
-        ) = 1
         order by
             cid asc,
             coalesce(nome_social, nome) asc nulls last
@@ -99,15 +82,15 @@ def build_email(cids: list | str, date: str | None, error: bool) -> Tuple[str, b
     requested_dt = parse_date_or_today(date, subtract_days_from_today=1)
     formatted_date = requested_dt.strftime("%d/%m/%Y")
     # Aqui temos as seguintes colunas:
-    # - id_prontuario -- ID ou no formato "<CNES>.<número>", ou UUID4
-    # - entrada, saida -- data/hora no formato 'YYYY-MM-DDThh:mm:ss'; saída pode ser null
-    # - cnes, estabelecimento -- identificadores da unidade de saúde, não modificamos
     # - cpf -- pode ser null
     # - nome, nome_social -- podem ser null
     # - data_nascimento -- formato YYYY-MM-DD, pode ser null
+    # - entrada, saida -- data/hora no formato 'YYYY-MM-DDThh:mm:ss'; saída pode ser null
+    # - cnes, estabelecimento -- identificadores da unidade de saúde, não modificamos
+    # - id_prontuario -- ID ou no formato "<CNES>.<número>", ou UUID4
+    # - fornecedor -- 'vitai' ou 'vitacare'
     # - cid -- formato [A-Z][0-9]{2,3}
     # - cid_descricao -- descrição em português do CID específico
-    # - cid_situacao -- status do CID reportado; pode ser "ATIVO", "RESOLVIDO" ou "NAO ESPECIFICADO"
     log(f"Got {len(cids)} total occurrence(s)")
 
     if len(cids) <= 0:
@@ -129,6 +112,7 @@ def build_email(cids: list | str, date: str | None, error: bool) -> Tuple[str, b
     unknown_patients = 0
     for row in cids:
         record_id = row["id_prontuario"]
+        record_provider = row["fornecedor"]
 
         dt_entrada = utils.format_datetime(row["entrada"])
         dt_saida = utils.format_datetime(row["saida"])
@@ -140,10 +124,7 @@ def build_email(cids: list | str, date: str | None, error: bool) -> Tuple[str, b
 
         # `<a href="esse link enorme aí">...</a>` é muito byte, precisei tirar :\
         # url = f"https://cnes.datasus.gov.br/pages/estabelecimentos/consulta.jsp?search={cnes}"
-        health_unit_str = f"""
-        <small>{estabelecimento} (CNES {cnes})
-        </small>
-        """
+        health_unit_str = f"<small>{estabelecimento} (CNES {cnes})</small>"
 
         cpf = row["cpf"]
         cpfs_with_occurrence.add(cpf)
@@ -157,34 +138,38 @@ def build_email(cids: list | str, date: str | None, error: bool) -> Tuple[str, b
         age = get_age_from_birthdate(isoformat_if(row["data_nascimento"]))
         cid = row["cid"]
         cid_descricao = row["cid_descricao"]
-        cid_situacao = row["cid_situacao"]
 
         if cid not in occurrences:
             occurrences[cid] = []
 
         occurrence_obj = {
             "id": record_id,
+            "provider": record_provider,
             "name": name_str,
             "age": f", {age} ano{'' if age < 2 else 's'}" if age else "",
             "health_unit": health_unit_str,
             "entry": dt_entrada,
             "exit": dt_saida,
-            "status": cid_situacao,
         }
         occurrences[cid].append(occurrence_obj)
 
         if cid in descriptions and cid_descricao != descriptions[cid]:
-            log(
-                f"Mismatched descriptions for CID '{cid}':\n\t'{descriptions[cid]}';\n\t'{cid_descricao}'",
-                level="warning",
-            )
+            warn = f"""
+Mismatched descriptions for CID '{cid}':
+\t'{descriptions[cid]}';
+\t'{cid_descricao}'
+            """.strip()
+
             # Aqui temos zero possibilidade de saber qual o correto
             # Ao invés disso, tentamos pegar o mais 'completo'
             # Ex.: "forca" é pior que "força"
             if len(re.findall(r"[çãáàéõóíú]", cid_descricao, re.IGNORECASE) or []) > len(
                 re.findall(r"[çãáàéõóíú]", descriptions[cid], re.IGNORECASE) or []
             ):
+                log(f"{warn}\nPicked '{cid_descricao}'", level="warning")
                 descriptions[cid] = cid_descricao
+            else:
+                log(f"{warn}\nPicked '{descriptions[cid]}'", level="warning")
         else:
             descriptions[cid] = cid_descricao
 
@@ -305,38 +290,27 @@ def build_email(cids: list | str, date: str | None, error: bool) -> Tuple[str, b
             elif do_space_bottom and is_last_child:
                 custom_margin = "margin:0 0 1em"
 
-            has_exit_dt = bool(patient["exit"])
-            id_is_uuid4 = bool(
-                re.fullmatch(
-                    r"[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+\-[A-Z0-9]+", str(patient["id"])
-                )
-            )
-
-            # TODO: ficou de fora por ora: patient["status"] (status do CID)
+            # (i) Ficou de fora por ora status do CID (ativo, etc), mas tem na tabela
             email_string += f"""
             <li style="{custom_margin};padding:4px 8px;background:#fafafa">
                 <div>{patient["name"]}{patient["age"]}</div>
                 <div>{patient["health_unit"]}</div>
                 <div>
-                    <small style="padding:2px 4px;background:#eee{
-                        ";margin-right:4px" if has_exit_dt or not id_is_uuid4 else ""
-                    }">Entrada: {
+                    <small style="padding:2px 4px;background:#eee;margin-right:4px">Entrada: {
                         patient["entry"]
                     }</small>
             """
             if patient["exit"]:
                 email_string += f"""
-                    <small style="padding:2px 4px;background:#eee{
-                        ";margin-right:4px" if not id_is_uuid4 else ""
-                    }">Saída: {
+                    <small style="padding:2px 4px;background:#eee;margin-right:4px">Saída: {
                         patient["exit"]
                     }</small>
                 """
 
-            # Para economizar espaço, vamos ignorar supostos IDs de prontuários Vitai, que
-            # vêm como UUIDv4. Ex.: ABCDEF01-1234-4ABC-DEF0-ABCDEF012345
-            if not id_is_uuid4:
-                email_string += f"""<font size=1 color="#778">Prontuário [{patient["id"]}]</font>"""
+            # Se for Vitai, usa "Boletim #####"; se for Vitacare, "Prontuário #####"
+            email_string += f"""<font size=1 color="#778">{
+                "Boletim" if patient["provider"] == "vitai" else "Prontuário"
+            } {patient["id"]}</font>"""
 
             email_string += f"""
                 </div>
@@ -365,10 +339,9 @@ def build_email(cids: list | str, date: str | None, error: bool) -> Tuple[str, b
     """
 
     email_string = utils.compress_message_whitespace(email_string)
-    # FIXME
-    with open("abc.html", "w") as f:
-        f.write(email_string)
 
+    email_kb = len(email_string)/1000
+    log(f"Final HTML is ~{email_kb:.2f} KB", level="warning" if email_kb > 100 else "info")
     return (email_string, False)
 
 
@@ -380,17 +353,29 @@ def send_email(
     recipients: dict,
     error: bool,
     date: Optional[str] = None,
+    write_to_file_instead: bool = False
 ):
     requested_dt = parse_date_or_today(date, subtract_days_from_today=1)
     formatted_date = requested_dt.strftime("%d/%m/%Y")
 
     request_headers = {"x-api-key": token}
+    # Cria objeto sem conteúdo da mensagem em si
     request_body = {
         **recipients,
         "subject": f"Comunicação de CIDs – {formatted_date}",
-        "body": message,
         "is_html_body": not error,
     }
+
+    # Testando localmente, faz sentido não enviar um email a cada teste; esse parâmetro
+    # permite que, ao invés de um email, o resultado seja escrito em um arquivo local
+    if write_to_file_instead:
+        log(request_body)
+        with open("infseg.preview.html", "w") as f:
+            f.write(message)
+        return
+
+    # Adiciona corpo da mensagem em si
+    request_body["body"] = message
 
     if api_base_url.endswith("/"):
         api_base_url = api_base_url.rstrip("/?#")

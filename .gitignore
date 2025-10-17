@@ -13,6 +13,8 @@ setup.py
 *.hdf
 .DS_Store
 run.py
+## Output local de Inf.Seg.
+infseg.preview.html
 
 
 # Byte-compiled / optimized / DLL files
