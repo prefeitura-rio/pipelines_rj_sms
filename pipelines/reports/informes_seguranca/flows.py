@@ -9,7 +9,7 @@ from prefect.storage import GCS
 from pipelines.constants import constants
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_email_recipients, get_secret_key
+from pipelines.utils.tasks import OR, get_email_recipients, get_secret_key
 
 from .constants import informes_seguranca_constants
 from .schedules import schedule
@@ -26,9 +26,10 @@ with Flow(
     #####################################
     # Parameters
     #####################################
-    ENVIRONMENT = Parameter("environment")
+    ENVIRONMENT = Parameter("environment", default="dev")
     DATE = Parameter("date", default=None)
     OVERRIDE_RECIPIENTS = Parameter("override_recipients", default=None)
+    WRITE_FILE_SKIP_EMAIL = Parameter("write_file_skip_email", default=False)
 
     #####################################
     # Tasks
@@ -38,12 +39,14 @@ with Flow(
 
     message, build_error = build_email(cids=results, date=DATE, error=fetch_error)
 
+    has_error = OR(a=fetch_error, b=build_error)
+
     recipients = get_email_recipients(
         environment=ENVIRONMENT,
         dataset="brutos_sheets",
         table="seguranca_destinatarios",
         recipients=OVERRIDE_RECIPIENTS,
-        error=(fetch_error or build_error),
+        error=has_error,
     )
 
     URL = get_secret_key(
@@ -61,8 +64,9 @@ with Flow(
         token=TOKEN,
         message=message,
         recipients=recipients,
-        error=(fetch_error or build_error),
+        error=has_error,
         date=DATE,
+        write_to_file_instead=WRITE_FILE_SKIP_EMAIL,
     )
 
 
