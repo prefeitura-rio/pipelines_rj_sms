@@ -154,8 +154,8 @@ datalake_extract_vitai_db_operator.run_config = KubernetesRun(
     labels=[
         global_constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="12Gi",
-    memory_request="12Gi",
+    memory_limit="4Gi",
+    memory_request="1Gi",
 )
 
 with Flow(
