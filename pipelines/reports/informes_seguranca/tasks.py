@@ -258,6 +258,10 @@ Mismatched descriptions for CID '{cid}':
                 # Ativa flag para espaçamento no fim da lista
                 do_space_bottom = True
 
+        if cid not in descriptions:
+            log(f"CID '{cid}' lacks description!", level="warning")
+            descriptions[cid] = "(CID sem descrição)"
+
         # Cabeçalho de CID
         email_string += f"""
         <tr>
