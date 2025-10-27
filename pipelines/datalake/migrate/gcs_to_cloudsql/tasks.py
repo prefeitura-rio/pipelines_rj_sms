@@ -146,7 +146,8 @@ def send_sequential_api_requests(
             # Garante que não existe database com esse nome
             # https://cloud.google.com/sql/docs/sqlserver/create-manage-databases#delete
             # Se já não existir, vai dar o seguinte warning (mas ainda HTTP 200):
-            # > ERROR_SQL_SERVER_EXTERNAL_WARNING: Warn: database vitacare_historic_xxxx doesn't exist
+            # > ERROR_SQL_SERVER_EXTERNAL_WARNING: Warn:
+            #   database vitacare_historic_xxxx doesn't exist
             # Chama a API e espera a operação terminar
             utils.call_api("DELETE", f"/instances/{instance_name}/databases/{database_name}")
             utils.wait_for_operations(instance_name, label="DELETE")

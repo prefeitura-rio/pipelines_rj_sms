@@ -4,7 +4,7 @@
 
 import io
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Tuple
 
 import pandas as pd
@@ -22,7 +22,6 @@ from .constants import constants
 from .utils import (
     format_relevant_entry,
     format_tcm_case,
-    get_current_edition,
     get_current_year,
     get_latest_extraction_status,
 )
@@ -450,85 +449,6 @@ WHERE data_publicacao = '{DATE}'
         </font>
     """
     return (CURRENT_VPS_EDITION, False, re.sub(r"\s{2,}\<", "<", final_email_string))
-
-
-@task(max_retries=5, retry_delay=timedelta(minutes=3))
-def get_email_recipients(
-    environment: str = "prod", recipients: list = None, error: bool = False
-) -> dict:
-    # Se queremos sobrescrever os recipientes do email
-    # (ex. enviar somente para uma pessoa, para teste)
-    if recipients is not None:
-        if type(recipients) is str:
-            recipients = [recipients]
-        if type(recipients) is list or type(recipients) is tuple:
-            recipients = list(recipients)
-            log(f"Overriding recipients ({len(recipients)}): {recipients}")
-            return {
-                "to_addresses": recipients,
-                "cc_addresses": [],
-                "bcc_addresses": [],
-            }
-        log(f"Unrecognized type for `recipients`: '{type(recipients)}'; ignoring")
-
-    client = bigquery.Client()
-    project_name = get_bigquery_project_from_environment.run(environment=environment)
-
-    DATASET = "brutos_sheets"
-    TABLE = "cdi_destinatarios"
-
-    QUERY = f"""
-SELECT email, tipo, recebe_erro
-FROM `{project_name}.{DATASET}.{TABLE}`
-    """
-    log(f"Querying `{project_name}.{DATASET}.{TABLE}` for email recipients...")
-    rows = [row.values() for row in client.query(QUERY).result()]
-    log(f"Found {len(rows)} row(s)")
-
-    to_addresses = []
-    cc_addresses = []
-    bcc_addresses = []
-    for email, kind, gets_errors in rows:
-        email = str(email).strip()
-        kind = str(kind).lower().strip()
-        gets_errors = str(gets_errors).lower().strip() == "true"
-        if not email:
-            continue
-        if "@" not in email:
-            log(f"Recipient '{email}' does not contain '@'; skipping", level="warning")
-            continue
-
-        should_get = (error and gets_errors) or not error
-        if should_get:
-            if kind == "to":
-                to_addresses.append(email)
-            elif kind == "cc":
-                cc_addresses.append(email)
-            elif kind == "bcc":
-                bcc_addresses.append(email)
-            elif kind == "skip":
-                continue
-            else:
-                log(
-                    f"Recipient type '{kind}' (for '{email}') not recognized; skipping",
-                    level="warning",
-                )
-        else:
-            log(f"Skipping recipient '{email}' because they are not configured to receive errors")
-
-    log(
-        f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)"
-    )
-    # Fallback caso por algum motivo não tenha nenhum destinatário
-    if len(to_addresses) + len(cc_addresses) + len(bcc_addresses) <= 0:
-        log(f"No recipient left! Defaulting to maintainer", level="warning")
-        to_addresses.append("matheus.avellar@dados.rio")
-
-    return {
-        "to_addresses": to_addresses,
-        "cc_addresses": cc_addresses,
-        "bcc_addresses": bcc_addresses,
-    }
 
 
 @task
