@@ -64,11 +64,11 @@ def build_param_list(
     target_name: str,
     datetime_column: str,
     partition_column: str,
-    start_dates: tuple, 
+    start_dates: tuple,
     end_dates: tuple,
-    rename_flow: bool
-):         
-              
+    rename_flow: bool,
+):
+
     return [
         {
             "operator_key": None,

@@ -5,7 +5,6 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from pipelines.datalake.extract_load.vitai_db.tasks import build_param_list
 
 from pipelines.constants import constants as global_constants
 
@@ -24,6 +23,7 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
     vitai_db_extraction_schedule,
 )
 from pipelines.datalake.extract_load.vitai_db.tasks import (
+    build_param_list,
     create_working_time_range,
     define_queries,
     run_query,
