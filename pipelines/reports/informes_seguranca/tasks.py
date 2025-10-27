@@ -163,9 +163,9 @@ Mismatched descriptions for CID '{cid}':
             # Aqui temos zero possibilidade de saber qual o correto
             # Ao invés disso, tentamos pegar o mais 'completo'
             # Ex.: "forca" é pior que "força"
-            if len(re.findall(r"[çãáàéõóíú]", cid_descricao, re.IGNORECASE) or []) > len(
-                re.findall(r"[çãáàéõóíú]", descriptions[cid], re.IGNORECASE) or []
-            ):
+            if not descriptions[cid] or len(
+                re.findall(r"[çãáàéõóíú]", cid_descricao, re.IGNORECASE) or []
+            ) > len(re.findall(r"[çãáàéõóíú]", descriptions[cid], re.IGNORECASE) or []):
                 log(f"{warn}\nPicked '{cid_descricao}'", level="warning")
                 descriptions[cid] = cid_descricao
             else:
@@ -258,7 +258,7 @@ Mismatched descriptions for CID '{cid}':
                 # Ativa flag para espaçamento no fim da lista
                 do_space_bottom = True
 
-        if cid not in descriptions:
+        if cid not in descriptions or not descriptions[cid]:
             log(f"CID '{cid}' lacks description!", level="warning")
             descriptions[cid] = "(CID sem descrição)"
 
