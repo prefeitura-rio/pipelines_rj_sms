@@ -184,68 +184,6 @@ with Flow(
     owners=[
         global_constants.HERIAN_ID.value,
     ],
-) as datalake_extract_vitai_db_manager:
-    ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    WINDOW_SIZE = Parameter("window_size", default=7)
-
-    TABLE_NAME = Parameter("table_name", default="")
-    SCHEMA_NAME = Parameter("schema_name", default="basecentral")
-    DT_COLUMN = Parameter("datetime_column", default="datahora")
-    TARGET_NAME = Parameter("target_name", default="")
-    PARTITION_COLUMN = Parameter("partition_column", default="datalake_loaded_at")
-
-    rename_current_flow_run(
-        name_template="""Manager '{schema_name}.{table_name}' - Janela: {window_size} ({environment})""",  # noqa
-        schema_name=SCHEMA_NAME,
-        table_name=TABLE_NAME,
-        window_size=WINDOW_SIZE,
-        environment=ENVIRONMENT,
-    )
-
-    bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
-
-    progress_table = load_operators_progress(
-        slug=vitai_db_constants.SLUG_NAME.value, project_name=bigquery_project
-    )
-
-    params = build_param_list(
-        environment=ENVIRONMENT,
-        table_name=TABLE_NAME,
-        schema_name=SCHEMA_NAME,
-        datetime_column=DT_COLUMN,
-        target_name=TARGET_NAME,
-        window_size=WINDOW_SIZE,
-        partition_column=PARTITION_COLUMN,
-    )
-
-    remaining_runs = get_remaining_operators(
-        progress_table=progress_table, all_operators_params=params
-    )
-
-    project_name = get_project_name(environment=ENVIRONMENT)
-
-    current_flow_run_labels = get_current_flow_labels()
-
-    created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Operator"),
-        project_name=unmapped(project_name),
-        parameters=remaining_runs,
-        labels=unmapped(current_flow_run_labels),
-    )
-
-    wait_runs_task = wait_for_flow_run.map(
-        flow_run_id=created_flow_runs,
-        stream_states=unmapped(True),
-        stream_logs=unmapped(True),
-        raise_final_state=unmapped(True),
-    )
-
-with Flow(
-    name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Manager",
-    state_handlers=[handle_flow_state_change],
-    owners=[
-        global_constants.HERIAN_ID.value,
-    ],
 ) as datalake_extract_vitai_db_manager2:
 
     ###########################
