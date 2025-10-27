@@ -1,10 +1,21 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
+
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants as global_constants
+
+# Refatoração do Manager
+from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
+    build_operator_parameters,
+    check_records,
+    generate_extraction_windows,
+    parse_date,
+    run_siscan_scraper,
+)
 from pipelines.datalake.extract_load.vitai_db.constants import (
     constants as vitai_db_constants,
 )
@@ -16,6 +27,14 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_working_time_range,
     define_queries,
     run_query,
+)
+from pipelines.datalake.utils.tasks import (
+    delete_file,
+    extrair_fim,
+    extrair_inicio,
+    prepare_df_from_disk,
+    rename_current_flow_run,
+    upload_from_disk,
 )
 from pipelines.utils.basics import as_dict, is_null_or_empty
 from pipelines.utils.credential_injector import (
@@ -40,25 +59,7 @@ from pipelines.utils.tasks import (
     rename_current_flow_run,
     upload_df_to_datalake,
 )
-
-# Refatoração do Manager
-from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
-    build_operator_parameters,
-    check_records,
-    generate_extraction_windows,
-    parse_date,
-    run_siscan_scraper,
-)
-from pipelines.datalake.utils.tasks import (
-    delete_file,
-    extrair_fim,
-    extrair_inicio,
-    prepare_df_from_disk,
-    rename_current_flow_run,
-    upload_from_disk,
-)
 from pipelines.utils.time import from_relative_date
-from datetime import datetime
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Operator",
@@ -250,20 +251,19 @@ with Flow(
     ###########################
     # Parâmetros
     ###########################
-    
+
     # Originais
     TABLE_NAME = Parameter("table_name", default="")
     SCHEMA_NAME = Parameter("schema_name", default="basecentral")
     DT_COLUMN = Parameter("datetime_column", default="datahora")
     TARGET_NAME = Parameter("target_name", default="")
     PARTITION_COLUMN = Parameter("partition_column", default="datalake_loaded_at")
-    
+
     # Refatoração
     ENVIRONMENT = Parameter("environment", default="dev")
     RELATIVE_DATE = Parameter("relative_date", default="M-1")
     DIAS_POR_OPERATOR = Parameter("range", default=7)
     RENAME_FLOW = Parameter("rename_flow", default=True)
-    
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
@@ -293,15 +293,15 @@ with Flow(
 
     # Adicionar os parâmetros do flow operator
     operator_params = build_operator_parameters(
-        datetime_column = DT_COLUMN,
+        datetime_column=DT_COLUMN,
         environment=ENVIRONMENT,
         interval_end=interval_ends,
         interval_start=interval_starts,
         partition_column=PARTITION_COLUMN,
-        schema_name=SCHEMA_NAME,        
+        schema_name=SCHEMA_NAME,
         table_name=TABLE_NAME,
         target_name=TARGET_NAME,
-        batch_size=10000
+        batch_size=10000,
     )
 
     # Cria e espera a execução das flow runs
@@ -318,8 +318,8 @@ with Flow(
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
-    )   
-    
+    )
+
 datalake_extract_vitai_db_manager2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
 datalake_extract_vitai_db_manager2.executor = LocalDaskExecutor(num_workers=1)
 datalake_extract_vitai_db_manager2.run_config = KubernetesRun(
