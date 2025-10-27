@@ -5,6 +5,7 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from pipelines.datalake.extract_load.vitai_db.tasks import build_param_list
 
 from pipelines.constants import constants as global_constants
 
@@ -23,7 +24,6 @@ from pipelines.datalake.extract_load.vitai_db.schedules import (
     vitai_db_extraction_schedule,
 )
 from pipelines.datalake.extract_load.vitai_db.tasks import (
-    build_param_list,
     create_working_time_range,
     define_queries,
     run_query,
@@ -184,7 +184,7 @@ with Flow(
     owners=[
         global_constants.HERIAN_ID.value,
     ],
-) as datalake_extract_vitai_db_manager2:
+) as datalake_extract_vitai_db_manager:
 
     ###########################
     # Parâmetros
@@ -230,16 +230,16 @@ with Flow(
     current_labels = get_current_flow_labels()
 
     # Adicionar os parâmetros do flow operator
-    operator_params = build_operator_parameters(
+    operator_params = build_param_list(
         datetime_column=DT_COLUMN,
         environment=ENVIRONMENT,
-        interval_end=interval_ends,
-        interval_start=interval_starts,
+        end_dates=interval_ends,
+        start_dates=interval_starts,
         partition_column=PARTITION_COLUMN,
         schema_name=SCHEMA_NAME,
         table_name=TABLE_NAME,
         target_name=TARGET_NAME,
-        batch_size=10000,
+        rename_flow=RENAME_FLOW,
     )
 
     # Cria e espera a execução das flow runs
@@ -258,9 +258,9 @@ with Flow(
         raise_final_state=unmapped(True),
     )
 
-datalake_extract_vitai_db_manager2.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
-datalake_extract_vitai_db_manager2.executor = LocalDaskExecutor(num_workers=1)
-datalake_extract_vitai_db_manager2.run_config = KubernetesRun(
+datalake_extract_vitai_db_manager.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
+datalake_extract_vitai_db_manager.executor = LocalDaskExecutor(num_workers=1)
+datalake_extract_vitai_db_manager.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[
         global_constants.RJ_SMS_AGENT_LABEL.value,

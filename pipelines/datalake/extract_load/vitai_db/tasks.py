@@ -64,37 +64,26 @@ def build_param_list(
     target_name: str,
     datetime_column: str,
     partition_column: str,
-    window_size: int = 7,
-):
-    curr_year = pd.Timestamp.now().year
-
-    params = []
-    for year in range(2012, curr_year + 1):
-        for window in calculate_windows.run(year=year, window_size=window_size):
-            start, end = window
-            operator_key = calculate_operator_key.run(
-                schema_name=schema_name,
-                table_name=table_name,
-                target_name=target_name,
-                interval_start=start,
-                window_size=window_size,
-            )
-            params.append(
-                {
-                    "operator_key": operator_key,
-                    "interval_start": start,
-                    "interval_end": end,
-                    "schema_name": schema_name,
-                    "table_name": table_name,
-                    "datetime_column": datetime_column,
-                    "target_name": target_name,
-                    "environment": environment,
-                    "partition_column": partition_column,
-                    "rename_flow": True,
-                }
-            )
-
-    return params
+    start_dates: tuple, 
+    end_dates: tuple,
+    rename_flow: bool
+):         
+              
+    return [
+        {
+            "operator_key": None,
+            "interval_start": start,
+            "interval_end": end,
+            "schema_name": schema_name,
+            "table_name": table_name,
+            "datetime_column": datetime_column,
+            "target_name": target_name,
+            "environment": environment,
+            "partition_column": partition_column,
+            "rename_flow": rename_flow,
+        }
+        for start, end in zip(start_dates, end_dates)
+    ]
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=20))
