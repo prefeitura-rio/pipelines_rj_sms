@@ -118,7 +118,7 @@ def get_latest_vote(ctid: str):
         not_allowed_text = "não liberado para consulta"
         if not_allowed_text in div.get_text():
             log("Votes not available for this case", level="warning")
-            return None
+            return f"{HOST}/processo/Ficha?ctid={ctid}"
         # Caso contrário, presume que existe voto disponível, retorna o URL
         log("Votes are available but unreachable for this case", level="warning")
         return f"{HOST}/InteiroTeor/Index?ctid={ctid}"
@@ -191,7 +191,7 @@ def get_latest_vote(ctid: str):
                 return download
 
     log("Could not find counselor vote", level="warning")
-    return None
+    return f"{HOST}/InteiroTeor/Index?ctid={ctid}"
 
 
 @task()
