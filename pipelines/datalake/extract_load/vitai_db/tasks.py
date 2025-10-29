@@ -215,4 +215,3 @@ def upload_to_native_table(
 
     log("✅ Upload concluído com sucesso.", level="info")
     return
-
