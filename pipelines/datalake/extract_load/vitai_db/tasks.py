@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 
+from google.api_core.exceptions import NotFound
 import pandas as pd
+from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -166,3 +168,51 @@ def run_query(
     df["partition_date"] = pd.to_datetime(df[partition_column]).dt.date
 
     return df
+
+@task
+def upload_to_native_table(
+    df: pd.DataFrame,
+    table_id: str,
+    dataset_id: str,
+    if_exists: str,
+    partition_column: str,
+):
+    """
+    Envia um DataFrame para uma tabela nativa no BigQuery, com suporte a particionamento.
+
+    Args:
+        df (pd.DataFrame): O DataFrame a ser carregado.
+        table_id (str): O ID da tabela de destino no BigQuery.
+        dataset_id (str): O ID do dataset de destino no BigQuery.
+        if_exists (str): Ação a ser tomada se a tabela já existir ('append' ou 'replace').
+        partition_column (str): O nome da coluna a ser usada para o particionamento de tempo.
+    """
+    client = bigquery.Client()
+    project_id = client.project
+    table_ref = client.dataset(dataset_id, project=project_id).table(table_id)
+
+    # Garante que o dataset exista
+    try:
+        client.get_dataset(dataset_id)
+    except NotFound:
+        log(f"⚠️ Dataset {dataset_id} não encontrado, criando...", level="info")
+        client.create_dataset(dataset_id, exists_ok=True)
+
+    # Configuração do job de carregamento
+    job_config = bigquery.LoadJobConfig(
+        write_disposition="WRITE_APPEND" if if_exists == "append" else "WRITE_TRUNCATE",
+        time_partitioning=bigquery.TimePartitioning(
+            type_=bigquery.TimePartitioningType.DAY,
+            field=partition_column,
+        ),
+        # Para este caso, vamos deixar o BigQuery inferir o schema.
+        autodetect=True,
+    )
+
+    log(f"⬆️ Enviando {len(df)} linhas para a tabela {project_id}.{dataset_id}.{table_id}...")
+    job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
+    job.result()
+
+    log("✅ Upload concluído com sucesso.", level="info")
+    return
+    

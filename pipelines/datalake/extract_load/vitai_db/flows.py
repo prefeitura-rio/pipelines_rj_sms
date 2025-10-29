@@ -9,13 +9,7 @@ from prefect.storage import GCS
 from pipelines.constants import constants as global_constants
 
 # Refatoração do Manager
-from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
-    build_operator_parameters,
-    check_records,
-    generate_extraction_windows,
-    parse_date,
-    run_siscan_scraper,
-)
+from pipelines.datalake.extract_load.siscan_web_laudos.tasks import generate_extraction_windows
 from pipelines.datalake.extract_load.vitai_db.constants import (
     constants as vitai_db_constants,
 )
@@ -27,14 +21,12 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_working_time_range,
     define_queries,
     run_query,
+    upload_to_native_table
 )
 from pipelines.datalake.utils.tasks import (
-    delete_file,
     extrair_fim,
     extrair_inicio,
-    prepare_df_from_disk,
-    rename_current_flow_run,
-    upload_from_disk,
+    rename_current_flow_run
 )
 from pipelines.utils.basics import as_dict, is_null_or_empty
 from pipelines.utils.credential_injector import (
@@ -45,11 +37,7 @@ from pipelines.utils.credential_injector import (
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
-from pipelines.utils.progress import (
-    get_remaining_operators,
-    load_operators_progress,
-    save_operator_progress,
-)
+from pipelines.utils.progress import save_operator_progress
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     create_folder,
@@ -143,18 +131,27 @@ with Flow(
     #####################################
     # Tasks section #5 - Partitioning Data
     #####################################
-    upload_to_datalake_task = upload_df_to_datalake.map(
+    
+    # upload_to_datalake_task = upload_df_to_datalake.map(
+    #     df=dataframes,
+    #     partition_column=unmapped(PARTITION_COLUMN),
+    #     table_id=unmapped(TARGET_NAME),
+    #     dataset_id=unmapped(vitai_db_constants.DATASET_NAME.value),
+    #     if_exists=unmapped("replace"),
+    #     source_format=unmapped("parquet"),
+    #     if_storage_data_exists=unmapped("replace"),
+    #     biglake_table=unmapped(True),
+    #     dataset_is_public=unmapped(False),
+    # )
+    
+    upload_to_datalake_task = upload_to_native_table.map(
         df=dataframes,
-        partition_column=unmapped(PARTITION_COLUMN),
         table_id=unmapped(TARGET_NAME),
         dataset_id=unmapped(vitai_db_constants.DATASET_NAME.value),
         if_exists=unmapped("replace"),
-        source_format=unmapped("parquet"),
-        if_storage_data_exists=unmapped("replace"),
-        biglake_table=unmapped(True),
-        dataset_is_public=unmapped(False),
+        partition_column=unmapped(PARTITION_COLUMN)
     )
-
+    
     #####################################
     # Tasks section #7 - Saving Progress
     #####################################

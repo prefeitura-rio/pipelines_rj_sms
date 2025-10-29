@@ -12,4 +12,4 @@ class constants(Enum):
     """
 
     SLUG_NAME = "historico_vitai_db"
-    DATASET_NAME = "brutos_prontuario_vitai"
+    DATASET_NAME = "brutos_prontuario_vitai_bc_staging"
