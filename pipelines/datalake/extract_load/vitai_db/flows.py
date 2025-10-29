@@ -9,7 +9,9 @@ from prefect.storage import GCS
 from pipelines.constants import constants as global_constants
 
 # Refatoração do Manager
-from pipelines.datalake.extract_load.siscan_web_laudos.tasks import generate_extraction_windows
+from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
+    generate_extraction_windows,
+)
 from pipelines.datalake.extract_load.vitai_db.constants import (
     constants as vitai_db_constants,
 )
@@ -21,12 +23,12 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_working_time_range,
     define_queries,
     run_query,
-    upload_to_native_table
+    upload_to_native_table,
 )
 from pipelines.datalake.utils.tasks import (
     extrair_fim,
     extrair_inicio,
-    rename_current_flow_run
+    rename_current_flow_run,
 )
 from pipelines.utils.basics import as_dict, is_null_or_empty
 from pipelines.utils.credential_injector import (
@@ -64,7 +66,7 @@ with Flow(
     TABLE_NAME = Parameter("table_name", default="")
     SCHEMA_NAME = Parameter("schema_name", default="basecentral")
     DT_COLUMN = Parameter("datetime_column", default="datahora")
-    DATASET_NAME = Parameter("dataset_name", default='brutos_prontuario_vitai_bc_staging')
+    DATASET_NAME = Parameter("dataset_name", default="brutos_prontuario_vitai_bc_staging")
     TARGET_NAME = Parameter("target_name", default="")
     INTERVAL_START = Parameter("interval_start", default=None)
     INTERVAL_END = Parameter("interval_end", default=None)
@@ -137,9 +139,9 @@ with Flow(
         table_id=unmapped(TARGET_NAME),
         dataset_id=unmapped(DATASET_NAME),
         if_exists=unmapped("replace"),
-        partition_column=unmapped(PARTITION_COLUMN)
+        partition_column=unmapped(PARTITION_COLUMN),
     )
-    
+
     #####################################
     # Tasks section #7 - Saving Progress
     #####################################
@@ -179,7 +181,7 @@ with Flow(
     TABLE_NAME = Parameter("table_name", default="")
     SCHEMA_NAME = Parameter("schema_name", default="basecentral")
     DT_COLUMN = Parameter("datetime_column", default="datahora")
-    DATASET_NAME = Parameter("dataset_name", default='brutos_prontuario_vitai_bc_staging')
+    DATASET_NAME = Parameter("dataset_name", default="brutos_prontuario_vitai_bc_staging")
     TARGET_NAME = Parameter("target_name", default="")
     PARTITION_COLUMN = Parameter("partition_column", default="datalake_loaded_at")
 

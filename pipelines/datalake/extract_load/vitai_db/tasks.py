@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 
-from google.api_core.exceptions import NotFound
 import pandas as pd
+from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -169,6 +169,7 @@ def run_query(
 
     return df
 
+
 @task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=5))
 def upload_to_native_table(
     df: pd.DataFrame,
@@ -205,7 +206,7 @@ def upload_to_native_table(
             type_=bigquery.TimePartitioningType.DAY,
             field=partition_column,
         ),
-        autodetect=True # BigQuery infere o schema
+        autodetect=True,  # BigQuery infere o schema
     )
 
     log(f"⬆️  Enviando {len(df)} linhas para a tabela {table_id} em {project_id}...")
@@ -214,4 +215,3 @@ def upload_to_native_table(
 
     log("✅ Upload concluído com sucesso.", level="info")
     return
-    
