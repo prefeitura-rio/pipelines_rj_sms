@@ -168,8 +168,8 @@ flow_vitacare_historic_operator_v2.executor = LocalDaskExecutor(num_workers=1)
 flow_vitacare_historic_operator_v2.run_config = KubernetesRun(
     image=global_constants.DOCKER_IMAGE.value,
     labels=[global_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="8Gi",
-    memory_request="8Gi",
+    memory_limit="4Gi",
+    memory_request="4Gi",
 )
 
 flow_vitacare_historic_manager_v2.schedule = vitacare_historico_manager_schedule
