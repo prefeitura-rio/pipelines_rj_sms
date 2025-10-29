@@ -169,7 +169,7 @@ def run_query(
 
     return df
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=120), timeout=timedelta(minutes=5))
 def upload_to_native_table(
     df: pd.DataFrame,
     table_id: str,
@@ -205,11 +205,10 @@ def upload_to_native_table(
             type_=bigquery.TimePartitioningType.DAY,
             field=partition_column,
         ),
-        # Para este caso, vamos deixar o BigQuery inferir o schema.
-        autodetect=True,
+        autodetect=True # BigQuery infere o schema
     )
 
-    log(f"⬆️ Enviando {len(df)} linhas para a tabela {project_id}.{dataset_id}.{table_id}...")
+    log(f"⬆️  Enviando {len(df)} linhas para a tabela {table_id} em {project_id}...")
     job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
     job.result()
 

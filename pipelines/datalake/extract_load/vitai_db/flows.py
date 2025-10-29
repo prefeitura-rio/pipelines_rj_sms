@@ -64,6 +64,7 @@ with Flow(
     TABLE_NAME = Parameter("table_name", default="")
     SCHEMA_NAME = Parameter("schema_name", default="basecentral")
     DT_COLUMN = Parameter("datetime_column", default="datahora")
+    DATASET_NAME = Parameter("dataset_name", default='brutos_prontuario_vitai_bc_staging')
     TARGET_NAME = Parameter("target_name", default="")
     INTERVAL_START = Parameter("interval_start", default=None)
     INTERVAL_END = Parameter("interval_end", default=None)
@@ -131,23 +132,10 @@ with Flow(
     #####################################
     # Tasks section #5 - Partitioning Data
     #####################################
-    
-    # upload_to_datalake_task = upload_df_to_datalake.map(
-    #     df=dataframes,
-    #     partition_column=unmapped(PARTITION_COLUMN),
-    #     table_id=unmapped(TARGET_NAME),
-    #     dataset_id=unmapped(vitai_db_constants.DATASET_NAME.value),
-    #     if_exists=unmapped("replace"),
-    #     source_format=unmapped("parquet"),
-    #     if_storage_data_exists=unmapped("replace"),
-    #     biglake_table=unmapped(True),
-    #     dataset_is_public=unmapped(False),
-    # )
-    
     upload_to_datalake_task = upload_to_native_table.map(
         df=dataframes,
         table_id=unmapped(TARGET_NAME),
-        dataset_id=unmapped(vitai_db_constants.DATASET_NAME.value),
+        dataset_id=unmapped(DATASET_NAME),
         if_exists=unmapped("replace"),
         partition_column=unmapped(PARTITION_COLUMN)
     )
@@ -191,6 +179,7 @@ with Flow(
     TABLE_NAME = Parameter("table_name", default="")
     SCHEMA_NAME = Parameter("schema_name", default="basecentral")
     DT_COLUMN = Parameter("datetime_column", default="datahora")
+    DATASET_NAME = Parameter("dataset_name", default='brutos_prontuario_vitai_bc_staging')
     TARGET_NAME = Parameter("target_name", default="")
     PARTITION_COLUMN = Parameter("partition_column", default="datalake_loaded_at")
 
@@ -236,6 +225,7 @@ with Flow(
         schema_name=SCHEMA_NAME,
         table_name=TABLE_NAME,
         target_name=TARGET_NAME,
+        dataset_name=DATASET_NAME,
         rename_flow=RENAME_FLOW,
     )
 
