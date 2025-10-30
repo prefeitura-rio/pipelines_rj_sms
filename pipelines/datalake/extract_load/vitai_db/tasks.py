@@ -20,13 +20,13 @@ def create_working_time_range(
         start = pd.Timestamp.now(tz="America/Sao_Paulo") - pd.Timedelta(days=7)
         log(f"Interval start not provided. Using {start}.", level="warning")
     else:
-        start = pd.to_datetime(interval_start)
+        start = pd.to_datetime(interval_start, dayfirst=True)
 
     if not interval_end:
         end = pd.Timestamp.now(tz="America/Sao_Paulo")
         log("Interval end not provided. Getting current timestamp.", level="warning")
     else:
-        end = pd.to_datetime(interval_end)
+        end = pd.to_datetime(interval_end, dayfirst=True)
 
     return start, end
 
