@@ -63,6 +63,7 @@ def build_param_list(
     environment: str,
     schema_name: str,
     table_name: str,
+    dataset_name: str,
     target_name: str,
     datetime_column: str,
     partition_column: str,
@@ -81,6 +82,7 @@ def build_param_list(
             "datetime_column": datetime_column,
             "target_name": target_name,
             "environment": environment,
+            "dataset_name": dataset_name,
             "partition_column": partition_column,
             "rename_flow": rename_flow,
         }
