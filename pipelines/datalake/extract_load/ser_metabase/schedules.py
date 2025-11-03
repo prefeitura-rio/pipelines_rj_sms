@@ -15,10 +15,19 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.ser_metabase.constants import DATABASE_IDS
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
+scheduled_tables = [
+    "FATO_AMBULATORIO",
+    "FATO_INTERNACAO",
+    # "FATO_HISTORICO_SOLICITACAO",
+]
+
 flow_parameters = []
 for dataset_name, dataset_config in DATABASE_IDS.items():
     db_id = dataset_config["id"]
     for table_name, table_data in dataset_config["tables"].items():
+        if table_name not in scheduled_tables:
+            continue
+
         table_id = table_data["id"]
         flow_parameters.append(
             {
