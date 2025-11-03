@@ -17,8 +17,8 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 scheduled_tables = [
     "FATO_AMBULATORIO",
-    # "FATO_HISTORICO_SOLICITACAO",
     "FATO_INTERNACAO",
+    # "FATO_HISTORICO_SOLICITACAO",
 ]
 
 flow_parameters = []
