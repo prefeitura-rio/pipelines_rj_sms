@@ -36,7 +36,7 @@ def parse_date(date: str) -> datetime.datetime:
     return parse_date_or_today(date)
 
 
-@task(max_retries=1, retry_delay=timedelta(minutes=20))
+@task(max_retries=3, retry_delay=timedelta(minutes=10))
 def login(enviroment: str = "dev"):
 
     password = get_secret_key.run(
@@ -86,7 +86,7 @@ def login(enviroment: str = "dev"):
     return session
 
 
-@task(max_retries=1, retry_delay=timedelta(minutes=20))
+@task(max_retries=3, retry_delay=timedelta(minutes=10))
 def download_files(
     session: requests.Session, sections: str, date: datetime.datetime
 ) -> list | None:
@@ -132,7 +132,7 @@ def download_files(
                 files.append(file_path)
         elif response.status_code == 404:
             log(f"❌ Arquivo não encontrado: {date_to_extract + '-' + dou_section + '.zip'}")
-            return
+            raise Exception("Arquivo não encontrado.")
 
     log("✅ Requisições feitas com sucesso.")
 
