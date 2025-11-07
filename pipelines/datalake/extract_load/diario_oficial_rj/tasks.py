@@ -21,7 +21,7 @@ from pipelines.utils.tasks import upload_df_to_datalake
 from pipelines.utils.time import parse_date_or_today
 
 
-@task(max_retries=1, retry_delay=timedelta(minutes=20))
+@task(max_retries=3, retry_delay=timedelta(minutes=10))
 def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[str]:
     date = parse_date_or_today(date).strftime("%Y-%m-%d")
 
@@ -60,7 +60,7 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
     return result
 
 
-@task(max_retries=1, retry_delay=timedelta(minutes=20))
+@task(max_retries=3, retry_delay=timedelta(minutes=10))
 def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
     assert len(diario_id_date) == 2, "Tuple must be (id, date) pair!"
     diario_id = diario_id_date[0]
