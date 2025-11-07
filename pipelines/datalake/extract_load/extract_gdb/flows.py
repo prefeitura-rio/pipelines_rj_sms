@@ -11,9 +11,9 @@ from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 
 from .tasks import (
-    request_export,
     check_export_status,
     extract_compressed,
+    request_export,
     upload_to_bigquery,
 )
 
@@ -40,28 +40,14 @@ with Flow(
     with case(FROM_ZIP, False):
         task_id = request_export(uri=URI, environment=ENVIRONMENT)
         result_uri = check_export_status(uuid=task_id, environment=ENVIRONMENT)
-        path = extract_compressed(
-            uri=result_uri,
-            environment=ENVIRONMENT
-        )
+        path = extract_compressed(uri=result_uri, environment=ENVIRONMENT)
         upload_to_bigquery(
-            path=path,
-            dataset=DATASET,
-            uri=URI,
-            refdate=DATA_REFERENCIA,
-            environment=ENVIRONMENT
+            path=path, dataset=DATASET, uri=URI, refdate=DATA_REFERENCIA, environment=ENVIRONMENT
         )
     with case(FROM_ZIP, True):
-        path = extract_compressed(
-            uri=URI,
-            environment=ENVIRONMENT
-        )
+        path = extract_compressed(uri=URI, environment=ENVIRONMENT)
         upload_to_bigquery(
-            path=path,
-            dataset=DATASET,
-            uri=URI,
-            refdate=DATA_REFERENCIA,
-            environment=ENVIRONMENT
+            path=path, dataset=DATASET, uri=URI, refdate=DATA_REFERENCIA, environment=ENVIRONMENT
         )
 
 

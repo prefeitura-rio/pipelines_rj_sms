@@ -3,5 +3,6 @@
 
 from enum import Enum
 
+
 class constants(Enum):
     API_URL = "https://extractgdb.dados.rio"

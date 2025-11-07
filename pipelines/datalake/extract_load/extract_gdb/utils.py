@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
+import datetime
 import re
 import tempfile
+
 import pytz
 import requests
-import datetime
-from loguru import logger
-
 from google.cloud import storage
+from loguru import logger
 
 from pipelines.utils.tasks import get_secret_key
 
@@ -28,24 +28,14 @@ def get_bearer_token(environment: str = "dev") -> str:
     # Se não, precisamos obter um token novo
 
     username = get_secret_key.run(
-        environment=environment,
-        secret_name="GDB_EXPORT_USERNAME",
-        secret_path="/????"  # FIXME
+        environment=environment, secret_name="GDB_EXPORT_USERNAME", secret_path="/????"  # FIXME
     )
     password = get_secret_key.run(
-        environment=environment,
-        secret_name="GDB_EXPORT_PASSWORD",
-        secret_path="/????"  # FIXME
+        environment=environment, secret_name="GDB_EXPORT_PASSWORD", secret_path="/????"  # FIXME
     )
 
     base_url = flow_constants.API_URL.value
-    resp = requests.post(
-        f"{base_url}/token",
-        data={
-            "username": username,
-            "password": password
-        }
-    )
+    resp = requests.post(f"{base_url}/token", data={"username": username, "password": password})
     resp.raise_for_status()
     json = resp.json()
     if "access_token" not in json:
@@ -56,10 +46,9 @@ def get_bearer_token(environment: str = "dev") -> str:
     seconds_left = max(0, json["expires_in"] - 30)
     logger.info(f"Access token obtained; expires in {(seconds_left/60):.1f} min")
     # Salva data/hora de expiração
-    shared["expires"] = (
-        datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-        + datetime.timedelta(seconds=seconds_left)
-    )
+    shared["expires"] = datetime.datetime.now(
+        tz=pytz.timezone("America/Sao_Paulo")
+    ) + datetime.timedelta(seconds=seconds_left)
     # Pega token e salva para reuso
     token = json["access_token"]
     shared["token"] = token
@@ -71,9 +60,7 @@ def authenticated_post(endpoint: str, json: dict, enviroment: str = "dev") -> di
 
     base_url = flow_constants.API_URL.value
     resp = requests.post(
-        f"{base_url}{endpoint}/",
-        json=json,
-        headers={ "Authorization": f"Bearer {token}" }
+        f"{base_url}{endpoint}/", json=json, headers={"Authorization": f"Bearer {token}"}
     )
     resp.raise_for_status()
     return resp.json()
@@ -83,16 +70,13 @@ def authenticated_get(endpoint: str, enviroment: str = "dev") -> dict:
     token = get_bearer_token(environment=enviroment)
 
     base_url = flow_constants.API_URL.value
-    resp = requests.get(
-        f"{base_url}{endpoint}/",
-        headers={ "Authorization": f"Bearer {token}" }
-    )
+    resp = requests.get(f"{base_url}{endpoint}/", headers={"Authorization": f"Bearer {token}"})
     resp.raise_for_status()
     return resp.json()
 
 
 def inverse_exponential_backoff(iteration: int, initial: int, base: int, minimum: int):
-    return max(initial / (base ** iteration), minimum)
+    return max(initial / (base**iteration), minimum)
 
 
 def download_gcs_to_file(gcs_uri: str):
