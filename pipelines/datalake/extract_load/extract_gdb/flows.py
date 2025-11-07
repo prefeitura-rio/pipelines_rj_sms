@@ -1,0 +1,77 @@
+# -*- coding: utf-8 -*-
+# pylint: disable=C0103
+# flake8: noqa E501
+from prefect import Parameter, case
+from prefect.executors import LocalDaskExecutor
+from prefect.run_configs import KubernetesRun
+from prefect.storage import GCS
+
+from pipelines.constants import constants
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
+
+from .tasks import (
+    request_export,
+    check_export_status,
+    extract_compressed,
+    upload_to_bigquery,
+)
+
+with Flow(
+    name="DataLake - Extração e Carga de Dados - Arquivos GDB",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.AVELLAR_ID.value,
+    ],
+) as extract_gdb:
+
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    URI = Parameter("gs_uri", required=True)
+    DATASET = Parameter("dataset", default="brutos_gdb_cnes", required=True)
+    # No caso do CNES, aqui seria o mês referência do backup
+    # Ex.: "2025-08" para o backup de agosto/2025
+    DATA_REFERENCIA = Parameter("data_referencia", default=None)
+    # Se você JÁ extraiu o .GDB para um .ZIP (e deu algum erro ou precisou parar
+    # o flow antes do upload pro BigQuery) você pode re-executar o flow com os
+    # exatos mesmos parâmetros, mas com `from_zip: true`, e ele pega o .ZIP com
+    # mesmo nome do .GDB no URI do outro parâmetro e faz o upload pra você
+    FROM_ZIP = Parameter("from_zip", default=False, required=True)
+
+    with case(FROM_ZIP, False):
+        task_id = request_export(uri=URI, environment=ENVIRONMENT)
+        result_uri = check_export_status(uuid=task_id, environment=ENVIRONMENT)
+        path = extract_compressed(
+            uri=result_uri,
+            environment=ENVIRONMENT
+        )
+        upload_to_bigquery(
+            path=path,
+            dataset=DATASET,
+            uri=URI,
+            refdate=DATA_REFERENCIA,
+            environment=ENVIRONMENT
+        )
+    with case(FROM_ZIP, True):
+        path = extract_compressed(
+            uri=URI,
+            environment=ENVIRONMENT
+        )
+        upload_to_bigquery(
+            path=path,
+            dataset=DATASET,
+            uri=URI,
+            refdate=DATA_REFERENCIA,
+            environment=ENVIRONMENT
+        )
+
+
+extract_gdb.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+extract_gdb.executor = LocalDaskExecutor(num_workers=1)
+extract_gdb.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    memory_limit="3Gi",
+    memory_request="2Gi",
+)
