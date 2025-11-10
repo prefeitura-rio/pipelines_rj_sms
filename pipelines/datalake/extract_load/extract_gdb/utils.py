@@ -11,8 +11,8 @@ from loguru import logger
 
 from pipelines.utils.tasks import get_secret_key
 
-from .constants import constants as flow_constants
 from . import shared
+from .constants import constants as flow_constants
 
 
 def get_bearer_token(environment: str = "dev") -> str:
@@ -65,7 +65,9 @@ def authenticated_request(
     token = get_bearer_token(environment=enviroment)
 
     base_url = flow_constants.API_URL.value
-    resp = requests.request(method, f"{base_url}{endpoint}/", json=json, headers={"Authorization": f"Bearer {token}"})
+    resp = requests.request(
+        method, f"{base_url}{endpoint}/", json=json, headers={"Authorization": f"Bearer {token}"}
+    )
     # Possível que o token salvo seja inválido (ex. servidor reiniciou no meio tempo)
     if resp.status_code == 401:
         # Limpa 'cache'
@@ -74,13 +76,18 @@ def authenticated_request(
         token = get_bearer_token(environment=enviroment)
         # Tenta requisição mais uma vez
         resp = requests.request(
-            method, f"{base_url}{endpoint}/", json=json, headers={"Authorization": f"Bearer {token}"}
+            method,
+            f"{base_url}{endpoint}/",
+            json=json,
+            headers={"Authorization": f"Bearer {token}"},
         )
     resp.raise_for_status()
     return resp.json()
 
+
 def authenticated_post(endpoint: str, json: dict, enviroment: str = "dev") -> dict:
     return authenticated_request("POST", endpoint, json, enviroment=enviroment)
+
 
 def authenticated_get(endpoint: str, enviroment: str = "dev") -> dict:
     return authenticated_request("GET", endpoint, None, enviroment=enviroment)
