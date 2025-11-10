@@ -2,6 +2,7 @@
 import datetime
 import re
 import tempfile
+from typing import Literal, Optional, Union
 
 import pytz
 import requests
@@ -11,19 +12,19 @@ from loguru import logger
 from pipelines.utils.tasks import get_secret_key
 
 from .constants import constants as flow_constants
-from .shared import shared
+from . import shared
 
 
 def get_bearer_token(environment: str = "dev") -> str:
     # Se já temos um token salvo
-    if "token" in shared and "expires" in shared:
+    if "token" in shared.token and "expires" in shared.token:
         # Verifica se o token ainda está ativo
-        expires_in = shared["expires"]
+        expires_in = shared.token["expires"]
         now = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         # Se sim, retorna ele mesmo
         if expires_in < now:
             logger.info("Reusing previous access token")
-            return shared["token"]
+            return shared.token["token"]
         logger.info("Access token expired; obtaining new one")
     # Se não, precisamos obter um token novo
 
@@ -46,33 +47,43 @@ def get_bearer_token(environment: str = "dev") -> str:
     seconds_left = max(0, json["expires_in"] - 30)
     logger.info(f"Access token obtained; expires in {(seconds_left/60):.1f} min")
     # Salva data/hora de expiração
-    shared["expires"] = datetime.datetime.now(
+    shared.token["expires"] = datetime.datetime.now(
         tz=pytz.timezone("America/Sao_Paulo")
     ) + datetime.timedelta(seconds=seconds_left)
     # Pega token e salva para reuso
     token = json["access_token"]
-    shared["token"] = token
+    shared.token["token"] = token
     return token
 
 
-def authenticated_post(endpoint: str, json: dict, enviroment: str = "dev") -> dict:
+def authenticated_request(
+    method: Union[Literal["GET"], Literal["POST"]],
+    endpoint: str,
+    json: Optional[dict],
+    enviroment: str = "dev",
+) -> dict:
     token = get_bearer_token(environment=enviroment)
 
     base_url = flow_constants.API_URL.value
-    resp = requests.post(
-        f"{base_url}{endpoint}/", json=json, headers={"Authorization": f"Bearer {token}"}
-    )
+    resp = requests.request(method, f"{base_url}{endpoint}/", json=json, headers={"Authorization": f"Bearer {token}"})
+    # Possível que o token salvo seja inválido (ex. servidor reiniciou no meio tempo)
+    if resp.status_code == 401:
+        # Limpa 'cache'
+        shared.token = dict()
+        # Obtém novo token
+        token = get_bearer_token(environment=enviroment)
+        # Tenta requisição mais uma vez
+        resp = requests.request(
+            method, f"{base_url}{endpoint}/", json=json, headers={"Authorization": f"Bearer {token}"}
+        )
     resp.raise_for_status()
     return resp.json()
 
+def authenticated_post(endpoint: str, json: dict, enviroment: str = "dev") -> dict:
+    return authenticated_request("POST", endpoint, json, enviroment=enviroment)
 
 def authenticated_get(endpoint: str, enviroment: str = "dev") -> dict:
-    token = get_bearer_token(environment=enviroment)
-
-    base_url = flow_constants.API_URL.value
-    resp = requests.get(f"{base_url}{endpoint}/", headers={"Authorization": f"Bearer {token}"})
-    resp.raise_for_status()
-    return resp.json()
+    return authenticated_request("GET", endpoint, None, enviroment=enviroment)
 
 
 def inverse_exponential_backoff(iteration: int, initial: int, base: int, minimum: int):
@@ -94,22 +105,6 @@ def download_gcs_to_file(gcs_uri: str):
     file_hdl = tempfile.TemporaryFile()
     blob.download_to_file(file_hdl)
     return file_hdl
-
-
-def gdb_name_to_readable(name: str) -> str:
-    # TODO: isso quebra GDBs que não são do CNES?
-    # TODO: queremos fazer essa tradução aqui? ou deixamos pro dbt?
-    from_to = {
-        "LFCES004": "estabelecimento",
-        "LFCES018": "profissional",
-        "LFCES021": "vinculo",
-        "LFCES038": "equipe_vinculo",
-        "LFCES037": "equipe",
-        "NFCES046": "equipe_tipo",
-    }
-    if name in from_to:
-        return from_to[name]
-    return name
 
 
 def format_reference_date(refdate: str | None, uri: str) -> str:

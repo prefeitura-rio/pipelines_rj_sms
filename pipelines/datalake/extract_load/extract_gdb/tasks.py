@@ -22,7 +22,6 @@ from .utils import (
     authenticated_post,
     download_gcs_to_file,
     format_reference_date,
-    gdb_name_to_readable,
     inverse_exponential_backoff,
 )
 
@@ -49,8 +48,8 @@ def check_export_status(uuid: str, environment: str = "dev") -> str:
         status = json["status"]
         if status == "SUCCESS":
             return json["result"]["output"]
-        elif status == "FAILURE":  # TODO: conferir se é isso mesmo
-            raise Exception("Exception raised during extraction")
+        elif status == "FAILURE":
+            raise Exception("Extraction status was FAILURE")
         # sobram aqui de possíveis status:
         # - PENDING (esperando ser executado)
         # - PROGRESS (etapa da execução)
@@ -59,12 +58,12 @@ def check_export_status(uuid: str, environment: str = "dev") -> str:
         if attempts > MAX_ATTEMPTS:
             raise Exception(f"Gave up waiting for export of ID {uuid}")
         # Inverse Exponential Backoff -- começa alto, vai diminuindo
-        # Com parâmetros 300, 1.3 e 30, a função é max(300/1.3^x, 30):
-        #   Espera 300s = 5min na primeira iteração (x = 0)
-        #   Na segunda, espera 230s ~ 4min
-        #   Na terceira, espera 177s ~ 3min
+        # Com parâmetros 420, 1.3 e 30, a função é max(420/1.3^x, 30):
+        #   Espera 420s = 7min na primeira iteração (x = 0)
+        #   Na segunda, espera 323s ~ 5min
+        #   Na terceira, espera 248s ~ 4min
         #   ...
-        #   Na oitava iteração, espera 36s
+        #   Na décima iteração, espera 39s
         #   A partir daí, atinge o mínimo de espera, 30s
         delay = inverse_exponential_backoff(attempts, 300, 1.3, 30)
         logger.info(f"Sleeping for {int(delay)}s")
@@ -121,16 +120,23 @@ def upload_to_bigquery(path: str, dataset: str, uri: str, refdate: str | None, e
             logger.info(f"{file.removesuffix(".csv")} is empty; skipping")
             continue
 
-        # Traduz nomes de tabelas que sabemos o significado
-        table_name = gdb_name_to_readable(file.removesuffix(".csv"))
+        table_name = file.removesuffix(".csv").strip()
         # Remove potenciais caracteres problemáticos em nomes de tabelas
         table_name = re.sub(
             r"_{3,}", "__",  # Limita underlines consecutivos a 2
             re.sub(r"[^A-Za-z0-9_]", "_", table_name)
         )
 
+        # GDB->Legível:
+        #   LFCES004 -> estabelecimento
+        #   LFCES018 -> profissional
+        #   LFCES021 -> vinculo
+        #   LFCES038 -> equipe_vinculo
+        #   LFCES037 -> equipe
+        #   NFCES046 -> equipe_tipo
         # Algumas tabelas requerem um `id_profissional_sus`
-        if table_name in ("vinculo", "profissional", "equipe_vinculo"):
+        # Tabelas `vinculo`, `profissional`, `equipe_vinculo`
+        if table_name in ("LFCES021", "LFCES018", "LFCES038"):
             # Vitoria que descobriu como funciona isso aqui
             df["id_profissional_sus"] = df["PROF_ID"].apply(
                 lambda x: (hashlib.md5(x.encode("utf-8")).hexdigest()).upper()[0:16]
