@@ -39,33 +39,54 @@ def request_export(uri: str, environment: str = "dev") -> str:
 
 @task()
 def check_export_status(uuid: str, environment: str = "dev") -> str:
-    MAX_ATTEMPTS = 120
+    # Aqui, vamos fazer um Inverse Exponential Backoff
+    # Isto é, começamos esperando um tempo alto (INITIAL_BACKOFF_SECONDS) e,
+    # a cada iteração, diminuímos o tempo de espera por algum fator até
+    # atingir o tempo mínimo de espera (MIN_BACKOFF_SECONDS)
+    # A função é da forma max(INITIAL/BASE^x, MIN)
+    INITIAL_BACKOFF_SECONDS = 1200  # 1200 = 20min
+    MIN_BACKOFF_SECONDS = 60
+    BACKOFF_BASE = 1.3
+    # Máximo de vezes que vamos conferir o status da tarefa até desistir dela
+    MAX_ATTEMPTS = 200
+
+    # Para calcular o tempo total esperado, use o WolframAlpha (https://wolframalpha.com/)
+    # Insira: `(sum{x=0,MAX_ATTEMPTS} max(INITIAL/BASE^x, MIN))sec`
+    # Ex.: `(sum{x=0,200} max(1200/1.3^x, 60))sec` retorna ~4h 32min
+    # O GDB de abril/2024 do SIH levou ~3 horas pra baixar e exportar; então precisamos de
+    # pelo menos isso
 
     attempts = -1
     while True:
+        logger.info(f"{attempts+1} / {MAX_ATTEMPTS} ({((attempts+1)/MAX_ATTEMPTS)*100:.2f}%)")
         json = authenticated_get(f"/check/{uuid}", enviroment=environment)
         logger.info(json)
         status = json["status"]
+        # Task terminou e foi bem sucedida
         if status == "SUCCESS":
             return json["result"]["output"]
+        # Task terminou e falhou
         elif status == "FAILURE":
             raise Exception("Extraction status was FAILURE")
-        # sobram aqui de possíveis status:
-        # - PENDING (esperando ser executado)
-        # - PROGRESS (etapa da execução)
+        # Task ainda não foi exectada
+        elif status == "PENDING":
+            # TODO: permitir uma espera maior?
+            # porque se estamos em PENDING, sabe-se la quantas tasks
+            # estão na nossa frente
+            pass
+        # Só sobra como possível status PROGRESS (etapa da execução)
 
         attempts += 1
         if attempts > MAX_ATTEMPTS:
             raise Exception(f"Gave up waiting for export of ID {uuid}")
-        # Inverse Exponential Backoff -- começa alto, vai diminuindo
-        # Com parâmetros 420, 1.3 e 30, a função é max(420/1.3^x, 30):
-        #   Espera 420s = 7min na primeira iteração (x = 0)
-        #   Na segunda, espera 323s ~ 5min
-        #   Na terceira, espera 248s ~ 4min
-        #   ...
-        #   Na décima iteração, espera 39s
-        #   A partir daí, atinge o mínimo de espera, 30s
-        delay = inverse_exponential_backoff(attempts, 300, 1.3, 30)
+
+        # Esperamos cada vez menos tempo para conferir o status da task
+        delay = inverse_exponential_backoff(
+            attempts,
+            INITIAL_BACKOFF_SECONDS,
+            BACKOFF_BASE,
+            MIN_BACKOFF_SECONDS,
+        )
         logger.info(f"Sleeping for {int(delay)}s")
         sleep(delay)
 
@@ -116,31 +137,17 @@ def upload_to_bigquery(path: str, dataset: str, uri: str, refdate: str | None, e
     for file in files:
         csv_path = os.path.join(path, file)
         df = pd.read_csv(csv_path, dtype="unicode", na_filter=False)
+        table_name = file.removesuffix(".csv").strip()
+
         if df.empty:
-            logger.info(f"{file.removesuffix(".csv")} is empty; skipping")
+            logger.info(f"{table_name} is empty; skipping")
             continue
 
-        table_name = file.removesuffix(".csv").strip()
         # Remove potenciais caracteres problemáticos em nomes de tabelas
         table_name = re.sub(
             r"_{3,}", "__",  # Limita underlines consecutivos a 2
             re.sub(r"[^A-Za-z0-9_]", "_", table_name)
         )
-
-        # GDB->Legível:
-        #   LFCES004 -> estabelecimento
-        #   LFCES018 -> profissional
-        #   LFCES021 -> vinculo
-        #   LFCES038 -> equipe_vinculo
-        #   LFCES037 -> equipe
-        #   NFCES046 -> equipe_tipo
-        # Algumas tabelas requerem um `id_profissional_sus`
-        # Tabelas `vinculo`, `profissional`, `equipe_vinculo`
-        if table_name in ("LFCES021", "LFCES018", "LFCES038"):
-            # Vitoria que descobriu como funciona isso aqui
-            df["id_profissional_sus"] = df["PROF_ID"].apply(
-                lambda x: (hashlib.md5(x.encode("utf-8")).hexdigest()).upper()[0:16]
-            )
 
         column_mapping = dict()
         existing_columns = set()

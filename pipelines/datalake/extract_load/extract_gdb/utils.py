@@ -22,7 +22,7 @@ def get_bearer_token(environment: str = "dev") -> str:
         expires_in = shared.token["expires"]
         now = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         # Se sim, retorna ele mesmo
-        if expires_in < now:
+        if now < expires_in:
             logger.info("Reusing previous access token")
             return shared.token["token"]
         logger.info("Access token expired; obtaining new one")
