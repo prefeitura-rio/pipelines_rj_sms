@@ -29,7 +29,7 @@ from .utils import (
 @task()
 def request_export(uri: str, environment: str = "dev") -> str:
     logger.info(f"Requesting export of URI '{uri}'")
-    json = authenticated_post("/export", { "gcs_uri": uri }, enviroment=environment)
+    json = authenticated_post("/export", {"gcs_uri": uri}, enviroment=environment)
     logger.info(json)
     if json["success"] == False:
         raise ValueError("Failed to request export!")
@@ -123,14 +123,13 @@ def extract_compressed(uri: str, environment: str = "dev") -> str:
 
 
 @task()
-def upload_to_bigquery(path: str, dataset: str, uri: str, refdate: str | None, environment: str = "dev") -> str:
+def upload_to_bigquery(
+    path: str, dataset: str, uri: str, refdate: str | None, environment: str = "dev"
+) -> str:
     files = [
         file
         for file in os.listdir(path)
-        if (
-            os.path.isfile(os.path.join(path, file))
-            and file.endswith(".csv")
-        )
+        if (os.path.isfile(os.path.join(path, file)) and file.endswith(".csv"))
     ]
     print(f"Files extracted ({len(files)}): {files[:5]} (first 5)")
 
@@ -145,8 +144,9 @@ def upload_to_bigquery(path: str, dataset: str, uri: str, refdate: str | None, e
 
         # Remove potenciais caracteres problemáticos em nomes de tabelas
         table_name = re.sub(
-            r"_{3,}", "__",  # Limita underlines consecutivos a 2
-            re.sub(r"[^A-Za-z0-9_]", "_", table_name)
+            r"_{3,}",
+            "__",  # Limita underlines consecutivos a 2
+            re.sub(r"[^A-Za-z0-9_]", "_", table_name),
         )
 
         column_mapping = dict()
@@ -154,12 +154,9 @@ def upload_to_bigquery(path: str, dataset: str, uri: str, refdate: str | None, e
         for col in df.columns:
             # Remove tudo que não for letra, dígito e underline
             new_col = re.sub(
-                r"_{3,}", "__",  # Limita underlines consecutivos a 2
-                re.sub(
-                    r"[^A-Za-z0-9_]",
-                    "_",
-                    unicodedata.normalize("NFKD", col)
-                )
+                r"_{3,}",
+                "__",  # Limita underlines consecutivos a 2
+                re.sub(r"[^A-Za-z0-9_]", "_", unicodedata.normalize("NFKD", col)),
             )
             # Garante que não há múltiplas colunas com mesmo nome
             new_col_no_repeats = new_col
@@ -180,7 +177,9 @@ def upload_to_bigquery(path: str, dataset: str, uri: str, refdate: str | None, e
         df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         df["_data_particao"] = format_reference_date(refdate, uri)
 
-        logger.info(f"Uploading table '{table_name}' from DataFrame: {len(df)} rows; columns {list(df.columns)}")
+        logger.info(
+            f"Uploading table '{table_name}' from DataFrame: {len(df)} rows; columns {list(df.columns)}"
+        )
         # Chama a task de upload
         upload_df_to_datalake.run(
             df=df,
@@ -195,4 +194,3 @@ def upload_to_bigquery(path: str, dataset: str, uri: str, refdate: str | None, e
 
     # Apaga pasta temporária
     shutil.rmtree(path, ignore_errors=True)
-
