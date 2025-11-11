@@ -29,14 +29,10 @@ def get_bearer_token(environment: str = "dev") -> str:
     # Se não, precisamos obter um token novo
 
     username = get_secret_key.run(
-        environment=environment,
-        secret_name="USERNAME",
-        secret_path="gdb-extractor"
+        environment=environment, secret_name="USERNAME", secret_path="gdb-extractor"
     )
     password = get_secret_key.run(
-        environment=environment,
-        secret_name="PASSWORD",
-        secret_path="gdb-extractor"
+        environment=environment, secret_name="PASSWORD", secret_path="gdb-extractor"
     )
 
     base_url = flow_constants.API_URL.value
