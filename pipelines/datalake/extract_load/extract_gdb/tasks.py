@@ -53,12 +53,12 @@ def check_export_status(uuid: str, environment: str = "dev") -> str:
     # Para calcular o tempo total esperado, use o WolframAlpha (https://wolframalpha.com/)
     # Insira: `(sum{x=0,MAX_ATTEMPTS} max(INITIAL/BASE^x, MIN))sec`
     # Ex.: `(sum{x=0,200} max(1200/1.3^x, 60))sec` retorna ~4h 32min
-    # O GDB de abril/2024 do SIH levou ~3 horas pra baixar e exportar; então precisamos de
+    # O GDB de abril/2025 do SIH levou ~3 horas pra baixar e exportar; então precisamos de
     # pelo menos isso
 
     attempts = -1
     while True:
-        logger.info(f"{attempts+1} / {MAX_ATTEMPTS} ({((attempts+1)/MAX_ATTEMPTS)*100:.2f}%)")
+        logger.info(f"{attempts+1} / {MAX_ATTEMPTS} ({((attempts+1)/MAX_ATTEMPTS)*100:.1f}%)")
         json = authenticated_get(f"/check/{uuid}", enviroment=environment)
         logger.info(json)
         status = json["status"]
@@ -77,8 +77,14 @@ def check_export_status(uuid: str, environment: str = "dev") -> str:
         # Só sobra como possível status PROGRESS (etapa da execução)
 
         attempts += 1
-        if attempts > MAX_ATTEMPTS:
-            raise Exception(f"Gave up waiting for export of ID {uuid}")
+        if attempts >= MAX_ATTEMPTS:
+            raise Exception(
+                f"Desistiu de aguardar exportação com ID {uuid}. "
+                "A exportação provavelmente ainda está sendo executada pela API! "
+                "Após seu término, você pode re-executar este flow com os mesmos "
+                "parâmetros, mas usando `from_zip=true`, para que ele continue a "
+                "executar a partir da extração do ZIP exportado."
+            )
 
         # Esperamos cada vez menos tempo para conferir o status da task
         delay = inverse_exponential_backoff(
