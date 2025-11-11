@@ -76,11 +76,6 @@ dbt_every_30_minutes_clocks = generate_dump_api_schedules(
     runs_interval_minutes=0,
 )
 
-dbt_clocks = (
-  dbt_daily_clocks
-  + dbt_weekly_clocks
-  + dbt_monthly_clocks
-  + dbt_every_30_minutes_clocks
-)
+dbt_clocks = dbt_daily_clocks + dbt_weekly_clocks + dbt_monthly_clocks + dbt_every_30_minutes_clocks
 
 dbt_schedules = Schedule(clocks=untuple_clocks(dbt_clocks))
