@@ -151,10 +151,7 @@ def upload_to_bigquery(
 
         csv_path = os.path.join(path, file)
         csv_reader = pd.read_csv(
-            csv_path,
-            dtype="unicode",
-            na_filter=False,
-            chunksize=LINES_PER_CHUNK
+            csv_path, dtype="unicode", na_filter=False, chunksize=LINES_PER_CHUNK
         )
         logger.info(f"Uploading {table_name} ({i+1}/{len(files)})")
 
