@@ -28,7 +28,7 @@ from .utils import (
 @task()
 def request_export(uri: str, environment: str = "dev") -> str:
     logger.info(f"Requesting export of URI '{uri}'")
-    json = authenticated_post("/export", {"gcs_uri": uri}, enviroment=environment)
+    json = authenticated_post("/export/", {"gcs_uri": uri}, enviroment=environment)
     logger.info(json)
     if "success" not in json or not json["success"]:
         raise ValueError("Failed to request export!")

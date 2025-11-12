@@ -66,7 +66,7 @@ def authenticated_request(
 
     base_url = flow_constants.API_URL.value
     resp = requests.request(
-        method, f"{base_url}{endpoint}/", json=json, headers={"Authorization": f"Bearer {token}"}
+        method, f"{base_url}{endpoint}", json=json, headers={"Authorization": f"Bearer {token}"}
     )
     # Possível que o token salvo seja inválido (ex. servidor reiniciou no meio tempo)
     if resp.status_code == 401:
