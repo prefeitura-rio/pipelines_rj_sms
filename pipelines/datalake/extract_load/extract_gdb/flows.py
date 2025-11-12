@@ -30,6 +30,8 @@ with Flow(
     DATASET = Parameter("dataset", default="brutos_gdb_cnes", required=True)
     # No caso do CNES, aqui seria o mês referência do backup
     # Ex.: "2025-08" para o backup de agosto/2025
+    # O flow consegue inferir a data referência se o nome do arquivo termina com ela
+    # Ex.: CNES022024.GDB -> 2024-02
     DATA_REFERENCIA = Parameter("data_referencia", default=None)
     # Se você JÁ extraiu o .GDB para um .ZIP (e deu algum erro ou precisou parar
     # o flow antes do upload pro BigQuery) você pode re-executar o flow com os

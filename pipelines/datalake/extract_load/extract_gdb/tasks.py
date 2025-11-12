@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# [ Exportação + upload adaptada do .ipynb da Vitoria 🪦🥀 ]
+# [ Exportação + upload adaptado do .ipynb da Vitoria 🪦🥀 ]
 import datetime
-import hashlib
 import os
 import re
 import shutil
@@ -139,7 +138,7 @@ def upload_to_bigquery(
     ]
     print(f"Files extracted ({len(files)}): {files[:5]} (first 5)")
 
-    for file in files:
+    for i, file in enumerate(files):
         csv_path = os.path.join(path, file)
         df = pd.read_csv(csv_path, dtype="unicode", na_filter=False)
         table_name = file.removesuffix(".csv").strip()
@@ -147,6 +146,7 @@ def upload_to_bigquery(
         if df.empty:
             logger.info(f"{table_name} is empty; skipping")
             continue
+        logger.info(f"Uploading {table_name} ({i+1}/{len(files)})")
 
         # Remove potenciais caracteres problemáticos em nomes de tabelas
         table_name = re.sub(
@@ -186,17 +186,37 @@ def upload_to_bigquery(
         logger.info(
             f"Uploading table '{table_name}' from DataFrame: {len(df)} rows; columns {list(df.columns)}"
         )
-        # Chama a task de upload
-        upload_df_to_datalake.run(
-            df=df,
-            dataset_id=dataset,
-            table_id=table_name,
-            partition_column="_data_particao",
-            if_exists="append",
-            if_storage_data_exists="append",
-            source_format="csv",
-            csv_delimiter=",",
-        )
+        attempt = 0
+        MAX_UPLOAD_ATTEMPTS = 5
+        while True:
+            attempt += 1
+            try:
+                # Chama a task de upload
+                upload_df_to_datalake.run(
+                    df=df,
+                    dataset_id=dataset,
+                    table_id=table_name,
+                    partition_column="_data_particao",
+                    if_exists="append",
+                    if_storage_data_exists="append",
+                    source_format="csv",
+                    csv_delimiter=",",
+                )
+                break
+            # Aqui deu erro de conexão comigo algumas vezes:
+            # > socket.gaierror: [Errno -3] Temporary failure in name resolution
+            # > httplib2.error.ServerNotFoundError:
+            #     Unable to find the server at cloudresourcemanager.googleapis.com
+            # > http.client.RemoteDisconnected: Remote end closed connection without response
+            # > "Something went wrong while setting permissions for BigLake service account [...]"
+            # Então pescamos por um erro e tentamos mais uma vez por via das dúvidas
+            except Exception as e:
+                # Se já tentamos N vezes, desiste e dá erro
+                if attempt > MAX_UPLOAD_ATTEMPTS:
+                    raise e
+                # Senão, pausa por uns segundos e tenta de novo
+                logger.warning(f"{repr(e)}; sleeping for 5s and retrying")
+                sleep(5)
 
     # Apaga pasta temporária
     shutil.rmtree(path, ignore_errors=True)
