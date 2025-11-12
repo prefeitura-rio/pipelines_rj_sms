@@ -7,8 +7,8 @@ from typing import Literal, Optional, Union
 import pytz
 import requests
 from google.cloud import storage
-from loguru import logger
 
+from pipelines.utils.logger import log
 from pipelines.utils.tasks import get_secret_key
 
 from . import shared
@@ -23,9 +23,9 @@ def get_bearer_token(environment: str = "dev") -> str:
         now = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         # Se sim, retorna ele mesmo
         if now < expires_in:
-            logger.info("Reusing previous access token")
+            log("Reusing previous access token")
             return shared.token["token"]
-        logger.info("Access token expired; obtaining new one")
+        log("Access token expired; obtaining new one")
     # Se não, precisamos obter um token novo
 
     username = get_secret_key.run(
@@ -40,12 +40,12 @@ def get_bearer_token(environment: str = "dev") -> str:
     resp.raise_for_status()
     json = resp.json()
     if "access_token" not in json:
-        logger.info(json)
+        log(json)
         raise ValueError("No access token!")
 
     # Tempo de expiração previsto para o token subtraído de 30s
     seconds_left = max(0, json["expires_in"] - 30)
-    logger.info(f"Access token obtained; expires in {(seconds_left/60):.1f} min")
+    log(f"Access token obtained; expires in {(seconds_left/60):.1f} min")
     # Salva data/hora de expiração
     shared.token["expires"] = datetime.datetime.now(
         tz=pytz.timezone("America/Sao_Paulo")

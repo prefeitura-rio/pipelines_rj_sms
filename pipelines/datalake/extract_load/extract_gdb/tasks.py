@@ -11,8 +11,8 @@ from time import sleep
 
 import pandas as pd
 import pytz
-from loguru import logger
 
+from pipelines.utils.logger import log
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import upload_df_to_datalake
 
@@ -27,9 +27,9 @@ from .utils import (
 
 @task()
 def request_export(uri: str, environment: str = "dev") -> str:
-    logger.info(f"Requesting export of URI '{uri}'")
+    log(f"Requesting export of URI '{uri}'")
     json = authenticated_post("/export/", {"gcs_uri": uri}, enviroment=environment)
-    logger.info(json)
+    log(json)
     if "success" not in json or not json["success"]:
         raise ValueError("Failed to request export!")
 
@@ -57,9 +57,9 @@ def check_export_status(uuid: str, environment: str = "dev") -> str:
 
     attempts = -1
     while True:
-        logger.info(f"{attempts+1} / {MAX_ATTEMPTS} ({((attempts+1)/MAX_ATTEMPTS)*100:.1f}%)")
+        log(f"{attempts+1} / {MAX_ATTEMPTS} ({((attempts+1)/MAX_ATTEMPTS)*100:.1f}%)")
         json = authenticated_get(f"/check/{uuid}", enviroment=environment)
-        logger.info(json)
+        log(json)
         status = json["status"]
         # Task terminou e foi bem sucedida
         if status == "SUCCESS":
@@ -92,7 +92,7 @@ def check_export_status(uuid: str, environment: str = "dev") -> str:
             BACKOFF_BASE,
             MIN_BACKOFF_SECONDS,
         )
-        logger.info(f"Sleeping for {int(delay)}s")
+        log(f"Sleeping for {int(delay)}s")
         sleep(delay)
 
 
@@ -104,22 +104,22 @@ def extract_compressed(uri: str, environment: str = "dev") -> str:
     if uri.lower().endswith(".gdb"):
         # Se sim, trocamos por .zip
         uri = f"{uri[:-4]}.zip"
-    logger.info(f"Downloading file at '{uri}'")
+    log(f"Downloading file at '{uri}'")
 
     # Se ainda assim chegamos aqui sem um ZIP, avisa, mas tenta seguir
     # Vai que é um .tar.gz ou algo doido assim e funciona ¯\_(ツ)_/¯
     if not uri.lower().endswith(".zip"):
-        logger.warning("This task expects ZIP files; this will likely throw error")
+        log("This task expects ZIP files; this will likely throw error", level="warning")
 
     file_hdl = download_gcs_to_file(uri)
     temp_dir_path = tempfile.mkdtemp()
 
     try:
         with zipfile.ZipFile(file_hdl, "r") as zip_ref:
-            logger.info(f"Extracting ZIP to temp folder: '{temp_dir_path}'")
+            log(f"Extracting ZIP to temp folder: '{temp_dir_path}'")
             zip_ref.extractall(temp_dir_path)
     except Exception as e:
-        logger.error("Error extracting zip file!")
+        log("Error extracting zip file!", level="error")
         raise e
     finally:
         # Handle de TemporaryFile, então close() apaga o arquivo automaticamente
@@ -136,7 +136,7 @@ def upload_to_bigquery(
         for file in os.listdir(path)
         if (os.path.isfile(os.path.join(path, file)) and file.endswith(".csv"))
     ]
-    logger.info(f"Files extracted ({len(files)}): {files[:5]} (first 5)")
+    log(f"Files extracted ({len(files)}): {files[:5]} (first 5)")
 
     # Lemos o CSV em pedaços para não estourar a memória
     LINES_PER_CHUNK = 100_000
@@ -153,17 +153,17 @@ def upload_to_bigquery(
         csv_reader = pd.read_csv(
             csv_path, dtype="unicode", na_filter=False, chunksize=LINES_PER_CHUNK
         )
-        logger.info(f"Uploading {table_name} ({i+1}/{len(files)})")
+        log(f"Uploading {table_name} ({i+1}/{len(files)})")
 
         # Iteramos por cada pedaço do CSV
         for j, chunk in enumerate(csv_reader):
             # Cria um dataframe a partir do chunk
             df = pd.DataFrame(chunk)
-            logger.info(f"Reading chunk #{j+1} (at most {LINES_PER_CHUNK} lines)")
+            log(f"Reading chunk #{j+1} (at most {LINES_PER_CHUNK} lines)")
 
             # (acho que isso nem é mais possível, porque não entraria no `for`)
             if df.empty:
-                logger.info(f"{table_name} is empty; skipping")
+                log(f"{table_name} is empty; skipping")
                 continue
 
             column_mapping = dict()
@@ -184,7 +184,7 @@ def upload_to_bigquery(
                 existing_columns.add(new_col_no_repeats)
                 # Cria mapeamento do nome da coluna original -> tratado
                 column_mapping[col] = new_col_no_repeats
-            logger.info(column_mapping)
+            log(column_mapping)
 
             # Substitui nomes de colunas pelos nomes tratados
             df.rename(columns=column_mapping, inplace=True)
@@ -194,7 +194,7 @@ def upload_to_bigquery(
             df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
             df["_data_particao"] = format_reference_date(refdate, uri)
 
-            logger.info(
+            log(
                 f"Uploading table '{table_name}' from DataFrame: "
                 f"{len(df)} rows; columns {list(df.columns)}"
             )
@@ -227,7 +227,7 @@ def upload_to_bigquery(
                     if attempt > MAX_UPLOAD_ATTEMPTS:
                         raise e
                     # Senão, pausa por uns segundos e tenta de novo
-                    logger.warning(f"{repr(e)}; sleeping for 5s and retrying")
+                    log(f"{repr(e)}; sleeping for 5s and retrying", level="warning")
                     sleep(5)
 
     # Apaga pasta temporária
