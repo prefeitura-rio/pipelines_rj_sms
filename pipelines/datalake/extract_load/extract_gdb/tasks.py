@@ -136,18 +136,12 @@ def upload_to_bigquery(
         for file in os.listdir(path)
         if (os.path.isfile(os.path.join(path, file)) and file.endswith(".csv"))
     ]
-    print(f"Files extracted ({len(files)}): {files[:5]} (first 5)")
+    logger.info(f"Files extracted ({len(files)}): {files[:5]} (first 5)")
 
+    # Lemos o CSV em pedaços para não estourar a memória
+    LINES_PER_CHUNK = 100_000
     for i, file in enumerate(files):
-        csv_path = os.path.join(path, file)
-        df = pd.read_csv(csv_path, dtype="unicode", na_filter=False)
         table_name = file.removesuffix(".csv").strip()
-
-        if df.empty:
-            logger.info(f"{table_name} is empty; skipping")
-            continue
-        logger.info(f"Uploading {table_name} ({i+1}/{len(files)})")
-
         # Remove potenciais caracteres problemáticos em nomes de tabelas
         table_name = re.sub(
             r"_{3,}",
@@ -155,69 +149,89 @@ def upload_to_bigquery(
             re.sub(r"[^A-Za-z0-9_]", "_", table_name),
         )
 
-        column_mapping = dict()
-        existing_columns = set()
-        for col in df.columns:
-            # Remove tudo que não for letra, dígito e underline
-            new_col = re.sub(
-                r"_{3,}",
-                "__",  # Limita underlines consecutivos a 2
-                re.sub(r"[^A-Za-z0-9_]", "_", unicodedata.normalize("NFKD", col)),
-            )
-            # Garante que não há múltiplas colunas com mesmo nome
-            new_col_no_repeats = new_col
-            repeat_count = 0
-            while new_col_no_repeats in existing_columns:
-                repeat_count += 1
-                new_col_no_repeats = f"{col}_{repeat_count}"
-            existing_columns.add(new_col_no_repeats)
-            # Cria mapeamento do nome da coluna original -> tratado
-            column_mapping[col] = new_col_no_repeats
-        logger.info(column_mapping)
-
-        # Substitui nomes de colunas pelos nomes tratados
-        df.rename(columns=column_mapping, inplace=True)
-
-        # Metadados
-        df["_source_file"] = uri
-        df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-        df["_data_particao"] = format_reference_date(refdate, uri)
-
-        logger.info(
-            f"Uploading table '{table_name}' from DataFrame: "
-            f"{len(df)} rows; columns {list(df.columns)}"
+        csv_path = os.path.join(path, file)
+        csv_reader = pd.read_csv(
+            csv_path,
+            dtype="unicode",
+            na_filter=False,
+            chunksize=LINES_PER_CHUNK
         )
-        attempt = 0
-        MAX_UPLOAD_ATTEMPTS = 5
-        while True:
-            attempt += 1
-            try:
-                # Chama a task de upload
-                upload_df_to_datalake.run(
-                    df=df,
-                    dataset_id=dataset,
-                    table_id=table_name,
-                    partition_column="_data_particao",
-                    if_exists="append",
-                    if_storage_data_exists="append",
-                    source_format="csv",
-                    csv_delimiter=",",
+        logger.info(f"Uploading {table_name} ({i+1}/{len(files)})")
+
+        # Iteramos por cada pedaço do CSV
+        for j, chunk in enumerate(csv_reader):
+            # Cria um dataframe a partir do chunk
+            df = pd.DataFrame(chunk)
+            logger.info(f"Reading chunk #{j+1} (at most {LINES_PER_CHUNK} lines)")
+
+            # (acho que isso nem é mais possível, porque não entraria no `for`)
+            if df.empty:
+                logger.info(f"{table_name} is empty; skipping")
+                continue
+
+            column_mapping = dict()
+            existing_columns = set()
+            for col in df.columns:
+                # Remove tudo que não for letra, dígito e underline
+                new_col = re.sub(
+                    r"_{3,}",
+                    "__",  # Limita underlines consecutivos a 2
+                    re.sub(r"[^A-Za-z0-9_]", "_", unicodedata.normalize("NFKD", col)),
                 )
-                break
-            # Aqui deu erro de conexão comigo algumas vezes:
-            # > socket.gaierror: [Errno -3] Temporary failure in name resolution
-            # > httplib2.error.ServerNotFoundError:
-            #     Unable to find the server at cloudresourcemanager.googleapis.com
-            # > http.client.RemoteDisconnected: Remote end closed connection without response
-            # > "Something went wrong while setting permissions for BigLake service account [...]"
-            # Então pescamos por um erro e tentamos mais uma vez por via das dúvidas
-            except Exception as e:
-                # Se já tentamos N vezes, desiste e dá erro
-                if attempt > MAX_UPLOAD_ATTEMPTS:
-                    raise e
-                # Senão, pausa por uns segundos e tenta de novo
-                logger.warning(f"{repr(e)}; sleeping for 5s and retrying")
-                sleep(5)
+                # Garante que não há múltiplas colunas com mesmo nome
+                new_col_no_repeats = new_col
+                repeat_count = 0
+                while new_col_no_repeats in existing_columns:
+                    repeat_count += 1
+                    new_col_no_repeats = f"{col}_{repeat_count}"
+                existing_columns.add(new_col_no_repeats)
+                # Cria mapeamento do nome da coluna original -> tratado
+                column_mapping[col] = new_col_no_repeats
+            logger.info(column_mapping)
+
+            # Substitui nomes de colunas pelos nomes tratados
+            df.rename(columns=column_mapping, inplace=True)
+
+            # Metadados
+            df["_source_file"] = uri
+            df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+            df["_data_particao"] = format_reference_date(refdate, uri)
+
+            logger.info(
+                f"Uploading table '{table_name}' from DataFrame: "
+                f"{len(df)} rows; columns {list(df.columns)}"
+            )
+            attempt = 0
+            MAX_UPLOAD_ATTEMPTS = 5
+            while True:
+                attempt += 1
+                try:
+                    # Chama a task de upload
+                    upload_df_to_datalake.run(
+                        df=df,
+                        dataset_id=dataset,
+                        table_id=table_name,
+                        partition_column="_data_particao",
+                        if_exists="append",
+                        if_storage_data_exists="append",
+                        source_format="csv",
+                        csv_delimiter=",",
+                    )
+                    break
+                # Aqui deu erro de conexão comigo algumas vezes:
+                # > socket.gaierror: [Errno -3] Temporary failure in name resolution
+                # > httplib2.error.ServerNotFoundError:
+                #     Unable to find the server at cloudresourcemanager.googleapis.com
+                # > http.client.RemoteDisconnected: Remote end closed connection without response
+                # > "Something went wrong while setting permissions for BigLake service account [...]"
+                # Então pescamos por um erro e tentamos mais uma vez por via das dúvidas
+                except Exception as e:
+                    # Se já tentamos N vezes, desiste e dá erro
+                    if attempt > MAX_UPLOAD_ATTEMPTS:
+                        raise e
+                    # Senão, pausa por uns segundos e tenta de novo
+                    logger.warning(f"{repr(e)}; sleeping for 5s and retrying")
+                    sleep(5)
 
     # Apaga pasta temporária
     shutil.rmtree(path, ignore_errors=True)
