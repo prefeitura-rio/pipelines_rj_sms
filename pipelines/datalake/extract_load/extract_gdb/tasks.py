@@ -12,8 +12,8 @@ from time import sleep
 import pandas as pd
 import pytz
 
-from pipelines.utils.logger import log
 from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
 
 from .utils import (
