@@ -30,7 +30,7 @@ def request_export(uri: str, environment: str = "dev") -> str:
     logger.info(f"Requesting export of URI '{uri}'")
     json = authenticated_post("/export", {"gcs_uri": uri}, enviroment=environment)
     logger.info(json)
-    if json["success"] == False:
+    if "success" not in json or not json["success"]:
         raise ValueError("Failed to request export!")
 
     return json["id"]  # Retorna UUID da task criada
@@ -119,7 +119,7 @@ def extract_compressed(uri: str, environment: str = "dev") -> str:
             logger.info(f"Extracting ZIP to temp folder: '{temp_dir_path}'")
             zip_ref.extractall(temp_dir_path)
     except Exception as e:
-        logger.error(f"Error extracting zip file!")
+        logger.error("Error extracting zip file!")
         raise e
     finally:
         # Handle de TemporaryFile, então close() apaga o arquivo automaticamente
@@ -184,7 +184,8 @@ def upload_to_bigquery(
         df["_data_particao"] = format_reference_date(refdate, uri)
 
         logger.info(
-            f"Uploading table '{table_name}' from DataFrame: {len(df)} rows; columns {list(df.columns)}"
+            f"Uploading table '{table_name}' from DataFrame: "
+            f"{len(df)} rows; columns {list(df.columns)}"
         )
         attempt = 0
         MAX_UPLOAD_ATTEMPTS = 5
