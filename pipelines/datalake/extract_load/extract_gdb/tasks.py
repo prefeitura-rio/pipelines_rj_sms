@@ -43,17 +43,16 @@ def check_export_status(uuid: str, environment: str = "dev") -> str:
     # a cada iteração, diminuímos o tempo de espera por algum fator até
     # atingir o tempo mínimo de espera (MIN_BACKOFF_SECONDS)
     # A função é da forma max(INITIAL/BASE^x, MIN)
-    INITIAL_BACKOFF_SECONDS = 1200  # 1200 = 20min
-    MIN_BACKOFF_SECONDS = 60
-    BACKOFF_BASE = 1.3
+    INITIAL_BACKOFF_SECONDS = 60 * 60  # 1h
+    MIN_BACKOFF_SECONDS = 5 * 60  # 5min
+    BACKOFF_BASE = 1.35
     # Máximo de vezes que vamos conferir o status da tarefa até desistir dela
-    MAX_ATTEMPTS = 200
+    MAX_ATTEMPTS = 100
 
     # Para calcular o tempo total esperado, use o WolframAlpha (https://wolframalpha.com/)
     # Insira: `(sum{x=0,MAX_ATTEMPTS} max(INITIAL/BASE^x, MIN))sec`
-    # Ex.: `(sum{x=0,200} max(1200/1.3^x, 60))sec` retorna ~4h 32min
-    # O GDB de abril/2025 do SIH levou ~3 horas pra baixar e exportar; então precisamos de
-    # pelo menos isso
+    # Ex.: `(sum{x=0,100} max(3600/1.35^x, 300))sec` retorna ~11h 15min
+    # O GDB de abr/2025 do SIH levou ~3 horas pra exportar; o de jun/2025 levou ~6h
 
     attempts = -1
     while True:
