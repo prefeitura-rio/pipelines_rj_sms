@@ -279,6 +279,19 @@ weekly_parameters = [
     },
 ]
 
+monthly_parameters = [
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "codigos",
+        "rename_flow": True,
+        "table_id": "codigos_exames",
+        "url": "https://docs.google.com/spreadsheets/d/1IwykWf0glAraHrVDZLJosxuhnpo8AO5EUdj1OSwDqNU",
+        "url_type": "google_sheet",
+    },
+]
+
 
 daily_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
@@ -301,6 +314,16 @@ weekly_clocks = generate_dump_api_schedules(
     runs_interval_minutes=30,
 )
 
-clocks = daily_clocks + weekly_clocks
+monthly_clocks = generate_dump_api_schedules(
+    interval=timedelta(days=30),
+    start_date=datetime(2025, 11, 15, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    flow_run_parameters=monthly_parameters,
+    runs_interval_minutes=30,
+)
+
+clocks = daily_clocks + weekly_clocks + monthly_clocks
 
 daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))
