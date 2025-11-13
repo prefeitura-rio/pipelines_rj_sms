@@ -17,6 +17,7 @@ from pipelines.datalake.extract_load.datasus_ftp.flows import *
 from pipelines.datalake.extract_load.diario_oficial_rj.flows import *
 from pipelines.datalake.extract_load.diario_oficial_uniao.flows import *
 from pipelines.datalake.extract_load.diario_oficial_uniao_api.flows import *
+from pipelines.datalake.extract_load.extract_gdb.flows import *
 from pipelines.datalake.extract_load.gal_gcs.flows import *
 from pipelines.datalake.extract_load.google_sheets.flows import *
 from pipelines.datalake.extract_load.medilab_api.flows import *
