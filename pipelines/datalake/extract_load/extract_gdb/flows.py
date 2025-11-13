@@ -27,7 +27,7 @@ with Flow(
 
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     URI = Parameter("gs_uri", required=True)
-    DATASET = Parameter("dataset", default="brutos_gdb_cnes", required=True)
+    DATASET = Parameter("dataset", default="brutos_gdb_{cnes/sih/sia}", required=True)
     # No caso do CNES, aqui seria o mês referência do backup
     # Ex.: "2025-08" para o backup de agosto/2025
     # O flow consegue inferir a data referência se o nome do arquivo termina com ela
