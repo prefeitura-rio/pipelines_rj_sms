@@ -506,3 +506,9 @@ cases:
     flow_name: report_informes_seguranca
     params:
       environment: "dev"
+
+  - case_slug: prontuario_extraction
+    flow_path: pipelines.datalake.extract_load.prontuario_cgs.flows
+    flow_name: prontuario_extraction
+    params:
+      environment: "dev"
