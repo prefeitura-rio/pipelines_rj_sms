@@ -218,8 +218,9 @@ def send_report(data, environment: str):
     ####################################
     usercount = unique_users if unique_users > 0 else "Nenhum"
     s = "" if unique_users < 2 else "s"
-    interval_text = "meia" if IS_WORKDAY else "1"
-    usage_report_str = f"{usercount} pessoa{s} us{'ou' if unique_users < 2 else 'aram'} o HCI na última {interval_text} hora"
+    ou = "ou" if unique_users < 2 else "aram"
+    meia = "meia" if IS_WORKDAY else "1"
+    usage_report_str = f"{usercount} pessoa{s} us{ou} o HCI na última {meia} hora"
     log(usage_report_str)
     asyncio.run(
         send_discord_webhook(

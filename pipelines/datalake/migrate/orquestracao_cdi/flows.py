@@ -22,7 +22,6 @@ from pipelines.datalake.migrate.orquestracao_cdi.tasks import (
     create_dou_params_dict,
     create_tcm_params_dict,
     fetch_tcm_cases,
-    get_email_recipients,
     get_todays_tcm_from_gcs,
     send_email,
 )
@@ -38,6 +37,7 @@ from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
+    get_email_recipients,
     get_project_name_from_prefect_environment,
     get_secret_key,
 )
@@ -102,7 +102,7 @@ with Flow(
             flow_run_id=[dou_flow_run, dorj_flow_run],
             stream_states=unmapped(True),
             stream_logs=unmapped(True),
-            raise_final_state=unmapped(True),
+            raise_final_state=unmapped(False),
             max_duration=unmapped(timedelta(minutes=60)),
         )
 
@@ -169,7 +169,11 @@ with Flow(
         )
         (edition, error, message) = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
         recipients = get_email_recipients(
-            environment=ENVIRONMENT, recipients=OVERRIDE_RECIPIENTS, error=error
+            environment=ENVIRONMENT,
+            dataset="brutos_sheets",
+            table="cdi_destinatarios",
+            recipients=OVERRIDE_RECIPIENTS,
+            error=error,
         )
         send_email(
             date=DATE,
@@ -195,7 +199,11 @@ with Flow(
         df = get_todays_tcm_from_gcs(environment=ENVIRONMENT, skipped=True)
         (edition, error, message) = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
         recipients = get_email_recipients(
-            environment=ENVIRONMENT, recipients=OVERRIDE_RECIPIENTS, error=error
+            environment=ENVIRONMENT,
+            dataset="brutos_sheets",
+            table="cdi_destinatarios",
+            recipients=OVERRIDE_RECIPIENTS,
+            error=error,
         )
         send_email(
             date=DATE,
