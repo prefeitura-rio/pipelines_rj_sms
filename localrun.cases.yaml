@@ -498,3 +498,49 @@ cases:
       dou_section: 'DO1 DO2 DO3'
       date: "29/08/2025"
       dataset_id: "brutos_diario_oficial"
+  - case_slug: "datalake-bq-subpav"
+    flow_path: "pipelines.datalake.migrate.bq_to_subpav.flows"
+    flow_name: "bq_to_subpav_flow"
+    params:
+      infisical_path: "/smsrio"
+      secret_name: "DB_URL"
+      dataset_id: "projeto_sinanrio"
+      table_id: "sintomaticos_respiratorios_dia"
+      db_schema: "teste_dl"
+      dest_table: "tb_sintomaticos"
+      project: "SINANRIO - Sintomáticos respiratórios"
+      if_exists: "append"
+      notify: true
+      rename_flow: false
+      bq_columns: null
+      custom_insert_query: |
+        INSERT INTO tb_sintomaticos (
+          cpf,
+          condicoes,
+          soap_subjetivo_motivo,
+          soap_objetivo_descricao,
+          soap_avaliacao_observacoes,
+          datahora_fim,
+          nome,
+          data_nascimento,
+          cids_extraidos,
+          rn,
+          created_at
+        )
+        SELECT
+          :cpf,
+          :condicoes,
+          :soap_subjetivo_motivo,
+          :soap_objetivo_descricao,
+          :soap_avaliacao_observacoes,
+          :datahora_fim,
+          :nome,
+          :data_nascimento,
+          :cids_extraidos,
+          :rn,
+          NOW()
+        WHERE NOT EXISTS (
+          SELECT 1 FROM teste_dl.tb_sintomaticos
+          WHERE cpf = :cpf
+            AND DATE(created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND CURDATE()
+        )

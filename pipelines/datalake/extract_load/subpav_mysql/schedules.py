@@ -26,7 +26,7 @@ LABELS = [constants.RJ_SMS_AGENT_LABEL.value]
 # Parâmetros
 # -----------
 # Args: (table_id, schema, frequencia,extra):
-# - frequencia: "monthly", "weekly" ou "per_hour".
+# - frequencia: "daily", "monthly", "weekly" ou "per_hour".
 # - extra: "dump_mode","if_exists","if_storage_data_exists","relative_date_filter"
 
 TABELAS_CONFIG = [
@@ -93,6 +93,9 @@ TABELAS_CONFIG = [
     ("protagonistas", "subpav_acesso_mais_seguro", "monthly"),
     ("riscos", "subpav_acesso_mais_seguro", "monthly"),
     ("status", "subpav_acesso_mais_seguro", "monthly"),
+    # Sinan Rio (Legado)
+    ("tuberculose_sinan", "subpav_sinan", "daily"),
+    ("tb_estabelecimento_saude", "subpav_sinan", "monthly"),
 ]
 
 
@@ -127,6 +130,7 @@ def unpack_params(freq):
 
 monthly_params = unpack_params("monthly")
 weekly_params = unpack_params("weekly")
+daily_params = unpack_params("daily")
 per_hour_params = unpack_params("per_hour")
 
 # Geração dos clocks (agendamentos) para cada grupo de tabelas com frequência específica.
@@ -147,6 +151,15 @@ weekly_clocks = generate_dump_api_schedules(
     runs_interval_minutes=1,
 )
 
+
+daily_clocks = generate_dump_api_schedules(
+    interval=timedelta(days=1),
+    start_date=datetime(2025, 6, 1, 2, 0, tzinfo=RJ_TZ),
+    labels=LABELS,
+    flow_run_parameters=daily_params,
+    runs_interval_minutes=1,
+)
+
 # Antes de usar por hora, verificar com o Pedro
 per_hour_clocks = generate_dump_api_schedules(
     interval=timedelta(hours=1),
@@ -160,7 +173,8 @@ per_hour_clocks = generate_dump_api_schedules(
 # Podem ser usadas individualmente (mensal, semanal, por hora) ou em conjunto.
 subpav_monthly_schedule = Schedule(clocks=untuple_clocks(monthly_clocks))
 subpav_weekly_schedule = Schedule(clocks=untuple_clocks(weekly_clocks))
+subpav_daily_schedule = Schedule(clocks=untuple_clocks(daily_clocks))
 subpav_per_hour_schedule = Schedule(clocks=untuple_clocks(per_hour_clocks))
 subpav_combined_schedule = Schedule(
-    clocks=untuple_clocks(monthly_clocks + weekly_clocks + per_hour_clocks)
+    clocks=untuple_clocks(daily_clocks + monthly_clocks + weekly_clocks + per_hour_clocks)
 )
