@@ -12,7 +12,7 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-flow_parameters = [
+daily_parameters = [
     {
         "url": "https://docs.google.com/spreadsheets/d/1XySagSMiJs22XaYqq6IY372gqLOr4zA3koCpUf0kjOg/edit?usp=sharing",  # noqa: E501
         "url_type": "google_sheet",
@@ -203,17 +203,73 @@ flow_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1jwp5rV3Rwr2NGQy60YQgF47PSFuTcVpE8uKhcrODnRs/edit",  # noqa: E501
         "url_type": "google_sheet",
     },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "Historico",
+        "rename_flow": True,
+        "table_id": "projeto_odontologia_historico",
+        "url": "https://docs.google.com/spreadsheets/d/1Af1SvIhQgvRr_da22Qpveb9VNvwLZai_KR69v8eJ1a8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+    },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "historico_ap",
+        "rename_flow": True,
+        "table_id": "projeto_odontologia_historico_ap",
+        "url": "https://docs.google.com/spreadsheets/d/1Af1SvIhQgvRr_da22Qpveb9VNvwLZai_KR69v8eJ1a8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+    },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "sigtap_odo",
+        "rename_flow": True,
+        "table_id": "projeto_odontologia_sigtap_odo",
+        "url": "https://docs.google.com/spreadsheets/d/1Af1SvIhQgvRr_da22Qpveb9VNvwLZai_KR69v8eJ1a8/edit?usp=sharing",  # noqa: E501
+        "url_type": "google_sheet",
+    },
+]
+
+weekly_parameters = [
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "caps",
+        "rename_flow": True,
+        "table_id": "contatos_caps",
+        "url": "https://docs.google.com/spreadsheets/d/18yQ7o8CRnt-i4nPym0WyzMtVXdd96GvWbQwMQxAHlLM",  # noqa: E501
+        "url_type": "google_sheet",
+    },
 ]
 
 
-clocks = generate_dump_api_schedules(
+daily_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
     start_date=datetime(2023, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    flow_run_parameters=flow_parameters,
+    flow_run_parameters=daily_parameters,
     runs_interval_minutes=3,
 )
+
+weekly_clocks = generate_dump_api_schedules(
+    interval=timedelta(days=7),
+    #                   2025-09-14 foi domingo
+    start_date=datetime(2025, 9, 14, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    flow_run_parameters=weekly_parameters,
+    runs_interval_minutes=30,
+)
+
+clocks = daily_clocks + weekly_clocks
 
 daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))
