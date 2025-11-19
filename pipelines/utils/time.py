@@ -116,7 +116,9 @@ def get_dates_in_range(minimum_date: date | str, maximum_date: date | str) -> li
     return [minimum_date + timedelta(days=i) for i in range((maximum_date - minimum_date).days)]
 
 
-def parse_date_or_today(date: Optional[str]) -> datetime:
+def parse_date_or_today(
+    date: Optional[str], subtract_days_from_today: Optional[int] = None
+) -> datetime:
     """
     Recebe string de data (ex.: "2025-07-18", "30/10/1999")
     e retorna objeto `datetime` a partir dela. Se receber
@@ -145,9 +147,12 @@ def parse_date_or_today(date: Optional[str]) -> datetime:
     if date is None or len(date) <= 0:
         # Retorna a data atual em formato igual ao retornado
         # pelas funções de parsing
-        return datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(
+        today = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(
             hour=0, minute=0, second=0, microsecond=0, tzinfo=None
         )
+        if subtract_days_from_today:
+            return today - timedelta(days=subtract_days_from_today)
+        return today
 
     # Caso contrário, vamos tentar interpretar a string recebida
     date = date.strip()
@@ -159,3 +164,69 @@ def parse_date_or_today(date: Optional[str]) -> datetime:
         return datetime.strptime(date, "%d/%m/%Y")
     # Senão, faz última tentativa de parsing da string, pode dar erro
     return parser.parse(date, ignoretz=True, dayfirst=True)
+
+
+def get_age_from_birthdate(birthdate: str, today: str = None) -> int | None:
+    """
+    Args:
+        birthdate(str): Date in the ISO format: `YYYY-MM-DD`.
+        today(str?): Reference date for what 'today' is, in the ISO format: \
+            `YYYY-MM-DD`. If not specified, `datetime.now(tz=pytz.timezone("America/Sao_Paulo"))` \
+            is used instead.
+
+    Returns:
+        age(int): Age of a person born on the specified date, if possible to calculate \
+            with given values; otherwise, `None` is returned.
+
+    Example usage, if today is 08/oct/2025:
+    >>> get_age_from_birthdate("2024-10-09")  # Not a full year yet
+    0
+    >>> get_age_from_birthdate("2024-10-08")  # Exactly one full year
+    1
+    >>> get_age_from_birthdate("2000-12-31")
+    24
+    >>> get_age_from_birthdate("2000-05-01")
+    25
+    >>> get_age_from_birthdate("1900-01-01")
+    125
+    >>> get_age_from_birthdate("1900-01-01", today="1900-12-31")
+    0
+    >>> get_age_from_birthdate("1900-01-01", today="1901-01-01")
+    1
+    >>> get_age_from_birthdate(None)
+    None
+    >>> get_age_from_birthdate("")
+    None
+    >>> get_age_from_birthdate("banana")
+    [...] WARNING - prefect | Expected date in format `YYYY-MM-DD`; got 'banana'
+    >>> get_age_from_birthdate("2000-01-01", today="banana")
+    [...] WARNING - prefect | Expected reference date in format `YYYY-MM-DD`; got 'banana'
+    """
+    if birthdate is None:
+        return None
+
+    birthdate = str(birthdate).strip()
+    if len(birthdate) <= 0:
+        return None
+
+    if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", birthdate):
+        log(f"Expected date in format `YYYY-MM-DD`; got {repr(birthdate)}", level="warning")
+        return None
+
+    if today is not None and not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", today):
+        log(f"Expected reference date in format `YYYY-MM-DD`; got {repr(today)}", level="warning")
+        return None
+
+    dt_today = (
+        datetime.fromisoformat(today)
+        if today is not None
+        else datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+    )
+    dt_born = datetime.fromisoformat(birthdate)
+
+    # [Ref] https://stackoverflow.com/a/9754466/4824627
+    return (
+        dt_today.year
+        - dt_born.year
+        - int((dt_today.month, dt_today.day) < (dt_born.month, dt_born.day))
+    )

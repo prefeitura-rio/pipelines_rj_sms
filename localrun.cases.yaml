@@ -362,10 +362,9 @@ cases:
     params:
       dataset: 'brutos_cientificalab'
       environment: 'dev'
-      dt_inicio: '2025-08-17T00:00:00-03:00'
-      dt_fim: '2025-08-17T03:59:59-03:00'
+      dt_inicio: '2025-09-30T10:00:00-03:00'
+      dt_fim: '2025-09-30T11:00:00-03:00'
       rename_flow: False
-      ap: 'AP10'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
@@ -423,7 +422,7 @@ cases:
           "title": "Base de Dados SIH"
         }
       ]
-  - case_slug: 'dou-extraction'
+  - case_slug: 'dou-extraction'  # [!] Flow antigo! Prefira o -api
     flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao.flows'
     flow_name: 'extract_diario_oficial_uniao'
     params:
@@ -431,6 +430,14 @@ cases:
       dou_section: 3
       max_workers: 10
       date: ""
+  - case_slug: 'dou-extraction-api'
+    flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao_api.flows'
+    flow_name: 'dou_extraction'
+    params:
+      environment: 'dev'
+      dou_section: 'DO1 DO2 DO3'
+      date: "29/08/2025"
+      dataset_id: "brutos_diario_oficial"
   - case_slug: 'medilab_api'
     flow_path: 'pipelines.datalake.extract_load.medilab_api.flows'
     flow_name: 'flow_medilab_api'
@@ -481,62 +488,29 @@ cases:
       table_name: "CURATIVOS"
       db_schema: "dbo"
       partition_column: "extracted_at"
+  - case_slug: extract_gdb
+    flow_path: pipelines.datalake.extract_load.extract_gdb.flows
+    flow_name: extract_gdb
+    params:
+      environment: "dev"
+      gs_uri: "gs://path/to/file.GDB"
+      dataset: "brutos_gdb_xxxx"
+  # -----------------------------------
   - case_slug: "report-alerta-jobs-caros"
     flow_path: "pipelines.reports.alerta_jobs_caros.flows"
     flow_name: "report_alerta_jobs_caros"
     params:
       environment: "dev"
-  - case_slug: 'dou-extraction-api'
-    flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao_api.flows'
-    flow_name: 'dou_extraction'
+  - case_slug: "report-alerta-atualizacao-tabelas"
+    flow_path: "pipelines.reports.alerta_atualizacao_tabelas.flows"
+    flow_name: "report_alerta_atualizacao_tabelas"
     params:
-      environment: 'dev'
-      dou_section: 'DO1 DO2 DO3'
-      date: "29/08/2025"
-      dataset_id: "brutos_diario_oficial"
-  - case_slug: "datalake-bq-subpav"
-    flow_path: "pipelines.datalake.migrate.bq_to_subpav.flows"
-    flow_name: "bq_to_subpav_flow"
+      environment: "dev"
+      table_ids:
+        "rj-sms.projeto_whatsapp.telefones_validos": ["IplanRio - E Aí?"]
+        "rj-sms.projeto_gestacoes.temp_correlacao_prenatal_20250831_192404": ["S/SUBPAV/SAP - BI de Gestantes"]
+  - case_slug: report_informes_seguranca
+    flow_path: pipelines.reports.informes_seguranca.flows
+    flow_name: report_informes_seguranca
     params:
-      infisical_path: "/smsrio"
-      secret_name: "DB_URL"
-      dataset_id: "projeto_sinanrio"
-      table_id: "sintomaticos_respiratorios_dia"
-      db_schema: "teste_dl"
-      dest_table: "tb_sintomaticos"
-      project: "SINANRIO - Sintomáticos respiratórios"
-      if_exists: "append"
-      notify: true
-      rename_flow: false
-      bq_columns: null
-      custom_insert_query: |
-        INSERT INTO tb_sintomaticos (
-          cpf,
-          condicoes,
-          soap_subjetivo_motivo,
-          soap_objetivo_descricao,
-          soap_avaliacao_observacoes,
-          datahora_fim,
-          nome,
-          data_nascimento,
-          cids_extraidos,
-          rn,
-          created_at
-        )
-        SELECT
-          :cpf,
-          :condicoes,
-          :soap_subjetivo_motivo,
-          :soap_objetivo_descricao,
-          :soap_avaliacao_observacoes,
-          :datahora_fim,
-          :nome,
-          :data_nascimento,
-          :cids_extraidos,
-          :rn,
-          NOW()
-        WHERE NOT EXISTS (
-          SELECT 1 FROM teste_dl.tb_sintomaticos
-          WHERE cpf = :cpf
-            AND DATE(created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND CURDATE()
-        )
+      environment: "dev"
