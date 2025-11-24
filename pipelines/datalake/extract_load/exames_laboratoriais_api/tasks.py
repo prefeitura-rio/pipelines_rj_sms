@@ -90,9 +90,12 @@ def authenticate_fetch(
                 credential=None,
         )
 
-        results = results_response["body"]
+        if isinstance(results_response.get("body"), str):
+            error_message = f"(authenticate_fetch) response isnt json: {results_response['body']}"
+            log(error_message, level="error")
+            raise Exception(error_message)
 
-        log(results)
+        results = results_response["body"]
     
         return results
     
