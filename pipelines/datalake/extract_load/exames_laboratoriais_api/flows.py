@@ -78,7 +78,7 @@ with Flow(
 
     with case(rename_flow, True):
         rename_current_flow_run(
-            name_template=f"(AP{ap}) - dt_ini: {dt_inicio} dt_fim: {dt_fim}",
+            name_template="(AP{ap}) - dt_ini: {dt_inicio} dt_fim: {dt_fim}",
             dt_inicio=dt_inicio,
             dt_fim=dt_fim,
             ap=ap,
