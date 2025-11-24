@@ -15,7 +15,7 @@ flow_manager_parameters = [
         "relative_date": "D-1",
         "dataset_id": "brutos_exames_laboratoriais",
         "rename_flow": True,
-        "hours_per_window": 1,
+        "hours_per_window": 1.5,
     }
 ]
 
