@@ -93,7 +93,7 @@ def authenticate_fetch(
                 lote_status == 501
                 and "Resultado não disponíveis para data solicitada" in lote_mensagem
             ):
-                log(f"(authenticate_fetch) Status 501: {lote_mensagem}", level="warn")
+                log(f"(authenticate_fetch) Status 501: {lote_mensagem}", level="warning")
                 return results
 
             elif lote_status != 200:
