@@ -84,15 +84,18 @@ def authenticate_fetch(
             error_message = f"(authenticate_fetch) request failed: {results}"
             log(error_message, level="error")
             raise Exception(error_message)
-        
-        if 'lote' in results:
+
+        if "lote" in results:
             lote_status = results["lote"].get("status")
             lote_mensagem = results["lote"].get("mensagem")
 
-            if lote_status == 501 and "Resultado não disponíveis para data solicitada" in lote_mensagem:
+            if (
+                lote_status == 501
+                and "Resultado não disponíveis para data solicitada" in lote_mensagem
+            ):
                 log(f"(authenticate_fetch) WARNING: Status 501. {lote_mensagem}", level="warn")
-                return results 
-            
+                return results
+
             elif lote_status != 200:
                 message = f"(authenticate_and_fetch) Failed to get results: Status: {lote_status} Message: {lote_mensagem}"
                 raise Exception(message)
