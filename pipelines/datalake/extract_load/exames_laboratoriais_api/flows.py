@@ -1,39 +1,37 @@
+# -*- coding: utf-8 -*-
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.prefect import get_current_flow_labels
+from pipelines.constants import constants
+from pipelines.datalake.extract_load.exames_laboratoriais_api.schedules import schedule
+from pipelines.datalake.extract_load.exames_laboratoriais_api.tasks import (
+    authenticate_fetch,
+    build_operator_params,
+    generate_time_windows,
+    get_all_aps,
+    get_credential_param,
+    get_source_from_ap,
+    parse_identificador,
+    transform,
+)
+from pipelines.datalake.utils.tasks import upload_df_to_datalake
+from pipelines.utils.basics import from_relative_date
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
 )
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.prefect import get_current_flow_labels
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     get_project_name,
     get_secret_key,
     rename_current_flow_run,
 )
-from pipelines.datalake.utils.tasks import upload_df_to_datalake
-from pipelines.utils.basics import from_relative_date
-from pipelines.constants import constants
-from pipelines.datalake.extract_load.exames_laboratoriais_api.tasks import (
-    authenticate_fetch,
-    parse_identificador,
-    transform,
-    get_credential_param,
-    get_source_from_ap,
-    generate_time_windows,
-    get_all_aps,
-    build_operator_params,
-)
-from pipelines.datalake.extract_load.exames_laboratoriais_api.schedules import schedule
-
-
-
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Exames Laboratoriais (Operator)",
@@ -46,11 +44,11 @@ with Flow(
     dt_inicio = Parameter("dt_inicio", default="2025-10-21T10:00:00-0300")
     dt_fim = Parameter("dt_fim", default="2025-10-21T11:30:00-0300")
     rename_flow = Parameter("rename_flow", default=True)
-    dataset_id = Parameter("dataset", default='exames_laboratoriais', required=False)
+    dataset_id = Parameter("dataset", default="exames_laboratoriais", required=False)
 
     source = get_source_from_ap(ap=ap)
 
-    credential = get_credential_param(source = source)
+    credential = get_credential_param(source=source)
 
     INFISICAL_PATH = credential["INFISICAL_PATH"]
 
@@ -86,9 +84,7 @@ with Flow(
             source=source,
         )
 
-    identificador_lis = parse_identificador(
-        identificador=identificador_lis_secret, ap=ap
-    )
+    identificador_lis = parse_identificador(identificador=identificador_lis_secret, ap=ap)
 
     # autenticação + busca
     results = authenticate_fetch(
@@ -140,25 +136,20 @@ with Flow(
     ],
 ) as exames_laboratoriais_manager:
 
-    dataset_id = Parameter("dataset", default='exames_laboratoriais', required=False)
+    dataset_id = Parameter("dataset", default="exames_laboratoriais", required=False)
     environment = Parameter("environment", default="dev")
     relative_date_filter = Parameter("intervalo", default="D-1")
     hours_per_window = Parameter("hours_per_window", default=2)
-    
+
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
 
     start_date = from_relative_date(relative_date=relative_date_filter)
-    windows = generate_time_windows(
-        start_date=start_date, hours_per_window=hours_per_window
-    )
+    windows = generate_time_windows(start_date=start_date, hours_per_window=hours_per_window)
     aps_list = get_all_aps()
 
     operator_parameters = build_operator_params(
-        windows=windows, 
-        aps=aps_list, 
-        env=environment, 
-        dataset=dataset_id
+        windows=windows, aps=aps_list, env=environment, dataset=dataset_id
     )
 
     created_operator_runs = create_flow_run.map(

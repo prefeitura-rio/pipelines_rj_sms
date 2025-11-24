@@ -7,12 +7,12 @@ import pandas as pd
 import pytz
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import cloud_function_request
 from pipelines.datalake.extract_load.exames_laboratoriais_api.constants import (
     AREA_PROGRAMATICA,
-    CREDENTIALS
+    CREDENTIALS,
 )
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.tasks import cloud_function_request
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
@@ -24,19 +24,15 @@ def authenticate_fetch(
     dt_start: str,
     dt_end: str,
     environment: str,
-    source: str
+    source: str,
 ) -> dict:
-    
-    auth_headers = {
-        "emissor": username, 
-        "apccodigo": apccodigo, 
-        "pass": password
-    }
 
-    if source == 'cientificalab': 
-        base_url = 'https://cielab.lisnet.com.br/lisnetws'
+    auth_headers = {"emissor": username, "apccodigo": apccodigo, "pass": password}
+
+    if source == "cientificalab":
+        base_url = "https://cielab.lisnet.com.br/lisnetws"
     else:
-        base_url ='https://biomega-api.lisnet.com.br/lisnetws'
+        base_url = "https://biomega-api.lisnet.com.br/lisnetws"
 
     try:
         token_response = cloud_function_request.run(
@@ -49,45 +45,39 @@ def authenticate_fetch(
             credential=None,
         )
 
-        print(f'token_response: {token_response}') 
+        print(f"token_response: {token_response}")
 
-        if token_response['body']['status'] != 200:
+        if token_response["body"]["status"] != 200:
             message = f"(authenticate_and_fetch) Error getting token: {token_response['body']['mensagem']}"
             raise Exception(message)
 
-        token = token_response['body']['token']
-        
-        log('Authentication was successful')
+        token = token_response["body"]["token"]
 
-        results_headers = {
-            "codigo": apccodigo, 
-            "token": token
-        }
-        
+        log("Authentication was successful")
+
+        results_headers = {"codigo": apccodigo, "token": token}
+
         request_body = {
-                "lote": {
-                    "identificadorLis": identificador_lis,
-                    "dataResultado": {
-                        "inicial": dt_start, 
-                        "final": dt_end
-                    },
-                    "parametros": {
-                        "retorno": "ESTRUTURADO/LINK",
-                        "parcial": "N",
-                        "sigiloso": "S",
-                    },
-                }
+            "lote": {
+                "identificadorLis": identificador_lis,
+                "dataResultado": {"inicial": dt_start, "final": dt_end},
+                "parametros": {
+                    "retorno": "ESTRUTURADO/LINK",
+                    "parcial": "N",
+                    "sigiloso": "S",
+                },
+            }
         }
-        
+
         results_response = cloud_function_request.run(
-                url=f"{base_url}/APOIO/DTL/resultado",
-                request_type="POST",
-                header_params=results_headers,
-                body_params=request_body,
-                api_type="json",
-                env=environment,
-                endpoint_for_filename="exames_lab_results",
-                credential=None,
+            url=f"{base_url}/APOIO/DTL/resultado",
+            request_type="POST",
+            header_params=results_headers,
+            body_params=request_body,
+            api_type="json",
+            env=environment,
+            endpoint_for_filename="exames_lab_results",
+            credential=None,
         )
 
         if isinstance(results_response.get("body"), str):
@@ -96,13 +86,14 @@ def authenticate_fetch(
             raise Exception(error_message)
 
         results = results_response["body"]
-    
+
         return results
-    
+
     except Exception as e:
         error_message = str(e)
         log(f"(authenticate_and_fetch) Unexpected error: {error_message}", level="error")
         raise
+
 
 @task(nout=3)
 def transform(json_result: dict, source: str):
@@ -194,7 +185,6 @@ def transform(json_result: dict, source: str):
 
     now = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%Y-%m-%d %H:%M:%S")
 
-
     solicitacoes_df = pd.DataFrame(solicitacoes_rows)
     exames_df = pd.DataFrame(exames_rows)
     resultados_df = pd.DataFrame(resultados_rows)
@@ -204,8 +194,8 @@ def transform(json_result: dict, source: str):
             df["datalake_loaded_at"] = now
             df["source"] = source
 
-
     return solicitacoes_df, exames_df, resultados_df
+
 
 @task
 def parse_identificador(identificador: str, ap: str) -> str:
@@ -218,7 +208,6 @@ def parse_identificador(identificador: str, ap: str) -> str:
         return identificador_lis
     except (json.JSONDecodeError, TypeError, AttributeError):
         return identificador
-
 
 
 @task
@@ -234,44 +223,41 @@ def get_source_from_ap(ap: str) -> str:
         message = f"AP {ap} não encontrada no mapeamento AREA_PROGRAMATICA."
         log(message, level="error")
         raise ValueError(message)
-    
+
     return source
 
-@task 
+
+@task
 def get_all_aps():
     return list(AREA_PROGRAMATICA.keys())
 
+
 @task
-def generate_time_windows(
-    start_date: pd.Timestamp, hours_per_window: int = 2
-):
-    '''
-        Gera janelas de tempo de 2 horas desde a start_date até a meia-noite de ontem
-    '''
+def generate_time_windows(start_date: pd.Timestamp, hours_per_window: int = 2):
+    """
+    Gera janelas de tempo de 2 horas desde a start_date até a meia-noite de ontem
+    """
     tz = pytz.timezone("America/Sao_Paulo")
-    
+
     if start_date.tzinfo is None:
         start_date = tz.localize(start_date)
 
     # A data fim sempre vai ser a meia-noite do dia anterior
     # Ex: Se hoje é 24/11 12h -> end_date é 24/11 00:00:00
     end_date_limit = pd.Timestamp.now(tz).normalize()
-    
+
     # 1. GERAÇÃO DOS PONTOS DE INÍCIO DA JANELA
     # Cria uma sequência de datas de 'start_date' até 'end_date_limit', com o passo de 'Xh'
     start_points = pd.date_range(
-        start=start_date, 
-        end=end_date_limit, 
-        freq=f'{hours_per_window}H', 
-        inclusive='left'
+        start=start_date, end=end_date_limit, freq=f"{hours_per_window}H", inclusive="left"
     )
-    
+
     windows = []
-    
-    # 2. CRIAÇÃO DAS JANELAS 
+
+    # 2. CRIAÇÃO DAS JANELAS
     for window_start in start_points:
         window_end = window_start + timedelta(hours=hours_per_window, seconds=-1)
-        
+
         # Garante que a última janela não ultrapasse o limite de ontem à meia-noite
         if window_end >= end_date_limit:
             continue
@@ -284,16 +270,14 @@ def generate_time_windows(
             }
         )
 
-    log(f"{len(windows)} janelas geradas com sucesso de {start_date.date()} até {end_date_limit.date()}")
+    log(
+        f"{len(windows)} janelas geradas com sucesso de {start_date.date()} até {end_date_limit.date()}"
+    )
     return windows
 
+
 @task
-def build_operator_params(
-    windows: list, 
-    aps: list, 
-    env: str, 
-    dataset: str
-):
+def build_operator_params(windows: list, aps: list, env: str, dataset: str):
     """
     Cria a lista de dicionários de parâmetros para o flow operator
     Pra cada AP cria uma entrada para cada janela de tempo
@@ -311,6 +295,6 @@ def build_operator_params(
                     "dataset": dataset,
                 }
             )
-            
+
     log(f"Parâmetros gerados para {len(params)} combinações (AP x Janela).")
     return params

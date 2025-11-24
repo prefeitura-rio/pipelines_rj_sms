@@ -23,13 +23,13 @@ CREDENTIALS = {
 
 
 AREA_PROGRAMATICA = {
-        "10": "cientificalab",
-        "21": "cientificalab",
-        "22": "cientificalab",
-        "31": "cientificalab",
-        "32": "cientificalab",
-        "33": "cientificalab",
-        "40": "cientificalab",
-        "51": "cientificalab",
-        "52": "biomega",
-    }
+    "10": "cientificalab",
+    "21": "cientificalab",
+    "22": "cientificalab",
+    "31": "cientificalab",
+    "32": "cientificalab",
+    "33": "cientificalab",
+    "40": "cientificalab",
+    "51": "cientificalab",
+    "52": "biomega",
+}
