@@ -76,17 +76,13 @@ with Flow(
         environment=environment,
     )
 
-    # Formatação dos parâmetros para o nome do Flow Run
-    dt_inicio_formatado = dt_inicio.split(":")[0] + ":" + dt_inicio.split(":")[1]
-    dt_fim_formatado = dt_fim.split(":")[0] + ":" + dt_fim.split(":")[1]
-
     with case(rename_flow, True):
         rename_current_flow_run(
-            name_template="(AP{ap}) Início: {dt_inicio} Fim: {dt_fim}",
-            dt_inicio=dt_inicio_formatado,
-            dt_fim=dt_fim_formatado,
+            name_template="(AP{ap}) INÍCIO: {dt_inicio} FIM: {dt_fim}",
+            dt_inicio=dt_inicio,
+            dt_fim=dt_fim,
             ap=ap,
-        )
+    )
 
     identificador_lis = parse_identificador(identificador=identificador_lis_secret, ap=ap)
 
