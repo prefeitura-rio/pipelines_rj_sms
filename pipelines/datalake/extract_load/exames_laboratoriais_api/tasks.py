@@ -245,7 +245,11 @@ def get_all_aps():
 
 
 @task
-def generate_time_windows(start_date: pd.Timestamp, hours_per_window: int = 2):
+def generate_time_windows(
+    start_date: pd.Timestamp, ,
+    end_date: str,
+    hours_per_window: int = 2
+):
     """
     Gera janelas de tempo de 2 horas desde a start_date até a meia-noite de ontem
     """
@@ -254,9 +258,14 @@ def generate_time_windows(start_date: pd.Timestamp, hours_per_window: int = 2):
     if start_date.tzinfo is None:
         start_date = tz.localize(start_date)
 
-    # A data fim sempre vai ser a meia-noite do dia anterior
+    # A data fim sempre vai ser a meia-noite do dia anterior (se n for passada)
     # Ex: Se hoje é 24/11 12h -> end_date é 24/11 00:00:00
     end_date_limit = pd.Timestamp.now(tz).normalize()
+
+    if end_date:
+        end_date_limit = pd.to_datetime(end_date).tz_localize(tz).normalize()
+    else:
+        end_date_limit = pd.Timestamp.now(tz).normalize()
 
     # 1. GERAÇÃO DOS PONTOS DE INÍCIO DA JANELA
     # Cria uma sequência de datas de 'start_date' até 'end_date_limit', com o passo de 'Xh'

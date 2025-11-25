@@ -76,11 +76,16 @@ with Flow(
         environment=environment,
     )
 
+
+    # Formatação dos parâmetros para o nome do Flow Run
+    dt_inicio_formatado = dt_inicio.split(":")[0] + ":" + dt_inicio.split(":")[1]
+    dt_fim_formatado = dt_fim.split(":")[0] + ":" + dt_fim.split(":")[1]
+
     with case(rename_flow, True):
         rename_current_flow_run(
-            name_template="(AP{ap}) - dt_ini: {dt_inicio} dt_fim: {dt_fim}",
-            dt_inicio=dt_inicio,
-            dt_fim=dt_fim,
+            name_template="(AP{ap}) Início: {dt_inicio} Fim: {dt_fim}",
+            dt_inicio=dt_inicio_formatado,
+            dt_fim=dt_fim_formatado,      
             ap=ap,
         )
 
@@ -140,12 +145,13 @@ with Flow(
     environment = Parameter("environment", default="dev")
     relative_date_filter = Parameter("intervalo", default="D-1")
     hours_per_window = Parameter("hours_per_window", default=2)
+    end_date = Parameter("end_date", default=None)
 
     prefect_project_name = get_project_name(environment=environment)
     current_labels = get_current_flow_labels()
 
     start_date = from_relative_date(relative_date=relative_date_filter)
-    windows = generate_time_windows(start_date=start_date, hours_per_window=hours_per_window)
+    windows = generate_time_windows(start_date=start_date, hours_per_window=hours_per_window, end_date=end_date)
     aps_list = get_all_aps()
 
     operator_parameters = build_operator_params(
