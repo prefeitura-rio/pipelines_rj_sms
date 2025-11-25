@@ -246,7 +246,7 @@ def get_all_aps():
 
 @task
 def generate_time_windows(
-    start_date: pd.Timestamp, ,
+    start_date: pd.Timestamp, 
     end_date: str,
     hours_per_window: int = 2
 ):
