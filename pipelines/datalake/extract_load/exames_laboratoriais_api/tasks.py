@@ -245,11 +245,7 @@ def get_all_aps():
 
 
 @task
-def generate_time_windows(
-    start_date: pd.Timestamp, 
-    end_date: str,
-    hours_per_window: int = 2
-):
+def generate_time_windows(start_date: pd.Timestamp, end_date: str, hours_per_window: int = 2):
     """
     Gera janelas de tempo de 2 horas desde a start_date até a meia-noite de ontem
     """

@@ -76,7 +76,6 @@ with Flow(
         environment=environment,
     )
 
-
     # Formatação dos parâmetros para o nome do Flow Run
     dt_inicio_formatado = dt_inicio.split(":")[0] + ":" + dt_inicio.split(":")[1]
     dt_fim_formatado = dt_fim.split(":")[0] + ":" + dt_fim.split(":")[1]
@@ -85,7 +84,7 @@ with Flow(
         rename_current_flow_run(
             name_template="(AP{ap}) Início: {dt_inicio} Fim: {dt_fim}",
             dt_inicio=dt_inicio_formatado,
-            dt_fim=dt_fim_formatado,      
+            dt_fim=dt_fim_formatado,
             ap=ap,
         )
 
@@ -151,7 +150,9 @@ with Flow(
     current_labels = get_current_flow_labels()
 
     start_date = from_relative_date(relative_date=relative_date_filter)
-    windows = generate_time_windows(start_date=start_date, hours_per_window=hours_per_window, end_date=end_date)
+    windows = generate_time_windows(
+        start_date=start_date, hours_per_window=hours_per_window, end_date=end_date
+    )
     aps_list = get_all_aps()
 
     operator_parameters = build_operator_params(
