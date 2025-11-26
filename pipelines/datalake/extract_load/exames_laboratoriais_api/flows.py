@@ -177,7 +177,7 @@ exames_laboratoriais_operator.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="1Gi",
+    memory_limit="2Gi",
 )
 
 exames_laboratoriais_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
