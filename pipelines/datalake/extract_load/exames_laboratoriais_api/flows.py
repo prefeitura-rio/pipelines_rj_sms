@@ -177,17 +177,17 @@ exames_laboratoriais_operator.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi",
+    memory_limit="4Gi",
 )
 
 exames_laboratoriais_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-exames_laboratoriais_manager.executor = LocalDaskExecutor(num_workers=12)
+exames_laboratoriais_manager.executor = LocalDaskExecutor(num_workers=8)
 exames_laboratoriais_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="2Gi",
+    memory_limit="4Gi",
 )
 
 exames_laboratoriais_manager.schedule = schedule
