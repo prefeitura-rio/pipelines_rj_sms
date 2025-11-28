@@ -512,3 +512,4 @@ cases:
     flow_name: prontuario_extraction
     params:
       environment: "dev"
+      bucket_name: "subhue_backups"

@@ -1,27 +1,181 @@
 import os
+import re
+import csv
+import shutil
 import tarfile
+import pandas as pd
+from pandas.errors import EmptyDataError
+from datetime import datetime
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log 
+from pipelines.constants import constants
 from pipelines.utils.googleutils import download_from_cloud_storage
-
+from pipelines.utils.tasks import upload_df_to_datalake
+from pipelines.datalake.extract_load.prontuario_cgs.constants import constants as prontuario_constants
+from pipelines.datalake.extract_load.prontuario_cgs.utils import read_table, process_sql_file_streaming
 
 @task
-def get_file(path, bucket_name, blob_prefix, environment):
+def create_temp_folders(folders) -> None:
+    for folder in folders:
+        os.makedirs(folder, exist_ok=True)
+    return
+
+@task
+def get_file(path, bucket_name, blob_prefix, environment, wait_for) -> list:
     log('⬇️  Realizando download do arquivo...')
     return download_from_cloud_storage(path, bucket_name, blob_prefix)
     
 @task
-def unpack_files(tar_files:str, output_dir:str):
-    log('📁 Descompactando os arquivos...')
-    
-    outputs = []
+def unpack_files(tar_files:str, output_dir:str, environment) -> None:
+    log(f'📁 Descompactando {len(tar_files)} arquivo(s)...')
+
     for file in tar_files:
+        log(f'Descompactando: {file}...')
         output_path = os.path.join(output_dir, os.path.basename(file).replace('.tar.gz', ''))
         with tarfile.open(file, "r:gz") as tar:
             tar.extractall(path=output_path)
-            outputs.append(output_path)
-    return outputs
+            
+    log(f'✅ Arquivo descompactado em {output_dir}')
+    return 
 
 @task
-def print_log(message):
-    log(message)
+def extract_postgres_data(
+    data_dir:str,
+    wait_for,
+    output_dir
+    ) -> None:
+    log('📋️ Extraindo dados do arquivo hospub.sql...')
+    target_tables = prontuario_constants.SELECTED_POSTGRES_TABLES.value
+    
+    upload_path = os.path.join(output_dir, 'POSTGRES')
+    os.makedirs(upload_path, exist_ok=True)
+    postgres_folder = [folder_name for folder_name in os.listdir(data_dir) if 'VISUAL' in folder_name][0]
+    sql_path = os.path.join(data_dir, postgres_folder, 'hospub.sql')
+    
+    return process_sql_file_streaming(sql_path, upload_path, target_tables)
+
+@task 
+def extract_openbase_data(
+    data_dir:str,
+    output_dir:str,
+    wait_for
+    ) -> str:
+    log('📋️ Obtendo dados de arquivos OpenBase...')
+    upload_path = os.path.join(output_dir, 'OPENBASE')
+    os.makedirs(upload_path, exist_ok=True)
+    
+    selected_tables = prontuario_constants.SELECTED_OPENBASE_TABLES.value
+    openbase_folder = [folder_name for folder_name in os.listdir(data_dir) if 'BASE' in folder_name][0]
+    
+    openbase_path = os.path.join(data_dir, openbase_folder)
+    
+    # Lista os arquivos brutos em cada diretório
+    log(f'Extraindo dados de {openbase_path}')
+    
+    cnes = openbase_path.split("-")[1]        
+    
+    tables = [x for x in os.listdir(openbase_path) if x.endswith('._S')] 
+    tables.sort()
+    dictionaries = [x for x in os.listdir(openbase_path) if x.endswith('._Sd')] 
+    dictionaries.sort()
+    
+    data = zip(tables, dictionaries)
+    tables_data = list(data)
+    
+    for table, dictionary in tables_data:
+        if table.replace("._S","") != dictionary.replace("._Sd",""):
+            log("Table and dictionary do not match: ", table, dictionary)
+
+    dictionaries = {}
+    for table, dictionary in tables_data:
+        with open(f'{openbase_path}/{dictionary}', "r", encoding=prontuario_constants.DICTIONARY_ENCODING.value) as f:
+            dictionary_data = f.readlines()
+        # Ignore the 3 first lines
+        dictionary_data = dictionary_data[3:]
+        trimmed = [x.strip() for x in dictionary_data]
+        separated = [x.split() for x in trimmed]
+
+        structured_dictionary = {}
+        acc_offset = 0
+        for attrs in separated:
+            name = attrs[0]
+            _type = attrs[1]
+            condition = attrs[2] if len(attrs) > 2 else None
+            
+            if ',' in _type:
+                _type = _type.split(',')[0]
+            size = int(re.sub(r'\D', '', _type))
+
+            structured_dictionary[name] = {
+                "type": _type,
+                "size": size,
+                "offset": acc_offset
+            }
+            acc_offset += size
+        dictionaries[table] = structured_dictionary
+
+    for table, dictionary in tables_data:
+        if not table in selected_tables:
+            continue
+        table_name = table.replace("._S", "").replace(f"{openbase_path}", "")
+        structured_dictionary = dictionaries[table]
+        df = read_table(f'{openbase_path}/{table}', structured_dictionary)
+        output_name = os.path.join(upload_path,f'{table_name.lower()}.csv')
+        df.to_csv(output_name, 
+                  index=False, 
+                  encoding="utf-8", 
+                  quoting=csv.QUOTE_ALL, 
+                  sep=",", 
+                  escapechar="\\")
+    return cnes
+
+
+@task
+def upload(upload_path, dataset_id, wait_for, environment, cnes) -> None:
+    for folder in os.listdir(upload_path):
+        for file in os.listdir(os.path.join(upload_path, folder)):
+            file_path = os.path.join(upload_path, folder, file)
+            try:
+                df = pd.read_csv(file_path, 
+                    sep=',',          
+                    quotechar='"',
+                    skipinitialspace=True,
+                    low_memory=False,
+                    dtype=str,
+                    on_bad_lines='warn'
+                )
+                if not df.empty:
+                    # Remove possíveis pontos em nome de colunas que invialibizam o upload
+                    cols_renamed = [col.replace('.', '') for col in df.columns]
+                    df.rename(columns=dict(zip(df.columns, cols_renamed)), inplace=True)
+                    
+                    df['loaded_at'] = datetime.now().isoformat()
+                    df['cnes'] = cnes
+                    
+                    table_name = f"{folder.lower()}_{file.replace('.csv', '')}"
+                    upload_df_to_datalake.run(
+                        df=df,
+                        dataset_id=dataset_id,
+                        table_id=table_name,
+                        partition_column="loaded_at",
+                        if_exists="append",
+                        if_storage_data_exists="append",
+                        source_format="csv",
+                        csv_delimiter=",",
+            )
+            except EmptyDataError as e:
+                log(f'⚠️ {file} está vazio.')
+            except Exception as e:
+                log(f'Erro no upload da tabela {file}')
+    return        
+
+@task
+def delete_temp_folders(folders, wait_for):
+    for folder in folders:
+        shutil.rmtree(folder)
+    return
+
+
+@task
+def dumb_task(bucket):
+    return
