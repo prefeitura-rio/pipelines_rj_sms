@@ -222,7 +222,7 @@ def salvar_fichas_html(
     Observa as mesmas regras de headers/session já usadas no projeto.
     """
     # data atual no formato AAAAMMDD
-    data_str = datetime.datetime.now().strftime("%Y%m%d")
+    data_str = datetime.now().strftime("%Y%m%d")
  
     # nome da pasta onde serão gravados os arquivos html
     dir_path = Path(
