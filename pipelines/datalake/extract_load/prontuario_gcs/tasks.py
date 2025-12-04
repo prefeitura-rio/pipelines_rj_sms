@@ -1,19 +1,28 @@
+# -*- coding: utf-8 -*-
+import csv
 import os
 import re
-import csv
 import shutil
 import tarfile
+from datetime import datetime
+
 import pandas as pd
 from google.cloud import bigquery, storage
 from pandas.errors import EmptyDataError
-from datetime import datetime
-from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.logger import log 
+
 from pipelines.constants import constants
+from pipelines.datalake.extract_load.prontuario_gcs.constants import (
+    constants as prontuario_constants,
+)
+from pipelines.datalake.extract_load.prontuario_gcs.utils import (
+    process_sql_file_streaming,
+    read_table,
+)
+from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import download_from_cloud_storage
+from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
-from pipelines.datalake.extract_load.prontuario_gcs.constants import constants as prontuario_constants
-from pipelines.datalake.extract_load.prontuario_gcs.utils import read_table, process_sql_file_streaming
+
 
 @task
 def create_temp_folders(folders) -> None:
@@ -21,26 +30,28 @@ def create_temp_folders(folders) -> None:
         os.makedirs(folder, exist_ok=True)
     return
 
+
 @task
 def get_files(path, bucket_name, blob_prefixes, environment, wait_for) -> list:
-    log('⬇️ Realizando download dos arquivos no bucket...')
+    log("⬇️ Realizando download dos arquivos no bucket...")
     files = []
     for prefix in blob_prefixes:
-        log(f'Realizando download de {prefix}...')
+        log(f"Realizando download de {prefix}...")
         filename = download_from_cloud_storage(path, bucket_name, prefix)
         files.append(filename[0] if filename else None)
-    log('✅ Download feito com sucesso.')
+    log("✅ Download feito com sucesso.")
     return files
+
 
 @task
 def get_cnes_from_file_name(files):
     cnes_list = []
     for file in files:
-        match = re.search(r'hospub-(\d+)', file)
+        match = re.search(r"hospub-(\d+)", file)
         cnes_list.append(match.group(1))
-        
+
     cnes_list = set(cnes_list)
-    
+
     output = {}
     for cnes in cnes_list:
         files_per_cnes = []
@@ -50,67 +61,70 @@ def get_cnes_from_file_name(files):
         output[cnes] = files_per_cnes
     return output
 
+
 @task
-def unpack_files(tar_files:str, output_dir:str, environment) -> None:
-    log(f'📁 Descompactando {len(tar_files)} arquivo(s)...')
+def unpack_files(tar_files: str, output_dir: str, environment) -> None:
+    log(f"📁 Descompactando {len(tar_files)} arquivo(s)...")
 
     for file in tar_files:
-        log(f'Descompactando: {file}...')
-        output_path = os.path.join(output_dir, os.path.basename(file).replace('.tar.gz', ''))
+        log(f"Descompactando: {file}...")
+        output_path = os.path.join(output_dir, os.path.basename(file).replace(".tar.gz", ""))
         with tarfile.open(file, "r:gz") as tar:
             tar.extractall(path=output_path)
-            
-    log(f'✅ Arquivo descompactado em {output_dir}')
-    return 
+
+    log(f"✅ Arquivo descompactado em {output_dir}")
+    return
+
 
 @task
-def extract_postgres_data(
-    data_dir:str,
-    wait_for,
-    output_dir
-    ) -> None:
-    log('📋️ Extraindo dados do arquivo hospub.sql...')
+def extract_postgres_data(data_dir: str, wait_for, output_dir) -> None:
+    log("📋️ Extraindo dados do arquivo hospub.sql...")
     target_tables = prontuario_constants.SELECTED_POSTGRES_TABLES.value
-    
-    upload_path = os.path.join(output_dir, 'POSTGRES')
+
+    upload_path = os.path.join(output_dir, "POSTGRES")
     os.makedirs(upload_path, exist_ok=True)
-    postgres_folder = [folder_name for folder_name in os.listdir(data_dir) if 'VISUAL' in folder_name][0]
-    sql_path = os.path.join(data_dir, postgres_folder, 'hospub.sql')
-    
+    postgres_folder = [
+        folder_name for folder_name in os.listdir(data_dir) if "VISUAL" in folder_name
+    ][0]
+    sql_path = os.path.join(data_dir, postgres_folder, "hospub.sql")
+
     return process_sql_file_streaming(sql_path, upload_path, target_tables)
 
-@task 
-def extract_openbase_data(
-    data_dir:str,
-    output_dir:str,
-    wait_for
-    ) -> str:
-    log('📋️ Obtendo dados de arquivos OpenBase...')
-    upload_path = os.path.join(output_dir, 'OPENBASE')
+
+@task
+def extract_openbase_data(data_dir: str, output_dir: str, wait_for) -> str:
+    log("📋️ Obtendo dados de arquivos OpenBase...")
+    upload_path = os.path.join(output_dir, "OPENBASE")
     os.makedirs(upload_path, exist_ok=True)
-    
+
     selected_tables = prontuario_constants.SELECTED_OPENBASE_TABLES.value
-    openbase_folder = [folder_name for folder_name in os.listdir(data_dir) if 'BASE' in folder_name][0]
-    
+    openbase_folder = [
+        folder_name for folder_name in os.listdir(data_dir) if "BASE" in folder_name
+    ][0]
+
     openbase_path = os.path.join(data_dir, openbase_folder)
-    
-    log(f'Extraindo dados de {openbase_path}')  
-    
-    tables = [x for x in os.listdir(openbase_path) if x.endswith('._S')] 
+
+    log(f"Extraindo dados de {openbase_path}")
+
+    tables = [x for x in os.listdir(openbase_path) if x.endswith("._S")]
     tables.sort()
-    dictionaries = [x for x in os.listdir(openbase_path) if x.endswith('._Sd')] 
+    dictionaries = [x for x in os.listdir(openbase_path) if x.endswith("._Sd")]
     dictionaries.sort()
-    
+
     data = zip(tables, dictionaries)
     tables_data = list(data)
-    
+
     for table, dictionary in tables_data:
-        if table.replace("._S","") != dictionary.replace("._Sd",""):
+        if table.replace("._S", "") != dictionary.replace("._Sd", ""):
             log("Table and dictionary do not match: ", table, dictionary)
 
     dictionaries = {}
     for table, dictionary in tables_data:
-        with open(f'{openbase_path}/{dictionary}', "r", encoding=prontuario_constants.DICTIONARY_ENCODING.value) as f:
+        with open(
+            f"{openbase_path}/{dictionary}",
+            "r",
+            encoding=prontuario_constants.DICTIONARY_ENCODING.value,
+        ) as f:
             dictionary_data = f.readlines()
         # Ignore the 3 first lines
         dictionary_data = dictionary_data[3:]
@@ -123,16 +137,12 @@ def extract_openbase_data(
             name = attrs[0]
             _type = attrs[1]
             condition = attrs[2] if len(attrs) > 2 else None
-            
-            if ',' in _type:
-                _type = _type.split(',')[0]
-            size = int(re.sub(r'\D', '', _type))
 
-            structured_dictionary[name] = {
-                "type": _type,
-                "size": size,
-                "offset": acc_offset
-            }
+            if "," in _type:
+                _type = _type.split(",")[0]
+            size = int(re.sub(r"\D", "", _type))
+
+            structured_dictionary[name] = {"type": _type, "size": size, "offset": acc_offset}
             acc_offset += size
         dictionaries[table] = structured_dictionary
 
@@ -142,35 +152,38 @@ def extract_openbase_data(
             continue
         table_name = table.replace("._S", "").replace(f"{openbase_path}", "")
         structured_dictionary = dictionaries[table]
-        csv_name = read_table(f'{openbase_path}/{table}', structured_dictionary, upload_path)
+        csv_name = read_table(f"{openbase_path}/{table}", structured_dictionary, upload_path)
         csv_names.append(csv_name)
     return csv_names
 
 
 @task
-def upload_to_datalake(upload_path, dataset_id, wait_for, environment, cnes, lines_per_chunk) -> None:
+def upload_to_datalake(
+    upload_path, dataset_id, wait_for, environment, cnes, lines_per_chunk
+) -> None:
     for folder in os.listdir(upload_path):
         for file in os.listdir(os.path.join(upload_path, folder)):
             file_path = os.path.join(upload_path, folder, file)
             try:
-                csv_chunks = pd.read_csv(file_path, 
-                    sep=',',          
+                csv_chunks = pd.read_csv(
+                    file_path,
+                    sep=",",
                     quotechar='"',
                     skipinitialspace=True,
                     dtype=str,
-                    on_bad_lines='warn',
-                    chunksize=lines_per_chunk
+                    on_bad_lines="warn",
+                    chunksize=lines_per_chunk,
                 )
                 for i, chunk in enumerate(csv_chunks):
                     df = pd.DataFrame(chunk)
                     if not df.empty:
                         # Remove possíveis pontos em nome de colunas que invialibizam o upload
-                        cols_renamed = [col.replace('.', '') for col in df.columns]
+                        cols_renamed = [col.replace(".", "") for col in df.columns]
                         df.rename(columns=dict(zip(df.columns, cols_renamed)), inplace=True)
-                        
-                        df['loaded_at'] = datetime.now().isoformat()
-                        df['cnes'] = cnes
-                        
+
+                        df["loaded_at"] = datetime.now().isoformat()
+                        df["cnes"] = cnes
+
                         table_name = f"{folder.lower()}_{file.replace('.csv', '')}"
                         upload_df_to_datalake.run(
                             df=df,
@@ -182,13 +195,14 @@ def upload_to_datalake(upload_path, dataset_id, wait_for, environment, cnes, lin
                             source_format="csv",
                             csv_delimiter=",",
                         )
-                        log(f'⬆️ Upload {i+1} de {table_name} feito com sucesso!')
+                        log(f"⬆️ Upload {i+1} de {table_name} feito com sucesso!")
             except EmptyDataError as e:
-                log(f'⚠️ {file} está vazio.')
+                log(f"⚠️ {file} está vazio.")
             except Exception as e:
-                log(f'Erro no upload da tabela {file}')
+                log(f"Erro no upload da tabela {file}")
                 raise e
-    return        
+    return
+
 
 @task
 def delete_temp_folders(folders, wait_for):
@@ -196,42 +210,43 @@ def delete_temp_folders(folders, wait_for):
         shutil.rmtree(folder)
     return
 
+
 @task
 def list_files_from_bucket(environment, bucket_name, folder):
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
-    files = bucket.list_blobs(prefix=f'{folder}/hospub')
-    
+    files = bucket.list_blobs(prefix=f"{folder}/hospub")
+
     files_path = [str(f.name) for f in files]
-        
+
     return files_path
 
 
 @task
 def build_operator_parameters(
-    files_per_cnes : dict,
+    files_per_cnes: dict,
     bucket_name: str,
-    dataset_id :str,
+    dataset_id: str,
     environment: str = "dev",
 ) -> list:
-    """Gera lista de parâmetros para o(s) operator(s).
-    """
+    """Gera lista de parâmetros para o(s) operator(s)."""
     return [
         {
-        "environment": environment, 
-        'dataset': dataset_id,
-        'bucket_name': bucket_name,
-        'cnes': cnes,
-        'blob_prefix_list':files,
-        'rename_flow':True
+            "environment": environment,
+            "dataset": dataset_id,
+            "bucket_name": bucket_name,
+            "cnes": cnes,
+            "blob_prefix_list": files,
+            "rename_flow": True,
         }
         for cnes, files in files_per_cnes.items()
     ]
+
 
 @task
 def dumb_task(bucket):
     return
 
 
-if __name__ == '__main__':
-    files = list_files_from_bucket(environment=None, bucket_name='subhue_backups')
+if __name__ == "__main__":
+    files = list_files_from_bucket(environment=None, bucket_name="subhue_backups")
