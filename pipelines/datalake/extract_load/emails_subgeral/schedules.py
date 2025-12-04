@@ -1,22 +1,40 @@
-import os
+# -*- coding: utf-8 -*-
+"""
+Agendamentos
+"""
 
-# Lê um arquivo html que está no caminho absoluto especificado
-def read_html_file(file_path: str) -> str:
-    with open(file_path, "r", encoding="utf-8") as file:
-        return file.read()
+# Geral
+from datetime import datetime, timedelta
 
-flow_params = {
-    "recipients": ["matheusmiloski.smsrio@gmail.com", "juliana.paranhos@regulacaoriorj.com.br"],
-    "subject": "Teste de envio via smtplib com anexos",
-    "html_body": read_html_file(os.path.join(os.path.dirname(__file__), "teste.html")),
-    "plain_body": "Mensagem de teste do envio via smtplib.",
-    "attachments": [
-        # Exemplo: r"C:\temp\relatorio.csv"
+import pytz
 
-        os.path.join(os.path.dirname(__file__), "arquivo1.csv"),
-        os.path.join(os.path.dirname(__file__), "arquivo2.csv")
+# Prefect
+from prefect.schedules import Schedule
+
+# Internos
+from pipelines.constants import constants
+from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
+
+
+flow_parameters = [
+    {
+        "subject": "Teste de envio via smtplib com anexos",
+        "recipients": ["matheusmiloski.smsrio@gmail.com", "juliana.paranhos@regulacaoriorj.com.br"],
+        "query_path" : "mail_templates/gerencia_cancer/gerencia_cancer.sql",
+        "html_body_path": "mail_templates/gerencia_cancer/gerencia_cancer.sql",
+        "plain_body_path": "mail_templates/gerencia_cancer/gerencia_cancer.sql",
+    }
+]
+
+
+clocks = generate_dump_api_schedules(
+    interval=timedelta(days=7),
+    start_date=datetime(2025, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    "inline_images": {
-        # Exemplo "logo": r"C:\temp\logo.png"
-    },
-}
+    flow_run_parameters=flow_parameters,
+    runs_interval_minutes=180,
+)
+
+schedule = Schedule(clocks=untuple_clocks(clocks))

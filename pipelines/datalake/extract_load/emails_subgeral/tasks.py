@@ -1,21 +1,81 @@
-import logging
+from google.cloud import bigquery
+from datetime import timedelta
 import mimetypes
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Type
+from typing import List, Optional, Sequence, Tuple, Type
 
-# Configuração básica de logging do módulo
-logger = logging.getLogger(__name__)
+from prefeitura_rio.pipelines_utils.logging import log
+from pipelines.utils.credential_injector import authenticated_task as task
+from datetime import datetime
 
 
-# Tipos auxiliares
-AttachmentPaths = Optional[Sequence[str]]
-InlineImages = Optional[Dict[str, str]]
+def _read_file(html_path: str) -> str:
+    """
+    Lê o conteúdo de um arquivo, resolvendo o caminho absoluto.
+    """
+    path = Path(html_path).resolve()
+    if not path.exists():
+        msg = f"Arquivo HTML não encontrado: {path}"
+        log(msg)
+        raise FileNotFoundError(msg)
+
+    with path.open("r", encoding="utf-8") as file_handle:
+        html_content = file_handle.read()
+
+    return html_content
+
+# Tarefa principal para extrair dados do BigQuery
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
+def bigquery_to_xl_disk(subject:str, query_path: str) -> str:
+    """
+    Executa uma consulta no BigQuery, salva em Excel e retorna o caminho absoluto do arquivo.
+    """
+
+    if not query_path:
+        return None
+    
+    query = _read_file(query_path)
+    
+    client = bigquery.Client()
+    log("Cliente Big Query OK")
+
+    df = client.query_and_wait(query).to_dataframe()
+    log(query)
+    log("Query executada com sucesso")
+    log(f"{df.sample(5)}")
+    
+
+    # 
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    subject = subject.replace(" ", "_")
+    filename = f"{subject}__{timestamp}.xlsx"
+    filepath = Path.cwd() / filename
+    
+    df.to_excel(filepath, index=False, encoding="utf-8-sig")
+    log(f"Arquivo salvo: {filepath}")
+    
+    return str(filepath.absolute())
+
+
+# Apaga arquivo do disco
+@task
+def delete_file_from_disk(filepath: str) -> None:
+    """
+    Apaga um arquivo do disco.
+    """
+    path = Path(filepath)
+    if path.exists():
+        path.unlink()
+        log("Arquivo apagado do disco: %s", filepath)
+    else:
+        log("Arquivo não encontrado para apagar: %s", filepath)
 
 
 # Funções utilitárias relacionadas a MIME / arquivos
-def guess_mime_type(path: Path) -> Tuple[str, str]:
+def _guess_mime_type(path: Path) -> Tuple[str, str]:
     """
     Descobre o tipo MIME de um arquivo.
     """
@@ -26,7 +86,7 @@ def guess_mime_type(path: Path) -> Tuple[str, str]:
 
 
 # Funções de preparação / validação dos dados do e-mail
-def normalize_recipients(raw_recipients: Sequence[str]) -> List[str]:
+def _normalize_recipients(raw_recipients: Sequence[str]) -> List[str]:
     """
     Normaliza e valida a lista de destinatários.
     """
@@ -36,22 +96,21 @@ def normalize_recipients(raw_recipients: Sequence[str]) -> List[str]:
 
     if not recipients:
         msg = "Lista de destinatários vazia após normalização."
-        logger.error(msg)
+        log(msg)
         raise ValueError(msg)
 
     return recipients
 
-
-def build_email_message(
+def _build_email_message(
     sender_email: str,
     sender_name: str,
     recipients: Sequence[str],
     subject: str,
-    html_body: str,
-    plain_body: Optional[str] = None,
+    html_body_path: str,
+    plain_body_path: str,
 ) -> EmailMessage:
     """
-    Constrói a mensagem de e-mail base (sem anexos e sem imagens inline).
+    Constrói a mensagem de e-mail base (sem anexos).
     """
     message = EmailMessage()
 
@@ -60,20 +119,25 @@ def build_email_message(
     message["Bcc"] = ", ".join(recipients) # Usando Bcc para não expor destinatários
     message["Subject"] = subject
 
-    # Conteúdo em texto puro (para clientes que não renderizam HTML)
-    plain_text_body = plain_body or "Mensagem sem versão em texto simples."
-    message.set_content(plain_text_body)
-
-    # Adiciona a versão em HTML
-    message.add_alternative(html_body, subtype="html")
+    try:
+        plain_body = _read_file(plain_body_path)
+        message.set_content(plain_body)
+    except Exception as exc:
+        log("Corpo em texto puro não fornecido ou falha ao ler: %s", exc)
+    
+    try:
+        html_body = _read_file(html_body_path)
+        message.add_alternative(html_body, subtype="html")
+    except Exception as exc:
+        log("Corpo em HTML não fornecido ou falha ao ler: %s", exc)
 
     return message
 
 
-# Funções para anexar arquivos e imagens inline
-def add_attachments_to_message(
+# Funções para anexar arquivos
+def _add_attachments_to_message(
     message: EmailMessage,
-    attachments: AttachmentPaths,
+    attachments: Optional[Sequence[str]],
 ) -> None:
     """
     Adiciona anexos ao objeto `EmailMessage`.
@@ -86,10 +150,10 @@ def add_attachments_to_message(
 
         # Se o arquivo não existir, registra aviso e segue para o próximo.
         if not path.exists():
-            logger.warning("Anexo não encontrado, ignorando: %s", attach_path)
+            log("Anexo não encontrado, ignorando: %s", attach_path)
             continue
 
-        maintype, subtype = guess_mime_type(path)
+        maintype, subtype = _guess_mime_type(path)
 
         # Lê o conteúdo binário do arquivo
         with path.open("rb") as file_handle:
@@ -104,58 +168,8 @@ def add_attachments_to_message(
         )
 
 
-def add_inline_images_to_message(
-    message: EmailMessage,
-    inline_images: InlineImages,
-) -> None:
-    """
-    Adiciona imagens inline (referenciadas por Content-ID) ao e-mail.
-    """
-    if not inline_images:
-        return
-
-    for content_id_name, img_path in inline_images.items():
-        path = Path(img_path)
-
-        # Se a imagem não existir, registra aviso e segue.
-        if not path.exists():
-            logger.warning("Imagem inline não encontrada, ignorando: %s", img_path)
-            continue
-
-        maintype, subtype = guess_mime_type(path)
-
-        # Lê a imagem em bytes
-        with path.open("rb") as file_handle:
-            image_bytes = file_handle.read()
-
-        # Adiciona inicialmente como anexo comum
-        message.add_attachment(
-            image_bytes,
-            maintype=maintype,
-            subtype=subtype,
-            filename=path.name,
-        )
-
-        # Recupera o payload para acessar a última parte adicionada
-        payload = message.get_payload()
-
-        # Garante que o payload é uma lista de partes (com alternativa HTML, anexos etc.)
-        if isinstance(payload, list) and payload:
-            last_part: EmailMessage = payload[-1]
-
-            # Define o Content-ID que será referenciado no HTML
-            last_part.add_header("Content-ID", f"<{content_id_name}>")
-
-            # Marca o conteúdo como inline para aparecer embutido no corpo
-            last_part.add_header(
-                "Content-Disposition",
-                "inline",
-                filename=path.name,
-            )
-
-
 # Funções de envio via SMTP
-def get_smtp_client_class(use_ssl: bool, smtp_port: int) -> Type[smtplib.SMTP]:
+def _get_smtp_client_class(use_ssl: bool, smtp_port: int) -> Type[smtplib.SMTP]:
     """
     Retorna a classe de cliente SMTP apropriada (SMTP ou SMTP_SSL).
     """
@@ -165,7 +179,7 @@ def get_smtp_client_class(use_ssl: bool, smtp_port: int) -> Type[smtplib.SMTP]:
     return smtplib.SMTP
 
 
-def send_prepared_message_via_smtp(
+def _send_prepared_message_via_smtp(
     message: EmailMessage,
     smtp_host: str,
     smtp_port: int,
@@ -177,7 +191,7 @@ def send_prepared_message_via_smtp(
     """
     Envia uma mensagem `EmailMessage` usando SMTP (STARTTLS por padrão).
     """
-    smtp_class = get_smtp_client_class(
+    smtp_class = _get_smtp_client_class(
         use_ssl=use_ssl,
         smtp_port=smtp_port,
     )
@@ -196,14 +210,15 @@ def send_prepared_message_via_smtp(
             # Envia a mensagem já preparada
             server.send_message(message)
 
-        logger.info("E-mail enviado com sucesso para: %s", message["To"])
+        log("E-mail enviado com sucesso para: %s", message["To"])
 
     except Exception as exc:
-        logger.exception("Falha ao enviar e-mail via SMTP: %s", exc)
+        log.exception("Falha ao enviar e-mail via SMTP: %s", exc)
         raise
 
 
 # Função que orquestra todo o envio
+@task(max_retries=2, retry_delay=timedelta(minutes=2))
 def send_email_smtp(
     smtp_host: str,
     smtp_port: int,
@@ -213,42 +228,36 @@ def send_email_smtp(
     sender_name: str,
     recipients: Sequence[str],
     subject: str,
-    html_body: str,
-    plain_body: Optional[str] = None,
-    attachments: AttachmentPaths = None,
-    inline_images: InlineImages = None,
+    html_body_path: str,
+    plain_body_path: Optional[str] = None,
+    attachments: Optional[Sequence[str]] = None,
     use_ssl: bool = False,
 ) -> None:
     """
     Função de alto nível para envio de e-mails via SMTP.
     """
     # Normaliza e valida a lista de destinatários
-    normalized_recipients = normalize_recipients(recipients)
+    normalized_recipients = _normalize_recipients(recipients)
 
     # Constrói a mensagem (sem anexos / imagens)
-    message: EmailMessage = build_email_message(
+    message = _build_email_message(
         sender_email=sender_email,
         sender_name=sender_name,
         recipients=normalized_recipients,
         subject=subject,
-        html_body=html_body,
-        plain_body=plain_body,
+        html_body_path=html_body_path,
+        plain_body_path=plain_body_path,
     )
 
-    # Adiciona anexos, se houver
-    add_attachments_to_message(
-        message=message,
-        attachments=attachments,
-    )
-
-    # Adiciona imagens inline, se houver
-    add_inline_images_to_message(
-        message=message,
-        inline_images=inline_images,
-    )
+    if attachments:
+        # Adiciona anexos, se houver
+        _add_attachments_to_message(
+            message=message,
+            attachments=attachments,
+        )
 
     # Envia a mensagem
-    send_prepared_message_via_smtp(
+    _send_prepared_message_via_smtp(
         message=message,
         smtp_host=smtp_host,
         smtp_port=smtp_port,

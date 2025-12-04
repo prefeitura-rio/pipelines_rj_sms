@@ -514,3 +514,13 @@ cases:
     flow_name: report_informes_seguranca
     params:
       environment: "dev"
+  - case_slug: emails-subgeral
+    flow_path: pipelines.datalake.extract_load.emails_subgeral.flows 
+    flow_name: sms_emails_subgeral
+    params:
+      environment: "dev"
+      subject:
+      recipients:
+      query_path:
+      html_body_path:
+      plain_body_path:
