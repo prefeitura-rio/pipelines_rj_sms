@@ -165,3 +165,23 @@ with Flow(
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
     )
+
+# Operator
+prontuario_extraction_operator.executor = LocalDaskExecutor(num_workers=1)
+prontuario_extraction_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+prontuario_extraction_operator.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[constants.RJ_SMS_AGENT_LABEL.value],
+    memory_request="1Gi",
+    memory_limit="2Gi",
+)
+
+# Manager
+prontuario_extraction_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+prontuario_extraction_manager.executor = LocalDaskExecutor(num_workers=8)
+prontuario_extraction_manager.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[constants.RJ_SMS_AGENT_LABEL.value],
+    memory_limit="2Gi",
+    memory_request="1Gi",
+)

@@ -37,6 +37,7 @@ from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitacare_historico.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
+from pipelines.datalake.extract_load.prontuario_gcs.flows import *
 
 # ===============================
 # MIGRATE
