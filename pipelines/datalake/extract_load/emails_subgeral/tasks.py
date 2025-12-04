@@ -128,13 +128,13 @@ def _build_email_message(
         plain_body = _read_file(plain_body_path)
         message.set_content(plain_body)
     except Exception as exc:
-        log("Corpo em texto puro não fornecido ou falha ao ler: %s", exc)
+        log(f"Corpo em texto puro não fornecido ou falha ao ler: {exc}")
     
     try:
         html_body = _read_file(html_body_path)
         message.add_alternative(html_body, subtype="html")
     except Exception as exc:
-        log("Corpo em HTML não fornecido ou falha ao ler: %s", exc)
+        log(f"Corpo em HTML não fornecido ou falha ao ler: {exc}")
 
     return message
 
@@ -142,7 +142,7 @@ def _build_email_message(
 # Funções para anexar arquivos
 def _add_attachments_to_message(
     message: EmailMessage,
-    attachments: Optional[Sequence[str]],
+    attachments: str,
 ) -> None:
     """
     Adiciona anexos ao objeto `EmailMessage`.
@@ -150,27 +150,31 @@ def _add_attachments_to_message(
     if not attachments:
         return
 
-    for attach_path in attachments:
-        path = Path(attach_path)
+    raw_path = Path(attachments)
 
-        # Se o arquivo não existir, registra aviso e segue para o próximo.
-        if not path.exists():
-            log("Anexo não encontrado, ignorando: %s", attach_path)
-            continue
+    # Se for relativo, resolvemos em relação ao BASE_DIR
+    if not raw_path.is_absolute():
+        path = (BASE_DIR / raw_path).resolve()
+    else:
+        path = raw_path
 
-        maintype, subtype = _guess_mime_type(path)
+    # Se o arquivo não existir, registra aviso e segue para o próximo.
+    if not path.exists():
+        log(f"Anexo não encontrado, ignorando: {path}")
 
-        # Lê o conteúdo binário do arquivo
-        with path.open("rb") as file_handle:
-            file_bytes = file_handle.read()
+    maintype, subtype = _guess_mime_type(path)
 
-        # Adiciona o anexo ao e-mail
-        message.add_attachment(
-            file_bytes,
-            maintype=maintype,
-            subtype=subtype,
-            filename=path.name,
-        )
+    # Lê o conteúdo binário do arquivo
+    with path.open("rb") as file_handle:
+        file_bytes = file_handle.read()
+
+    # Adiciona o anexo ao e-mail
+    message.add_attachment(
+        file_bytes,
+        maintype=maintype,
+        subtype=subtype,
+        filename=path.name,
+    )
 
 
 # Funções de envio via SMTP
@@ -214,11 +218,11 @@ def _send_prepared_message_via_smtp(
 
             # Envia a mensagem já preparada
             server.send_message(message)
-
-        log("E-mail enviado com sucesso para: %s", message["To"])
+            
+            log("E-mail enviado com sucesso.")
 
     except Exception as exc:
-        log.exception("Falha ao enviar e-mail via SMTP: %s", exc)
+        log(f"Falha ao enviar e-mail via SMTP: {exc}")
         raise
 
 
