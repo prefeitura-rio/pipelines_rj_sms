@@ -74,7 +74,9 @@ with Flow(
     )
 
     # Task 3 - remove arquivo do disco
-    delete_file = delete_file_from_disk(filepath=xl_absolute_path)
+    delete_file = delete_file_from_disk(
+        filepath=xl_absolute_path,
+        upstream_tasks=[email])
 
     # To do: Task 4 - Log flow run (escreve em tabela de log no BQ)
 

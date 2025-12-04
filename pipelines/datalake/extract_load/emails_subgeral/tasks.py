@@ -11,24 +11,27 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from datetime import datetime
 
 
-def _read_file(html_path: str) -> str:
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def _read_file(relative_path: str) -> str:
     """
-    Lê o conteúdo de um arquivo, resolvendo o caminho absoluto.
+    Lê o conteúdo de um arquivo, resolvendo o caminho absoluto
+    relativo a este arquivo.
     """
-    path = Path(html_path).resolve()
+    path = (BASE_DIR / relative_path).resolve()
+
     if not path.exists():
         msg = f"Arquivo HTML não encontrado: {path}"
         log(msg)
         raise FileNotFoundError(msg)
 
     with path.open("r", encoding="utf-8") as file_handle:
-        html_content = file_handle.read()
-
-    return html_content
+        return file_handle.read()
 
 # Tarefa principal para extrair dados do BigQuery
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def bigquery_to_xl_disk(subject:str, query_path: str) -> str:
+def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
     """
     Executa uma consulta no BigQuery, salva em Excel e retorna o caminho absoluto do arquivo.
     """
@@ -37,7 +40,7 @@ def bigquery_to_xl_disk(subject:str, query_path: str) -> str:
         return None
     
     query = _read_file(query_path)
-    
+
     client = bigquery.Client()
     log("Cliente Big Query OK")
 
@@ -45,19 +48,20 @@ def bigquery_to_xl_disk(subject:str, query_path: str) -> str:
     log(query)
     log("Query executada com sucesso")
     log(f"{df.sample(5)}")
-    
 
-    # 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    subject = subject.replace(" ", "_")
-    filename = f"{subject}__{timestamp}.xlsx"
-    filepath = Path.cwd() / filename
-    
-    df.to_excel(filepath, index=False, encoding="utf-8-sig")
+    safe_subject = subject.replace(" ", "_")
+    filename = f"{safe_subject}__{timestamp}.xlsx"
+
+    # caminho baseado no arquivo atual, não no cwd
+    filepath = (BASE_DIR / filename).resolve()
+
+    df.to_excel(filepath, index=False)
     log(f"Arquivo salvo: {filepath}")
-    
-    return str(filepath.absolute())
+
+    return str(filepath)
+
 
 
 # Apaga arquivo do disco
@@ -66,12 +70,13 @@ def delete_file_from_disk(filepath: str) -> None:
     """
     Apaga um arquivo do disco.
     """
+
     path = Path(filepath)
     if path.exists():
         path.unlink()
-        log("Arquivo apagado do disco: %s", filepath)
+        log(f"Arquivo apagado do disco: {filepath}")
     else:
-        log("Arquivo não encontrado para apagar: %s", filepath)
+        log(f"Arquivo não encontrado para apagar: {filepath}")
 
 
 # Funções utilitárias relacionadas a MIME / arquivos
@@ -236,6 +241,7 @@ def send_email_smtp(
     """
     Função de alto nível para envio de e-mails via SMTP.
     """
+
     # Normaliza e valida a lista de destinatários
     normalized_recipients = _normalize_recipients(recipients)
 
