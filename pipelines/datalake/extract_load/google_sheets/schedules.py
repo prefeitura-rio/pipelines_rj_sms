@@ -255,6 +255,16 @@ daily_parameters = [
         "url_type": "google_sheet",
     },
     {
+        "csv_delimiter": ",",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Controle PGM 2025",
+        "rename_flow": True,
+        "table_id": "pgm",
+        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
+        "url_type": "google_sheet",
+    },
+    {
         "url": "https://docs.google.com/spreadsheets/d/1gCVtBz0udlcgFKtKJHvjsGwI0wA8kQyNU_bUSGHN8Hw",
         "url_type": "google_sheet",
         "gsheets_sheet_name": "cids",
@@ -275,6 +285,19 @@ weekly_parameters = [
         "rename_flow": True,
         "table_id": "contatos_caps",
         "url": "https://docs.google.com/spreadsheets/d/18yQ7o8CRnt-i4nPym0WyzMtVXdd96GvWbQwMQxAHlLM",
+        "url_type": "google_sheet",
+    },
+]
+
+monthly_parameters = [
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "codigos",
+        "rename_flow": True,
+        "table_id": "codigos_exames",
+        "url": "https://docs.google.com/spreadsheets/d/1IwykWf0glAraHrVDZLJosxuhnpo8AO5EUdj1OSwDqNU",
         "url_type": "google_sheet",
     },
 ]
@@ -301,6 +324,16 @@ weekly_clocks = generate_dump_api_schedules(
     runs_interval_minutes=30,
 )
 
-clocks = daily_clocks + weekly_clocks
+monthly_clocks = generate_dump_api_schedules(
+    interval=timedelta(days=30),
+    start_date=datetime(2025, 11, 15, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    flow_run_parameters=monthly_parameters,
+    runs_interval_minutes=30,
+)
+
+clocks = daily_clocks + weekly_clocks + monthly_clocks
 
 daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))

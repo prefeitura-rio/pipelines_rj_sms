@@ -31,13 +31,12 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
 
     BASE = "https://doweb.rio.rj.gov.br/busca/busca/buscar/query/0"
     DATE_INTERVAL = f"/di:{date}/df:{date}"
-    # Precisamos de algum texto de busca, então buscamos
-    # por "Secretaria Municipal de Saúde", entre aspas
+    # Precisamos de algum texto de busca, então buscamos por "rio", entre aspas
     QUERY = "/?q=" + urllib.parse.quote('"rio"')
     URL = f"{BASE}{DATE_INTERVAL}{QUERY}"
     log(f"Fetching DO for date '{date}'")
 
-    # Faz requisição GET, recebe um JSON
+    # Faz requisição GET, recebe um JSON ou um Exception
     json = send_get_request(URL, "json")
     # Confere se houve erro na requisição
     if isinstance(json, Exception):
@@ -55,6 +54,13 @@ def get_current_DO_identifiers(date: Optional[str], env: Optional[str]) -> List[
     distinct_ids = list(distinct_ids)
     do_count = len(distinct_ids)
     log(f"Found {do_count} distinct DO(s) on specified date: {distinct_ids}")
+    # Confere se não recebemos nenhum DO para a data atual
+    if do_count <= 0:
+        # Nesse caso, reporta status de falha na extração para essa data
+        report_extraction_status(False, date, environment=env)
+        # Dá erro; task vai ser retentada daqui a N minutos
+        raise Exception("Found no DO for specified date!")
+
     # Atrela os IDs à data atual
     result = list(zip(distinct_ids, [date] * do_count))
     return result

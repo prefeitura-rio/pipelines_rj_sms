@@ -293,10 +293,10 @@ cases:
     flow_name: "sms_cr_mysql"
     params:
       environment: "dev"
-      database: "monitoramento"
+      database: "subhue_eletivas"
       host: "db.smsrio.org"
-      table: "vw_MS_CadastrosAtivacoesGov"
-      query: "SELECT * FROM vw_MS_CadastrosAtivacoesGov"
+      table: "vw_eletivas_sisare"
+      query: "SELECT * FROM vw_eletivas_sisare"
       bq_dataset: "brutos_centralderegulacao_mysql"
   - case_slug: "datalake-migrate-gdrive_to_gcs"
     flow_path: "pipelines.datalake.migrate.gdrive_to_gcs.flows"
@@ -488,6 +488,14 @@ cases:
       table_name: "CURATIVOS"
       db_schema: "dbo"
       partition_column: "extracted_at"
+  - case_slug: extract_gdb
+    flow_path: pipelines.datalake.extract_load.extract_gdb.flows
+    flow_name: extract_gdb
+    params:
+      environment: "dev"
+      gs_uri: "gs://path/to/file.GDB"
+      dataset: "brutos_gdb_xxxx"
+  # -----------------------------------
   - case_slug: "report-alerta-jobs-caros"
     flow_path: "pipelines.reports.alerta_jobs_caros.flows"
     flow_name: "report_alerta_jobs_caros"
