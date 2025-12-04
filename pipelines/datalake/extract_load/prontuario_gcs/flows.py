@@ -123,7 +123,7 @@ with Flow(
 # FLOW MANAGER
 ################
 with Flow(
-    name="DataLake - Extração e Carga de Dados - ProntuaRIO Backups",
+    name="DataLake - Extração e Carga de Dados - ProntuaRIO Backups (MANAGER)",
     state_handlers=[handle_flow_state_change],
     owners=[constants.HERIAN_ID.value],
 ) as prontuario_extraction_manager:
