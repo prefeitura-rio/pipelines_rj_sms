@@ -507,9 +507,24 @@ cases:
     params:
       environment: "dev"
 
-  - case_slug: prontuario_extraction
-    flow_path: pipelines.datalake.extract_load.prontuario_cgs.flows
-    flow_name: prontuario_extraction
+  - case_slug: prontuario_extraction_operator
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_extraction_operator
     params:
       environment: "dev"
       bucket_name: "subhue_backups"
+      dataset: 'brutos_prontuario_prontuaRIO'
+      blob_prefix_list: ['2025-11/hospub-2269945-BASE-10-11-2025-18h00m.tar.gz',
+                        '2025-11/hospub-2269945-VISUAL-10-11-2025-23h30m.tar.gz']
+      cnes: '2269945'
+      lines_per_chunk: 100000
+
+
+  - case_slug: prontuario_extraction_manager
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_extraction_manager
+    params:
+      environment: "dev"
+      bucket_name: "subhue_backups"
+      dataset: 'brutos_prontuario_prontuaRIO'
+

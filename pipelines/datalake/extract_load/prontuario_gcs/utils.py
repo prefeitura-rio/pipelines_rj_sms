@@ -48,15 +48,23 @@ def handle_others(field_bytes, attrs):
         #print(field_bytes, attrs["type"])
         return field_bytes.strip()
     
-def read_table(table_name, structured_dictionary):
-    with open(table_name, "rb") as f:
-        rows = []
+def read_table(table_path, structured_dictionary, output_dir):
+    with open(table_path, "rb") as f:
 
         metadata = list(structured_dictionary.keys())
         metadata = sorted(metadata, key=lambda x: structured_dictionary[x]["offset"])
         last_col = metadata[-1]
         expected_length = structured_dictionary[last_col]["size"] + structured_dictionary[last_col]["offset"] + 1
-
+        
+        # Extrai o nome da tabela a partir do caminho do arquivo
+        # Ex: ./data/hospub-2296306-BASE-31-08-2025-22h42m/alta_clinica._S.
+        table_name = table_path.split('/')[-1].split('.')[0]
+        csv_name = f'{output_dir}/{table_name}.csv'
+        
+        # Cria o arquivo CSV para a respectiva tabela e adiciona a linha de colunas
+        with open(csv_name, 'w') as csv_file:
+            csv_file.write(','.join(metadata) + '\n')
+        
         while True:
             rec = f.read(expected_length)
             if not rec:
@@ -83,9 +91,14 @@ def read_table(table_name, structured_dictionary):
                     value = handle_others(field_bytes, attrs)
 
                 row[col] = value
-            rows.append(row)
+            
+            # Escreve a linha extraída diretamente no CSV
+            with open(csv_name, 'a') as csv_file:
+                # Converte possíveis valores inteiros para string
+                line = [str(value) for value in row.values()]
+                csv_file.write(','.join(line) + '\n')
 
-    return pd.DataFrame(rows)
+    return csv_name
 
 def extract_table_name(insert_stmt):
     """Extrai o nome da tabela do comando INSERT INTO."""
@@ -292,8 +305,6 @@ if __name__ == '__main__':
     input_file = 'data/hospub-2269945-VISUAL-10-11-2025-23h30m/hospub.sql'
     tables_to_extract = ['public.hp_rege_evolucao', 'public.hp_rege_ralta', 'public.hp_rege_receituario', 'public.hp_descricao_cirurgia',
                                 'public.hp_rege_emerg', 'public.hp_prontuario_be']
-    process_sql_file_streaming(input_file=input_file,
-                               output_path='upload',
-                               target_tables=tables_to_extract)
-    print('FIM')
-
+    #process_sql_file_streaming(input_file=input_file,
+    #                           output_path='upload',
+    #                           target_tables=tables_to_extract)

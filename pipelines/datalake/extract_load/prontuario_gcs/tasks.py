@@ -4,6 +4,7 @@ import csv
 import shutil
 import tarfile
 import pandas as pd
+from google.cloud import bigquery, storage
 from pandas.errors import EmptyDataError
 from datetime import datetime
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -11,8 +12,8 @@ from pipelines.utils.logger import log
 from pipelines.constants import constants
 from pipelines.utils.googleutils import download_from_cloud_storage
 from pipelines.utils.tasks import upload_df_to_datalake
-from pipelines.datalake.extract_load.prontuario_cgs.constants import constants as prontuario_constants
-from pipelines.datalake.extract_load.prontuario_cgs.utils import read_table, process_sql_file_streaming
+from pipelines.datalake.extract_load.prontuario_gcs.constants import constants as prontuario_constants
+from pipelines.datalake.extract_load.prontuario_gcs.utils import read_table, process_sql_file_streaming
 
 @task
 def create_temp_folders(folders) -> None:
@@ -21,10 +22,34 @@ def create_temp_folders(folders) -> None:
     return
 
 @task
-def get_file(path, bucket_name, blob_prefix, environment, wait_for) -> list:
-    log('⬇️  Realizando download do arquivo...')
-    return download_from_cloud_storage(path, bucket_name, blob_prefix)
+def get_files(path, bucket_name, blob_prefixes, environment, wait_for) -> list:
+    log('⬇️ Realizando download dos arquivos no bucket...')
+    files = []
+    for prefix in blob_prefixes:
+        log(f'Realizando download de {prefix}...')
+        filename = download_from_cloud_storage(path, bucket_name, prefix)
+        files.append(filename[0] if filename else None)
+    log('✅ Download feito com sucesso.')
+    return files
+
+@task
+def get_cnes_from_file_name(files):
+    cnes_list = []
+    for file in files:
+        match = re.search(r'hospub-(\d+)', file)
+        cnes_list.append(match.group(1))
+        
+    cnes_list = set(cnes_list)
     
+    output = {}
+    for cnes in cnes_list:
+        files_per_cnes = []
+        for file in files:
+            if cnes in file:
+                files_per_cnes.append(file)
+        output[cnes] = files_per_cnes
+    return output
+
 @task
 def unpack_files(tar_files:str, output_dir:str, environment) -> None:
     log(f'📁 Descompactando {len(tar_files)} arquivo(s)...')
@@ -69,10 +94,7 @@ def extract_openbase_data(
     
     openbase_path = os.path.join(data_dir, openbase_folder)
     
-    # Lista os arquivos brutos em cada diretório
-    log(f'Extraindo dados de {openbase_path}')
-    
-    cnes = openbase_path.split("-")[1]        
+    log(f'Extraindo dados de {openbase_path}')  
     
     tables = [x for x in os.listdir(openbase_path) if x.endswith('._S')] 
     tables.sort()
@@ -114,59 +136,58 @@ def extract_openbase_data(
             acc_offset += size
         dictionaries[table] = structured_dictionary
 
+    csv_names = []
     for table, dictionary in tables_data:
         if not table in selected_tables:
             continue
         table_name = table.replace("._S", "").replace(f"{openbase_path}", "")
         structured_dictionary = dictionaries[table]
-        df = read_table(f'{openbase_path}/{table}', structured_dictionary)
-        output_name = os.path.join(upload_path,f'{table_name.lower()}.csv')
-        df.to_csv(output_name, 
-                  index=False, 
-                  encoding="utf-8", 
-                  quoting=csv.QUOTE_ALL, 
-                  sep=",", 
-                  escapechar="\\")
-    return cnes
+        csv_name = read_table(f'{openbase_path}/{table}', structured_dictionary, upload_path)
+        csv_names.append(csv_name)
+    return csv_names
 
 
 @task
-def upload(upload_path, dataset_id, wait_for, environment, cnes) -> None:
+def upload_to_datalake(upload_path, dataset_id, wait_for, environment, cnes, lines_per_chunk) -> None:
     for folder in os.listdir(upload_path):
         for file in os.listdir(os.path.join(upload_path, folder)):
             file_path = os.path.join(upload_path, folder, file)
             try:
-                df = pd.read_csv(file_path, 
+                csv_chunks = pd.read_csv(file_path, 
                     sep=',',          
                     quotechar='"',
                     skipinitialspace=True,
-                    low_memory=False,
                     dtype=str,
-                    on_bad_lines='warn'
+                    on_bad_lines='warn',
+                    chunksize=lines_per_chunk
                 )
-                if not df.empty:
-                    # Remove possíveis pontos em nome de colunas que invialibizam o upload
-                    cols_renamed = [col.replace('.', '') for col in df.columns]
-                    df.rename(columns=dict(zip(df.columns, cols_renamed)), inplace=True)
-                    
-                    df['loaded_at'] = datetime.now().isoformat()
-                    df['cnes'] = cnes
-                    
-                    table_name = f"{folder.lower()}_{file.replace('.csv', '')}"
-                    upload_df_to_datalake.run(
-                        df=df,
-                        dataset_id=dataset_id,
-                        table_id=table_name,
-                        partition_column="loaded_at",
-                        if_exists="append",
-                        if_storage_data_exists="append",
-                        source_format="csv",
-                        csv_delimiter=",",
-            )
+                for i, chunk in enumerate(csv_chunks):
+                    df = pd.DataFrame(chunk)
+                    if not df.empty:
+                        # Remove possíveis pontos em nome de colunas que invialibizam o upload
+                        cols_renamed = [col.replace('.', '') for col in df.columns]
+                        df.rename(columns=dict(zip(df.columns, cols_renamed)), inplace=True)
+                        
+                        df['loaded_at'] = datetime.now().isoformat()
+                        df['cnes'] = cnes
+                        
+                        table_name = f"{folder.lower()}_{file.replace('.csv', '')}"
+                        upload_df_to_datalake.run(
+                            df=df,
+                            dataset_id=dataset_id,
+                            table_id=table_name,
+                            partition_column="loaded_at",
+                            if_exists="append",
+                            if_storage_data_exists="append",
+                            source_format="csv",
+                            csv_delimiter=",",
+                        )
+                        log(f'⬆️ Upload {i+1} de {table_name} feito com sucesso!')
             except EmptyDataError as e:
                 log(f'⚠️ {file} está vazio.')
             except Exception as e:
                 log(f'Erro no upload da tabela {file}')
+                raise e
     return        
 
 @task
@@ -175,7 +196,42 @@ def delete_temp_folders(folders, wait_for):
         shutil.rmtree(folder)
     return
 
+@task
+def list_files_from_bucket(environment, bucket_name, folder):
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    files = bucket.list_blobs(prefix=f'{folder}/hospub')
+    
+    files_path = [str(f.name) for f in files]
+        
+    return files_path
+
+
+@task
+def build_operator_parameters(
+    files_per_cnes : dict,
+    bucket_name: str,
+    dataset_id :str,
+    environment: str = "dev",
+) -> list:
+    """Gera lista de parâmetros para o(s) operator(s).
+    """
+    return [
+        {
+        "environment": environment, 
+        'dataset': dataset_id,
+        'bucket_name': bucket_name,
+        'cnes': cnes,
+        'blob_prefix_list':files,
+        'rename_flow':True
+        }
+        for cnes, files in files_per_cnes.items()
+    ]
 
 @task
 def dumb_task(bucket):
     return
+
+
+if __name__ == '__main__':
+    files = list_files_from_bucket(environment=None, bucket_name='subhue_backups')
