@@ -56,6 +56,14 @@ flow_parameters = [
         "query": "SELECT * FROM vw_minhasauderio_pesquisa_satisfacao",
         "bq_dataset": "brutos_centralderegulacao_mysql",
     },
+    {
+        "environment": "prod",
+        "database": "subhue_eletivas",
+        "host": "db.smsrio.org",
+        "table": "vw_eletivas_sisare",
+        "query": "SELECT * FROM vw_eletivas_sisare",
+        "bq_dataset": "brutos_centralderegulacao_mysql",
+    },
 ]
 
 clocks = generate_dump_api_schedules(
