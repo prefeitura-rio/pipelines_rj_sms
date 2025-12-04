@@ -336,6 +336,6 @@ if __name__ == "__main__":
         "public.hp_rege_emerg",
         "public.hp_prontuario_be",
     ]
-    process_sql_file_streaming(input_file=input_file,
-                               output_path='upload',
-                               target_tables=tables_to_extract)
+    process_sql_file_streaming(
+        input_file=input_file, output_path="upload", target_tables=tables_to_extract
+    )

@@ -127,17 +127,15 @@ with Flow(
     state_handlers=[handle_flow_state_change],
     owners=[constants.HERIAN_ID.value],
 ) as prontuario_extraction_manager:
-    
+
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     RENAME_FLOW = Parameter("rename_flow", required=False)
     DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
-    FOLDER = Parameter ("folder", default='', required=True)
-    
+    FOLDER = Parameter("folder", default="", required=True)
+
     # 1 - Listar os arquivos no bucket
-    files = list_files_from_bucket(
-        environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=FOLDER
-    )
+    files = list_files_from_bucket(environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=FOLDER)
 
     # 2 - Separar path por CNES
     prefix_p_cnes = get_cnes_from_file_name(files=files)
