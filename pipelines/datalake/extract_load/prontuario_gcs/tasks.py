@@ -71,6 +71,7 @@ def unpack_files(tar_files: str, output_dir: str, environment) -> None:
         output_path = os.path.join(output_dir, os.path.basename(file).replace(".tar.gz", ""))
         with tarfile.open(file, "r:gz") as tar:
             tar.extractall(path=output_path)
+        os.remove(file)
 
     log(f"✅ Arquivo descompactado em {output_dir}")
     return
@@ -86,9 +87,14 @@ def extract_postgres_data(data_dir: str, wait_for, output_dir) -> None:
     postgres_folder = [
         folder_name for folder_name in os.listdir(data_dir) if "VISUAL" in folder_name
     ][0]
+    
     sql_path = os.path.join(data_dir, postgres_folder, "hospub.sql")
-
-    return process_sql_file_streaming(sql_path, upload_path, target_tables)
+    
+    process_sql_file_streaming(sql_path, upload_path, target_tables)
+    
+    # Deleta o arquivo SQL para liberar armazenamento para o flow no Prefect
+    os.remove(sql_path)
+    return 
 
 
 @task
@@ -154,6 +160,10 @@ def extract_openbase_data(data_dir: str, output_dir: str, wait_for) -> str:
         structured_dictionary = dictionaries[table]
         csv_name = read_table(f"{openbase_path}/{table}", structured_dictionary, upload_path)
         csv_names.append(csv_name)
+    
+    # Deleta o diretório com os arquivos OpenBase para liberar armazenamento no Prefect
+    shutil.rmtree(openbase_path)
+    
     return csv_names
 
 
@@ -203,13 +213,11 @@ def upload_to_datalake(
                 raise e
     return
 
-
 @task
 def delete_temp_folders(folders, wait_for):
     for folder in folders:
         shutil.rmtree(folder)
     return
-
 
 @task
 def list_files_from_bucket(environment, bucket_name, folder):

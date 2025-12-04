@@ -324,9 +324,6 @@ def process_sql_file_streaming(input_file, output_path, target_tables=None, buff
             processed_count += 1
 
     print(f"\nProcessamento concluído!")
-    print(f"Total de linhas lidas: {line_count}")
-    print(f"Total de registros extraídos: {processed_count}")
-    print(f"\nArquivos CSV gerados:")
 
 
 if __name__ == "__main__":
@@ -339,6 +336,6 @@ if __name__ == "__main__":
         "public.hp_rege_emerg",
         "public.hp_prontuario_be",
     ]
-    # process_sql_file_streaming(input_file=input_file,
-    #                           output_path='upload',
-    #                           target_tables=tables_to_extract)
+    process_sql_file_streaming(input_file=input_file,
+                               output_path='upload',
+                               target_tables=tables_to_extract)

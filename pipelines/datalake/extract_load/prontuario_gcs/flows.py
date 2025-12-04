@@ -43,7 +43,7 @@ from pipelines.utils.tasks import (
 )
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - ProntuaRIO Backups",
+    name="DataLake - Extração e Carga de Dados - ProntuaRIO Backups (OPERATOR)",
     state_handlers=[handle_flow_state_change],
     owners=[constants.HERIAN_ID.value],
 ) as prontuario_extraction_operator:
@@ -127,10 +127,16 @@ with Flow(
     state_handlers=[handle_flow_state_change],
     owners=[constants.HERIAN_ID.value],
 ) as prontuario_extraction_manager:
-
+    
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
+    RENAME_FLOW = Parameter("rename_flow", required=False)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
+    FOLDER = Parameter ("folder", default='', required=True)
+    
     # 1 - Listar os arquivos no bucket
     files = list_files_from_bucket(
-        environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder="2025-11"
+        environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=FOLDER
     )
 
     # 2 - Separar path por CNES
@@ -150,7 +156,7 @@ with Flow(
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
     current_labels = get_current_flow_labels()
 
-    operator_runs = create_flow_run.map(
+    created_operator_runs = create_flow_run.map(
         flow_name=unmapped(prontuario_extraction_operator.name),
         project_name=unmapped(prefect_project_name),
         labels=unmapped(current_labels),
@@ -160,7 +166,7 @@ with Flow(
 
     ## 3.3 Acompanhar cada operator pelo wait_for_flow
     wait_for_operator_runs = wait_for_flow_run(
-        flow_run_id=operator_runs,
+        flow_run_id=created_operator_runs,
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),
