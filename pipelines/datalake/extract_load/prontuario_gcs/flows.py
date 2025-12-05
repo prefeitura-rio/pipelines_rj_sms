@@ -194,10 +194,10 @@ with Flow(
 
     # 2.3 Acompanhar cada operator pelo wait_for_flow
     wait_for_operator_runs = wait_for_flow_run(
-       flow_run_id=created_operator_runs,
-       stream_states=unmapped(True),
-       stream_logs=unmapped(True),
-       raise_final_state=unmapped(True),
+        flow_run_id=created_operator_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
     )
 
 # Operator
