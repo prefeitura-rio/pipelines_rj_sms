@@ -17,7 +17,6 @@ from pipelines.datalake.extract_load.prontuario_gcs.tasks import (
     build_operator_parameters,
     create_temp_folders,
     delete_temp_folders,
-    dumb_task,
     extract_openbase_data,
     extract_postgres_data,
     get_file,
