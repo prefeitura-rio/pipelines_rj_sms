@@ -1,3 +1,4 @@
+import pandas as pd
 from google.cloud import bigquery
 from datetime import timedelta
 import mimetypes
@@ -275,3 +276,38 @@ def send_email_smtp(
         smtp_password=smtp_password,
         use_ssl=use_ssl,
     )
+
+# Função que cria um dataframe com metadados para log
+@task
+def make_meta_df(
+    environment : str,
+    subject : str,
+    recipients : str,
+    query_path : str,
+    attachments : str,
+    html_body_path : str,
+    plain_body_path : str,
+    sender_name : str,
+    sender_email : str,
+    smtp_user : str,
+    smtp_host : str,
+    smtp_port : str,
+) -> pd.DataFrame:
+    row = {
+        "date" : datetime.now(),
+        "environment" : environment,
+        "subject" : subject,
+        "recipients" : recipients,
+        "query_path" : query_path,
+        "attachments" : attachments,
+        "html_body_path" : html_body_path,
+        "plain_body_path" : plain_body_path,
+        "sender_name" : sender_name,
+        "sender_email" : sender_email,
+        "smtp_user" : smtp_user,
+        "smtp_host" : smtp_host,
+        "smtp_port" : smtp_port
+    }
+
+    df = pd.DataFrame([row])
+    return df

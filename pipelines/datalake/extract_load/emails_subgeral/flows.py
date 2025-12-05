@@ -17,13 +17,14 @@ from pipelines.datalake.extract_load.emails_subgeral.schedules import schedule
 from pipelines.datalake.extract_load.emails_subgeral.tasks import (
     bigquery_to_xl_disk,
     send_email_smtp,
-    delete_file_from_disk
+    delete_file_from_disk,
+    make_meta_df
 )
 
 # internos
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 ###
 
@@ -78,8 +79,31 @@ with Flow(
         filepath=xl_absolute_path,
         upstream_tasks=[email])
 
-    # To do: Task 4 - Log flow run (escreve em tabela de log no BQ)
+    # Task 4 - Cria metadados sobre emails enviados
+    df = make_meta_df(
+        environment = ENVIRONMENT,
+        subject = SUBJECT,
+        recipients = RECIPIENTS,
+        query_path = QUERY_PATH,
+        attachments = xl_absolute_path,
+        html_body_path = HTML_BODY_PATH,
+        plain_body_path = PLAIN_BODY_PATH,
+        sender_name = SENDER_NAME,
+        sender_email = user,
+        smtp_user = user,
+        smtp_host = SMTP_HOST,
+        smtp_port = SMTP_PORT,
+        upstream_tasks=[delete_file]
+    )
 
+    # Task 5 - Escreve metadados no Big Query
+    write_meta = upload_df_to_datalake(
+        df=df,
+        table_id="logs",
+        dataset_id="brutos_emails_subgeral",
+        partition_column="as_of",
+        source_format="parquet",
+    )
 
 sms_emails_subgeral.executor = LocalDaskExecutor(num_workers=1)
 sms_emails_subgeral.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
