@@ -51,7 +51,7 @@ with Flow(
     LINES_PER_CHUNK = Parameter("lines_per_chunk", default=100_000)
 
     with case(RENAME_FLOW, value=True):
-        rename_current_flow_run(name_template=f"Extração: ", cnes=CNES, files=BLOB_PREFIX)
+        rename_current_flow_run(cnes=CNES, files=BLOB_PREFIX)
 
     # 1 - Cria diretórios temporários
     folders_created = create_temp_folders(
@@ -180,7 +180,7 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    ## 2.2 Criar as flows runs para cada CNES
+    # 2.2 Criar as flows runs para cada CNES
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
     current_labels = get_current_flow_labels()
 
@@ -192,12 +192,12 @@ with Flow(
         run_name=unmapped(None),
     )
 
-    ## 2.3 Acompanhar cada operator pelo wait_for_flow
+    # 2.3 Acompanhar cada operator pelo wait_for_flow
     wait_for_operator_runs = wait_for_flow_run(
-        flow_run_id=created_operator_runs,
-        stream_states=unmapped(True),
-        stream_logs=unmapped(True),
-        raise_final_state=unmapped(True),
+       flow_run_id=created_operator_runs,
+       stream_states=unmapped(True),
+       stream_logs=unmapped(True),
+       raise_final_state=unmapped(True),
     )
 
 # Operator

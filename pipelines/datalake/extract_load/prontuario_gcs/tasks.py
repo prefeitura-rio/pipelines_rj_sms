@@ -230,11 +230,13 @@ def list_files_from_bucket(environment, bucket_name, folder):
     # Faz a relação CNES - Prefixo
     cnes_prefix = {}
 
-    for file in files:
-        cnes_match = re.search(r"hospub-(\d+)", file)
-        cnes = cnes_match.group(0)
-
-        prefix_match = re.search(r".*hospub-\d+")
+    for file in files_path:
+        cnes_matches = re.search(r"hospub-(\d+)", file)
+        
+        cnes_match = cnes_matches.group(0) # Ex: hospub-2269945
+        cnes = cnes_match.split('-')[1] # 2269945
+        
+        prefix_match = re.search(r".*hospub-\d+", file)
         prefix = prefix_match.group(0)
 
         cnes_prefix[cnes] = prefix
