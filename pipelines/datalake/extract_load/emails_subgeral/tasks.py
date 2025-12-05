@@ -30,6 +30,7 @@ def _read_file(relative_path: str) -> str:
     with path.open("r", encoding="utf-8") as file_handle:
         return file_handle.read()
 
+
 # Tarefa principal para extrair dados do BigQuery
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
@@ -39,7 +40,7 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
 
     if not query_path:
         return None
-    
+
     query = _read_file(query_path)
 
     client = bigquery.Client()
@@ -62,7 +63,6 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
     log(f"Arquivo salvo: {filepath}")
 
     return str(filepath)
-
 
 
 # Apaga arquivo do disco
@@ -107,6 +107,7 @@ def _normalize_recipients(raw_recipients: Sequence[str]) -> List[str]:
 
     return recipients
 
+
 def _build_email_message(
     sender_email: str,
     sender_name: str,
@@ -122,7 +123,7 @@ def _build_email_message(
 
     message["From"] = f"{sender_name} <{sender_email}>"
     message["To"] = f"{sender_name} <{sender_email}>"
-    message["Bcc"] = ", ".join(recipients) # Usando Bcc para não expor destinatários
+    message["Bcc"] = ", ".join(recipients)  # Usando Bcc para não expor destinatários
     message["Subject"] = subject
 
     try:
@@ -130,7 +131,7 @@ def _build_email_message(
         message.set_content(plain_body)
     except Exception as exc:
         log(f"Corpo em texto puro não fornecido ou falha ao ler: {exc}")
-    
+
     try:
         html_body = _read_file(html_body_path)
         message.add_alternative(html_body, subtype="html")
@@ -219,7 +220,7 @@ def _send_prepared_message_via_smtp(
 
             # Envia a mensagem já preparada
             server.send_message(message)
-            
+
             log("E-mail enviado com sucesso.")
 
     except Exception as exc:
@@ -277,36 +278,37 @@ def send_email_smtp(
         use_ssl=use_ssl,
     )
 
+
 # Função que cria um dataframe com metadados para log
 @task
 def make_meta_df(
-    environment : str,
-    subject : str,
-    recipients : str,
-    query_path : str,
-    attachments : str,
-    html_body_path : str,
-    plain_body_path : str,
-    sender_name : str,
-    sender_email : str,
-    smtp_user : str,
-    smtp_host : str,
-    smtp_port : str,
+    environment: str,
+    subject: str,
+    recipients: str,
+    query_path: str,
+    attachments: str,
+    html_body_path: str,
+    plain_body_path: str,
+    sender_name: str,
+    sender_email: str,
+    smtp_user: str,
+    smtp_host: str,
+    smtp_port: str,
 ) -> pd.DataFrame:
     row = {
-        "date" : datetime.now(),
-        "environment" : environment,
-        "subject" : subject,
-        "recipients" : recipients,
-        "query_path" : query_path,
-        "attachments" : attachments,
-        "html_body_path" : html_body_path,
-        "plain_body_path" : plain_body_path,
-        "sender_name" : sender_name,
-        "sender_email" : sender_email,
-        "smtp_user" : smtp_user,
-        "smtp_host" : smtp_host,
-        "smtp_port" : smtp_port
+        "date": datetime.now(),
+        "environment": environment,
+        "subject": subject,
+        "recipients": recipients,
+        "query_path": query_path,
+        "attachments": attachments,
+        "html_body_path": html_body_path,
+        "plain_body_path": plain_body_path,
+        "sender_name": sender_name,
+        "sender_email": sender_email,
+        "smtp_user": smtp_user,
+        "smtp_host": smtp_host,
+        "smtp_port": smtp_port,
     }
 
     df = pd.DataFrame([row])

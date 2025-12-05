@@ -11,14 +11,14 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.emails_subgeral.constants import (
     SMTP_HOST,
     SMTP_PORT,
-    SENDER_NAME
+    SENDER_NAME,
 )
 from pipelines.datalake.extract_load.emails_subgeral.schedules import schedule
 from pipelines.datalake.extract_load.emails_subgeral.tasks import (
     bigquery_to_xl_disk,
     send_email_smtp,
     delete_file_from_disk,
-    make_meta_df
+    make_meta_df,
 )
 
 # internos
@@ -29,10 +29,10 @@ from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 ###
 
 with Flow(
-        name="SUBGERAL - Envia E-mails",
-        state_handlers=[handle_flow_state_change],
-        owners=[constants.MATHEUS_ID.value]
-    ) as sms_emails_subgeral:
+    name="SUBGERAL - Envia E-mails",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.MATHEUS_ID.value],
+) as sms_emails_subgeral:
 
     # PARAMETROS AMBIENTE ---------------------------
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
@@ -52,9 +52,7 @@ with Flow(
     HTML_BODY_PATH = Parameter("html_body_path", default=None)
     PLAIN_BODY_PATH = Parameter("plain_body_path", default=None)
 
-
-
-    # TASKS -----------------------------------------------       
+    # TASKS -----------------------------------------------
     # Task 1 - Obtém dados, salva no disco e retorna path absoluto
     xl_absolute_path = bigquery_to_xl_disk(subject=SUBJECT, query_path=QUERY_PATH)
 
@@ -71,29 +69,27 @@ with Flow(
         html_body_path=HTML_BODY_PATH,
         plain_body_path=PLAIN_BODY_PATH,
         attachments=xl_absolute_path,
-        use_ssl=False
+        use_ssl=False,
     )
 
     # Task 3 - remove arquivo do disco
-    delete_file = delete_file_from_disk(
-        filepath=xl_absolute_path,
-        upstream_tasks=[email])
+    delete_file = delete_file_from_disk(filepath=xl_absolute_path, upstream_tasks=[email])
 
     # Task 4 - Cria metadados sobre emails enviados
     df = make_meta_df(
-        environment = ENVIRONMENT,
-        subject = SUBJECT,
-        recipients = RECIPIENTS,
-        query_path = QUERY_PATH,
-        attachments = xl_absolute_path,
-        html_body_path = HTML_BODY_PATH,
-        plain_body_path = PLAIN_BODY_PATH,
-        sender_name = SENDER_NAME,
-        sender_email = user,
-        smtp_user = user,
-        smtp_host = SMTP_HOST,
-        smtp_port = SMTP_PORT,
-        upstream_tasks=[delete_file]
+        environment=ENVIRONMENT,
+        subject=SUBJECT,
+        recipients=RECIPIENTS,
+        query_path=QUERY_PATH,
+        attachments=xl_absolute_path,
+        html_body_path=HTML_BODY_PATH,
+        plain_body_path=PLAIN_BODY_PATH,
+        sender_name=SENDER_NAME,
+        sender_email=user,
+        smtp_user=user,
+        smtp_host=SMTP_HOST,
+        smtp_port=SMTP_PORT,
+        upstream_tasks=[delete_file],
     )
 
     # Task 5 - Escreve metadados no Big Query
