@@ -10,7 +10,8 @@ from prefect.storage import GCS
 from prefect.utilities.edges import unmapped
 
 # Internos
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
+
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
