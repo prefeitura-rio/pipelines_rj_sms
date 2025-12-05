@@ -18,7 +18,7 @@ from pipelines.datalake.extract_load.emails_subgeral.tasks import (
     bigquery_to_xl_disk,
     delete_file_from_disk,
     make_meta_df,
-    send_email_smtp
+    send_email_smtp,
 )
 
 # internos
