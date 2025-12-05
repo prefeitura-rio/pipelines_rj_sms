@@ -15,12 +15,11 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-
 flow_parameters = [
     {
         "subject": f"E-mail de teste - dia {datetime.date}",
         "recipients": ["matheus.miloski@dados.rio", "juliana.paranhos@regulacaoriorj.com.br"],
-        "query_path" : "mail_templates/teste/query_teste.sql",
+        "query_path": "mail_templates/teste/query_teste.sql",
         "html_body_path": "mail_templates/teste/body_teste.html",
         "plain_body_path": "mail_templates/teste/body_texte.txt",
     }
