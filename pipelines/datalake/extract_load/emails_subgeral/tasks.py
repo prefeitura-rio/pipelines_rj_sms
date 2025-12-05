@@ -58,7 +58,7 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
 
     # define o diretório de escrita
     # /tmp sempre existe e é gravável em containers
-    output_dir = Path("/tmp/emails_subgeral") 
+    output_dir = Path("/tmp/emails_subgeral")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     filepath = (output_dir / filename).resolve()
