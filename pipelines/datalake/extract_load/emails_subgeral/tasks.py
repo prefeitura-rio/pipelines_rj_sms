@@ -300,7 +300,7 @@ def make_meta_df(
 ) -> pd.DataFrame:
     row = {
         "datetime": datetime.now(),
-        "date" : datetime.today().strftime('%Y-%m-%d'),
+        "date": datetime.today().strftime("%Y-%m-%d"),
         "environment": environment,
         "subject": subject,
         "recipients": recipients,
