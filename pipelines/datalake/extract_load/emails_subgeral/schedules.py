@@ -18,11 +18,11 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "subject": "Teste email prefect (dl)",
-        "recipients": ["matheusmiloski.smsrio@gmail.com", "juliana.paranhos@regulacaoriorj.com.br"],
-        "query_path" : "mail_templates/gerencia_cancer/gerencia_cancer.sql",
-        "html_body_path": "mail_templates/gerencia_cancer/gerencia_cancer.sql",
-        "plain_body_path": "mail_templates/gerencia_cancer/gerencia_cancer.sql",
+        "subject": f"E-mail de teste - dia {datetime.date}",
+        "recipients": ["matheusmiloski.smsrio@gmail.com"],
+        "query_path" : "mail_templates/teste/query_teste.sql",
+        "html_body_path": "mail_templates/teste/body_teste.html",
+        "plain_body_path": "mail_templates/teste/body_texte.txt",
     }
 ]
 
