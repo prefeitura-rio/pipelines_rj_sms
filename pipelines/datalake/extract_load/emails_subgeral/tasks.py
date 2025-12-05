@@ -299,7 +299,8 @@ def make_meta_df(
     smtp_port: str,
 ) -> pd.DataFrame:
     row = {
-        "date": datetime.now(),
+        "datetime": datetime.now(),
+        "date" : datetime.today().strftime('%Y-%m-%d'),
         "environment": environment,
         "subject": subject,
         "recipients": recipients,

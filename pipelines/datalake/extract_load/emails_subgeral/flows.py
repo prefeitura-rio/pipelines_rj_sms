@@ -97,7 +97,7 @@ with Flow(
         df=df,
         table_id="logs",
         dataset_id="brutos_emails_subgeral",
-        partition_column="as_of",
+        partition_column="date",
         source_format="parquet",
     )
 
