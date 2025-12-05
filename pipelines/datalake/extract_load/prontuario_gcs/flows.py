@@ -20,8 +20,7 @@ from pipelines.datalake.extract_load.prontuario_gcs.tasks import (
     dumb_task,
     extract_openbase_data,
     extract_postgres_data,
-    get_cnes_from_file_name,
-    get_files,
+    get_file,
     list_files_from_bucket,
     unpack_files,
     upload_to_datalake,
@@ -38,7 +37,6 @@ from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     get_project_name,
-    get_secret_key,
     rename_current_flow_run,
 )
 
@@ -53,11 +51,15 @@ with Flow(
     CNES = Parameter("cnes", required=True)
     RENAME_FLOW = Parameter("rename_flow", required=False)
     DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
-    BLOB_PREFIX_LIST = Parameter("blob_prefix_list", required=True)
+    BLOB_PREFIX = Parameter("blob_prefix", required=True)
     LINES_PER_CHUNK = Parameter("lines_per_chunk", default=100_000)
 
     with case(RENAME_FLOW, value=True):
-        rename_current_flow_run(name_template=f"Extração de arquivos de {CNES}")
+        rename_current_flow_run(
+            name_template=f"Extração: ",
+            cnes=CNES,
+            files=BLOB_PREFIX
+            )
 
     # 1 - Cria diretórios temporários
     folders_created = create_temp_folders(
@@ -67,55 +69,93 @@ with Flow(
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         ]
     )
-
-    # 2 - Faz o download dos arquivos no bucket
-    downloaded_files = get_files(
+    
+    #####################
+    # 2 Extração OPENBASE
+    #####################
+    
+    # 2.1 - Faz o download do arquivo OpenBase
+    openbase_file = get_file(
         path=prontuario_constants.DOWNLOAD_DIR.value,
         bucket_name=BUCKET_NAME,
         environment=ENVIRONMENT,
-        blob_prefixes=BLOB_PREFIX_LIST,
+        blob_prefix=BLOB_PREFIX,
         wait_for=folders_created,
+        blob_type='BASE'
     )
 
-    # 3 - Faz a descompressão dos arquivos
-    output = unpack_files(
-        tar_files=downloaded_files,
+    # 2.2 - Descompressão dos arquivos
+    unpacked_openbase = unpack_files(
+        tar_files=openbase_file,
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         environment=ENVIRONMENT,
     )
-
-    # 4 - Extração de tabelas selecionadas dos arquivos dump database
-    postgres_finished = extract_postgres_data(
-        data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        output_dir=prontuario_constants.UPLOAD_PATH.value,
-        wait_for=output,
-    )
-
-    # 5 - Extração das tabelas selecionadas dos arquivos OpenBase
+    
+    # 2.3 - Extração das tabelas selecionadas dos arquivos OpenBase
     openbase_finished = extract_openbase_data(
         data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         output_dir=prontuario_constants.UPLOAD_PATH.value,
-        wait_for=output,
+        wait_for=unpacked_openbase,
     )
-
-    # 6 - Upload das tabelas para o datalake
-    upload_finished = upload_to_datalake(
+    
+    # 2.4 - Upload das tabelas para o datalake
+    upload_openbase_finished = upload_to_datalake(
         upload_path=prontuario_constants.UPLOAD_PATH.value,
         dataset_id=DATASET,
-        wait_for=[openbase_finished, postgres_finished],
+        wait_for=openbase_finished,
         environment=ENVIRONMENT,
         cnes=CNES,
         lines_per_chunk=LINES_PER_CHUNK,
+        base_type='OPENBASE'
+    )
+    
+    #####################
+    # 3 Extração POSTGRES
+    #####################
+    
+    # 3.1 Download do tar com os arquivos POSTGRES
+    postgres_file = get_file(
+        path=prontuario_constants.DOWNLOAD_DIR.value,
+        bucket_name=BUCKET_NAME,
+        environment=ENVIRONMENT,
+        blob_prefix=BLOB_PREFIX,
+        wait_for=upload_openbase_finished,
+        blob_type='VISUAL'
+    )
+    
+    # 3.2 - Descompressão do arquivo
+    unpacked_postgres = unpack_files(
+        tar_files=postgres_file,
+        output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        environment=ENVIRONMENT,
+    )
+    
+    # 3.3 - Extração das tabelas
+    postgres_finished = extract_postgres_data(
+        data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        output_dir=prontuario_constants.UPLOAD_PATH.value,
+        wait_for=unpacked_postgres,
     )
 
-    # 7 - Deletar arquivos e diretórios
+    # 3.4 - Upload das tabelas para o datalake
+    upload_postgres_finished = upload_to_datalake(
+        upload_path=prontuario_constants.UPLOAD_PATH.value,
+        dataset_id=DATASET,
+        wait_for=[postgres_finished],
+        environment=ENVIRONMENT,
+        cnes=CNES,
+        lines_per_chunk=LINES_PER_CHUNK,
+        base_type='POSTGRES'
+    )
+
+    # 4 - Deletar arquivos e diretórios
     delete_temp_folders(
         folders=[
             prontuario_constants.DOWNLOAD_DIR.value,
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
             prontuario_constants.UPLOAD_PATH.value,
         ],
-        wait_for=upload_finished,
+        wait_for=upload_postgres_finished,
     )
 
 
@@ -135,14 +175,10 @@ with Flow(
     FOLDER = Parameter("folder", default="", required=True)
 
     # 1 - Listar os arquivos no bucket
-    files = list_files_from_bucket(environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=FOLDER)
+    prefix_p_cnes = list_files_from_bucket(environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=FOLDER)
 
-    # 2 - Separar path por CNES
-    prefix_p_cnes = get_cnes_from_file_name(files=files)
-
-    # 3 - Criar os operators para cara CNES
-
-    ## 3.1 Criar os parametros para cada flow
+    # 2 - Criar os operators para cara CNES
+    ## 2.1 Criar os parametros para cada flow
     operator_params = build_operator_parameters(
         files_per_cnes=prefix_p_cnes,
         bucket_name=BUCKET_NAME,
@@ -150,7 +186,7 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    ## 3.2 Criar as flows runs para cada CNES
+    ## 2.2 Criar as flows runs para cada CNES
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
     current_labels = get_current_flow_labels()
 
@@ -162,7 +198,7 @@ with Flow(
         run_name=unmapped(None),
     )
 
-    ## 3.3 Acompanhar cada operator pelo wait_for_flow
+    ## 2.3 Acompanhar cada operator pelo wait_for_flow
     wait_for_operator_runs = wait_for_flow_run(
         flow_run_id=created_operator_runs,
         stream_states=unmapped(True),
