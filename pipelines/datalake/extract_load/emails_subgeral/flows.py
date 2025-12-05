@@ -9,16 +9,16 @@ from prefect.storage import GCS
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.emails_subgeral.constants import (
+    SENDER_NAME,
     SMTP_HOST,
     SMTP_PORT,
-    SENDER_NAME,
 )
 from pipelines.datalake.extract_load.emails_subgeral.schedules import schedule
 from pipelines.datalake.extract_load.emails_subgeral.tasks import (
     bigquery_to_xl_disk,
-    send_email_smtp,
     delete_file_from_disk,
     make_meta_df,
+    send_email_smtp
 )
 
 # internos

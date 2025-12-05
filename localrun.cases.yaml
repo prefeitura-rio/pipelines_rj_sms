@@ -515,7 +515,7 @@ cases:
     params:
       environment: "dev"
   - case_slug: emails-subgeral
-    flow_path: pipelines.datalake.extract_load.emails_subgeral.flows 
+    flow_path: pipelines.datalake.extract_load.emails_subgeral.flows
     flow_name: sms_emails_subgeral
     params:
       environment: "dev"

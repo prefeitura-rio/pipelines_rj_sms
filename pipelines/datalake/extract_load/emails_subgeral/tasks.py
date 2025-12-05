@@ -1,16 +1,16 @@
-import pandas as pd
-from google.cloud import bigquery
-from datetime import timedelta
+# -*- coding: utf-8 -*-
 import mimetypes
 import smtplib
+from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple, Type
 
+import pandas as pd
+from google.cloud import bigquery
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.utils.credential_injector import authenticated_task as task
-from datetime import datetime
 
+from pipelines.utils.credential_injector import authenticated_task as task
 
 BASE_DIR = Path(__file__).resolve().parent
 
