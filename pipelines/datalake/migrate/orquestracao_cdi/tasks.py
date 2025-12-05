@@ -486,6 +486,7 @@ Email gerado às {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("
         "subject": f"Você Precisa Saber {subject_edition_string}- {DATE}",
         "body": message,
         "is_html_body": is_html,
+        "use_gmail_api": True,
     }
 
     if api_base_url.endswith("/"):
