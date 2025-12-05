@@ -514,3 +514,13 @@ cases:
     flow_name: report_informes_seguranca
     params:
       environment: "dev"
+  - case_slug: emails-subgeral
+    flow_path: pipelines.datalake.extract_load.emails_subgeral.flows
+    flow_name: sms_emails_subgeral
+    params:
+      environment: "dev"
+      subject: "Teste email prefect (dl)"
+      recipients: ["matheusmiloski.smsrio@gmail.com", "juliana.paranhos@regulacaoriorj.com.br"]
+      query_path: "mail_templates/gerencia_cancer/gerencia_cancer.sql"
+      html_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.html"
+      plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"
