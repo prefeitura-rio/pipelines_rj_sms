@@ -19,7 +19,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {
         "subject": f"E-mail de teste - dia {datetime.date}",
-        "recipients": ["matheusmiloski.smsrio@gmail.com"],
+        "recipients": ["matheus.miloski@dados.rio", "juliana.paranhos@regulacaoriorj.com.br"],
         "query_path" : "mail_templates/teste/query_teste.sql",
         "html_body_path": "mail_templates/teste/body_teste.html",
         "plain_body_path": "mail_templates/teste/body_texte.txt",
