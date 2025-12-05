@@ -56,9 +56,12 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
     safe_subject = subject.replace(" ", "_")
     filename = f"{safe_subject}__{timestamp}.xlsx"
 
-    # caminho baseado no arquivo atual, não no cwd
-    filepath = (BASE_DIR / filename).resolve()
+    # define o diretório de escrita
+    # /tmp sempre existe e é gravável em containers
+    output_dir = Path("/tmp/emails_subgeral") 
+    output_dir.mkdir(parents=True, exist_ok=True)
 
+    filepath = (output_dir / filename).resolve()
     df.to_excel(filepath, index=False)
     log(f"Arquivo salvo: {filepath}")
 
