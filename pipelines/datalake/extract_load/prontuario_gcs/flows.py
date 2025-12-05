@@ -35,10 +35,7 @@ from pipelines.utils.flow import Flow
 from pipelines.utils.logger import log
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import (
-    get_project_name,
-    rename_current_flow_run,
-)
+from pipelines.utils.tasks import get_project_name, rename_current_flow_run
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - ProntuaRIO Backups (OPERATOR)",
@@ -55,11 +52,7 @@ with Flow(
     LINES_PER_CHUNK = Parameter("lines_per_chunk", default=100_000)
 
     with case(RENAME_FLOW, value=True):
-        rename_current_flow_run(
-            name_template=f"Extração: ",
-            cnes=CNES,
-            files=BLOB_PREFIX
-            )
+        rename_current_flow_run(name_template=f"Extração: ", cnes=CNES, files=BLOB_PREFIX)
 
     # 1 - Cria diretórios temporários
     folders_created = create_temp_folders(
@@ -69,11 +62,11 @@ with Flow(
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         ]
     )
-    
+
     #####################
     # 2 Extração OPENBASE
     #####################
-    
+
     # 2.1 - Faz o download do arquivo OpenBase
     openbase_file = get_file(
         path=prontuario_constants.DOWNLOAD_DIR.value,
@@ -81,7 +74,7 @@ with Flow(
         environment=ENVIRONMENT,
         blob_prefix=BLOB_PREFIX,
         wait_for=folders_created,
-        blob_type='BASE'
+        blob_type="BASE",
     )
 
     # 2.2 - Descompressão dos arquivos
@@ -90,14 +83,14 @@ with Flow(
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         environment=ENVIRONMENT,
     )
-    
+
     # 2.3 - Extração das tabelas selecionadas dos arquivos OpenBase
     openbase_finished = extract_openbase_data(
         data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         output_dir=prontuario_constants.UPLOAD_PATH.value,
         wait_for=unpacked_openbase,
     )
-    
+
     # 2.4 - Upload das tabelas para o datalake
     upload_openbase_finished = upload_to_datalake(
         upload_path=prontuario_constants.UPLOAD_PATH.value,
@@ -106,13 +99,13 @@ with Flow(
         environment=ENVIRONMENT,
         cnes=CNES,
         lines_per_chunk=LINES_PER_CHUNK,
-        base_type='OPENBASE'
+        base_type="OPENBASE",
     )
-    
+
     #####################
     # 3 Extração POSTGRES
     #####################
-    
+
     # 3.1 Download do tar com os arquivos POSTGRES
     postgres_file = get_file(
         path=prontuario_constants.DOWNLOAD_DIR.value,
@@ -120,16 +113,16 @@ with Flow(
         environment=ENVIRONMENT,
         blob_prefix=BLOB_PREFIX,
         wait_for=upload_openbase_finished,
-        blob_type='VISUAL'
+        blob_type="VISUAL",
     )
-    
+
     # 3.2 - Descompressão do arquivo
     unpacked_postgres = unpack_files(
         tar_files=postgres_file,
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         environment=ENVIRONMENT,
     )
-    
+
     # 3.3 - Extração das tabelas
     postgres_finished = extract_postgres_data(
         data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
@@ -145,7 +138,7 @@ with Flow(
         environment=ENVIRONMENT,
         cnes=CNES,
         lines_per_chunk=LINES_PER_CHUNK,
-        base_type='POSTGRES'
+        base_type="POSTGRES",
     )
 
     # 4 - Deletar arquivos e diretórios
@@ -175,7 +168,9 @@ with Flow(
     FOLDER = Parameter("folder", default="", required=True)
 
     # 1 - Listar os arquivos no bucket
-    prefix_p_cnes = list_files_from_bucket(environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=FOLDER)
+    prefix_p_cnes = list_files_from_bucket(
+        environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=FOLDER
+    )
 
     # 2 - Criar os operators para cara CNES
     ## 2.1 Criar os parametros para cada flow

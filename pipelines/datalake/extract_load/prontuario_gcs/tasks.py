@@ -33,21 +33,21 @@ def create_temp_folders(folders) -> None:
 
 @task
 def get_file(path, bucket_name, blob_prefix, environment, wait_for, blob_type) -> list:
-    '''
+    """
     Faz o download de arquivo no bucket
-    '''
-    prefix = f'{blob_prefix}-{blob_type}'
-    
+    """
+    prefix = f"{blob_prefix}-{blob_type}"
+
     log(f"⬇️ Realizando download de {prefix}...")
-    filename = download_from_cloud_storage(path, bucket_name, prefix) 
-    
+    filename = download_from_cloud_storage(path, bucket_name, prefix)
+
     log("✅ Download feito com sucesso.")
     return filename
 
 
 @task
 def unpack_files(tar_files: str, output_dir: str, environment) -> None:
-    """ 
+    """
     Descomprime e deleta o arquivo tar.gz
     """
     log(f"📁 Descompactando {len(tar_files)} arquivo(s)...")
@@ -57,8 +57,8 @@ def unpack_files(tar_files: str, output_dir: str, environment) -> None:
         output_path = os.path.join(output_dir, os.path.basename(file).replace(".tar.gz", ""))
         with tarfile.open(file, "r:gz") as tar:
             tar.extractall(path=output_path)
-            
-        # Deleta o arquivo compactado para liberar armazenamento no flow 
+
+        # Deleta o arquivo compactado para liberar armazenamento no flow
         os.remove(file)
     log(f"✅ Arquivo descompactado em {output_dir}")
     return
@@ -162,7 +162,7 @@ def upload_to_datalake(
         if folder != base_type:
             continue
         files_dir = os.path.join(upload_path, folder)
-        
+
         for file in os.listdir(files_dir):
             file_path = os.path.join(files_dir, file)
             try:
@@ -202,7 +202,7 @@ def upload_to_datalake(
             except Exception as e:
                 log(f"Erro no upload da tabela {file}")
                 raise e
-            
+
         # Deleta arquivos já upados para o bucket
         shutil.rmtree(files_dir)
     return
@@ -217,7 +217,7 @@ def delete_temp_folders(folders, wait_for):
 
 @task
 def list_files_from_bucket(environment, bucket_name, folder):
-    """ 
+    """
     Lista os arquivos no bucket e cria a relação de CNES-Prefix
     """
     client = storage.Client()
@@ -226,17 +226,17 @@ def list_files_from_bucket(environment, bucket_name, folder):
 
     # Extrai o nome dos blobs no bucket
     files_path = [str(f.name) for f in files]
-        
+
     # Faz a relação CNES - Prefixo
     cnes_prefix = {}
-    
+
     for file in files:
         cnes_match = re.search(r"hospub-(\d+)", file)
         cnes = cnes_match.group(0)
-        
+
         prefix_match = re.search(r".*hospub-\d+")
         prefix = prefix_match.group(0)
-        
+
         cnes_prefix[cnes] = prefix
     print(cnes_prefix)
     return cnes_prefix
