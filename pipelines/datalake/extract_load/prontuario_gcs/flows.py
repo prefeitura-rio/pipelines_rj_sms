@@ -114,10 +114,10 @@ with Flow(
         bucket_name=BUCKET_NAME,
         environment=ENVIRONMENT,
         blob_prefix=BLOB_PREFIX,
-        wait_for=None, # DEV: REMOVER
+        wait_for=None,  # DEV: REMOVER
         blob_type="VISUAL",
     )
-    
+
     # 3.2 - Descompressão do arquivo
     unpacked_postgres = unpack_files(
         tar_files=postgres_file,
@@ -132,7 +132,7 @@ with Flow(
         lines_per_chunk=LINES_PER_CHUNK,
         dataset_id=DATASET,
         cnes=CNES,
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
 
     # 4 - Deletar arquivos e diretórios
@@ -188,10 +188,10 @@ with Flow(
 
     # 2.3 Acompanhar cada operator pelo wait_for_flow
     wait_for_operator_runs = wait_for_flow_run(
-       flow_run_id=created_operator_runs,
-       stream_states=unmapped(True),
-       stream_logs=unmapped(True),
-       raise_final_state=unmapped(True),
+        flow_run_id=created_operator_runs,
+        stream_states=unmapped(True),
+        stream_logs=unmapped(True),
+        raise_final_state=unmapped(True),
     )
 
 # Operator

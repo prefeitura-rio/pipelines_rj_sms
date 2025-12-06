@@ -15,13 +15,13 @@ from pipelines.datalake.extract_load.prontuario_gcs.constants import (
     constants as prontuario_constants,
 )
 from pipelines.datalake.extract_load.prontuario_gcs.utils import (
-    process_sql_file_streaming,
-    read_table,
     handle_D,
     handle_J,
-    handle_U,
     handle_others,
+    handle_U,
     process_insert_statement,
+    process_sql_file_streaming,
+    read_table,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import download_from_cloud_storage
@@ -59,16 +59,16 @@ def unpack_files(tar_files: str, output_dir: str) -> None:
 
     for file in tar_files:
         log(f"Descompactando: {file}...")
-        
+
         output_path = os.path.join(output_dir, os.path.basename(file).replace(".tar.gz", ""))
         files_to_extract = prontuario_constants.SELECTED_FILES_TO_UNPACK.value
-    
+
         with tarfile.open(file, "r:gz") as tar:
             for file_in_tar in files_to_extract:
-                if not file_in_tar in tar.getnames(): 
+                if not file_in_tar in tar.getnames():
                     continue
                 tar.extract(file_in_tar, path=output_path)
-                    
+
         # Deleta o arquivo compactado para liberar armazenamento no flow
         os.remove(file)
     log(f"✅ Arquivos descompactados")
@@ -77,15 +77,15 @@ def unpack_files(tar_files: str, output_dir: str) -> None:
 
 @task
 def extract_postgres_data(
-    data_dir: str, 
-    wait_for:any, 
-    output_dir:str, 
-    lines_per_chunk:int,
-    dataset_id:str,
-    cnes:str,
-    environment:str
-    ) -> None:
-    
+    data_dir: str,
+    wait_for: any,
+    output_dir: str,
+    lines_per_chunk: int,
+    dataset_id: str,
+    cnes: str,
+    environment: str,
+) -> None:
+
     log("📋️ Extraindo dados do arquivo hospub.sql...")
     target_tables = prontuario_constants.SELECTED_POSTGRES_TABLES.value
 
@@ -96,7 +96,7 @@ def extract_postgres_data(
     ][0]
 
     sql_path = os.path.join(data_dir, postgres_folder, "hospub.sql")
-    
+
     # Dicionário para rastrear quais tabelas já foram inicializadas
     table_files = {}
     table_columns = {}
@@ -126,12 +126,8 @@ def extract_postgres_data(
                 # Se já havia um INSERT acumulado, processa ele
                 if current_insert:
                     csv_name = process_insert_statement(
-                    current_insert, 
-                    table_files, 
-                    table_columns, 
-                    upload_path, 
-                    target_tables
-                )
+                        current_insert, table_files, table_columns, upload_path, target_tables
+                    )
                     if csv_name:
                         processed_count += 1
 
@@ -150,35 +146,31 @@ def extract_postgres_data(
                 if csv_name:
                     processed_count += 1
                 current_insert = ""
-                
+
             if processed_count >= lines_per_chunk:
                 upload_file_to_datalake.run(
                     file=csv_name,
                     dataset_id=dataset_id,
                     cnes=cnes,
                     environment=environment,
-                    base_type='postgres'
+                    base_type="postgres",
                 )
                 processed_count = 0
 
     # Processa o último INSERT se houver
     if current_insert:
         csv_name = process_insert_statement(
-                    current_insert, 
-                    table_files, 
-                    table_columns, 
-                    upload_path, 
-                    target_tables
-                )
+            current_insert, table_files, table_columns, upload_path, target_tables
+        )
         if csv_name:
             processed_count += 1
             upload_file_to_datalake.run(
-                    file=csv_name,
-                    dataset_id=dataset_id,
-                    cnes=cnes,
-                    environment=environment,
-                    base_type='postgres'
-                )
+                file=csv_name,
+                dataset_id=dataset_id,
+                cnes=cnes,
+                environment=environment,
+                base_type="postgres",
+            )
             processed_count = 0
 
     # Deleta o arquivo SQL para liberar armazenamento para a flow run no Prefect
@@ -188,13 +180,14 @@ def extract_postgres_data(
 
 @task
 def extract_openbase_data(
-    data_dir: str, 
-    output_dir: str, 
-    cnes:str,
-    environment:str,
-    lines_per_chunk:str,
-    dataset_id:str,
-    wait_for) -> str:
+    data_dir: str,
+    output_dir: str,
+    cnes: str,
+    environment: str,
+    lines_per_chunk: str,
+    dataset_id: str,
+    wait_for,
+) -> str:
     log("📋️ Obtendo dados de arquivos OpenBase...")
     upload_path = os.path.join(output_dir, "OPENBASE")
     os.makedirs(upload_path, exist_ok=True)
@@ -206,7 +199,7 @@ def extract_openbase_data(
     openbase_path = os.path.join(data_dir, openbase_folder)
 
     log(f"Extraindo dados de {openbase_path}")
-    
+
     tables = [x for x in os.listdir(openbase_path) if x.endswith("._S")]
     tables.sort()
     dictionaries = [x for x in os.listdir(openbase_path) if x.endswith("._Sd")]
@@ -252,48 +245,50 @@ def extract_openbase_data(
             continue
 
         structured_dictionary = dictionaries[table]
-        table_path = f'{openbase_path}/{table}'
-        
+        table_path = f"{openbase_path}/{table}"
+
         with open(table_path, "rb") as f:
             metadata = list(structured_dictionary.keys())
             metadata = sorted(metadata, key=lambda x: structured_dictionary[x]["offset"])
             last_col = metadata[-1]
             expected_length = (
-                structured_dictionary[last_col]["size"] + structured_dictionary[last_col]["offset"] + 1
+                structured_dictionary[last_col]["size"]
+                + structured_dictionary[last_col]["offset"]
+                + 1
             )
-            
+
             # Extrai o nome da tabela a partir do caminho do arquivo
             # Ex: ./data/hospub-2296306-BASE-31-08-2025-22h42m/alta_clinica._S.
             table_name = table_path.split("/")[-1].split(".")[0]
             csv_name = f"{upload_path}/{table_name}.csv"
-            
+
             # Variáveis para controle de tamanho dos arquivos CSV
             create_file = True
             line_count = 0
-            
+
             while True:
                 if create_file:
                     # Cria o arquivo CSV para a respectiva tabela e adiciona a linha de colunas
                     with open(csv_name, "w") as csv_file:
                         csv_file.write(",".join(metadata) + "\n")
                     create_file = False
-                        
+
                 rec = f.read(expected_length)
-                
+
                 if not rec:
                     # A extração da tabela chegou ao fim antes das 100_000 linhas
                     # Então faz o upload do que resta no arquivo.
                     upload_file_to_datalake.run(
-                    file=csv_name, 
-                    dataset_id=dataset_id, 
-                    environment=environment,
-                    cnes=cnes,
-                    base_type='openbase'
+                        file=csv_name,
+                        dataset_id=dataset_id,
+                        environment=environment,
+                        cnes=cnes,
+                        base_type="openbase",
                     )
                     # Deleta o arquivo após o upload para evitar problemas no Prefect
                     os.remove(csv_name)
                     break
-                
+
                 row = {}
                 for col, attrs in structured_dictionary.items():
                     field_bytes = rec[
@@ -312,36 +307,33 @@ def extract_openbase_data(
                     else:
                         value = handle_others(field_bytes, attrs)
                     row[col] = value
-                    
+
                 # Escreve a linha extraída no CSV
                 with open(csv_name, "a") as csv_file:
                     # Converte possíveis valores inteiros para string
                     line = [str(value) for value in row.values()]
                     csv_file.write(",".join(line) + "\n")
-                line_count+=1
-                
+                line_count += 1
+
                 if line_count >= lines_per_chunk:
                     upload_file_to_datalake.run(
-                        file=csv_name, 
-                        dataset_id=dataset_id, 
+                        file=csv_name,
+                        dataset_id=dataset_id,
                         environment=environment,
                         cnes=cnes,
-                        base_type='openbase'
-                        )
+                        base_type="openbase",
+                    )
                     # Deleta o arquivo após o upload para evitar problemas no Prefect
                     os.remove(csv_name)
                     create_file = True
                     line_count = 0
 
-    return 
+    return
+
 
 @task
 def upload_file_to_datalake(
-    file:str, 
-    dataset_id:str, 
-    cnes:str,
-    base_type:str, 
-    environment:str
+    file: str, dataset_id: str, cnes: str, base_type: str, environment: str
 ):
     try:
         df = pd.read_csv(
@@ -351,7 +343,7 @@ def upload_file_to_datalake(
             skipinitialspace=True,
             dtype=str,
             on_bad_lines="warn",
-            )
+        )
         if not df.empty:
             # Remove possíveis pontos em nome de colunas que invialibizam o upload
             cols_renamed = [col.replace(".", "") for col in df.columns]
@@ -359,11 +351,11 @@ def upload_file_to_datalake(
 
             df["loaded_at"] = datetime.now().isoformat()
             df["cnes"] = cnes
-            table_name = file.split('/')[-1]
-            table_name = table_name.replace('.csv', '')
-            table_name = f'{base_type}_{table_name}'
-            log(f'⬆️ Relizando upload de {file} com {df.shape[0]} linhas...')
-            
+            table_name = file.split("/")[-1]
+            table_name = table_name.replace(".csv", "")
+            table_name = f"{base_type}_{table_name}"
+            log(f"⬆️ Relizando upload de {file} com {df.shape[0]} linhas...")
+
             upload_df_to_datalake.run(
                 df=df,
                 dataset_id=dataset_id,
@@ -381,6 +373,7 @@ def upload_file_to_datalake(
     except Exception as e:
         log(f"Erro no upload da tabela {file}")
         raise e
+
 
 @task
 def upload_to_datalake(
@@ -460,10 +453,10 @@ def list_files_from_bucket(environment, bucket_name, folder):
 
     for file in files_path:
         cnes_matches = re.search(r"hospub-(\d+)", file)
-        
-        cnes_match = cnes_matches.group(0) # Ex: hospub-2269945
-        cnes = cnes_match.split('-')[1] # 2269945
-        
+
+        cnes_match = cnes_matches.group(0)  # Ex: hospub-2269945
+        cnes = cnes_match.split("-")[1]  # 2269945
+
         prefix_match = re.search(r".*hospub-\d+", file)
         prefix = prefix_match.group(0)
 
@@ -492,9 +485,11 @@ def build_operator_parameters(
         for cnes, prefix in files_per_cnes.items()
     ]
 
+
 @task
 def dumb_task(vars):
     return
+
 
 if __name__ == "__main__":
     files = list_files_from_bucket(environment=None, bucket_name="subhue_backups")
