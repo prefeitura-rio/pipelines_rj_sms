@@ -522,10 +522,9 @@ cases:
       environment: "dev"
       bucket_name: "subhue_backups"
       dataset: 'brutos_prontuario_prontuaRIO'
-      blob_prefix: '2025-11/hospub-2269945'
-      cnes: '2269945'
+      blob_prefix: '2025-11/hospub-2270714'
+      cnes: '2270714'
       lines_per_chunk: 100000
-
 
   - case_slug: prontuario_extraction_manager
     flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows

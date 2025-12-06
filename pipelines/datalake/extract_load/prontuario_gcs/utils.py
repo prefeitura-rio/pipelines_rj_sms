@@ -250,7 +250,7 @@ def process_insert_statement(
         cleaned_values = [clean_value(v) for v in values]
         csv_file.write(",".join(cleaned_values) + "\n")
 
-    return True
+    return csv_filename
 
 
 def process_sql_file_streaming(input_file, output_path, target_tables=None, buffer_size=65536):

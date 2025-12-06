@@ -80,13 +80,16 @@ with Flow(
     unpacked_openbase = unpack_files(
         tar_files=openbase_file,
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        environment=ENVIRONMENT,
     )
 
-    # 2.3 - Extração das tabelas selecionadas dos arquivos OpenBase
+    # 2.3 - Extração e upload (por chunk) das tabelas selecionadas dos arquivos OpenBase
     openbase_finished = extract_openbase_data(
         data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         output_dir=prontuario_constants.UPLOAD_PATH.value,
+        cnes=CNES,
+        environment=ENVIRONMENT,
+        dataset_id=DATASET,
+        lines_per_chunk=LINES_PER_CHUNK,
         wait_for=unpacked_openbase,
     )
 
@@ -111,15 +114,14 @@ with Flow(
         bucket_name=BUCKET_NAME,
         environment=ENVIRONMENT,
         blob_prefix=BLOB_PREFIX,
-        wait_for=upload_openbase_finished,
+        wait_for=None, # DEV: REMOVER
         blob_type="VISUAL",
     )
-
+    
     # 3.2 - Descompressão do arquivo
     unpacked_postgres = unpack_files(
         tar_files=postgres_file,
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        environment=ENVIRONMENT,
     )
 
     # 3.3 - Extração das tabelas
@@ -127,17 +129,10 @@ with Flow(
         data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         output_dir=prontuario_constants.UPLOAD_PATH.value,
         wait_for=unpacked_postgres,
-    )
-
-    # 3.4 - Upload das tabelas para o datalake
-    upload_postgres_finished = upload_to_datalake(
-        upload_path=prontuario_constants.UPLOAD_PATH.value,
-        dataset_id=DATASET,
-        wait_for=[postgres_finished],
-        environment=ENVIRONMENT,
-        cnes=CNES,
         lines_per_chunk=LINES_PER_CHUNK,
-        base_type="POSTGRES",
+        dataset_id=DATASET,
+        cnes=CNES,
+        environment=ENVIRONMENT
     )
 
     # 4 - Deletar arquivos e diretórios
@@ -147,9 +142,8 @@ with Flow(
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
             prontuario_constants.UPLOAD_PATH.value,
         ],
-        wait_for=upload_postgres_finished,
+        wait_for=postgres_finished,
     )
-
 
 ################
 # FLOW MANAGER
@@ -194,10 +188,10 @@ with Flow(
 
     # 2.3 Acompanhar cada operator pelo wait_for_flow
     wait_for_operator_runs = wait_for_flow_run(
-        flow_run_id=created_operator_runs,
-        stream_states=unmapped(True),
-        stream_logs=unmapped(True),
-        raise_final_state=unmapped(True),
+       flow_run_id=created_operator_runs,
+       stream_states=unmapped(True),
+       stream_logs=unmapped(True),
+       raise_final_state=unmapped(True),
     )
 
 # Operator
