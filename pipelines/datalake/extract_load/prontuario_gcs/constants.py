@@ -15,7 +15,7 @@ class constants(Enum):
     UNCOMPRESS_FILES_DIR = "./data"
     UPLOAD_PATH = "./upload"
     DICTIONARY_ENCODING = "ISO-8859-1"
-    SELECTED_FILES_TO_UNPACK = (
+    SELECTED_BASE_FILES = (
         "cen02._S",
         "cen02._Sd",
         "cen54._S",
@@ -36,8 +36,6 @@ class constants(Enum):
         "cen62._Sd",
         "lab63._S",
         "lab63._Sd",
-        "hospub.sql",
-        "prescricao_medica3.sql",
     )
     SELECTED_OPENBASE_TABLES = (
         "cen02._S",
@@ -51,11 +49,23 @@ class constants(Enum):
         "cen62._S",
         "lab63._S",
     )
-    SELECTED_POSTGRES_TABLES = (
+    SELECTED_HOSPUB_TABLES = (
         "hp_rege_evolucao",
         "hp_rege_ralta",
         "hp_rege_receituario",
         "hp_descricao_cirurgia",
         "hp_rege_emerg",
         "hp_prontuario_be",
+    )
+    SELECTED_PRESCRICAO_TABLES = (
+        'atendimento',
+        'dieta',
+        'fa_just_med',
+        'fa_just_medicamento',
+        'medicamento', 
+        'medicamento_ccih',
+        'medicamento_sala', 
+        'medico',
+        'paciente',
+        'prescricao'
     )

@@ -36,6 +36,11 @@ from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, rename_current_flow_run
 
+
+######################################################################################
+#                                   OPERATOR
+######################################################################################
+
 with Flow(
     name="DataLake - Extração e Carga de Dados - ProntuaRIO Backups (OPERATOR)",
     state_handlers=[handle_flow_state_change],
@@ -80,6 +85,9 @@ with Flow(
     unpacked_openbase = unpack_files(
         tar_files=openbase_file,
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        files_to_extract=prontuario_constants.SELECTED_BASE_FILES.value,
+        exclude_origin=True,
+        wait_for=openbase_file
     )
 
     # 2.3 - Extração e upload (por chunk) das tabelas selecionadas dos arquivos OpenBase
@@ -93,16 +101,6 @@ with Flow(
         wait_for=unpacked_openbase,
     )
 
-    # 2.4 - Upload das tabelas para o datalake
-    upload_openbase_finished = upload_to_datalake(
-        upload_path=prontuario_constants.UPLOAD_PATH.value,
-        dataset_id=DATASET,
-        wait_for=openbase_finished,
-        environment=ENVIRONMENT,
-        cnes=CNES,
-        lines_per_chunk=LINES_PER_CHUNK,
-        base_type="OPENBASE",
-    )
 
     #####################
     # 3 Extração POSTGRES
@@ -114,26 +112,54 @@ with Flow(
         bucket_name=BUCKET_NAME,
         environment=ENVIRONMENT,
         blob_prefix=BLOB_PREFIX,
-        wait_for=None,  # DEV: REMOVER
+        wait_for=openbase_finished,
         blob_type="VISUAL",
     )
 
-    # 3.2 - Descompressão do arquivo
-    unpacked_postgres = unpack_files(
+    # 3.2 - Descompressão do arquivo hospub.sql
+    unpacked_hospub = unpack_files(
         tar_files=postgres_file,
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        files_to_extract=['hospub.sql'],
+        exclude_origin=False,
+        wait_for=postgres_file
     )
 
-    # 3.3 - Extração das tabelas
-    postgres_finished = extract_postgres_data(
+    # 3.3 - Extração das tabelas do arquivo hospub.sql
+    hospub_extraction_finished = extract_postgres_data(
         data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         output_dir=prontuario_constants.UPLOAD_PATH.value,
-        wait_for=unpacked_postgres,
+        wait_for=unpacked_hospub,
         lines_per_chunk=LINES_PER_CHUNK,
         dataset_id=DATASET,
         cnes=CNES,
         environment=ENVIRONMENT,
+        sql_file='hospub.sql',
+        target_tables=prontuario_constants.SELECTED_HOSPUB_TABLES.value
     )
+    
+    # 3.4 - Descompressão do arquivo prescricao_medica3.sql
+    unpacked_prescricao = unpack_files(
+        tar_files=postgres_file,
+        output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        files_to_extract=['prescricao_medica3.sql'],
+        exclude_origin=True,
+        wait_for=hospub_extraction_finished
+    )
+    
+    # 3.5 Extração das tabelas do arquivo prescricao.sql
+    prescricao_extraction_finished = extract_postgres_data(
+        data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        output_dir=prontuario_constants.UPLOAD_PATH.value,
+        wait_for=unpacked_prescricao,
+        lines_per_chunk=LINES_PER_CHUNK,
+        dataset_id=DATASET,
+        cnes=CNES,
+        environment=ENVIRONMENT,
+        sql_file='prescricao_medica3.sql',
+        target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value
+    )   
+
 
     # 4 - Deletar arquivos e diretórios
     delete_temp_folders(
@@ -142,12 +168,13 @@ with Flow(
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
             prontuario_constants.UPLOAD_PATH.value,
         ],
-        wait_for=postgres_finished,
+        wait_for=prescricao_extraction_finished,
     )
 
-################
-# FLOW MANAGER
-################
+######################################################################################
+#                                     MANAGER
+######################################################################################
+
 with Flow(
     name="DataLake - Extração e Carga de Dados - ProntuaRIO Backups (MANAGER)",
     state_handlers=[handle_flow_state_change],

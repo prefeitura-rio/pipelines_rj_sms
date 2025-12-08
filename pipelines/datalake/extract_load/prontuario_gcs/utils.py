@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
-import csv
 import os
 import re
 from datetime import datetime
-from pathlib import Path
-from pprint import pprint  # Debugging
-
-import pandas as pd
-from google.api_core import exceptions
-from google.cloud import storage
 
 
 def handle_J(field_bytes, attrs):
@@ -209,48 +202,61 @@ def clean_value(value):
 
     return value
 
-
 def process_insert_statement(
-    insert_stmt, table_files, table_columns, output_path, target_tables=None
+    insert_stmt: str, 
+    output_path: str,
+    target_tables: list=[],
 ):
-    """Processa um único comando INSERT e grava no arquivo CSV."""
+    """Processa uma única linha de INSERT e:
+    - Verifica se é uma comando válido
+    - Verifica se o comando faz referência a uma tabela desejada
+    - Extrai nome da tabela, colunas e valores do INSERT
+    
+    Retorna uma tupla com (nesta ordem) uma flag booleana indicando sucesso, nome do arquivo CSV 
+    onde foi inserido os valores e o nome da tabela 
+
+    Args:
+        insert_stmt (_str_): string com o comando insert
+        output_path (_str_): Diretório do arquivo do arquivo com as informações extraídas
+        target_tables (_list_, optional): Lista com os nomes das tabelas desejadas. Se vazio extrai qualquer
+        linha de insert
+
+    Returns:
+        _tuple_: Flag indicadora de sucesso, nome do arquivo CSV gerado e nome da tabela extraída.
+    """
     insert_stmt = insert_stmt.strip()
     if not insert_stmt:
-        return False
+        return False, '', ''
 
     # Extrai informações do comando INSERT
     table_name = extract_table_name(insert_stmt)
     if not table_name:
-        return False
+        return False, '', ''
 
     # Verifica se a tabela está na lista de tabelas desejadas
     if target_tables and table_name not in target_tables:
-        return False
+        return False, '', table_name
 
     columns = extract_columns(insert_stmt)
     values = extract_values(insert_stmt)
 
     if not columns or not values:
-        return False
+        return False, '', table_name
 
     # Define o nome do arquivo CSV
     csv_filename = f"{output_path}/{table_name}.csv"
 
-    # Verifica se é a primeira vez que processa esta tabela
-    if table_name not in table_files:
+    if not os.path.exists(csv_filename):
         # Cria novo arquivo e escreve cabeçalho
         with open(csv_filename, "w", encoding="utf-8", newline="") as csv_file:
             csv_file.write(",".join(columns) + "\n")
-        table_files[table_name] = True
-        table_columns[table_name] = columns
-        print(f"Criando arquivo: {csv_filename}")
 
     # Processa e grava os valores diretamente no arquivo
     with open(csv_filename, "a", encoding="utf-8", newline="") as csv_file:
         cleaned_values = [clean_value(v) for v in values]
         csv_file.write(",".join(cleaned_values) + "\n")
-
-    return csv_filename
+         
+    return True, csv_filename, table_name
 
 
 def process_sql_file_streaming(input_file, output_path, target_tables=None, buffer_size=65536):
@@ -276,6 +282,7 @@ def process_sql_file_streaming(input_file, output_path, target_tables=None, buff
     processed_count = 0
 
     print("Iniciando processamento...")
+    
 
     with open(input_file, "r", encoding="utf-8", buffering=buffer_size) as f:
         for line in f:
