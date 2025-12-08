@@ -514,6 +514,7 @@ def build_operator_parameters(
     files_per_cnes: dict,
     bucket_name: str,
     dataset_id: str,
+    chunk_size: int,
     environment: str = "dev",
 ) -> list:
     """Gera lista de parâmetros para o(s) operator(s)."""
@@ -525,6 +526,7 @@ def build_operator_parameters(
             "cnes": cnes,
             "blob_prefix": prefix,
             "rename_flow": True,
+            "lines_per_chunk":chunk_size
         }
         for cnes, prefix in files_per_cnes.items()
     ]

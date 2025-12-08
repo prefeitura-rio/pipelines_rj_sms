@@ -22,7 +22,6 @@ from pipelines.datalake.extract_load.prontuario_gcs.tasks import (
     get_file,
     list_files_from_bucket,
     unpack_files,
-    upload_to_datalake,
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -52,7 +51,7 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", required=False)
     DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
     BLOB_PREFIX = Parameter("blob_prefix", required=True)
-    LINES_PER_CHUNK = Parameter("lines_per_chunk", default=100_000)
+    LINES_PER_CHUNK = Parameter("lines_per_chunk", default=50_000)
 
     with case(RENAME_FLOW, value=True):
         rename_current_flow_run(cnes=CNES, files=BLOB_PREFIX)
@@ -183,6 +182,7 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", required=False)
     DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
     FOLDER = Parameter("folder", default="", required=True)
+    CHUNK_SIZE = Parameter('chunk_size', default=50_000)
 
     # 1 - Listar os arquivos no bucket
     prefix_p_cnes = list_files_from_bucket(
@@ -196,6 +196,7 @@ with Flow(
         bucket_name=BUCKET_NAME,
         dataset_id=DATASET,
         environment=ENVIRONMENT,
+        chunk_size=CHUNK_SIZE
     )
 
     # 2.2 Criar as flows runs para cada CNES
@@ -211,7 +212,7 @@ with Flow(
     )
 
     # 2.3 Acompanhar cada operator pelo wait_for_flow
-    wait_for_operator_runs = wait_for_flow_run(
+    wait_for_operator_runs = wait_for_flow_run.map(
         flow_run_id=created_operator_runs,
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
@@ -224,8 +225,8 @@ prontuario_extraction_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 prontuario_extraction_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
-    memory_request="1Gi",
-    memory_limit="2Gi",
+    memory_request="2Gi",
+    memory_limit="4Gi",
 )
 
 # Manager
@@ -235,5 +236,5 @@ prontuario_extraction_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
     memory_limit="2Gi",
-    memory_request="1Gi",
+    memory_request="2Gi",
 )
