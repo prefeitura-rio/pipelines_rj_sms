@@ -526,7 +526,7 @@ def build_operator_parameters(
             "cnes": cnes,
             "blob_prefix": prefix,
             "rename_flow": True,
-            "lines_per_chunk":chunk_size
+            "lines_per_chunk": chunk_size,
         }
         for cnes, prefix in files_per_cnes.items()
     ]

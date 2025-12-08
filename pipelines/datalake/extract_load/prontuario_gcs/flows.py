@@ -182,7 +182,7 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", required=False)
     DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
     FOLDER = Parameter("folder", default="", required=True)
-    CHUNK_SIZE = Parameter('chunk_size', default=50_000)
+    CHUNK_SIZE = Parameter("chunk_size", default=50_000)
 
     # 1 - Listar os arquivos no bucket
     prefix_p_cnes = list_files_from_bucket(
@@ -196,7 +196,7 @@ with Flow(
         bucket_name=BUCKET_NAME,
         dataset_id=DATASET,
         environment=ENVIRONMENT,
-        chunk_size=CHUNK_SIZE
+        chunk_size=CHUNK_SIZE,
     )
 
     # 2.2 Criar as flows runs para cada CNES
