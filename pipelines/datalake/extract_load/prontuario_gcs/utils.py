@@ -202,18 +202,19 @@ def clean_value(value):
 
     return value
 
+
 def process_insert_statement(
-    insert_stmt: str, 
+    insert_stmt: str,
     output_path: str,
-    target_tables: list=[],
+    target_tables: list = [],
 ):
     """Processa uma única linha de INSERT e:
     - Verifica se é uma comando válido
     - Verifica se o comando faz referência a uma tabela desejada
     - Extrai nome da tabela, colunas e valores do INSERT
-    
-    Retorna uma tupla com (nesta ordem) uma flag booleana indicando sucesso, nome do arquivo CSV 
-    onde foi inserido os valores e o nome da tabela 
+
+    Retorna uma tupla com (nesta ordem) uma flag booleana indicando sucesso, nome do arquivo CSV
+    onde foi inserido os valores e o nome da tabela
 
     Args:
         insert_stmt (_str_): string com o comando insert
@@ -226,22 +227,22 @@ def process_insert_statement(
     """
     insert_stmt = insert_stmt.strip()
     if not insert_stmt:
-        return False, '', ''
+        return False, "", ""
 
     # Extrai informações do comando INSERT
     table_name = extract_table_name(insert_stmt)
     if not table_name:
-        return False, '', ''
+        return False, "", ""
 
     # Verifica se a tabela está na lista de tabelas desejadas
     if target_tables and table_name not in target_tables:
-        return False, '', table_name
+        return False, "", table_name
 
     columns = extract_columns(insert_stmt)
     values = extract_values(insert_stmt)
 
     if not columns or not values:
-        return False, '', table_name
+        return False, "", table_name
 
     # Define o nome do arquivo CSV
     csv_filename = f"{output_path}/{table_name}.csv"
@@ -255,7 +256,7 @@ def process_insert_statement(
     with open(csv_filename, "a", encoding="utf-8", newline="") as csv_file:
         cleaned_values = [clean_value(v) for v in values]
         csv_file.write(",".join(cleaned_values) + "\n")
-         
+
     return True, csv_filename, table_name
 
 
@@ -282,7 +283,6 @@ def process_sql_file_streaming(input_file, output_path, target_tables=None, buff
     processed_count = 0
 
     print("Iniciando processamento...")
-    
 
     with open(input_file, "r", encoding="utf-8", buffering=buffer_size) as f:
         for line in f:

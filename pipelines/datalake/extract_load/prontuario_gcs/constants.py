@@ -58,14 +58,14 @@ class constants(Enum):
         "hp_prontuario_be",
     )
     SELECTED_PRESCRICAO_TABLES = (
-        'atendimento',
-        'dieta',
-        'fa_just_med',
-        'fa_just_medicamento',
-        'medicamento', 
-        'medicamento_ccih',
-        'medicamento_sala', 
-        'medico',
-        'paciente',
-        'prescricao'
+        "atendimento",
+        "dieta",
+        "fa_just_med",
+        "fa_just_medicamento",
+        "medicamento",
+        "medicamento_ccih",
+        "medicamento_sala",
+        "medico",
+        "paciente",
+        "prescricao",
     )

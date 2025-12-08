@@ -36,7 +36,6 @@ from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, rename_current_flow_run
 
-
 ######################################################################################
 #                                   OPERATOR
 ######################################################################################
@@ -87,7 +86,7 @@ with Flow(
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         files_to_extract=prontuario_constants.SELECTED_BASE_FILES.value,
         exclude_origin=True,
-        wait_for=openbase_file
+        wait_for=openbase_file,
     )
 
     # 2.3 - Extração e upload (por chunk) das tabelas selecionadas dos arquivos OpenBase
@@ -100,7 +99,6 @@ with Flow(
         lines_per_chunk=LINES_PER_CHUNK,
         wait_for=unpacked_openbase,
     )
-
 
     #####################
     # 3 Extração POSTGRES
@@ -120,9 +118,9 @@ with Flow(
     unpacked_hospub = unpack_files(
         tar_files=postgres_file,
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        files_to_extract=['hospub.sql'],
+        files_to_extract=["hospub.sql"],
         exclude_origin=False,
-        wait_for=postgres_file
+        wait_for=postgres_file,
     )
 
     # 3.3 - Extração das tabelas do arquivo hospub.sql
@@ -134,19 +132,19 @@ with Flow(
         dataset_id=DATASET,
         cnes=CNES,
         environment=ENVIRONMENT,
-        sql_file='hospub.sql',
-        target_tables=prontuario_constants.SELECTED_HOSPUB_TABLES.value
+        sql_file="hospub.sql",
+        target_tables=prontuario_constants.SELECTED_HOSPUB_TABLES.value,
     )
-    
+
     # 3.4 - Descompressão do arquivo prescricao_medica3.sql
     unpacked_prescricao = unpack_files(
         tar_files=postgres_file,
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        files_to_extract=['prescricao_medica3.sql'],
+        files_to_extract=["prescricao_medica3.sql"],
         exclude_origin=True,
-        wait_for=hospub_extraction_finished
+        wait_for=hospub_extraction_finished,
     )
-    
+
     # 3.5 Extração das tabelas do arquivo prescricao.sql
     prescricao_extraction_finished = extract_postgres_data(
         data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
@@ -156,10 +154,9 @@ with Flow(
         dataset_id=DATASET,
         cnes=CNES,
         environment=ENVIRONMENT,
-        sql_file='prescricao_medica3.sql',
-        target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value
-    )   
-
+        sql_file="prescricao_medica3.sql",
+        target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value,
+    )
 
     # 4 - Deletar arquivos e diretórios
     delete_temp_folders(
