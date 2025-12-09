@@ -225,8 +225,8 @@ prontuario_extraction_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 prontuario_extraction_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
-    memory_request="2Gi",
-    memory_limit="4Gi",
+    memory_request="1Gi",
+    memory_limit="2Gi",
 )
 
 # Manager
