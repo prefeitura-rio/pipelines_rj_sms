@@ -54,7 +54,7 @@ with Flow(
     LINES_PER_CHUNK = Parameter("lines_per_chunk", default=50_000)
 
     with case(RENAME_FLOW, value=True):
-        rename_current_flow_run(cnes=CNES, files=BLOB_PREFIX)
+        rename_current_flow_run(cnes=CNES, blob_prefix=BLOB_PREFIX)
 
     # 1 - Cria diretórios temporários
     folders_created = create_temp_folders(
@@ -103,6 +103,7 @@ with Flow(
     # 3 Extração POSTGRES
     #####################
 
+    
     # 3.1 Download do tar com os arquivos POSTGRES
     postgres_file = get_file(
         path=prontuario_constants.DOWNLOAD_DIR.value,
@@ -226,12 +227,12 @@ prontuario_extraction_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
     memory_request="1Gi",
-    memory_limit="2Gi",
+    memory_limit="8Gi",
 )
 
 # Manager
 prontuario_extraction_manager.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-prontuario_extraction_manager.executor = LocalDaskExecutor(num_workers=2)
+prontuario_extraction_manager.executor = LocalDaskExecutor(num_workers=1)
 prontuario_extraction_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],

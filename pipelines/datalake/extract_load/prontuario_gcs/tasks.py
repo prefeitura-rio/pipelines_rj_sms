@@ -76,13 +76,14 @@ def unpack_files(
         log(f"Descompactando: {file}...")
 
         output_path = os.path.join(output_dir, os.path.basename(file).replace(".tar.gz", ""))
-
-        with tarfile.open(file, "r:gz") as tar:
-            for file_in_tar in files_to_extract:
-                if not file_in_tar in tar.getnames():
-                    continue
-                tar.extract(file_in_tar, path=output_path)
-
+        try:
+            with tarfile.open(file, "r:gz") as tar:
+                for file_in_tar in files_to_extract:
+                    if not file_in_tar in tar.getnames():
+                        continue
+                    tar.extract(file_in_tar, path=output_path)
+        except Exception as e:
+            log(f"Erro ao descompactar o arquivo {file}: {e}")
     if exclude_origin:
         os.remove(file)
     log(f"✅ Arquivos descompactados")
@@ -134,7 +135,10 @@ def extract_postgres_data(
     processed_count = 0
     csv_name = None
     table_name = None
-
+    
+    if not os.path.exists(data_dir):
+        return 
+    
     with open(sql_path, "r", encoding="utf-8", buffering=65536) as f:
         for line in f:
 
