@@ -65,6 +65,7 @@ with Flow(
         ]
     )
 
+
     #####################
     # 2 Extração OPENBASE
     #####################
@@ -102,6 +103,7 @@ with Flow(
     #####################
     # 3 Extração POSTGRES
     #####################
+
 
     # 3.1 Download do tar com os arquivos POSTGRES
     postgres_file = get_file(
