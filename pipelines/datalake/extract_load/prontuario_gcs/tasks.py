@@ -135,10 +135,10 @@ def extract_postgres_data(
     processed_count = 0
     csv_name = None
     table_name = None
-    
+
     if not os.path.exists(data_dir):
-        return 
-    
+        return
+
     with open(sql_path, "r", encoding="utf-8", buffering=65536) as f:
         for line in f:
 

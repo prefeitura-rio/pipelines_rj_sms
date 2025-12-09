@@ -103,7 +103,6 @@ with Flow(
     # 3 Extração POSTGRES
     #####################
 
-    
     # 3.1 Download do tar com os arquivos POSTGRES
     postgres_file = get_file(
         path=prontuario_constants.DOWNLOAD_DIR.value,
