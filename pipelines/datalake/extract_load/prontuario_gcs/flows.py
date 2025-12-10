@@ -104,7 +104,7 @@ with Flow(
     # 3 Extração POSTGRES
     #####################
 
-    with case (SKIP_POSTGRES, False):
+    with case(SKIP_POSTGRES, False):
         # 3.1 Download do tar com os arquivos POSTGRES
         postgres_file = get_file(
             path=prontuario_constants.DOWNLOAD_DIR.value,
