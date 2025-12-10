@@ -7,21 +7,21 @@ import tarfile
 from datetime import datetime
 
 import pandas as pd
-from google.cloud import bigquery, storage
+from google.cloud import storage
 from pandas.errors import EmptyDataError
 
-from pipelines.constants import constants
 from pipelines.datalake.extract_load.prontuario_gcs.constants import (
     constants as prontuario_constants,
 )
 from pipelines.datalake.extract_load.prontuario_gcs.utils import (
-    handle_D,
-    handle_J,
-    handle_others,
-    handle_U,
     process_insert_statement,
-    process_sql_file_streaming,
-    read_table,
+    _find_openbase_folder,
+    _get_table_and_dictionary_files,
+    _load_all_dictionaries,
+    _parse_record,
+    _get_metadata_info,
+    _write_csv_header,
+    _write_csv_row,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import download_from_cloud_storage
@@ -234,148 +234,95 @@ def extract_openbase_data(
     dataset_id: str,
     wait_for,
 ) -> str:
-    log("📋️ Obtendo dados de arquivos OpenBase...")
+    """
+    Extrai dados de arquivos OpenBase e faz upload para o datalake.
+    
+    Args:
+        data_dir: Diretório contendo os arquivos OpenBase
+        output_dir: Diretório de saída para arquivos temporários
+        cnes: Código CNES da unidade de saúde
+        environment: Ambiente de execução
+        lines_per_chunk: Número de linhas por arquivo CSV
+        dataset_id: ID do dataset no datalake
+        wait_for: Dependência do Prefect
+        
+    Returns:
+        String vazia (mantido para compatibilidade)
+    """
+    log("📋 Obtendo dados de arquivos OpenBase...")
+    
+    # Configuração inicial
     upload_path = os.path.join(output_dir, "OPENBASE")
     os.makedirs(upload_path, exist_ok=True)
-
-    selected_tables = prontuario_constants.SELECTED_OPENBASE_TABLES.value
-    openbase_folder = [
-        folder_name for folder_name in os.listdir(data_dir) if "BASE" in folder_name
-    ][0]
-    openbase_path = os.path.join(data_dir, openbase_folder)
-
+    lines_per_chunk = int(lines_per_chunk)
+    
+    # Localiza e prepara dados
+    openbase_path = _find_openbase_folder(data_dir)
     log(f"Extraindo dados de {openbase_path}")
-
-    tables = [x for x in os.listdir(openbase_path) if x.endswith("._S")]
-    tables.sort()
-    dictionaries = [x for x in os.listdir(openbase_path) if x.endswith("._Sd")]
-    dictionaries.sort()
-
-    data = zip(tables, dictionaries)
-    tables_data = list(data)
-
-    for table, dictionary in tables_data:
-        if table.replace("._S", "") != dictionary.replace("._Sd", ""):
-            log("Table and dictionary do not match: ", table, dictionary)
-
-    dictionaries = {}
-    for table, dictionary in tables_data:
-        with open(
-            f"{openbase_path}/{dictionary}",
-            "r",
-            encoding=prontuario_constants.DICTIONARY_ENCODING.value,
-        ) as f:
-            dictionary_data = f.readlines()
-        # Ignore the 3 first lines
-        dictionary_data = dictionary_data[3:]
-        trimmed = [x.strip() for x in dictionary_data]
-        separated = [x.split() for x in trimmed]
-
-        structured_dictionary = {}
-        acc_offset = 0
-        for attrs in separated:
-            name = attrs[0]
-            _type = attrs[1]
-            condition = attrs[2] if len(attrs) > 2 else None
-
-            if "," in _type:
-                _type = _type.split(",")[0]
-            size = int(re.sub(r"\D", "", _type))
-
-            structured_dictionary[name] = {"type": _type, "size": size, "offset": acc_offset}
-            acc_offset += size
-        dictionaries[table] = structured_dictionary
-
-    for table, dictionary in tables_data:
-        if not table in selected_tables:
+    
+    tables_data = _get_table_and_dictionary_files(openbase_path)
+    dictionaries = _load_all_dictionaries(
+        tables_data,
+        openbase_path,
+        prontuario_constants.DICTIONARY_ENCODING.value
+    )
+    
+    # Processa cada tabela selecionada
+    selected_tables = prontuario_constants.SELECTED_OPENBASE_TABLES.value
+    
+    for table, _ in tables_data:
+        if table not in selected_tables:
             continue
-
+        
+        table_path = os.path.join(openbase_path, table)
         structured_dictionary = dictionaries[table]
-        table_path = f"{openbase_path}/{table}"
-
-        with open(table_path, "rb") as f:
-            metadata = list(structured_dictionary.keys())
-            metadata = sorted(metadata, key=lambda x: structured_dictionary[x]["offset"])
-            last_col = metadata[-1]
-            expected_length = (
-                structured_dictionary[last_col]["size"]
-                + structured_dictionary[last_col]["offset"]
-                + 1
-            )
-
-            # Extrai o nome da tabela a partir do caminho do arquivo
-            # Ex: ./data/hospub-2296306-BASE-31-08-2025-22h42m/alta_clinica._S.
-            table_name = table_path.split("/")[-1].split(".")[0]
-            csv_name = f"{upload_path}/{table_name}.csv"
-
-            # Variáveis para controle de tamanho dos arquivos CSV
-            create_file = True
-            line_count = 0
-
-            while True:
-                if create_file:
-                    # Cria o arquivo CSV para a respectiva tabela e adiciona a linha de colunas
-                    with open(csv_name, "w") as csv_file:
-                        csv_file.write(",".join(metadata) + "\n")
-                    create_file = False
-
-                rec = f.read(expected_length)
-
-                if not rec:
-                    # A extração da tabela chegou ao fim antes das 100_000 linhas
-                    # Então faz o upload do que resta no arquivo.
-                    try:
-                        upload_file_to_datalake.run(
-                            file=csv_name,
+        
+    metadata, expected_length = _get_metadata_info(structured_dictionary)
+    table_name = table_path.split("/")[-1].split(".")[0]
+    csv_path = os.path.join(upload_path, f"{table_name}.csv")
+    
+    create_file = True
+    line_count = 0
+    
+    with open(table_path, "rb") as f:
+        while True:
+            if create_file:
+                _write_csv_header(csv_path, metadata)
+                create_file = False
+            
+            rec = f.read(expected_length)
+            
+            if not rec:
+                # Upload final do arquivo restante
+                upload_file_to_datalake.run(
+                            file=csv_path,
                             dataset_id=dataset_id,
                             environment=environment,
                             cnes=cnes,
                             base_type="openbase",
                         )
-                    except FileNotFoundError:
-                        pass
-                    break
-
-                row = {}
-                for col, attrs in structured_dictionary.items():
-                    field_bytes = rec[
-                        attrs["offset"] : attrs["offset"] + attrs["size"]
-                    ]  # .rstrip(b" \x00")
-                    # Numerico
-                    if attrs["type"].upper().startswith("J"):
-                        value = handle_J(field_bytes, attrs)
-                    # Alfanumerico
-                    elif attrs["type"].upper().startswith("U"):
-                        value = handle_U(field_bytes, attrs)
-                    # Data
-                    elif attrs["type"].upper().startswith("D"):
-                        value = handle_D(field_bytes, attrs)
-                    # Others
-                    else:
-                        value = handle_others(field_bytes, attrs)
-                    row[col] = value
-
-                # Escreve a linha extraída no CSV
-                with open(csv_name, "a") as csv_file:
-                    # Converte possíveis valores inteiros para string
-                    line = [str(value) for value in row.values()]
-                    csv_file.write(",".join(line) + "\n")
-                line_count += 1
-
-                if line_count >= lines_per_chunk:
-                    upload_file_to_datalake.run(
-                        file=csv_name,
-                        dataset_id=dataset_id,
-                        environment=environment,
-                        cnes=cnes,
-                        base_type="openbase",
-                    )
-                    create_file = True
-                    line_count = 0
-
-    # Libera armazenamento para a flow run
+                log(f'Extração finalizada para a tabela {table_name}.')
+                break
+            
+            row = _parse_record(rec, structured_dictionary)
+            _write_csv_row(csv_path, row)
+            line_count += 1
+            
+            if line_count >= lines_per_chunk:
+                upload_file_to_datalake.run(
+                            file=csv_path,
+                            dataset_id=dataset_id,
+                            environment=environment,
+                            cnes=cnes,
+                            base_type="openbase",
+                        )
+                log('Retomando extração...')
+                create_file = True
+                line_count = 0
+    
+    # Limpeza
     shutil.rmtree(openbase_path)
-    return
+    return ""
 
 
 @task
@@ -421,61 +368,7 @@ def upload_file_to_datalake(
     except Exception as e:
         log(f"Erro no upload da tabela {file}")
         raise e
-
-
-@task
-def upload_to_datalake(
-    upload_path, dataset_id, wait_for, environment, cnes, lines_per_chunk, base_type
-) -> None:
-    for folder in os.listdir(upload_path):
-        if folder != base_type:
-            continue
-        files_dir = os.path.join(upload_path, folder)
-
-        for file in os.listdir(files_dir):
-            file_path = os.path.join(files_dir, file)
-            try:
-                csv_chunks = pd.read_csv(
-                    file_path,
-                    sep=",",
-                    quotechar='"',
-                    skipinitialspace=True,
-                    dtype=str,
-                    on_bad_lines="warn",
-                    chunksize=lines_per_chunk,
-                )
-                for i, chunk in enumerate(csv_chunks):
-                    df = pd.DataFrame(chunk)
-                    if not df.empty:
-                        # Remove possíveis pontos em nome de colunas que invialibizam o upload
-                        cols_renamed = [col.replace(".", "") for col in df.columns]
-                        df.rename(columns=dict(zip(df.columns, cols_renamed)), inplace=True)
-
-                        df["loaded_at"] = datetime.now().isoformat()
-                        df["cnes"] = cnes
-
-                        table_name = f"{folder.lower()}_{file.replace('.csv', '')}"
-                        upload_df_to_datalake.run(
-                            df=df,
-                            dataset_id=dataset_id,
-                            table_id=table_name,
-                            partition_column="loaded_at",
-                            if_exists="append",
-                            if_storage_data_exists="append",
-                            source_format="csv",
-                            csv_delimiter=",",
-                        )
-                        log(f"⬆️ Upload {i+1} de {table_name} feito com sucesso!")
-            except EmptyDataError as e:
-                log(f"⚠️ {file} está vazio.")
-            except Exception as e:
-                log(f"Erro no upload da tabela {file}")
-                raise e
-
-        # Deleta arquivos já upados para o bucket
-        shutil.rmtree(files_dir)
-    return
-
+    
 
 @task
 def delete_temp_folders(folders, wait_for):

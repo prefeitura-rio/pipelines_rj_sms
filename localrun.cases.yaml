@@ -524,7 +524,9 @@ cases:
       dataset: 'brutos_prontuario_prontuaRIO'
       blob_prefix: '2025-11/hospub-2270609'
       cnes: '2270609'
-      lines_per_chunk: 50000
+      lines_per_chunk: 25000
+      skip_openbase: false
+      skip_postgres: false
 
   - case_slug: prontuario_extraction_manager
     flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows

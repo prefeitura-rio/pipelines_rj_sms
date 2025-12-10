@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+from typing import Dict, List, Tuple
 from datetime import datetime
+from pipelines.utils.logger import log
 
 ##############################################################################################
 #                                  EXTRAÇÃO OPENBASE
@@ -52,61 +54,119 @@ def handle_others(field_bytes, attrs):
         return field_bytes.strip()
 
 
-def read_table(table_path, structured_dictionary, output_dir):
-    with open(table_path, "rb") as f:
+def _find_openbase_folder(data_dir: str) -> str:
+    """Localiza a pasta OpenBase no diretório de dados."""
+    folders = [name for name in os.listdir(data_dir) if "BASE" in name]
+    if not folders:
+        raise ValueError(f"Nenhuma pasta OpenBase encontrada em {data_dir}")
+    return os.path.join(data_dir, folders[0])
 
-        metadata = list(structured_dictionary.keys())
-        metadata = sorted(metadata, key=lambda x: structured_dictionary[x]["offset"])
-        last_col = metadata[-1]
-        expected_length = (
-            structured_dictionary[last_col]["size"] + structured_dictionary[last_col]["offset"] + 1
-        )
 
-        # Extrai o nome da tabela a partir do caminho do arquivo
-        # Ex: ./data/hospub-2296306-BASE-31-08-2025-22h42m/alta_clinica._S.
-        table_name = table_path.split("/")[-1].split(".")[0]
-        csv_name = f"{output_dir}/{table_name}.csv"
+def _get_table_and_dictionary_files(openbase_path: str) -> List[Tuple[str, str]]:
+    """Obtém e valida pares de arquivos de tabela e dicionário."""
+    tables = sorted([x for x in os.listdir(openbase_path) if x.endswith("._S")])
+    dictionaries = sorted([x for x in os.listdir(openbase_path) if x.endswith("._Sd")])
+    
+    tables_data = list(zip(tables, dictionaries))
+    
+    # Valida correspondência entre tabelas e dicionários
+    for table, dictionary in tables_data:
+        if table.replace("._S", "") != dictionary.replace("._Sd", ""):
+            log(f"⚠️ Tabela e dicionário não correspondem: {table}, {dictionary}")
+    
+    return tables_data
 
-        # Cria o arquivo CSV para a respectiva tabela e adiciona a linha de colunas
-        with open(csv_name, "w") as csv_file:
-            csv_file.write(",".join(metadata) + "\n")
 
-        while True:
-            rec = f.read(expected_length)
-            if not rec:
-                break
+def _parse_dictionary_file(dictionary_path: str, encoding: str) -> Dict:
+    """Converte arquivo de dicionário em estrutura de dados."""
+    with open(dictionary_path, "r", encoding=encoding) as f:
+        lines = f.readlines()[3:]  # Ignora as 3 primeiras linhas
+    
+    structured_dictionary = {}
+    acc_offset = 0
+    
+    for line in lines:
+        attrs = line.strip().split()
+        name = attrs[0]
+        _type = attrs[1].split(",")[0] if "," in attrs[1] else attrs[1]
+        size = int(re.sub(r"\D", "", _type))
+        
+        structured_dictionary[name] = {
+            "type": _type,
+            "size": size,
+            "offset": acc_offset
+        }
+        acc_offset += size
+    
+    return structured_dictionary
 
-            row = {}
-            for col, attrs in structured_dictionary.items():
-                field_bytes = rec[
-                    attrs["offset"] : attrs["offset"] + attrs["size"]
-                ]  # .rstrip(b" \x00")
 
-                # Numerico
-                if attrs["type"].upper().startswith("J"):
-                    value = handle_J(field_bytes, attrs)
+def _load_all_dictionaries(
+    tables_data: List[Tuple[str, str]], 
+    openbase_path: str, 
+    encoding: str
+) -> Dict[str, Dict]:
+    """Carrega todos os dicionários de metadados."""
+    dictionaries = {}
+    
+    for table, dictionary in tables_data:
+        dictionary_path = os.path.join(openbase_path, dictionary)
+        dictionaries[table] = _parse_dictionary_file(dictionary_path, encoding)
+    
+    return dictionaries
 
-                # Alfanumerico
-                elif attrs["type"].upper().startswith("U"):
-                    value = handle_U(field_bytes, attrs)
 
-                # Data
-                elif attrs["type"].upper().startswith("D"):
-                    value = handle_D(field_bytes, attrs)
+def _get_metadata_info(structured_dictionary: Dict) -> Tuple[List[str], int]:
+    """Extrai informações de metadados ordenados e tamanho esperado de registro."""
+    metadata = sorted(
+        structured_dictionary.keys(),
+        key=lambda x: structured_dictionary[x]["offset"]
+    )
+    last_col = metadata[-1]
+    expected_length = (
+        structured_dictionary[last_col]["size"] +
+        structured_dictionary[last_col]["offset"] + 1
+    )
+    return metadata, expected_length
 
-                # Others
-                else:
-                    value = handle_others(field_bytes, attrs)
 
-                row[col] = value
+def _extract_field_value(field_bytes: bytes, attrs: Dict) -> str:
+    """Extrai e converte valor do campo baseado no tipo."""
+    field_type = attrs["type"].upper()
+    
+    if field_type.startswith("J"):
+        return handle_J(field_bytes, attrs)
+    elif field_type.startswith("U"):
+        return handle_U(field_bytes, attrs)
+    elif field_type.startswith("D"):
+        return handle_D(field_bytes, attrs)
+    else:
+        return handle_others(field_bytes, attrs)
 
-            # Escreve a linha extraída diretamente no CSV
-            with open(csv_name, "a") as csv_file:
-                # Converte possíveis valores inteiros para string
-                line = [str(value) for value in row.values()]
-                csv_file.write(",".join(line) + "\n")
 
-    return csv_name
+def _parse_record(rec: bytes, structured_dictionary: Dict) -> Dict:
+    """Converte um registro binário em dicionário de valores."""
+    row = {}
+    
+    for col, attrs in structured_dictionary.items():
+        field_bytes = rec[attrs["offset"]:attrs["offset"] + attrs["size"]]
+        row[col] = _extract_field_value(field_bytes, attrs)
+    
+    return row
+
+
+def _write_csv_header(csv_path: str, metadata: List[str]) -> None:
+    """Cria arquivo CSV e escreve cabeçalho."""
+    with open(csv_path, "w") as f:
+        f.write(",".join(metadata) + "\n")
+
+
+def _write_csv_row(csv_path: str, row: Dict) -> None:
+    """Adiciona uma linha ao arquivo CSV."""
+    with open(csv_path, "a") as f:
+        line = [str(value) for value in row.values()]
+        f.write(",".join(line) + "\n")
+
 
 
 ##############################################################################################

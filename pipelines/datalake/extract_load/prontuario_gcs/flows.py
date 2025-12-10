@@ -166,7 +166,7 @@ with Flow(
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
             prontuario_constants.UPLOAD_PATH.value,
         ],
-        wait_for=prescricao_extraction_finished,
+        wait_for = prescricao_extraction_finished if not SKIP_POSTGRES else openbase_finished 
     )
 
 ######################################################################################
