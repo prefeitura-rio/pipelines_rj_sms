@@ -19,9 +19,9 @@ from pipelines.datalake.extract_load.prontuario_gcs.utils import (
     get_table_and_dictionary_files,
     load_all_dictionaries,
     parse_record,
-    process_insert_statement,
     write_csv_header,
     write_csv_row,
+    process_insert_statement,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import download_from_cloud_storage
@@ -274,48 +274,48 @@ def extract_openbase_data(
         table_path = os.path.join(openbase_path, table)
         structured_dictionary = dictionaries[table]
 
-    metadata, expected_length = get_metadata_info(structured_dictionary)
-    table_name = table_path.split("/")[-1].split(".")[0]
-    csv_path = os.path.join(upload_path, f"{table_name}.csv")
+        metadata, expected_length = get_metadata_info(structured_dictionary)
+        table_name = table_path.split("/")[-1].split(".")[0]
+        csv_path = os.path.join(upload_path, f"{table_name}.csv")
 
-    create_file = True
-    line_count = 0
+        create_file = True
+        line_count = 0
 
-    with open(table_path, "rb") as f:
-        while True:
-            if create_file:
-                write_csv_header(csv_path, metadata)
-                create_file = False
+        with open(table_path, "rb") as f:
+            while True:
+                if create_file:
+                    write_csv_header(csv_path, metadata)
+                    create_file = False
 
-            rec = f.read(expected_length)
+                rec = f.read(expected_length)
 
-            if not rec:
-                # Upload final do arquivo restante
-                upload_file_to_datalake.run(
-                    file=csv_path,
-                    dataset_id=dataset_id,
-                    environment=environment,
-                    cnes=cnes,
-                    base_type="openbase",
-                )
-                log(f"Extração finalizada para a tabela {table_name}.")
-                break
+                if not rec:
+                    # Upload final do arquivo restante
+                    upload_file_to_datalake.run(
+                        file=csv_path,
+                        dataset_id=dataset_id,
+                        environment=environment,
+                        cnes=cnes,
+                        base_type="openbase",
+                    )
+                    log(f"Extração finalizada para a tabela {table_name}.")
+                    break
 
-            row = parse_record(rec, structured_dictionary)
-            write_csv_row(csv_path, row)
-            line_count += 1
+                row = parse_record(rec, structured_dictionary)
+                write_csv_row(csv_path, row)
+                line_count += 1
 
-            if line_count >= lines_per_chunk:
-                upload_file_to_datalake.run(
-                    file=csv_path,
-                    dataset_id=dataset_id,
-                    environment=environment,
-                    cnes=cnes,
-                    base_type="openbase",
-                )
-                log("Retomando extração...")
-                create_file = True
-                line_count = 0
+                if line_count >= lines_per_chunk:
+                    upload_file_to_datalake.run(
+                        file=csv_path,
+                        dataset_id=dataset_id,
+                        environment=environment,
+                        cnes=cnes,
+                        base_type="openbase",
+                    )
+                    log("Retomando extração...")
+                    create_file = True
+                    line_count = 0
 
     # Limpeza
     shutil.rmtree(openbase_path)

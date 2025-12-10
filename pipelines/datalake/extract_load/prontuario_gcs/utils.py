@@ -390,20 +390,3 @@ def process_sql_file_streaming(input_file, output_path, target_tables=None, buff
             current_insert, table_files, table_columns, output_path, target_tables
         ):
             processed_count += 1
-
-    print(f"\nProcessamento concluído!")
-
-
-if __name__ == "__main__":
-    input_file = "data/hospub-2269945-VISUAL-10-11-2025-23h30m/hospub.sql"
-    tables_to_extract = [
-        "public.hp_rege_evolucao",
-        "public.hp_rege_ralta",
-        "public.hp_rege_receituario",
-        "public.hp_descricao_cirurgia",
-        "public.hp_rege_emerg",
-        "public.hp_prontuario_be",
-    ]
-    process_sql_file_streaming(
-        input_file=input_file, output_path="upload", target_tables=tables_to_extract
-    )
