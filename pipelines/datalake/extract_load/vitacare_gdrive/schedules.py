@@ -42,7 +42,6 @@ flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
     },
-
     # FICHA A
     {
         "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_SUB_PAV_FICHA_A/*/*_*_RELACAO_FICHA_A_VITAhisCARE.csv",
@@ -58,7 +57,6 @@ flow_parameters = [
         "environment": "prod",
         "rename_flow": True,
     },
-
     {
         "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_SUB_PAV_FICHA_C_CRIANCA_V2/*/*FICHA_C_CRIANCAS_CAP_V2*.csv",
         "desired_dataset_name": "brutos_informes_vitacare",
