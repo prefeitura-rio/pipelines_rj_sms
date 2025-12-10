@@ -22,6 +22,8 @@ from pipelines.datalake.extract_load.gal_gcs.flows import *
 from pipelines.datalake.extract_load.google_sheets.flows import *
 from pipelines.datalake.extract_load.medilab_api.flows import *
 from pipelines.datalake.extract_load.minhasaude_mongodb.flows import *
+from pipelines.datalake.extract_load.prontuario_gcs import *
+from pipelines.datalake.extract_load.prontuario_gcs.flows import *
 from pipelines.datalake.extract_load.relational_db.flows import *
 from pipelines.datalake.extract_load.ser_metabase.flows import *
 from pipelines.datalake.extract_load.siscan_web_laudos.flows import *
