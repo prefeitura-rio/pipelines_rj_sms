@@ -365,6 +365,16 @@ cases:
       dt_inicio: '2025-09-30T10:00:00-03:00'
       dt_fim: '2025-09-30T11:00:00-03:00'
       rename_flow: False
+  - case_slug: "exames_laboratoriais_operator"
+    flow_path: "pipelines.datalake.extract_load.exames_laboratoriais_api.flows"
+    flow_name: "exames_laboratoriais_operator"
+    params:
+      dataset: 'brutos_exames_laboratoriais'
+      environment: 'dev'
+      dt_inicio: '2025-07-23T18:00:00-03:00'
+      dt_fim: '2025-07-23T19:30:00-03:00'
+      rename_flow: False
+      ap: '33'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
