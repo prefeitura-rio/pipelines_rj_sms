@@ -14,14 +14,14 @@ from pipelines.datalake.extract_load.prontuario_gcs.constants import (
     constants as prontuario_constants,
 )
 from pipelines.datalake.extract_load.prontuario_gcs.utils import (
-    process_insert_statement,
     _find_openbase_folder,
+    _get_metadata_info,
     _get_table_and_dictionary_files,
     _load_all_dictionaries,
     _parse_record,
-    _get_metadata_info,
     _write_csv_header,
     _write_csv_row,
+    process_insert_statement,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import download_from_cloud_storage
@@ -236,7 +236,7 @@ def extract_openbase_data(
 ) -> str:
     """
     Extrai dados de arquivos OpenBase e faz upload para o datalake.
-    
+
     Args:
         data_dir: Diretório contendo os arquivos OpenBase
         output_dir: Diretório de saída para arquivos temporários
@@ -245,81 +245,79 @@ def extract_openbase_data(
         lines_per_chunk: Número de linhas por arquivo CSV
         dataset_id: ID do dataset no datalake
         wait_for: Dependência do Prefect
-        
+
     Returns:
         String vazia (mantido para compatibilidade)
     """
     log("📋 Obtendo dados de arquivos OpenBase...")
-    
+
     # Configuração inicial
     upload_path = os.path.join(output_dir, "OPENBASE")
     os.makedirs(upload_path, exist_ok=True)
     lines_per_chunk = int(lines_per_chunk)
-    
+
     # Localiza e prepara dados
     openbase_path = _find_openbase_folder(data_dir)
     log(f"Extraindo dados de {openbase_path}")
-    
+
     tables_data = _get_table_and_dictionary_files(openbase_path)
     dictionaries = _load_all_dictionaries(
-        tables_data,
-        openbase_path,
-        prontuario_constants.DICTIONARY_ENCODING.value
+        tables_data, openbase_path, prontuario_constants.DICTIONARY_ENCODING.value
     )
-    
+
     # Processa cada tabela selecionada
     selected_tables = prontuario_constants.SELECTED_OPENBASE_TABLES.value
-    
+
     for table, _ in tables_data:
         if table not in selected_tables:
             continue
-        
+
         table_path = os.path.join(openbase_path, table)
         structured_dictionary = dictionaries[table]
-        
+
     metadata, expected_length = _get_metadata_info(structured_dictionary)
     table_name = table_path.split("/")[-1].split(".")[0]
     csv_path = os.path.join(upload_path, f"{table_name}.csv")
-    
+
     create_file = True
     line_count = 0
-    
+
     with open(table_path, "rb") as f:
         while True:
             if create_file:
                 _write_csv_header(csv_path, metadata)
                 create_file = False
-            
+
             rec = f.read(expected_length)
-            
+
             if not rec:
                 # Upload final do arquivo restante
                 upload_file_to_datalake.run(
-                            file=csv_path,
-                            dataset_id=dataset_id,
-                            environment=environment,
-                            cnes=cnes,
-                            base_type="openbase",
-                        )
-                log(f'Extração finalizada para a tabela {table_name}.')
+                    file=csv_path,
+                    dataset_id=dataset_id,
+                    environment=environment,
+                    cnes=cnes,
+                    base_type="openbase",
+                )
+                log(f"Extração finalizada para a tabela {table_name}.")
                 break
-            
+
             row = _parse_record(rec, structured_dictionary)
             _write_csv_row(csv_path, row)
             line_count += 1
-            
+
             if line_count >= lines_per_chunk:
                 upload_file_to_datalake.run(
-                            file=csv_path,
-                            dataset_id=dataset_id,
-                            environment=environment,
-                            cnes=cnes,
-                            base_type="openbase",
-                        )
-                log('Retomando extração...')
+                    file=csv_path,
+                    dataset_id=dataset_id,
+                    environment=environment,
+                    cnes=cnes,
+                    base_type="openbase",
+                )
+                log("Retomando extração...")
                 create_file = True
                 line_count = 0
-    
+
     # Limpeza
     shutil.rmtree(openbase_path)
     return ""
@@ -368,7 +366,7 @@ def upload_file_to_datalake(
     except Exception as e:
         log(f"Erro no upload da tabela {file}")
         raise e
-    
+
 
 @task
 def delete_temp_folders(folders, wait_for):

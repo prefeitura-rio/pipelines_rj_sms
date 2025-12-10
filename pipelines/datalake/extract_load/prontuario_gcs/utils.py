@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import re
-from typing import Dict, List, Tuple
 from datetime import datetime
+from typing import Dict, List, Tuple
+
 from pipelines.utils.logger import log
 
 ##############################################################################################
@@ -66,14 +67,14 @@ def _get_table_and_dictionary_files(openbase_path: str) -> List[Tuple[str, str]]
     """Obtém e valida pares de arquivos de tabela e dicionário."""
     tables = sorted([x for x in os.listdir(openbase_path) if x.endswith("._S")])
     dictionaries = sorted([x for x in os.listdir(openbase_path) if x.endswith("._Sd")])
-    
+
     tables_data = list(zip(tables, dictionaries))
-    
+
     # Valida correspondência entre tabelas e dicionários
     for table, dictionary in tables_data:
         if table.replace("._S", "") != dictionary.replace("._Sd", ""):
             log(f"⚠️ Tabela e dicionário não correspondem: {table}, {dictionary}")
-    
+
     return tables_data
 
 
@@ -81,51 +82,43 @@ def _parse_dictionary_file(dictionary_path: str, encoding: str) -> Dict:
     """Converte arquivo de dicionário em estrutura de dados."""
     with open(dictionary_path, "r", encoding=encoding) as f:
         lines = f.readlines()[3:]  # Ignora as 3 primeiras linhas
-    
+
     structured_dictionary = {}
     acc_offset = 0
-    
+
     for line in lines:
         attrs = line.strip().split()
         name = attrs[0]
         _type = attrs[1].split(",")[0] if "," in attrs[1] else attrs[1]
         size = int(re.sub(r"\D", "", _type))
-        
-        structured_dictionary[name] = {
-            "type": _type,
-            "size": size,
-            "offset": acc_offset
-        }
+
+        structured_dictionary[name] = {"type": _type, "size": size, "offset": acc_offset}
         acc_offset += size
-    
+
     return structured_dictionary
 
 
 def _load_all_dictionaries(
-    tables_data: List[Tuple[str, str]], 
-    openbase_path: str, 
-    encoding: str
+    tables_data: List[Tuple[str, str]], openbase_path: str, encoding: str
 ) -> Dict[str, Dict]:
     """Carrega todos os dicionários de metadados."""
     dictionaries = {}
-    
+
     for table, dictionary in tables_data:
         dictionary_path = os.path.join(openbase_path, dictionary)
         dictionaries[table] = _parse_dictionary_file(dictionary_path, encoding)
-    
+
     return dictionaries
 
 
 def _get_metadata_info(structured_dictionary: Dict) -> Tuple[List[str], int]:
     """Extrai informações de metadados ordenados e tamanho esperado de registro."""
     metadata = sorted(
-        structured_dictionary.keys(),
-        key=lambda x: structured_dictionary[x]["offset"]
+        structured_dictionary.keys(), key=lambda x: structured_dictionary[x]["offset"]
     )
     last_col = metadata[-1]
     expected_length = (
-        structured_dictionary[last_col]["size"] +
-        structured_dictionary[last_col]["offset"] + 1
+        structured_dictionary[last_col]["size"] + structured_dictionary[last_col]["offset"] + 1
     )
     return metadata, expected_length
 
@@ -133,7 +126,7 @@ def _get_metadata_info(structured_dictionary: Dict) -> Tuple[List[str], int]:
 def _extract_field_value(field_bytes: bytes, attrs: Dict) -> str:
     """Extrai e converte valor do campo baseado no tipo."""
     field_type = attrs["type"].upper()
-    
+
     if field_type.startswith("J"):
         return handle_J(field_bytes, attrs)
     elif field_type.startswith("U"):
@@ -147,11 +140,11 @@ def _extract_field_value(field_bytes: bytes, attrs: Dict) -> str:
 def _parse_record(rec: bytes, structured_dictionary: Dict) -> Dict:
     """Converte um registro binário em dicionário de valores."""
     row = {}
-    
+
     for col, attrs in structured_dictionary.items():
-        field_bytes = rec[attrs["offset"]:attrs["offset"] + attrs["size"]]
+        field_bytes = rec[attrs["offset"] : attrs["offset"] + attrs["size"]]
         row[col] = _extract_field_value(field_bytes, attrs)
-    
+
     return row
 
 
@@ -166,7 +159,6 @@ def _write_csv_row(csv_path: str, row: Dict) -> None:
     with open(csv_path, "a") as f:
         line = [str(value) for value in row.values()]
         f.write(",".join(line) + "\n")
-
 
 
 ##############################################################################################
