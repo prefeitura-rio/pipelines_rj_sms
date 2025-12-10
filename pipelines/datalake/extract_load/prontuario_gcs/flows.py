@@ -166,7 +166,7 @@ with Flow(
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
             prontuario_constants.UPLOAD_PATH.value,
         ],
-        wait_for= openbase_finished if SKIP_POSTGRES else prescricao_extraction_finished,
+        wait_for=openbase_finished if SKIP_POSTGRES else prescricao_extraction_finished,
     )
 
 ######################################################################################
@@ -185,7 +185,7 @@ with Flow(
     DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
     FOLDER = Parameter("folder", default="", required=True)
     CHUNK_SIZE = Parameter("chunk_size", default=25_000)
-    
+
     with case(RENAME_FLOW, True):
         rename_current_flow_run(folder=FOLDER, env=ENVIRONMENT)
 

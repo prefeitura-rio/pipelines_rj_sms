@@ -19,9 +19,9 @@ from pipelines.datalake.extract_load.prontuario_gcs.utils import (
     get_table_and_dictionary_files,
     load_all_dictionaries,
     parse_record,
+    process_insert_statement,
     write_csv_header,
     write_csv_row,
-    process_insert_statement,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import download_from_cloud_storage
