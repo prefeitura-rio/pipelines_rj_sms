@@ -242,7 +242,7 @@ def make_run_meta():
 
 
 @task
-def mark_slice_completed(_):
+def mark_slice_completed():
     """
     Roda ao terminar os slices.
     (Significa que o slice chegou aqui aqui sem erros)

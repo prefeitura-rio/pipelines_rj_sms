@@ -118,9 +118,8 @@ with Flow(
     delete_raw = delete_file.map(file_path=raw_files, upstream_tasks=[uploads])
     delete_prepared = delete_file.map(file_path=prepared_files, upstream_tasks=[delete_raw])
 
-
     # 5) Marca quais slices chegaram até o fim sem erro
-    slice_completed = mark_slice_completed.map(delete_prepared)    
+    slice_completed = mark_slice_completed.map(upstream_tasks=[delete_prepared])    
 
     # 6) Prepara DF de log de validação de finalização de sucesso da run
     df_validacao = validate_upload(
