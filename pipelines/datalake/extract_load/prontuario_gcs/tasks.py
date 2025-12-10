@@ -531,6 +531,8 @@ def build_operator_parameters(
             "blob_prefix": prefix,
             "rename_flow": True,
             "lines_per_chunk": chunk_size,
+            "skip_openbase": False,
+            "skip_postgres": True if cnes == "2273349" else False, # Este CNES não possui base POSTGRES
         }
         for cnes, prefix in files_per_cnes.items()
     ]

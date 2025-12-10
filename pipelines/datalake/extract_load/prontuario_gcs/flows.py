@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103
 # flake8: noqa E501
-import os
 
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
@@ -30,7 +29,6 @@ from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
 from pipelines.utils.flow import Flow
-from pipelines.utils.logger import log
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, rename_current_flow_run
@@ -51,7 +49,9 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", required=False)
     DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
     BLOB_PREFIX = Parameter("blob_prefix", required=True)
-    LINES_PER_CHUNK = Parameter("lines_per_chunk", default=50_000)
+    LINES_PER_CHUNK = Parameter("lines_per_chunk", default=25_000)
+    SKIP_OPENBASE = Parameter("skip_openbase", default=False, required=False)
+    SKIP_POSTGRES = Parameter("skip_postgres", default=False, required=False)
 
     with case(RENAME_FLOW, value=True):
         rename_current_flow_run(cnes=CNES, blob_prefix=BLOB_PREFIX)
@@ -69,93 +69,95 @@ with Flow(
     # 2 Extração OPENBASE
     #####################
 
-    # 2.1 - Faz o download do arquivo OpenBase
-    openbase_file = get_file(
-        path=prontuario_constants.DOWNLOAD_DIR.value,
-        bucket_name=BUCKET_NAME,
-        environment=ENVIRONMENT,
-        blob_prefix=BLOB_PREFIX,
-        wait_for=folders_created,
-        blob_type="BASE",
-    )
+    with case(SKIP_OPENBASE, False):
+        # 2.1 - Faz o download do arquivo OpenBase
+        openbase_file = get_file(
+            path=prontuario_constants.DOWNLOAD_DIR.value,
+            bucket_name=BUCKET_NAME,
+            environment=ENVIRONMENT,
+            blob_prefix=BLOB_PREFIX,
+            wait_for=folders_created,
+            blob_type="BASE",
+        )
 
-    # 2.2 - Descompressão dos arquivos
-    unpacked_openbase = unpack_files(
-        tar_files=openbase_file,
-        output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        files_to_extract=prontuario_constants.SELECTED_BASE_FILES.value,
-        exclude_origin=True,
-        wait_for=openbase_file,
-    )
+        # 2.2 - Descompressão dos arquivos
+        unpacked_openbase = unpack_files(
+            tar_files=openbase_file,
+            output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+            files_to_extract=prontuario_constants.SELECTED_BASE_FILES.value,
+            exclude_origin=True,
+            wait_for=openbase_file,
+        )
 
-    # 2.3 - Extração e upload (por chunk) das tabelas selecionadas dos arquivos OpenBase
-    openbase_finished = extract_openbase_data(
-        data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        output_dir=prontuario_constants.UPLOAD_PATH.value,
-        cnes=CNES,
-        environment=ENVIRONMENT,
-        dataset_id=DATASET,
-        lines_per_chunk=LINES_PER_CHUNK,
-        wait_for=unpacked_openbase,
-    )
+        # 2.3 - Extração e upload (por chunk) das tabelas selecionadas dos arquivos OpenBase
+        openbase_finished = extract_openbase_data(
+            data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+            output_dir=prontuario_constants.UPLOAD_PATH.value,
+            cnes=CNES,
+            environment=ENVIRONMENT,
+            dataset_id=DATASET,
+            lines_per_chunk=LINES_PER_CHUNK,
+            wait_for=unpacked_openbase,
+        )
 
     #####################
     # 3 Extração POSTGRES
     #####################
 
-    # 3.1 Download do tar com os arquivos POSTGRES
-    postgres_file = get_file(
-        path=prontuario_constants.DOWNLOAD_DIR.value,
-        bucket_name=BUCKET_NAME,
-        environment=ENVIRONMENT,
-        blob_prefix=BLOB_PREFIX,
-        wait_for=openbase_finished,
-        blob_type="VISUAL",
-    )
+    with case (SKIP_POSTGRES, False):
+        # 3.1 Download do tar com os arquivos POSTGRES
+        postgres_file = get_file(
+            path=prontuario_constants.DOWNLOAD_DIR.value,
+            bucket_name=BUCKET_NAME,
+            environment=ENVIRONMENT,
+            blob_prefix=BLOB_PREFIX,
+            wait_for=openbase_finished,
+            blob_type="VISUAL",
+        )
 
-    # 3.2 - Descompressão do arquivo hospub.sql
-    unpacked_hospub = unpack_files(
-        tar_files=postgres_file,
-        output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        files_to_extract=["hospub.sql"],
-        exclude_origin=False,
-        wait_for=postgres_file,
-    )
+        # 3.2 - Descompressão do arquivo hospub.sql
+        unpacked_hospub = unpack_files(
+            tar_files=postgres_file,
+            output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+            files_to_extract=["hospub.sql"],
+            exclude_origin=False,
+            wait_for=postgres_file,
+        )
 
-    # 3.3 - Extração das tabelas do arquivo hospub.sql
-    hospub_extraction_finished = extract_postgres_data(
-        data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        output_dir=prontuario_constants.UPLOAD_PATH.value,
-        wait_for=unpacked_hospub,
-        lines_per_chunk=LINES_PER_CHUNK,
-        dataset_id=DATASET,
-        cnes=CNES,
-        environment=ENVIRONMENT,
-        sql_file="hospub.sql",
-        target_tables=prontuario_constants.SELECTED_HOSPUB_TABLES.value,
-    )
+        # 3.3 - Extração das tabelas do arquivo hospub.sql
+        hospub_extraction_finished = extract_postgres_data(
+            data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+            output_dir=prontuario_constants.UPLOAD_PATH.value,
+            wait_for=unpacked_hospub,
+            lines_per_chunk=LINES_PER_CHUNK,
+            dataset_id=DATASET,
+            cnes=CNES,
+            environment=ENVIRONMENT,
+            sql_file="hospub.sql",
+            target_tables=prontuario_constants.SELECTED_HOSPUB_TABLES.value,
+        )
 
-    # 3.4 - Descompressão do arquivo prescricao_medica3.sql
-    unpacked_prescricao = unpack_files(
-        tar_files=postgres_file,
-        output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        files_to_extract=["prescricao_medica3.sql"],
-        exclude_origin=True,
-        wait_for=hospub_extraction_finished,
-    )
+        # 3.4 - Descompressão do arquivo prescricao_medica3.sql
+        unpacked_prescricao = unpack_files(
+            tar_files=postgres_file,
+            output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+            files_to_extract=["prescricao_medica3.sql"],
+            exclude_origin=True,
+            wait_for=hospub_extraction_finished,
+        )
 
-    # 3.5 Extração das tabelas do arquivo prescricao.sql
-    prescricao_extraction_finished = extract_postgres_data(
-        data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-        output_dir=prontuario_constants.UPLOAD_PATH.value,
-        wait_for=unpacked_prescricao,
-        lines_per_chunk=LINES_PER_CHUNK,
-        dataset_id=DATASET,
-        cnes=CNES,
-        environment=ENVIRONMENT,
-        sql_file="prescricao_medica3.sql",
-        target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value,
-    )
+        # 3.5 Extração das tabelas do arquivo prescricao.sql
+        prescricao_extraction_finished = extract_postgres_data(
+            data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+            output_dir=prontuario_constants.UPLOAD_PATH.value,
+            wait_for=unpacked_prescricao,
+            lines_per_chunk=LINES_PER_CHUNK,
+            dataset_id=DATASET,
+            cnes=CNES,
+            environment=ENVIRONMENT,
+            sql_file="prescricao_medica3.sql",
+            target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value,
+        )
 
     # 4 - Deletar arquivos e diretórios
     delete_temp_folders(
@@ -182,7 +184,7 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", required=False)
     DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
     FOLDER = Parameter("folder", default="", required=True)
-    CHUNK_SIZE = Parameter("chunk_size", default=50_000)
+    CHUNK_SIZE = Parameter("chunk_size", default=25_000)
 
     # 1 - Listar os arquivos no bucket
     prefix_p_cnes = list_files_from_bucket(

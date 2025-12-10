@@ -4,6 +4,11 @@ import re
 from datetime import datetime
 
 
+
+##############################################################################################
+#                                  EXTRAÇÃO OPENBASE
+##############################################################################################
+
 def handle_J(field_bytes, attrs):
     try:
         return int.from_bytes(field_bytes, "big")
@@ -103,6 +108,11 @@ def read_table(table_path, structured_dictionary, output_dir):
                 csv_file.write(",".join(line) + "\n")
 
     return csv_name
+
+
+##############################################################################################
+#                                  EXTRAÇÃO POSTGRES
+##############################################################################################
 
 
 def extract_table_name(insert_stmt):
