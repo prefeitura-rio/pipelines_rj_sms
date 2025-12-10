@@ -524,3 +524,26 @@ cases:
     flow_name: report_informes_seguranca
     params:
       environment: "dev"
+
+  - case_slug: prontuario_extraction_operator
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_extraction_operator
+    params:
+      environment: "dev"
+      bucket_name: "subhue_backups"
+      dataset: 'brutos_prontuario_prontuaRIO'
+      blob_prefix: '2025-11/hospub-2270609'
+      cnes: '2270609'
+      lines_per_chunk: 25000
+      skip_openbase: false
+      skip_postgres: false
+
+  - case_slug: prontuario_extraction_manager
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_extraction_manager
+    params:
+      environment: "dev"
+      bucket_name: "subhue_backups"
+      folder: "2025-11"
+      dataset: 'brutos_prontuario_prontuaRIO'
+      chunk_size: 50000
