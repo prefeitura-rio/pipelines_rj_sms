@@ -16,6 +16,7 @@ from pipelines.datalake.extract_load.sisreg_api.tasks import (
     gera_data_inicial,
     make_run_meta,
     validate_upload,
+    mark_slice_completed
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,
@@ -117,7 +118,11 @@ with Flow(
     delete_raw = delete_file.map(file_path=raw_files, upstream_tasks=[uploads])
     delete_prepared = delete_file.map(file_path=prepared_files, upstream_tasks=[delete_raw])
 
-    # 5) Prepara DF de log de validação de finalização de sucesso da run
+
+    # 5) Marca quais slices chegaram até o fim sem erro
+    slice_completed = mark_slice_completed.map(delete_prepared)    
+
+    # 6) Prepara DF de log de validação de finalização de sucesso da run
     df_validacao = validate_upload(
         run_id=run_id,
         as_of=as_of,
@@ -126,10 +131,11 @@ with Flow(
         bq_dataset=BQ_DATASET,
         data_inicial=DATA_INICIAL,
         data_final=DATA_FINAL,
+        slice_completed=slice_completed,
         upstream_tasks=[delete_prepared],
     )
 
-    # 6) Registra a validação na tabela de log
+    # 7) Registra a validação na tabela de log
     registra_validacao = upload_df_to_datalake(
         df=df_validacao,
         table_id=BQ_TABLE,
