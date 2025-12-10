@@ -55,7 +55,7 @@ def handle_others(field_bytes, attrs):
         return field_bytes.strip()
 
 
-def _find_openbase_folder(data_dir: str) -> str:
+def find_openbase_folder(data_dir: str) -> str:
     """Localiza a pasta OpenBase no diretório de dados."""
     folders = [name for name in os.listdir(data_dir) if "BASE" in name]
     if not folders:
@@ -63,7 +63,7 @@ def _find_openbase_folder(data_dir: str) -> str:
     return os.path.join(data_dir, folders[0])
 
 
-def _get_table_and_dictionary_files(openbase_path: str) -> List[Tuple[str, str]]:
+def get_table_and_dictionary_files(openbase_path: str) -> List[Tuple[str, str]]:
     """Obtém e valida pares de arquivos de tabela e dicionário."""
     tables = sorted([x for x in os.listdir(openbase_path) if x.endswith("._S")])
     dictionaries = sorted([x for x in os.listdir(openbase_path) if x.endswith("._Sd")])
@@ -78,7 +78,7 @@ def _get_table_and_dictionary_files(openbase_path: str) -> List[Tuple[str, str]]
     return tables_data
 
 
-def _parse_dictionary_file(dictionary_path: str, encoding: str) -> Dict:
+def parse_dictionary_file(dictionary_path: str, encoding: str) -> Dict:
     """Converte arquivo de dicionário em estrutura de dados."""
     with open(dictionary_path, "r", encoding=encoding) as f:
         lines = f.readlines()[3:]  # Ignora as 3 primeiras linhas
@@ -98,7 +98,7 @@ def _parse_dictionary_file(dictionary_path: str, encoding: str) -> Dict:
     return structured_dictionary
 
 
-def _load_all_dictionaries(
+def load_all_dictionaries(
     tables_data: List[Tuple[str, str]], openbase_path: str, encoding: str
 ) -> Dict[str, Dict]:
     """Carrega todos os dicionários de metadados."""
@@ -106,12 +106,12 @@ def _load_all_dictionaries(
 
     for table, dictionary in tables_data:
         dictionary_path = os.path.join(openbase_path, dictionary)
-        dictionaries[table] = _parse_dictionary_file(dictionary_path, encoding)
+        dictionaries[table] = parse_dictionary_file(dictionary_path, encoding)
 
     return dictionaries
 
 
-def _get_metadata_info(structured_dictionary: Dict) -> Tuple[List[str], int]:
+def get_metadata_info(structured_dictionary: Dict) -> Tuple[List[str], int]:
     """Extrai informações de metadados ordenados e tamanho esperado de registro."""
     metadata = sorted(
         structured_dictionary.keys(), key=lambda x: structured_dictionary[x]["offset"]
@@ -123,7 +123,7 @@ def _get_metadata_info(structured_dictionary: Dict) -> Tuple[List[str], int]:
     return metadata, expected_length
 
 
-def _extract_field_value(field_bytes: bytes, attrs: Dict) -> str:
+def extract_field_value(field_bytes: bytes, attrs: Dict) -> str:
     """Extrai e converte valor do campo baseado no tipo."""
     field_type = attrs["type"].upper()
 
@@ -137,24 +137,24 @@ def _extract_field_value(field_bytes: bytes, attrs: Dict) -> str:
         return handle_others(field_bytes, attrs)
 
 
-def _parse_record(rec: bytes, structured_dictionary: Dict) -> Dict:
+def parse_record(rec: bytes, structured_dictionary: Dict) -> Dict:
     """Converte um registro binário em dicionário de valores."""
     row = {}
 
     for col, attrs in structured_dictionary.items():
         field_bytes = rec[attrs["offset"] : attrs["offset"] + attrs["size"]]
-        row[col] = _extract_field_value(field_bytes, attrs)
+        row[col] = extract_field_value(field_bytes, attrs)
 
     return row
 
 
-def _write_csv_header(csv_path: str, metadata: List[str]) -> None:
+def write_csv_header(csv_path: str, metadata: List[str]) -> None:
     """Cria arquivo CSV e escreve cabeçalho."""
     with open(csv_path, "w") as f:
         f.write(",".join(metadata) + "\n")
 
 
-def _write_csv_row(csv_path: str, row: Dict) -> None:
+def write_csv_row(csv_path: str, row: Dict) -> None:
     """Adiciona uma linha ao arquivo CSV."""
     with open(csv_path, "a") as f:
         line = [str(value) for value in row.values()]

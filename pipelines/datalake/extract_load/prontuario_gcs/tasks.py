@@ -14,13 +14,13 @@ from pipelines.datalake.extract_load.prontuario_gcs.constants import (
     constants as prontuario_constants,
 )
 from pipelines.datalake.extract_load.prontuario_gcs.utils import (
-    _find_openbase_folder,
-    _get_metadata_info,
-    _get_table_and_dictionary_files,
-    _load_all_dictionaries,
-    _parse_record,
-    _write_csv_header,
-    _write_csv_row,
+    find_openbase_folder,
+    get_metadata_info,
+    get_table_and_dictionary_files,
+    load_all_dictionaries,
+    parse_record,
+    write_csv_header,
+    write_csv_row,
     process_insert_statement,
 )
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -254,14 +254,13 @@ def extract_openbase_data(
     # Configuração inicial
     upload_path = os.path.join(output_dir, "OPENBASE")
     os.makedirs(upload_path, exist_ok=True)
-    lines_per_chunk = int(lines_per_chunk)
 
     # Localiza e prepara dados
-    openbase_path = _find_openbase_folder(data_dir)
+    openbase_path = find_openbase_folder(data_dir)
     log(f"Extraindo dados de {openbase_path}")
 
-    tables_data = _get_table_and_dictionary_files(openbase_path)
-    dictionaries = _load_all_dictionaries(
+    tables_data = get_table_and_dictionary_files(openbase_path)
+    dictionaries = load_all_dictionaries(
         tables_data, openbase_path, prontuario_constants.DICTIONARY_ENCODING.value
     )
 
@@ -275,7 +274,7 @@ def extract_openbase_data(
         table_path = os.path.join(openbase_path, table)
         structured_dictionary = dictionaries[table]
 
-    metadata, expected_length = _get_metadata_info(structured_dictionary)
+    metadata, expected_length = get_metadata_info(structured_dictionary)
     table_name = table_path.split("/")[-1].split(".")[0]
     csv_path = os.path.join(upload_path, f"{table_name}.csv")
 
@@ -285,7 +284,7 @@ def extract_openbase_data(
     with open(table_path, "rb") as f:
         while True:
             if create_file:
-                _write_csv_header(csv_path, metadata)
+                write_csv_header(csv_path, metadata)
                 create_file = False
 
             rec = f.read(expected_length)
@@ -302,8 +301,8 @@ def extract_openbase_data(
                 log(f"Extração finalizada para a tabela {table_name}.")
                 break
 
-            row = _parse_record(rec, structured_dictionary)
-            _write_csv_row(csv_path, row)
+            row = parse_record(rec, structured_dictionary)
+            write_csv_row(csv_path, row)
             line_count += 1
 
             if line_count >= lines_per_chunk:
@@ -400,7 +399,6 @@ def list_files_from_bucket(environment, bucket_name, folder):
         prefix = prefix_match.group(0)
 
         cnes_prefix[cnes] = prefix
-    print(cnes_prefix)
     return cnes_prefix
 
 
