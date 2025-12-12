@@ -111,7 +111,7 @@ with Flow(
             bucket_name=BUCKET_NAME,
             environment=ENVIRONMENT,
             blob_prefix=BLOB_PREFIX,
-            wait_for=openbase_finished,
+            wait_for= openbase_file if not SKIP_OPENBASE else folders_created,
             blob_type="VISUAL",
         )
 
@@ -166,7 +166,7 @@ with Flow(
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
             prontuario_constants.UPLOAD_PATH.value,
         ],
-        wait_for=[prescricao_extraction_finished, openbase_finished],
+        wait_for=prescricao_extraction_finished if not SKIP_POSTGRES else openbase_finished,
     )
 
 ######################################################################################
