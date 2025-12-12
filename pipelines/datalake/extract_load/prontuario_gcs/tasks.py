@@ -183,7 +183,7 @@ def extract_postgres_data(
                 log(f"Linhas processadas: {processed_count}")
                 log(f"Tabela atual: {table_name}")
                 log(f"Tabela anterior: {previous_table}")
-                upload_file_to_datalake.run(
+                upload_file_to_native_table.run(
                     file=previous_csv_name,
                     dataset_id=dataset_id,
                     cnes=cnes,
@@ -445,7 +445,7 @@ def upload_file_to_native_table(
         reader = csv.DictReader(line.replace("\x00", "") for line in f)
         for row in reader:
             data_list.append(row)
-
+            
     table = file.split("/")[-1].replace(".csv", "")
     lines = [
         {
@@ -456,6 +456,10 @@ def upload_file_to_native_table(
         }
         for data in data_list
     ]
+    
+    if not lines:
+        log(f'⚠️ O arquivo {file} está vázio. Não há linhas a inserir.')
+        return 
 
     log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
 
