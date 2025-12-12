@@ -445,7 +445,7 @@ def upload_file_to_native_table(
         reader = csv.DictReader(line.replace("\x00", "") for line in f)
         for row in reader:
             data_list.append(row)
-            
+
     table = file.split("/")[-1].replace(".csv", "")
     lines = [
         {
@@ -456,10 +456,10 @@ def upload_file_to_native_table(
         }
         for data in data_list
     ]
-    
+
     if not lines:
-        log(f'⚠️ O arquivo {file} está vázio. Não há linhas a inserir.')
-        return 
+        log(f"⚠️ O arquivo {file} está vázio. Não há linhas a inserir.")
+        return
 
     log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
 
