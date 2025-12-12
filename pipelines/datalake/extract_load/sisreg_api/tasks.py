@@ -12,6 +12,7 @@ from uuid import uuid4
 import pandas as pd
 from elasticsearch import Elasticsearch, exceptions
 from prefect.engine.signals import SKIP
+from prefect.triggers import all_finished
 
 # Internos
 from prefeitura_rio.pipelines_utils.logging import log
@@ -241,7 +242,28 @@ def make_run_meta():
 
 
 @task
-def validate_upload(run_id, as_of, environment, bq_table, bq_dataset, data_inicial, data_final):
+def mark_slice_completed():
+    """
+    Roda ao terminar os slices.
+    (Significa que o slice chegou aqui aqui sem erros)
+    """
+    return True
+
+
+@task(trigger=all_finished, skip_on_upstream_skip=False)
+def validate_upload(
+    run_id, as_of, environment, bq_table, bq_dataset, data_inicial, data_final, slice_completed
+):
+    values = slice_completed or []
+    total_slices = len(values)
+
+    # Slices que passaram por mark_slice_completed e retornaram True
+    succeeded_slices = sum(1 for v in values if v)
+    failed_slices = total_slices - succeeded_slices
+
+    # Completed apenas se todos os slices finalizaram bem
+    completed = failed_slices == 0
+
     row = {
         "run_id": run_id,
         "as_of": as_of,
@@ -251,7 +273,7 @@ def validate_upload(run_id, as_of, environment, bq_table, bq_dataset, data_inici
         "data_inicial": data_inicial,
         "data_final": data_final,
         "validation_date": datetime.now(),
-        "completed": True,
+        "completed": completed,
     }
     df = pd.DataFrame([row])
     return df
