@@ -459,6 +459,7 @@ def upload_file_to_native_table(
 
     if not lines:
         log(f"⚠️ O arquivo {file} está vázio. Não há linhas a inserir.")
+        os.remove(file)
         return
 
     log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
@@ -494,3 +495,5 @@ def upload_file_to_native_table(
         log(f"❌ Ocorreram erros ao inserir as linhas na tabela: {errors}")
     else:
         log(f"✅ Inserção de linhas feitas com sucesso")
+        
+    os.remove(file)
