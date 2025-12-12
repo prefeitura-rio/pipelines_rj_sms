@@ -111,7 +111,7 @@ with Flow(
             bucket_name=BUCKET_NAME,
             environment=ENVIRONMENT,
             blob_prefix=BLOB_PREFIX,
-            wait_for= openbase_file if not SKIP_OPENBASE else folders_created,
+            wait_for=openbase_file if not SKIP_OPENBASE else folders_created,
             blob_type="VISUAL",
         )
 

@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 import csv
+import json
 import os
 import re
-import json
 import shutil
 import tarfile
 from datetime import datetime
-import pytz
+
 import pandas as pd
-from google.cloud import storage, bigquery
+import pytz
 from google.api_core.exceptions import NotFound
+from google.cloud import bigquery, storage
 from pandas.errors import EmptyDataError
 
 from pipelines.datalake.extract_load.prontuario_gcs.constants import (
@@ -430,6 +431,7 @@ def build_operator_parameters(
         for cnes, prefix in files_per_cnes.items()
     ]
 
+
 @task
 def upload_file_to_native_table(
     environment: str,
@@ -439,26 +441,27 @@ def upload_file_to_native_table(
     cnes: str,
 ):
     data_list = []
-    with open(file, 'r') as f:
-        reader = csv.DictReader(line.replace('\x00', '') for line in f)
+    with open(file, "r") as f:
+        reader = csv.DictReader(line.replace("\x00", "") for line in f)
         for row in reader:
             data_list.append(row)
-    
-    table = file.split('/')[-1].replace('.csv','')
+
+    table = file.split("/")[-1].replace(".csv", "")
     lines = [
         {
-            'cnes':cnes,
-            'data':json.dumps(data),
-            'loaded_at':datetime.now(tz=pytz.timezone('America/Sao_Paulo')).isoformat(),
-            'base_type':base_type
-        } for data in data_list
-        ]
+            "cnes": cnes,
+            "data": json.dumps(data),
+            "loaded_at": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat(),
+            "base_type": base_type,
+        }
+        for data in data_list
+    ]
 
-    log(f'⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...')
-    
+    log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
+
     client = bigquery.Client()
     dataset_ref = client.dataset(dataset_id)
-    
+
     try:
         client.get_dataset(dataset_ref)
     except NotFound:
@@ -467,7 +470,7 @@ def upload_file_to_native_table(
         log(f"Dataset {dataset_id} criado.")
 
     table_ref = dataset_ref.table(table)
-    
+
     try:
         client.get_table(table_ref)
     except NotFound:
@@ -480,10 +483,9 @@ def upload_file_to_native_table(
         table = bigquery.Table(table_ref, schema=schema)
         client.create_table(table)
         log(f"Criada tabela {table}")
-        
 
     errors = client.insert_rows_json(table_ref, lines)
-    
+
     if errors:
         log(f"❌ Ocorreram erros ao inserir as linhas na tabela: {errors}")
     else:
