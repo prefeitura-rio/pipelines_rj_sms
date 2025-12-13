@@ -505,7 +505,7 @@ def upload_file_to_native_table(
     # Caso não consiga, divide o chunk em dois e tenta enviar em duas partes
     try:
         errors = client.insert_rows_json(table_ref, lines)
-    except (from_http_response, GoogleAPICallError) as e:
+    except GoogleAPICallError as e:
         log("⚠️ Erro ao inserir linhas na tabela, tentando em chunks menores...")
         half = int(len(lines) / 2)
 
