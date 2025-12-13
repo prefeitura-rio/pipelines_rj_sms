@@ -5,11 +5,11 @@ import os
 import re
 import shutil
 import tarfile
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
-from google.api_core.exceptions import NotFound
+from google.api_core.exceptions import NotFound, from_http_response, GoogleAPICallError
 from google.cloud import bigquery, storage
 from pandas.errors import EmptyDataError
 
@@ -432,7 +432,7 @@ def build_operator_parameters(
     ]
 
 
-@task
+@task(max_retries=2, retry_delay=timedelta(minutes=1))
 def upload_file_to_native_table(
     environment: str,
     dataset_id: str,
@@ -440,9 +440,23 @@ def upload_file_to_native_table(
     base_type: str,
     cnes: str,
 ):
+    """Envia arquivo CS para tabela nativa do bigquery. 
+    Utilizado para o envio de arquivos com número de colunas variável.  
+
+    Args:
+        environment (str): Variável de ambiente
+        dataset_id (str): Dataset de destino
+        file (str): Caminho do arquivo CSV
+        base_type (str): Tipo de base (openbase ou postgres)
+        cnes (str): CNES da unidade de saúde
+    """
+    
+    # Lê e prepara os dados para envio
     data_list = []
     with open(file, "r") as f:
-        reader = csv.DictReader(line.replace("\x00", "") for line in f)
+        reader = csv.DictReader(
+            line.replace("\x00", "") # Remove null bytes 
+            for line in f)
         for row in reader:
             data_list.append(row)
 
@@ -462,8 +476,8 @@ def upload_file_to_native_table(
         os.remove(file)
         return
 
+    # Faz o envio dos dados para o BigQuery
     log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
-
     client = bigquery.Client()
     dataset_ref = client.dataset(dataset_id)
 
@@ -489,8 +503,26 @@ def upload_file_to_native_table(
         client.create_table(table)
         log(f"Criada tabela {table}")
 
-    errors = client.insert_rows_json(table_ref, lines)
-
+    # Faz tentativa de enviar o dados no chunk estabelecido nos parâmetros
+    # Caso não consiga, divide o chunk em dois e tenta enviar em duas partes
+    try:
+        errors = client.insert_rows_json(table_ref, lines)
+    except (from_http_response, GoogleAPICallError) as e:
+        log('⚠️ Erro ao inserir linhas na tabela, tentando em chunks menores...')
+        half = int(len(lines)/2)
+        
+        log('Enviando primeira metade dos dados...')
+        first_chunk = lines[:half]
+        errors = client.insert_rows_json(table_ref, first_chunk)
+        
+        log('Enviando segunda metade dos dados...')
+        second_chunk = lines[half:]
+        errors = client.insert_rows_json(table_ref, second_chunk)
+    except Exception as e:
+        log(f"❌ Erro ao inserir linhas na tabela: {e}")
+        raise e
+        
+        
     if errors:
         log(f"❌ Ocorreram erros ao inserir as linhas na tabela: {errors}")
     else:
