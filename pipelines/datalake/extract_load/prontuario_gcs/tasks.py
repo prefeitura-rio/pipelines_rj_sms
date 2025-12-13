@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
-from google.api_core.exceptions import NotFound, from_http_response, GoogleAPICallError
+from google.api_core.exceptions import GoogleAPICallError, NotFound, from_http_response
 from google.cloud import bigquery, storage
 from pandas.errors import EmptyDataError
 
@@ -440,8 +440,8 @@ def upload_file_to_native_table(
     base_type: str,
     cnes: str,
 ):
-    """Envia arquivo CS para tabela nativa do bigquery. 
-    Utilizado para o envio de arquivos com número de colunas variável.  
+    """Envia arquivo CS para tabela nativa do bigquery.
+    Utilizado para o envio de arquivos com número de colunas variável.
 
     Args:
         environment (str): Variável de ambiente
@@ -450,13 +450,11 @@ def upload_file_to_native_table(
         base_type (str): Tipo de base (openbase ou postgres)
         cnes (str): CNES da unidade de saúde
     """
-    
+
     # Lê e prepara os dados para envio
     data_list = []
     with open(file, "r") as f:
-        reader = csv.DictReader(
-            line.replace("\x00", "") # Remove null bytes 
-            for line in f)
+        reader = csv.DictReader(line.replace("\x00", "") for line in f)  # Remove null bytes
         for row in reader:
             data_list.append(row)
 
@@ -508,21 +506,20 @@ def upload_file_to_native_table(
     try:
         errors = client.insert_rows_json(table_ref, lines)
     except (from_http_response, GoogleAPICallError) as e:
-        log('⚠️ Erro ao inserir linhas na tabela, tentando em chunks menores...')
-        half = int(len(lines)/2)
-        
-        log('Enviando primeira metade dos dados...')
+        log("⚠️ Erro ao inserir linhas na tabela, tentando em chunks menores...")
+        half = int(len(lines) / 2)
+
+        log("Enviando primeira metade dos dados...")
         first_chunk = lines[:half]
         errors = client.insert_rows_json(table_ref, first_chunk)
-        
-        log('Enviando segunda metade dos dados...')
+
+        log("Enviando segunda metade dos dados...")
         second_chunk = lines[half:]
         errors = client.insert_rows_json(table_ref, second_chunk)
     except Exception as e:
         log(f"❌ Erro ao inserir linhas na tabela: {e}")
         raise e
-        
-        
+
     if errors:
         log(f"❌ Ocorreram erros ao inserir as linhas na tabela: {errors}")
     else:
