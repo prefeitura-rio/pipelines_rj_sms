@@ -3,6 +3,7 @@ import csv
 import json
 import os
 import re
+import sys
 import shutil
 import tarfile
 from datetime import datetime, timedelta
@@ -453,8 +454,15 @@ def upload_file_to_native_table(
 
     # Lê e prepara os dados para envio
     data_list = []
+    csv.field_size_limit(sys.maxsize)
+    
     with open(file, "r") as f:
-        reader = csv.DictReader(line.replace("\x00", "") for line in f)  # Remove null bytes
+        reader = csv.DictReader(
+            [line.replace("\x00", "") for line in f], # Remove null bytes
+            delimiter="|",
+            quotechar='"',
+            skipinitialspace=True,
+        )
         for row in reader:
             data_list.append(row)
 
@@ -478,7 +486,7 @@ def upload_file_to_native_table(
     log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
     client = bigquery.Client()
     dataset_ref = client.dataset(dataset_id)
-
+    
     try:
         client.get_dataset(dataset_ref)
     except NotFound:

@@ -47,7 +47,7 @@ with Flow(
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     CNES = Parameter("cnes", required=True)
     RENAME_FLOW = Parameter("rename_flow", required=False)
-    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_staging", required=True)
     BLOB_PREFIX = Parameter("blob_prefix", required=True)
     LINES_PER_CHUNK = Parameter("lines_per_chunk", default=25_000)
     SKIP_OPENBASE = Parameter("skip_openbase", default=False, required=False)
@@ -182,7 +182,7 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     RENAME_FLOW = Parameter("rename_flow", required=False)
-    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_staging", required=True)
     FOLDER = Parameter("folder", default="", required=True)
     CHUNK_SIZE = Parameter("chunk_size", default=25_000)
 
@@ -240,6 +240,6 @@ prontuario_extraction_manager.executor = LocalDaskExecutor(num_workers=1)
 prontuario_extraction_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="2Gi",
-    memory_request="2Gi",
+    memory_limit="1Gi",
+    memory_request="1Gi",
 )
