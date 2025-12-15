@@ -21,14 +21,13 @@ TABLES_CONFIG = [
         "dataset_id": "projeto_sinanrio",
         "table_id": "sintomaticos_respiratorios_dia",
         "db_schema": "teste_dl",
-        "dest_table": "tb_sintomaticos",
+        "dest_table": "tb_sintomatico",
         "frequency": "daily",
         "if_exists": "append",
-        "infisical_path": "/smsrio",
-        "secret_name": "DB_URL",
+        "infisical_path": "/plataforma-subpav",
         "notify": True,
         "custom_insert_query": """
-            INSERT INTO teste_dl.tb_sintomaticos (
+            INSERT INTO teste_dl.tb_sintomatico (
                 cpf,
                 condicoes,
                 soap_subjetivo_motivo,
@@ -60,6 +59,39 @@ TABLES_CONFIG = [
             )
         """,
     },
+    {
+        "project": "SINANRIO - Notificação",
+        "dataset_id": "projeto_sinanrio",
+        "table_id": "notificacao",
+        "db_schema": "teste_dl",
+        "dest_table": "notificacao",
+        "frequency": "daily",
+        "if_exists": "append",
+        "infisical_path": "/plataforma-subpav",
+        "notify": True,
+    },
+    {
+        "project": "SINANRIO - Tabela de Investigação",
+        "dataset_id": "projeto_sinanrio",
+        "table_id": "tb_investiga",
+        "db_schema": "teste_dl",
+        "dest_table": "tb_investiga",
+        "frequency": "daily",
+        "if_exists": "append",
+        "infisical_path": "/plataforma-subpav",
+        "notify": True,
+    },
+    {
+        "project": "SINANRIO - Resultado de Exames",
+        "dataset_id": "projeto_sinanrio",
+        "table_id": "tb_resultado_exame",
+        "db_schema": "teste_dl",
+        "dest_table": "tb_resultado_exame",
+        "frequency": "daily",
+        "if_exists": "append",
+        "infisical_path": "/plataforma-subpav",
+        "notify": True,
+    },
 ]
 
 
@@ -70,13 +102,14 @@ def build_param(config: dict) -> dict:
         "db_schema": config["db_schema"],
         "dest_table": config["dest_table"],
         "infisical_path": config["infisical_path"],
-        "secret_name": config["secret_name"],
         "rename_flow": True,
         "if_exists": config.get("if_exists", "append"),
         "project": config.get("project", ""),
         "environment": config.get("environment", "dev"),
     }
     # Só adiciona se tiver valor!
+    if config.get("secret_name") is not None:
+        param["secret_name"] = config["secret_name"]
     if config.get("bq_columns") is not None:
         param["bq_columns"] = config["bq_columns"]
     if config.get("custom_insert_query") is not None:
@@ -100,7 +133,7 @@ daily_params = unpack_params("daily")
 weekly_params = unpack_params("weekly")
 monthly_params = unpack_params("monthly")
 
-BASE_START_DATE = datetime(2025, 7, 31, 3, 0, tzinfo=RJ_TZ)
+BASE_START_DATE = datetime(2025, 7, 31, 7, 0, tzinfo=RJ_TZ)
 
 daily_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),

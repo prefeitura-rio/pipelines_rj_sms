@@ -97,15 +97,30 @@ TABELAS_CONFIG = [
     ("tuberculose_sinan", "subpav_sinan", "daily"),
     ("tb_estabelecimento_saude", "subpav_sinan", "monthly"),
     # Sinan Rio (Novo)
-    ("notificacao", "subpav_sinanrio", "daily", {
-        "infisical_path": "/plataforma-subpav",
-        "secret_name": "HOST",
-    }),
-    ("tb_investiga", "subpav_sinanrio", "daily", {
-        "infisical_path": "/plataforma-subpav",
-        "secret_name": "HOST",
-    }),
-
+    (
+        "notificacao",
+        "subpav_sinanrio",
+        "daily",
+        {
+            "infisical_path": "/plataforma-subpav",
+        },
+    ),
+    (
+        "tb_investiga",
+        "subpav_sinanrio",
+        "daily",
+        {
+            "infisical_path": "/plataforma-subpav",
+        },
+    ),
+    (
+        "tb_sintomatico",
+        "subpav_sinanrio",
+        "daily",
+        {
+            "infisical_path": "/plataforma-subpav",
+        },
+    ),
 ]
 
 
