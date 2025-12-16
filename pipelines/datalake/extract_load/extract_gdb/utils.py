@@ -209,7 +209,7 @@ def jsonify_dataframe(df: pd.DataFrame, keep_columns: Optional[List[str]] = None
     """
     keep_columns = keep_columns or []
     if isinstance(keep_columns, str):
-        keep_columns = [ keep_columns ]
+        keep_columns = [keep_columns]
 
     # Colunas que queremos inserir no JSON
     json_columns = set(df.columns) - set(keep_columns)
