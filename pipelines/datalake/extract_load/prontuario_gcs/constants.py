@@ -37,7 +37,7 @@ class constants(Enum):
         "lab63._S",
         "lab63._Sd",
         "intc0._Sd",
-        "intc0._S"
+        "intc0._S",
     )
     SELECTED_OPENBASE_TABLES = (
         "cen02._S",
@@ -50,7 +50,7 @@ class constants(Enum):
         "cen70._S",
         "cen62._S",
         "lab63._S",
-        "intc0._S"
+        "intc0._S",
     )
     SELECTED_HOSPUB_TABLES = (
         "hp_rege_evolucao",
