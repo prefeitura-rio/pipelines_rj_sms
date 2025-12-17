@@ -523,7 +523,7 @@ def upload_file_to_native_table(
         log(f"❌ Erro ao inserir linhas na tabela: {e}")
         log(chunk)
         raise e
-        
+
     if errors:
         log(f"❌ Ocorreram erros ao inserir as linhas na tabela: {errors}")
     else:
