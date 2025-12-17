@@ -509,25 +509,21 @@ def upload_file_to_native_table(
         client.create_table(table)
         log(f"Criada tabela {table}")
 
-    # Faz tentativa de enviar o dados no chunk estabelecido nos parâmetros
-    # Caso não consiga, divide o chunk em dois e tenta enviar em duas partes
+    # Envia os dados em chunks de 100 linhas para evitar erros de API
+    errors = []
     try:
-        errors = client.insert_rows_json(table_ref, lines)
-    except GoogleAPICallError as e:
-        log("⚠️ Erro ao inserir linhas na tabela, tentando em chunks menores...")
-        half = int(len(lines) / 2)
-
-        log("Enviando primeira metade dos dados...")
-        first_chunk = lines[:half]
-        errors = client.insert_rows_json(table_ref, first_chunk)
-
-        log("Enviando segunda metade dos dados...")
-        second_chunk = lines[half:]
-        errors = client.insert_rows_json(table_ref, second_chunk)
+        chunk_size = 100
+        for i in range(0, len(lines), chunk_size):
+            chunk = lines[i : i + chunk_size]
+            log(f"Enviando chunk de {len(chunk)} linhas...")
+            chunk_errors = client.insert_rows_json(table_ref, chunk)
+            if chunk_errors:
+                errors.extend(chunk_errors)
     except Exception as e:
         log(f"❌ Erro ao inserir linhas na tabela: {e}")
+        log(chunk)
         raise e
-
+        
     if errors:
         log(f"❌ Ocorreram erros ao inserir as linhas na tabela: {errors}")
     else:
