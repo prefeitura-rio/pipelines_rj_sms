@@ -2,8 +2,9 @@
 import datetime
 import re
 import tempfile
-from typing import Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
+import pandas as pd
 import pytz
 import requests
 from google.cloud import storage
@@ -161,3 +162,71 @@ def format_reference_date(refdate: str | None, uri: str) -> str:
     if re.search(r"^[0-9]{4}[\-\/][0-9]{2}[\-\/][0-9]{2}$", refdate):
         return f"{refdate}".replace("/", "-")
     raise ValueError(f"Expected reference date format YYYY(-MM(-DD)?)?; got '{refdate}'")
+
+
+def jsonify_dataframe(df: pd.DataFrame, keep_columns: Optional[List[str]] = None) -> pd.DataFrame:
+    """
+    Convert all rows of a dataframe into JSON strings.
+    This may affect the object referenced by `df`; make a copy before using this
+    function if you need to use its previous value.
+
+    Args:
+        df (pd.DataFrame):
+            Source dataframe.
+        keep_columns (List[str]?):
+            Optional list of column names to leave out of JSON value.
+            If not specified, the resulting dataframe will have a single
+            column, 'json'. If a string `s` is passed instead of a list,
+            this will be equivalent to `keep_columns=[s]`. If there are
+            no columns outside of the list in `keep_columns`, an empty-string
+            `"json"` column will be added.
+
+    Returns:
+        df (DataFrame):
+            Modified dataframe.
+
+    >>> a = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'col3': [7, 8, 9]})
+    >>> jsonify_dataframe(a)  # equivalent to keep_columns=[]
+                               json
+    0  {"col1":1,"col2":4,"col3":7}
+    1  {"col1":2,"col2":5,"col3":8}
+    2  {"col1":3,"col2":6,"col3":9}
+    >>> jsonify_dataframe(a, keep_columns="col1")
+                      json  col1
+    0  {"col2":4,"col3":7}     1
+    1  {"col2":5,"col3":8}     2
+    2  {"col2":6,"col3":9}     3
+    >>> jsonify_dataframe(a, keep_columns=["col1", "col3"])
+             json  col1  col3
+    0  {"col2":4}     1     7
+    1  {"col2":5}     2     8
+    2  {"col2":6}     3     9
+    >>> jsonify_dataframe(a, keep_columns=["col1", "col2", "col3"])
+      json  col1  col2  col3
+    0   {}     1     4     7
+    1   {}     2     5     8
+    2   {}     3     6     9
+    """
+    keep_columns = keep_columns or []
+    if isinstance(keep_columns, str):
+        keep_columns = [keep_columns]
+
+    # Colunas que queremos inserir no JSON
+    json_columns = set(df.columns) - set(keep_columns)
+    if len(json_columns) <= 0:
+        df.insert(0, "json", "{}")
+        return df
+
+    # Aqui é dupla negativa: estamos REMOVENDO colunas que NÃO vão pro JSON
+    # i.e. mantemos somente colunas que VÃO pro JSON
+    df_json = df.drop(columns=list(keep_columns))
+    # Oposto aqui: removemos colunas do JSON, i.e. mantemos as fora do JSON
+    df_keep = df.drop(columns=list(json_columns))
+    # Transforma colunas em JSON
+    df_json["json"] = df_json.to_json(orient="records", lines=True).splitlines()
+    # Remove colunas que foram pro JSON (então só resta a coluna do JSON)
+    df_json.drop(columns=list(json_columns), inplace=True)
+    # Merge do novo dataframe de JSON com as colunas anteriores
+    # Em teoria teremos o mesmo número de linhas, na mesma ordem, ...
+    _tmp_df = pd.merge(df_json, df_keep, left_index=True, right_index=True)
+    return _tmp_df
