@@ -515,7 +515,6 @@ def upload_file_to_native_table(
         chunk_size = 10
         for i in range(0, len(lines), chunk_size):
             chunk = lines[i : i + chunk_size]
-            log(f"Enviando chunk de {len(chunk)} linhas...")
             chunk_errors = client.insert_rows_json(table_ref, chunk)
             if chunk_errors:
                 errors.extend(chunk_errors)
