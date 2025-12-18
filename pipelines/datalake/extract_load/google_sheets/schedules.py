@@ -274,7 +274,7 @@ daily_parameters = [
         "environment": "prod",
         "rename_flow": True,
     },
-        {
+    {
         "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
         "url_type": "google_sheet",
         "gsheets_sheet_name": "Controle de Demandas - Equipe Individual",
@@ -283,7 +283,7 @@ daily_parameters = [
         "csv_delimiter": "|",
         "environment": "prod",
         "rename_flow": True,
-    }
+    },
 ]
 
 weekly_parameters = [
