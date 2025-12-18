@@ -44,7 +44,7 @@ with Flow(
     dt_inicio = Parameter("dt_inicio", default="2025-10-21T10:00:00-0300")
     dt_fim = Parameter("dt_fim", default="2025-10-21T11:30:00-0300")
     rename_flow = Parameter("rename_flow", default=True)
-    dataset_id = Parameter("dataset", default="exames_laboratoriais", required=False)
+    dataset_id = Parameter("dataset", default="brutos_exames_laboratoriais", required=False)
 
     source = get_source_from_ap(ap=ap)
 
@@ -136,7 +136,7 @@ with Flow(
     ],
 ) as exames_laboratoriais_manager:
 
-    dataset_id = Parameter("dataset", default="exames_laboratoriais", required=False)
+    dataset_id = Parameter("dataset", default="brutos_exames_laboratoriais", required=False)
     environment = Parameter("environment", default="dev")
     relative_date_filter = Parameter("intervalo", default="D-1")
     hours_per_window = Parameter("hours_per_window", default=2)
