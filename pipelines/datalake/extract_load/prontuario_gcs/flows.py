@@ -116,16 +116,16 @@ with Flow(
         )
 
         # 3.2 - Descompressão do arquivo hospub.sql
-        #unpacked_hospub = unpack_files(
+        # unpacked_hospub = unpack_files(
         #    tar_files=postgres_file,
         #    output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         #    files_to_extract=["hospub.sql"],
         #    exclude_origin=False,
         #    wait_for=postgres_file,
-        #)
+        # )
 
         # 3.3 - Extração das tabelas do arquivo hospub.sql
-        #hospub_extraction_finished = extract_postgres_data(
+        # hospub_extraction_finished = extract_postgres_data(
         #    data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         #    output_dir=prontuario_constants.UPLOAD_PATH.value,
         #    wait_for=unpacked_hospub,
@@ -135,7 +135,7 @@ with Flow(
         #    environment=ENVIRONMENT,
         #    sql_file="hospub.sql",
         #    target_tables=prontuario_constants.SELECTED_HOSPUB_TABLES.value,
-        #)
+        # )
 
         # 3.4 - Descompressão do arquivo prescricao_medica3.sql
         unpacked_prescricao = unpack_files(
