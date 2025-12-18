@@ -509,10 +509,10 @@ def upload_file_to_native_table(
         client.create_table(table)
         log(f"Criada tabela {table}")
 
-    # Envia os dados em chunks de 100 linhas para evitar erros de API
+    # Envia os dados em chunks de 10 linhas para evitar erros de API
     errors = []
     try:
-        chunk_size = 100
+        chunk_size = 10
         for i in range(0, len(lines), chunk_size):
             chunk = lines[i : i + chunk_size]
             log(f"Enviando chunk de {len(chunk)} linhas...")
