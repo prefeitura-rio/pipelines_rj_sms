@@ -511,7 +511,7 @@ def upload_file_to_native_table(
         bigquery.SchemaField("loaded_at", "STRING"),
         bigquery.SchemaField("base_type", "STRING"),
     ]
-    
+
     try:
         client.get_table(table_ref)
     except NotFound:
