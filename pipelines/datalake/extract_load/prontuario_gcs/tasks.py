@@ -492,14 +492,6 @@ def upload_file_to_native_table(
         return
 
     # Faz o envio dos dados para o BigQuery
-
-    schema = [
-        bigquery.SchemaField("cnes", "STRING"),
-        bigquery.SchemaField("data", "STRING"),
-        bigquery.SchemaField("loaded_at", "STRING"),
-        bigquery.SchemaField("base_type", "STRING"),
-    ]
-
     log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
     client = bigquery.Client()
     dataset_ref = client.dataset(dataset_id)
@@ -513,10 +505,16 @@ def upload_file_to_native_table(
 
     table_ref = dataset_ref.table(table)
 
+    schema = [
+        bigquery.SchemaField("cnes", "STRING"),
+        bigquery.SchemaField("data", "STRING"),
+        bigquery.SchemaField("loaded_at", "STRING"),
+        bigquery.SchemaField("base_type", "STRING"),
+    ]
+    
     try:
         client.get_table(table_ref)
     except NotFound:
-
         table = bigquery.Table(table_ref, schema=schema)
         client.create_table(table)
         log(f"Criada tabela {table}")
@@ -526,8 +524,6 @@ def upload_file_to_native_table(
         source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
     )
 
-    erros = []
-
     try:
         load_job = client.load_table_from_json(lines, table_ref, job_config=job_config)
         result = load_job.result()
@@ -535,25 +531,6 @@ def upload_file_to_native_table(
         log(result)
         log(f"❌ Erro ao inserir linhas na tabela: {e}")
         raise e
-
-    # Envia os dados em chunks de 10 linhas para evitar erros de API
-    # errors = []
-    # try:
-    #    chunk_size = 10
-    #    for i in range(0, len(lines), chunk_size):
-    #        chunk = lines[i : i + chunk_size]
-    #        chunk_errors = client.insert_rows_json(table_ref, chunk)
-    #        if chunk_errors:
-    #            errors.extend(chunk_errors)
-    # except Exception as e:
-    #    log(f"❌ Erro ao inserir linhas na tabela: {e}")
-    #    log(chunk)
-    #    raise e
-    #
-    # if errors:
-    #    log(f"❌ Ocorreram erros ao inserir as linhas na tabela: {errors}")
-    # else:
-    #    log(f"✅ Inserção de linhas feitas com sucesso")
 
     log(f"✅ Inserção de linhas feitas com sucesso")
     os.remove(file)
