@@ -252,14 +252,7 @@ def mark_slice_completed():
 
 @task(trigger=all_finished, skip_on_upstream_skip=False)
 def validate_upload(
-    run_id,
-    as_of,
-    environment,
-    bq_table,
-    bq_dataset,
-    data_inicial,
-    data_final,
-    slice_completed
+    run_id, as_of, environment, bq_table, bq_dataset, data_inicial, data_final, slice_completed
 ):
     values = slice_completed or []
     total_slices = len(values)
