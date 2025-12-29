@@ -380,10 +380,6 @@ cases:
     flow_name: "sms_dump_vitacare_reports"
     params:
       environment: "dev"
-      endpoint: "posicao"
-      target_date: "D-1"
-      dataset_id: "brutos_api_vitacare"
-      table_id_prefix: "estoque_posicao"
   - case_slug: "siscan_web_laudos_operator"
     flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
     flow_name: "sms_siscan_web_operator"

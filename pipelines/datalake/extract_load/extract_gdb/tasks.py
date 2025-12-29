@@ -22,6 +22,7 @@ from .utils import (
     download_gcs_to_file,
     format_reference_date,
     inverse_exponential_backoff,
+    jsonify_dataframe,
 )
 
 
@@ -187,11 +188,13 @@ def upload_to_bigquery(
 
             # Substitui nomes de colunas pelos nomes tratados
             df.rename(columns=column_mapping, inplace=True)
+            # Transforma cada linha em um JSON
+            df = jsonify_dataframe(df)
 
             # Metadados
             df["_source_file"] = uri
             df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-            df["_data_particao"] = format_reference_date(refdate, uri)
+            df["data_particao"] = format_reference_date(refdate, uri)
 
             log(
                 f"Uploading table '{table_name}' from DataFrame: "
@@ -207,7 +210,7 @@ def upload_to_bigquery(
                         df=df,
                         dataset_id=dataset,
                         table_id=table_name,
-                        partition_column="_data_particao",
+                        partition_column="data_particao",
                         if_exists="append",
                         if_storage_data_exists="append",
                         source_format="csv",
