@@ -1,0 +1,9 @@
+- aguardando pedro criar planilha "emails_subgeral" no sheets 
+- modelar tabela de emails 
+- consumir tabela de emails no pipeline
+- Usar abas para projetos
+- Sempre adicionar mensagem LGPD no email.
+- Colocar style inline nos htmls
+- Ver limite do tamanho dos emails  (antes de cortar)
+- Demais comentários avellar email: https://github.com/prefeitura-rio/pipelines_rj_sms/blob/ec25a412847b5a5c88a110f059b26774d144e23b/pipelines/reports/informes_seguranca/tasks.py#L176
+- Para ver o que cada cliente de email suporta: https://www.caniemail.com/

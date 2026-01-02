@@ -8,17 +8,17 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.emails_subgeral.constants import (
+from pipelines.reports.emails_subgeral_gestao.constants import (
     SMTP_HOST,
     SMTP_PORT,
     SENDER_NAME
 )
-from pipelines.datalake.extract_load.emails_subgeral.schedules import schedule
-from pipelines.datalake.extract_load.emails_subgeral.tasks import (
+from pipelines.reports.emails_subgeral_gestao.schedules import schedule
+from pipelines.reports.emails_subgeral_gestao.tasks import (
     bigquery_to_xl_disk,
     send_email_smtp,
     delete_file_from_disk,
-    make_meta_df
+    make_email_meta_df
 )
 
 # internos
@@ -80,7 +80,7 @@ with Flow(
         upstream_tasks=[email])
 
     # Task 4 - Cria metadados sobre emails enviados
-    df = make_meta_df(
+    df = make_email_meta_df(
         environment = ENVIRONMENT,
         subject = SUBJECT,
         recipients = RECIPIENTS,
@@ -99,9 +99,9 @@ with Flow(
     # Task 5 - Escreve metadados no Big Query
     write_meta = upload_df_to_datalake(
         df=df,
-        table_id="logs",
+        table_id="logs_emails_gestao",
         dataset_id="brutos_emails_subgeral",
-        partition_column="as_of",
+        partition_column="date_partition",
         source_format="parquet",
     )
 
