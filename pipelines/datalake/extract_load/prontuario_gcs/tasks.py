@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
-from google.api_core.exceptions import GoogleAPICallError, NotFound, from_http_response
+from google.api_core.exceptions import NotFound
 from google.cloud import bigquery, storage
 from pandas.errors import EmptyDataError
 
