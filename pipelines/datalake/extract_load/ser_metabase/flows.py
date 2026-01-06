@@ -28,8 +28,7 @@ from pipelines.utils.tasks import get_secret_key
 
 with Flow(
     name="SUBGERAL - Extract & Load - SER METABASE",
-    state_handlers=[handle_flow_state_change],
-    owners=[constants.MATHEUS_ID.value],
+    state_handlers=[handle_flow_state_change]
 ) as ser_metabase_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
