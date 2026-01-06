@@ -544,7 +544,7 @@ cases:
       dataset: 'brutos_prontuario_prontuaRIO'
       chunk_size: 50000
   - case_slug: emails-subgeral
-    flow_path: pipelines.datalake.extract_load.emails_subgeral.flows 
+    flow_path: pipelines.datalake.reports.emails_subgeral_gestao.flows 
     flow_name: sms_emails_subgeral
     params:
       environment: "dev"
