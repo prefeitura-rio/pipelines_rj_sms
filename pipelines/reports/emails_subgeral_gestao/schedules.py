@@ -18,7 +18,7 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 flow_parameters = [
     {
-        "gsheets_sheet_name": "teste_1",
+        "gsheets_sheet_name": "testes_1",
         "subject":f"E-mail de teste - dia {date.today():%Y-%m-%d}",
         "query_path" : "mail_templates/teste/query_teste.sql",
         "html_body_path": "mail_templates/teste/body_teste.html",
