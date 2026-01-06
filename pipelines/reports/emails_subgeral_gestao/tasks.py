@@ -5,6 +5,7 @@ from typing import Optional, Sequence, Tuple
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
+import pandas as pd
 from google.cloud import bigquery
 
 from prefeitura_rio.pipelines_utils.logging import log
@@ -18,9 +19,58 @@ from pipelines.reports.utils.emails_subgeral import (
     _normalize_recipients
 )
 
+from pipelines.utils.tasks import (
+    create_folders,
+    download_from_url,
+    inject_gcp_credentials
+)
 
 
-# tarefa para extrair dados do BigQuery
+
+def _extract_emails_from_csv(folder: dict, gsheets_sheet_name: str) -> Sequence[str]:
+    """
+    Lê o CSV em `csv_path` e retorna uma lista com um email por linha
+    da coluna chamada "email". Retorna uma lista vazia se a coluna
+    não existir. Remove valores NA e remove espaços em branco.
+    """
+    csv_file = Path(folder["raw"]) / f"{gsheets_sheet_name}.csv"
+
+    df = pd.read_csv(csv_file)
+    if "email" not in df.columns:
+        return []
+
+    emails = df["email"].dropna().astype(str).str.strip().tolist()
+    return emails
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
+def get_recipients_from_gsheets(
+    environment: str,
+    gsheets_url: str,
+    gsheets_sheet_name: str
+) -> Sequence[str]:
+    """
+    Extrai lista de emails de uma planilha Google Sheets e escreve o arquivo em disco.
+    """
+    
+    inject_gcp_credentials(environment=environment)
+
+    folder = create_folders()
+
+    download_from_url(
+        url_type="google_sheet",
+        url=gsheets_url,
+        gsheets_sheet_name=gsheets_sheet_name,
+        file_name=gsheets_sheet_name,
+        file_path=folder["raw"],
+        csv_delimiter="|"
+    )
+
+    recipents = _extract_emails_from_csv(folder, gsheets_sheet_name)
+
+    return recipents
+
+
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
     """
@@ -68,7 +118,6 @@ def _guess_mime_type(path: Path) -> Tuple[str, str]:
     return maintype, subtype
 
 
-# função auxiliar para adicionar arquivos anexos ao email
 def _add_attachments_to_message(
     message: EmailMessage,
     attachments: str,

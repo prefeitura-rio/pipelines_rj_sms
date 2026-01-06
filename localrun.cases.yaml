@@ -548,8 +548,8 @@ cases:
     flow_name: sms_emails_subgeral
     params:
       environment: "dev"
+      gsheets_sheet_name: "teste_1"
       subject: "Teste email prefect (dl)"
-      recipients: ["matheusmiloski.smsrio@gmail.com", "juliana.paranhos@regulacaoriorj.com.br"]
       query_path: "mail_templates/gerencia_cancer/gerencia_cancer.sql"
       html_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.html"
       plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"
