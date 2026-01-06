@@ -21,8 +21,7 @@ from pipelines.reports.utils.emails_subgeral import (
 
 from pipelines.utils.tasks import (
     create_folders,
-    download_from_url,
-    inject_gcp_credentials
+    download_from_url
 )
 
 
@@ -45,19 +44,15 @@ def _extract_emails_from_csv(folder: dict, gsheets_sheet_name: str) -> Sequence[
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def get_recipients_from_gsheets(
-    environment: str,
     gsheets_url: str,
     gsheets_sheet_name: str
 ) -> Sequence[str]:
     """
     Extrai lista de emails de uma planilha Google Sheets e escreve o arquivo em disco.
     """
-    
-    inject_gcp_credentials(environment=environment)
+    folder = create_folders.run()
 
-    folder = create_folders()
-
-    download_from_url(
+    download_from_url.run(
         url_type="google_sheet",
         url=gsheets_url,
         gsheets_sheet_name=gsheets_sheet_name,

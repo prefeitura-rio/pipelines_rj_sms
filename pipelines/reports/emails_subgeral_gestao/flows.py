@@ -15,18 +15,24 @@ from pipelines.reports.emails_subgeral_gestao.constants import (
     SENDER_NAME
 )
 from pipelines.reports.emails_subgeral_gestao.schedules import schedule
+from pipelines.reports.utils.emails_subgeral import (
+    make_email_meta_df,
+    delete_file_from_disk
+)
+
 from pipelines.reports.emails_subgeral_gestao.tasks import (
     get_recipients_from_gsheets,
     bigquery_to_xl_disk,
-    send_email_smtp,
-    delete_file_from_disk,
-    make_email_meta_df
+    send_email_smtp
 )
 
-# internos
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.utils.tasks import (
+    get_secret_key,
+    inject_gcp_credentials,
+    upload_df_to_datalake
+)
 
 
 
@@ -39,7 +45,7 @@ with Flow(
     # PARAMETROS AMBIENTE ---------------------------
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
-    # PARAMETROS CREDENCIAIS ------------------------
+    # CREDENCIAIS ------------------------
     user = get_secret_key(
         environment=ENVIRONMENT, secret_name="MAILGRID_USER", secret_path="/emails_subgeral"
     )
@@ -47,8 +53,12 @@ with Flow(
         environment=ENVIRONMENT, secret_name="MAILGRID_PASSWORD", secret_path="/emails_subgeral"
     )
 
+    gcp_credentials = inject_gcp_credentials(environment=ENVIRONMENT)
+
+
     # PARAMETROS GSHEETS ---------------------------
     GSHEETS_SHEET_NAME = Parameter("gsheets_sheet_name", default=None)
+
 
     # PARAMETROS EMAIL ------------------------------
     SUBJECT = Parameter("subject", default=None)
@@ -60,13 +70,16 @@ with Flow(
 
     # Task 0 - Obtém lista de emails do Google Sheets
     recipients = get_recipients_from_gsheets(
-        environment=ENVIRONMENT,
         gsheets_url=GSHEETS_URL,
         gsheets_sheet_name=GSHEETS_SHEET_NAME
     )
 
     # Task 1 - Obtém dados, salva no disco e retorna path absoluto
-    xl_absolute_path = bigquery_to_xl_disk(subject=SUBJECT, query_path=QUERY_PATH)
+    xl_absolute_path = bigquery_to_xl_disk(
+        subject=SUBJECT,
+        query_path=QUERY_PATH,
+        upstream_tasks=[recipients]
+    )
 
     # Task 2 - Envia o email
     email = send_email_smtp(
