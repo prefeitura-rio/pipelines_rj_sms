@@ -1,16 +1,16 @@
+# -*- coding: utf-8 -*-
 import re
 import smtplib
-import pandas as pd
-
-from typing import List, Sequence, Type
-from email.message import EmailMessage
 from datetime import datetime
+from email.message import EmailMessage
 from pathlib import Path
+from typing import List, Sequence, Type
 
-from pipelines.utils.credential_injector import authenticated_task as task
+import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.reports.emails_subgeral_gestao.constants import BASE_DIR
 
+from pipelines.reports.emails_subgeral_gestao.constants import BASE_DIR
+from pipelines.utils.credential_injector import authenticated_task as task
 
 
 def _read_file(relative_path: str) -> str:
@@ -34,19 +34,19 @@ def _normalize_recipients(raw_recipients: Sequence[str]) -> List[str]:
     Normaliza e valida a lista de destinatários.
     """
 
-    email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     recipients = []
-    
+
     for recipient in raw_recipients:
         if not recipient:
             continue
-        
+
         cleaned = recipient.strip()
-        
+
         if not email_pattern.match(cleaned):
             log(f"E-mail inválido, ignorando: {cleaned}")
             continue
-        
+
         recipients.append(cleaned)
 
     if not recipients:
@@ -140,34 +140,34 @@ def _send_prepared_message_via_smtp(
 
 @task
 def make_email_meta_df(
-    environment : str,
-    subject : str,
-    recipients : str,
-    query_path : str,
-    attachments : str,
-    html_body_path : str,
-    plain_body_path : str,
-    sender_name : str,
-    sender_email : str,
-    smtp_user : str,
-    smtp_host : str,
-    smtp_port : str,
+    environment: str,
+    subject: str,
+    recipients: str,
+    query_path: str,
+    attachments: str,
+    html_body_path: str,
+    plain_body_path: str,
+    sender_name: str,
+    sender_email: str,
+    smtp_user: str,
+    smtp_host: str,
+    smtp_port: str,
 ) -> pd.DataFrame:
     row = {
-        "date" : datetime.now(),
-        "date_partition" : datetime.now().strftime("%Y%m%d"),
-        "environment" : environment,
-        "subject" : subject,
-        "recipients" : recipients,
-        "query_path" : query_path,
-        "attachments" : attachments,
-        "html_body_path" : html_body_path,
-        "plain_body_path" : plain_body_path,
-        "sender_name" : sender_name,
-        "sender_email" : sender_email,
-        "smtp_user" : smtp_user,
-        "smtp_host" : smtp_host,
-        "smtp_port" : smtp_port
+        "date": datetime.now(),
+        "date_partition": datetime.now().strftime("%Y%m%d"),
+        "environment": environment,
+        "subject": subject,
+        "recipients": recipients,
+        "query_path": query_path,
+        "attachments": attachments,
+        "html_body_path": html_body_path,
+        "plain_body_path": plain_body_path,
+        "sender_name": sender_name,
+        "sender_email": sender_email,
+        "smtp_user": smtp_user,
+        "smtp_host": smtp_host,
+        "smtp_port": smtp_port,
     }
 
     df = pd.DataFrame([row])

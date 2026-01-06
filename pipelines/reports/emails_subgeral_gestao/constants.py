@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from pathlib import Path
 
 SENDER_NAME = "Secretaria Municipal de Saúde do Rio de Janeiro"

@@ -1,20 +1,20 @@
+# -*- coding: utf-8 -*-
 import mimetypes
 import unicodedata
-
-from typing import Optional, Sequence, Tuple
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
+from typing import Optional, Sequence, Tuple
+
 import pandas as pd
 from google.cloud import bigquery
-
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.utils.credential_injector import authenticated_task as task
 
 from pipelines.reports.emails_subgeral_gestao.constants import BASE_DIR
 from pipelines.reports.utils.emails_subgeral import (
-    _read_file,
     _build_email_message,
+    _normalize_recipients,
+    _read_file,
     _send_prepared_message_via_smtp,
     _normalize_recipients,
 )

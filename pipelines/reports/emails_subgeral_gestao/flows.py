@@ -17,11 +17,9 @@ from pipelines.reports.emails_subgeral_gestao.schedules import schedule
 from pipelines.reports.utils.emails_subgeral import make_email_meta_df, delete_file_from_disk
 
 from pipelines.reports.emails_subgeral_gestao.tasks import (
-    get_recipients_from_gsheets,
     bigquery_to_xl_disk,
     send_email_smtp,
 )
-
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key, inject_gcp_credentials, upload_df_to_datalake
