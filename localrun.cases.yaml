@@ -365,15 +365,21 @@ cases:
       dt_inicio: '2025-09-30T10:00:00-03:00'
       dt_fim: '2025-09-30T11:00:00-03:00'
       rename_flow: False
+  - case_slug: "exames_laboratoriais_operator"
+    flow_path: "pipelines.datalake.extract_load.exames_laboratoriais_api.flows"
+    flow_name: "exames_laboratoriais_operator"
+    params:
+      dataset: 'brutos_exames_laboratoriais'
+      environment: 'dev'
+      dt_inicio: '2025-07-23T18:00:00-03:00'
+      dt_fim: '2025-07-23T19:30:00-03:00'
+      rename_flow: False
+      ap: '33'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
     params:
       environment: "dev"
-      endpoint: "posicao"
-      target_date: "D-1"
-      dataset_id: "brutos_api_vitacare"
-      table_id_prefix: "estoque_posicao"
   - case_slug: "siscan_web_laudos_operator"
     flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
     flow_name: "sms_siscan_web_operator"
@@ -514,13 +520,36 @@ cases:
     flow_name: report_informes_seguranca
     params:
       environment: "dev"
+
+  - case_slug: prontuario_extraction_operator
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_extraction_operator
+    params:
+      environment: "dev"
+      bucket_name: "subhue_backups"
+      dataset: 'brutos_prontuario_prontuaRIO'
+      blob_prefix: '2025-11/hospub-2270609'
+      cnes: '2270609'
+      lines_per_chunk: 25000
+      skip_openbase: false
+      skip_postgres: false
+
+  - case_slug: prontuario_extraction_manager
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_extraction_manager
+    params:
+      environment: "dev"
+      bucket_name: "subhue_backups"
+      folder: "2025-11"
+      dataset: 'brutos_prontuario_prontuaRIO'
+      chunk_size: 50000
   - case_slug: emails-subgeral
-    flow_path: pipelines.datalake.extract_load.emails_subgeral.flows
+    flow_path: pipelines.reports.emails_subgeral_gestao.flows 
     flow_name: sms_emails_subgeral
     params:
       environment: "dev"
+      gsheets_sheet_name: "teste_1"
       subject: "Teste email prefect (dl)"
-      recipients: ["matheusmiloski.smsrio@gmail.com", "juliana.paranhos@regulacaoriorj.com.br"]
       query_path: "mail_templates/gerencia_cancer/gerencia_cancer.sql"
       html_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.html"
       plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"
