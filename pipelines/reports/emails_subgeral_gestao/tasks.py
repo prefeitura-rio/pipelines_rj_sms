@@ -16,9 +16,7 @@ from pipelines.reports.utils.emails_subgeral import (
     _normalize_recipients,
     _read_file,
     _send_prepared_message_via_smtp,
-    _normalize_recipients,
 )
-
 from pipelines.utils.tasks import create_folders, download_from_url
 
 
