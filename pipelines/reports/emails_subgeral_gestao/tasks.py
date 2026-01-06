@@ -1,29 +1,24 @@
+# -*- coding: utf-8 -*-
 import mimetypes
 import unicodedata
-
-from typing import Optional, Sequence, Tuple
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
+from typing import Optional, Sequence, Tuple
+
 import pandas as pd
 from google.cloud import bigquery
-
 from prefeitura_rio.pipelines_utils.logging import log
-from pipelines.utils.credential_injector import authenticated_task as task
 
 from pipelines.reports.emails_subgeral_gestao.constants import BASE_DIR
 from pipelines.reports.utils.emails_subgeral import (
-    _read_file,
     _build_email_message,
+    _normalize_recipients,
+    _read_file,
     _send_prepared_message_via_smtp,
-    _normalize_recipients
 )
-
-from pipelines.utils.tasks import (
-    create_folders,
-    download_from_url
-)
-
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.tasks import create_folders, download_from_url
 
 
 def _extract_emails_from_csv(folder: dict, gsheets_sheet_name: str) -> Sequence[str]:
@@ -43,10 +38,7 @@ def _extract_emails_from_csv(folder: dict, gsheets_sheet_name: str) -> Sequence[
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def get_recipients_from_gsheets(
-    gsheets_url: str,
-    gsheets_sheet_name: str
-) -> Sequence[str]:
+def get_recipients_from_gsheets(gsheets_url: str, gsheets_sheet_name: str) -> Sequence[str]:
     """
     Extrai lista de emails de uma planilha Google Sheets e escreve o arquivo em disco.
     """
@@ -58,7 +50,7 @@ def get_recipients_from_gsheets(
         gsheets_sheet_name=gsheets_sheet_name,
         file_name=gsheets_sheet_name,
         file_path=folder["raw"],
-        csv_delimiter="|"
+        csv_delimiter="|",
     )
 
     recipients = _extract_emails_from_csv(folder, gsheets_sheet_name)
@@ -75,7 +67,7 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
     if not query_path or not subject:
         log("Erro: query_path ou subject não fornecidos")
         return None
-    
+
     query = _read_file(query_path)
 
     client = bigquery.Client()
@@ -89,10 +81,8 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    safe_subject = unicodedata.normalize('NFKD', subject) \
-                                .encode('ascii', 'ignore') \
-                                .decode('ascii')
-    
+    safe_subject = unicodedata.normalize("NFKD", subject).encode("ascii", "ignore").decode("ascii")
+
     safe_subject = safe_subject.replace(" ", "_")
     filename = f"{safe_subject}__{timestamp}.xlsx"
 
