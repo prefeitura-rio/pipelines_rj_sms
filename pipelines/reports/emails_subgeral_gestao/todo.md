@@ -1,7 +1,3 @@
-- aguardando pedro criar planilha "emails_subgeral" no sheets 
-- modelar tabela de emails 
-- consumir tabela de emails no pipeline
-- Usar abas para projetos
 - Sempre adicionar mensagem LGPD no email.
 - Colocar style inline nos htmls
 - Ver limite do tamanho dos emails  (antes de cortar)

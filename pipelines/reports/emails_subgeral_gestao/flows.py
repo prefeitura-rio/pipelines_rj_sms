@@ -77,8 +77,7 @@ with Flow(
     # Task 1 - Obtém dados, salva no disco e retorna path absoluto
     xl_absolute_path = bigquery_to_xl_disk(
         subject=SUBJECT,
-        query_path=QUERY_PATH,
-        upstream_tasks=[recipients]
+        query_path=QUERY_PATH
     )
 
     # Task 2 - Envia o email
@@ -94,7 +93,8 @@ with Flow(
         html_body_path=HTML_BODY_PATH,
         plain_body_path=PLAIN_BODY_PATH,
         attachments=xl_absolute_path,
-        use_ssl=False
+        use_ssl=False,
+        upstream_tasks=[recipients]
     )
 
     # Task 3 - remove arquivo do disco
@@ -128,7 +128,7 @@ with Flow(
         source_format="parquet",
     )
 
-sms_emails_subgeral.executor = LocalDaskExecutor(num_workers=1)
+sms_emails_subgeral.executor = LocalDaskExecutor(num_workers=3)
 sms_emails_subgeral.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_emails_subgeral.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,

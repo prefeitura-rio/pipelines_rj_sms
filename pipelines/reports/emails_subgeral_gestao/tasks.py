@@ -34,7 +34,7 @@ def _extract_emails_from_csv(folder: dict, gsheets_sheet_name: str) -> Sequence[
     """
     csv_file = Path(folder["raw"]) / f"{gsheets_sheet_name}.csv"
 
-    df = pd.read_csv(csv_file)
+    df = pd.read_csv(csv_file, delimiter="|")
     if "email" not in df.columns:
         return []
 
@@ -61,9 +61,9 @@ def get_recipients_from_gsheets(
         csv_delimiter="|"
     )
 
-    recipents = _extract_emails_from_csv(folder, gsheets_sheet_name)
+    recipients = _extract_emails_from_csv(folder, gsheets_sheet_name)
 
-    return recipents
+    return recipients
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
@@ -72,7 +72,8 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
     Executa uma consulta no BigQuery, salva em Excel e retorna o caminho absoluto do arquivo.
     """
 
-    if not query_path:
+    if not query_path or not subject:
+        log("Erro: query_path ou subject não fornecidos")
         return None
     
     query = _read_file(query_path)
@@ -83,7 +84,8 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
     df = client.query_and_wait(query).to_dataframe()
     log(query)
     log("Query executada com sucesso")
-    log(f"{df.sample(5)}")
+    if len(df) > 4:
+        log(f"{df.sample(5)}")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -134,6 +136,7 @@ def _add_attachments_to_message(
     # Se o arquivo não existir, registra aviso e segue para o próximo.
     if not path.exists():
         log(f"Anexo não encontrado, ignorando: {path}")
+        return
 
     maintype, subtype = _guess_mime_type(path)
 
@@ -163,7 +166,7 @@ def send_email_smtp(
     subject: str,
     html_body_path: str,
     plain_body_path: Optional[str] = None,
-    attachments: Optional[Sequence[str]] = None,
+    attachments: Optional[str] = None,
     use_ssl: bool = False,
 ) -> None:
     """

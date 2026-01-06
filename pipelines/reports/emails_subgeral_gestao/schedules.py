@@ -4,7 +4,7 @@ Agendamentos
 """
 
 # Geral
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytz
 
@@ -19,10 +19,10 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_parameters = [
     {
         "gsheets_sheet_name": "teste_1",
-        "subject": f"E-mail de teste - dia {datetime.date}",
+        "subject":f"E-mail de teste - dia {date.today():%Y-%m-%d}",
         "query_path" : "mail_templates/teste/query_teste.sql",
         "html_body_path": "mail_templates/teste/body_teste.html",
-        "plain_body_path": "mail_templates/teste/body_texte.txt",
+        "plain_body_path": "mail_templates/teste/body_teste.txt",
     }
 ]
 
