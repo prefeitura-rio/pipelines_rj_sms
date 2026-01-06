@@ -27,8 +27,7 @@ from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
 
 with Flow(
-    name="SUBGERAL - Extract & Load - SER METABASE",
-    state_handlers=[handle_flow_state_change]
+    name="SUBGERAL - Extract & Load - SER METABASE", state_handlers=[handle_flow_state_change]
 ) as ser_metabase_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
