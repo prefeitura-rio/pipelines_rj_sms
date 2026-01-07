@@ -113,8 +113,6 @@ def send_report(data, environment: str):
         amount: float = event[3]
         if amount <= 0:
             continue
-        if "desenvolvimento" in evt_type.lower():
-            continue
         # Pega média semanal do evento
         average = next(
             (
@@ -169,6 +167,7 @@ def send_report(data, environment: str):
         "401": "Não autorizado",
         "403": "Permissão negada",
         "404": "Não encontrado",
+        "429": "Excesso de acessos",
         "500": "⚠️ Erro interno",
     }
 
