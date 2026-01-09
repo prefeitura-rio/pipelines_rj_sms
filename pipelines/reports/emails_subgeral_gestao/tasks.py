@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
+import base64
 import mimetypes
 import unicodedata
-import base64
-from io import BytesIO
 from datetime import datetime, timedelta
 from email.message import EmailMessage
+from io import BytesIO
 from pathlib import Path
 from typing import Optional, Sequence, Tuple
 
@@ -95,7 +95,7 @@ def bigquery_to_xl_payload(subject: str, query_path: str) -> Optional[dict]:
     filename = f"{safe_subject}__{timestamp}.xlsx"
 
     buf = BytesIO()
-    df.to_excel(buf, index=False)   
+    df.to_excel(buf, index=False)
     content_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
 
     log(f"XLSX gerado em memória: {filename} (base64_len={len(content_b64)})")
