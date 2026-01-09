@@ -4,168 +4,44 @@
   <meta charset="UTF-8" />
   <title>Relatório - Análise a partir da comparação com outros profissionais</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #f3f4f6;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      color: #111827;
-    }
-
-    .wrapper {
-      width: 100%;
-      background-color: #f3f4f6;
-      padding: 24px 0;
-    }
-
-    .container {
-      max-width: 640px;
-      margin: 0 auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      padding: 24px 24px 16px 24px;
-    }
-
-    h1 {
-      font-size: 22px;
-      margin: 0 0 16px 0;
-      color: #111827;
-    }
-
-    h2 {
-      font-size: 16px;
-      margin: 24px 0 8px 0;
-      color: #111827;
-    }
-
-    p {
-      margin: 0 0 12px 0;
-      line-height: 1.5;
-      font-size: 14px;
-      color: #374151;
-    }
-
-    b, strong {
-      color: #111827;
-    }
-
-    ul {
-      margin: 8px 0 16px 18px;
-      padding: 0;
-    }
-
-    li {
-      margin-bottom: 6px;
-      font-size: 14px;
-      line-height: 1.5;
-      color: #374151;
-    }
-
-    .divider {
-      border: 0;
-      border-top: 1px solid #e5e7eb;
-      margin: 16px 0;
-    }
-
-    .footer {
-      font-size: 12px;
-      color: #6b7280;
-      margin-top: 8px;
-    }
-
-    .signature {
-      font-size: 12px;
-      color: #4b5563;
-      margin-top: 4px;
-    }
-
-    .tagline {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 4px;
-    }
-
-    .highlight {
-      background-color: #eef2ff;
-      border-left: 3px solid #4f46e5;
-      padding: 10px 12px;
-      border-radius: 4px;
-      margin-bottom: 16px;
-    }
-
-    .label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #6b7280;
-      margin-bottom: 4px;
-    }
-  </style>
 </head>
 
-<body>
-  <div class="wrapper">
-    <div class="container">
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; color: #111827;">
+  <div style="width: 100%; background-color: #f3f4f6; padding: 24px 0;">
+    <div style="max-width: 640px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb; padding: 24px 24px 16px 24px;">
 
-      <h1>Análise a partir da comparação com outros profissionais</h1>
+      <h1 style="font-size: 22px; margin: 0 0 16px 0; color: #111827;">Análise a partir da comparação com outros profissionais</h1>
 
-      <div class="highlight">
-        <div class="label">Objetivo</div>
-        <p>
-          Identificar profissionais que ofertam menos vagas que seus colegas, considerando
-          profissionais que realizam o mesmo procedimento dentro do mesmo estabelecimento,
-          levando em conta diferenças na carga horária semanal.
+      <div style="background-color: #eef2ff; border-left: 3px solid #4f46e5; padding: 10px 12px; border-radius: 4px; margin-bottom: 16px;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-bottom: 4px;">Objetivo</div>
+        <p style="margin: 0 0 12px 0; line-height: 1.5; font-size: 14px; color: #374151;">
+          Identificar profissionais que ofertam menos vagas que seus colegas, considerando profissionais que realizam o mesmo procedimento dentro do mesmo estabelecimento, levando em conta diferenças na carga horária semanal.
         </p>
       </div>
 
-      <h2>Metodologia</h2>
-      <p>
-        Para chegar a este resultado, utilizamos uma abordagem baseada em padronização da oferta
-        de vagas por profissional, conforme descrito a seguir:
+      <h2 style="font-size: 16px; margin: 24px 0 8px 0; color: #111827;">Metodologia</h2>
+      <p style="margin: 0 0 12px 0; line-height: 1.5; font-size: 14px; color: #374151;">
+        Para chegar a este resultado, utilizamos uma abordagem baseada em padronização da oferta de vagas por profissional, conforme descrito a seguir:
       </p>
 
-      <ul>
-        <li>
-          Avaliamos a quantidade total de vagas ofertadas por cada profissional, para cada
-          procedimento em determinado estabelecimento, ajustando pela carga horária ambulatorial
-          do profissional.
-        </li>
-        <li>
-          Para permitir comparações justas entre profissionais com diferentes cargas horárias,
-          aplicamos uma transformação matemática sobre os valores ajustados.
-        </li>
-        <li>
-          Agrupamos esses valores ajustados por procedimento e estabelecimento para determinar
-          o padrão médio de oferta do grupo.
-        </li>
-        <li>
-          Calculamos quartis (Q1 e Q3) e o intervalo interquartil (IQR), definindo um limite
-          inferior de referência.
-        </li>
-        <li>
-          Profissionais cujos valores ajustados ficam abaixo desse limite inferior são
-          considerados fora do padrão, indicando oferta significativamente menor que a esperada.
-        </li>
+      <ul style="margin: 8px 0 16px 18px; padding: 0;">
+        <li style="margin-bottom: 6px; font-size: 14px; line-height: 1.5; color: #374151;">Avaliamos a quantidade total de vagas ofertadas por cada profissional, para cada procedimento em determinado estabelecimento, ajustando pela carga horária ambulatorial do profissional.</li>
+        <li style="margin-bottom: 6px; font-size: 14px; line-height: 1.5; color: #374151;">Para permitir comparações justas entre profissionais com diferentes cargas horárias, aplicamos uma transformação matemática sobre os valores ajustados.</li>
+        <li style="margin-bottom: 6px; font-size: 14px; line-height: 1.5; color: #374151;">Agrupamos esses valores ajustados por procedimento e estabelecimento para determinar o padrão médio de oferta do grupo.</li>
+        <li style="margin-bottom: 6px; font-size: 14px; line-height: 1.5; color: #374151;">Calculamos quartis (Q1 e Q3) e o intervalo interquartil (IQR), definindo um limite inferior de referência.</li>
+        <li style="margin-bottom: 6px; font-size: 14px; line-height: 1.5; color: #374151;">Profissionais cujos valores ajustados ficam abaixo desse limite inferior são considerados fora do padrão, indicando oferta significativamente menor que a esperada.</li>
       </ul>
 
-      <hr class="divider" />
+      <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;" />
 
-      <p class="footer">
+      <p style="font-size: 12px; color: #6b7280; margin-top: 8px; margin-bottom: 12px;">
         Em caso de dúvidas, entre em contato pelo Suporte da Plataforma SMS-Rio:
-        <a href="mailto:suporte.smsrio@gmail.com">suporte.smsrio@gmail.com</a>,
-        indicando o assunto deste e-mail.
+        <a href="mailto:suporte.smsrio@gmail.com">suporte.smsrio@gmail.com</a>, indicando o assunto deste e-mail.
       </p>
 
-      <p class="signature">
-        Produzido pelo Núcleo de Tecnologia e Inovação (NTI)
-      </p>
+      <p style="font-size: 12px; color: #4b5563; margin-top: 4px; margin-bottom: 12px;">Produzido pelo Núcleo de Tecnologia e Inovação (NTI)</p>
 
-      <p class="tagline">
-        Secretaria Municipal de Saúde do Rio de Janeiro
-      </p>
+      <p style="font-size: 11px; color: #9ca3af; margin-top: 4px; margin-bottom: 0;">Secretaria Municipal de Saúde do Rio de Janeiro</p>
 
     </div>
   </div>
