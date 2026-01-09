@@ -114,7 +114,7 @@ with Flow(
         source_format="parquet",
     )
 
-sms_emails_subgeral.executor = LocalDaskExecutor(num_workers=3)
+sms_emails_subgeral.executor = LocalDaskExecutor(num_workers=1)
 sms_emails_subgeral.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_emails_subgeral.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,

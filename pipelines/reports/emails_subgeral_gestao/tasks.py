@@ -74,20 +74,18 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
     log("Cliente Big Query OK")
 
     df = client.query_and_wait(query).to_dataframe()
-    log(query)
     log("Query executada com sucesso")
-    if len(df) > 4:
-        log(f"{df.sample(5)}")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
     safe_subject = unicodedata.normalize("NFKD", subject).encode("ascii", "ignore").decode("ascii")
-
     safe_subject = safe_subject.replace(" ", "_")
     filename = f"{safe_subject}__{timestamp}.xlsx"
 
-    # caminho baseado no arquivo atual, não no cwd
-    filepath = (BASE_DIR / filename).resolve()
+    folder = create_folders.run()
+    out_dir = Path(folder["raw"]) / "emails_subgeral_gestao"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    filepath = (out_dir / filename).resolve()
 
     df.to_excel(filepath, index=False)
     log(f"Arquivo salvo: {filepath}")
