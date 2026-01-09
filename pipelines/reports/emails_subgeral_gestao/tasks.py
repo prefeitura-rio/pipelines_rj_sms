@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import mimetypes
 import unicodedata
+import base64
+from io import BytesIO
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
@@ -37,6 +39,20 @@ def _extract_emails_from_csv(folder: dict, gsheets_sheet_name: str) -> Sequence[
     return emails
 
 
+def _add_attachment_payload_to_message(message: EmailMessage, payload: dict) -> None:
+    if not payload:
+        return
+    filename = payload["filename"]
+    file_bytes = base64.b64decode(payload["content_b64"])
+
+    message.add_attachment(
+        file_bytes,
+        maintype="application",
+        subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=filename,
+    )
+
+
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def get_recipients_from_gsheets(gsheets_url: str, gsheets_sheet_name: str) -> Sequence[str]:
     """
@@ -59,11 +75,11 @@ def get_recipients_from_gsheets(gsheets_url: str, gsheets_sheet_name: str) -> Se
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
+def bigquery_to_xl_payload(subject: str, query_path: str) -> Optional[dict]:
     """
-    Executa uma consulta no BigQuery, salva em Excel e retorna o caminho absoluto do arquivo.
+    Executa uma query no BigQuery e retorna o resultado como um arquivo XLSX
+    em memória, codificado em base64.
     """
-
     if not query_path or not subject:
         log("Erro: query_path ou subject não fornecidos")
         return None
@@ -71,26 +87,19 @@ def bigquery_to_xl_disk(subject: str, query_path: str) -> Optional[str]:
     query = _read_file(query_path)
 
     client = bigquery.Client()
-    log("Cliente Big Query OK")
-
     df = client.query_and_wait(query).to_dataframe()
-    log("Query executada com sucesso")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe_subject = unicodedata.normalize("NFKD", subject).encode("ascii", "ignore").decode("ascii")
     safe_subject = safe_subject.replace(" ", "_")
     filename = f"{safe_subject}__{timestamp}.xlsx"
 
-    folder = create_folders.run()
-    out_dir = Path(folder["raw"]) / "emails_subgeral_gestao"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    buf = BytesIO()
+    df.to_excel(buf, index=False)   
+    content_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
 
-    filepath = (out_dir / filename).resolve()
-
-    df.to_excel(filepath, index=False)
-    log(f"Arquivo salvo: {filepath}")
-
-    return str(filepath)
+    log(f"XLSX gerado em memória: {filename} (base64_len={len(content_b64)})")
+    return {"filename": filename, "content_b64": content_b64}
 
 
 def _guess_mime_type(path: Path) -> Tuple[str, str]:
@@ -176,10 +185,10 @@ def send_email_smtp(
 
     if attachments:
         # Adiciona anexos, se houver
-        _add_attachments_to_message(
-            message=message,
-            attachments=attachments,
-        )
+        if isinstance(attachments, dict) and "content_b64" in attachments:
+            _add_attachment_payload_to_message(message, attachments)
+        else:
+            _add_attachments_to_message(message=message, attachments=attachments)
 
     # Envia a mensagem
     _send_prepared_message_via_smtp(

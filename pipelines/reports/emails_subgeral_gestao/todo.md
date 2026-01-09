@@ -1,5 +1,6 @@
 - Sempre adicionar mensagem LGPD no email.
 - Colocar style inline nos htmls
+- checar se perde styling ao encaminhar o email
 - Ver limite do tamanho dos emails  (antes de cortar)
 - Demais comentários avellar email: https://github.com/prefeitura-rio/pipelines_rj_sms/blob/ec25a412847b5a5c88a110f059b26774d144e23b/pipelines/reports/informes_seguranca/tasks.py#L176
 - Para ver o que cada cliente de email suporta: https://www.caniemail.com/

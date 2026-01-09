@@ -16,7 +16,7 @@ from pipelines.reports.emails_subgeral_gestao.constants import (
 )
 from pipelines.reports.emails_subgeral_gestao.schedules import schedule
 from pipelines.reports.emails_subgeral_gestao.tasks import (
-    bigquery_to_xl_disk,
+    bigquery_to_xl_payload,
     get_recipients_from_gsheets,
     send_email_smtp,
 )
@@ -66,7 +66,7 @@ with Flow(
     )
 
     # Task 1 - Obtém dados, salva no disco e retorna path absoluto
-    xl_absolute_path = bigquery_to_xl_disk(subject=SUBJECT, query_path=QUERY_PATH)
+    xl_payload = bigquery_to_xl_payload(subject=SUBJECT, query_path=QUERY_PATH)
 
     # Task 2 - Envia o email
     email = send_email_smtp(
@@ -80,32 +80,28 @@ with Flow(
         subject=SUBJECT,
         html_body_path=HTML_BODY_PATH,
         plain_body_path=PLAIN_BODY_PATH,
-        attachments=xl_absolute_path,
+        attachments=xl_payload,
         use_ssl=False,
         upstream_tasks=[recipients],
     )
 
-    # Task 3 - remove arquivo do disco
-    delete_file = delete_file_from_disk(filepath=xl_absolute_path, upstream_tasks=[email])
-
-    # Task 4 - Cria metadados sobre emails enviados
+    # Task 3 - Cria metadados sobre emails enviados
     df = make_email_meta_df(
         environment=ENVIRONMENT,
         subject=SUBJECT,
         recipients=recipients,
         query_path=QUERY_PATH,
-        attachments=xl_absolute_path,
+        attachments=xl_payload,
         html_body_path=HTML_BODY_PATH,
         plain_body_path=PLAIN_BODY_PATH,
         sender_name=SENDER_NAME,
         sender_email=user,
         smtp_user=user,
         smtp_host=SMTP_HOST,
-        smtp_port=SMTP_PORT,
-        upstream_tasks=[delete_file],
+        smtp_port=SMTP_PORT
     )
 
-    # Task 5 - Escreve metadados no Big Query
+    # Task 4 - Escreve metadados no Big Query
     write_meta = upload_df_to_datalake(
         df=df,
         table_id="logs_emails_gestao",
