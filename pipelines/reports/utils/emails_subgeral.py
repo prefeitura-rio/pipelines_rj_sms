@@ -9,7 +9,7 @@ from typing import List, Sequence, Type
 import pandas as pd
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.reports.emails_subgeral_gestao.constants import BASE_DIR
+from pipelines.reports.emails_subgeral_gestao.constants import BASE_DIR, LGPD_MESSAGE
 from pipelines.utils.credential_injector import authenticated_task as task
 
 
@@ -57,6 +57,30 @@ def _normalize_recipients(raw_recipients: Sequence[str]) -> List[str]:
     return recipients
 
 
+def _append_lgpd(message: str, is_html: bool = False) -> str:
+    """
+    Retorna `message` com a `LGPD_MESSAGE` anexada ao final.
+
+    - Se `is_html` for True, a mensagem LGPD é envolvida em um parágrafo HTML simples.
+    - Se a mensagem LGPD já estiver presente em `message`, não será anexada novamente.
+    """
+    if message is None:
+        message = ""
+
+    base = message.rstrip()
+    lgpd = LGPD_MESSAGE.strip()
+
+    # Evita duplicar o texto LGPD se já estiver presente
+    if lgpd and lgpd in base:
+        return base
+
+    if is_html:
+        lgpd_html = f"<p>{lgpd}</p>"
+        return f"{base}\n{lgpd_html}"
+
+    return f"{base}\n{lgpd}"
+
+
 def _build_email_message(
     sender_email: str,
     sender_name: str,
@@ -77,12 +101,14 @@ def _build_email_message(
 
     try:
         plain_body = _read_file(plain_body_path)
+        plain_body = _append_lgpd(plain_body, is_html=False)
         message.set_content(plain_body)
     except Exception as exc:
         log(f"Corpo em texto puro não fornecido ou falha ao ler: {exc}")
 
     try:
         html_body = _read_file(html_body_path)
+        html_body = _append_lgpd(html_body, is_html=True)
         message.add_alternative(html_body, subtype="html")
     except Exception as exc:
         log(f"Corpo em HTML não fornecido ou falha ao ler: {exc}")
