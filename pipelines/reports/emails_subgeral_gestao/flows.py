@@ -98,7 +98,7 @@ with Flow(
         sender_email=user,
         smtp_user=user,
         smtp_host=SMTP_HOST,
-        smtp_port=SMTP_PORT
+        smtp_port=SMTP_PORT,
     )
 
     # Task 4 - Escreve metadados no Big Query
