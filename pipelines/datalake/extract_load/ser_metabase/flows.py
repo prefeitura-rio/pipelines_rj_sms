@@ -23,9 +23,12 @@ from pipelines.datalake.extract_load.ser_metabase.tasks import (
     upload_df_to_datalake_wrapper,
 )
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key
 
-with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
+with Flow(
+    name="SUBGERAL - Extract & Load - SER METABASE", state_handlers=[handle_flow_state_change]
+) as ser_metabase_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
     # METABASE ------------------------------

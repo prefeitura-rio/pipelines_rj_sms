@@ -543,3 +543,13 @@ cases:
       folder: "2025-11"
       dataset: 'brutos_prontuario_prontuaRIO'
       chunk_size: 50000
+  - case_slug: emails-subgeral
+    flow_path: pipelines.reports.emails_subgeral_gestao.flows
+    flow_name: sms_emails_subgeral
+    params:
+      environment: "dev"
+      gsheets_sheet_name: "teste_1"
+      subject: "Teste email prefect (dl)"
+      query_path: "mail_templates/gerencia_cancer/gerencia_cancer.sql"
+      html_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.html"
+      plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"
