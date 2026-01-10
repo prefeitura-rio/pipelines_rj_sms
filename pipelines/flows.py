@@ -59,6 +59,7 @@ from pipelines.datalake.transform.gemini.pacientes_restritos.flows import *
 from pipelines.reports.alerta_atualizacao_tabelas.flows import *
 from pipelines.reports.alerta_jobs_caros.flows import *
 from pipelines.reports.checks_bucket_files.flows import *
+from pipelines.reports.emails_subgeral_gestao.flows import *
 from pipelines.reports.informes_seguranca.flows import *
 
 # ===============================
