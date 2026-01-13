@@ -9,26 +9,20 @@ from prefect.utilities.edges import unmapped
 # Internos
 from prefeitura_rio.pipelines_utils.custom import Flow
 
-from pipelines.datalake.extract_load.sisreg_afastamentos import (
-    constants
-)
+from pipelines.datalake.extract_load.sisreg_afastamentos import constants
 from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
-    get_cpf_profissionais,
+    concat_dfs,
     get_base_request,
+    get_cpf_profissionais,
     get_extraction_date,
+    log_df,
     login_sisreg,
     search_afastamentos,
     search_historico_afastamentos,
-    concat_dfs,
-    log_df,
 )
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import (
-    get_secret_key,
-    upload_df_to_datalake,
-)
-
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(
     name="SUBGERAL - Extract & Load - SISREG AFASTAMENTOS",
@@ -49,20 +43,12 @@ with Flow(
     )
 
     # Nome do dataset e tabela no datalake
-    DATASET_ID = Parameter(
-        "dataset_id",
-        default=constants.DEFAULT_DATASET_ID,
-        required=False
-    )
+    DATASET_ID = Parameter("dataset_id", default=constants.DEFAULT_DATASET_ID, required=False)
     AFASTAMENTO_TABLE_ID = Parameter(
-        "afastamento_table_id",
-        default=constants.DEFAULT_AFASTAMENTO_TABLE_ID,
-        required=False
+        "afastamento_table_id", default=constants.DEFAULT_AFASTAMENTO_TABLE_ID, required=False
     )
     HISTORICO_TABLE_ID = Parameter(
-        "historico_table_id",
-        default=constants.DEFAULT_HISTORICO_TABLE_ID,
-        required=False
+        "historico_table_id", default=constants.DEFAULT_HISTORICO_TABLE_ID, required=False
     )
 
     # Data de extração das tabelas
