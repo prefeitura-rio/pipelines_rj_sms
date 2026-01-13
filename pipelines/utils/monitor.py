@@ -121,7 +121,7 @@ def send_message(
     # Calculate max char count for message
     message_max_char_count = 2000 - len(header_content)
     line_max_char_count = 5000
-    
+
     # Split message into lines
     message_lines = message.split("\n")
 
@@ -144,7 +144,7 @@ def send_message(
                     else:
                         pages.append(current_page)
                         current_page = chunk
-            else: 
+            else:
                 raise ValueError(
                     f"Line length exceeds maximum allowed characters: {len(line)} > {message_max_char_count}"
                 )
