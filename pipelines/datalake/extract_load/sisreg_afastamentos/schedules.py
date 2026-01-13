@@ -13,7 +13,10 @@ from prefect.schedules import Schedule
 
 # Internos
 from pipelines.constants import constants
-from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
+from pipelines.utils.schedules import (
+    generate_dump_api_schedules,
+    untuple_clocks
+)
 
 flow_parameters = [
     {
@@ -24,7 +27,8 @@ flow_parameters = [
 
 clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
-    start_date=datetime(2025, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(
+        2025, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
@@ -32,4 +36,4 @@ clocks = generate_dump_api_schedules(
     runs_interval_minutes=180,
 )
 
-# schedule = Schedule(clocks=untuple_clocks(clocks))
+schedule = Schedule(clocks=untuple_clocks(clocks))

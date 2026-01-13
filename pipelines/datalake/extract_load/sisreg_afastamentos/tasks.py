@@ -13,15 +13,12 @@ import pandas as pd
 import requests
 
 # Internos
-from pipelines.datalake.extract_load.sisreg_afastamentos.constants import (
-    EXTRACTION_DATE_COLUMN
+from pipelines.datalake.extract_load.sisreg_afastamentos import (
+    constants
 )
 from pipelines.utils.credential_injector import authenticated_task as task
-# from pipelines.utils.tasks import upload_df_to_datalake
 from prefeitura_rio.pipelines_utils.logging import log
 from google.cloud import bigquery
-
-from pipelines.utils.tasks import upload_df_to_datalake
 
 
 @task
@@ -30,19 +27,12 @@ def get_extraction_date() -> datetime:
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def get_cpf_profissionais(environment, limit=None) -> pd.DataFrame:
+def get_cpf_profissionais(environment, limit=10) -> pd.DataFrame:
     client = bigquery.Client()
     log("Cliente Big Query OK")
 
-    # sql = (
-    #     "SELECT distinct\n"
-    #     "   cpf_profissional_exec\n"
-    #     "FROM `rj-sms.brutos_sisreg_staging.escala`\n"
-    #     f"{'LIMIT 10\n' if debug else ''}"
-    #     ";"
-    # )
     sql_limit = (
-        "" if limit is None else
+        "" if environment != "dev" or limit is None else
         f"LIMIT {limit}"
     )
     sql = f"""
@@ -109,7 +99,11 @@ def login_sisreg(
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def search_afastamentos(cpf: str, session: Session, extraction_date: datetime) -> pd.DataFrame | None:
+def search_afastamentos(
+    cpf: str,
+    session: Session,
+    extraction_date: datetime
+) -> pd.DataFrame | None:
     res = session.get(
         (
             "https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?"
@@ -163,13 +157,17 @@ def search_afastamentos(cpf: str, session: Session, extraction_date: datetime) -
         lambda value: datetime.strptime(value, '%H:%M').time()
     )
     df['cpf'] = cpf
-    df[EXTRACTION_DATE_COLUMN] = extraction_date
+    df[constants.EXTRACTION_DATE_COLUMN] = extraction_date
 
     return df
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def search_historico_afastamentos(cpf: str, session: Session, extraction_date: datetime):
+def search_historico_afastamentos(
+    cpf: str,
+    session: Session,
+    extraction_date: datetime
+) -> pd.DataFrame | None:
     res = session.get(
         (
             "https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?"
@@ -209,7 +207,7 @@ def search_historico_afastamentos(cpf: str, session: Session, extraction_date: d
     )
 
     df['cpf'] = cpf
-    df[EXTRACTION_DATE_COLUMN] = extraction_date
+    df[constants.EXTRACTION_DATE_COLUMN] = extraction_date
 
     return df
 
