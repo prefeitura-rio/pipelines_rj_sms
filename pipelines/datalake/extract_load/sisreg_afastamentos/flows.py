@@ -4,16 +4,11 @@ Flow
 """
 # Prefect
 from prefect import Parameter
-# from prefect.executors import LocalDaskExecutor
-# from prefect.run_configs import KubernetesRun
-# from prefect.storage import GCS
 from prefect.utilities.edges import unmapped
 
 # Internos
 from prefeitura_rio.pipelines_utils.custom import Flow
 
-# from pipelines.constants import constants
-# from pipelines.datalake.extract_load.sisreg_afastamentos.schedules import schedule
 from pipelines.datalake.extract_load.sisreg_afastamentos.constants import (
     DEFAULT_DATASET_ID,
     EXTRACTION_DATE_COLUMN,
@@ -33,7 +28,7 @@ from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
-    get_secret_key,
+    # get_secret_key,
     upload_df_to_datalake,
 )
 
@@ -101,12 +96,13 @@ with Flow(
     # Incluindo preparação e upload dos mesmo
     df_afastamento = concat_dfs(dfs=dfs_afastamentos)
     df_afastamento_ok = handle_columns_to_bq(df=df_afastamento)
-    log_df(df=df_afastamento, name=AFASTAMENTO_TABLE_NAME)
+    log_df(df=df_afastamento_ok, name=AFASTAMENTO_TABLE_NAME)
     upload_df_to_datalake(
         df=df_afastamento_ok,
         dataset_id=DATASET_ID,
         table_id=AFASTAMENTO_TABLE_NAME,
         partition_column=EXTRACTION_DATE_COLUMN,
+        source_format="parquet",
     )
 
     # Pagina de histórico de afastamentos
@@ -121,10 +117,11 @@ with Flow(
     # Incluindo preparação e upload dos mesmo
     df_historico = concat_dfs(dfs=dfs_historicos)
     df_historico_ok = handle_columns_to_bq(df=df_historico)
-    log_df(df=df_historico, name=HISTORICO_TABLE_NAME)
+    log_df(df=df_historico_ok, name=HISTORICO_TABLE_NAME)
     upload_df_to_datalake(
         df=df_historico_ok,
         dataset_id=DATASET_ID,
         table_id=HISTORICO_TABLE_NAME,
         partition_column=EXTRACTION_DATE_COLUMN,
+        source_format="parquet",
     )

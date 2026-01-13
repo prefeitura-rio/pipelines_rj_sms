@@ -21,6 +21,8 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from prefeitura_rio.pipelines_utils.logging import log
 from google.cloud import bigquery
 
+from pipelines.utils.tasks import upload_df_to_datalake
+
 
 @task
 def get_extraction_date() -> datetime:
@@ -29,7 +31,6 @@ def get_extraction_date() -> datetime:
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def get_cpf_profissionais(environment, limit=None) -> pd.DataFrame:
-    log("Instanciando cliente Big Query")
     client = bigquery.Client()
     log("Cliente Big Query OK")
 
@@ -52,7 +53,6 @@ def get_cpf_profissionais(environment, limit=None) -> pd.DataFrame:
         ;
     """
 
-    log("Executando query")
     log(sql)
     df = client.query_and_wait(sql).to_dataframe()
     log("Query executada com sucesso")
@@ -63,10 +63,8 @@ def get_cpf_profissionais(environment, limit=None) -> pd.DataFrame:
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def get_base_request() -> requests.Session:
-    log("Criando objeto Session")
     session = requests.session()
 
-    log("Reqisitando url base")
     session.get(
         "https://sisregiii.saude.gov.br/",
         headers={
@@ -74,7 +72,6 @@ def get_base_request() -> requests.Session:
         },
     )
 
-    log("Base request feito")
     return session
 
 
@@ -113,7 +110,6 @@ def login_sisreg(
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def search_afastamentos(cpf: str, session: Session, extraction_date: datetime) -> pd.DataFrame | None:
-    log(f"Buscando afastamentos para {cpf}")
     res = session.get(
         (
             "https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?"
@@ -130,7 +126,7 @@ def search_afastamentos(cpf: str, session: Session, extraction_date: datetime) -
     )
 
     if len(html_tables) <= 1:
-        log("Listagem vazia")
+        log(f"Listagem vazia para cpf {cpf}")
         return None
 
     html_table = html_tables[1]
@@ -169,13 +165,11 @@ def search_afastamentos(cpf: str, session: Session, extraction_date: datetime) -
     df['cpf'] = cpf
     df[EXTRACTION_DATE_COLUMN] = extraction_date
 
-    log(f"Consulta realizada para o cpf {cpf}")
     return df
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def search_historico_afastamentos(cpf: str, session: Session, extraction_date: datetime):
-    log(f"Buscando historico afastamentos para {cpf}")
     res = session.get(
         (
             "https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?"
@@ -217,7 +211,6 @@ def search_historico_afastamentos(cpf: str, session: Session, extraction_date: d
     df['cpf'] = cpf
     df[EXTRACTION_DATE_COLUMN] = extraction_date
 
-    log(f"Busca historico afastamentos concluida para o cpf {cpf}")
     return df
 
 
@@ -228,10 +221,4 @@ def concat_dfs(dfs: list[pd.DataFrame]) -> pd.DataFrame:
 
 @task
 def log_df(df: pd.DataFrame, name: str):
-    column_names = [
-        c.encode('utf-8').decode('utf-8')
-        for c in df.columns
-    ]
-    log(f"{name}: {df}")
-    log(f"{name}: {column_names}")
-    log(f"{name}: {df.dtypes}")
+    log(f"{name}:\n{df}")
