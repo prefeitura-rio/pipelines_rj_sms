@@ -248,7 +248,7 @@ daily_parameters = [
         "csv_delimiter": ",",
         "dataset_id": "brutos_cdi",
         "environment": "prod",
-        "gsheets_sheet_name": "Equipe JR",
+        "gsheets_sheet_name": "Equipe JR 2025",
         "rename_flow": True,
         "table_id": "judicial_residual",
         "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
