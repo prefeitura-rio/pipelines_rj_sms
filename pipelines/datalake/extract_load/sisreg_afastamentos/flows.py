@@ -53,20 +53,12 @@ with Flow(
     )
 
     # Nome do dataset e tabela no datalake
-    DATASET_ID = Parameter(
-        "dataset_id",
-        default=constants.DEFAULT_DATASET_ID,
-        required=False
-    )
+    DATASET_ID = Parameter("dataset_id", default=constants.DEFAULT_DATASET_ID, required=False)
     AFASTAMENTO_TABLE_ID = Parameter(
-        "afastamento_table_id",
-        default=constants.DEFAULT_AFASTAMENTO_TABLE_ID,
-        required=False
+        "afastamento_table_id", default=constants.DEFAULT_AFASTAMENTO_TABLE_ID, required=False
     )
     HISTORICO_TABLE_ID = Parameter(
-        "historico_table_id",
-        default=constants.DEFAULT_HISTORICO_TABLE_ID,
-        required=False
+        "historico_table_id", default=constants.DEFAULT_HISTORICO_TABLE_ID, required=False
     )
 
     # Data de extração das tabelas
