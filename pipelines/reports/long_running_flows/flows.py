@@ -3,7 +3,6 @@ from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.reports.long_running_flows.schedules import schedule
@@ -13,9 +12,17 @@ from pipelines.reports.long_running_flows.tasks import (
     force_secrets_injection,
     report_flows,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import rename_current_flow_run
 
-with Flow("Report: Flows de Longa Execução") as report_long_running_flows:
+with Flow(
+    "Report: Flows de Longa Execução",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.AVELLAR_ID.value,
+    ],
+) as report_long_running_flows:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
     injected = force_secrets_injection(environment=ENVIRONMENT)

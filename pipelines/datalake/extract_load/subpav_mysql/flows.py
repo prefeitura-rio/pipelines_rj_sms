@@ -8,7 +8,6 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.subpav_mysql.schedules import (
@@ -20,11 +19,17 @@ from pipelines.datalake.extract_load.subpav_mysql.tasks import (
     download_from_db,
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.utils.time import from_relative_date
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Plataforma SUBPAV",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DIT_ID.value,
+    ],
 ) as sms_dump_subpav:
     #####################################
     # Parameters
@@ -41,8 +46,12 @@ with Flow(
     SCHEMA = Parameter("schema", required=True)
     DATETIME_COLUMN = Parameter("datetime_column", default="created_at")
     ID_COLUMN = Parameter("id_column", default="id")
+
     IF_EXISTS = Parameter("if_exists", default="append")
     IF_STORAGE_DATA_EXISTS = Parameter("if_storage_data_exists", default="append")
+    DUMP_MODE = Parameter(
+        "dump_mode", default="append"
+    )  # Accepted values are "append" and "overwrite".
 
     # GCP
     ENVIRONMENT = Parameter("environment", default="dev")
@@ -94,7 +103,7 @@ with Flow(
         source_format=unmapped("parquet"),
         if_exists=unmapped(IF_EXISTS),
         if_storage_data_exists=unmapped(IF_STORAGE_DATA_EXISTS),
-        dump_mode=unmapped("replace"),
+        dump_mode=unmapped(DUMP_MODE),
     )
 
 

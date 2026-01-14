@@ -4,18 +4,20 @@ from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.diario_oficial_uniao.schedules import schedule
 from pipelines.datalake.extract_load.diario_oficial_uniao.tasks import (
     dou_extraction,
-    parse_date,
+    report_extraction_status,
     upload_to_datalake,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - Diário Oficial da União"
+    name="DataLake - Extração e Carga de Dados - Diário Oficial da União",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.HERIAN_ID.value],
 ) as extract_diario_oficial_uniao:
     """
     Fluxo de extração e carga de atos oficiais do Diário Oficial da União (DOU).
@@ -35,13 +37,15 @@ with Flow(
     # Flow
     #####################################
 
-    date = parse_date(date_string=DATE)
-    dou_infos = dou_extraction(date=date, dou_section=DOU_SECTION, max_workers=MAX_WORKERS)
-    upload_to_datalake(dou_infos=dou_infos, environment=ENVIRONMENT, dataset=DATASET_ID)
-
+    dou_infos, is_successful = dou_extraction(
+        date=DATE, dou_section=DOU_SECTION, max_workers=MAX_WORKERS
+    )
+    upload_to_datalake(dou_infos=dou_infos, dataset=DATASET_ID)
+    report_extraction_status(
+        status=is_successful, date=DATE, dou_section=DOU_SECTION, environment=ENVIRONMENT
+    )
 
 # Flow configs
-extract_diario_oficial_uniao.schedule = schedule
 extract_diario_oficial_uniao.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 extract_diario_oficial_uniao.executor = LocalDaskExecutor(num_workers=10)
 extract_diario_oficial_uniao.run_config = KubernetesRun(

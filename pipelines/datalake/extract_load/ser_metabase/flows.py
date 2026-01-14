@@ -7,6 +7,7 @@ from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from prefect.utilities.edges import unmapped
 
 # Internos
 from prefeitura_rio.pipelines_utils.custom import Flow
@@ -15,13 +16,19 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.ser_metabase.schedules import schedule
 from pipelines.datalake.extract_load.ser_metabase.tasks import (
     authenticate_in_metabase,
-    interrupt_if_empty,
-    query_database,
+    calculate_slices,
+    get_extraction_datetime,
+    query_database_slice,
+    query_slice_limit,
+    upload_df_to_datalake_wrapper,
 )
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+from pipelines.utils.state_handlers import handle_flow_state_change
+from pipelines.utils.tasks import get_secret_key
 
-with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
+with Flow(
+    name="SUBGERAL - Extract & Load - SER METABASE", state_handlers=[handle_flow_state_change]
+) as ser_metabase_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
     # METABASE ------------------------------
@@ -31,6 +38,21 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
     # BIGQUERY ------------------------------
     BQ_DATASET_ID = Parameter("bq_dataset_id", default="brutos_ser_metabase", required=True)
     BQ_TABLE_ID = Parameter("bq_table_id", default="FATO_AMBULATORIO", required=True)
+
+    # DATE LIMITS ---------------------------
+    DATE_START = Parameter(
+        "date_start",
+        default=None,
+        required=False,
+    )
+    DATE_END = Parameter(
+        "date_end",
+        default=None,
+        required=False,
+    )
+
+    # SLICING -------------------------------
+    SLICE_SIZE = Parameter("slice_size", default=900_000, required=False)
 
     # CREDENTIALS ------------------------------
     user = get_secret_key(environment=ENVIRONMENT, secret_name="USER", secret_path="/metabase")
@@ -44,26 +66,71 @@ with Flow("SUBGERAL - Extract & Load - SER METABASE") as ser_metabase_flow:
         password=password,
     )
 
-    # Task 2 - Query Database
-    df = query_database(
+    # Task 2 - Calculate minimal value for data slicing
+    min_value = query_slice_limit(
         token=token,
         database_id=DATABASE_ID,
         table_id=TABLE_ID,
+        which="min",
+        date_start=DATE_START,
+        date_end=DATE_END,
+    )
+    # Task 3 - Calculate maximal value for data slicing
+    max_value = query_slice_limit(
+        token=token,
+        database_id=DATABASE_ID,
+        table_id=TABLE_ID,
+        which="max",
+        date_start=DATE_START,
+        date_end=DATE_END,
     )
 
-    # Task 3 - Verify Database length
-    df_verified = interrupt_if_empty(df=df)
+    # Task 4 - Calculate list of inital values for each slice
+    slices_min = calculate_slices(
+        token=token,
+        database_id=DATABASE_ID,
+        table_id=TABLE_ID,
+        min_value=min_value,
+        max_value=max_value,
+        which="min",
+        slice_size=SLICE_SIZE,
+        date_start=DATE_START,
+        date_end=DATE_END,
+    )
+    # Task 5 - Calculate list of final values for each slice
+    slices_max = calculate_slices(
+        token=token,
+        database_id=DATABASE_ID,
+        table_id=TABLE_ID,
+        min_value=min_value,
+        max_value=max_value,
+        which="max",
+        slice_size=SLICE_SIZE,
+        date_start=DATE_START,
+        date_end=DATE_END,
+    )
 
-    # Task 4 - Transform Data Frame columns
-    df_columns_ok = handle_columns_to_bq(df=df_verified)
+    # Task 6 - Queries the data for each slice determined
+    extraction_date = get_extraction_datetime()
 
-    # Task 5 - Upload to Big Query
-    upload_df_to_datalake(
-        df=df_columns_ok,
-        table_id=BQ_TABLE_ID,
-        dataset_id=BQ_DATASET_ID,
-        partition_column="data_extracao",
-        source_format="parquet",
+    # Task 7 - Queries the data for each slice determined
+    dfs = query_database_slice.map(
+        token=unmapped(token),
+        database_id=unmapped(DATABASE_ID),
+        table_id=unmapped(TABLE_ID),
+        extraction_date=unmapped(extraction_date),
+        slice_min=slices_min,
+        slice_max=slices_max,
+    )
+
+    # Task 8 - Transform Data Frame columns
+    dfs_columns_ok = handle_columns_to_bq.map(df=dfs)
+
+    # Task 9 - Upload to Big Query
+    upload_df_to_datalake_wrapper.map(
+        df=dfs_columns_ok,
+        table_id=unmapped(BQ_TABLE_ID),
+        dataset_id=unmapped(BQ_DATASET_ID),
     )
 
 # ------------------------------------

@@ -1,64 +1,133 @@
 # -*- coding: utf-8 -*-
-"""
-Tasks for dump_api_prontuario_vitai
-"""
+import json
+from datetime import datetime, timedelta
 
-from datetime import date, datetime, timedelta
+import pandas as pd
+import requests
 
-from prefect import task
-from prefeitura_rio.pipelines_utils.logging import log
-
-from pipelines.datalake.extract_load.vitai_api.constants import (
-    constants as vitai_constants,
-)
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
+from pipelines.utils.tasks import get_secret_key, load_file_from_bigquery
 
 
 @task
-def build_date_param(date_param: str = "today"):
-    """
-    Builds a date parameter based on the given input.
+def get_all_api_data(environment: str = "dev") -> str:
 
-    Args:
-        date_param (str, optional): The date parameter. Defaults to "today".
+    df = load_file_from_bigquery.run(
+        project_name="rj-sms",
+        dataset_name="saude_dados_mestres",
+        table_name="estabelecimento",
+    )
+    df = df[(df["prontuario_versao"] == "vitai") & (df["prontuario_episodio_tem_dado"] == "sim")]
 
-    Returns:
-        str: The built date parameter.
+    cnes_list = df["id_cnes"].tolist()
 
-    Raises:
-        ValueError: If the date_param is not a valid date string (YYYY-MM-DD).
-    """
-    if date_param == "today":
-        date_param = str(date.today())
-    elif date_param == "yesterday":
-        date_param = str(date.today() - timedelta(days=1))
-    elif date_param is not None:
+    api_data = []
+    for cnes in cnes_list:
         try:
-            # check if date_param is a date string
-            datetime.strptime(date_param, "%Y-%m-%d")
-        except ValueError as e:
-            raise ValueError("date_param must be a date string (YYYY-MM-DD)") from e
+            api_url = get_secret_key.run(
+                environment=environment,
+                secret_name=f"API_URL_{cnes}",
+                secret_path="/prontuario-vitai",
+            )
+        except Exception:
+            log(f"A URL da API não foi encontrada para o CNES {cnes}")
+            continue
 
-    log(f"Params built: {date_param}")
-    return date_param
+        api_data.append(
+            {
+                "cnes": cnes,
+                "api_url": api_url,
+            }
+        )
+
+    return api_data
 
 
 @task
-def build_url(endpoint: str, date_param: None) -> str:
-    """
-    Build the URL for the given endpoint and date parameter.
+def extract_data(
+    api_data: str, api_token: str, endpoint_path: str, target_date: str
+) -> pd.DataFrame:
 
-    Args:
-        endpoint (str): The endpoint for the URL.
-        date_param (None): The date parameter for the URL.
+    endpoint_url = f"{api_data['api_url']}{endpoint_path}"
 
-    Returns:
-        str: The built URL.
-    """
-    if date_param is None:
-        url = vitai_constants.ENDPOINT.value[endpoint]
+    if "listByPeriodo" in endpoint_path:
+        # Dividir data em lista de 24 janelas de 1h
+        windows = []
+        for i in range(24):
+            windows.append(
+                (
+                    (target_date + timedelta(hours=i)).strftime("%d/%m/%Y %H:00:00"),
+                    (target_date + timedelta(hours=i + 1)).strftime("%d/%m/%Y %H:00:00"),
+                )
+            )
+
+        responses = []
+        for window in windows:
+            endpoint_params = {
+                "dataInicial": window[0],
+                "dataFinal": window[1],
+            }
+            try:
+                response = requests.get(
+                    endpoint_url,
+                    headers={"Authorization": f"Bearer {api_token}"},
+                    params=endpoint_params,
+                    timeout=90,
+                )
+                response.raise_for_status()
+                responses.extend(response.json())
+            except Exception as e:
+                log(f"Error extracting data from {endpoint_url}: {e}")
+                continue
+
+        return responses
+    elif "{estabelecimento_id}" in endpoint_path:
+        response = requests.get(
+            f"{api_data['api_url']}/v1/estabelecimentos/",
+            headers={"Authorization": f"Bearer {api_token}"},
+            timeout=90,
+        )
+        response.raise_for_status()
+
+        estabelecimento_id_list = [x["id"] for x in response.json()]
+
+        responses = []
+        for estabelecimento_id in estabelecimento_id_list:
+            response = requests.get(
+                endpoint_url.format(estabelecimento_id=estabelecimento_id),
+                headers={"Authorization": f"Bearer {api_token}"},
+                timeout=90,
+            )
+            response.raise_for_status()
+            responses.extend(response.json())
+
+        return responses
     else:
-        url = f"{vitai_constants.ENDPOINT.value[endpoint]}/{date_param}"
+        response = requests.get(
+            endpoint_url,
+            headers={"Authorization": f"Bearer {api_token}"},
+            timeout=90,
+        )
+        response.raise_for_status()
+        return response.json()
 
-    log(f"URL built: {url}")
 
-    return url
+@task
+def format_to_upload(responses: list, endpoint_path: str, target_date: str) -> pd.DataFrame:
+
+    flattened_responses = []
+    for response in responses:
+        flattened_responses.extend(response)
+
+    rows = [
+        {
+            "data": json.dumps(row),
+            "_loaded_at": datetime.now(),
+            "_endpoint": endpoint_path,
+            "_target_date": target_date,
+        }
+        for row in flattened_responses
+    ]
+    df = pd.DataFrame(rows)
+    return df

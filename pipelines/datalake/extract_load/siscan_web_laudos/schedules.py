@@ -4,37 +4,55 @@ Agendamentos
 """
 
 # Geral
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 import pytz
 
 # Prefect
-from prefect.schedules import Schedule
+from prefect.schedules import Schedule, filters
 
 # Internos
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-flow_parameters = [
+operator_flow_parameters = [
     {
         "environment": "prod",
-        "data_inicial": "01/01/2020",
-        "data_final": "now",
+        "data_inicial": "01/01/2025",
+        "data_final": "01/01/2025",
         "bq_dataset": "brutos_siscan_web",
         "bq_table": "laudos",
-        "dias_por_faixa": 15,
-        "formato_data": "%d/%m/%Y",
     }
 ]
 
-clocks = generate_dump_api_schedules(
-    interval=timedelta(days=1),
-    start_date=datetime(2025, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+
+monthly_manager_parameters = [{"environment": "prod", "relative_date": "M-1", "range": 7}]
+daily_flow_parameters = [
+    {"environment": "prod", "relative_date": "D-5", "range": 1},
+]
+
+monthly_manager_clock = generate_dump_api_schedules(
+    interval=timedelta(weeks=4),
+    start_date=datetime(2025, 8, 6, hour=20, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    flow_run_parameters=flow_parameters,
-    runs_interval_minutes=180,
+    flow_run_parameters=monthly_manager_parameters,
+    runs_interval_minutes=0,
 )
 
-schedule = Schedule(clocks=untuple_clocks(clocks))
+daily_manager_clock = generate_dump_api_schedules(
+    interval=timedelta(days=1),
+    start_date=datetime(2025, 6, 12, hour=20, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    flow_run_parameters=daily_flow_parameters,
+    runs_interval_minutes=0,
+)
+
+manager_clocks = daily_manager_clock + monthly_manager_clock
+
+schedule = Schedule(
+    clocks=untuple_clocks(manager_clocks), filters=[filters.between_times(time(19), time(23))]
+)

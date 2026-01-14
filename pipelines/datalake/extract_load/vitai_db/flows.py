@@ -3,7 +3,6 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants as global_constants
 from pipelines.datalake.extract_load.vitai_db.constants import (
@@ -25,12 +24,14 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
+from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.progress import (
     get_remaining_operators,
     load_operators_progress,
     save_operator_progress,
 )
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     create_folder,
     get_bigquery_project_from_environment,
@@ -42,6 +43,10 @@ from pipelines.utils.tasks import (
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Operator",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        global_constants.HERIAN_ID.value,
+    ],
 ) as datalake_extract_vitai_db_operator:
     #####################################
     # Tasks section #0 - Params
@@ -149,12 +154,16 @@ datalake_extract_vitai_db_operator.run_config = KubernetesRun(
     labels=[
         global_constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="12Gi",
-    memory_request="12Gi",
+    memory_limit="4Gi",
+    memory_request="1Gi",
 )
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Manager",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        global_constants.HERIAN_ID.value,
+    ],
 ) as datalake_extract_vitai_db_manager:
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     WINDOW_SIZE = Parameter("window_size", default=7)

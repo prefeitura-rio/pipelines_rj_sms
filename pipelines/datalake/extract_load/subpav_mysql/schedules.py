@@ -25,29 +25,61 @@ LABELS = [constants.RJ_SMS_AGENT_LABEL.value]
 # -----------
 # Parâmetros
 # -----------
+# Args: (table_id, schema, frequencia,extra):
+# - frequencia: "monthly", "weekly" ou "per_hour".
+# - extra: "dump_mode","if_exists","if_storage_data_exists","relative_date_filter"
 
-# Lista de configurações de tabelas com suas respectivas frequências de execução.
-# Cada item é uma tupla com (table_id, schema, frequencia), onde:
-# - frequencia pode ser: "monthly", "weekly" ou "per_hour".
 TABELAS_CONFIG = [
     # Principal
-    ("bairros", "subpav_principal", "monthly"),
+    (
+        "bairros",
+        "subpav_principal",
+        "monthly",
+        {
+            "dump_mode": "overwrite",
+            "if_exists": "replace",
+            "if_storage_data_exists": "replace",
+        },
+    ),
     # Indicadores
     ("indicadores", "subpav_indicadores", "monthly"),
     # CNES APS
     ("cbos", "subpav_cnes", "monthly"),
     ("categorias_profissionais", "subpav_cnes", "monthly"),
     ("cbos_categorias_profissionais", "subpav_cnes", "monthly"),
-    ("competencias", "subpav_cnes", "weekly"),
-    ("equipes", "subpav_cnes", "weekly"),
-    ("equipes_profissionais", "subpav_cnes", "weekly"),
+    (
+        "competencias",
+        "subpav_cnes",
+        "weekly",
+        {
+            "dump_mode": "overwrite",
+            "if_exists": "replace",
+            "if_storage_data_exists": "replace",
+        },
+    ),
+    ("equipes", "subpav_cnes", "monthly"),
+    (
+        "equipes_profissionais",
+        "subpav_cnes",
+        "monthly",
+        {
+            "relative_date_filter": "D-60",
+        },
+    ),
     ("equipes_tipos", "subpav_cnes", "monthly"),
-    ("horarios_atendimentos", "subpav_cnes", "weekly"),
-    ("profissionais", "subpav_cnes", "weekly"),
-    ("profissionais_unidades", "subpav_cnes", "weekly"),
-    ("unidades", "subpav_cnes", "weekly"),
-    ("unidades_auxiliares", "subpav_cnes", "weekly"),
-    ("unidades_estruturas_fisicas", "subpav_cnes", "weekly"),
+    ("horarios_atendimentos", "subpav_cnes", "monthly"),
+    ("profissionais", "subpav_cnes", "monthly"),
+    (
+        "profissionais_unidades",
+        "subpav_cnes",
+        "monthly",
+        {
+            "relative_date_filter": "D-60",
+        },
+    ),
+    ("unidades", "subpav_cnes", "monthly"),
+    ("unidades_auxiliares", "subpav_cnes", "monthly"),
+    ("unidades_estruturas_fisicas", "subpav_cnes", "monthly"),
     # Acesso Mais Seguro AMS
     # Prefixo notificacoes_ são as transacionais
     ("consequencias", "subpav_acesso_mais_seguro", "monthly"),
@@ -64,37 +96,44 @@ TABELAS_CONFIG = [
 ]
 
 
-def build_param(table_id, schema):
+def build_param(table_id, config, extra=None):
     """
-    Gera um dicionário de parâmetros padrão para o fluxo de extração e carga de uma tabela.
-
-    Args:
-        table_id (str): Nome da tabela no banco de origem.
-        schema (str): Nome do schema da tabela no banco de origem.
-
-    Returns:
-        dict: Dicionário com os parâmetros necessários para o flow run do Prefect.
+    Gera um dicionário de parâmetros com base nas configurações por tabela.
     """
-    return {
+    default_params = {
         "table_id": table_id,
-        "schema": schema,
+        "schema": config["schema"],
         "dataset_id": subpav_constants.DATASET_ID.value,
         "environment": "prod",
         "rename_flow": True,
-        "mode": "replace",
     }
+
+    if extra:
+        default_params.update(extra)
+    return default_params
 
 
 # -------- Agrupando por frequência
-monthly_params = [build_param(t, s) for t, s, f in TABELAS_CONFIG if f == "monthly"]
-weekly_params = [build_param(t, s) for t, s, f in TABELAS_CONFIG if f == "weekly"]
-per_hour_params = [build_param(t, s) for t, s, f in TABELAS_CONFIG if f == "per_hour"]
+def unpack_params(freq):
+    result = []
+    for item in TABELAS_CONFIG:
+        if item[2] != freq:
+            continue
+        table_id, schema = item[0], item[1]
+        extra = item[3] if len(item) == 4 else None
+        result.append(build_param(table_id, {"schema": schema}, extra=extra))
+    return result
+
+
+monthly_params = unpack_params("monthly")
+weekly_params = unpack_params("weekly")
+per_hour_params = unpack_params("per_hour")
 
 # Geração dos clocks (agendamentos) para cada grupo de tabelas com frequência específica.
 # Os clocks são criados com base em um intervalo de tempo fixo (timedelta) e data de início.
 monthly_clocks = generate_dump_api_schedules(
     interval=timedelta(weeks=4),
-    start_date=datetime(2025, 6, 1, 6, 0, tzinfo=RJ_TZ),
+    start_date=datetime(2025, 6, 1, 2, 0, tzinfo=RJ_TZ),
     labels=LABELS,
     flow_run_parameters=monthly_params,
     runs_interval_minutes=1,
@@ -102,7 +141,7 @@ monthly_clocks = generate_dump_api_schedules(
 
 weekly_clocks = generate_dump_api_schedules(
     interval=timedelta(weeks=1),
-    start_date=datetime(2025, 6, 1, 5, 0, tzinfo=RJ_TZ),
+    start_date=datetime(2025, 6, 1, 2, 0, tzinfo=RJ_TZ),
     labels=LABELS,
     flow_run_parameters=weekly_params,
     runs_interval_minutes=1,
@@ -111,7 +150,7 @@ weekly_clocks = generate_dump_api_schedules(
 # Antes de usar por hora, verificar com o Pedro
 per_hour_clocks = generate_dump_api_schedules(
     interval=timedelta(hours=1),
-    start_date=datetime(2025, 6, 1, 5, 0, tzinfo=RJ_TZ),
+    start_date=datetime(2025, 6, 1, 2, 0, tzinfo=RJ_TZ),
     labels=LABELS,
     flow_run_parameters=per_hour_params,
     runs_interval_minutes=1,

@@ -12,9 +12,12 @@ from prefect.schedules import Schedule
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
-flow_parameters = [
+flow_manager_parameters = [
     {
         "environment": "prod",
+        "relative_date": "D-1",
+        "dataset_id": "brutos_cientificalab",
+        "rename_flow": True,
     }
 ]
 
@@ -25,7 +28,7 @@ clocks = generate_dump_api_schedules(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    flow_run_parameters=flow_parameters,
+    flow_run_parameters=flow_manager_parameters,
     runs_interval_minutes=0,
 )
 

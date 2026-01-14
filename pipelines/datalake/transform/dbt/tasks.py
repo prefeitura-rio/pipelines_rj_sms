@@ -7,10 +7,14 @@ Tasks for execute_dbt
 
 import os
 import shutil
+from datetime import datetime
 
 import git
 import prefect
+import pytz
+import requests
 from dbt.cli.main import dbtRunner, dbtRunnerResult
+from google.cloud import bigquery
 from prefect.client import Client
 from prefect.engine.signals import FAIL
 from prefeitura_rio.pipelines_utils.logging import log
@@ -72,7 +76,7 @@ def execute_dbt(
     exclude="",
     state="",
     flag="",
-):
+) -> dict:
     """
     Executes a dbt command with the specified parameters.
 
@@ -111,7 +115,10 @@ def execute_dbt(
         log(f"Executing dbt command: {' '.join(cli_args)}", level="info")
 
     dbt_runner = dbtRunner()
+    start_time = datetime.now()
     running_result: dbtRunnerResult = dbt_runner.invoke(cli_args)
+    end_time = datetime.now()
+    execution_time = (end_time - start_time).total_seconds()
 
     log_path = os.path.join(repository_path, "logs", "dbt.log")
 
@@ -123,11 +130,75 @@ def execute_dbt(
         )
         raise FAIL("DBT Run seems not successful. No logs found.")
 
-    return running_result
+    return {
+        "command": " ".join(cli_args),
+        "running_result": running_result,
+        "execution_time": execution_time,
+        "start_time": start_time,
+        "end_time": end_time,
+        "log_path": log_path,
+    }
 
 
 @task
-def create_dbt_report(running_results: dbtRunnerResult, repository_path: str) -> None:
+def estimate_dbt_costs(execution_info: dict, environment: str) -> float:
+    """
+    Estimates the costs of running dbt commands.
+    """
+    affected_datasets = []
+    for command_result in execution_info["running_result"].result:
+        affected_datasets.append(command_result.node.schema)
+
+    # Convert to UTC
+    start_time = execution_info["start_time"].astimezone(pytz.UTC)
+    end_time = execution_info["end_time"].astimezone(pytz.UTC)
+
+    # Query BigQuery to get the costs
+    query_string = '/* {"app": "dbt",%'
+    project_id = "rj-sms" if environment == "prod" else "rj-sms-dev"
+    query = f"""
+    SELECT
+        destination_table.project_id as destination_project_id,
+        destination_table.dataset_id as destination_dataset_id,
+        destination_table.table_id as destination_table_id,
+        case
+            statement_type
+            when 'SCRIPT'
+            then 0
+            when 'CREATE_MODEL'
+            then 50 * 6.25 * (total_bytes_billed / 1024 / 1024 / 1024 / 1024)
+            else 6.25 * (total_bytes_billed / 1024 / 1024 / 1024 / 1024)
+        end as cost_in_usd,
+    FROM `{project_id}.region-us.INFORMATION_SCHEMA.JOBS_BY_PROJECT`
+    WHERE
+        query like '{query_string}' and
+        creation_time >= '{start_time}' and
+        creation_time <= '{end_time}'
+    ORDER BY creation_time
+    """
+    client = bigquery.Client()
+    query_job = client.query(query)
+    results = query_job.result().to_dataframe()
+
+    results = results[results["destination_dataset_id"].isin(affected_datasets)]
+
+    response = requests.get(
+        url="https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json"
+    )
+    response.raise_for_status()
+    usd_to_brl_rate = response.json()["usd"]["brl"]
+
+    total_costs = results["cost_in_usd"].sum() * usd_to_brl_rate
+
+    return total_costs
+
+
+@task
+def create_dbt_report(
+    execution_info: dict,
+    estimated_total_cost: float,
+    repository_path: str,
+) -> None:
     """
     Creates a report based on the results of running dbt commands.
 
@@ -141,6 +212,8 @@ def create_dbt_report(running_results: dbtRunnerResult, repository_path: str) ->
     Returns:
         None
     """
+    running_results = execution_info["running_result"]
+    log_path = execution_info["log_path"]
 
     logs = process_dbt_logs(log_path=os.path.join(repository_path, "logs", "dbt.log"))
     log_path = log_to_file(logs)
@@ -159,6 +232,9 @@ def create_dbt_report(running_results: dbtRunnerResult, repository_path: str) ->
         elif command_result.status == "warn":
             has_warnings = True
             general_report.append(f"- ⚠️ WARN: {summarizer(command_result)}")
+
+    cost_report = f"**Custo da Execução**: R${estimated_total_cost:.2f}"
+    log(cost_report)
 
     # Sort and log the general report
     general_report = sorted(general_report, reverse=True)
@@ -182,7 +258,11 @@ def create_dbt_report(running_results: dbtRunnerResult, repository_path: str) ->
     command = prefect.context.get("parameters").get("command")
     emoji = "❌" if not fully_successful else "✅"
     complement = "com Erros" if not fully_successful else "sem Erros"
-    message = f"{param_report}\n{general_report}" if include_report else param_report
+    message = (
+        f"{param_report}\n{cost_report}\n{general_report}"
+        if include_report
+        else f"{param_report}\n{cost_report}"
+    )
 
     send_message(
         title=f"{emoji} Execução `dbt {command}` finalizada {complement}",
@@ -222,7 +302,7 @@ def rename_current_flow_run_dbt(
 
 
 @task()
-def get_target_from_environment(environment: str):
+def get_target_from_environment(environment: str, requested_target: str = None):
     """
     Retrieves the target environment based on the given environment parameter.
     """
@@ -233,7 +313,21 @@ def get_target_from_environment(environment: str):
         "local-staging": "dev",
         "dev": "dev",
     }
-    return converter.get(environment, "dev")
+
+    if requested_target is None or len(requested_target) <= 0:
+        return converter.get(environment, "dev")
+
+    # https://github.com/prefeitura-rio/queries-rj-sms/blob/master/profiles.yml
+    allowed_targets = [
+        "prod",  # rj-sms     (dataset.table)
+        "dev",  # rj-sms-dev (username__dataset.table)
+        "ci",  # rj-sms-dev (dataset.table)
+        "sandbox",  # rj-sms-sandbox (dataset.table)
+    ]
+    if requested_target in allowed_targets:
+        return requested_target
+    log(f"Requested target '{requested_target}' is invalid; defaulting to 'dev'", level="warning")
+    return "dev"
 
 
 @task

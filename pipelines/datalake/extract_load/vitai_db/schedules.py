@@ -189,7 +189,7 @@ flow_parameters = [
 
 vitai_clocks = generate_dump_api_schedules(
     interval=timedelta(hours=12),
-    start_date=datetime(2024, 11, 12, 1, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    start_date=datetime(2024, 11, 12, 2, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],

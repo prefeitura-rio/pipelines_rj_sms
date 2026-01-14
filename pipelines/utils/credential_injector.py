@@ -51,7 +51,7 @@ def authenticated_task(fn: Callable = None, **task_init_kwargs: Any) -> Union[
         return prefect.tasks.core.function.FunctionTask(
             fn=inject_credential_setting_in_function(fn), **task_init_kwargs
         )
-    # Decorator Mode: create a decoretor that can be used to create a Prefect task
+    # Decorator Mode: create a decorator that can be used to create a Prefect task
     else:
         return lambda any_function: prefect.tasks.core.function.FunctionTask(
             fn=inject_credential_setting_in_function(any_function),

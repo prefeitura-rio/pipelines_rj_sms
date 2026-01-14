@@ -8,7 +8,6 @@ from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 from prefeitura_rio.pipelines_utils.prefect import (
     task_rename_current_flow_run_dataset_table,
 )
@@ -17,6 +16,8 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.google_sheets.schedules import (
     daily_update_schedule,
 )
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     create_folders,
     download_from_url,
@@ -26,6 +27,10 @@ from pipelines.utils.tasks import (
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Google Sheets",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DIT_ID.value,
+    ],
 ) as sms_dump_url:
     #####################################
     # Parameters
@@ -84,6 +89,7 @@ with Flow(
         if_exists="replace",
         csv_delimiter=CSV_DELIMITER,
         dump_mode="overwrite",
+        delete_mode="staging",
         if_storage_data_exists="replace",
         biglake_table=True,
         dataset_is_public=False,

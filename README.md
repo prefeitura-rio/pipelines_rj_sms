@@ -1,17 +1,58 @@
-# Pipelines RJ/SMS
+# 📊 Pipelines **RJ‑SMS**
 
-## Setup
+> Ambiente para extração e carga de dados brutos, em **Python + Prefect**, que abastece o Data Lake (**Google Cloud Storage / Google Big Query**) da Secretaria Municipal de Saúde do Rio de Janeiro (**SMS Rio**).
 
-### Etapa 1 - Preparação de Ambiente
-- Na raiz do projeto, prepare o ambiente:
- - `poetry shell`
- - `poetry install`
+Administrador: [Pedro Marques](@TanookiVerde)
 
-A versão do Poetry utilizada é 1.7.1. Se você instalou uma versão mais recente, você pode fazer downgrade com `poetry self update 1.7.1`.
 
-### Etapa 2 - Configuração de Debugging
-- Crie pasta na raiz: `.vscode`
-- Dentro da pasta, crie um arquivo: `launch.json` e coloque o seguinte conteúdo dentro dele:
+---
+
+## 🛠️ Pré-requisitos
+
+| Ferramenta | Versão | Observações |
+|------------|--------|-------------|
+| **Python** | 3.10.x | Windows: Baixe o instalador https://www.python.org/downloads/release/python-3109/ |
+| **Poetry** | 1.7.1  | `pip install poetry==1.7.1` |
+| **Git** | | Windows: Baixe o instalador https://git-scm.com/downloads/win |
+
+> **Clone o repositório**
+> ```bash
+> git clone https://github.com/prefeitura-rio/pipelines_rj_sms
+> cd queries-sms-rj
+> ```
+
+---
+
+## ⚙️ Configuração passo a passo
+
+### 1 - Ambiente Python
+Dentro do repositório, execute:
+
+```bash
+poetry shell             # cria/ativa o venv isolado
+poetry install           # instala todas as dependências declaradas em pyproject.toml
+```
+
+O comando poetry shell garante que as libs sejam instaladas no ambiente virtual correto, evitando conflitos.
+
+> No futuro, caso precise de alguma lib extra, será necessário executar `poetry add <pacote>`.
+> Nestes casos, fale com o administrador do projeto.
+
+### 2 - Variáveis de Ambiente
+
+Crie um arquivo `.env` na raiz do repositório:
+
+```env
+INFISICAL_ADDRESS=xxxxxxxxxxxxxxxx
+INFISICAL_TOKEN=xxxxxxxxxxxxxxxx
+```
+
+Peça as credenciais do Infisical ao administrador do projeto.
+
+### 3 - VS Code & Debug
+
+1. Crie a pasta `.vscode` também na raiz.
+2. Dentro da pasta, crie o arquivo `launch.json` com o seguinte conteúdo:
 
 ```json
 {
@@ -31,10 +72,10 @@ A versão do Poetry utilizada é 1.7.1. Se você instalou uma versão mais recen
     ]
 }
 ```
-- Crie também um arquivo `.env` na raiz do projeto que defina as variáveis de ambiente: `INFISICAL_ADDRESS` e `INFISICAL_TOKEN`
-    - Para preencher estes valores, entre em contato com o responsável pelo projeto.
-- Agora este projeto fica disponível na aba de Debugging do VSCode para depuração.
-- Quando se clica no ícone "Play", o script `localrun.py` será executado. Na etapa 3 iremos configurar essa etapa final do processo.
+
+Agora este projeto fica disponível na aba de Debugging do VSCode para depuração.
+Quando se clica no ícone *Play*, o script `localrun.py` será executado.
+Na próxima etapa iremos configurar isso.
 
 ### Etapa 3 - Configurando Seleção de Casos
 _Casos (inspirado em casos de teste) são combinações de flow com parâmetros especificos. Eles estão definidos no arquivo `localrun.cases.yaml`. Na hora de executar localmente, o script `localrun.py` procura qual caso está selecionado no arquivo `localrun.selected.yaml`._
@@ -66,12 +107,36 @@ cases:
       environment: "dev"
 ```
 
-## Deploy em Staging
-- Sempre trabalhe com branchs `staging/<nome>`
-- Dê push e crie um Pull Request sem reviewer.
-- Cada commit nesta branch irá disparar as rotinas do Github que:
-    - Verificam formatação
-    - Fazem Deploy
-    - Registram flows em staging (ambiente de testes)
-- Você acompanha o status destas rotinas na própria página do seu PR
-- Flows registrados aparecem no servidor Prefect. Eles podem ser rodados por lá
+---
+
+## 🤝 Como contribuir com o projeto
+Não esqueça de checar se você está logado no seu ambiente com a sua conta certa do GitHub.
+(A que você quer usar para trabalhar nesse projeto).
+
+
+
+1. **Branch:** Sempre abra suas branchs de trabalho no formato `staging/<sua-feature>`. O título deve sempre que possível respeitar a estrutura: [`<PROJETO>`] `<acao>`: `<breve_descricao>`.
+2. **Commits semânticos:** Utilize commits no formato `feat: <breve_descricao>`, `fix: <breve_descricao>`, `chore: <breve_descricao>`, etc
+3. Abra **Pull Request** sem _reviewer_.
+
+> - Cada commit nesta branch irá disparar as rotinas do Github que:
+>    - Verificam formatação
+>    - Fazem Deploy
+>    - Registram flows em staging (ambiente de testes)
+>
+> - Você acompanha o status destas rotinas na própria página do seu PR
+> - Flows registrados aparecem no servidor Prefect. Eles podem ser rodados por lá
+> - Ao rodar os flows no Prefect, você poderá ver os dados pelo Big Query.
+
+5. Valide no Prefect UI o funcionamento do flow usando o projeto "staging", sempre com 'dev' como environment.
+
+> **Obs** Solicite o endereço e credenciais do Prefect UI ao administrador do projeto.
+
+6. Com execução validada, adicione o administrador (TanookiVerde) como reviewer do PR e mande uma mensagem no servidor do Discord da DIT.
+
+**Teste e verifique os dados!**
+
+---
+
+## Qualquer dúvida, erro, crítica ou sugestão:
+### Basta entrar em contato com o [Administrador](@TanookiVerde) ❤️
