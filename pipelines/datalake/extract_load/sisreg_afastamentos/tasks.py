@@ -26,29 +26,36 @@ def get_extraction_date() -> datetime:
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def get_cpf_profissionais(environment, limit=10) -> pd.DataFrame:
+def get_cpf_profissionais(environment: str, sample: int = 1) -> list[str]:
     client = bigquery.Client()
     log("Cliente Big Query OK")
 
-    sql_limit = "" if environment != "dev" or limit is None else f"LIMIT {limit}"
+    if sample < 1 or sample > 100:
+        sample = None
+        log("Invalid sample, querying all data")
+
+    sql_sample = (
+        "" if environment != "dev" or sample is None
+        else f"TABLESAMPLE SYSTEM ({sample} PERCENT)"
+    )
     sql = f"""
         SELECT distinct
-           cpf_profissional_exec
-        FROM `rj-sms.brutos_sisreg_staging.escala`
-        {sql_limit}
+          profissional_executante_cpf
+        FROM `rj-sms.brutos_sisreg.oferta_programada`
+        {sql_sample}
         ;
     """
 
     log(sql)
     df = client.query_and_wait(sql).to_dataframe()
-    log("Query executada com sucesso")
+    log(f"Query executada com sucesso, {len(df)} CPF retornados")
 
-    res = df["cpf_profissional_exec"].to_list()
+    res = df["profissional_executante_cpf"].to_list()
     return res
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def get_base_request() -> requests.Session:
+def init_session_request_base() -> requests.Session:
     session = requests.session()
 
     session.get(
@@ -63,14 +70,13 @@ def get_base_request() -> requests.Session:
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def login_sisreg(usuario: str, senha: str, session: Session) -> Session:
-    def make_payload(usuario: str, senha: str) -> str:
-        return (
-            f"usuario={usuario}&"
-            "senha=&"
-            f"senha_256={sha256(senha.upper().encode('utf-8')).hexdigest()}&"
-            "etapa=ACESSO&"
-            "logout="
-        )
+    payload = (
+        f"usuario={usuario}&"
+        "senha=&"
+        f"senha_256={sha256(senha.upper().encode('utf-8')).hexdigest()}&"
+        "etapa=ACESSO&"
+        "logout="
+    )
 
     log("Realizando autenticação")
     response = session.post(
@@ -78,7 +84,7 @@ def login_sisreg(usuario: str, senha: str, session: Session) -> Session:
         headers={
             "Content-Type": "application/x-www-form-urlencoded",
         },
-        data=make_payload(usuario, senha),
+        data=payload,
         allow_redirects=True,
     )
 
@@ -95,11 +101,11 @@ def search_afastamentos(
     cpf: str, session: Session, extraction_date: datetime
 ) -> pd.DataFrame | None:
     res = session.get(
-        ("https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?" f"cpf={cpf}&mostrar_antigos=1"),
+        f"https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?cpf={cpf}&mostrar_antigos=1"
     )
 
     if "Profissional nao encontrado!" in res.text:
-        log(f"Profissional de cpf '{cpf}' não encontrado no SISREG")
+        log(f"Profissional de cpf '{cpf}' não encontrado")
         return None
 
     html_tables = BeautifulSoup(res.content, "lxml").find_all(class_="table_listagem")

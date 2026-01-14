@@ -3,16 +3,17 @@
 Flow
 """
 # Prefect
-from prefect import Parameter
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.utilities.edges import unmapped
 
 # Internos
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.constants import constants as pipeline_constants
-
+from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.datalake.extract_load.sisreg_afastamentos import (
     schedules
 )
@@ -21,7 +22,7 @@ from pipelines.datalake.extract_load.sisreg_afastamentos import (
 )
 from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
     concat_dfs,
-    get_base_request,
+    init_session_request_base,
     get_cpf_profissionais,
     get_extraction_date,
     log_df,
@@ -29,13 +30,13 @@ from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
     search_afastamentos,
     search_historico_afastamentos,
 )
-from pipelines.datalake.utils.tasks import handle_columns_to_bq
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(
     name="SUBGERAL - Extract & Load - SISREG AFASTAMENTOS",
     state_handlers=[handle_flow_state_change],
+    owners=[
+        pipeline_constants.MATHEUS_ID.value,
+    ]
 ) as sisreg_afastamentos_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
@@ -72,7 +73,7 @@ with Flow(
     extraction_date = get_extraction_date()
 
     # Requisição base do SISREG
-    session = get_base_request()
+    session = init_session_request_base()
 
     # Buscando os CPFs dos profissionais,
     # com limite adicionado para questẽs de teste.
@@ -128,7 +129,7 @@ with Flow(
     )
 
 
-sisreg_afastamentos_flow.executor = LocalDaskExecutor(num_workers=1)
+sisreg_afastamentos_flow.executor = LocalDaskExecutor(num_workers=16)
 sisreg_afastamentos_flow.storage = GCS(
     pipeline_constants.GCS_FLOWS_BUCKET.value
 )
