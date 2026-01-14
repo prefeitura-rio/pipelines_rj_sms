@@ -11,14 +11,9 @@ from prefect.utilities.edges import unmapped
 
 # Internos
 from prefeitura_rio.pipelines_utils.custom import Flow
-from pipelines.constants import constants as pipeline_constants
 
-from pipelines.datalake.extract_load.sisreg_afastamentos import (
-    schedules
-)
-from pipelines.datalake.extract_load.sisreg_afastamentos import (
-    constants
-)
+from pipelines.constants import constants as pipeline_constants
+from pipelines.datalake.extract_load.sisreg_afastamentos import constants, schedules
 from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
     concat_dfs,
     get_base_request,
@@ -52,20 +47,12 @@ with Flow(
     )
 
     # Nome do dataset e tabela no datalake
-    DATASET_ID = Parameter(
-        "dataset_id",
-        default=constants.DEFAULT_DATASET_ID,
-        required=False
-    )
+    DATASET_ID = Parameter("dataset_id", default=constants.DEFAULT_DATASET_ID, required=False)
     AFASTAMENTO_TABLE_ID = Parameter(
-        "afastamento_table_id",
-        default=constants.DEFAULT_AFASTAMENTO_TABLE_ID,
-        required=False
+        "afastamento_table_id", default=constants.DEFAULT_AFASTAMENTO_TABLE_ID, required=False
     )
     HISTORICO_TABLE_ID = Parameter(
-        "historico_table_id",
-        default=constants.DEFAULT_HISTORICO_TABLE_ID,
-        required=False
+        "historico_table_id", default=constants.DEFAULT_HISTORICO_TABLE_ID, required=False
     )
 
     # Data de extração das tabelas
@@ -129,9 +116,7 @@ with Flow(
 
 
 sisreg_afastamentos_flow.executor = LocalDaskExecutor(num_workers=1)
-sisreg_afastamentos_flow.storage = GCS(
-    pipeline_constants.GCS_FLOWS_BUCKET.value
-)
+sisreg_afastamentos_flow.storage = GCS(pipeline_constants.GCS_FLOWS_BUCKET.value)
 sisreg_afastamentos_flow.run_config = KubernetesRun(
     image=pipeline_constants.DOCKER_IMAGE.value,
     labels=[pipeline_constants.RJ_SMS_AGENT_LABEL.value],
