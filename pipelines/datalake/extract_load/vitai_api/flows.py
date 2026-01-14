@@ -1,137 +1,89 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103
-"""
-Vitai healthrecord dumping flows
-"""
-
-from prefect import Parameter, case
+from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
-from prefeitura_rio.pipelines_utils.prefect import (
-    task_rename_current_flow_run_dataset_table,
-)
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.vitai_api.constants import (
-    constants as vitai_constants,
+from pipelines.datalake.extract_load.vitai_api.schedules import schedules
+from pipelines.datalake.extract_load.vitai_api.tasks import (
+    extract_data,
+    format_to_upload,
+    get_all_api_data,
 )
-
-# from pipelines.datalake.extract_load.vitai_api.schedules import (
-#     vitai_daily_update_schedule,
-# )
-from pipelines.datalake.extract_load.vitai_api.tasks import build_date_param, build_url
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
-    add_load_date_column,
-    create_folders,
-    create_partitions,
-    download_from_api,
-    from_json_to_csv,
     get_secret_key,
-    inject_gcp_credentials,
-    upload_to_datalake,
+    rename_current_flow_run,
+    upload_df_to_datalake,
 )
+from pipelines.utils.time import from_relative_date
 
 with Flow(
-    name="DataLake - Extração e Carga de Dados - Vitai",
-) as sms_dump_vitai:
-    #####################################
-    # Parameters
-    #####################################
-
-    # Flow
+    name="DataLake - Extração e Carga de Dados - Vitai API",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.HERIAN_ID.value],
+) as sms_vitai_api:
+    ENVIRONMENT = Parameter("environment", default="dev")
     RENAME_FLOW = Parameter("rename_flow", default=False)
 
-    # INFISICAL
-    INFISICAL_PATH = vitai_constants.INFISICAL_PATH.value
-    INFISICAL_KEY = vitai_constants.INFISICAL_KEY.value
-
     # Vitai API
-    ENDPOINT = Parameter("endpoint", required=True)
-    DATE = Parameter("date", default=None)
+    RELATIVE_TARGET_DATE = Parameter("relative_target_date", default="D-1")
+    ENDPOINT_PATH = Parameter("endpoint_path", default="/v1/boletim/listByPeriodo")
 
     # GCP
-    ENVIRONMENT = Parameter("environment", default="dev")
-    DATASET_ID = Parameter("dataset_id", default=vitai_constants.DATASET_ID.value)
+    DATASET_ID = Parameter("dataset_id", default="brutos_prontuario_vitai_api")
     TABLE_ID = Parameter("table_id", required=True)
 
-    #####################################
-    # Set environment
-    ####################################
-    inject_gcp_credentials_task = inject_gcp_credentials(environment=ENVIRONMENT)
-
     with case(RENAME_FLOW, True):
-        rename_flow_task = task_rename_current_flow_run_dataset_table(
-            prefix="Dump Vitai: ", dataset_id=DATASET_ID, table_id=TABLE_ID
+        rename_current_flow_run(
+            environment=ENVIRONMENT,
+            relative_target_date=RELATIVE_TARGET_DATE,
+            endpoint_path=ENDPOINT_PATH,
         )
-        rename_flow_task.set_upstream(inject_gcp_credentials_task)
 
-    ####################################
-    # Tasks section #1 - Get data
-    #####################################
-    get_secret_task = get_secret_key(
-        secret_path=INFISICAL_PATH, secret_name=INFISICAL_KEY, environment="prod"
+    target_date = from_relative_date(relative_date=RELATIVE_TARGET_DATE)
+
+    api_token = get_secret_key(
+        environment=ENVIRONMENT,
+        secret_name="TOKEN",
+        secret_path="/prontuario-vitai",
     )
-    get_secret_task.set_upstream(inject_gcp_credentials_task)
 
-    create_folders_task = create_folders()
-    create_folders_task.set_upstream(get_secret_task)  # pylint: disable=E1101
-
-    build_date_param_task = build_date_param(date_param=DATE)
-    build_date_param_task.set_upstream(create_folders_task)
-
-    build_url_task = build_url(endpoint=ENDPOINT, date_param=build_date_param_task)
-    build_url_task.set_upstream(build_date_param_task)
-
-    download_task = download_from_api(
-        url=build_url_task,
-        file_folder=create_folders_task["raw"],
-        file_name=TABLE_ID,
-        params=None,
-        credentials=get_secret_task,
-        auth_method="bearer",
-        add_load_date_to_filename=True,
-        load_date=build_date_param_task,
+    api_data = get_all_api_data(
+        environment=ENVIRONMENT,
     )
-    download_task.set_upstream(create_folders_task)
 
-    #####################################
-    # Tasks section #2 - Transform data and Create table
-    #####################################
-
-    conversion_task = from_json_to_csv(input_path=download_task, sep=";")
-    conversion_task.set_upstream(download_task)
-
-    add_load_date_column_task = add_load_date_column(input_path=conversion_task, sep=";")
-    add_load_date_column_task.set_upstream(conversion_task)
-
-    create_partitions_task = create_partitions(
-        data_path=create_folders_task["raw"],
-        partition_directory=create_folders_task["partition_directory"],
+    dataframe_per_cnes = extract_data.map(
+        api_data=api_data,
+        api_token=unmapped(api_token),
+        endpoint_path=unmapped(ENDPOINT_PATH),
+        target_date=unmapped(target_date),
     )
-    create_partitions_task.set_upstream(add_load_date_column_task)
-    upload_to_datalake_task = upload_to_datalake(
-        input_path=create_folders_task["partition_directory"],
+
+    full_dataframe = format_to_upload(
+        responses=dataframe_per_cnes,
+        endpoint_path=ENDPOINT_PATH,
+        target_date=target_date,
+    )
+
+    upload_df_to_datalake(
+        df=full_dataframe,
         dataset_id=DATASET_ID,
         table_id=TABLE_ID,
-        if_exists="replace",
-        csv_delimiter=";",
-        if_storage_data_exists="replace",
-        biglake_table=True,
-        dataset_is_public=False,
+        source_format="parquet",
+        partition_column="_loaded_at",
     )
-    upload_to_datalake_task.set_upstream(create_partitions_task)
 
-
-sms_dump_vitai.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
-sms_dump_vitai.executor = LocalDaskExecutor(num_workers=10)
-sms_dump_vitai.run_config = KubernetesRun(
+sms_vitai_api.schedule = schedules
+sms_vitai_api.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sms_vitai_api.executor = LocalDaskExecutor(num_workers=5)
+sms_vitai_api.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_limit="4Gi",
+    memory_limit="2Gi",
+    memory_request="2Gi",
 )
-
-# sms_dump_vitai.schedule = vitai_daily_update_schedule

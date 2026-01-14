@@ -8,7 +8,6 @@ from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.datalake_bigquery.schedules import schedule
@@ -20,7 +19,9 @@ from pipelines.utils.credential_injector import (
 from pipelines.utils.credential_injector import (
     authenticated_wait_for_flow_run as wait_for_flow_run,
 )
+from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     get_bigquery_project_from_environment,
     get_project_name,
@@ -29,6 +30,10 @@ from pipelines.utils.tasks import (
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - Clonando Tabelas do Datalake",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.DIT_ID.value,
+    ],
 ) as datalake_bigquery_clone:
 
     ENVIRONMENT = Parameter("environment", default="dev")

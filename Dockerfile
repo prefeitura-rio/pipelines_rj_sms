@@ -10,15 +10,15 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Install apt dependencies and npm
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    git \
-    python3-dev \
-    default-libmysqlclient-dev \
-    build-essential \
-    pkg-config \
-    firefox-esr \
-    chromium \
-    chromium-driver \
-    curl && \
+      git \
+      python3-dev \
+      default-libmysqlclient-dev \
+      build-essential \
+      pkg-config \
+      firefox-esr \
+      chromium \
+      chromium-driver \
+      curl && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     apt-get clean && \
@@ -26,10 +26,10 @@ RUN apt-get update && \
 
 # Setting environment with prefect version
 ARG PREFECT_VERSION=1.4.1
-ENV PREFECT_VERSION $PREFECT_VERSION
+ENV PREFECT_VERSION="$PREFECT_VERSION"
 
 # Setup virtual environment and prefect
-ENV VIRTUAL_ENV=/opt/venv
+ENV VIRTUAL_ENV="/opt/venv"
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN python3 -m pip install --no-cache-dir -U "pip>=21.2.4" "prefect==$PREFECT_VERSION"
@@ -47,8 +47,8 @@ RUN npm install -g npm@latest && \
 RUN npm install puppeteer@23.0.0 @mermaid-js/mermaid-cli@11.2.0
 
 # Install MSSQL dependencies
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
-    echo "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list && \
+RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg && \
+    echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
     ACCEPT_EULA=Y apt-get install --no-install-recommends -y ffmpeg libsm6 libxext6 msodbcsql17 openssl unixodbc-dev && \
     apt-get clean && \

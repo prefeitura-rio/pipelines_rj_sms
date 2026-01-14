@@ -38,8 +38,9 @@ cases:
     params:
       environment: "dev"
       rename_flow: false
-      command: "build"
-      send_discord_report: false
+      command: "run"
+      select: "tag:vitacare_api"
+      send_discord_report: true
   - case_slug: "smsrio-raw-routine"
     flow_path: "pipelines.prontuarios.raw.smsrio.flows"
     flow_name: "sms_prontuarios_raw_smsrio"
@@ -180,16 +181,21 @@ cases:
     flow_name: "report_long_running_flows"
     params:
       environment: "prod"
-  - case_slug: "dump-hci"
-    flow_path: "pipelines.datalake.extract_load.historico_clinico_integrado.flows"
-    flow_name: "dump_hci"
+  - case_slug: "extract_load_relational_db"
+    flow_path: "pipelines.datalake.extract_load.relational_db.flows"
+    flow_name: "extract_load_relational_db"
     params:
       environment: "dev"
-      table_id: "user"
-      dataset_id: "brutos_hci_app"
-      schema: "postgres"
-      historical_mode: false
-      reference_datetime_column: "updated_at"
+      rename_flow: True
+      db_url_infisical_key: "PRONTUARIOS_DB_URL"
+      db_url_infisical_path: "/"
+      source_schema_name: "public"
+      source_table_name: "userhistory"
+      source_datetime_column: "timestamp"
+      target_dataset_id: "brutos_aplicacao_hci"
+      target_table_id: "user"
+      relative_datetime: "D-1"
+      historical_mode: True
   - case_slug: "datalake_clone_table"
     flow_path: "pipelines.datalake.extract_load.datalake_bigquery.flows"
     flow_name: "datalake_bigquery_clone"
@@ -202,6 +208,11 @@ cases:
   - case_slug: "extract_diario_oficial_rj"
     flow_path: "pipelines.datalake.extract_load.diario_oficial_rj.flows"
     flow_name: "extract_diario_oficial_rj"
+    params:
+      environment: "dev"
+  - case_slug: "extract_tribunal_de_contas_rj"
+    flow_path: "pipelines.datalake.extract_load.tribunal_de_contas_rj.flows"
+    flow_name: "extract_tribunal_de_contas_rj"
     params:
       environment: "dev"
   - case_slug: "tasks_clickup_extraction"
@@ -257,7 +268,7 @@ cases:
     flow_path: "pipelines.datalake.extract_load.coordenadas_estabelecimentos_pgeo3.flows"
     flow_name: "sms_estabelecimentos_coordenadas"
     params:
-      environment: "dev"
+      environment: "prod"
       bq_dataset_id: "brutos_geo_pgeo3"
       bq_table_id: "estabelecimentos_coordenadas"
   - case_slug: "datalake_minhasaude_mongodb_perfilacessos"
@@ -282,10 +293,10 @@ cases:
     flow_name: "sms_cr_mysql"
     params:
       environment: "dev"
-      database: "monitoramento"
+      database: "subhue_eletivas"
       host: "db.smsrio.org"
-      table: "vw_MS_CadastrosAtivacoesGov"
-      query: "SELECT * FROM vw_MS_CadastrosAtivacoesGov"
+      table: "vw_eletivas_sisare"
+      query: "SELECT * FROM vw_eletivas_sisare"
       bq_dataset: "brutos_centralderegulacao_mysql"
   - case_slug: "datalake-migrate-gdrive_to_gcs"
     flow_path: "pipelines.datalake.migrate.gdrive_to_gcs.flows"
@@ -297,6 +308,11 @@ cases:
       owner_email: "storage02healthbr@gmail.com"
       last_modified_date: "M-1"
       rename_flow: True
+  - case_slug: "orquestracao_cdi"
+    flow_path: "pipelines.datalake.migrate.orquestracao_cdi.flows"
+    flow_name: "flow_orquestracao_cdi"
+    params:
+      environment: "dev"
   - case_slug: "datalake-migrate-gcs_to_cloudsql"
     flow_path: "pipelines.datalake.migrate.gcs_to_cloudsql.flows"
     flow_name: "migrate_gcs_to_cloudsql"
@@ -306,6 +322,7 @@ cases:
       instance_name: "vitacare"
       file_pattern: "HISTÓRICO_PEPVITA_RJ/AP*/vitacare_historic_*_*_*.bak"
       limit_files: -1
+      continue_from: 0
   - case_slug: "datalake-extract-smsrio"
     flow_path: "pipelines.datalake.extract_load.smsrio_mysql.flows"
     flow_name: "sms_dump_smsrio"
@@ -331,63 +348,87 @@ cases:
     params:
       environment: 'dev'
       es_index: 'marcacao-ambulatorial-rj'
-      page_size: 10_000
-      scroll_timeout: '2m'
+      page_size: 5_000
+      scroll_timeout: '10m'
       filters: {"codigo_central_reguladora": "330455"}
-      data_inicial: '2025-04-07'
       data_final: 'now'
       bq_dataset: 'brutos_sisreg_api'
       bq_table: 'marcacoes'
-      dias_por_faixa: 30
+      dias_por_faixa: 5
       formato_data: '%Y-%m-%d'
-
-  - case_slug: "cientificalab_api"
+  - case_slug: "cientificalab_api_operator"
     flow_path: "pipelines.datalake.extract_load.cientificalab_api.flows"
-    flow_name: "flow_cientificalab"
+    flow_name: "flow_cientificalab_operator"
     params:
+      dataset: 'brutos_cientificalab'
       environment: 'dev'
-      dt_inicio: '2025-01-21T10:00:00-0300'
-      dt_fim: '2025-01-21T11:30:00-0300'
+      dt_inicio: '2025-09-30T10:00:00-03:00'
+      dt_fim: '2025-09-30T11:00:00-03:00'
+      rename_flow: False
+  - case_slug: "exames_laboratoriais_operator"
+    flow_path: "pipelines.datalake.extract_load.exames_laboratoriais_api.flows"
+    flow_name: "exames_laboratoriais_operator"
+    params:
+      dataset: 'brutos_exames_laboratoriais'
+      environment: 'dev'
+      dt_inicio: '2025-07-23T18:00:00-03:00'
+      dt_fim: '2025-07-23T19:30:00-03:00'
+      rename_flow: False
+      ap: '33'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
     params:
       environment: "dev"
-      endpoint: "posicao"
-      target_date: "D-1"
-      dataset_id: "brutos_api_vitacare"
-      table_id_prefix: "estoque_posicao"
-
-  - case_slug: "siscan_web_laudos"
+  - case_slug: "siscan_web_laudos_operator"
     flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
-    flow_name: "sms_siscan_web"
+    flow_name: "sms_siscan_web_operator"
     params:
       environment: "dev"
-      data_inicial: "26/01/2025"
-      data_final: "26/02/2025"
+      data_inicial: "03/08/2025"
+      data_final: "03/08/2025"
       bq_dataset: "brutos_siscan_web"
       bq_table: "laudos"
-      dias_por_faixa: 1
-      formato_data: "%d/%m/%Y"
-
+  - case_slug: "siscan_web_laudos_manager"
+    flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
+    flow_name: "sms_siscan_web_manager"
+    params:
+      environment: "dev"
+      relative_date: 'D-7'
+      range: 7
   - case_slug: "datalake-extract-subpav"
     flow_path: "pipelines.datalake.extract_load.subpav_mysql.flows"
     flow_name: "sms_dump_subpav"
     params:
       environment: "dev"
       dataset_id: "brutos_plataforma_subpav"
+      table_id: "competencias"
+      schema: "subpav_cnes"
+  - case_slug: "rastreio_pacientes_restritos"
+    flow_path: "pipelines.datalake.transform.gemini.pacientes_restritos.flows"
+    flow_name: "hci_pacientes_restritos"
+    params:
+      environment: 'dev'
       table_id: "notificacoes"
       schema: "subpav_acesso_mais_seguro"
-
   - case_slug: 'checks-bucket-files'
     flow_path: 'pipelines.reports.checks_bucket_files.flows'
     flow_name: 'report_bucket_files'
     params:
       environment: 'dev'
-      bucket_name: 'conectividade_aps'
-      source_freshness: 'D-0'
-
-  - case_slug: 'dou-extraction'
+      configurations: [
+        {
+          "bucket_name": "vitacare_backups_gdrive",
+          "source_freshness": "M-0",
+          "title": "Arquivos de Backup Vitacare"
+        },
+        {
+          "bucket_name": "cgcca_sih",
+          "source_freshness": "Y-0",
+          "title": "Base de Dados SIH"
+        }
+      ]
+  - case_slug: 'dou-extraction'  # [!] Flow antigo! Prefira o -api
     flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao.flows'
     flow_name: 'extract_diario_oficial_uniao'
     params:
@@ -395,3 +436,120 @@ cases:
       dou_section: 3
       max_workers: 10
       date: ""
+  - case_slug: 'dou-extraction-api'
+    flow_path: 'pipelines.datalake.extract_load.diario_oficial_uniao_api.flows'
+    flow_name: 'dou_extraction'
+    params:
+      environment: 'dev'
+      dou_section: 'DO1 DO2 DO3'
+      date: "29/08/2025"
+      dataset_id: "brutos_diario_oficial"
+  - case_slug: 'medilab_api'
+    flow_path: 'pipelines.datalake.extract_load.medilab_api.flows'
+    flow_name: 'flow_medilab_api'
+    params:
+      environment: 'dev'
+      dt_start: '2025-07-01'
+      dt_end: '2025-07-17'
+  - case_slug: "datalake-extract-load-vitacare-api-v2"
+    flow_path: "pipelines.datalake.extract_load.vitacare_api_v2.flows"
+    flow_name: "sms_vitacare_api_v2"
+    params:
+      environment: "dev"
+      rename_flow: True
+      endpoint: "posicao"
+      dataset_id: "brutos_prontuario_vitacare_api"
+      table_id_prefix: "estoque_posicao"
+      target_date: "D-0"
+  - case_slug: "flow_healthcheck"
+    flow_path: "pipelines.tools.healthchecks.flows"
+    flow_name: "flow_healthcheck"
+    params:
+      environment: "dev"
+  - case_slug: "sms_vitai_api"
+    flow_path: "pipelines.datalake.extract_load.vitai_api.flows"
+    flow_name: "sms_vitai_api"
+    params:
+      environment: "dev"
+      rename_flow: True
+      endpoint_path: "/v1/profissionais/findByEstabelecimento/{estabelecimento_id}"
+      dataset_id: "brutos_prontuario_vitai_api"
+      table_id: "profissional"
+  - case_slug: "elt_gal"
+    flow_path: "pipelines.datalake.extract_load.gal_gcs.flows"
+    flow_name: "extract_gal_gcs"
+    params:
+      environment: "dev"
+      gcs_bucket: "svs_cie"
+      gcs_path_template: "exames_laboratoriais/gal_lacen/tuberculose/*/*/tubb-colzn-*"
+      dataset_id: "brutos_gal"
+      table_id: "exames_laboratoriais"
+      relative_target_date: "D-7"
+  - case_slug: "vitacare_historico_operator"
+    flow_path: "pipelines.datalake.extract_load.vitacare_historico.flows"
+    flow_name: "flow_vitacare_historic_operator_v2"
+    params:
+      environment: "dev"
+      rename_flow: False
+      table_name: "CURATIVOS"
+      db_schema: "dbo"
+      partition_column: "extracted_at"
+  - case_slug: extract_gdb
+    flow_path: pipelines.datalake.extract_load.extract_gdb.flows
+    flow_name: extract_gdb
+    params:
+      environment: "dev"
+      gs_uri: "gs://path/to/file.GDB"
+      dataset: "brutos_gdb_xxxx"
+  # -----------------------------------
+  - case_slug: "report-alerta-jobs-caros"
+    flow_path: "pipelines.reports.alerta_jobs_caros.flows"
+    flow_name: "report_alerta_jobs_caros"
+    params:
+      environment: "dev"
+  - case_slug: "report-alerta-atualizacao-tabelas"
+    flow_path: "pipelines.reports.alerta_atualizacao_tabelas.flows"
+    flow_name: "report_alerta_atualizacao_tabelas"
+    params:
+      environment: "dev"
+      table_ids:
+        "rj-sms.projeto_whatsapp.telefones_validos": ["IplanRio - E Aí?"]
+        "rj-sms.projeto_gestacoes.temp_correlacao_prenatal_20250831_192404": ["S/SUBPAV/SAP - BI de Gestantes"]
+  - case_slug: report_informes_seguranca
+    flow_path: pipelines.reports.informes_seguranca.flows
+    flow_name: report_informes_seguranca
+    params:
+      environment: "dev"
+
+  - case_slug: prontuario_extraction_operator
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_extraction_operator
+    params:
+      environment: "dev"
+      bucket_name: "subhue_backups"
+      dataset: 'brutos_prontuario_prontuaRIO'
+      blob_prefix: '2025-11/hospub-2270609'
+      cnes: '2270609'
+      lines_per_chunk: 25000
+      skip_openbase: false
+      skip_postgres: false
+
+  - case_slug: prontuario_extraction_manager
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_extraction_manager
+    params:
+      environment: "dev"
+      bucket_name: "subhue_backups"
+      folder: "2025-11"
+      dataset: 'brutos_prontuario_prontuaRIO'
+      chunk_size: 50000
+  - case_slug: emails-subgeral
+    flow_path: pipelines.reports.emails_subgeral_gestao.flows
+    flow_name: sms_emails_subgeral
+    params:
+      environment: "dev"
+      gsheets_sheet_name: "teste_1"
+      subject: "Teste email prefect (dl)"
+      query_path: "mail_templates/gerencia_cancer/gerencia_cancer.sql"
+      html_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.html"
+      plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"

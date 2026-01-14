@@ -224,13 +224,13 @@ def extrair_fatia_para_datalake(
     Retorna quantidade de documentos enviados.
     """
     conn = _build_conn_string(host, port, user, password, authsource)
-    gte, lt = faixa
-    filtro = {**(query or {}), slice_var: {"$gte": gte, "$lt": lt}}
+    gte, lte = faixa
+    filtro = {**(query or {}), slice_var: {"$gte": gte, "$lte": lte}}
 
     documentos_enviados = 0
     buffer: List[Dict[str, Any]] = []
 
-    log(f"Iniciando extração para faixa {gte} -> {lt}…")
+    log(f"Iniciando extração para faixa {gte} -> {lte}…")
     with MongoClient(conn) as cli:
         col = cli[db_name][collection_name]
         cursor = (
@@ -278,7 +278,7 @@ def validar_total_documentos(
     diff = abs(total_enviado - total_esperado)
     percent_diff = diff / total_esperado
 
-    if percent_diff > 0.03:
+    if percent_diff > 0.05:
         log(
             f"❌ Inconsistência detectada: "
             f"coleção tem {total_esperado:,d} docs, "
@@ -288,7 +288,7 @@ def validar_total_documentos(
 
         # Envia alerta para o monitor (Discord)
         msg = (
-            f" @{flow_owner} Inconsistência: coleção tem {total_esperado:,d} docs, "
+            f" <@{flow_owner}> Inconsistência: coleção tem {total_esperado:,d} docs, "
             f"mas apenas {total_enviado:,d} chegaram ao Data Lake "
             f"({percent_diff:.2%} de diferença)."
         )

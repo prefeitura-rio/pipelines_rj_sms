@@ -118,20 +118,24 @@ Não esqueça de checar se você está logado no seu ambiente com a sua conta ce
 
 
 
-1. **Branch:** Sempre abra suas branchs de trabalho no formato `staging/<sua-feature>`
+1. **Branch:** Sempre abra suas branchs de trabalho no formato `staging/<sua-feature>`. O título deve sempre que possível respeitar a estrutura: [`<PROJETO>`] `<acao>`: `<breve_descricao>`.
 2. **Commits semânticos:** Utilize commits no formato `feat: <breve_descricao>`, `fix: <breve_descricao>`, `chore: <breve_descricao>`, etc
 3. Abra **Pull Request** sem _reviewer_.
-4. Após validar no Prefect, abra um PR com o título respeitando a estrutura: [`<PROJETO>`] `<acao>`: `<breve_descricao>`.
-> **Obs** Solicite o endereço e credenciais do Prefect ao administrador do projeto.
 
-- Cada commit nesta branch irá disparar as rotinas do Github que:
-    - Verificam formatação
-    - Fazem Deploy
-    - Registram flows em staging (ambiente de testes)
+> - Cada commit nesta branch irá disparar as rotinas do Github que:
+>    - Verificam formatação
+>    - Fazem Deploy
+>    - Registram flows em staging (ambiente de testes)
+>
+> - Você acompanha o status destas rotinas na própria página do seu PR
+> - Flows registrados aparecem no servidor Prefect. Eles podem ser rodados por lá
+> - Ao rodar os flows no Prefect, você poderá ver os dados pelo Big Query.
 
-- Você acompanha o status destas rotinas na própria página do seu PR
-- Flows registrados aparecem no servidor Prefect. Eles podem ser rodados por lá
-- Ao rodar os flows no Prefect, você poderá ver os dados pelo Big Query.
+5. Valide no Prefect UI o funcionamento do flow usando o projeto "staging", sempre com 'dev' como environment.
+
+> **Obs** Solicite o endereço e credenciais do Prefect UI ao administrador do projeto.
+
+6. Com execução validada, adicione o administrador (TanookiVerde) como reviewer do PR e mande uma mensagem no servidor do Discord da DIT.
 
 **Teste e verifique os dados!**
 

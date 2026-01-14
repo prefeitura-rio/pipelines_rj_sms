@@ -3,21 +3,27 @@ from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.vitacare_api_v2.constants import (
     constants as flow_constants,
 )
+from pipelines.datalake.extract_load.vitacare_api_v2.schedules import schedules
 from pipelines.datalake.extract_load.vitacare_api_v2.tasks import (
     extract_data,
     generate_endpoint_params,
+    send_email_notification,
 )
+from pipelines.utils.basics import get_property_from_dict
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import rename_current_flow_run, upload_df_to_datalake
 from pipelines.utils.time import from_relative_date
 
 with Flow(
     name="DataLake - Extração e Carga de Dados - VitaCare API v2",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.PEDRO_ID.value],
 ) as sms_vitacare_api_v2:
     #####################################
     # Parameters
@@ -53,10 +59,19 @@ with Flow(
         table_id_prefix=TABLE_ID_PREFIX,
     )
 
-    extracted_data = extract_data.map(
+    extraction_results = extract_data.map(
         endpoint_params=endpoint_params,
         endpoint_name=unmapped(ENDPOINT),
         environment=unmapped(ENVIRONMENT),
+    )
+
+    extracted_data = get_property_from_dict.map(
+        dict=extraction_results,
+        key=unmapped("data"),
+    )
+    logs = get_property_from_dict.map(
+        dict=extraction_results,
+        key=unmapped("logs"),
     )
 
     upload_df_to_datalake.map(
@@ -69,7 +84,15 @@ with Flow(
         dump_mode=unmapped("append"),
     )
 
+    send_email_notification(
+        logs=logs,
+        endpoint=ENDPOINT,
+        environment=ENVIRONMENT,
+        target_date=target_date,
+    )
 
+
+sms_vitacare_api_v2.schedule = schedules
 sms_vitacare_api_v2.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_vitacare_api_v2.executor = LocalDaskExecutor(num_workers=5)
 sms_vitacare_api_v2.run_config = KubernetesRun(

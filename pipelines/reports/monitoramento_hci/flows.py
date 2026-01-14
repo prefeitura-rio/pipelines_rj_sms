@@ -4,14 +4,17 @@ from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
 
 from pipelines.constants import constants
 from pipelines.reports.monitoramento_hci.schedules import schedule
 from pipelines.reports.monitoramento_hci.tasks import get_data, send_report
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
 
 with Flow(
     name="Report: Monitoramento do HCI",
+    state_handlers=[handle_flow_state_change],
+    owners=[constants.AVELLAR_ID.value],
 ) as report_uso_hci:
 
     #####################################
@@ -25,7 +28,7 @@ with Flow(
     # Tasks
     #####################################
     data = get_data(dataset_name=DATASET, table_name=TABLE, environment=ENVIRONMENT)
-    send_report(data=data)
+    send_report(data=data, environment=ENVIRONMENT)
 
 
 report_uso_hci.schedule = schedule
@@ -36,6 +39,5 @@ report_uso_hci.run_config = KubernetesRun(
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
-    memory_request="2Gi",
     memory_limit="2Gi",
 )

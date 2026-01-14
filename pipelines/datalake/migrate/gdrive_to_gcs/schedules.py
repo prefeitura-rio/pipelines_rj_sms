@@ -34,16 +34,16 @@ flow_parameters = [
         "last_modified_date": "M-0",
         "rename_flow": True,
     },
-    # ===============================
-    # SIH
-    # ===============================
-    {
-        "folder_id": "1cOi0sZgjso-2Oiv93R62T060zd1XzeMu",
-        "bucket_name": "sih_gdrive",
-        "environment": "prod",
-        "last_modified_date": "M-0",
-        "rename_flow": True,
-    },
+    # # ===============================
+    # # SIH
+    # # ===============================
+    # {
+    #     "folder_id": "1cOi0sZgjso-2Oiv93R62T060zd1XzeMu",
+    #     "bucket_name": "sih_gdrive",
+    #     "environment": "prod",
+    #     "last_modified_date": "M-0",
+    #     "rename_flow": True,
+    # },
 ]
 
 

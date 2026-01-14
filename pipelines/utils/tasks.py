@@ -5,6 +5,7 @@
 General utilities for SMS pipelines
 """
 
+import csv
 import ftplib
 import glob
 import json
@@ -19,7 +20,7 @@ from ftplib import FTP
 from io import StringIO
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 import basedosdados as bd
 import google.auth.transport.requests
@@ -429,7 +430,9 @@ def download_from_url(  # pylint: disable=too-many-arguments
         dataframe.columns = remove_columns_accents(dataframe)
         log(f">>>>> Dataframe columns after treatment: {dataframe.columns}")
 
-        dataframe.to_csv(filepath, index=False, sep=csv_delimiter, encoding="utf-8")
+        dataframe.to_csv(
+            filepath, index=False, sep=csv_delimiter, encoding="utf-8", quoting=csv.QUOTE_ALL
+        )
     else:
         raise ValueError("Invalid URL type. Please set values to `url_type` parameter")
 
@@ -444,8 +447,11 @@ def cloud_function_request(
     request_type: str = "GET",
     body_params: any = None,
     query_params: dict = None,
+    header_params: dict = None,
     env: str = "dev",
     api_type: str = "json",
+    endpoint_for_filename: str = None,
+    timeout: int = 90,
 ):
     """
     Sends a request to an endpoint trough a cloud function.
@@ -467,7 +473,7 @@ def cloud_function_request(
     logger = prefect.context.get("logger")
 
     if env in ["prod", "local-prod"]:
-        cloud_function_url = "https://us-central1-rj-sms.cloudfunctions.net/vitacare"
+        cloud_function_url = "https://us-central1-rj-sms-dev.cloudfunctions.net/vitacare"
     elif env in ["dev", "staging"]:
         cloud_function_url = "https://us-central1-rj-sms-dev.cloudfunctions.net/vitacare"
     else:
@@ -477,12 +483,24 @@ def cloud_function_request(
     request = google.auth.transport.requests.Request()
     TOKEN = google.oauth2.id_token.fetch_id_token(request, cloud_function_url)
 
+    # Prepara query_params para incluir o filename_descriptor
+    # Garante que query_params é um dicionário mutável
+    if query_params is None:
+        query_params_for_cf = {}
+    else:
+        query_params_for_cf = query_params.copy()  # Cria uma cópia para não modificar o original
+
+    if endpoint_for_filename:
+        # Adiciona o descritor ao query_params sob uma chave específica
+        query_params_for_cf["_endpoint_for_filename"] = endpoint_for_filename
+
     payload = {
         "tipo_api": api_type,
         "url": url,
         "request_type": request_type,
         "body_params": body_params,
-        "query_params": query_params,
+        "query_params": query_params_for_cf,
+        "header_params": header_params,
         "credential": credential,
     }
 
@@ -493,13 +511,45 @@ def cloud_function_request(
 
     try:
         response = requests.request(
-            "POST", cloud_function_url, headers=headers, data=json.dumps(payload)
+            "POST", cloud_function_url, headers=headers, data=json.dumps(payload), timeout=timeout
         )
 
         if response.status_code == 200:
             logger.info("[Cloud Function] Request was Successful")
 
             payload = response.json()
+
+            if "gcs_url" in payload:
+                gcs_url = payload["gcs_url"]
+                logger.info(f"[Cloud Function] GCS URL received. Downloading from: {gcs_url}")
+
+                try:
+                    # Parseia a URL GCS para obter o nome do bucket e do blob
+                    path_parts = gcs_url.replace("gs://", "").split("/", 1)
+                    if len(path_parts) < 2:
+                        raise ValueError(f"Invalid GCS URL format: {gcs_url}")
+                    bucket_name = path_parts[0]
+                    blob_name = path_parts[1]
+
+                    client = storage.Client()
+                    bucket = client.bucket(bucket_name)
+                    blob = bucket.blob(blob_name)
+
+                    # Baixa o conteúdo do GCS
+                    downloaded_content = blob.download_as_text()
+
+                    # Insere o conteúdo baixado de volta na chave 'body'
+                    if api_type == "json":
+                        payload["body"] = json.loads(downloaded_content)
+                    else:
+                        payload["body"] = downloaded_content
+
+                except Exception as gcs_e:
+                    message = (
+                        f"[Cloud Function] Failed to download data from GCS ({gcs_url}): {gcs_e}"
+                    )
+                    logger.error(message)
+                    raise RuntimeError(message) from gcs_e
 
             if payload["status_code"] != 200:
                 logger.error(
@@ -765,6 +815,7 @@ def upload_to_datalake(
     dataset_id: str,
     table_id: str,
     dump_mode: str = "append",
+    delete_mode: str = "all",
     source_format: str = "csv",
     csv_delimiter: str = ";",
     if_exists: str = "replace",
@@ -781,12 +832,16 @@ def upload_to_datalake(
         dataset_id (str): The ID of the BigQuery dataset.
         table_id (str): The ID of the BigQuery table.
         dump_mode (str, optional): The dump mode for the table. Defaults to "append". Accepted values are "append" and "overwrite".
+        delete_mode (str, optional): Whether to delete both `_staging` and prod tables ("all"), or only `_staging` ("staging").
+            Defaults to "all".
         source_format (str, optional): The format of the input data. Defaults to "csv". Accepted values are "csv" and "parquet".
         csv_delimiter (str, optional): The delimiter used in the CSV file. Defaults to ";".
         if_exists (str, optional): The behavior if the table already exists. Defaults to "replace".
         if_storage_data_exists (str, optional): The behavior if the storage data already exists. Defaults to "replace".
         biglake_table (bool, optional): Whether the table is a BigLake table. Defaults to True.
         dataset_is_public (bool, optional): Whether the dataset is public. Defaults to False.
+        exception_on_missing_input_file (bool, optional): If True, raises `FileNotFoundError` if `input_path` is an empty string or
+            directory with no files. Defaults to False.
 
     Raises:
         RuntimeError: If an error occurs during the upload process.
@@ -854,10 +909,14 @@ def upload_to_datalake(
                     f"{storage_path}\n"
                     f"{storage_path_link}"
                 )  # pylint: disable=C0301
-                tb.delete(mode="all")
-                log(
-                    "MODE OVERWRITE: Sucessfully DELETED TABLE:\n" f"{table_staging}\n"
-                )  # pylint: disable=C0301
+                tb.delete(mode=(delete_mode if delete_mode in ["staging", "all"] else "all"))
+                if delete_mode == "staging":
+                    log(f"MODE OVERWRITE: Sucessfully DELETED TABLE:\n{table_staging}\n")
+                else:
+                    deleted_tables = [
+                        tb.table_full_name[key] for key in tb.table_full_name.keys() if key != "all"
+                    ]
+                    log(f"MODE OVERWRITE: Sucessfully DELETED TABLES:\n{deleted_tables}\n")
 
                 tb.create(
                     path=input_path,
@@ -888,6 +947,10 @@ def upload_df_to_datalake(
     biglake_table: bool = True,
     dataset_is_public: bool = False,
 ):
+    if df.empty:
+        log(f"Dataframe vazio para {table_id}. Upload Ignorado", level="warning")
+        return None
+
     root_folder = f"./data/{uuid.uuid4()}"
     os.makedirs(root_folder, exist_ok=True)
     log(f"Using as root folder: {root_folder}")
@@ -895,6 +958,10 @@ def upload_df_to_datalake(
     # All columns as strings
     df = df.astype(str)
     log("Converted all columns to strings")
+
+    if df.empty:
+        log("DataFrame is empty. Skipping upload", level="warning")
+        return
 
     if partition_column:
         log(f"Creating date partitions for a {df.shape[0]} rows dataframe")
@@ -1008,9 +1075,48 @@ def load_file_from_bigquery(
     return df
 
 
+@task
+def query_table_from_bigquery(sql_query: str, env: str = "dev") -> pd.DataFrame:
+    """
+    Query data from BigQuery table into a pandas DataFrame.
+
+    Args:
+        environment (str, optional): DON'T REMOVE THIS ARGUMENT.
+        sql_query (str): The SQL query to execute.
+
+    Returns:
+        pandas.DataFrame: The query data from the BigQuery table.
+    """
+    client = bigquery.Client()
+    log(f"[Ignore] Using Parameter to avoid Warnings: {env}")
+
+    df = client.query(sql_query).to_dataframe()
+
+    return df
+
+
 @task()
-def is_equal(value, target):
-    return value == target
+def is_equal(a, b):
+    """
+    Returns `a == b`
+    """
+    return a == b
+
+
+@task()
+def OR(a: bool, b: bool) -> bool:
+    """
+    Returns `a or b`
+    """
+    return a or b
+
+
+@task()
+def AND(a: bool, b: bool) -> bool:
+    """
+    Returns `a and b`
+    """
+    return a and b
 
 
 @task
@@ -1201,3 +1307,108 @@ def create_date_partitions(
             safe_export_df_to_parquet.run(df=dataframe, output_path=file_folder)
 
     return root_folder
+
+
+@task(max_retries=1, retry_delay=timedelta(minutes=3))
+def get_email_recipients(
+    environment: str | None = None,
+    dataset: str | None = None,
+    table: str | None = None,
+    recipients: List[str] | str | None = None,
+    error: bool | None = False,
+) -> dict:
+    """
+    Args:
+        environment(str): Current working environment: `"prod"`, `"dev"`, etc. Used to get\
+            appropriate project name, i.e. `rj-sms`, `rj-sms-dev`. Can be skipped if \
+            `recipients` is used instead.
+        dataset(str?): Dataset to look for the table in. Defaults to `"brutos_sheets"`. \
+            Can be skipped if `recipients` is used instead.
+        table(str): Table name containing recipients. Code will therefore look for recipients \
+            at `rj-sms(-dev).{dataset}.{table}`. Can be skipped if `recipients` is used instead.
+        recipients(str | str[]?): Optional override of recipients. Skips reading the database. \
+            Either a single email address, or a list of them.
+        error(bool?): Optional flag indicating this is an error report. Only recipients marked \
+            specifically as error recipients in the sheet will be returned.
+
+    Returns:
+        recipients(dict): Recipients of the email, in the format used by Iplan's API. \
+            A dictionary with the following three keys, containing (possibly empty) lists of email \
+            addresses (strings): `"to_addresses"`, `"cc_addresses"` and `"bcc_addresses"`. These\
+            refer to the TO, CC and BCC header fields of the email to be sent, respectively.
+    """
+
+    # Se queremos sobrescrever os recipientes do email
+    # (ex. enviar somente para uma pessoa, para teste)
+    if recipients is not None:
+        if type(recipients) is str:
+            recipients = [recipients]
+        if type(recipients) is list or type(recipients) is tuple:
+            recipients = list(recipients)
+            log(f"Overriding recipients ({len(recipients)}): {recipients}")
+            return {
+                "to_addresses": recipients,
+                "cc_addresses": [],
+                "bcc_addresses": [],
+            }
+        log(f"Unrecognized type for `recipients`: '{type(recipients)}'; ignoring")
+
+    client = bigquery.Client()
+
+    PROJECT = get_bigquery_project_from_environment.run(environment=environment)
+    DATASET = dataset or "brutos_sheets"
+    if not table or not isinstance(table, str) or len(table) == 0:
+        raise ValueError(f"Parameter `table` must be valid table name; got {repr(table)}")
+    TABLE = table
+
+    QUERY = f"""
+SELECT email, tipo, recebe_erro
+FROM `{PROJECT}.{DATASET}.{TABLE}`
+    """
+    log(f"Querying `{PROJECT}.{DATASET}.{TABLE}` for email recipients...")
+    rows = [row.values() for row in client.query(QUERY).result()]
+    log(f"Found {len(rows)} row(s)")
+
+    to_addresses = []
+    cc_addresses = []
+    bcc_addresses = []
+    for email, kind, gets_errors in rows:
+        email = str(email).strip()
+        kind = str(kind).lower().strip()
+        gets_errors = str(gets_errors).lower().strip() == "true"
+        if not email:
+            continue
+        if "@" not in email:
+            log(f"Recipient '{email}' does not contain '@'; skipping", level="warning")
+            continue
+
+        should_get = (error and gets_errors) or not error
+        if should_get:
+            if kind == "to":
+                to_addresses.append(email)
+            elif kind == "cc":
+                cc_addresses.append(email)
+            elif kind == "bcc":
+                bcc_addresses.append(email)
+            elif kind == "skip":
+                continue
+            else:
+                log(
+                    f"Recipient type '{kind}' (for '{email}') not recognized; skipping",
+                    level="warning",
+                )
+        else:
+            log(f"Skipping recipient '{email}' because they are not configured to receive errors")
+
+    log(
+        f"Recipients: {len(to_addresses)} (TO); {len(cc_addresses)} (CC); {len(bcc_addresses)} (BCC)"
+    )
+    # Erro caso por algum motivo não tenha nenhum destinatário
+    if len(to_addresses) + len(cc_addresses) + len(bcc_addresses) <= 0:
+        raise ValueError("Email has no recipients!")
+
+    return {
+        "to_addresses": to_addresses,
+        "cc_addresses": cc_addresses,
+        "bcc_addresses": bcc_addresses,
+    }

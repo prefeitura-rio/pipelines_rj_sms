@@ -4,6 +4,9 @@
 """
 Tasks for TPC Dump
 """
+import csv
+import os
+import sys
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -61,7 +64,18 @@ def extract_data_from_blob(
 
     # CHECK IF FILE IS FROM CURRENT DATE
     log("Verifying if file is from current date")
-    df = pd.read_csv(file_path, sep=";", dtype=str, keep_default_na=False, nrows=1)
+    df = pd.read_csv(
+        file_path,
+        sep=";",
+        quoting=csv.QUOTE_MINIMAL,
+        encoding="utf-8",
+        quotechar='"',
+        escapechar="\\",
+        keep_default_na=False,
+        dtype=str,
+        nrows=1,
+    )
+
     replication_date = df.data_atualizacao[0]
     replication_date = pd.Timestamp(replication_date).strftime("%Y-%m-%d")
 
@@ -91,19 +105,16 @@ def transform_data(file_path: str, blob_file: str):
 
     log("Conforming CSV to GCP")
 
-    with open(file_path, "r", encoding="utf-8") as f:
-        file_contents = f.read()
-
-        file_contents = file_contents.replace('\\""', '\\"')
-
-        file_contents = file_contents.replace('"', "")
-
-        file_contents = file_contents.replace(";/;.;", ";")
-
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(file_contents)
-
-    df = pd.read_csv(file_path, sep=";", dtype=str, keep_default_na=False)
+    df = pd.read_csv(
+        file_path,
+        sep=";",
+        quoting=csv.QUOTE_MINIMAL,
+        encoding="utf-8",
+        quotechar='"',
+        escapechar="\\",
+        keep_default_na=False,
+        dtype=str,
+    )
 
     if blob_file == "posicao":
         # remove registros errados

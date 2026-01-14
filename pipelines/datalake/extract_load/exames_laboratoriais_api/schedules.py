@@ -1,0 +1,33 @@
+# -*- coding: utf-8 -*-
+# pylint: disable=C0103
+
+from datetime import datetime, timedelta
+
+import pytz
+from prefect.schedules import Schedule
+
+from pipelines.constants import constants
+from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
+
+flow_manager_parameters = [
+    {
+        "environment": "prod",
+        "relative_date": "D-1",
+        "dataset_id": "brutos_exames_laboratoriais",
+        "rename_flow": True,
+        "hours_per_window": 1.5,
+    }
+]
+
+
+clocks = generate_dump_api_schedules(
+    interval=timedelta(days=1),
+    start_date=datetime(2025, 11, 25, 4, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    flow_run_parameters=flow_manager_parameters,
+    runs_interval_minutes=0,
+)
+
+schedule = Schedule(clocks=untuple_clocks(clocks))
