@@ -4,11 +4,17 @@ Flow
 """
 # Prefect
 from prefect import Parameter
+from prefect.executors import LocalDaskExecutor
+from prefect.run_configs import KubernetesRun
+from prefect.storage import GCS
 from prefect.utilities.edges import unmapped
 
 # Internos
 from prefeitura_rio.pipelines_utils.custom import Flow
 
+from pipelines.datalake.extract_load.sisreg_afastamentos import (
+    schedules
+)
 from pipelines.datalake.extract_load.sisreg_afastamentos import (
     constants
 )
@@ -123,3 +129,14 @@ with Flow(
         partition_column=constants.EXTRACTION_DATE_COLUMN,
         source_format="parquet",
     )
+
+
+sisreg_afastamentos_flow.executor = LocalDaskExecutor(num_workers=1)
+sisreg_afastamentos_flow.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+sisreg_afastamentos_flow.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[constants.RJ_SMS_AGENT_LABEL.value],
+    memory_request="10Gi",
+    memory_limit="10Gi",
+)
+sisreg_afastamentos_flow.schedule = schedules.schedule
