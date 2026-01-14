@@ -54,7 +54,7 @@ Peça as credenciais do Infisical ao administrador do projeto.
 1. Crie a pasta `.vscode` também na raiz.
 2. Dentro da pasta, crie o arquivo `launch.json` com o seguinte conteúdo:
 
-```json
+```jsonc
 {
     "version": "0.2.0",
     "configurations": [
@@ -77,8 +77,9 @@ Agora este projeto fica disponível na aba de Debugging do VSCode para depuraç�
 Quando se clica no ícone *Play*, o script `localrun.py` será executado.
 Na próxima etapa iremos configurar isso.
 
-### Etapa 3 - Configurando Seleção de Casos
-_Casos (inspirado em casos de teste) são combinações de flow com parâmetros especificos. Eles estão definidos no arquivo `localrun.cases.yaml`. Na hora de executar localmente, o script `localrun.py` procura qual caso está selecionado no arquivo `localrun.selected.yaml`._
+### 4 - Configurando Seleção de Casos
+> Casos (inspirado em casos de teste) são combinações de flow com parâmetros especificos. Eles estão definidos no arquivo `localrun.cases.yaml`. Na hora de executar localmente, o script `localrun.py` procura qual caso está selecionado no arquivo `localrun.selected.yaml`.
+
 - Crie um arquivo `localrun.selected.yaml` com conteúdo semelhante ao abaixo.
 
 ```yaml
@@ -89,8 +90,10 @@ override_params:
 
 - O arquivo acima diz que o caso de slug `report-data-ingestion` será executado quando iniciar a depuração. Além disso, ele especifica que o parametro "environment" será sobreposto para "dev". A sobreposição ocorre em relação à definição original do caso em `localrun.cases.yaml`.
 
+- Cheque se seu ambiente está executando com o compilador certo (Python 3.10.x)
 
-### Etapa 4 (opcional) - Definindo Novos Casos
+
+### 5 - (Opcional) Definindo Novos Casos
 - Edite o arquivo `localrun.cases.yaml` criando novos casos. São os campos:
     - `case_slug`: Apelido do caso que serve como identificador.
     - `flow_path`: Caminho do módulo python em que o flow está definido. O mesmo usando no import do python.
