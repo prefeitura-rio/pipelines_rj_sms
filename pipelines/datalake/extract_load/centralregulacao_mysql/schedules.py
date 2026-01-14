@@ -72,7 +72,6 @@ flow_parameters = [
         "query": "SELECT * FROM tb_preparos_finais",
         "bq_dataset": "brutos_centralderegulacao_mysql",
     },
-
 ]
 
 clocks = generate_dump_api_schedules(
