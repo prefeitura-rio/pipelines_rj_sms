@@ -8,35 +8,31 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-# Internos
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 from pipelines.constants import constants as pipeline_constants
-from pipelines.datalake.utils.tasks import handle_columns_to_bq
-from pipelines.datalake.extract_load.sisreg_afastamentos import (
-    schedules
-)
-from pipelines.datalake.extract_load.sisreg_afastamentos import (
-    constants
-)
+from pipelines.datalake.extract_load.sisreg_afastamentos import constants, schedules
 from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
     concat_dfs,
-    init_session_request_base,
     get_cpf_profissionais,
     get_extraction_date,
+    init_session_request_base,
     log_df,
     login_sisreg,
     search_afastamentos,
     search_historico_afastamentos,
 )
+from pipelines.datalake.utils.tasks import handle_columns_to_bq
+
+# Internos
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(
     name="SUBGERAL - Extract & Load - SISREG AFASTAMENTOS",
     state_handlers=[handle_flow_state_change],
     owners=[
         pipeline_constants.MATHEUS_ID.value,
-    ]
+    ],
 ) as sisreg_afastamentos_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
@@ -122,9 +118,7 @@ with Flow(
 
 
 sisreg_afastamentos_flow.executor = LocalDaskExecutor(num_workers=16)
-sisreg_afastamentos_flow.storage = GCS(
-    pipeline_constants.GCS_FLOWS_BUCKET.value
-)
+sisreg_afastamentos_flow.storage = GCS(pipeline_constants.GCS_FLOWS_BUCKET.value)
 sisreg_afastamentos_flow.run_config = KubernetesRun(
     image=pipeline_constants.DOCKER_IMAGE.value,
     labels=[pipeline_constants.RJ_SMS_AGENT_LABEL.value],

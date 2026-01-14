@@ -35,8 +35,7 @@ def get_cpf_profissionais(environment: str, sample: int = 1) -> list[str]:
         log("Invalid sample, querying all data")
 
     sql_sample = (
-        "" if environment != "dev" or sample is None
-        else f"TABLESAMPLE SYSTEM ({sample} PERCENT)"
+        "" if environment != "dev" or sample is None else f"TABLESAMPLE SYSTEM ({sample} PERCENT)"
     )
     sql = f"""
         SELECT distinct
