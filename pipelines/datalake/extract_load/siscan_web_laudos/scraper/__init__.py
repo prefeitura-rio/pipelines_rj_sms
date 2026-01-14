@@ -17,7 +17,7 @@ from .auth import login  # noqa: E402
 # Importações tardias evitam circularidade
 from .driver import init_firefox  # noqa: E402
 from .filters import goto_laudo_page, set_filters  # noqa: E402
-from .patients import iterate_patients  # noqa: E402 
+from .patients import iterate_patients  # noqa: E402
 
 __all__ = ["ScraperError", "run_scraper"]
 
