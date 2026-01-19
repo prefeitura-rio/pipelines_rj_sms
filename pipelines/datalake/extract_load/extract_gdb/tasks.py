@@ -38,13 +38,13 @@ def request_export(uri: str, environment: str = "dev") -> str:
 
 
 @task()
-def check_export_status(uuid: str, environment: str = "dev") -> str:
+def check_export_status(uuid: str, environment: str = "dev", backoff: int = 60*60) -> str:
     # Aqui, vamos fazer um Inverse Exponential Backoff
     # Isto é, começamos esperando um tempo alto (INITIAL_BACKOFF_SECONDS) e,
     # a cada iteração, diminuímos o tempo de espera por algum fator até
     # atingir o tempo mínimo de espera (MIN_BACKOFF_SECONDS)
     # A função é da forma max(INITIAL/BASE^x, MIN)
-    INITIAL_BACKOFF_SECONDS = 60 * 60  # 1h
+    INITIAL_BACKOFF_SECONDS = int(backoff or 60 * 60)  # 1h
     MIN_BACKOFF_SECONDS = 5 * 60  # 5min
     BACKOFF_BASE = 1.35
     # Máximo de vezes que vamos conferir o status da tarefa até desistir dela
@@ -129,7 +129,12 @@ def extract_compressed(uri: str, environment: str = "dev") -> str:
 
 @task()
 def upload_to_bigquery(
-    path: str, dataset: str, uri: str, refdate: str | None, environment: str = "dev"
+    path: str,
+    dataset: str,
+    uri: str,
+    refdate: str | None,
+    environment: str = "dev",
+    lines_per_chunk: int = 100_000
 ) -> str:
     files = [
         file
@@ -139,7 +144,7 @@ def upload_to_bigquery(
     log(f"Files extracted ({len(files)}): {files[:5]} (first 5)")
 
     # Lemos o CSV em pedaços para não estourar a memória
-    LINES_PER_CHUNK = 100_000
+    LINES_PER_CHUNK = int(lines_per_chunk or 100_000)
     for i, file in enumerate(files):
         table_name = file.removesuffix(".csv").strip()
         # Remove potenciais caracteres problemáticos em nomes de tabelas
