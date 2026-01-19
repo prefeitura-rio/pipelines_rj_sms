@@ -17,10 +17,10 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
       - name: Setup Python version
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
 
@@ -47,7 +47,7 @@ jobs:
 
       - name: Get changed files for code tree analysis
         id: files
-        uses: Ana06/get-changed-files@v2.1.0
+        uses: Ana06/get-changed-files@v2.3.0
 
       - name: Perform code tree analysis
         id: code-tree-analysis
@@ -63,7 +63,7 @@ jobs:
           issue_number: ${{ github.event.number }}  #remove comments from the current PR
 
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v1
+        uses: thollander/actions-comment-pull-request@v3.0.1
         with:
           message: "${{ steps.code-tree-analysis.outputs.pr-message }}"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
