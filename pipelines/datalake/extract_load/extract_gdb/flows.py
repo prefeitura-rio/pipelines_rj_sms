@@ -48,9 +48,7 @@ with Flow(
         )
     with case(FROM_ZIP, True):
         path = extract_compressed(uri=URI, environment=ENVIRONMENT)
-        upload_to_bigquery(
-            path=path, dataset=DATASET, uri=URI, refdate=DATA_REFERENCIA, environment=ENVIRONMENT
-        )
+        upload_to_bigquery(path=path, dataset=DATASET, uri=URI, refdate=DATA_REFERENCIA, environment=ENVIRONMENT)
 
 
 extract_gdb.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
