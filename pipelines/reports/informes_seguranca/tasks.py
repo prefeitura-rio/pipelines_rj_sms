@@ -235,7 +235,7 @@ Mismatched descriptions for CID '{cid}':
     all_cids: List[str] = sorted(occurrences.keys())
     for i, cid in enumerate(all_cids):
         # Cabeçalho de grupo de CIDs
-        (current_group_range, current_group_description) = utils.get_cid_group(cid)
+        current_group_range, current_group_description = utils.get_cid_group(cid)
         # Se temos uma nova categoria de CIDs
         if current_group_range != group_range:
             # Adiciona categoria
@@ -253,7 +253,7 @@ Mismatched descriptions for CID '{cid}':
         do_space_bottom = False
         if i + 1 < len(all_cids):
             next_cid = all_cids[i + 1]
-            (next_group_range, _) = utils.get_cid_group(next_cid)
+            next_group_range, _ = utils.get_cid_group(next_cid)
             if next_group_range != group_range:
                 # Ativa flag para espaçamento no fim da lista
                 do_space_bottom = True

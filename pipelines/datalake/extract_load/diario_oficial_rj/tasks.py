@@ -148,8 +148,8 @@ def get_article_contents(do_tuple: tuple) -> List[dict]:
     assert len(do_tuple) == 2, "Tuple must be ((do_id, date), (title, id)) pair!"
 
     # Caso contrário, pega dados da etapa anterior
-    (do_id, do_date) = do_tuple[0]
-    (folder_path, title, id) = do_tuple[1]
+    do_id, do_date = do_tuple[0]
+    folder_path, title, id = do_tuple[1]
 
     log(f"Getting content of article '{title}' (id '{id}')...")
     URL = f"https://doweb.rio.rj.gov.br/apifront/portal/edicoes/publicacoes_ver_conteudo/{id}"

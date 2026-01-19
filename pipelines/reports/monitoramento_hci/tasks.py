@@ -53,14 +53,12 @@ GROUP BY 1, 2, 3
     cpf_count = [
         # Trata casos de [] e [None] -> 0
         (row.values() or [0])[0] or 0
-        for row in client.query(
-            f"""
+        for row in client.query(f"""
 SELECT
     count(distinct autor_cpf)
 FROM `{project_name}.{dataset_name}.{table_name}`
 WHERE created_at >= DATETIME_SUB(CURRENT_DATETIME("America/Sao_Paulo"), INTERVAL {interval})
-        """
-        ).result()
+        """).result()
     ][0]
 
     return {

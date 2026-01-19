@@ -3,6 +3,7 @@
 """
 Constants for Sisreg.
 """
+
 from enum import Enum
 
 

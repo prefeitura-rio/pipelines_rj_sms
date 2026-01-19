@@ -31,16 +31,14 @@ def report_extraction_status(status: bool, date: str, environment: str = "dev"):
 
     log(f"Inserting into {FULL_TABLE_NAME} status of success={success} for date='{date}'...")
     client = bigquery.Client()
-    query_job = client.query(
-        f"""
+    query_job = client.query(f"""
         INSERT INTO {FULL_TABLE_NAME} (
             data_publicacao, tipo_diario, extracao_sucesso, _updated_at
         )
         VALUES (
             '{date}', 'dorj', {success}, '{current_datetime}'
         )
-    """
-    )
+    """)
     query_job.result()  # Wait for the job to complete
     log("Extraction report done!")
 
@@ -248,8 +246,8 @@ def parse_do_contents(root: BeautifulSoup) -> List[str]:
     def clean_text(text: str):
         text = str(text).strip()
         replace_list = [
-            ("\u00A0", " "),  # NO-BREAK SPACE
-            ("\u202F", " "),  # NARROW NO-BREAK SPACE
+            ("\u00a0", " "),  # NO-BREAK SPACE
+            ("\u202f", " "),  # NARROW NO-BREAK SPACE
             ("\r", ""),
             ("\n", " "),
         ]

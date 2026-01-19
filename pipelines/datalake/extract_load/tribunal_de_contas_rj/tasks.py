@@ -26,7 +26,7 @@ def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
     case_num = str(case_num).strip()
     log(f"Attempting to fetch '{case_num}'")
 
-    (sec, num, year) = split_case_number(case_num)
+    sec, num, year = split_case_number(case_num)
     case_num = f"{sec}/{num}/{year}"
 
     if sec is None or num is None or year is None:
@@ -37,7 +37,7 @@ def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
     # Isso automaticamente redireciona pra um 'GET /processo/Ficha?Ctid=xxxxxx'
     HOST = "https://etcm.tcmrio.tc.br"
     PATH = "/processo/Lista"
-    (url, html) = send_request(
+    url, html = send_request(
         "POST", f"{HOST}{PATH}", {"Sec": sec, "Num": num, "Ano": year, "TipoConsulta": "PorNumero"}
     )
 
@@ -63,7 +63,7 @@ def fetch_case_page(case_num: str, env: Optional[str] = None) -> tuple:
         # Pega o caminho do URL
         path = a.get("href")
         # E fazemos um GET manual a ele
-        (url, html) = send_request("GET", f"{HOST}{path}")
+        url, html = send_request("GET", f"{HOST}{path}")
 
     ctid_regex = re.compile(r"ctid=(?P<ctid>[0-9]+)", re.IGNORECASE)
     m = ctid_regex.search(url)
@@ -109,7 +109,7 @@ def get_latest_vote(ctid: str):
     # - Se não houver <div> de erro, então melhor caso: podemos pegar o URL do PDF
     HOST = "https://etcm.tcmrio.tc.br"
     file_path = f"/InteiroTeor/Arquivos?ctid={ctid}"
-    (_, html) = send_request("GET", f"{HOST}{file_path}")
+    _, html = send_request("GET", f"{HOST}{file_path}")
     html: BeautifulSoup
     # Se existe <div> de erro
     div = html.find("div", {"class": "validation-summary-errors"})

@@ -5,6 +5,7 @@
 """
 Functions to interact with Google Cloud Storage and BigQuery.
 """
+
 import os
 
 import pandas as pd

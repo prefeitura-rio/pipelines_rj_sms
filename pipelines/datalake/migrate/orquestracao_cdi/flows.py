@@ -167,7 +167,7 @@ with Flow(
         df = get_todays_tcm_from_gcs(
             environment=ENVIRONMENT, skipped=False, upstream_tasks=[wait_tcm]
         )
-        (edition, error, message) = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
+        edition, error, message = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
         recipients = get_email_recipients(
             environment=ENVIRONMENT,
             dataset="brutos_sheets",
@@ -197,7 +197,7 @@ with Flow(
             environment=ENVIRONMENT,
         )
         df = get_todays_tcm_from_gcs(environment=ENVIRONMENT, skipped=True)
-        (edition, error, message) = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
+        edition, error, message = build_email(environment=ENVIRONMENT, date=DATE, tcm_df=df)
         recipients = get_email_recipients(
             environment=ENVIRONMENT,
             dataset="brutos_sheets",

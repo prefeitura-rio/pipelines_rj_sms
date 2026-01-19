@@ -2,6 +2,7 @@
 """
 Fluxo
 """
+
 from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun

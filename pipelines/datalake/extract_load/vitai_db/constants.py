@@ -3,6 +3,7 @@
 """
 Constants for Vitai DB Extraction.
 """
+
 from enum import Enum
 
 

@@ -3,6 +3,7 @@
 """
 Constants for Tribunal de Contas do Município.
 """
+
 from enum import Enum
 
 

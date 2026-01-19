@@ -2,6 +2,7 @@
 """
 Schedules
 """
+
 # Geral
 from datetime import datetime, timedelta
 

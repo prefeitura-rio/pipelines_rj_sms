@@ -4,6 +4,7 @@
 """
 General task functions for the data lake pipelines
 """
+
 import os
 from datetime import datetime, timedelta
 from typing import Tuple

@@ -96,11 +96,11 @@ def cleanup_text(text: str) -> str:
     EMPTY = ""
     SPACE = " "
     replace_pairs = [
-        ("\u00AD", EMPTY),  # Soft Hyphen
-        ("\u200C", EMPTY),  # Zero Width Non-Joiner
+        ("\u00ad", EMPTY),  # Soft Hyphen
+        ("\u200c", EMPTY),  # Zero Width Non-Joiner
         ("\t", SPACE),  # Tab
         ("\n", SPACE),  # Line feed
-        ("\u00A0", SPACE),  # No-Break Space
+        ("\u00a0", SPACE),  # No-Break Space
     ]
     for pair in replace_pairs:
         text = text.replace(pair[0], pair[1])
@@ -121,7 +121,7 @@ def cleanup_text(text: str) -> str:
 
 def get_counselors_initials() -> List[str]:
     # Página de conselheiros
-    (_, html) = send_request(
+    _, html = send_request(
         "GET", "https://www.tcmrio.tc.br/web/site/Destaques.aspx?group=Conselheiros"
     )
     # Remove conselheiros aposentados

@@ -145,14 +145,12 @@ def define_queries(
 
     queries = []
     for i in range(0, row_count, batch_size):
-        queries.append(
-            f"""
+        queries.append(f"""
                 select *
                 from {schema_name}.{table_name}
                 where {dt_column} between '{interval_start}' and '{interval_end}'
                 limit {batch_size} offset {i}
-            """
-        )
+            """)
 
     return queries
 

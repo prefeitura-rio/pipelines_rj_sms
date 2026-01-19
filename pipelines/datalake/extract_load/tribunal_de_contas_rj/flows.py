@@ -35,7 +35,7 @@ with Flow(
     DATASET_ID = Parameter("dataset_id", default=flow_constants.DATASET_ID.value)
 
     # Caso principal
-    (case_obj, html) = fetch_case_page(case_num=CASE_ID, env=ENVIRONMENT)
+    case_obj, html = fetch_case_page(case_num=CASE_ID, env=ENVIRONMENT)
     result = scrape_case_info_from_page(case_tuple=(case_obj, html))
     # Tenta encontrar votos no caso
     latest_vote = get_latest_vote(ctid=case_obj["_ctid"])

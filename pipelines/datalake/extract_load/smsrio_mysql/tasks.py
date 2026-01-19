@@ -2,6 +2,7 @@
 """
 Tasks for SMSRio Dump
 """
+
 from datetime import datetime, timedelta
 from math import ceil
 

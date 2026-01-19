@@ -3,6 +3,7 @@
 """
 Constants for cientificalab.
 """
+
 from enum import Enum
 
 

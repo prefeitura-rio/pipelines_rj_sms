@@ -2,6 +2,7 @@
 """
 Constants
 """
+
 from typing import Literal
 
 DATABASE_IDS = {

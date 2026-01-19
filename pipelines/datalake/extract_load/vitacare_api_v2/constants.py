@@ -3,6 +3,7 @@
 """
 Constants for Vitacare.
 """
+
 from enum import Enum
 
 
