@@ -227,7 +227,7 @@ def upload_to_bigquery(
                 # > httplib2.error.ServerNotFoundError:
                 #     Unable to find the server at cloudresourcemanager.googleapis.com
                 # > http.client.RemoteDisconnected: Remote end closed connection without response
-                # > "Something went wrong while setting permissions for BigLake service account [...]"
+                # > "Something went wrong while setting permissions for BigLake service account […]"
                 # Então pescamos por um erro e tentamos mais uma vez por via das dúvidas
                 except Exception as e:
                     # Se já tentamos N vezes, desiste e dá erro
