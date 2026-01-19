@@ -3,6 +3,7 @@
 """
 Constants for DataSUS dump.
 """
+
 from enum import Enum
 
 

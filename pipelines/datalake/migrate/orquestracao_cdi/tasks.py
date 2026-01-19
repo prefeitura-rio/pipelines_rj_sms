@@ -245,7 +245,7 @@ WHERE data_publicacao = '{DATE}'
         if tcm_case_id is not None:
             # Se temos o voto
             if tcm_case_id in tcm_cases:
-                (vote_date, vote_url) = tcm_cases[tcm_case_id]
+                vote_date, vote_url = tcm_cases[tcm_case_id]
                 # Se voto não está vazio
                 if vote_url:
                     # Se temos todas as informações

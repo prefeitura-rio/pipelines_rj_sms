@@ -2,6 +2,7 @@
 """
 Custom script for deleting ghost flows in Prefect Cloud.
 """
+
 import argparse
 from datetime import datetime
 

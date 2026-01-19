@@ -3,6 +3,7 @@
 """
 Constants for SMSRio.
 """
+
 from enum import Enum
 
 

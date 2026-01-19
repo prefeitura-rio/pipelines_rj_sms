@@ -298,16 +298,14 @@ def report_extraction_status(status: bool, date: str, environment: str = "dev"):
     log(f"Inserting into {FULL_TABLE_NAME} status of success={success} for date='{date}'...")
 
     client = bigquery.Client()
-    query_job = client.query(
-        f"""
+    query_job = client.query(f"""
         INSERT INTO {FULL_TABLE_NAME} (
             data_publicacao, tipo_diario, extracao_sucesso, _updated_at
         )
         VALUES (
             '{date}', '{tipo_diario}', {success}, '{current_datetime}'
         )
-    """
-    )
+    """)
     query_job.result()
     log("✅ Status da extração reportado!")
 
