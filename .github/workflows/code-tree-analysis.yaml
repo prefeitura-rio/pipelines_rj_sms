@@ -3,10 +3,19 @@ name: CI
 on:
   pull_request:
 
+# Improvement #2: Cancel existing executions when new commits are pushed onto the branch
+# [Ref] https://ashishb.net/programming/common-pitfalls-of-github-actions/
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   code-tree-analysis:
     name: Code tree analysis
     runs-on: ubuntu-latest
+    # Improvement #4: Add a timeout of 30 mins
+    timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v2
 
@@ -14,6 +23,17 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.10"
+
+      # Improvement #5: Cache Python dependencies using the hash of "requirements.txt" as the key
+      # This step must be executed before "pip install"
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-pip-poetry-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-poetry-
 
       - name: Install Python dependencies for deploying
         run: |-
