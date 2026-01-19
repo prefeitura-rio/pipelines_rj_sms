@@ -38,7 +38,7 @@ def request_export(uri: str, environment: str = "dev") -> str:
 
 
 @task()
-def check_export_status(uuid: str, environment: str = "dev", backoff: int = 60*60) -> str:
+def check_export_status(uuid: str, environment: str = "dev", backoff: int = 60 * 60) -> str:
     # Aqui, vamos fazer um Inverse Exponential Backoff
     # Isto é, começamos esperando um tempo alto (INITIAL_BACKOFF_SECONDS) e,
     # a cada iteração, diminuímos o tempo de espera por algum fator até
@@ -134,7 +134,7 @@ def upload_to_bigquery(
     uri: str,
     refdate: str | None,
     environment: str = "dev",
-    lines_per_chunk: int = 100_000
+    lines_per_chunk: int = 100_000,
 ) -> str:
     files = [
         file
