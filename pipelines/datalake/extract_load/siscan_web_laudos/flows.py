@@ -139,11 +139,10 @@ with Flow(
 
     # Gera data relativa e a data atual
     relative_date = from_relative_date(relative_date=RELATIVE_DATE)
-    today = datetime.now()
 
     # Gera as janelas de extração com base no interval
     windows = generate_extraction_windows(
-        start_date=relative_date, end_date=today, interval=DIAS_POR_FAIXA
+        start_date=relative_date, end_date='', interval=DIAS_POR_FAIXA
     )
     print_log(msg=windows)
 

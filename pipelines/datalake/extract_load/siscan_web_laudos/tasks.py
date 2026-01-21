@@ -95,7 +95,8 @@ def generate_extraction_windows(start_date: datetime, end_date: datetime, interv
         List[tuple]: Lista de tuplas com as datas de início e fim de cada janela
     """
     intervals = []
-
+    if not end_date:
+        end_date = datetime.now().strftime("%d/%m/%Y")
     while start_date <= end_date:
         end_interval = start_date + timedelta(days=interval - 1)
         if end_interval > end_date:
