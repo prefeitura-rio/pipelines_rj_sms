@@ -97,8 +97,6 @@ def set_filters(driver: Firefox, opcao_exame: str, data_inicio: str, data_fim: s
             safe_click(driver, OPCAO_EXAME_HISTO_MAMA)
         case "mamografia":
             safe_click(driver, OPCAO_EXAME_MAMO)
-        case "monitoramento_externo":
-            safe_click(driver, OPCAO_EXAME_MONITORAMENTO_EXTERNO)
 
     safe_click(driver, OPCAO_MUNICIPIO)
     safe_click(driver, OPCAO_FILTRO_DATA)
