@@ -13,7 +13,14 @@ MENU_EXAME = (By.ID, "j_id32:j_id66_span")
 MENU_GERENCIAR_LAUDO = (By.ID, "j_id32:j_id68")
 
 # Pesquisa
+OPCAO_EXAME_CITO_COLO = (By.ID, "form:tpExame:0")
+OPCAO_EXAME_HISTO_COLO = (By.ID, "form:tpExame:1")
+OPCAO_EXAME_CITO_MAMA = (By.ID, "form:tpExame:2")
+OPCAO_EXAME_HISTO_MAMA = (By.ID, "form:tpExame:3")
 OPCAO_EXAME_MAMO = (By.ID, "form:tpExame:4")
+OPCAO_EXAME_MONITORAMENTO_EXTERNO = (By.ID, "form:tpExame:5")
+### OBS: TO DO -> OS CAMPOS DOS LAUDOS DE CADA TIPO DE EXAME SÃO DIFERENTES, PORTANTO É PRECISO TRATAR CADA TIPO SEPARADAMENTE
+
 OPCAO_MUNICIPIO = (By.ID, "form:j_id120:1")
 OPCAO_FILTRO_DATA = (By.ID, "form:porData:0")
 CAMPO_DATA_INICIO = (By.ID, "form:dataInicioInputDate")

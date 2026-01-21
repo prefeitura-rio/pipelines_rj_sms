@@ -21,15 +21,24 @@ from .locators import (
     LUPA_LAUDO,
     MENU_EXAME,
     MENU_GERENCIAR_LAUDO,
-    OPCAO_EXAME_MAMO,
     OPCAO_FILTRO_DATA,
     OPCAO_MUNICIPIO,
+
+    OPCAO_EXAME_CITO_COLO,
+    OPCAO_EXAME_CITO_MAMA,
+    OPCAO_EXAME_HISTO_COLO,
+    OPCAO_EXAME_HISTO_MAMA,
+    OPCAO_EXAME_MAMO,
+    OPCAO_EXAME_MONITORAMENTO_EXTERNO,
 )
 
+import time 
 
 def goto_laudo_page(driver: Firefox) -> None:
     """Abre a tela *Gerenciar Laudo* a partir do menu principal."""
+
     LOGGER.info("Navegando até a tela Gerenciar Laudo…")
+    time.sleep(3)
     wait_until(driver, lambda d: d.find_elements(*MENU_EXAME))
     safe_click(driver, MENU_EXAME)
 
@@ -73,10 +82,24 @@ def _definir_data_js(
     )
 
 
-def set_filters(driver: Firefox, data_inicio: str, data_fim: str) -> None:
+def set_filters(driver: Firefox, opcao_exame: str, data_inicio: str, data_fim: str) -> None:
     """Seleciona Mamografia, município e intervalo de datas desejado."""
-    LOGGER.info("Aplicando filtros: %s – %s.", data_inicio, data_fim)
-    safe_click(driver, OPCAO_EXAME_MAMO)
+    LOGGER.info("Aplicando filtros: %s - %s.", data_inicio, data_fim)
+
+    match opcao_exame:
+        case "cito_colo":
+            safe_click(driver, OPCAO_EXAME_CITO_COLO)
+        case "histo_colo":
+            safe_click(driver, OPCAO_EXAME_HISTO_COLO)
+        case "cito_mama":
+            safe_click(driver, OPCAO_EXAME_CITO_MAMA)
+        case "histo_mama":
+            safe_click(driver, OPCAO_EXAME_HISTO_MAMA)
+        case "mamografia":
+            safe_click(driver, OPCAO_EXAME_MAMO)
+        case "monitoramento_externo":
+            safe_click(driver, OPCAO_EXAME_MONITORAMENTO_EXTERNO)
+
     safe_click(driver, OPCAO_MUNICIPIO)
     safe_click(driver, OPCAO_FILTRO_DATA)
 

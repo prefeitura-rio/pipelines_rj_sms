@@ -19,7 +19,7 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def run_siscan_scraper(
-    email: str, password: str, start_date: str, end_date: str, output_dir: str = "."
+    email: str, password: str, opcao_exame: str, start_date: str, end_date: str, output_dir: str = "."
 ):
     """
     Executa o scraper do SISCaN para coletar dados de pacientes em um intervalo de datas.
@@ -39,7 +39,7 @@ def run_siscan_scraper(
         log(f"Iniciando coleta de dados do SISCaN de {start_date} a {end_date}.")
 
         pacientes = run_scraper(
-            email=email, password=password, start_date=start_date, end_date=end_date, headless=True
+            email=email, password=password, opcao_exame=opcao_exame, start_date=start_date, end_date=end_date, headless=True
         )
         df = pd.DataFrame(pacientes)
 

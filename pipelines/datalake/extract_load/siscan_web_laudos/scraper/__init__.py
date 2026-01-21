@@ -25,17 +25,18 @@ __all__ = ["ScraperError", "run_scraper"]
 def run_scraper(
     email: str,
     password: str,
+    opcao_exame: str,
     start_date: str,
     end_date: str,
     *,
     headless: bool | None = None,
 ) -> List[Dict[str, Any]]:
     """Fluxo de ponta a ponta que devolve lista de laudos em dicionários."""
-    driver = init_firefox(headless=headless)
+    driver = init_firefox(headless=False)
     try:
         login(email, password, driver)
         goto_laudo_page(driver)
-        set_filters(driver, start_date, end_date)
+        set_filters(driver, opcao_exame, start_date, end_date)
         return iterate_patients(driver)
     finally:
         driver.quit()

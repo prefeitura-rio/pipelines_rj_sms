@@ -192,7 +192,7 @@ def iterate_patients(driver: Firefox) -> List[Dict[str, Any]]:
     while True:
         LOGGER.info("Processando página %d…", pagina)
         # garante que o overlay AJAX sumiu antes de continuar
-        esperar_overlay_sumir(driver, 90)
+        esperar_overlay_sumir(driver, 300)
         botoes = driver.find_elements(*LUPA_LAUDO)
         if not botoes:  # sem laudos = fim da coleta
             LOGGER.info("Nenhum laudo encontrado na página %d - encerrando loop.", pagina)
