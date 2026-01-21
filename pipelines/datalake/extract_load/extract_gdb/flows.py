@@ -38,18 +38,38 @@ with Flow(
     # exatos mesmos parâmetros, mas com `from_zip: true`, e ele pega o .ZIP com
     # mesmo nome do .GDB no URI do outro parâmetro e faz o upload pra você
     FROM_ZIP = Parameter("from_zip", default=False, required=True)
+    # Por padrão, o flow pede a exportação do arquivo e dorme por 1h; isso é
+    # adequado para os arquivos mais recentes. Se o seu arquivo é pequeno ou
+    # grande demais, você pode alterar esse tempo de espera inicial para ser
+    # mais adequado
+    INITIAL_BACKOFF_SECONDS = Parameter("backoff_seconds", default=60 * 60, required=False)
+    # Alguns arquivos possuem muitas e muitas colunas, então a quantidade padrão de
+    # linhas (100k) pode estourar a memória; aqui você pode definir um valor menor
+    CHUNK_SIZE = Parameter("lines_per_chunk", default=100_000, required=False)
 
     with case(FROM_ZIP, False):
         task_id = request_export(uri=URI, environment=ENVIRONMENT)
-        result_uri = check_export_status(uuid=task_id, environment=ENVIRONMENT)
+        result_uri = check_export_status(
+            uuid=task_id, environment=ENVIRONMENT, backoff=INITIAL_BACKOFF_SECONDS
+        )
         path = extract_compressed(uri=result_uri, environment=ENVIRONMENT)
         upload_to_bigquery(
-            path=path, dataset=DATASET, uri=URI, refdate=DATA_REFERENCIA, environment=ENVIRONMENT
+            path=path,
+            dataset=DATASET,
+            uri=URI,
+            refdate=DATA_REFERENCIA,
+            environment=ENVIRONMENT,
+            lines_per_chunk=CHUNK_SIZE,
         )
     with case(FROM_ZIP, True):
         path = extract_compressed(uri=URI, environment=ENVIRONMENT)
         upload_to_bigquery(
-            path=path, dataset=DATASET, uri=URI, refdate=DATA_REFERENCIA, environment=ENVIRONMENT
+            path=path,
+            dataset=DATASET,
+            uri=URI,
+            refdate=DATA_REFERENCIA,
+            environment=ENVIRONMENT,
+            lines_per_chunk=CHUNK_SIZE,
         )
 
 
