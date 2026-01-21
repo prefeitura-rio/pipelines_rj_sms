@@ -97,6 +97,8 @@ def generate_extraction_windows(start_date: datetime, end_date: datetime, interv
     intervals = []
     if not end_date:
         end_date = datetime.now()
+    log(type(start_date))
+    log(type(end_date))
     while start_date <= end_date:
         end_interval = start_date + timedelta(days=interval - 1)
         if end_interval > end_date:
