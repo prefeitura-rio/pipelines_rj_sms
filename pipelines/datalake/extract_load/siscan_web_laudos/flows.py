@@ -18,8 +18,8 @@ from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
     check_records,
     generate_extraction_windows,
     parse_date,
+    print_log,
     run_siscan_scraper,
-    print_log
 )
 from pipelines.datalake.utils.tasks import (
     delete_file,
@@ -146,13 +146,13 @@ with Flow(
         start_date=relative_date, end_date=today, interval=DIAS_POR_FAIXA
     )
     print_log(msg=windows)
-    
+
     interval_starts = extrair_inicio.map(faixa=windows)
     interval_ends = extrair_fim.map(faixa=windows)
 
     print_log(msg=interval_starts)
     print_log(msg=interval_ends)
-    
+
     # Monta os parâmetros de cada operator
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
     current_labels = get_current_flow_labels()
