@@ -16,11 +16,13 @@ from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 exames = [
-    "mamografia", # ok 
-    "cito_colo",
-    "histo_colo",
-#    "cito_mama", apenas 17 resultados no siscan em 2025 inteiro
-    "histo_mama", # ok 
+    "mamografia",
+    
+    "histo_mama",
+#    "cito_mama", # apenas 17 resultados no siscan em 2025 inteiro
+
+#    "cito_colo",
+#    "histo_colo",
 ]
 
 operator_flow_parameters = [
