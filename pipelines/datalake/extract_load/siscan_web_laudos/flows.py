@@ -18,7 +18,6 @@ from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
     check_records,
     generate_extraction_windows,
     parse_date,
-    print_log,
     run_siscan_scraper,
 )
 from pipelines.datalake.utils.tasks import (
@@ -144,13 +143,9 @@ with Flow(
     windows = generate_extraction_windows(
         start_date=relative_date, end_date="", interval=DIAS_POR_FAIXA
     )
-    print_log(msg=windows)
 
     interval_starts = extrair_inicio.map(faixa=windows)
     interval_ends = extrair_fim.map(faixa=windows)
-
-    print_log(msg=interval_starts)
-    print_log(msg=interval_ends)
 
     # Monta os parâmetros de cada operator
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
@@ -161,7 +156,6 @@ with Flow(
         end_dates=interval_ends,
         environment=ENVIRONMENT,
     )
-    print_log(msg=operator_params)
     # Cria e espera a execução das flow runs
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(sms_siscan_web_operator.name),
