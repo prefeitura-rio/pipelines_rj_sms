@@ -131,8 +131,3 @@ def build_operator_parameters(
 def parse_date(date: str) -> datetime:
     return datetime.strptime(date, "%d/%m/%Y")
 
-
-@task
-def print_log(msg: str):
-    log(msg)
-    return
