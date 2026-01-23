@@ -1,0 +1,1 @@
+SELECT * FROM `rj-sms.brutos_sisreg_api_log.logs`
