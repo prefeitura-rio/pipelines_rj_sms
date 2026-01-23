@@ -255,6 +255,16 @@ daily_parameters = [
         "url_type": "google_sheet",
     },
     {
+        "csv_delimiter": ",",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Controle PGM 2025",
+        "rename_flow": True,
+        "table_id": "pgm",
+        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
+        "url_type": "google_sheet",
+    },
+    {
         "url": "https://docs.google.com/spreadsheets/d/1gCVtBz0udlcgFKtKJHvjsGwI0wA8kQyNU_bUSGHN8Hw",
         "url_type": "google_sheet",
         "gsheets_sheet_name": "cids",
