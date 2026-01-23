@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
 
 def make_request(url, headers):
     session = requests.Session()

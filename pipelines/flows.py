@@ -27,6 +27,7 @@ from pipelines.datalake.extract_load.prontuario_gcs import *
 from pipelines.datalake.extract_load.prontuario_gcs.flows import *
 from pipelines.datalake.extract_load.relational_db.flows import *
 from pipelines.datalake.extract_load.ser_metabase.flows import *
+from pipelines.datalake.extract_load.siclom_api.flows import *
 from pipelines.datalake.extract_load.siscan_web_laudos.flows import *
 from pipelines.datalake.extract_load.sisreg_api.flows import *
 from pipelines.datalake.extract_load.sisreg_web.flows import *
@@ -39,7 +40,6 @@ from pipelines.datalake.extract_load.vitacare_gdrive.flows import *
 from pipelines.datalake.extract_load.vitacare_historico.flows import *
 from pipelines.datalake.extract_load.vitai_api.flows import *
 from pipelines.datalake.extract_load.vitai_db.flows import *
-from pipelines.datalake.extract_load.siclom_api.flows import *
 
 # ===============================
 # MIGRATE
