@@ -45,20 +45,15 @@ def fetch_siclom_data(environment, cpf_batch, endpoint, api_key):
         'Accept': 'application/json',
         'X-API-KEY': api_key
     }
-    log(headers)
-
-    log(url)
+    
     patient_informations = []
     
     for cpf in cpf_batch:
-        log(url+cpf)
         response = make_request(url=url+cpf, headers=headers)
         if not response:
-            log(f'Erro ao buscar dados do Siclom: {cpf} não está disponível no SICLOM')
-            continue
+            continue # Atualmente a API retorna 500 quando o CPF não é encontrado.
         if response.status_code == 200:
             patient_informations.extend(response.json()['resultado'])
-            log(f'Dados do Siclom obtidos com sucesso para o lote de CPFs.')
     
     if patient_informations:    
         df = pd.DataFrame(patient_informations)
@@ -68,10 +63,4 @@ def fetch_siclom_data(environment, cpf_batch, endpoint, api_key):
     else:
         df = pd.DataFrame()
         
-    df.to_csv('siclom.csv', index=False)
     return df
-
-
-@task
-def dummy_task(environment):
-    return 
