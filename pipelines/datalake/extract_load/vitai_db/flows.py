@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
+
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants as global_constants
+
+# Refatoração do Manager
+from pipelines.datalake.extract_load.siscan_web_laudos.tasks import (
+    generate_extraction_windows,
+)
 from pipelines.datalake.extract_load.vitai_db.constants import (
     constants as vitai_db_constants,
 )
@@ -16,6 +23,12 @@ from pipelines.datalake.extract_load.vitai_db.tasks import (
     create_working_time_range,
     define_queries,
     run_query,
+    upload_to_native_table,
+)
+from pipelines.datalake.utils.tasks import (
+    extrair_fim,
+    extrair_inicio,
+    rename_current_flow_run,
 )
 from pipelines.utils.basics import as_dict, is_null_or_empty
 from pipelines.utils.credential_injector import (
@@ -26,11 +39,7 @@ from pipelines.utils.credential_injector import (
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
-from pipelines.utils.progress import (
-    get_remaining_operators,
-    load_operators_progress,
-    save_operator_progress,
-)
+from pipelines.utils.progress import save_operator_progress
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import (
     create_folder,
@@ -40,6 +49,7 @@ from pipelines.utils.tasks import (
     rename_current_flow_run,
     upload_df_to_datalake,
 )
+from pipelines.utils.time import from_relative_date
 
 with Flow(
     name="Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Operator",
@@ -56,6 +66,7 @@ with Flow(
     TABLE_NAME = Parameter("table_name", default="")
     SCHEMA_NAME = Parameter("schema_name", default="basecentral")
     DT_COLUMN = Parameter("datetime_column", default="datahora")
+    DATASET_NAME = Parameter("dataset_name", default="brutos_prontuario_vitai_bc_staging")
     TARGET_NAME = Parameter("target_name", default="")
     INTERVAL_START = Parameter("interval_start", default=None)
     INTERVAL_END = Parameter("interval_end", default=None)
@@ -123,16 +134,12 @@ with Flow(
     #####################################
     # Tasks section #5 - Partitioning Data
     #####################################
-    upload_to_datalake_task = upload_df_to_datalake.map(
+    upload_to_datalake_task = upload_to_native_table.map(
         df=dataframes,
-        partition_column=unmapped(PARTITION_COLUMN),
         table_id=unmapped(TARGET_NAME),
-        dataset_id=unmapped(vitai_db_constants.DATASET_NAME.value),
+        dataset_id=unmapped(DATASET_NAME),
         if_exists=unmapped("replace"),
-        source_format=unmapped("parquet"),
-        if_storage_data_exists=unmapped("replace"),
-        biglake_table=unmapped(True),
-        dataset_is_public=unmapped(False),
+        partition_column=unmapped(PARTITION_COLUMN),
     )
 
     #####################################
@@ -165,56 +172,76 @@ with Flow(
         global_constants.HERIAN_ID.value,
     ],
 ) as datalake_extract_vitai_db_manager:
-    ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    WINDOW_SIZE = Parameter("window_size", default=7)
 
+    ###########################
+    # Parâmetros
+    ###########################
+
+    # Originais
     TABLE_NAME = Parameter("table_name", default="")
     SCHEMA_NAME = Parameter("schema_name", default="basecentral")
     DT_COLUMN = Parameter("datetime_column", default="datahora")
+    DATASET_NAME = Parameter("dataset_name", default="brutos_prontuario_vitai_bc_staging")
     TARGET_NAME = Parameter("target_name", default="")
     PARTITION_COLUMN = Parameter("partition_column", default="datalake_loaded_at")
 
-    rename_current_flow_run(
-        name_template="""Manager '{schema_name}.{table_name}' - Janela: {window_size} ({environment})""",  # noqa
-        schema_name=SCHEMA_NAME,
-        table_name=TABLE_NAME,
-        window_size=WINDOW_SIZE,
-        environment=ENVIRONMENT,
+    # Refatoração
+    ENVIRONMENT = Parameter("environment", default="dev")
+    RELATIVE_DATE = Parameter("relative_date", default="M-1")
+    DIAS_POR_OPERATOR = Parameter("range", default=7)
+    RENAME_FLOW = Parameter("rename_flow", default=True)
+
+    with case(RENAME_FLOW, True):
+        rename_current_flow_run(
+            environment=ENVIRONMENT,
+            relative_date=RELATIVE_DATE,
+            range=DIAS_POR_OPERATOR,
+        )
+
+    ###########################
+    # Flow
+    ###########################
+
+    # Gera data relativa e a data atual
+    relative_date = from_relative_date(relative_date=RELATIVE_DATE)
+    today = datetime.now()
+
+    # Gera as janelas de extração com base no interval
+    windows = generate_extraction_windows(
+        start_date=relative_date, end_date=today, interval=DIAS_POR_OPERATOR
     )
+    interval_starts = extrair_inicio.map(faixa=windows)
+    interval_ends = extrair_fim.map(faixa=windows)
 
-    bigquery_project = get_bigquery_project_from_environment(environment=ENVIRONMENT)
+    # Monta os parâmetros de cada operator
+    prefect_project_name = get_project_name(environment=ENVIRONMENT)
+    current_labels = get_current_flow_labels()
 
-    progress_table = load_operators_progress(
-        slug=vitai_db_constants.SLUG_NAME.value, project_name=bigquery_project
-    )
-
-    params = build_param_list(
-        environment=ENVIRONMENT,
-        table_name=TABLE_NAME,
-        schema_name=SCHEMA_NAME,
+    # Adicionar os parâmetros do flow operator
+    operator_params = build_param_list(
         datetime_column=DT_COLUMN,
-        target_name=TARGET_NAME,
-        window_size=WINDOW_SIZE,
+        environment=ENVIRONMENT,
+        end_dates=interval_ends,
+        start_dates=interval_starts,
         partition_column=PARTITION_COLUMN,
+        schema_name=SCHEMA_NAME,
+        table_name=TABLE_NAME,
+        target_name=TARGET_NAME,
+        dataset_name=DATASET_NAME,
+        rename_flow=RENAME_FLOW,
     )
 
-    remaining_runs = get_remaining_operators(
-        progress_table=progress_table, all_operators_params=params
+    # Cria e espera a execução das flow runs
+    created_operator_runs = create_flow_run.map(
+        flow_name=unmapped(datalake_extract_vitai_db_operator.name),
+        project_name=unmapped(prefect_project_name),
+        labels=unmapped(current_labels),
+        parameters=operator_params,
+        run_name=unmapped(None),
     )
 
-    project_name = get_project_name(environment=ENVIRONMENT)
-
-    current_flow_run_labels = get_current_flow_labels()
-
-    created_flow_runs = create_flow_run.map(
-        flow_name=unmapped("Datalake - Extração e Carga de Dados - Vitai (Rio Saúde) - Operator"),
-        project_name=unmapped(project_name),
-        parameters=remaining_runs,
-        labels=unmapped(current_flow_run_labels),
-    )
-
-    wait_runs_task = wait_for_flow_run.map(
-        flow_run_id=created_flow_runs,
+    wait_for_operator_runs = wait_for_flow_run.map(
+        flow_run_id=created_operator_runs,
         stream_states=unmapped(True),
         stream_logs=unmapped(True),
         raise_final_state=unmapped(True),

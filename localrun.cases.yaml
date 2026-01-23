@@ -81,6 +81,7 @@ cases:
       table_name: "atendimento"
       partition_column: "datalake_loaded_at"
       datetime_column: "created_at"
+      dataset_name: "brutos_prontuario_vitai_bc_staging"
       target_name: "basecentral__atendimento_eventos"
       interval_start:
       interval_end:
