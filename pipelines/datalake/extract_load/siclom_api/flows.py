@@ -58,3 +58,12 @@ with Flow(
         partition_column=unmapped("extracted_at"),
         csv_delimiter=unmapped(","),
     )
+
+siclom_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+siclom_extraction.executor = LocalDaskExecutor(num_workers=2)
+siclom_extraction.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[constants.RJ_SMS_AGENT_LABEL.value],
+    memory_limit="4Gi",
+    memory_request="2Gi",
+)
