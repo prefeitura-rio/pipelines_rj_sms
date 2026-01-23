@@ -16,7 +16,7 @@ RJ_TZ = pytz.timezone("America/Sao_Paulo")
 LABELS = [constants.RJ_SMS_AGENT_LABEL.value]
 
 TABLES_CONFIG = [
-    { # Sintomáticos Respiratórios
+    {  # Sintomáticos Respiratórios
         "project": "SINANRIO - Sintomáticos respiratórios",
         "dataset_id": "projeto_sinanrio",
         "table_id": "sintomaticos_respiratorios_dia",
@@ -26,10 +26,10 @@ TABLES_CONFIG = [
         "infisical_path": "/plataforma-subpav",
         "notify": True,
         "custom_insert_query": """
-        INSERT INTO tb_sintomatico (cpf, cns, nome, dt_nascimento, id_raca_cor, id_sexo, id_escolaridade, telefone, 
-        cep, logradouro, numero, complemento, id_bairro, cidade, cnes, ine, nao_municipe, n_prontuario, cnes_cadastrante, 
+        INSERT INTO tb_sintomatico (cpf, cns, nome, dt_nascimento, id_raca_cor, id_sexo, id_escolaridade, telefone,
+        cep, logradouro, numero, complemento, id_bairro, cidade, cnes, ine, nao_municipe, n_prontuario, cnes_cadastrante,
         cpf_cadastrante, cns_cadastrante, id_tb_situacao, origem)
-        SELECT :cpf, :cns, :nome, :dt_nascimento, :id_raca_cor, :id_sexo, :id_escolaridade, :telefone, :cep, :logradouro, :numero, 
+        SELECT :cpf, :cns, :nome, :dt_nascimento, :id_raca_cor, :id_sexo, :id_escolaridade, :telefone, :cep, :logradouro, :numero,
         :complemento, :id_bairro, :cidade, :cnes, :ine, :nao_municipe, :n_prontuario, IFNULL(:cnes_cadastrante, ''), IFNULL(:cpf_cadastrante, ''),
         IFNULL(:cns_cadastrante, ''), :id_tb_situacao, LEFT(:origem, 1)
         WHERE NOT EXISTS (
@@ -43,7 +43,7 @@ TABLES_CONFIG = [
             )
         """,
     },
-    { # Notificações
+    {  # Notificações
         "project": "SINANRIO - Notificação",
         "dataset_id": "projeto_sinanrio",
         "table_id": "notificacao",
@@ -96,7 +96,7 @@ TABLES_CONFIG = [
                 :finalizado, :timestamp
         """,
     },
-    { # Investigações
+    {  # Investigações
         "project": "SINANRIO - Tabela de Investigação",
         "dataset_id": "projeto_sinanrio",
         "table_id": "tb_investiga",
@@ -136,9 +136,8 @@ TABLES_CONFIG = [
                 :tp_benef_gov, :st_agravo_drogas, :st_agravo_tabaco, :tp_molecular, :tp_sensibilidade, :nu_contato_identificados,
                 :tp_antirretroviral_trat, :st_bacil_apos_6_mes, :nu_prontuario_atual, :tp_transf, :co_uf_transf, :co_municipio_transf
         """,
-
     },
-    { # Resultados de Exames (todos)
+    {  # Resultados de Exames (todos)
         "project": "SINANRIO - Resultado de Exames",
         "dataset_id": "projeto_sinanrio",
         "table_id": "resultado_exame",
@@ -164,9 +163,8 @@ TABLES_CONFIG = [
                 diagnostico         = VALUES(diagnostico),
                 updated_at          = CURRENT_TIMESTAMP
         """,
-
     },
-    { # Resultados de Exames (Atualização de sintomatico)
+    {  # Resultados de Exames (Atualização de sintomatico)
         "project": "SINANRIO - Atualização de Exames Sintomaticos",
         "dataset_id": "projeto_sinanrio",
         "table_id": "resultado_exame",
@@ -237,7 +235,6 @@ TABLES_CONFIG = [
                 OR ( :paciente_cpf IS NOT NULL AND :paciente_cpf <> '' AND s.cpf = :paciente_cpf )
             )
         """,
-
     },
 ]
 

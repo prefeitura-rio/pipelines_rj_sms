@@ -94,7 +94,6 @@ TABELAS_CONFIG = [
     ("protagonistas", "subpav_acesso_mais_seguro", "monthly"),
     ("riscos", "subpav_acesso_mais_seguro", "monthly"),
     ("status", "subpav_acesso_mais_seguro", "monthly"),
-    
     # SISARE
     # Mensais auxiliares e diárias transacionais
     ("altas", "subpav_altas_referenciadas", "daily"),
@@ -149,7 +148,6 @@ TABELAS_CONFIG = [
     ("tipos_feedback", "subpav_altas_referenciadas", "monthly"),
     ("tipos_gravidez", "subpav_altas_referenciadas", "monthly"),
     ("vias_parto", "subpav_altas_referenciadas", "monthly"),
-
     # SISCegonha
     ("agendamento_gestantes", "subpav_cegonha", "daily"),
     ("agendamento_profissional", "subpav_cegonha", "monthly"),
@@ -178,7 +176,6 @@ TABELAS_CONFIG = [
     ("unidades_turnos_horarios", "subpav_cegonha", "daily"),
     ("1", "subpav_cegonha", "monthly"),
     ("visita_gestantes_tipos", "subpav_cegonha", "daily"),
-
     # Sinan Rio (Legado)
     ("tuberculose_sinan", "subpav_sinan", "daily"),
     ("tb_estabelecimento_saude", "subpav_sinan", "monthly"),
