@@ -28,6 +28,7 @@ LABELS = [constants.RJ_SMS_AGENT_LABEL.value]
 # Args: (table_id, schema, frequencia,extra):
 # - frequencia: "daily", "monthly", "weekly" ou "per_hour".
 # - extra: "dump_mode","if_exists","if_storage_data_exists","relative_date_filter"
+# -infisical_path: "/plataforma-subpav" (novo bd subpav)
 
 TABELAS_CONFIG = [
     # Principal
@@ -148,6 +149,35 @@ TABELAS_CONFIG = [
     ("tipos_feedback", "subpav_altas_referenciadas", "monthly"),
     ("tipos_gravidez", "subpav_altas_referenciadas", "monthly"),
     ("vias_parto", "subpav_altas_referenciadas", "monthly"),
+
+    # SISCegonha
+    ("agendamento_gestantes", "subpav_cegonha", "daily"),
+    ("agendamento_profissional", "subpav_cegonha", "monthly"),
+    ("cadastro_gestante", "subpav_cegonha", "daily"),
+    ("cadastro_gestante_log", "subpav_cegonha", "daily"),
+    ("cegonha_feriados", "subpav_cegonha", "monthly"),
+    ("cnes_dias_sem_visita", "subpav_cegonha", "monthly"),
+    ("dados_maternidade_gestantes", "subpav_cegonha", "daily"),
+    ("dias_sem_visita", "subpav_cegonha", "monthly"),
+    ("gestacao_tipos", "subpav_cegonha", "monthly"),
+    ("gestante_acompanhante", "subpav_cegonha", "monthly"),
+    ("gestante_excecoes", "subpav_cegonha", "daily"),
+    ("gestantes", "subpav_cegonha", "daily"),
+    ("gestantes_videos_historico_login", "subpav_cegonha", "monthly"),
+    ("gestantes_videos_unidades", "subpav_cegonha", "monthly"),
+    ("horarios", "subpav_cegonha", "monthly"),
+    ("maternidade_tipo_gestantes", "subpav_cegonha", "monthly"),
+    ("maternidade_video", "subpav_cegonha", "monthly"),
+    ("profissionais", "subpav_cegonha", "monthly"),
+    ("raca_cor", "subpav_cegonha", "monthly"),
+    ("semana_dias", "subpav_cegonha", "monthly"),
+    ("situacao_excecoes", "subpav_cegonha", "monthly"),
+    ("turnos", "subpav_cegonha", "monthly"),
+    ("unidades_agendamento_vagas", "subpav_cegonha", "daily"),
+    ("unidades_referencia_encaminha", "subpav_cegonha", "daily"),
+    ("unidades_turnos_horarios", "subpav_cegonha", "daily"),
+    ("1", "subpav_cegonha", "monthly"),
+    ("visita_gestantes_tipos", "subpav_cegonha", "daily"),
 
     # Sinan Rio (Legado)
     ("tuberculose_sinan", "subpav_sinan", "daily"),
