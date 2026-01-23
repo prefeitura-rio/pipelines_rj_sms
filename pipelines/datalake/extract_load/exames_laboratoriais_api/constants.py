@@ -9,7 +9,7 @@ CREDENTIALS = {
         "INFISICAL_PASSWORD": "CIELAB_PASSWORD",
         "INFISICAL_APCCODIGO": "CIELAB_APCCODIGO",
         "INFISICAL_AP_LIS": "MAPEAMENTO_AP_LIS",
-        "DATASET_ID": "exames_laboratoriais",
+        "DATASET_ID": "brutos_exames_laboratoriais",
     },
     "biomega": {
         "INFISICAL_PATH": "/tmlabs",
@@ -17,7 +17,7 @@ CREDENTIALS = {
         "INFISICAL_PASSWORD": "BIOMEGA_PASSWORD",
         "INFISICAL_APCCODIGO": "BIOMEGA_APCCODIGO",
         "INFISICAL_AP_LIS": "BIOMEGA_LIS",
-        "DATASET_ID": "exames_laboratoriais",
+        "DATASET_ID": "brutos_exames_laboratoriais",
     },
 }
 

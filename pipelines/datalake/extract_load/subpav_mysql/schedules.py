@@ -94,7 +94,6 @@ TABELAS_CONFIG = [
     ("protagonistas", "subpav_acesso_mais_seguro", "monthly"),
     ("riscos", "subpav_acesso_mais_seguro", "monthly"),
     ("status", "subpav_acesso_mais_seguro", "monthly"),
-    
     # SISARE
     # Mensais auxiliares e diárias transacionais
     ("altas", "subpav_altas_referenciadas", "daily", {"id_column": "id_alta"}),
@@ -169,15 +168,15 @@ TABELAS_CONFIG = [
     ("maternidade_video", "subpav_cegonha", "monthly"),
     ("profissionais", "subpav_cegonha", "monthly", {"id_column": "id_profissionais"}),
     ("raca_cor", "subpav_cegonha", "monthly"),
-    ("semana_dias", "subpav_cegonha", "monthly", {"id_column": "id_semana_dia"}),
-    ("situacao_excecoes", "subpav_cegonha", "monthly", {"id_column": "id_situacao_excecao"}),
-    ("turnos", "subpav_cegonha", "monthly", {"id_column": "id_turno"}),
-    ("unidades_agendamento_vagas", "subpav_cegonha", "daily", {"id_column": "id_unidades_agendamento_vagas"}),
-    ("unidades_referencia_encaminha", "subpav_cegonha", "daily", {"id_column": "id_unidades_referencia_encaminha"}),
-    ("unidades_turnos_horarios", "subpav_cegonha", "daily", {"id_column": "id_turnos_horario"}),
-    ("unidades_videos", "subpav_cegonha", "monthly", {"id_column": "id_unidade_video"}),
-    ("visita_gestantes_tipos", "subpav_cegonha", "daily", {"id_column": "id_visita_gestante_tipo"}),
-    
+    ("semana_dias", "subpav_cegonha", "monthly"),
+    ("situacao_excecoes", "subpav_cegonha", "monthly"),
+    ("turnos", "subpav_cegonha", "monthly"),
+    ("unidades_agendamento_vagas", "subpav_cegonha", "daily"),
+    ("unidades_referencia_encaminha", "subpav_cegonha", "daily"),
+    ("unidades_turnos_horarios", "subpav_cegonha", "daily"),
+    ("1", "subpav_cegonha", "monthly"),
+    ("visita_gestantes_tipos", "subpav_cegonha", "daily"),
+
     # Sinan Rio (Legado)
     ("tuberculose_sinan", "subpav_sinan", "daily"),
     ("tb_estabelecimento_saude", "subpav_sinan", "monthly"),

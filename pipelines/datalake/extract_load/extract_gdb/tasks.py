@@ -22,6 +22,7 @@ from .utils import (
     download_gcs_to_file,
     format_reference_date,
     inverse_exponential_backoff,
+    jsonify_dataframe,
 )
 
 
@@ -37,13 +38,13 @@ def request_export(uri: str, environment: str = "dev") -> str:
 
 
 @task()
-def check_export_status(uuid: str, environment: str = "dev") -> str:
+def check_export_status(uuid: str, environment: str = "dev", backoff: int = 60 * 60) -> str:
     # Aqui, vamos fazer um Inverse Exponential Backoff
     # Isto é, começamos esperando um tempo alto (INITIAL_BACKOFF_SECONDS) e,
     # a cada iteração, diminuímos o tempo de espera por algum fator até
     # atingir o tempo mínimo de espera (MIN_BACKOFF_SECONDS)
     # A função é da forma max(INITIAL/BASE^x, MIN)
-    INITIAL_BACKOFF_SECONDS = 60 * 60  # 1h
+    INITIAL_BACKOFF_SECONDS = int(backoff or 60 * 60)  # 1h
     MIN_BACKOFF_SECONDS = 5 * 60  # 5min
     BACKOFF_BASE = 1.35
     # Máximo de vezes que vamos conferir o status da tarefa até desistir dela
@@ -128,7 +129,12 @@ def extract_compressed(uri: str, environment: str = "dev") -> str:
 
 @task()
 def upload_to_bigquery(
-    path: str, dataset: str, uri: str, refdate: str | None, environment: str = "dev"
+    path: str,
+    dataset: str,
+    uri: str,
+    refdate: str | None,
+    environment: str = "dev",
+    lines_per_chunk: int = 100_000,
 ) -> str:
     files = [
         file
@@ -138,7 +144,7 @@ def upload_to_bigquery(
     log(f"Files extracted ({len(files)}): {files[:5]} (first 5)")
 
     # Lemos o CSV em pedaços para não estourar a memória
-    LINES_PER_CHUNK = 100_000
+    LINES_PER_CHUNK = int(lines_per_chunk or 100_000)
     for i, file in enumerate(files):
         table_name = file.removesuffix(".csv").strip()
         # Remove potenciais caracteres problemáticos em nomes de tabelas
@@ -187,11 +193,13 @@ def upload_to_bigquery(
 
             # Substitui nomes de colunas pelos nomes tratados
             df.rename(columns=column_mapping, inplace=True)
+            # Transforma cada linha em um JSON
+            df = jsonify_dataframe(df)
 
             # Metadados
             df["_source_file"] = uri
             df["_loaded_at"] = datetime.datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
-            df["_data_particao"] = format_reference_date(refdate, uri)
+            df["data_particao"] = format_reference_date(refdate, uri)
 
             log(
                 f"Uploading table '{table_name}' from DataFrame: "
@@ -207,7 +215,7 @@ def upload_to_bigquery(
                         df=df,
                         dataset_id=dataset,
                         table_id=table_name,
-                        partition_column="_data_particao",
+                        partition_column="data_particao",
                         if_exists="append",
                         if_storage_data_exists="append",
                         source_format="csv",
@@ -219,7 +227,7 @@ def upload_to_bigquery(
                 # > httplib2.error.ServerNotFoundError:
                 #     Unable to find the server at cloudresourcemanager.googleapis.com
                 # > http.client.RemoteDisconnected: Remote end closed connection without response
-                # > "Something went wrong while setting permissions for BigLake service account [...]"
+                # > "Something went wrong while setting permissions for BigLake service account […]"
                 # Então pescamos por um erro e tentamos mais uma vez por via das dúvidas
                 except Exception as e:
                     # Se já tentamos N vezes, desiste e dá erro

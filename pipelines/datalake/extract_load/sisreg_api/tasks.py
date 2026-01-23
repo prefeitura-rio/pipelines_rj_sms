@@ -241,7 +241,7 @@ def make_run_meta():
     return str(uuid4()), datetime.now().isoformat()
 
 
-@task
+@task(trigger=all_finished, skip_on_upstream_skip=False)
 def mark_slice_completed():
     """
     Roda ao terminar os slices.

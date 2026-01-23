@@ -1,0 +1,30 @@
+Análise a partir da comparação com outros profissionais
+
+Objetivo:
+Identificar profissionais que ofertam menos vagas que seus colegas, considerando profissionais que realizam o mesmo procedimento dentro do mesmo estabelecimento, levando em conta diferenças na carga horária semanal.
+
+
+Metodologia:
+Para chegar a este resultado, utilizamos uma abordagem baseada em padronização da oferta de vagas por profissional, conforme descrito a seguir:
+
+- Avaliamos a quantidade total de vagas ofertadas por cada profissional, para cada
+  procedimento em determinado estabelecimento, ajustando pela carga horária ambulatorial
+  do profissional.
+
+- Para permitir comparações justas entre profissionais com diferentes cargas horárias,
+  aplicamos uma transformação matemática sobre os valores ajustados.
+
+- Agrupamos esses valores ajustados por procedimento e estabelecimento para determinar
+  o padrão médio de oferta do grupo.
+
+- Calculamos quartis (Q1 e Q3) e o intervalo interquartil (IQR), definindo um limite
+  inferior de referência.
+
+- Profissionais cujos valores ajustados ficam abaixo desse limite inferior são
+  considerados fora do padrão, indicando oferta significativamente menor que a esperada.
+
+---
+Em caso de dúvidas, entre em contato pelo Suporte da Plataforma SMS-Rio: suporte.smsrio@gmail.com, indicando o assunto deste e-mail.
+
+Produzido pelo Núcleo de Tecnologia e Inovação (NTI)
+Secretaria Municipal de Saúde do Rio de Janeiro
