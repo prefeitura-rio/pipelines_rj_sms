@@ -10,6 +10,6 @@ def make_request(url, headers):
     session.mount("https://", HTTPAdapter(max_retries=retries))
     try:
         response = session.get(url=url, headers=headers)
-    except requests.exceptions.RetryError:
+    except requests.exceptions.RequestException:
         return None
     return response
