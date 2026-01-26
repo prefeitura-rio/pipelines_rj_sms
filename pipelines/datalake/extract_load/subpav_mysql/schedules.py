@@ -100,15 +100,10 @@ TABELAS_CONFIG = [
         {"id_column": "id_alta_arquivo"},
     ),
     (
-        
         "altas_medicamentos",
-       
         "subpav_altas_referenciadas",
-       
         "daily",
-       
         {"id_column": "id_alta_medicamento"},
-    ,
     ),
     (
         "altas_pendentes",
@@ -117,15 +112,10 @@ TABELAS_CONFIG = [
         {"id_column": "id_alta_pendente"},
     ),
     (
-        
         "altas_pendentes_referenciadas",
-       
         "subpav_altas_referenciadas",
-       
         "daily",
-       
         {"id_column": "id_alta_pendente_referenciada"},
-    ,
     ),
     ("apgars", "subpav_altas_referenciadas", "monthly", {"id_column": "id_apgar"}),
     (
