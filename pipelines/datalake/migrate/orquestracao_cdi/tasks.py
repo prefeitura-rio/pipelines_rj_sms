@@ -42,13 +42,13 @@ def create_dou_params_dict(environment: str = "prod", date: Optional[str] = None
 @task
 def create_dbt_params_dict(environment: str = "prod"):
     # Queremos executar o seguinte comando:
-    # $ dbt build --select +tag:cdi+ --target ENV
+    # $ dbt build --select +tag:cdi_vps+ --target ENV
     return {
         "environment": environment,
         "rename_flow": True,
         "send_discord_report": False,
         "command": "build",
-        "select": "+tag:cdi+",
+        "select": "+tag:cdi_vps+",
         "exclude": None,
         "flag": None,
     }
