@@ -89,7 +89,7 @@ TABELAS_CONFIG = [
     ("protagonistas", "subpav_acesso_mais_seguro", "monthly"),
     ("riscos", "subpav_acesso_mais_seguro", "monthly"),
     ("status", "subpav_acesso_mais_seguro", "monthly"),
-    
+
     # SISARE
     # Mensais auxiliares e diárias transacionais
     ("altas", "subpav_altas_referenciadas", "daily", {"id_column": "id_alta"}),
@@ -218,7 +218,7 @@ TABELAS_CONFIG = [
     ("unidades_videos", "subpav_cegonha", "monthly", {"id_column": "id_unidade_video"}),
     ("visita_gestantes_tipos", "subpav_cegonha", "daily", {"id_column": "id_visita_gestante_tipo"}),
 
-    
+
     # Sinan Rio (Legado)
     ("tuberculose_sinan", "subpav_sinan", "daily"),
     ("tb_estabelecimento_saude", "subpav_sinan", "monthly"),
