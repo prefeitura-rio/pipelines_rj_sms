@@ -89,7 +89,10 @@ def get_article_names_ids(diario_id_date: tuple) -> List[tuple]:
         ["atos do prefeito", "decretos n"],
         ["secretaria municipal de saúde", "resoluções", "resolução n"],
         ["controladoria geral do município do rio de janeiro", "resoluções", "resolução n"],
-        ["controladoria geral do município do rio de janeiro", "comissão de qualificação de organizações sociais"],
+        [
+            "controladoria geral do município do rio de janeiro",
+            "comissão de qualificação de organizações sociais",
+        ],
         ["tribunal de contas do município", "resoluções", "resolução n"],
         ["tribunal de contas do município", "outros"],
         ["avisos editais e termos de contratos", "secretaria municipal de saúde", "avisos"],
