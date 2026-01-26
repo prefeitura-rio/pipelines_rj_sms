@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from pipelines.utils.logger import log
 
@@ -54,32 +55,39 @@ def _execute_batches(
     query: str,
     records: List[Dict[str, Any]],
     batch_size: int,
-    errors: List[str],
     max_retries: int = 1,
-) -> Tuple[int, int]:
-
+) -> Tuple[int, int, List[str]]:
+    """
+    Executa inserts/updates em lotes usando SQLAlchemy.
+    Retorna: (success, failure, errors_resumidos).
+    """
     total = len(records)
     success = 0
     failure = 0
+    errors: List[str] = []
 
     for i in range(0, total, batch_size):
         batch = records[i : i + batch_size]
-        log(f"Processing batch {i}-{i + len(batch) - 1} ({len(batch)} records)...", level="info")
+        msg = f"Processing batch {i}-{i + len(batch) - 1} " f"({len(batch)} records)..."
+        log(msg, level="info")
+
         attempt = 0
         while attempt < max_retries:
             try:
                 conn.execute(text(query), batch)
                 success += len(batch)
                 break
-            except Exception as exc:
+            except SQLAlchemyError as exc:
                 attempt += 1
                 if attempt >= max_retries:
                     failure += len(batch)
-                    msg = f"❌ Batch {i}-{i + len(batch) - 1} failed: {str(exc).splitlines()[0]}"
-                    log(msg, level="error")
+                    err_msg = (
+                        f"❌ Batch {i}-{i + len(batch) - 1} failed: " f"{str(exc).splitlines()[0]}"
+                    )
+                    log(err_msg, level="error")
                     if len(errors) < 5:
-                        errors.append(msg)
-    return success, failure
+                        errors.append(err_msg)
+    return success, failure, errors
 
 
 def default_metrics() -> Dict[str, Any]:
@@ -187,10 +195,9 @@ def inject_db_schema_in_query(query: str, db_schema: str) -> str:
     if not db_schema or not query:
         return query
 
-    # Regex para encontrar o nome da tabela após INSERT INTO, UPDATE ou REPLACE INTO
-    # Agora aceita nomes como `schema.tabela` ou tabela simples
     pattern = re.compile(
-        r"\b(INSERT\s+INTO|UPDATE|REPLACE\s+INTO)\s+([`]?)([\w\.]+)([`]?)", re.IGNORECASE
+        r"\b(INSERT(?:\s+IGNORE)?\s+INTO|UPDATE|REPLACE\s+INTO)\s+([`]?)([\w\.]+)([`]?)",
+        re.IGNORECASE,
     )
 
     def replacer(match):
@@ -198,7 +205,6 @@ def inject_db_schema_in_query(query: str, db_schema: str) -> str:
         aspas_esquerda = match.group(2)
         tabela = match.group(3)
         aspas_direita = match.group(4)
-        # Se já tem ponto (schema.tabela), não faz nada
         if "." in tabela:
             return match.group(0)
         return f"{comando} {aspas_esquerda}{db_schema}.{tabela}{aspas_direita}"

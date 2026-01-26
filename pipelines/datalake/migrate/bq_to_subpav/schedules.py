@@ -26,11 +26,17 @@ TABLES_CONFIG = [
         "infisical_path": "/plataforma-subpav",
         "notify": True,
         "custom_insert_query": """
-        INSERT INTO tb_sintomatico (cpf, cns, nome, dt_nascimento, id_raca_cor, id_sexo, id_escolaridade, telefone,
-        cep, logradouro, numero, complemento, id_bairro, cidade, cnes, ine, nao_municipe, n_prontuario, cnes_cadastrante,
+        INSERT INTO tb_sintomatico (cpf, cns, nome, dt_nascimento,
+        id_raca_cor, id_sexo, id_escolaridade,
+        telefone, cep, logradouro, numero, complemento,
+        id_bairro, cidade, cnes, ine, nao_municipe,
+        n_prontuario, cnes_cadastrante,
         cpf_cadastrante, cns_cadastrante, id_tb_situacao, origem)
-        SELECT :cpf, :cns, :nome, :dt_nascimento, :id_raca_cor, :id_sexo, :id_escolaridade, :telefone, :cep, :logradouro, :numero,
-        :complemento, :id_bairro, :cidade, :cnes, :ine, :nao_municipe, :n_prontuario, IFNULL(:cnes_cadastrante, ''), IFNULL(:cpf_cadastrante, ''),
+        SELECT :cpf, :cns, :nome, :dt_nascimento, :id_raca_cor, :id_sexo,
+        :id_escolaridade, :telefone, :cep, :logradouro, :numero,
+        :complemento, :id_bairro, :cidade, :cnes, :ine,
+        :nao_municipe, :n_prontuario,
+        IFNULL(:cnes_cadastrante, ''), IFNULL(:cpf_cadastrante, ''),
         IFNULL(:cns_cadastrante, ''), :id_tb_situacao, LEFT(:origem, 1)
         WHERE NOT EXISTS (
                 SELECT 1
@@ -54,11 +60,12 @@ TABLES_CONFIG = [
         "notify": True,
         "custom_insert_query": """
             INSERT IGNORE INTO notificacao (
-                nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao, co_unidade_notificacao, co_uf_notificacao,
-                tp_notificacao, dt_diagnostico_sintoma, no_nome_paciente, dt_nascimento, nu_idade, tp_sexo,
-                tp_gestante, tp_raca_cor, tp_escolaridade, nu_cartao_sus, no_nome_mae, co_uf_residencia,
-                co_municipio_residencia, co_distrito_residencia, co_bairro_residencia, no_bairro_residencia, nu_cep_residencia, co_geo_campo_1,
-                co_geo_campo_2, co_logradouro_residencia, no_logradouro_residencia, nu_residencia, ds_complemento_residencia, ds_referencia_residencia,
+                nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao, co_unidade_notificacao,
+                co_uf_notificacao, tp_notificacao, dt_diagnostico_sintoma, no_nome_paciente, dt_nascimento,
+                nu_idade, tp_sexo, tp_gestante, tp_raca_cor, tp_escolaridade, nu_cartao_sus, no_nome_mae,
+                co_uf_residencia, co_municipio_residencia, co_distrito_residencia, co_bairro_residencia, no_bairro_residencia,
+                nu_cep_residencia, co_geo_campo_1, co_geo_campo_2, co_logradouro_residencia, no_logradouro_residencia,
+                nu_residencia, ds_complemento_residencia, ds_referencia_residencia,
                 nu_ddd_residencia, nu_telefone_residencia, tp_zona_residencia, co_pais_residencia, dt_investigacao, co_cbo_ocupacao,
                 tp_classificacao_final, ds_classificacao_final, tp_criterio_confirmacao, tp_modo_infeccao, ds_modo_infeccao_outro, tp_local_infeccao,
                 ds_local_infeccao_outro, tp_autoctone_residencia, co_uf_infeccao, co_pais_infeccao, co_municipio_infeccao, co_distrito_infeccao,
@@ -94,7 +101,7 @@ TABLES_CONFIG = [
                 :cpf_notificante, :cpf_paciente, :dnv_paciente, :justificativa_cpf, :lat, :long,
                 :notif_assistente, :resp_encerramento, :st_agravo_tabagismo, :st_pcr_escarro, :tp_cultura_justificativa, :visivel,
                 :finalizado, :timestamp
-        """,
+        """,  # noqa: E501
     },
     {  # Investigações
         "project": "SINANRIO - Tabela de Investigação",
@@ -135,7 +142,7 @@ TABLES_CONFIG = [
                 :dt_encerramento, :tp_pcr_escarro, :tp_pop_liberdade, :tp_pop_rua, :tp_pop_saude, :tp_pop_imigrante,
                 :tp_benef_gov, :st_agravo_drogas, :st_agravo_tabaco, :tp_molecular, :tp_sensibilidade, :nu_contato_identificados,
                 :tp_antirretroviral_trat, :st_bacil_apos_6_mes, :nu_prontuario_atual, :tp_transf, :co_uf_transf, :co_municipio_transf
-        """,
+        """,  # noqa: E501
     },
     {  # Resultados de Exames (todos)
         "project": "SINANRIO - Resultado de Exames",
@@ -162,7 +169,7 @@ TABLES_CONFIG = [
                 notificacao_ativa   = VALUES(notificacao_ativa),
                 diagnostico         = VALUES(diagnostico),
                 updated_at          = CURRENT_TIMESTAMP
-        """,
+        """,  # noqa: E501
     },
     {  # Resultados de Exames (Atualização de sintomatico)
         "project": "SINANRIO - Atualização de Exames Sintomaticos",
@@ -234,12 +241,15 @@ TABLES_CONFIG = [
                     ( :paciente_cns IS NOT NULL AND :paciente_cns <> '' AND s.cns = :paciente_cns )
                 OR ( :paciente_cpf IS NOT NULL AND :paciente_cpf <> '' AND s.cpf = :paciente_cpf )
             )
-        """,
+        """,  # noqa: E501
     },
 ]
 
 
 def build_param(config: dict) -> dict:
+    """
+    Cria os parametros do flow a partir da configuração da tabela.
+    """
     param = {
         "dataset_id": config["dataset_id"],
         "table_id": config["table_id"],

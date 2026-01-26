@@ -15,6 +15,7 @@ from pipelines.datalake.migrate.bq_to_subpav.schedules import (
     bq_to_subpav_combined_schedule,
 )
 from pipelines.datalake.migrate.bq_to_subpav.tasks import (
+    build_insert_config,
     generate_report,
     get_db_uri,
     insert_df_into_mysql,
@@ -78,21 +79,30 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    result = insert_df_into_mysql(
-        df=df_bq,
+    config = build_insert_config(
         db_schema=DB_SCHEMA,
         table_name=DEST_TABLE,
         if_exists=IF_EXISTS,
-        mysql_uri=db_uri,
-        environment=ENVIRONMENT,
         custom_insert_query=CUSTOM_INSERT_QUERY,
+        environment=ENVIRONMENT,
+        batch_size=1000,
+    )
+
+    result = insert_df_into_mysql(
+        df=df_bq,
+        mysql_uri=db_uri,
+        config=config,
         metrics=metrics,
     )
 
     generate_report(
-        metrics=result, project=PROJECT, notify=NOTIFY_RESOLVED, environment=ENVIRONMENT
+        metrics=result,
+        context={
+            "project": PROJECT,
+            "notify": NOTIFY_RESOLVED,
+            "environment": ENVIRONMENT,
+        },
     )
-
 #####################################
 # Configuração do Flow
 #####################################
