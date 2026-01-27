@@ -19,7 +19,7 @@ def get_patient_data(environment, batch):
     log("Obtendo dados dos pacientes de interesse...")
 
     client = bigquery.Client()
-    # Primeira versão com 5000 casos para teste. Irá mudar para produção
+    # Primeira versão com 500 casos para teste. Irá mudar para produção
     sql = """
         select distinct paciente_cpf as cpf
         from `rj-sms.saude_historico_clinico.episodio_assistencial`
@@ -27,7 +27,7 @@ def get_patient_data(environment, batch):
                 'B211','B213','Z830','B208','Z114','B231','B203','B201','Z206','B212','B221',
                 'B24','B209','B220','B219','B210','B230','B207','B21','B22','F024','B232',
                 'B23','B206','Z717','R75','B218','B202','B227')
-        limit 5000
+        limit 500
     """
 
     df = client.query_and_wait(sql).to_dataframe()
