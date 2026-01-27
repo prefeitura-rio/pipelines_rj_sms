@@ -562,3 +562,4 @@ cases:
       table_id: cd4
       batch: 10
       endpoint: '/mostracargacd4/'
+      retry: false

@@ -34,6 +34,7 @@ with Flow(
     TABLE_ID = Parameter("table_id", default="cd4", required=True)
     BATCH = Parameter("batch", default=1000, required=True)
     ENDPOINT = Parameter("endpoint", required=True)
+    RETRY = Parameter("retry", default=False)
 
     API_KEY = get_secret_key(
         secret_path=siclom_constants.INFISICAL_PATH.value,
@@ -48,6 +49,7 @@ with Flow(
         cpf_batch=cpf_batches,
         endpoint=unmapped(ENDPOINT),
         api_key=unmapped(API_KEY),
+        retry=unmapped(RETRY),
     )
 
     uploaded_data = upload_df_to_datalake.map(

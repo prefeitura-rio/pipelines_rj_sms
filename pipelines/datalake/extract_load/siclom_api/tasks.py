@@ -15,20 +15,39 @@ from pipelines.utils.logger import log
 
 
 @task
-def get_patient_data(environment, batch):
-    log("Obtendo dados dos pacientes de interesse...")
+def get_patient_data(
+    environment: str, 
+    batch: int, 
+    retry: bool
+    ):
+    """
+    Obtém os CPFs a serem consultados na API do SICLOM.
 
+    Parâmetros:
+        - `batch`: Tamanho de cada lote de CPFs a ser gerado para requisições paralelizadas
+        - `retry`: Utilizada para obter CPFs que não estão na tabela fim. Essa flag pode ser utilizada 
+        tanto para obter novos CPFs ou para possíveis CPFs que tiveram erro durante a requisição.
+    """
+    
+    log("Obtendo dados dos pacientes de interesse...")
     client = bigquery.Client()
     # Primeira versão com 500 casos para teste. Irá mudar para produção
-    sql = """
-        select distinct paciente_cpf as cpf
-        from `rj-sms.saude_historico_clinico.episodio_assistencial`
-        where `condicoes`[SAFE_OFFSET(0)].id  in ('B200','B204','B222','B217','B20','B205','B238','Z21',
-                'B211','B213','Z830','B208','Z114','B231','B203','B201','Z206','B212','B221',
-                'B24','B209','B220','B219','B210','B230','B207','B21','B22','F024','B232',
-                'B23','B206','Z717','R75','B218','B202','B227')
-        limit 500
-    """
+    
+    if retry:
+        # TODO: Escrever a query que pega a diferença entre as tabelas
+        sql = """
+        
+        """
+    else:
+        # TODO: Confirmar com a SAP qual a melhor tabela para obter os CPFs de interesse
+        sql = """
+                select distinct paciente_cpf as cpf
+                from `rj-sms.saude_historico_clinico.episodio_assistencial`
+                where `condicoes`[SAFE_OFFSET(0)].id  in ('B200','B204','B222','B217','B20','B205','B238','Z21',
+                        'B211','B213','Z830','B208','Z114','B231','B203','B201','Z206','B212','B221',
+                        'B24','B209','B220','B219','B210','B230','B207','B21','B22','F024','B232',
+                        'B23','B206','Z717','R75','B218','B202','B227')
+        """
 
     df = client.query_and_wait(sql).to_dataframe()
     cpf_list = df["cpf"].to_list()
@@ -36,9 +55,20 @@ def get_patient_data(environment, batch):
 
     return chunks
 
-
 @task
 def fetch_siclom_data(environment, cpf_batch, endpoint, api_key):
+    """
+    Faz a requisição para a API do SICLOM.
+
+    Args:
+        `environment` (_str_): Ambiente de execução do flow.
+        `cpf_batch` (_list_): Lote de CPFs a serem consultados na API.
+        `endpoint` (_str_): Endpoint da API.
+        `api_key` (_str_): Chave de autenticação da API.
+
+    Returns:
+        `pd.DataFrame`: _description_
+    """
     log(f"Buscando dados do Siclom para o lote de CPFs...")
 
     base_url = constants.BASE_URL.value
