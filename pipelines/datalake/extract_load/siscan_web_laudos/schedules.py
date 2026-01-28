@@ -17,12 +17,11 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 
 exames = [
     "mamografia",
-    
     "histo_mama",
+    
 #    "cito_mama", # apenas 17 resultados no siscan em 2025 inteiro
-
-#    "cito_colo",
-#    "histo_colo",
+#    "cito_colo", # por enquanto estamos trabalhando apenas em mama
+#    "histo_colo", # por enquanto estamos trabalhando apenas em mama
 ]
 
 operator_flow_parameters = [
