@@ -15,16 +15,26 @@ from prefect.schedules import Schedule, filters
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
+exames = [
+    "mamografia",
+    "histo_mama",
+    
+#    "cito_mama", # apenas 17 resultados no siscan em 2025 inteiro
+#    "cito_colo", # por enquanto estamos trabalhando apenas em mama
+#    "histo_colo", # por enquanto estamos trabalhando apenas em mama
+]
+
 operator_flow_parameters = [
     {
         "environment": "prod",
+        "opcao_exame": exame,
         "data_inicial": "01/01/2025",
         "data_final": "01/01/2025",
         "bq_dataset": "brutos_siscan_web",
-        "bq_table": "laudos",
+        "bq_table": f"laudos_{exame}",
     }
+    for exame in exames
 ]
-
 
 monthly_manager_parameters = [{"environment": "prod", "relative_date": "M-1", "range": 7}]
 daily_flow_parameters = [
