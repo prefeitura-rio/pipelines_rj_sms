@@ -48,6 +48,7 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", default=False)
     ENVIRONMENT = Parameter("environment", default="dev")
     LIMIT = Parameter("limit", required=False, default=None)
+    BATCH_SIZE = Parameter("batch_size", required=False, default=1000)
     NOTIFY = Parameter("notify", default=None)
 
     NOTIFY_RESOLVED = resolve_notify(project=PROJECT, notify_param=NOTIFY)
@@ -85,7 +86,7 @@ with Flow(
         if_exists=IF_EXISTS,
         custom_insert_query=CUSTOM_INSERT_QUERY,
         environment=ENVIRONMENT,
-        batch_size=1000,
+        batch_size=BATCH_SIZE,
     )
 
     result = insert_df_into_mysql(

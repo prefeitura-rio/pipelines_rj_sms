@@ -58,6 +58,7 @@ TABLES_CONFIG = [
         "frequency": "daily",
         "infisical_path": "/plataforma-subpav",
         "notify": True,
+        "batch_size": 10000,
         "custom_insert_query": """
             INSERT IGNORE INTO notificacao (
                 nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao, co_unidade_notificacao,
@@ -81,7 +82,7 @@ TABLES_CONFIG = [
                 notif_assistente, resp_encerramento, st_agravo_tabagismo, st_pcr_escarro, tp_cultura_justificativa, visivel,
                 finalizado, `timestamp`
             )
-            SELECT
+            VALUES (
                 :nu_notificacao, :dt_notificacao, :co_cid, :co_municipio_notificacao, :co_unidade_notificacao, :co_uf_notificacao,
                 :tp_notificacao, :dt_diagnostico_sintoma, :no_nome_paciente, :dt_nascimento, :nu_idade, :tp_sexo,
                 :tp_gestante, :tp_raca_cor, :tp_escolaridade, :nu_cartao_sus, :no_nome_mae, :co_uf_residencia,
@@ -101,6 +102,7 @@ TABLES_CONFIG = [
                 :cpf_notificante, :cpf_paciente, :dnv_paciente, :justificativa_cpf, :lat, :long,
                 :notif_assistente, :resp_encerramento, :st_agravo_tabagismo, :st_pcr_escarro, :tp_cultura_justificativa, :visivel,
                 :finalizado, :timestamp
+            )
         """,  # noqa: E501
     },
     {  # Investigações
@@ -112,6 +114,7 @@ TABLES_CONFIG = [
         "frequency": "daily",
         "infisical_path": "/plataforma-subpav",
         "notify": True,
+        "batch_size": 10000,
         "custom_insert_query": """
             INSERT IGNORE INTO tb_investiga (
                 nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao, nu_prontuario, tp_entrada,
@@ -128,7 +131,7 @@ TABLES_CONFIG = [
                 tp_benef_gov, st_agravo_drogas, st_agravo_tabaco, tp_molecular, tp_sensibilidade, nu_contato_identificados,
                 tp_antirretroviral_trat, st_bacil_apos_6_mes, nu_prontuario_atual, tp_transf, co_uf_transf, co_municipio_transf
             )
-            SELECT
+            VALUES(
                 :nu_notificacao, :dt_notificacao, :co_cid, :co_municipio_notificacao, :nu_prontuario, :tp_entrada,
                 :tp_institucionalizado, :tp_raio_x, :tp_turberculinico, :tp_forma, :tp_extrapulmonar_1, :tp_extrapulmonar_2,
                 :ds_extrapulmonar_outro, :st_agravo_aids, :st_agravo_alcolismo, :st_agravo_diabete, :st_agravo_mental, :st_agravo_outro,
@@ -142,6 +145,7 @@ TABLES_CONFIG = [
                 :dt_encerramento, :tp_pcr_escarro, :tp_pop_liberdade, :tp_pop_rua, :tp_pop_saude, :tp_pop_imigrante,
                 :tp_benef_gov, :st_agravo_drogas, :st_agravo_tabaco, :tp_molecular, :tp_sensibilidade, :nu_contato_identificados,
                 :tp_antirretroviral_trat, :st_bacil_apos_6_mes, :nu_prontuario_atual, :tp_transf, :co_uf_transf, :co_municipio_transf
+            )
         """,  # noqa: E501
     },
     {  # Resultados de Exames (todos)
@@ -272,6 +276,8 @@ def build_param(config: dict) -> dict:
         param["limit"] = config["limit"]
     if config.get("notify") is not None:
         param["notify"] = config["notify"]
+    if config.get("batch_size") is not None:
+        param["batch_size"] = config["batch_size"]
     return param
 
 
