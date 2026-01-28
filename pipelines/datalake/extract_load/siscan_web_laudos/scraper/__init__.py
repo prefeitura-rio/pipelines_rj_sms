@@ -32,7 +32,7 @@ def run_scraper(
     headless: bool | None = None,
 ) -> List[Dict[str, Any]]:
     """Fluxo de ponta a ponta que devolve lista de laudos em dicionários."""
-    driver = init_firefox(headless=False)
+    driver = init_firefox(headless=headless)
     try:
         login(email, password, driver)
         goto_laudo_page(driver)

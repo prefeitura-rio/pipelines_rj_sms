@@ -66,7 +66,7 @@ def get_val(driver: Firefox, locator: tuple[str, str]) -> str:
 # --------------------------------------------------------------------------- #
 def _esperar_pagina_detalhe(driver: Firefox) -> None:
     """Garante que campo de protocolo esteja visível antes de extrair dados."""
-    esperar_visivel(driver, DET_NPROTO)  # noqa: F403
+    esperar_visivel(driver, DET_NPROTO, 300)  # noqa: F403
 
 
 def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
@@ -113,16 +113,9 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "prestador_uf": get_val(driver, DET_UF_PRESTADOR),  # noqa: F403
         "prestador_cnes": get_val(driver, DET_CNES_PRESTADOR),  # noqa: F403
         "data_realizacao": get_val(driver, DET_DATA_RECEBIMENTO),  # noqa: F403
-        "prestador_municipio": get_val(driver, DET_MUNICIPIO_PRESTADOR),  # noqa: F403
+        "prestador_municipio": get_val(driver, DET_MUNICIPIO_PRESTADOR)  # noqa: F403
 
-        # ------------------------------ Indicação -------------------------- #
-        "mamografia_tipo": get_val(driver, DET_TIPO_MAMOGRAFIA),  # noqa: F403
-        "mamografia_rastreamento_tipo": get_val(
-            driver, DET_TIPO_MAMOGRAFIA_RASTREAMENTO
-        ),  # noqa: F403
-        "achado_exame_clinico": get_val(driver, DET_ACHADO_EXAME_CLINICO),  # noqa: F403
-        "achado_exame_direita": get_val(driver, DET_ACHADO_EXAME_DIREITA),  # noqa: F403
-        "data_ultima_menstruacao": get_val(driver, DET_DATA_ULTIMA_MENSTRUACAO)  # noqa: F403
+
     }
 
     return detalhes
@@ -132,6 +125,16 @@ def _extrair_detalhes_especificos_mamo(driver: Firefox, detalhes: Dict[str, Any]
     """Extrai campos específicos para mamografia e atualiza o dicionário."""
     detalhes.update(
         {
+
+        # ------------------------------ Indicação -------------------------- #
+        "mamografia_tipo": get_val(driver, DET_TIPO_MAMOGRAFIA),  # noqa: F403
+        "mamografia_rastreamento_tipo": get_val(
+            driver, DET_TIPO_MAMOGRAFIA_RASTREAMENTO
+        ),  # noqa: F403
+        "achado_exame_clinico": get_val(driver, DET_ACHADO_EXAME_CLINICO),  # noqa: F403
+        "achado_exame_direita": get_val(driver, DET_ACHADO_EXAME_DIREITA),  # noqa: F403
+        "data_ultima_menstruacao": get_val(driver, DET_DATA_ULTIMA_MENSTRUACAO),  # noqa: F403
+
         # ------------------------------ Mamografia ------------------------- #
         "numero_filmes": get_val(driver, DET_NUMERO_FILMES),  # noqa: F403
         "mama_direita_pele": get_val(driver, DET_MAMA_DIREITA_PELE),  # noqa: F403
@@ -200,7 +203,7 @@ def _proxima_pagina(driver: Firefox) -> bool:
         return False
 
     driver.execute_script("arguments[0].scrollIntoView(true);", botao)
-    esperar_overlay_sumir(driver, 30)
+    esperar_overlay_sumir(driver, 300)
     try:
         driver.execute_script("arguments[0].click();", botao)
     except Exception as exc:
@@ -208,7 +211,7 @@ def _proxima_pagina(driver: Firefox) -> bool:
         clicar_com_retry(driver, BOTAO_PROXIMO, scroll=False, timeout=10)
 
     # Aguarda recarregar / desaparecer overlay AJAX antes de prosseguir
-    esperar_overlay_sumir(driver, 90)
+    esperar_overlay_sumir(driver, 300)
     esperar_carregamento(driver)
     WebDriverWait(driver, 90).until(EC.presence_of_element_located(LUPA_LAUDO))
     return True

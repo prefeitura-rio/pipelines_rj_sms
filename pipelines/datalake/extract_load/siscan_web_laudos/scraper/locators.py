@@ -82,7 +82,7 @@ DET_CONSELHO = (By.ID, "form:conselho")
 DET_DATA_LIBERACAO_RESULTADO = (By.ID, "form:dataLiberacaoResultado")
 
 # Botão
-BOTAO_VOLTAR = (By.NAME, "form:j_id285")
+BOTAO_VOLTAR = (By.CSS_SELECTOR, "input[title='Voltar']")
 
 ####################################### CAMPOS ESPECÍFICOS POR TIPO DE EXAME
 # OPCAO_EXAME_MAMO

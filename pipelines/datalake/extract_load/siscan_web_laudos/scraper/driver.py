@@ -145,7 +145,7 @@ def clicar_com_retry(
         except ElementClickInterceptedException:  # ➋ trata bloqueio
             LOGGER.debug("Elemento %s bloqueado por overlay – aguardando…", locator)
             try:
-                esperar_overlay_sumir(driver, 30)
+                esperar_overlay_sumir(driver, 300)
             except TimeoutException:
                 pass
         except (StaleElementReferenceException, TimeoutException):
