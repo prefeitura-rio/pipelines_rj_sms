@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 import csv
+import json
 import os
 import re
 import shutil
+import sys
 import tarfile
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
-from google.cloud import storage
+import pytz
+from google.api_core.exceptions import NotFound
+from google.cloud import bigquery, storage
 from pandas.errors import EmptyDataError
 
 from pipelines.datalake.extract_load.prontuario_gcs.constants import (
@@ -180,7 +184,7 @@ def extract_postgres_data(
                 log(f"Linhas processadas: {processed_count}")
                 log(f"Tabela atual: {table_name}")
                 log(f"Tabela anterior: {previous_table}")
-                upload_file_to_datalake.run(
+                upload_file_to_native_table.run(
                     file=previous_csv_name,
                     dataset_id=dataset_id,
                     cnes=cnes,
@@ -192,7 +196,7 @@ def extract_postgres_data(
 
             # Verifica se bateu o limite de linhas por upload
             elif processed_count >= lines_per_chunk:
-                upload_file_to_datalake.run(
+                upload_file_to_native_table.run(
                     file=csv_name,
                     dataset_id=dataset_id,
                     cnes=cnes,
@@ -211,7 +215,7 @@ def extract_postgres_data(
             current_insert, upload_path, target_tables
         )
         if flag:
-            upload_file_to_datalake.run(
+            upload_file_to_native_table.run(
                 file=csv_name,
                 dataset_id=dataset_id,
                 cnes=cnes,
@@ -291,7 +295,7 @@ def extract_openbase_data(
 
                 if not rec:
                     # Upload final do arquivo restante
-                    upload_file_to_datalake.run(
+                    upload_file_to_native_table.run(
                         file=csv_path,
                         dataset_id=dataset_id,
                         environment=environment,
@@ -306,7 +310,7 @@ def extract_openbase_data(
                 line_count += 1
 
                 if line_count >= lines_per_chunk:
-                    upload_file_to_datalake.run(
+                    upload_file_to_native_table.run(
                         file=csv_path,
                         dataset_id=dataset_id,
                         environment=environment,
@@ -429,10 +433,104 @@ def build_operator_parameters(
     ]
 
 
-@task
-def dumb_task(vars):
-    return
+@task(max_retries=2, retry_delay=timedelta(minutes=1))
+def upload_file_to_native_table(
+    environment: str,
+    dataset_id: str,
+    file: str,
+    base_type: str,
+    cnes: str,
+):
+    """Envia arquivo CS para tabela nativa do bigquery.
+    Utilizado para o envio de arquivos com número de colunas variável.
 
+    Args:
+        environment (str): Variável de ambiente
+        dataset_id (str): Dataset de destino
+        file (str): Caminho do arquivo CSV
+        base_type (str): Tipo de base (openbase ou postgres)
+        cnes (str): CNES da unidade de saúde
+    """
 
-if __name__ == "__main__":
-    files = list_files_from_bucket(environment=None, bucket_name="subhue_backups")
+    # Lê e prepara os dados para envio
+    data_list = []
+    csv.field_size_limit(sys.maxsize)
+
+    with open(file, "r") as f:
+        reader = csv.DictReader(
+            [line.replace("\x00", "") for line in f],  # Remove null bytes
+            delimiter="|",
+            quotechar='"',
+            skipinitialspace=True,
+        )
+        for row in reader:
+
+            tamanho_bytes = sys.getsizeof(row)
+            tamanho_mb = tamanho_bytes / (1024 * 1024)
+
+            if tamanho_mb > 1:
+                log("O dicionário tem mais de 10MB")
+                log(row)
+                raise Exception
+            else:
+                data_list.append(row)
+
+    table = file.split("/")[-1].replace(".csv", "")
+    lines = [
+        {
+            "cnes": cnes,
+            "data": json.dumps(data),
+            "loaded_at": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat(),
+            "base_type": base_type,
+        }
+        for data in data_list
+    ]
+
+    if not lines:
+        log(f"⚠️ O arquivo {file} está vázio. Não há linhas a inserir.")
+        os.remove(file)
+        return
+
+    # Faz o envio dos dados para o BigQuery
+    log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
+    client = bigquery.Client()
+    dataset_ref = client.dataset(dataset_id)
+
+    try:
+        client.get_dataset(dataset_ref)
+    except NotFound:
+        dataset = bigquery.Dataset(dataset_ref)
+        client.create_dataset(dataset)
+        log(f"Dataset {dataset_id} criado.")
+
+    table_ref = dataset_ref.table(table)
+
+    schema = [
+        bigquery.SchemaField("cnes", "STRING"),
+        bigquery.SchemaField("data", "STRING"),
+        bigquery.SchemaField("loaded_at", "STRING"),
+        bigquery.SchemaField("base_type", "STRING"),
+    ]
+
+    try:
+        client.get_table(table_ref)
+    except NotFound:
+        table = bigquery.Table(table_ref, schema=schema)
+        client.create_table(table)
+        log(f"Criada tabela {table}")
+
+    job_config = bigquery.LoadJobConfig(
+        schema=schema,
+        source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+    )
+
+    try:
+        load_job = client.load_table_from_json(lines, table_ref, job_config=job_config)
+        result = load_job.result()
+    except Exception as e:
+        log(result)
+        log(f"❌ Erro ao inserir linhas na tabela: {e}")
+        raise e
+
+    log(f"✅ Inserção de linhas feitas com sucesso")
+    os.remove(file)
