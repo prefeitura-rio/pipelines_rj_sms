@@ -71,7 +71,7 @@ def _esperar_pagina_detalhe(driver: Firefox) -> None:
 
 def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
     """
-    Extrai todos os 52 campos de detalhes do laudo.
+    Extrai os campos de detalhes do laudo.
 
     Se o campo não existir ou estiver vazio, retorna string vazia mantendo
     todas as chaves no dicionário.
@@ -90,6 +90,7 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "unidade_municipio": get_txt(driver, DET_MUNICIPIO),  # noqa: F403
         "n_prontuario": get_txt(driver, DET_NPRONT),  # noqa: F403
         "n_protocolo": get_txt(driver, DET_NPROTO),  # noqa: F403
+
         # ------------------------------- Paciente -------------------------- #
         "paciente_cartao_sus": get_val(driver, DET_CARTAO_SUS),  # noqa: F403
         "paciente_nome": get_val(driver, DET_NOME_PACIENTE),  # noqa: F403
@@ -105,6 +106,7 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "paciente_municipio": get_val(driver, DET_MUNICIPIO_PACIENTE),  # noqa: F403
         "paciente_logradouro": get_val(driver, DET_ENDERECO),  # noqa: F403
         "paciente_endereco_complemento": get_val(driver, DET_COMPLEMENTO),  # noqa: F403
+
         # ------------------------------ Prestador -------------------------- #
         "prestador_nome": get_val(driver, DET_NOME_PRESTADOR),  # noqa: F403
         "prestador_cnpj": get_val(driver, DET_CNPJ),  # noqa: F403
@@ -112,6 +114,7 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "prestador_cnes": get_val(driver, DET_CNES_PRESTADOR),  # noqa: F403
         "data_realizacao": get_val(driver, DET_DATA_RECEBIMENTO),  # noqa: F403
         "prestador_municipio": get_val(driver, DET_MUNICIPIO_PRESTADOR),  # noqa: F403
+
         # ------------------------------ Indicação -------------------------- #
         "mamografia_tipo": get_val(driver, DET_TIPO_MAMOGRAFIA),  # noqa: F403
         "mamografia_rastreamento_tipo": get_val(
@@ -119,7 +122,16 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         ),  # noqa: F403
         "achado_exame_clinico": get_val(driver, DET_ACHADO_EXAME_CLINICO),  # noqa: F403
         "achado_exame_direita": get_val(driver, DET_ACHADO_EXAME_DIREITA),  # noqa: F403
-        "data_ultima_menstruacao": get_val(driver, DET_DATA_ULTIMA_MENSTRUACAO),  # noqa: F403
+        "data_ultima_menstruacao": get_val(driver, DET_DATA_ULTIMA_MENSTRUACAO)  # noqa: F403
+    }
+
+    return detalhes
+
+
+def _extrair_detalhes_especificos_mamo(driver: Firefox, detalhes: Dict[str, Any]) -> None:
+    """Extrai campos específicos para mamografia e atualiza o dicionário."""
+    detalhes.update(
+        {
         # ------------------------------ Mamografia ------------------------- #
         "numero_filmes": get_val(driver, DET_NUMERO_FILMES),  # noqa: F403
         "mama_direita_pele": get_val(driver, DET_MAMA_DIREITA_PELE),  # noqa: F403
@@ -147,14 +159,34 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "recomendacoes": get_val(driver, DET_RECOMENDACOES),  # noqa: F403
         # -------------------------- Observações Gerais --------------------- #
         "observacoes_gerais": get_txt(driver, DET_OBSERVACOES_GERAIS),  # noqa: F403
-        # ------------------- Responsável pelo Resultado -------------------- #
-        "responsavel_resultado": get_val(driver, DET_RESPONSAVEL_RESULTADO),  # noqa: F403
-        "cns_resultado": get_val(driver, DET_CNS_RESULTADO),  # noqa: F403
-        "conselho": get_val(driver, DET_CONSELHO),  # noqa: F403
-        "data_liberacao_resultado": get_val(driver, DET_DATA_LIBERACAO_RESULTADO),  # noqa: F403
-    }
+        }
+    )
 
-    return detalhes
+def _extrair_detalhes_especificos_histo_mama(driver: Firefox, detalhes: Dict[str, Any]) -> None:
+    """Extrai campos específicos para histopatologia de mama e atualiza o dicionário."""
+    detalhes.update(
+        {
+            "lateralidade": get_val(driver, DET_LATERALIDADE),  # noqa: F403
+            "localizacao": get_val(driver, DET_LOCALIZACAO),  # noqa: F403
+            "procedimento_cirurgico": get_val(driver, DET_PROCEDIMENTO_CIRURGICO),  # noqa: F403
+            "exame_macroscopico": get_val(driver, DET_EXAME_MACROSCOPICO),  # noqa: F403
+            "microcalcificacoes_histo": get_val(driver, DET_MICROCALCIFICACOES_HISTO),  # noqa: F403
+            "lesao_neoplasico": get_val(driver, DET_LESAO_NEOPLASICO),  # noqa: F403
+            "lesao_benigno": get_val(driver, DET_LESAO_BENIGNO),  # noqa: F403
+            "registrado_apac": get_val(driver, DET_REGISTRADO_APAC),  # noqa: F403
+            "multifocalidade": get_val(driver, DET_MULTIFOCALIDADE),  # noqa: F403
+            "multicentricidade": get_val(driver, DET_MULTICENTRICIDADE),  # noqa: F403
+            "grau_histologico": get_val(driver, DET_GRAU_HISTOLOGICO),  # noqa: F403
+            "invasao_vascular": get_val(driver, DET_INVASAO_VASCULAR),  # noqa: F403
+            "infiltracao_perineural": get_val(driver, DET_INFILTRACAO_PERINEURAL),  # noqa: F403
+            "embolizacao_linfatica": get_val(driver, DET_EMBOLIZACAO_LINFATICA),  # noqa: F403
+            "margens_cirurgicas": get_val(driver, DET_MARGENS_CIRURGICAS),  # noqa: F403
+            "receptor_estrogeno": get_val(driver, DET_RECEPTOR_ESTROGENO),  # noqa: F403
+            "receptor_progesterona": get_val(driver, DET_RECEPTOR_PROGESTERONA),  # noqa: F403
+            "estudos_imuno": get_val(driver, DET_ESTUDOS_IMUNO),  # noqa: F403
+            "observacoes_gerais_histo": get_txt(driver, DET_OBSERVACOES_GERAIS_HISTO),  # noqa: F403
+        }
+    )
 
 
 def _proxima_pagina(driver: Firefox) -> bool:
@@ -182,7 +214,7 @@ def _proxima_pagina(driver: Firefox) -> bool:
     return True
 
 
-def iterate_patients(driver: Firefox) -> List[Dict[str, Any]]:
+def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
     """Percorre todas as páginas e devolve lista de dicionários de laudos."""
     LOGGER.info("Iniciando iteração sobre pacientes…")
     resultados: List[Dict[str, Any]] = []
@@ -215,7 +247,16 @@ def iterate_patients(driver: Firefox) -> List[Dict[str, Any]]:
                 esperar_carregamento(driver)
                 continue
 
+            # detalhes gerais, comuns a todos os laudos
             detalhes = _extrair_detalhes(driver)
+
+            # detalhes específicos por tipo de exame
+            match opcao_exame:
+                case "mamografia":
+                    _extrair_detalhes_especificos_mamo(driver, detalhes)
+                case "histo_mama":
+                    _extrair_detalhes_especificos_histo_mama(driver, detalhes)
+
             if detalhes["n_protocolo"] not in protocolos_vistos:  # verifica nº de protocolo
                 resultados.append(detalhes)
                 protocolos_vistos.add(detalhes["n_protocolo"])

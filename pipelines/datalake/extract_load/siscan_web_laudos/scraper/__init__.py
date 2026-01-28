@@ -37,7 +37,7 @@ def run_scraper(
         login(email, password, driver)
         goto_laudo_page(driver)
         set_filters(driver, opcao_exame, start_date, end_date)
-        return iterate_patients(driver)
+        return iterate_patients(driver, opcao_exame)
     finally:
         driver.quit()
         LOGGER.info("Driver encerrado.")
