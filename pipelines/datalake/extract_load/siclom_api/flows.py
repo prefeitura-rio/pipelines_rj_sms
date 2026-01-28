@@ -42,14 +42,13 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    cpf_batches = get_patient_data(environment=ENVIRONMENT, batch=BATCH)
+    cpf_batches = get_patient_data(environment=ENVIRONMENT, batch=BATCH, retry=RETRY)
 
     patient_informations = fetch_siclom_data.map(
         environment=unmapped(ENVIRONMENT),
         cpf_batch=cpf_batches,
         endpoint=unmapped(ENDPOINT),
-        api_key=unmapped(API_KEY),
-        retry=unmapped(RETRY),
+        api_key=unmapped(API_KEY)
     )
 
     uploaded_data = upload_df_to_datalake.map(
