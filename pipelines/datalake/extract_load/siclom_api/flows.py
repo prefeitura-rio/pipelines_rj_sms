@@ -1,14 +1,8 @@
 # -*- coding: utf-8 -*-
-
-import json
-
-import pandas as pd
-import requests
-from prefect import Parameter, case, unmapped
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.siclom_api.constants import (
     constants as siclom_constants,
@@ -42,15 +36,21 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    cpf_batches = get_patient_data(environment=ENVIRONMENT, batch=BATCH, retry=RETRY)
+    # 1 - Obtém os CPFs a serem consultados
+    cpf_batches = get_patient_data(
+        environment=ENVIRONMENT,
+        table_id=TABLE_ID, 
+        batch=BATCH, 
+        retry=RETRY)
 
+    # 2 - Faz as requisições na API do siclom
     patient_informations = fetch_siclom_data.map(
-        environment=unmapped(ENVIRONMENT),
         cpf_batch=cpf_batches,
         endpoint=unmapped(ENDPOINT),
         api_key=unmapped(API_KEY)
     )
 
+    # 3 - Carrega os dados no datalake
     uploaded_data = upload_df_to_datalake.map(
         df=patient_informations,
         dataset_id=unmapped(DATASET_ID),
