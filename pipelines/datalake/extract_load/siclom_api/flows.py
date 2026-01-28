@@ -1,0 +1,70 @@
+# -*- coding: utf-8 -*-
+from prefect import Parameter, unmapped
+from prefect.executors import LocalDaskExecutor
+from prefect.run_configs import KubernetesRun
+from prefect.storage import GCS
+from pipelines.constants import constants
+from pipelines.datalake.extract_load.siclom_api.constants import (
+    constants as siclom_constants,
+)
+from pipelines.datalake.extract_load.siclom_api.tasks import (
+    fetch_siclom_data,
+    get_patient_data,
+)
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+
+with Flow(
+    name="DataLake - Extração e Carga de Dados - SICLOM API",
+    state_handlers=[handle_flow_state_change],
+    owners=[
+        constants.HERIAN_ID.value,
+    ],
+) as siclom_extraction:
+
+    ENVIRONMENT = Parameter("environment", default="dev", required=True)
+    DATASET_ID = Parameter("dataset_id", default="brutos_siclom_api", required=True)
+    TABLE_ID = Parameter("table_id", default="cd4", required=True)
+    BATCH = Parameter("batch", default=1000, required=True)
+    ENDPOINT = Parameter("endpoint", required=True)
+    RETRY = Parameter("retry", default=False)
+
+    API_KEY = get_secret_key(
+        secret_path=siclom_constants.INFISICAL_PATH.value,
+        secret_name=siclom_constants.INFISICAL_NAME.value,
+        environment=ENVIRONMENT,
+    )
+
+    # 1 - Obtém os CPFs a serem consultados
+    cpf_batches = get_patient_data(
+        environment=ENVIRONMENT,
+        table_id=TABLE_ID, 
+        batch=BATCH, 
+        retry=RETRY)
+
+    # 2 - Faz as requisições na API do siclom
+    patient_informations = fetch_siclom_data.map(
+        cpf_batch=cpf_batches,
+        endpoint=unmapped(ENDPOINT),
+        api_key=unmapped(API_KEY)
+    )
+
+    # 3 - Carrega os dados no datalake
+    uploaded_data = upload_df_to_datalake.map(
+        df=patient_informations,
+        dataset_id=unmapped(DATASET_ID),
+        table_id=unmapped(TABLE_ID),
+        if_exists=unmapped("append"),
+        partition_column=unmapped("extracted_at"),
+        csv_delimiter=unmapped(","),
+    )
+
+siclom_extraction.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
+siclom_extraction.executor = LocalDaskExecutor(num_workers=2)
+siclom_extraction.run_config = KubernetesRun(
+    image=constants.DOCKER_IMAGE.value,
+    labels=[constants.RJ_SMS_AGENT_LABEL.value],
+    memory_limit="4Gi",
+    memory_request="2Gi",
+)
