@@ -23,7 +23,7 @@ TABLES_CONFIG = [
         "db_schema": "subpav_sinanrio",
         "dest_table": "tb_sintomatico",
         "frequency": "daily",
-        "infisical_path": "/plataforma-subpav",
+        "infisical_path": "/plataforma-subpav/",
         "notify": True,
         "custom_insert_query": """
         INSERT INTO tb_sintomatico (cpf, cns, nome, dt_nascimento,
@@ -56,7 +56,7 @@ TABLES_CONFIG = [
         "db_schema": "subpav_sinanrio",
         "dest_table": "notificacao",
         "frequency": "daily",
-        "infisical_path": "/plataforma-subpav",
+        "infisical_path": "/plataforma-subpav/",
         "notify": True,
         "batch_size": 10000,
         "custom_insert_query": """
@@ -112,7 +112,7 @@ TABLES_CONFIG = [
         "db_schema": "subpav_sinanrio",
         "dest_table": "tb_investiga",
         "frequency": "daily",
-        "infisical_path": "/plataforma-subpav",
+        "infisical_path": "/plataforma-subpav/",
         "notify": True,
         "batch_size": 10000,
         "custom_insert_query": """
@@ -155,24 +155,34 @@ TABLES_CONFIG = [
         "db_schema": "subpav_sinanrio",
         "dest_table": "tb_resultado_exame",
         "frequency": "daily",
-        "infisical_path": "/plataforma-subpav",
+        "infisical_path": "/plataforma-subpav/",
         "notify": True,
+        "batch_size": 5000,
         "custom_insert_query": """
             INSERT INTO tb_resultado_exame (
                 codigo_amostra, paciente_cpf, paciente_cns, cnes, id_tipo_exame, id_resultado,
-                dt_resultado, notificacao_ativa, diagnostico, updated_at
+                dt_resultado, notificacao_ativa, diagnostico
             )
             VALUES (
                 :codigo_amostra, :paciente_cpf, :paciente_cns, :cnes, :id_tipo_exame, :id_resultado,
-                :dt_resultado, :notificacao_ativa, :diagnostico, CURRENT_TIMESTAMP
+                :dt_resultado, :notificacao_ativa, :diagnostico
             )
             ON DUPLICATE KEY UPDATE
-                paciente_cpf        = VALUES(paciente_cpf),
-                cnes                = VALUES(cnes),
-                id_resultado        = VALUES(id_resultado),
-                notificacao_ativa   = VALUES(notificacao_ativa),
-                diagnostico         = VALUES(diagnostico),
-                updated_at          = CURRENT_TIMESTAMP
+                paciente_cpf = IF(paciente_cpf <=> VALUES(paciente_cpf), paciente_cpf, VALUES(paciente_cpf)),
+                cnes = IF(cnes <=> VALUES(cnes), cnes, VALUES(cnes)),
+                id_resultado = IF(id_resultado <=> VALUES(id_resultado), id_resultado, VALUES(id_resultado)),
+                notificacao_ativa = IF(notificacao_ativa <=> VALUES(notificacao_ativa), notificacao_ativa, VALUES(notificacao_ativa)),
+                diagnostico = IF(diagnostico <=> VALUES(diagnostico), diagnostico, VALUES(diagnostico)),
+                updated_at = IF(
+                    (paciente_cpf <=> VALUES(paciente_cpf)) AND
+                    (cnes <=> VALUES(cnes)) AND
+                    (id_resultado <=> VALUES(id_resultado)) AND
+                    (notificacao_ativa <=> VALUES(notificacao_ativa)) AND
+                    (diagnostico <=> VALUES(diagnostico)),
+                    updated_at,
+                    CURRENT_TIMESTAMP
+                )
+
         """,  # noqa: E501
     },
     {  # Resultados de Exames (Atualização de sintomatico)
@@ -182,8 +192,10 @@ TABLES_CONFIG = [
         "db_schema": "subpav_sinanrio",
         "dest_table": "tb_sintomatico",
         "frequency": "daily",
-        "infisical_path": "/plataforma-subpav",
+        "infisical_path": "/plataforma-subpav/",
         "notify": True,
+        "batch_size": 5000,
+        "df_filter_name": "exames_update_sintomatico",
         "custom_insert_query": """
             UPDATE tb_sintomatico s
             SET
@@ -239,9 +251,7 @@ TABLES_CONFIG = [
                     ELSE s.dt_bac_2
                 END
 
-            WHERE :diagnostico = 1
-            AND s.id_tb_situacao IN (1, 2)
-            AND (
+            WHERE (
                     ( :paciente_cns IS NOT NULL AND :paciente_cns <> '' AND s.cns = :paciente_cns )
                 OR ( :paciente_cpf IS NOT NULL AND :paciente_cpf <> '' AND s.cpf = :paciente_cpf )
             )
@@ -278,6 +288,9 @@ def build_param(config: dict) -> dict:
         param["notify"] = config["notify"]
     if config.get("batch_size") is not None:
         param["batch_size"] = config["batch_size"]
+    if config.get("df_filter_name") is not None:
+        param["df_filter_name"] = config["df_filter_name"]
+
     return param
 
 
@@ -300,6 +313,7 @@ daily_clocks = generate_dump_api_schedules(
     start_date=BASE_START_DATE,
     labels=LABELS,
     flow_run_parameters=daily_params,
+    runs_interval_minutes=1,
 )
 
 weekly_clocks = generate_dump_api_schedules(

@@ -210,3 +210,49 @@ def inject_db_schema_in_query(query: str, db_schema: str) -> str:
         return f"{comando} {aspas_esquerda}{db_schema}.{tabela}{aspas_direita}"
 
     return pattern.sub(replacer, query, count=1)
+
+def _col(df: pd.DataFrame, name: str, default=None) -> pd.Series:
+    """Retorna uma Series do tamanho do DF mesmo se a coluna não existir."""
+    if name in df.columns:
+        return df[name]
+    return pd.Series([default] * len(df), index=df.index)
+
+def _is_non_empty_str(s: pd.Series) -> pd.Series:
+    """True para strings não vazias (tratando NaN)."""
+    return s.fillna("").astype(str).str.strip().ne("")
+
+def filter_exames_update_sintomatico(df: pd.DataFrame, notes: list | None = None) -> pd.DataFrame:
+    """
+    Mantém só linhas que podem de fato atualizar tb_sintomatico.
+    Regras:
+    - diagnostico == 1
+    - id_tipo_exame in (1,2)
+    - dt_resultado e id_resultado válidos
+    - tem pelo menos cpf ou cns preenchido
+    """
+    if df is None or df.empty:
+        return df
+
+    before = len(df)
+
+    diagnostico = pd.to_numeric(_col(df, "diagnostico"), errors="coerce").fillna(0).astype(int)
+    diagnostico_ok = diagnostico.eq(1)
+
+    tipo = pd.to_numeric(_col(df, "id_tipo_exame"), errors="coerce")
+    tipo_ok = tipo.isin([1, 2])
+
+    dt_ok = pd.to_datetime(_col(df, "dt_resultado"), errors="coerce").notna()
+
+    id_resultado = _col(df, "id_resultado")
+    id_resultado_ok = id_resultado.notna() & _is_non_empty_str(id_resultado)
+
+    cns_ok = _is_non_empty_str(_col(df, "paciente_cns"))
+    cpf_ok = _is_non_empty_str(_col(df, "paciente_cpf"))
+    id_ok = cns_ok | cpf_ok
+
+    df2 = df.loc[diagnostico_ok & tipo_ok & dt_ok & id_resultado_ok & id_ok].copy()
+
+    if notes is not None:
+        notes.append(f"Filtro exames_update_sintomatico: {before} → {len(df2)}")
+
+    return df2

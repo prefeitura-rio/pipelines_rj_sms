@@ -25,6 +25,7 @@ from pipelines.datalake.migrate.bq_to_subpav.utils import (
     should_notify,
     summarize_error,
     validate_bq_columns,
+    filter_exames_update_sintomatico
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -39,6 +40,9 @@ DEFAULT_REPORT_CONTEXT = {
     "environment": "dev",
 }
 
+DF_FILTERS = {
+    "exames_update_sintomatico": filter_exames_update_sintomatico,
+}
 
 @task
 def resolve_notify(project: str, notify_param) -> bool:
@@ -95,7 +99,8 @@ def query_bq_table(
         client = bigquery.Client(project=project_id)
         df = client.query(query).to_dataframe()
         log(f"[{environment.upper()}] {full_ref} → {len(df)} registros", level="info")
-        return {"df": df, "metrics": None}
+        metrics = default_metrics()
+        return {"df": df, "metrics": metrics}
 
     except GoogleAPIError as exc:
         msg = (
@@ -392,3 +397,19 @@ def generate_report(metrics: dict, context: Optional[Dict[str, Any]] = None) -> 
         )
 
     return report
+
+@task
+def apply_df_filter(df, filter_name: str | None, notes: list | None = None):
+    """Aplica um filtro opcional no DF, controlado por config."""
+    if df is None or getattr(df, "empty", True) or not filter_name:
+        return df
+
+    fn = DF_FILTERS.get(filter_name)
+    if not fn:
+        msg = f"df_filter_name='{filter_name}' não encontrado; seguindo sem filtro."
+        log(msg, level="warning")
+        if notes is not None:
+            notes.append(msg)
+        return df
+
+    return fn(df, notes=notes)

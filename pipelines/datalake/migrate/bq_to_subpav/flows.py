@@ -21,6 +21,8 @@ from pipelines.datalake.migrate.bq_to_subpav.tasks import (
     insert_df_into_mysql,
     query_bq_table,
     resolve_notify,
+    apply_df_filter
+    
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.flow import Flow
@@ -49,6 +51,8 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     LIMIT = Parameter("limit", required=False, default=None)
     BATCH_SIZE = Parameter("batch_size", required=False, default=1000)
+    DF_FILTER_NAME = Parameter("df_filter_name", required=False, default=None)
+
     NOTIFY = Parameter("notify", default=None)
 
     NOTIFY_RESOLVED = resolve_notify(project=PROJECT, notify_param=NOTIFY)
@@ -73,6 +77,12 @@ with Flow(
 
     df_bq = result["df"]
     metrics = result["metrics"]
+
+    df_bq = apply_df_filter(
+        df=df_bq, 
+        filter_name=DF_FILTER_NAME, 
+        notes=metrics["notes"]
+        )
 
     db_uri = get_db_uri(
         infisical_path=INFISICAL_PATH,
