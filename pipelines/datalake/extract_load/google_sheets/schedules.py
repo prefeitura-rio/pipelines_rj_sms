@@ -375,6 +375,16 @@ monthly_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1IwykWf0glAraHrVDZLJosxuhnpo8AO5EUdj1OSwDqNU",
         "url_type": "google_sheet",
     },
+    {
+        "csv_delimiter": "|",
+        "dataset_id": "brutos_sheets",
+        "environment": "prod",
+        "gsheets_sheet_name": "vacinas",
+        "rename_flow": True,
+        "table_id": "vacinas_padronizadas",
+        "url": "https://docs.google.com/spreadsheets/d/1TcN_4PHp2xnTzRkKLKO0eG1sjpwO7Nl5g9eAhEBDdOU",
+        "url_type": "google_sheet",
+    },
 ]
 
 
