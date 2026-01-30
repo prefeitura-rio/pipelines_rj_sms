@@ -1,15 +1,70 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
-import pandas as pd
 import pytz
+import requests
+from pandas import DataFrame
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from datetime import datetime
 from google.cloud import bigquery
-
 from pipelines.datalake.extract_load.siclom_api.constants import constants
-from pipelines.datalake.extract_load.siclom_api.utils import make_request
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 
 
+def make_request(url: str, headers: dict) -> requests.Response | None:
+    """Faz requisição para uma API utilizando o método GET."""
+    session = requests.Session()
+    retries = Retry(total=2, backoff_factor=1, status_forcelist=[502, 503, 504, 104])
+    session.mount("https://", HTTPAdapter(max_retries=retries))
+    try:
+        response = session.get(url=url, headers=headers)
+    except requests.exceptions.RequestException:
+        return None
+    return response
+
+@task
+def format_month(month:str) -> str:
+    """Formata string numérica referente ao mês. (Ex: 1 -> 01)"""
+    if int(month) > 12:
+        raise Exception(msg="Mês inválido.")
+    return str(month).zfill(2)
+
+@task
+def generate_formated_months(_) -> list[str]:
+    """Gera strings numéricas formatadas referente aos meses para extrações anuais."""
+    return [str(month).zfill(2) for month in range(1, 13)]
+
+@task
+def get_siclom_period_data(
+    endpoint: str, 
+    api_key: str, 
+    month: str, 
+    year: str
+    ) -> DataFrame:
+    """Faz a requisição para a API do SICLOM utilizando a busca por mês e ano."""
+    log(f"Buscando dados de {month}/{year}...")
+    
+    headers = {"Accept": "application/json", "X-API-KEY": api_key}
+    
+    base_url = constants.BASE_URL.value
+    url = f"{base_url}{endpoint}{month}/{year}"
+    
+    response = make_request(url=url, headers=headers)
+    
+    if response and response.status_code == 200:
+       data = response.json()['resultado']
+       df = DataFrame(data)
+       df['extracted_at'] = datetime.now(pytz.timezone('America/Sao_Paulo')).strftime('%Y-%m-%d %H:%M:%S')
+       
+       log('✅ Extração realizada com sucesso!')
+       return df
+    
+    else:
+       return DataFrame()
+
+# Após a implementação do endpoint para obter dados por período na API do SICLOM, 
+# as seguintes tasks perderam o sentido em serem utilizadas, mas preferi mante-las
+# para possíveis necessidades futuras.
 @task
 def get_patient_data(
     environment: str,
@@ -18,7 +73,7 @@ def get_patient_data(
     retry: bool
     ):
     """
-    Obtém os CPFs a serem consultados na API do SICLOM.
+    Obtém os CPFs a serem consultados na API do SICLOM e divide em lotes.
 
     Parâmetros:
         - `batch`: Tamanho de cada lote de CPFs a ser gerado para requisições paralelizadas
@@ -64,18 +119,9 @@ def get_patient_data(
     return chunks
 
 @task
-def fetch_siclom_data(cpf_batch, endpoint, api_key):
+def fetch_siclom_data(cpf_batch: list, endpoint: str, api_key: str):
     """
-    Faz a requisição para a API do SICLOM.
-
-    Args:
-        `environment` (_str_): Ambiente de execução do flow.
-        `cpf_batch` (_list_): Lote de CPFs a serem consultados na API.
-        `endpoint` (_str_): Endpoint da API.
-        `api_key` (_str_): Chave de autenticação da API.
-
-    Returns:
-        `pd.DataFrame`: _description_
+    Faz a requisição para a API do SICLOM utilizando a busca por CPF.
     """
     log(f"Buscando dados do Siclom para o lote de CPFs...")
 
@@ -99,11 +145,11 @@ def fetch_siclom_data(cpf_batch, endpoint, api_key):
         except Exception as e:
             raise e
     if patients_data:
-        df = pd.DataFrame(patients_data)
+        df = DataFrame(patients_data)
         df["extracted_at"] = datetime.now(pytz.timezone("America/Sao_Paulo")).strftime(
             "%Y-%m-%d %H:%M:%S"
         )
     else:
-        df = pd.DataFrame()
+        df = DataFrame()
 
     return df

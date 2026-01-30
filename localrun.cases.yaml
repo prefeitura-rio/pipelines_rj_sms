@@ -555,11 +555,12 @@ cases:
       plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"
   - case_slug: siclom_extraction
     flow_path: pipelines.datalake.extract_load.siclom_api.flows
-    flow_name: siclom_extraction
+    flow_name: siclom_period_extraction
     params:
       environment: dev
+      endpoint: '/mostracargacd4periodo/'
+      year: "2025"
+      month: "01"
+      annual: False
       dataset_id: brutos_siclom_api
-      table_id: cd4
-      batch: 10
-      endpoint: '/mostracargacd4/'
-      retry: false
+      table_id: "cd4"
