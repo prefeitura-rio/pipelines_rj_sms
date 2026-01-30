@@ -26,7 +26,8 @@ with Flow(
 
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     ENDPOINT = Parameter("endpoint", required=True)
-    YEAR = Parameter("year", default="2025", required=True)
+    YEAR = Parameter("year", default=2025, required=True)
+    INTERVAL = Parameter("interval", default=5, required=True)
     ANNUAL = Parameter("annual", default=True, required=True)
     MONTH = Parameter("month", required=False)
     DATASET_ID = Parameter("dataset_id", default="brutos_siclom_api", required=True)
@@ -40,14 +41,13 @@ with Flow(
     
     with case(ANNUAL, False):
         # 1 - Formata a string do mês
-        formated_month = format_month(month=MONTH)
+        formated_month = format_month(month=MONTH, year=YEAR)
         
         # 2 - Faz a requisição na API do SICLOM
         month_data = get_siclom_period_data(
             endpoint=ENDPOINT,
             api_key=API_KEY,
-            month=formated_month,
-            year=YEAR
+            period=formated_month
         )
         
         # 3 - Carrega os dados no datalake
@@ -62,12 +62,11 @@ with Flow(
         
     with case(ANNUAL, True):
         # 1 - Gera as strings numéricas de cada mês formatadas
-        months = generate_formated_months(_=ENVIRONMENT)
+        formated_periods = generate_formated_months(reference_year=YEAR, interval=INTERVAL)
         
         # 2 - Faz as requisições na API do SICLOM
         months_data = get_siclom_period_data.map(
-            year=unmapped(YEAR),
-            month=months,
+            period=formated_periods,
             endpoint=unmapped(ENDPOINT),
             api_key=unmapped(API_KEY)
         )

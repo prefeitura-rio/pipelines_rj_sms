@@ -23,31 +23,37 @@ def make_request(url: str, headers: dict) -> requests.Response | None:
     return response
 
 @task
-def format_month(month:str) -> str:
-    """Formata string numérica referente ao mês. (Ex: 1 -> 01)"""
+def format_month(month:str, year:str) -> str:
+    """Formata string numérica referente ao mês-ano."""
     if int(month) > 12:
         raise Exception(msg="Mês inválido.")
-    return str(month).zfill(2)
+    return f"{str(month).zfill(2)}/{year}"
 
 @task
-def generate_formated_months(_) -> list[str]:
+def generate_formated_months(reference_year:str, interval) -> list[str]:
     """Gera strings numéricas formatadas referente aos meses para extrações anuais."""
-    return [str(month).zfill(2) for month in range(1, 13)]
+    
+    periods = []
+    for year in range(reference_year, reference_year - interval, -1):
+        periods.extend([
+            f"{str(month).zfill(2)}/{year}" for month in range(1, 13)
+            ])
+    log(periods)
+    return periods
 
 @task
 def get_siclom_period_data(
     endpoint: str, 
     api_key: str, 
-    month: str, 
-    year: str
+    period: str
     ) -> DataFrame:
     """Faz a requisição para a API do SICLOM utilizando a busca por mês e ano."""
-    log(f"Buscando dados de {month}/{year}...")
+    log(f"Buscando dados de {period}...")
     
     headers = {"Accept": "application/json", "X-API-KEY": api_key}
     
     base_url = constants.BASE_URL.value
-    url = f"{base_url}{endpoint}{month}/{year}"
+    url = f"{base_url}{endpoint}{period}"
     
     response = make_request(url=url, headers=headers)
     
