@@ -25,6 +25,7 @@ __all__ = ["ScraperError", "run_scraper"]
 def run_scraper(
     email: str,
     password: str,
+    opcao_exame: str,
     start_date: str,
     end_date: str,
     *,
@@ -35,8 +36,8 @@ def run_scraper(
     try:
         login(email, password, driver)
         goto_laudo_page(driver)
-        set_filters(driver, start_date, end_date)
-        return iterate_patients(driver)
+        set_filters(driver, opcao_exame, start_date, end_date)
+        return iterate_patients(driver, opcao_exame)
     finally:
         driver.quit()
         LOGGER.info("Driver encerrado.")
