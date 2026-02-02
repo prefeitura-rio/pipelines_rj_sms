@@ -5,7 +5,7 @@ import yaml
 
 
 def get_case(case_slug: str) -> dict:
-    case_file = yaml.safe_load(open("localrun.cases.yaml"))
+    case_file = yaml.safe_load(open("localrun.cases.yaml", encoding="utf-8"))
 
     for case in case_file["cases"]:
         if case["case_slug"] == case_slug:
