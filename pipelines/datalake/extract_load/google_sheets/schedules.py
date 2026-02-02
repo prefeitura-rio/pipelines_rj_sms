@@ -387,6 +387,21 @@ monthly_parameters = [
     },
 ]
 
+# 1x a cada 6 meses
+semiannual_parameters = [
+    # Municípios do Brasil; IBGE passa anos sem atualizar
+    # Vide https://www.ibge.gov.br/explica/codigos-dos-municipios.php
+    {
+        "url": "https://docs.google.com/spreadsheets/d/176u8I3xlAW7mFN3M0QADZ2b6jU0iUAfWs4CvKd5rhJU",
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Brasil",
+        "table_id": "municipios_brasil",
+        "dataset_id": "brutos_sheets",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+]
 
 hourly_clocks = generate_dump_api_schedules(
     interval=timedelta(hours=4),
@@ -429,6 +444,16 @@ monthly_clocks = generate_dump_api_schedules(
     runs_interval_minutes=30,
 )
 
-clocks = hourly_clocks + daily_clocks + weekly_clocks + monthly_clocks
+semiannual_clocks = generate_dump_api_schedules(
+    interval=timedelta(days=6*30),
+    start_date=datetime(2026, 3, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    flow_run_parameters=semiannual_parameters,
+    runs_interval_minutes=30,
+)
+
+clocks = hourly_clocks + daily_clocks + weekly_clocks + monthly_clocks + semiannual_clocks
 
 daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))
