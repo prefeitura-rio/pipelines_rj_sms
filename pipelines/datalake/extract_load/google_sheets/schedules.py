@@ -9,9 +9,104 @@ from datetime import datetime, timedelta
 
 import pytz
 from prefect.schedules import Schedule
+from datetime import time
+
 
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
+
+hourly_parameters = [
+    {
+        "csv_delimiter": ",",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Controle PGM 2025",
+        "rename_flow": True,
+        "table_id": "pgm_2025",
+        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
+        "url_type": "google_sheet",
+    },
+
+     {
+        "csv_delimiter": ",",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Controle PGM 2026",
+        "rename_flow": True,
+        "table_id": "pgm_2026",
+        "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
+        "url_type": "google_sheet",
+    },
+
+    {
+        "csv_delimiter": ",",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Equipe JR 2025",
+        "rename_flow": True,
+        "table_id": "judicial_residual_2025",
+        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
+        "url_type": "google_sheet",
+    },
+
+
+     {
+        "csv_delimiter": ",",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Equipe JR",
+        "rename_flow": True,
+        "table_id": "judicial_residual_2026",
+        "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
+        "url_type": "google_sheet",
+    },
+
+
+
+
+    
+    {
+        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
+        "url_type": "google_sheet",
+        "gsheets_sheet_name": "Controle de Demandas - Equipe Individual",
+        "table_id": "equipe_tutela_individual_v2", # 2025
+        "dataset_id": "brutos_cdi",
+        "csv_delimiter": "|",
+        "environment": "prod",
+        "rename_flow": True,
+    },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Controle de Demandas - Equipe Individual",
+        "rename_flow": True,
+        "table_id": "equipe_tutela_individual_v2_2026",
+        "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
+        "url_type": "google_sheet"
+    },
+         {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Controle de Demandas - Equipe Coletiva",
+        "rename_flow": True,
+        "table_id": "equipe_tutela_coletiva_v2_2025",
+        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
+        "url_type": "google_sheet"
+    },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Controle de Demandas - Equipe Coletiva",
+        "rename_flow": True,
+        "table_id": "equipe_tutela_coletiva_v2_2026",
+        "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
+        "url_type": "google_sheet"
+    }
+
+]
 
 daily_parameters = [
     {
@@ -253,96 +348,6 @@ daily_parameters = [
         "csv_delimiter": "|",
         "environment": "prod",
         "rename_flow": True,
-    },
-
-    {
-        "csv_delimiter": ",",
-        "dataset_id": "brutos_cdi",
-        "environment": "prod",
-        "gsheets_sheet_name": "Controle PGM 2025",
-        "rename_flow": True,
-        "table_id": "pgm_2025",
-        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
-        "url_type": "google_sheet",
-    },
-
-     {
-        "csv_delimiter": ",",
-        "dataset_id": "brutos_cdi",
-        "environment": "prod",
-        "gsheets_sheet_name": "Controle PGM 2026",
-        "rename_flow": True,
-        "table_id": "pgm_2026",
-        "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
-        "url_type": "google_sheet",
-    },
-
-    {
-        "csv_delimiter": ",",
-        "dataset_id": "brutos_cdi",
-        "environment": "prod",
-        "gsheets_sheet_name": "Equipe JR 2025",
-        "rename_flow": True,
-        "table_id": "judicial_residual_2025",
-        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
-        "url_type": "google_sheet",
-    },
-
-
-     {
-        "csv_delimiter": ",",
-        "dataset_id": "brutos_cdi",
-        "environment": "prod",
-        "gsheets_sheet_name": "Equipe JR",
-        "rename_flow": True,
-        "table_id": "judicial_residual_2026",
-        "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
-        "url_type": "google_sheet",
-    },
-
-
-
-
-    
-    {
-        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
-        "url_type": "google_sheet",
-        "gsheets_sheet_name": "Controle de Demandas - Equipe Individual",
-        "table_id": "equipe_tutela_individual_v2", # 2026
-        "dataset_id": "brutos_cdi",
-        "csv_delimiter": "|",
-        "environment": "prod",
-        "rename_flow": True,
-    },
-    {
-        "csv_delimiter": ";",
-        "dataset_id": "brutos_cdi",
-        "environment": "prod",
-        "gsheets_sheet_name": "Controle de Demandas - Equipe Individual",
-        "rename_flow": True,
-        "table_id": "equipe_tutela_individual_v2_2026",
-        "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
-        "url_type": "google_sheet"
-    },
-         {
-        "csv_delimiter": ";",
-        "dataset_id": "brutos_cdi",
-        "environment": "prod",
-        "gsheets_sheet_name": "Controle de Demandas - Equipe Coletiva",
-        "rename_flow": True,
-        "table_id": "equipe_tutela_coletiva_v2_2025",
-        "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
-        "url_type": "google_sheet"
-    },
-    {
-        "csv_delimiter": ";",
-        "dataset_id": "brutos_cdi",
-        "environment": "prod",
-        "gsheets_sheet_name": "Controle de Demandas - Equipe Coletiva",
-        "rename_flow": True,
-        "table_id": "equipe_tutela_coletiva_v2_2026",
-        "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
-        "url_type": "google_sheet"
     }
 ]
 
@@ -383,6 +388,16 @@ monthly_parameters = [
 ]
 
 
+hourly_clocks = generate_dump_api_schedules(
+    interval=timedelta(hours=4),
+    start_date = datetime.combine(datetime.today(), time(hour=8, minute=0)),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    flow_run_parameters=hourly_parameters,
+    runs_interval_minutes=3,
+)
+
 daily_clocks = generate_dump_api_schedules(
     interval=timedelta(days=1),
     start_date=datetime(2023, 1, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
@@ -414,6 +429,6 @@ monthly_clocks = generate_dump_api_schedules(
     runs_interval_minutes=30,
 )
 
-clocks = daily_clocks + weekly_clocks + monthly_clocks
+clocks = hourly_clocks + daily_clocks + weekly_clocks + monthly_clocks
 
 daily_update_schedule = Schedule(clocks=untuple_clocks(clocks))
