@@ -65,6 +65,7 @@ with Flow(
     )
 
     # PARAMETROS CONSULTA ---------------------------
+    OPCAO_EXAME = Parameter("opcao_exame", default="mamografia")
     DATA_INICIAL = Parameter("data_inicial", default="01/01/2025")
     DATA_FINAL = Parameter("data_final", default="31/01/2025")
 
@@ -79,6 +80,7 @@ with Flow(
     raw_files = run_siscan_scraper(
         email=user,
         password=password,
+        opcao_exame=OPCAO_EXAME,
         start_date=DATA_INICIAL,
         end_date=DATA_FINAL,
         output_dir=CONFIG["output_dir"],

@@ -10,7 +10,6 @@ from .config import LOGGER, TENTATIVAS_LOGIN, URL_BASE
 from .driver import safe_click, safe_get, wait_clickable
 from .locators import BOTAO_ENTRAR, CAMPO_EMAIL, CAMPO_SENHA
 
-
 def login(email: str, senha: str, driver):  # type: ignore[arg-type]
     """Efetua login no sistema; tenta novamente em caso de lentidão."""
     LOGGER.info("Iniciando login…")
