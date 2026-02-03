@@ -40,7 +40,7 @@ TABLES_CONFIG = [
         IFNULL(:cns_cadastrante, ''), :id_tb_situacao, LEFT(:origem, 1)
         WHERE NOT EXISTS (
                 SELECT 1
-                FROM tb_sintomatico s
+                FROM subpav_sinanrio.tb_sintomatico s
                 WHERE (
                     (:cpf IS NOT NULL AND :cpf <> '' AND s.cpf = :cpf)
                     OR (:cns IS NOT NULL AND :cns <> '' AND s.cns = :cns)
