@@ -69,7 +69,7 @@ hourly_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
         "url_type": "google_sheet",
         "gsheets_sheet_name": "Controle de Demandas - Equipe Individual",
-        "table_id": "equipe_tutela_individual_v2", # 2025
+        "table_id": "equipe_tutela_individual_2025", # 2025
         "dataset_id": "brutos_cdi",
         "csv_delimiter": "|",
         "environment": "prod",
@@ -81,7 +81,7 @@ hourly_parameters = [
         "environment": "prod",
         "gsheets_sheet_name": "Controle de Demandas - Equipe Individual",
         "rename_flow": True,
-        "table_id": "equipe_tutela_individual_v2_2026",
+        "table_id": "equipe_tutela_individual_2026",
         "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
         "url_type": "google_sheet"
     },
@@ -91,7 +91,7 @@ hourly_parameters = [
         "environment": "prod",
         "gsheets_sheet_name": "Controle de Demandas - Equipe Coletiva",
         "rename_flow": True,
-        "table_id": "equipe_tutela_coletiva_v2_2025",
+        "table_id": "equipe_tutela_coletiva_2025",
         "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
         "url_type": "google_sheet"
     },
@@ -101,7 +101,7 @@ hourly_parameters = [
         "environment": "prod",
         "gsheets_sheet_name": "Controle de Demandas - Equipe Coletiva",
         "rename_flow": True,
-        "table_id": "equipe_tutela_coletiva_v2_2026",
+        "table_id": "equipe_tutela_coletiva_2026",
         "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
         "url_type": "google_sheet"
     }
