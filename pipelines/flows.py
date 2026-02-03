@@ -52,6 +52,8 @@ from pipelines.datalake.migrate.orquestracao_cdi.flows import *
 # TRANSFORM
 # ===============================
 from pipelines.datalake.transform.dbt.flows import *
+from pipelines.prontuarios.raw.smsrio.flows import *
+from pipelines.prontuarios.std.alergias_vitai.flows import *
 
 # ===============================
 # GEMINI
