@@ -4,6 +4,7 @@
 """
 Utilities for infisical.
 """
+
 import base64
 import json
 import os

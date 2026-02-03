@@ -3,6 +3,7 @@
 """
 Constants for DBT.
 """
+
 from enum import Enum
 
 

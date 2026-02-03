@@ -3,6 +3,7 @@
 """
 Flows de extração e carga de dados do Vitacare Historico SQL Server para o BigQuery
 """
+
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun

@@ -3,6 +3,7 @@
 """
 Schedules for Vitai Allergies Standardization
 """
+
 from datetime import datetime, timedelta
 
 import pytz

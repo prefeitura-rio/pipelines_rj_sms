@@ -3,6 +3,7 @@
 """
 Constants for Diário Oficial Municipal.
 """
+
 from enum import Enum
 
 

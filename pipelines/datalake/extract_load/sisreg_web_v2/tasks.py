@@ -3,7 +3,6 @@
 Tarefas para o Web Scraping do SISREG.
 """
 
-
 import os
 
 # bibliotecas padrão

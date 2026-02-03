@@ -55,7 +55,7 @@ def get_most_recent_schema(file_pattern: str, environment: str) -> list:
     log(f"Most recent file: {most_recent_file}")
 
     # Baixa o arquivo mais recente
-    (csv_file, detected_separator, _) = download_file(bucket, most_recent_file, extra_safe=True)
+    csv_file, detected_separator, _ = download_file(bucket, most_recent_file, extra_safe=True)
 
     try:
         # Pega a primeira linha
@@ -91,7 +91,7 @@ def upload_consistent_files(
 
     # Download file
     try:
-        (csv_file, detected_separator, metadata_columns) = download_file(
+        csv_file, detected_separator, metadata_columns = download_file(
             bucket, file_name, extra_safe=use_safe_download_file
         )
     except Exception as e:
