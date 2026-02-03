@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103, E1123
+# pylint: disable=import-error
+
 """
 SUBPAV dumping flows
 """
@@ -37,6 +38,7 @@ with Flow(
 
     # INFISICAL
     INFISICAL_PATH = Parameter("infisical_path", default="/smsrio")
+    SECRET_NAME = Parameter("secret_name", default="DB_URL")
 
     # Flow
     RENAME_FLOW = Parameter("rename_flow", default=False)
@@ -64,27 +66,30 @@ with Flow(
     #####################################
     # Set environment
     ####################################
-    bq_table_name = build_bq_table_name(db_table=TABLE_ID, schema=SCHEMA)
+    BQ_TABLE_NAME = build_bq_table_name(db_table=TABLE_ID, schema=SCHEMA)
 
     date_filter = from_relative_date(relative_date=RELATIVE_DATE_FILTER)
 
     with case(RENAME_FLOW, True):
-        rename_current_flow_run(environment=ENVIRONMENT, dataset=DATASET_ID, table=bq_table_name)
+        rename_current_flow_run(environment=ENVIRONMENT, dataset=DATASET_ID, table=BQ_TABLE_NAME)
 
     ####################################
     # Tasks section #1 - Get data
     #####################################
     DB_URL = get_secret_key(
-        secret_path=INFISICAL_PATH, secret_name="DB_URL", environment=ENVIRONMENT
+        secret_path=INFISICAL_PATH, secret_name=SECRET_NAME, environment=ENVIRONMENT
     )
 
     queries = create_extraction_batches(
-        db_url=DB_URL,
-        db_schema=SCHEMA,
-        db_table=TABLE_ID,
-        date_filter=date_filter,
-        datetime_column=DATETIME_COLUMN,
-        id_column=ID_COLUMN,
+        config={
+            "db_url": DB_URL,
+            "db_schema": SCHEMA,
+            "db_table": TABLE_ID,
+            "date_filter": date_filter,
+            "datetime_column": DATETIME_COLUMN,
+            "id_column": ID_COLUMN,
+            # "batch_size": 50000,  # opcional
+        }
     )
 
     dataframes = download_from_db.map(
@@ -98,7 +103,7 @@ with Flow(
     upload_df_to_datalake.map(
         df=dataframes,
         dataset_id=unmapped(DATASET_ID),
-        table_id=unmapped(bq_table_name),
+        table_id=unmapped(BQ_TABLE_NAME),
         partition_column=unmapped(PARTITION_COLUMN),
         source_format=unmapped("parquet"),
         if_exists=unmapped(IF_EXISTS),
