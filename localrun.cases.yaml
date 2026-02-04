@@ -560,9 +560,9 @@ cases:
     params:
       environment: dev
       endpoint: '/mostracargacd4periodo/'
-      interval: 5
+      interval: 1
       year: 2025
-      month: "01"
+      month: "06"
       annual: True
       dataset_id: brutos_siclom_api
       table_id: "teste_cd4"

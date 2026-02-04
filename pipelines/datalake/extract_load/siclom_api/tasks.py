@@ -51,22 +51,72 @@ def get_siclom_period_data(
     log(f"Buscando dados de {period}...")
     
     headers = {"Accept": "application/json", "X-API-KEY": api_key}
+    if endpoint != '/resultadoprepperiodo/':
+        base_url = constants.BASE_URL.value
+        url = f"{base_url}{endpoint}{period}"
+        
+        response = make_request(url=url, headers=headers)
+        if response and response.status_code == 200:
+            data = response.json()['resultado']
+            df = DataFrame(data)
+            df['extracted_at'] = datetime.now(pytz.timezone('America/Sao_Paulo')).strftime('%Y-%m-%d %H:%M:%S')
+            
+            log('✅ Extração realizada com sucesso!')
+            return df
+        else:
+            return DataFrame()
+    else:
+        return get_siclom_prep_data.run(
+            endpoint=endpoint,
+            api_key=api_key,
+            period=period
+        )
+   
+@task 
+def get_siclom_prep_data(
+    endpoint: str,
+    api_key: str,
+    period: str
+) -> DataFrame:
+    """Faz a requisição para a API do SICLOM utilizando a busca por mês e ano para dados de PREP."""
+    log(f"Buscando dados de PREP de {period}...")
+    
+    headers = {"Accept": "application/json", "X-API-KEY": api_key}
     
     base_url = constants.BASE_URL.value
-    url = f"{base_url}{endpoint}{period}"
-    
+    url = f"{base_url}{endpoint}{period}?page=1&numItemsPerPage=50"
+    extracted_data = []
     response = make_request(url=url, headers=headers)
     
-    if response and response.status_code == 200:
-       data = response.json()['resultado']
-       df = DataFrame(data)
-       df['extracted_at'] = datetime.now(pytz.timezone('America/Sao_Paulo')).strftime('%Y-%m-%d %H:%M:%S')
-       
-       log('✅ Extração realizada com sucesso!')
-       return df
-    
+    if not response:
+        return DataFrame()
     else:
-       return DataFrame()
+        payload = response.json()
+        if 'resultado' not in payload:
+            log('Nenhum dado retornado para o período solicitado.')
+            return DataFrame()
+        page = payload['resultado']
+        extracted_data.extend(page['items'])
+        next = page['next']
+        log('Iniciando extração por paginação...')
+        while next:
+            log(f'Extraindo página {page["current"]}/{page["pageCount"]}...')
+            url = f"{base_url}{endpoint}{period}?page={next}&numItemsPerPage=50"
+            response = make_request(url=url, headers=headers)
+            if not response or response.status_code != 200:
+                break
+            payload = response.json()
+            if 'resultado' not in payload:
+                break
+            page = payload['resultado']
+            extracted_data.extend(page['items'])
+            if 'next' in page:
+                next = page['next']
+            else:
+                break
+    df = DataFrame(extracted_data)
+    df['extracted_at'] = datetime.now(pytz.timezone('America/Sao_Paulo')).strftime('%Y-%m-%d %H:%M:%S')
+    return df
 
 # Após a implementação do endpoint para obter dados por período na API do SICLOM, 
 # as seguintes tasks perderam o sentido em serem utilizadas, mas preferi mante-las
