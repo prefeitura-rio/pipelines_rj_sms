@@ -48,7 +48,7 @@ with Flow(
     DEST_TABLE = Parameter("dest_table", required=True)
     CUSTOM_INSERT_QUERY = Parameter("custom_insert_query", required=False, default=None)
     RENAME_FLOW = Parameter("rename_flow", default=False)
-    ENVIRONMENT = Parameter("environment", default="dev")
+    ENVIRONMENT = Parameter("environment", default="prod")
     LIMIT = Parameter("limit", required=False, default=None)
     BATCH_SIZE = Parameter("batch_size", required=False, default=1000)
     DF_FILTER_NAME = Parameter("df_filter_name", required=False, default=None)
