@@ -26,7 +26,7 @@ def get_extraction_date() -> datetime:
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def get_cpf_profissionais(environment: str, sample: int = 1) -> list[str]:
+def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 10) -> list[str]:
     client = bigquery.Client()
     log("Cliente Big Query OK")
 
@@ -50,6 +50,9 @@ def get_cpf_profissionais(environment: str, sample: int = 1) -> list[str]:
     log(f"Query executada com sucesso, {len(df)} CPF retornados")
 
     res = df["profissional_executante_cpf"].to_list()
+    if environment == "dev":
+        res = res[:slice]
+        log(f"CPF reduzido a {len(res)} elementos")
     return res
 
 
@@ -147,7 +150,7 @@ def search_afastamentos(
     return df
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=5))
+@task(max_retries=3, retry_delay=timedelta(minutes=500))
 def search_historico_afastamentos(
     cpf: str, session: Session, extraction_date: datetime
 ) -> pd.DataFrame | None:
@@ -158,6 +161,9 @@ def search_historico_afastamentos(
     if "Nenhum Log Encontrado" in res.text:
         log(f"Nenhum log encontrado para o CPF {cpf}")
         return None
+
+    if "(CAPTCHA)" in res.text:
+        raise Exception("SISREG está pedindo CAPTCHA")
 
     df = pd.read_html(
         StringIO(BeautifulSoup(res.content, "lxml").find(class_="table_listagem").__str__())
