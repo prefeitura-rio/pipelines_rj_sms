@@ -56,7 +56,7 @@ with Flow(
     )  # Accepted values are "append" and "overwrite".
 
     # GCP
-    ENVIRONMENT = Parameter("environment", default="dev")
+    ENVIRONMENT = Parameter("environment", default="prod")
     DATASET_ID = Parameter("dataset_id", default="brutos_plataforma_subpav")
 
     # Storage Configuration
