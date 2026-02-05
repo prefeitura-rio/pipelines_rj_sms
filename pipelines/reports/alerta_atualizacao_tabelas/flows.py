@@ -5,7 +5,10 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.reports.alerta_atualizacao_tabelas.schedules import schedule
+from pipelines.reports.alerta_atualizacao_tabelas.schedules import (
+    freshness_hci_schedule,
+    freshness_tables_schedule,
+)
 from pipelines.reports.alerta_atualizacao_tabelas.tasks import (
     send_discord_alert,
     verify_tables_freshness,
@@ -35,7 +38,7 @@ report_alerta_atualizacao_tabelas.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
-report_alerta_atualizacao_tabelas.schedule = schedule
+report_alerta_atualizacao_tabelas.schedule = freshness_tables_schedule
 
 
 with Flow(
@@ -57,4 +60,4 @@ report_alerta_atualizacao_hci.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
-report_alerta_atualizacao_hci.schedule = schedule
+report_alerta_atualizacao_hci.schedule =  freshness_hci_schedule
