@@ -109,7 +109,12 @@ def generate_extraction_windows(start_date: datetime, end_date: datetime, interv
 
 @task
 def build_operator_parameters(
-    start_dates: tuple, end_dates: tuple, environment: str = "dev"
+    start_dates: tuple, 
+    end_dates: tuple,  
+    bq_table:str,
+    bq_dataset:str,
+    opcao_exame:str,
+    environment: str = "dev"
 ) -> list:
     """Gera lista de parâmetros para o(s) operator(s).
 
@@ -122,7 +127,14 @@ def build_operator_parameters(
         List[dict]: Lista com os parâmetros do(s) operator(s).
     """
     return [
-        {"environment": environment, "data_inicial": start, "data_final": end}
+        {
+            "environment": environment, 
+            "data_inicial": start, 
+            "data_final": end,
+            "bq_dataset": bq_dataset,
+            "bq_table": bq_table,
+            "opcao_exame": opcao_exame
+        }
         for start, end in zip(start_dates, end_dates)
     ]
 
