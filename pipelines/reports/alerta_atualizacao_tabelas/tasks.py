@@ -82,10 +82,13 @@ def verify_hci_last_episodes(environment: str) -> list:
             max(entry_datetime) as last_episode
         from `rj-sms.app_historico_clinico.episodio_assistencial` 
         group by provider
+        order by provider asc
     """
     df = bigquery.Client().query(sql).to_dataframe()
     df['last_episode'] = pd.to_datetime(df['last_episode'])
-    return [dict(df.iloc[row]) for row in range(0, len(df))]
+    last_episodes = [dict(df.iloc[row]) for row in range(0, len(df))]
+    
+    return last_episodes
 
 @task 
 def send_hci_discord_alert(environment: str, last_episodes: list):
@@ -111,4 +114,3 @@ def send_hci_discord_alert(environment: str, last_episodes: list):
         monitor_slug="freshness",
         suppress_embeds=True,
     )
-    
