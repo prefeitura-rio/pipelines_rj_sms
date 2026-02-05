@@ -198,6 +198,9 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", default=True)
     START_DATE = Parameter("start_date", default="01/01/2025")
     END_DATE = Parameter("end_date", default="31/01/2025")
+    OPCAO_EXAME = Parameter("opcao_exame", default="mamografia")
+    BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
+    BQ_TABLE = Parameter("bq_table", default="laudos")
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
@@ -229,6 +232,9 @@ with Flow(
         start_dates=interval_starts,
         end_dates=interval_ends,
         environment=ENVIRONMENT,
+        bq_dataset=BQ_DATASET,
+        bq_table=BQ_TABLE,
+        opcao_exame=OPCAO_EXAME,
     )
 
     # Cria e espera a execução das flow runs
