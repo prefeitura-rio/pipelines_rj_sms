@@ -8,7 +8,8 @@ from hashlib import sha256
 from io import StringIO
 
 import pandas as pd
-import requests
+# import requests
+import httpx
 from bs4 import BeautifulSoup
 from google.cloud import bigquery
 from prefeitura_rio.pipelines_utils.logging import log
@@ -57,19 +58,19 @@ def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 10) ->
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def init_session_request_base() -> requests.Session:
-    session = requests.session()
+def init_client_request_base() -> httpx.Client:
+    client = httpx.Client()
 
-    res = session.get(
+    res = client.get(
         "https://sisregiii.saude.gov.br/",
         headers=constants.REQUEST_HEADERS,
     )
 
-    return session
+    return client
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def login_sisreg(usuario: str, senha: str, session: Session) -> Session:
+def login_sisreg(usuario: str, senha: str, client: httpx.Client) -> httpx.Client:
     payload = (
         f"usuario={usuario}&"
         "senha=&"
@@ -79,13 +80,13 @@ def login_sisreg(usuario: str, senha: str, session: Session) -> Session:
     )
 
     log("Realizando autenticação")
-    response = session.post(
+    response = client.post(
         "https://sisregiii.saude.gov.br/",
         headers=constants.REQUEST_HEADERS | {
             "Content-Type": "application/x-www-form-urlencoded",
         },
         data=payload,
-        allow_redirects=True,
+        follow_redirects=True,
     )
 
     if usuario not in response.text:
@@ -93,14 +94,14 @@ def login_sisreg(usuario: str, senha: str, session: Session) -> Session:
         raise Exception("Not logged in")
 
     log("Login com sucesso")
-    return session
+    return client
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def search_afastamentos(
-    cpf: str, session: Session, extraction_date: datetime
+    cpf: str, client: httpx.Client, extraction_date: datetime
 ) -> pd.DataFrame | None:
-    res = session.get(
+    res = client.get(
         f"https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?cpf={cpf}&mostrar_antigos=1",
         headers=constants.REQUEST_HEADERS,
     )
@@ -151,9 +152,9 @@ def search_afastamentos(
 
 @task(max_retries=3, retry_delay=timedelta(minutes=500))
 def search_historico_afastamentos(
-    cpf: str, session: Session, extraction_date: datetime
+    cpf: str, client: httpx.Client, extraction_date: datetime
 ) -> pd.DataFrame | None:
-    res = session.get(
+    res = client.get(
         ("https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?" f"cpf={cpf}&op=Log"),
         headers=constants.REQUEST_HEADERS,
     )
@@ -195,3 +196,13 @@ def concat_dfs(dfs: list[pd.DataFrame]) -> pd.DataFrame:
 @task
 def log_df(df: pd.DataFrame, name: str):
     log(f"{name}:\n{df}")
+
+
+@task
+def close_httpx_client(client: httpx.Client, wait_dfs: list[pd.DataFrame]):
+    """
+    O wait_dfs é para garantir que todos os dados já foram buscados antes
+    da execução dessa task
+    """
+    log("Fechando o cliente httpx criado na execução do flow")
+    client.close()
