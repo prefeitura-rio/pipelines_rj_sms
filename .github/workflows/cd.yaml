@@ -21,11 +21,15 @@ jobs:
   build-container:
     name: Register flows (production)
     runs-on: ubuntu-latest
+    # Improvement #4: Add a timeout of 60 mins
+    # [Ref] https://ashishb.net/programming/common-pitfalls-of-github-actions/
+    timeout-minutes: 60
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
       - name: Setup Python version
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
 
@@ -35,6 +39,17 @@ jobs:
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           export_default_credentials: true
+
+      # Improvement #5: Cache Python dependencies using the hash of "requirements.txt" as the key
+      # This step must be executed before "pip install"
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-pip-poetry-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-poetry-
 
       - name: Install Python dependencies for deploying
         run: |-
@@ -52,7 +67,7 @@ jobs:
 
       - name: Get changed files for code tree analysis
         id: files
-        uses: Ana06/get-changed-files@v2.1.0
+        uses: Ana06/get-changed-files@v2.3.0
 
       - name: Perform code tree analysis
         id: code-tree-analysis
@@ -66,7 +81,7 @@ jobs:
           echo $PREFECT_AUTH_TOML | base64 --decode > $HOME/.prefect/auth.toml
 
       - name: Wait for GHCR image to be available
-        uses: lewagon/wait-on-check-action@v1.3.1
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.ref }}
           check-name: 'GitHub Container Registry'
@@ -74,7 +89,7 @@ jobs:
           verbose: true
 
       - name: Wait for GAR image to be available
-        uses: lewagon/wait-on-check-action@v1.3.1
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.ref }}
           check-name: 'Google Artifact Registry'

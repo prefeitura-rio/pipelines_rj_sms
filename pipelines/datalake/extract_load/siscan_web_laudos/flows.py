@@ -65,6 +65,7 @@ with Flow(
     )
 
     # PARAMETROS CONSULTA ---------------------------
+    OPCAO_EXAME = Parameter("opcao_exame", default="mamografia")
     DATA_INICIAL = Parameter("data_inicial", default="01/01/2025")
     DATA_FINAL = Parameter("data_final", default="31/01/2025")
 
@@ -79,6 +80,7 @@ with Flow(
     raw_files = run_siscan_scraper(
         email=user,
         password=password,
+        opcao_exame=OPCAO_EXAME,
         start_date=DATA_INICIAL,
         end_date=DATA_FINAL,
         output_dir=CONFIG["output_dir"],
@@ -138,12 +140,12 @@ with Flow(
 
     # Gera data relativa e a data atual
     relative_date = from_relative_date(relative_date=RELATIVE_DATE)
-    today = datetime.now()
 
     # Gera as janelas de extração com base no interval
     windows = generate_extraction_windows(
-        start_date=relative_date, end_date=today, interval=DIAS_POR_FAIXA
+        start_date=relative_date, end_date="", interval=DIAS_POR_FAIXA
     )
+
     interval_starts = extrair_inicio.map(faixa=windows)
     interval_ends = extrair_fim.map(faixa=windows)
 
@@ -156,7 +158,6 @@ with Flow(
         end_dates=interval_ends,
         environment=ENVIRONMENT,
     )
-
     # Cria e espera a execução das flow runs
     created_operator_runs = create_flow_run.map(
         flow_name=unmapped(sms_siscan_web_operator.name),

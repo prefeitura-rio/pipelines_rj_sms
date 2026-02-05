@@ -385,10 +385,11 @@ cases:
     flow_name: "sms_siscan_web_operator"
     params:
       environment: "dev"
-      data_inicial: "03/08/2025"
-      data_final: "03/08/2025"
+      data_inicial: "03/06/2025"
+      data_final: "15/06/2025"
       bq_dataset: "brutos_siscan_web"
-      bq_table: "laudos"
+      bq_table: "laudos_histo_mama"
+      opcao_exame: "histo_mama"
   - case_slug: "siscan_web_laudos_manager"
     flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
     flow_name: "sms_siscan_web_manager"
@@ -553,6 +554,105 @@ cases:
       query_path: "mail_templates/gerencia_cancer/gerencia_cancer.sql"
       html_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.html"
       plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"
+
+  - case_slug: cdi_extract_sheets_individual_2025
+    flow_path: pipelines.datalake.extract_load.google_sheets.flows
+    flow_name: sms_dump_url
+    params:
+      environment: "dev"
+      csv_delimiter: ";"
+      dataset_id: "brutos_cdi"
+      gsheets_sheet_name: "Controle de Demandas - Equipe Individual"
+      table_id: "equipe_individual_2025"
+      url: "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8"
+      url_type: "google_sheet"
+
+  - case_slug: cdi_extract_sheets_individual_2026
+    flow_path: pipelines.datalake.extract_load.google_sheets.flows
+    flow_name: sms_dump_url
+    params:
+      environment: "dev"
+      csv_delimiter: ";"
+      dataset_id: "brutos_cdi"
+      gsheets_sheet_name: "Controle de Demandas - Equipe Individual"
+      table_id: "equipe_individual_2026"
+      url: "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4"
+      url_type: "google_sheet"
+
+
+  - case_slug: cdi_extract_sheets_coletiva_2025
+    flow_path: pipelines.datalake.extract_load.google_sheets.flows
+    flow_name: sms_dump_url
+    params:
+      environment: "dev"
+      csv_delimiter: ";"
+      dataset_id: "brutos_cdi"
+      gsheets_sheet_name: "Controle de Demandas - Equipe Coletiva"
+      table_id: "equipe_coletiva_2025"
+      url: "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8"
+      url_type: "google_sheet"
+
+  - case_slug: cdi_extract_sheets_coletiva_2026
+    flow_path: pipelines.datalake.extract_load.google_sheets.flows
+    flow_name: sms_dump_url
+    params:
+      environment: "dev"
+      csv_delimiter: ";"
+      dataset_id: "brutos_cdi"
+      gsheets_sheet_name: "Controle de Demandas - Equipe Coletiva"
+      table_id: "equipe_coletiva_2026"
+      url: "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4"
+      url_type: "google_sheet"
+
+
+  - case_slug: cdi_extract_sheets_PGM_2025
+    flow_path: pipelines.datalake.extract_load.google_sheets.flows
+    flow_name: sms_dump_url
+    params:
+      environment: "dev"
+      csv_delimiter: ";"
+      dataset_id: "brutos_cdi"
+      gsheets_sheet_name: "Controle PGM 2025"
+      table_id: "pgm_2025"
+      url: "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8"
+      url_type: "google_sheet"
+
+  - case_slug: cdi_extract_sheets_pgm_2026
+    flow_path: pipelines.datalake.extract_load.google_sheets.flows
+    flow_name: sms_dump_url
+    params:
+      environment: "dev"
+      csv_delimiter: ";"
+      dataset_id: "brutos_cdi"
+      gsheets_sheet_name: "Controle PGM 2026"
+      table_id: "pgm_2026"
+      url: "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4"
+      url_type: "google_sheet"
+
+
+  - case_slug: cdi_extract_sheets_judicial_residual_2025
+    flow_path: pipelines.datalake.extract_load.google_sheets.flows
+    flow_name: sms_dump_url
+    params:
+      environment: "dev"
+      csv_delimiter: ";"
+      dataset_id: "brutos_cdi"
+      gsheets_sheet_name: "Equipe JR 2025"
+      table_id: "pgm_2025"
+      url: "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8"
+      url_type: "google_sheet"
+
+  - case_slug: cdi_extract_sheets_pgm_2026
+    flow_path: pipelines.datalake.extract_load.google_sheets.flows
+    flow_name: sms_dump_url
+    params:
+      environment: "dev"
+      csv_delimiter: ";"
+      dataset_id: "brutos_cdi"
+      gsheets_sheet_name: "Equipe JR"
+      table_id: "pgm_2026"
+      url: "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4"
+      url_type: "google_sheet"
   - case_slug: "datalake-extract_load-sisreg_afastamentos"
     flow_path: "pipelines.datalake.extract_load.sisreg_afastamentos.flows"
     flow_name: "sisreg_afastamentos_flow"
