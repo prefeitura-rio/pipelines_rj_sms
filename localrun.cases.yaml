@@ -553,3 +553,8 @@ cases:
       query_path: "mail_templates/gerencia_cancer/gerencia_cancer.sql"
       html_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.html"
       plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"
+  - case_slug: "datalake-extract_load-sisreg_afastamentos"
+    flow_path: "pipelines.datalake.extract_load.sisreg_afastamentos.flows"
+    flow_name: "sisreg_afastamentos_flow"
+    params:
+      environment: "dev"
