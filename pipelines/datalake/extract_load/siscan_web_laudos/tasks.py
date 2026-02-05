@@ -22,7 +22,7 @@ def run_siscan_scraper(
     email: str, password: str, opcao_exame: str, start_date: str, end_date: str, output_dir: str = "."
 ):
     """
-    Executa o scraper do SISCaN para coletar dados de pacientes em um intervalo de datas.
+    Executa o scraper do SISCAN para coletar dados de pacientes em um intervalo de datas.
 
     Parâmetros:
         email (str): E-mail de acesso ao sistema SISCAN.
@@ -36,7 +36,7 @@ def run_siscan_scraper(
     """
 
     try:
-        log(f"Iniciando coleta de dados do SISCaN de {start_date} a {end_date}.")
+        log(f"Iniciando coleta de dados do SISCAN de {start_date} a {end_date}.")
 
         pacientes = run_scraper(
             email=email, password=password, opcao_exame=opcao_exame, start_date=start_date, end_date=end_date, headless=True

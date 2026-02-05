@@ -71,7 +71,7 @@ with Flow(
 
     # PARAMETROS BQ ----------------------------------
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
-    BQ_TABLE = Parameter("bq_table", default="laudos")
+    BQ_TABLE = Parameter("bq_table", default="laudos_mamografia")
 
     ###########################
     # Flow
@@ -128,7 +128,7 @@ with Flow(
     RENAME_FLOW = Parameter("rename_flow", default=True)
     OPCAO_EXAME = Parameter("opcao_exame", default="mamografia")
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
-    BQ_TABLE = Parameter("bq_table", default="laudos")
+    BQ_TABLE = Parameter("bq_table", default="laudos_mamografia")
 
 
     with case(RENAME_FLOW, True):
@@ -200,7 +200,7 @@ with Flow(
     END_DATE = Parameter("end_date", default="31/01/2025")
     OPCAO_EXAME = Parameter("opcao_exame", default="mamografia")
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
-    BQ_TABLE = Parameter("bq_table", default="laudos")
+    BQ_TABLE = Parameter("bq_table", default="laudos_mamografia")
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
