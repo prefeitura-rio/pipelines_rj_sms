@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from .config import LOGGER
+from prefeitura_rio.pipelines_utils.logging import log
 
 
 class ScraperError(RuntimeError):
@@ -32,12 +32,28 @@ def run_scraper(
     headless: bool | None = None,
 ) -> List[Dict[str, Any]]:
     """Fluxo de ponta a ponta que devolve lista de laudos em dicionários."""
+    log(f"Iniciando scraper com opcao_exame={opcao_exame}, período: {start_date} a {end_date}")
     driver = init_firefox(headless=headless)
     try:
+        log("Realizando login...")
         login(email, password, driver)
+        log("Login realizado com sucesso.")
+        
+        log("Navegando para página de laudos...")
         goto_laudo_page(driver)
+        log("Página de laudos carregada.")
+        
+        log("Aplicando filtros...")
         set_filters(driver, opcao_exame, start_date, end_date)
-        return iterate_patients(driver, opcao_exame)
+        log("Filtros aplicados.")
+        
+        log("Iterando por pacientes...")
+        laudos = iterate_patients(driver, opcao_exame)
+        log(f"Scraper finalizado. Total de laudos: {len(laudos)}")
+        return laudos
+    except Exception as e:
+        log(f"Erro durante execução do scraper: {e}", exc_info=True)
+        raise
     finally:
         driver.quit()
-        LOGGER.info("Driver encerrado.")
+        log("Driver encerrado.")
