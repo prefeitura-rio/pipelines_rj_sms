@@ -36,9 +36,42 @@ operator_flow_parameters = [
     for exame in exames
 ]
 
-monthly_manager_parameters = [{"environment": "prod", "relative_date": "M-1", "range": 7}]
+monthly_manager_parameters = [
+        {
+            "environment": "prod", 
+            "relative_date": "M-1", 
+            "range": 7,
+            "opcao_exame": "mamografia",
+            "bq_dataset": "brutos_siscan_web",
+            "bq_table": "laudos_mamografia"
+        },
+        {
+            "environment": "prod", 
+            "relative_date": "M-1", 
+            "range": 7,
+            "opcao_exame": "histo_mama",
+            "bq_dataset": "brutos_siscan_web",
+            "bq_table": "laudos_histo_mama"
+        }
+    ]
+
 daily_flow_parameters = [
-    {"environment": "prod", "relative_date": "D-5", "range": 1},
+    {
+        "environment": "prod", 
+        "relative_date": "D-5", 
+        "range": 5,
+        "opcao_exame": "mamografia",
+        "bq_dataset": "brutos_siscan_web",
+        "bq_table": "laudos_mamografia"
+    },
+    {
+        "environment": "prod", 
+        "relative_date": "D-5", 
+        "range": 5,
+        "opcao_exame": "histo_mama",
+        "bq_dataset": "brutos_siscan_web",
+        "bq_table": "laudos_histo_mama"
+    }
 ]
 
 monthly_manager_clock = generate_dump_api_schedules(
