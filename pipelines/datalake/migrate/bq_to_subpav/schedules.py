@@ -273,7 +273,7 @@ def build_param(config: dict) -> dict:
         "rename_flow": True,
         "if_exists": config.get("if_exists", "append"),
         "project": config.get("project", ""),
-        "environment": config.get("environment", "dev"),
+        "environment": config.get("environment", "prod"),
     }
     # Só adiciona se tiver valor!
     if config.get("secret_name") is not None:
