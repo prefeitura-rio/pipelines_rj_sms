@@ -36,22 +36,31 @@ def run_siscan_scraper(
     """
 
     try:
-        log(f"Iniciando coleta de dados do SISCAN de {start_date} a {end_date}.")
+        log(f"Iniciando tarefa de coleta de dados do SISCAN")
+        log(f"Período: {start_date} a {end_date}")
+        log(f"Tipo de exame: {opcao_exame}")
+        log(f"Diretório de saída: {output_dir}")
 
         pacientes = run_scraper(
             email=email, password=password, opcao_exame=opcao_exame, start_date=start_date, end_date=end_date, headless=True
         )
+        log(f"✓ Dados coletados com sucesso. Total de registros: {len(pacientes)}")
+
         df = pd.DataFrame(pacientes)
+        log(f"✓ DataFrame criado com {len(df)} linhas")
 
         begin = datetime.strptime(start_date, "%d/%m/%Y").strftime("%Y%m%d")
         end_ = datetime.strptime(end_date, "%d/%m/%Y").strftime("%Y%m%d")
 
         filename = f"siscan_extraction_{begin}_{end_}.parquet"
         filepath = os.path.join(output_dir, filename)
+        
+        log(f"Salvando arquivo: {filename}")
         df.to_parquet(filepath, index=False)
 
-        log(f"📁 Arquivo salvo: {filepath} ({len(df)} registros)")
-        log(f"✅ Coleta concluída de {start_date} a {end_date}.")
+        log(f"Arquivo salvo com sucesso: {filepath}")
+        log(f"Registros processados: {len(df)}")
+        log(f"Coleta concluída para o período de {start_date} a {end_date}")
 
         return filepath
 

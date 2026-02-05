@@ -38,14 +38,21 @@ def goto_laudo_page(driver: Firefox) -> None:
 
     LOGGER.info("Navegando até a tela Gerenciar Laudo…")
     time.sleep(3)
+    
+    LOGGER.info("Aguardando menu de exame…")
     wait_until(driver, lambda d: d.find_elements(*MENU_EXAME))
+    LOGGER.info("Clicando no menu de exame…")
     safe_click(driver, MENU_EXAME)
 
+    LOGGER.info("Aguardando opção Gerenciar Laudo…")
     wait_until(driver, lambda d: d.find_elements(*MENU_GERENCIAR_LAUDO))
+    LOGGER.info("Clicando em Gerenciar Laudo…")
     safe_click(driver, MENU_GERENCIAR_LAUDO)
 
     # Confirma que o radio de filtro por data está presente
+    LOGGER.info("Verificando se opção de filtro por data está visível…")
     esperar_visivel(driver, OPCAO_FILTRO_DATA)
+    LOGGER.info("Tela Gerenciar Laudo carregada com sucesso.")
 
 
 def _definir_data_js(
@@ -85,27 +92,42 @@ def set_filters(driver: Firefox, opcao_exame: str, data_inicio: str, data_fim: s
     """Seleciona Mamografia, município e intervalo de datas desejado."""
     LOGGER.info("Aplicando filtros: %s - %s.", data_inicio, data_fim)
 
+    LOGGER.info("Selecionando tipo de exame: %s", opcao_exame)
     match opcao_exame:
         case "cito_colo":
+            LOGGER.debug("Clicando em Citologia de Colo")
             safe_click(driver, OPCAO_EXAME_CITO_COLO)
         case "histo_colo":
+            LOGGER.debug("Clicando em Histologia de Colo")
             safe_click(driver, OPCAO_EXAME_HISTO_COLO)
         case "cito_mama":
+            LOGGER.debug("Clicando em Citologia de Mama")
             safe_click(driver, OPCAO_EXAME_CITO_MAMA)
         case "histo_mama":
+            LOGGER.debug("Clicando em Histologia de Mama")
             safe_click(driver, OPCAO_EXAME_HISTO_MAMA)
         case "mamografia":
+            LOGGER.debug("Clicando em Mamografia")
             safe_click(driver, OPCAO_EXAME_MAMO)
 
+    LOGGER.info("Selecionando município")
     safe_click(driver, OPCAO_MUNICIPIO)
+    
+    LOGGER.info("Selecionando filtro por data")
     safe_click(driver, OPCAO_FILTRO_DATA)
 
+    LOGGER.info("Definindo data de início: %s", data_inicio)
     _definir_data_js(driver, CAMPO_DATA_INICIO, data_inicio)
+    
+    LOGGER.info("Definindo data de fim: %s", data_fim)
     _definir_data_js(driver, CAMPO_DATA_FIM, data_fim)
 
+    LOGGER.info("Clicando em Pesquisar")
     safe_click(driver, BOTAO_PESQUISAR)
 
+    LOGGER.info("Aguardando resultados da pesquisa")
     wait_until(
         driver,
         lambda d: d.find_elements(*LUPA_LAUDO) or d.find_elements(By.CSS_SELECTOR, "table"),
     )
+    LOGGER.info("Filtros aplicados com sucesso")
