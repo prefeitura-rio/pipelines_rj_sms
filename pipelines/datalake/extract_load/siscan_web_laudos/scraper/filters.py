@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from selenium.webdriver import Firefox
 from selenium.webdriver.common.by import By
+from prefeitura_rio.pipelines_utils.logging import log
 
-from .config import LOGGER
 from .driver import (
     clicar_com_retry,
     esperar_overlay_sumir,
@@ -36,16 +36,23 @@ import time
 def goto_laudo_page(driver: Firefox) -> None:
     """Abre a tela *Gerenciar Laudo* a partir do menu principal."""
 
-    LOGGER.info("Navegando até a tela Gerenciar Laudo…")
+    log("Navegando até a tela Gerenciar Laudo…")
     time.sleep(3)
+    
+    log("Aguardando menu de exame…")
     wait_until(driver, lambda d: d.find_elements(*MENU_EXAME))
+    log("Clicando no menu de exame…")
     safe_click(driver, MENU_EXAME)
 
+    log("Aguardando opção Gerenciar Laudo…")
     wait_until(driver, lambda d: d.find_elements(*MENU_GERENCIAR_LAUDO))
+    log("Clicando em Gerenciar Laudo…")
     safe_click(driver, MENU_GERENCIAR_LAUDO)
 
     # Confirma que o radio de filtro por data está presente
+    log("Verificando se opção de filtro por data está visível…")
     esperar_visivel(driver, OPCAO_FILTRO_DATA)
+    log("Tela Gerenciar Laudo carregada com sucesso.")
 
 
 def _definir_data_js(
@@ -83,29 +90,44 @@ def _definir_data_js(
 
 def set_filters(driver: Firefox, opcao_exame: str, data_inicio: str, data_fim: str) -> None:
     """Seleciona Mamografia, município e intervalo de datas desejado."""
-    LOGGER.info("Aplicando filtros: %s - %s.", data_inicio, data_fim)
+    log(f"Aplicando filtros: {data_inicio} - {data_fim}.")
 
+    log(f"Selecionando tipo de exame: {opcao_exame}")
     match opcao_exame:
         case "cito_colo":
+            log("Clicando em Citologia de Colo")
             safe_click(driver, OPCAO_EXAME_CITO_COLO)
         case "histo_colo":
+            log("Clicando em Histologia de Colo")
             safe_click(driver, OPCAO_EXAME_HISTO_COLO)
         case "cito_mama":
+            log("Clicando em Citologia de Mama")
             safe_click(driver, OPCAO_EXAME_CITO_MAMA)
         case "histo_mama":
+            log("Clicando em Histologia de Mama")
             safe_click(driver, OPCAO_EXAME_HISTO_MAMA)
         case "mamografia":
+            log("Clicando em Mamografia")
             safe_click(driver, OPCAO_EXAME_MAMO)
 
+    log("Selecionando município")
     safe_click(driver, OPCAO_MUNICIPIO)
+    
+    log("Selecionando filtro por data")
     safe_click(driver, OPCAO_FILTRO_DATA)
 
+    log(f"Definindo data de início: {data_inicio}")
     _definir_data_js(driver, CAMPO_DATA_INICIO, data_inicio)
+    
+    log(f"Definindo data de fim: {data_fim}")
     _definir_data_js(driver, CAMPO_DATA_FIM, data_fim)
 
+    log("Clicando em Pesquisar")
     safe_click(driver, BOTAO_PESQUISAR)
 
+    log("Aguardando resultados da pesquisa")
     wait_until(
         driver,
         lambda d: d.find_elements(*LUPA_LAUDO) or d.find_elements(By.CSS_SELECTOR, "table"),
     )
+    log("Filtros aplicados com sucesso")
