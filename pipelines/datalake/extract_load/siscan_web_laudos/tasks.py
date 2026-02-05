@@ -44,10 +44,10 @@ def run_siscan_scraper(
         pacientes = run_scraper(
             email=email, password=password, opcao_exame=opcao_exame, start_date=start_date, end_date=end_date, headless=True
         )
-        log(f"✓ Dados coletados com sucesso. Total de registros: {len(pacientes)}")
+        log(f"Dados coletados com sucesso. Total de registros: {len(pacientes)}")
 
         df = pd.DataFrame(pacientes)
-        log(f"✓ DataFrame criado com {len(df)} linhas")
+        log(f"DataFrame criado com {len(df)} linhas")
 
         begin = datetime.strptime(start_date, "%d/%m/%Y").strftime("%Y%m%d")
         end_ = datetime.strptime(end_date, "%d/%m/%Y").strftime("%Y%m%d")
@@ -65,7 +65,7 @@ def run_siscan_scraper(
         return filepath
 
     except Exception as e:
-        log(f"Erro durante a execução do scraper: {e}", level="error")
+        log(f"Erro durante a execução do scraper: {e}")
         raise
 
 
@@ -83,9 +83,9 @@ def check_records(file_path: str) -> bool:
     df = pd.read_parquet(file_path)
 
     if df.empty:
-        log("⚠️ Não há registros para processar.")
+        log("Não há registros para processar.")
         delete_file.run(file_path=file_path)
-        log("⚠️ O arquivo vazio foi excluído.")
+        log("O arquivo vazio foi excluído.")
         return False
 
     return True

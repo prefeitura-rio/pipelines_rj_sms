@@ -90,9 +90,9 @@ def _definir_data_js(
 
 def set_filters(driver: Firefox, opcao_exame: str, data_inicio: str, data_fim: str) -> None:
     """Seleciona Mamografia, município e intervalo de datas desejado."""
-    log("Aplicando filtros: %s - %s.", data_inicio, data_fim)
+    log(f"Aplicando filtros: {data_inicio} - {data_fim}.")
 
-    log("Selecionando tipo de exame: %s", opcao_exame)
+    log(f"Selecionando tipo de exame: {opcao_exame}")
     match opcao_exame:
         case "cito_colo":
             log("Clicando em Citologia de Colo")
@@ -116,10 +116,10 @@ def set_filters(driver: Firefox, opcao_exame: str, data_inicio: str, data_fim: s
     log("Selecionando filtro por data")
     safe_click(driver, OPCAO_FILTRO_DATA)
 
-    log("Definindo data de início: %s", data_inicio)
+    log(f"Definindo data de início: {data_inicio}")
     _definir_data_js(driver, CAMPO_DATA_INICIO, data_inicio)
     
-    log("Definindo data de fim: %s", data_fim)
+    log(f"Definindo data de fim: {data_fim}")
     _definir_data_js(driver, CAMPO_DATA_FIM, data_fim)
 
     log("Clicando em Pesquisar")

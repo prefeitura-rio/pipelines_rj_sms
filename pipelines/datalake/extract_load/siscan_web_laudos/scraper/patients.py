@@ -207,7 +207,7 @@ def _proxima_pagina(driver: Firefox) -> bool:
     try:
         driver.execute_script("arguments[0].click();", botao)
     except Exception as exc:
-        log("Clique JS falhou (%s); tentando fallback padrão.", exc)
+        log(f"Clique JS falhou ({exc}); tentando fallback padrão.")
         clicar_com_retry(driver, BOTAO_PROXIMO, scroll=False, timeout=10)
 
     # Aguarda recarregar / desaparecer overlay AJAX antes de prosseguir
@@ -225,31 +225,31 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
     pagina = 1
 
     while True:
-        log("Processando página %d…", pagina)
+        log(f"Processando página {pagina}…")
         # garante que o overlay AJAX sumiu antes de continuar
         esperar_overlay_sumir(driver, 300)
         botoes = driver.find_elements(*LUPA_LAUDO)
         if not botoes:  # sem laudos = fim da coleta
-            log("Nenhum laudo encontrado na página %d - encerrando loop.", pagina)
+            log(f"Nenhum laudo encontrado na página {pagina} - encerrando loop.")
             break
 
         novos_na_pagina = 0  # conta quantos protocolos **inéditos** surgem nesta página
         for idx, _ in enumerate(botoes):
-            log("Clicando no laudo %d de %d na página %d…", idx + 1, len(botoes), pagina)
+            log(f"Clicando no laudo {idx + 1} de {len(botoes)} na página {pagina}…")
             if not clicar_com_retry(
                 driver,
                 (By.XPATH, f"(//a[@title='Detalhar Laudo'])[{idx + 1}]"),
                 scroll=True,
                 timeout=10,
             ):
-                log("Falha ao clicar no laudo %d - pulando.", idx + 1)
+                log(f"Falha ao clicar no laudo {idx + 1} - pulando.")
                 continue
 
             try:
                 log("Aguardando carregamento da página de detalhes…")
                 _esperar_pagina_detalhe(driver)
             except TimeoutException:
-                log("Timeout ao aguardar página de detalhes do laudo %d.", idx + 1)
+                log(f"Timeout ao aguardar página de detalhes do laudo {idx+1}.")
                 driver.back()
                 esperar_carregamento(driver)
                 continue
@@ -259,7 +259,7 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
             detalhes = _extrair_detalhes(driver)
 
             # detalhes específicos por tipo de exame
-            log("Extraindo detalhes específicos para tipo '%s'…", opcao_exame)
+            log("Extraindo detalhes específicos para tipo '{opcao_exame}'…")
             match opcao_exame:
                 case "mamografia":
                     _extrair_detalhes_especificos_mamo(driver, detalhes)
@@ -271,9 +271,9 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
                 resultados.append(detalhes)
                 protocolos_vistos.add(detalhes["n_protocolo"])
                 novos_na_pagina += 1
-                log("Laudo %s coletado.", protocolo)
+                log("Laudo {protocolo} coletado.")
             else:
-                log("Laudo %s já foi coletado - pulando.", protocolo)
+                log("Laudo {protocolo} já foi coletado - pulando.")
 
             # Voltar à lista
             try:
@@ -291,8 +291,7 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
         # ------------------------------------------------------------------ #
         if novos_na_pagina == 0:
             log(
-                "Nenhum laudo inédito na página %d - última página alcançada.",
-                pagina,
+                f"Nenhum laudo inédito na página {pagina} - última página alcançada."
             )
             break
 
@@ -303,5 +302,5 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
 
         pagina += 1
 
-    log("Coleta finalizada: %d laudos únicos.", len(resultados))
+    log(f"Coleta finalizada: {len(resultados)} laudos únicos.")
     return resultados

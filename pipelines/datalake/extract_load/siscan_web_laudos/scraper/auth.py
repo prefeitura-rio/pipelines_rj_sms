@@ -38,7 +38,7 @@ def login(email: str, senha: str, driver):  # type: ignore[arg-type]
             log("Login concluído com sucesso.")
             return
         except (TimeoutException, WebDriverException) as exc:
-            log("Falha no login (%s) – tentativa %d de %d.", exc, tentativa, TENTATIVAS_LOGIN + 1)
+            log(f"Falha no login ({exc}) - tentativa {tentativa} de {TENTATIVAS_LOGIN + 1}.")
     
-    log("Falha ao autenticar após %d tentativas.", TENTATIVAS_LOGIN + 1)
+    log(f"Falha ao autenticar após {TENTATIVAS_LOGIN + 1} tentativas.")
     raise ScraperError("Não foi possível autenticar após múltiplas tentativas.")
