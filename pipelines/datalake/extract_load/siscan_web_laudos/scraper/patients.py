@@ -14,8 +14,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from prefeitura_rio.pipelines_utils.logging import log
 
-from .config import LOGGER
 from .driver import (
     clicar_com_retry,
     esperar_carregamento,
@@ -207,7 +207,7 @@ def _proxima_pagina(driver: Firefox) -> bool:
     try:
         driver.execute_script("arguments[0].click();", botao)
     except Exception as exc:
-        LOGGER.debug("Clique JS falhou (%s); tentando fallback padrão.", exc)
+        log("Clique JS falhou (%s); tentando fallback padrão.", exc)
         clicar_com_retry(driver, BOTAO_PROXIMO, scroll=False, timeout=10)
 
     # Aguarda recarregar / desaparecer overlay AJAX antes de prosseguir
@@ -219,47 +219,47 @@ def _proxima_pagina(driver: Firefox) -> bool:
 
 def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
     """Percorre todas as páginas e devolve lista de dicionários de laudos."""
-    LOGGER.info("Iniciando iteração sobre pacientes…")
+    log("Iniciando iteração sobre pacientes…")
     resultados: List[Dict[str, Any]] = []
     protocolos_vistos: Set[str] = set()
     pagina = 1
 
     while True:
-        LOGGER.info("Processando página %d…", pagina)
+        log("Processando página %d…", pagina)
         # garante que o overlay AJAX sumiu antes de continuar
         esperar_overlay_sumir(driver, 300)
         botoes = driver.find_elements(*LUPA_LAUDO)
         if not botoes:  # sem laudos = fim da coleta
-            LOGGER.info("Nenhum laudo encontrado na página %d - encerrando loop.", pagina)
+            log("Nenhum laudo encontrado na página %d - encerrando loop.", pagina)
             break
 
         novos_na_pagina = 0  # conta quantos protocolos **inéditos** surgem nesta página
         for idx, _ in enumerate(botoes):
-            LOGGER.debug("Clicando no laudo %d de %d na página %d…", idx + 1, len(botoes), pagina)
+            log("Clicando no laudo %d de %d na página %d…", idx + 1, len(botoes), pagina)
             if not clicar_com_retry(
                 driver,
                 (By.XPATH, f"(//a[@title='Detalhar Laudo'])[{idx + 1}]"),
                 scroll=True,
                 timeout=10,
             ):
-                LOGGER.warning("Falha ao clicar no laudo %d - pulando.", idx + 1)
+                log("Falha ao clicar no laudo %d - pulando.", idx + 1)
                 continue
 
             try:
-                LOGGER.debug("Aguardando carregamento da página de detalhes…")
+                log("Aguardando carregamento da página de detalhes…")
                 _esperar_pagina_detalhe(driver)
             except TimeoutException:
-                LOGGER.error("Timeout ao aguardar página de detalhes do laudo %d.", idx + 1)
+                log("Timeout ao aguardar página de detalhes do laudo %d.", idx + 1)
                 driver.back()
                 esperar_carregamento(driver)
                 continue
 
             # detalhes gerais, comuns a todos os laudos
-            LOGGER.debug("Extraindo detalhes gerais do laudo…")
+            log("Extraindo detalhes gerais do laudo…")
             detalhes = _extrair_detalhes(driver)
 
             # detalhes específicos por tipo de exame
-            LOGGER.debug("Extraindo detalhes específicos para tipo '%s'…", opcao_exame)
+            log("Extraindo detalhes específicos para tipo '%s'…", opcao_exame)
             match opcao_exame:
                 case "mamografia":
                     _extrair_detalhes_especificos_mamo(driver, detalhes)
@@ -271,16 +271,16 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
                 resultados.append(detalhes)
                 protocolos_vistos.add(detalhes["n_protocolo"])
                 novos_na_pagina += 1
-                LOGGER.debug("Laudo %s coletado.", protocolo)
+                log("Laudo %s coletado.", protocolo)
             else:
-                LOGGER.debug("Laudo %s já foi coletado - pulando.", protocolo)
+                log("Laudo %s já foi coletado - pulando.", protocolo)
 
             # Voltar à lista
             try:
-                LOGGER.debug("Voltando à lista de laudos…")
+                log("Voltando à lista de laudos…")
                 safe_click(driver, BOTAO_VOLTAR)
             except NoSuchElementException:
-                LOGGER.debug("Botão voltar não encontrado - usando back().")
+                log("Botão voltar não encontrado - usando back().")
                 driver.back()
             esperar_carregamento(driver)
 
@@ -290,18 +290,18 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
         # Encerra o loop para evitar duplicações ou laço infinito.           #
         # ------------------------------------------------------------------ #
         if novos_na_pagina == 0:
-            LOGGER.info(
+            log(
                 "Nenhum laudo inédito na página %d - última página alcançada.",
                 pagina,
             )
             break
 
-        LOGGER.info("Avançando para a próxima página…")
+        log("Avançando para a próxima página…")
         if not _proxima_pagina(driver):
-            LOGGER.info("Botão próxima página inativo - encerrando iteração.")
+            log("Botão próxima página inativo - encerrando iteração.")
             break  # Avança de página; se o botão estiver inativo, também encerra
 
         pagina += 1
 
-    LOGGER.info("Coleta finalizada: %d laudos únicos.", len(resultados))
+    log("Coleta finalizada: %d laudos únicos.", len(resultados))
     return resultados

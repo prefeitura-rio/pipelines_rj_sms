@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from .config import LOGGER
+from prefeitura_rio.pipelines_utils.logging import log
 
 
 class ScraperError(RuntimeError):
@@ -32,28 +32,28 @@ def run_scraper(
     headless: bool | None = None,
 ) -> List[Dict[str, Any]]:
     """Fluxo de ponta a ponta que devolve lista de laudos em dicionários."""
-    LOGGER.info(f"Iniciando scraper com opcao_exame={opcao_exame}, período: {start_date} a {end_date}")
+    log(f"Iniciando scraper com opcao_exame={opcao_exame}, período: {start_date} a {end_date}")
     driver = init_firefox(headless=headless)
     try:
-        LOGGER.info("Realizando login...")
+        log("Realizando login...")
         login(email, password, driver)
-        LOGGER.info("Login realizado com sucesso.")
+        log("Login realizado com sucesso.")
         
-        LOGGER.info("Navegando para página de laudos...")
+        log("Navegando para página de laudos...")
         goto_laudo_page(driver)
-        LOGGER.info("Página de laudos carregada.")
+        log("Página de laudos carregada.")
         
-        LOGGER.info("Aplicando filtros...")
+        log("Aplicando filtros...")
         set_filters(driver, opcao_exame, start_date, end_date)
-        LOGGER.info("Filtros aplicados.")
+        log("Filtros aplicados.")
         
-        LOGGER.info("Iterando por pacientes...")
+        log("Iterando por pacientes...")
         laudos = iterate_patients(driver, opcao_exame)
-        LOGGER.info(f"Scraper finalizado. Total de laudos: {len(laudos)}")
+        log(f"Scraper finalizado. Total de laudos: {len(laudos)}")
         return laudos
     except Exception as e:
-        LOGGER.error(f"Erro durante execução do scraper: {e}", exc_info=True)
+        log(f"Erro durante execução do scraper: {e}", exc_info=True)
         raise
     finally:
         driver.quit()
-        LOGGER.info("Driver encerrado.")
+        log("Driver encerrado.")
