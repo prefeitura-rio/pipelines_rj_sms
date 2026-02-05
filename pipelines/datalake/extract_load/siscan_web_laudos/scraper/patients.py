@@ -259,7 +259,7 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
             detalhes = _extrair_detalhes(driver)
 
             # detalhes específicos por tipo de exame
-            log("Extraindo detalhes específicos para tipo '{opcao_exame}'…")
+            log(f"Extraindo detalhes específicos para tipo '{opcao_exame}'…")
             match opcao_exame:
                 case "mamografia":
                     _extrair_detalhes_especificos_mamo(driver, detalhes)
@@ -271,9 +271,9 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
                 resultados.append(detalhes)
                 protocolos_vistos.add(detalhes["n_protocolo"])
                 novos_na_pagina += 1
-                log("Laudo {protocolo} coletado.")
+                log(f"Laudo {protocolo} coletado.")
             else:
-                log("Laudo {protocolo} já foi coletado - pulando.")
+                log(f"Laudo {protocolo} já foi coletado - pulando.")
 
             # Voltar à lista
             try:
