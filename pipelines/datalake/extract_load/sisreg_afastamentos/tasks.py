@@ -60,11 +60,9 @@ def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 10) ->
 def init_session_request_base() -> requests.Session:
     session = requests.session()
 
-    session.get(
+    res = session.get(
         "https://sisregiii.saude.gov.br/",
-        headers={
-            "Connection": "keep-alive",
-        },
+        headers=constants.REQUEST_HEADERS,
     )
 
     return session
@@ -83,7 +81,7 @@ def login_sisreg(usuario: str, senha: str, session: Session) -> Session:
     log("Realizando autenticação")
     response = session.post(
         "https://sisregiii.saude.gov.br/",
-        headers={
+        headers=constants.REQUEST_HEADERS | {
             "Content-Type": "application/x-www-form-urlencoded",
         },
         data=payload,
@@ -103,7 +101,8 @@ def search_afastamentos(
     cpf: str, session: Session, extraction_date: datetime
 ) -> pd.DataFrame | None:
     res = session.get(
-        f"https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?cpf={cpf}&mostrar_antigos=1"
+        f"https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?cpf={cpf}&mostrar_antigos=1",
+        headers=constants.REQUEST_HEADERS,
     )
 
     if "Profissional nao encontrado!" in res.text:
@@ -156,6 +155,7 @@ def search_historico_afastamentos(
 ) -> pd.DataFrame | None:
     res = session.get(
         ("https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?" f"cpf={cpf}&op=Log"),
+        headers=constants.REQUEST_HEADERS,
     )
 
     if "Nenhum Log Encontrado" in res.text:
