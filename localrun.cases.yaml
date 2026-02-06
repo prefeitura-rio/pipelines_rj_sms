@@ -653,3 +653,8 @@ cases:
       table_id: "pgm_2026"
       url: "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4"
       url_type: "google_sheet"
+  - case_slug: hci_freshness_check
+    flow_path: pipelines.reports.alerta_atualizacao_tabelas.flows
+    flow_name: report_alerta_atualizacao_hci
+    params:
+      environment: "dev"
