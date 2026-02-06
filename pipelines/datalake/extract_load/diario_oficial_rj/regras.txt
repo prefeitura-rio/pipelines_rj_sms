@@ -6,6 +6,7 @@ Queremos:
 * Controladoria Geral do Municípo
     > Resolução N
         (excluir pasta Despachos)
+    > Comissão de Qualificação de Organizações Sociais
 * Tribunal de Contas do Municípo
     > Resolução N
         (excluir pasta Despachos)
