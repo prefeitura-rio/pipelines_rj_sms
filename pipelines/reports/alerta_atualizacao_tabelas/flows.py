@@ -42,7 +42,7 @@ report_alerta_atualizacao_tabelas.schedule = freshness_tables_schedule
 
 
 with Flow(
-    "Report: Alerta Atualização Tabelas",
+    "Report: Alerta Últimos Episódios Assistenciais - HCI",
     state_handlers=[handle_flow_state_change],
     owners=[
         constants.HERIAN_ID.value,
