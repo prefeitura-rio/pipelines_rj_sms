@@ -3,17 +3,37 @@ name: CI
 on:
   pull_request:
 
+# Improvement #2: Cancel existing executions when new commits are pushed onto the branch
+# [Ref] https://ashishb.net/programming/common-pitfalls-of-github-actions/
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   code-tree-analysis:
     name: Code tree analysis
     runs-on: ubuntu-latest
+    # Improvement #4: Add a timeout of 30 mins
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
       - name: Setup Python version
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
+
+      # Improvement #5: Cache Python dependencies using the hash of "requirements.txt" as the key
+      # This step must be executed before "pip install"
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-pip-poetry-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-poetry-
 
       - name: Install Python dependencies for deploying
         run: |-
@@ -27,7 +47,7 @@ jobs:
 
       - name: Get changed files for code tree analysis
         id: files
-        uses: Ana06/get-changed-files@v2.1.0
+        uses: Ana06/get-changed-files@v2.3.0
 
       - name: Perform code tree analysis
         id: code-tree-analysis
@@ -43,7 +63,7 @@ jobs:
           issue_number: ${{ github.event.number }}  #remove comments from the current PR
 
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v1
+        uses: thollander/actions-comment-pull-request@v3.0.1
         with:
           message: "${{ steps.code-tree-analysis.outputs.pr-message }}"
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

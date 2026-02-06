@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=import-error
+
 """
 Tasks for SUBPAV Dump
 """
 from datetime import datetime, timedelta
 from math import ceil
+from typing import Any, Dict
 
 import pandas as pd
 import pytz
@@ -12,17 +15,25 @@ from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.data_cleaning import remove_columns_accents
 from pipelines.utils.logger import log
 
+DEFAULT_EXTRACT_CONFIG: Dict[str, Any] = {
+    "datetime_column": "created_at",
+    "id_column": "id",
+    "batch_size": 50000,
+    "date_filter": None,
+}
+
+
+def _normalize_extract_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Valida chaves obrigatórias e aplica defaults de extração."""
+    required = {"db_url", "db_schema", "db_table"}
+    missing = required - set(config.keys())
+    if missing:
+        raise ValueError(f"Config inválida: faltando {', '.join(sorted(missing))}")
+    return {**DEFAULT_EXTRACT_CONFIG, **config}
+
 
 @task(max_retries=3, retry_delay=timedelta(seconds=90))
-def create_extraction_batches(
-    db_url: str,
-    db_schema: str,
-    db_table: str,
-    datetime_column: str,
-    id_column: str,
-    batch_size: int = 50000,
-    date_filter: datetime = None,
-) -> list[str]:
+def create_extraction_batches(config: Dict[str, Any]) -> list[str]:
     """
     Cria uma lista de queries SQL para extrair dados de uma tabela em lotes (batches).
 
@@ -42,12 +53,23 @@ def create_extraction_batches(
     Returns:
         list[str]: Lista de queries SQL para extrair os dados em lotes.
     """
+    cfg = _normalize_extract_config(config)
+
+    db_url = cfg["db_url"]
+    db_schema = cfg["db_schema"]
+    db_table = cfg["db_table"]
+    datetime_column = cfg["datetime_column"]
+    id_column = cfg["id_column"]
+    batch_size = int(cfg["batch_size"])
+    date_filter = cfg["date_filter"]
+
     sql_filter = ""
     if date_filter:
         sql_filter = f"WHERE {datetime_column} >= '{date_filter.strftime('%Y-%m-%d')}'"
 
     total_rows = pd.read_sql(
-        f"SELECT COUNT(*) as quant FROM {db_schema}.{db_table} {sql_filter}", db_url
+        f"SELECT COUNT(*) as quant FROM {db_schema}.{db_table} {sql_filter}",
+        db_url,
     ).iloc[0]["quant"]
     log(f"Total rows to download: {total_rows}")
 

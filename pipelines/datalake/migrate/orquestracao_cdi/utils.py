@@ -39,6 +39,8 @@ def format_tcm_case(case_num: str) -> str | None:
 def format_relevant_entry(content: str):
     # Remove quebras de linha duplicadas
     content = re.sub(r"\n{2,}", "\n", content.replace("\r", "")).strip()
+    # Limita texto a 500 caracteres (muito mais do que o suficiente e normal)
+    content = f"{content[:500]}..." if len(content) > 500 else content
     # Negrito em decisões de TCM
     content = re.sub(
         r"^([^\n\r]+)\s+nos\s+termos\s+do\s+voto\s+do\s+Relator",
