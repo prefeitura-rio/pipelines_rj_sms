@@ -11,9 +11,16 @@ from pipelines.datalake.extract_load.exames_laboratoriais_api.constants import (
     AREA_PROGRAMATICA,
     CREDENTIALS,
 )
+
+from pipelines.datalake.extract_load.exames_laboratoriais_api.utils import (   
+    send_api_error_report
+)
 from pipelines.utils.credential_injector import authenticated_task as task
-from pipelines.utils.tasks import cloud_function_request
 import requests
+
+from pipelines.utils.monitor import send_email
+
+
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
@@ -41,11 +48,13 @@ def authenticate_fetch(
             headers=auth_headers,
         )
 
-        if token_response.json().get("status") != 200:
-            message = f"(authenticate_and_fetch) Error getting token: {token_response.json().get('mensagem')}"
+        token_data = token_response.json()
+
+        if token_data.get("status") != 200:
+            message = f"(authenticate_and_fetch) Error getting token: {token_data.get('mensagem')}"
             raise Exception(message)
 
-        token = token_response.json()['token']
+        token = token_data['token']
 
         log("Authentication was successful")
 
@@ -66,9 +75,29 @@ def authenticate_fetch(
         results_response = requests.post(
             f"{base_url}/APOIO/DTL/resultado",
             headers=results_headers,
+
             json=request_body
 
         )
+        
+        if results_response.status_code in [502, 503]:
+            message = (
+                f"(authenticate_fetch) Service Unavailable (Status {results_response.status_code}). "
+                "Possível manutenção ou instabilidade na API"
+            )
+            log(message, level="warning")
+
+            send_api_error_report(
+                status_code=results_response.status_code, 
+                source=source, 
+                environment=environment,
+                api_response=results_response.text
+            )
+
+            return {"lote": {"status": results_response.status_code, "mensagem": "API Fora do Ar"}}
+
+        print(f"Status code da resposta de resultados: {results_response.status_code}")
+        print(f"Resposta de resultados: {results_response.text}")
 
         results = results_response.json()
 
@@ -307,3 +336,4 @@ def build_operator_params(windows: list, aps: list, env: str, dataset: str):
 
     log(f"Parâmetros gerados para {len(params)} combinações (AP x Janela).")
     return params
+
