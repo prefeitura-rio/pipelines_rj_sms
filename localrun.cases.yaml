@@ -371,8 +371,8 @@ cases:
     params:
       dataset: 'brutos_exames_laboratoriais'
       environment: 'dev'
-      dt_inicio: '2025-07-23T18:00:00-03:00'
-      dt_fim: '2025-07-23T19:30:00-03:00'
+      dt_inicio: '2026-02-05T10:00:00-03:00'
+      dt_fim: '2026-02-05T11:00:00-03:00'
       rename_flow: False
       ap: '33'
   - case_slug: "datalake-extract-vitacare_gdrive"

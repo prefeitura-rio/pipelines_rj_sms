@@ -13,6 +13,7 @@ from pipelines.datalake.extract_load.exames_laboratoriais_api.constants import (
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.tasks import cloud_function_request
+import requests
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
@@ -35,21 +36,16 @@ def authenticate_fetch(
         base_url = "https://biomega-api.lisnet.com.br/lisnetws"
 
     try:
-        token_response = cloud_function_request.run(
-            url=f"{base_url}/tokenlisnet/apccodigo",
-            request_type="GET",
-            header_params=auth_headers,
-            api_type="json",
-            env=environment,
-            endpoint_for_filename="exames_lab_token",
-            credential=None,
+        token_response = requests.get(
+            f"{base_url}/tokenlisnet/apccodigo",
+            headers=auth_headers,
         )
 
-        if token_response["body"]["status"] != 200:
-            message = f"(authenticate_and_fetch) Error getting token: {token_response['body']['mensagem']}"
+        if token_response.json().get("status") != 200:
+            message = f"(authenticate_and_fetch) Error getting token: {token_response.json().get('mensagem')}"
             raise Exception(message)
 
-        token = token_response["body"]["token"]
+        token = token_response.json()['token']
 
         log("Authentication was successful")
 
@@ -67,18 +63,14 @@ def authenticate_fetch(
             }
         }
 
-        results_response = cloud_function_request.run(
-            url=f"{base_url}/APOIO/DTL/resultado",
-            request_type="POST",
-            header_params=results_headers,
-            body_params=request_body,
-            api_type="json",
-            env=environment,
-            endpoint_for_filename="exames_lab_results",
-            credential=None,
+        results_response = requests.post(
+            f"{base_url}/APOIO/DTL/resultado",
+            headers=results_headers,
+            json=request_body
+
         )
 
-        results = results_response["body"]
+        results = results_response.json()
 
         if isinstance(results, str):
             error_message = f"(authenticate_fetch) request failed: {results}"
