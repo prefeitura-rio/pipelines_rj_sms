@@ -14,7 +14,6 @@ from pipelines.utils.tasks import upload_df_to_datalake
 from .utils import (
     cleanup_text,
     find_h5_from_text,
-    get_counselors_initials,
     get_table_rows_from_h5,
     send_request,
     split_case_number,
@@ -99,10 +98,10 @@ def get_latest_vote(ctid: str):
             log("Votes not available for this case", level="warning")
             return f"{HOST}/processo/Ficha?ctid={ctid}"
     # Caso contrário, presume que existe voto disponível, retorna o URL
-    ## Infelizmente, o TCM foi mudado em ~fev/2026 e não mais permite que os
-    ## arquivos sejam acessados diretamente via URL. Assim, não temos como
-    ## obter o link para o voto do conselheiro, então nos limitamos a devolver
-    ## o (novo) URL que lista arquivos ("peças") do processo.
+    # > Infelizmente, o TCM foi mudado em ~fev/2026 e não mais permite que os
+    # > arquivos sejam acessados diretamente via URL. Assim, não temos como
+    # > obter o link para o voto do conselheiro, então nos limitamos a devolver
+    # > o (novo) URL que lista arquivos ("peças") do processo.
     return f"{HOST}/InteiroTeor/Visualizar?ctid={ctid}"
 
 
