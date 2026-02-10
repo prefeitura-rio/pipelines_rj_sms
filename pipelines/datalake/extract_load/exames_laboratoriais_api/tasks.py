@@ -12,9 +12,6 @@ from pipelines.datalake.extract_load.exames_laboratoriais_api.constants import (
     CREDENTIALS,
 )
 
-from pipelines.datalake.extract_load.exames_laboratoriais_api.utils import (   
-    send_api_error_report
-)
 from pipelines.utils.credential_injector import authenticated_task as task
 import requests
 
