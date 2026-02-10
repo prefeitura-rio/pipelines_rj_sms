@@ -12,6 +12,8 @@ from pipelines.datalake.extract_load.exames_laboratoriais_api.constants import (
     CREDENTIALS,
 )
 
+from pipelines.datalake.extract_load.exames_laboratoriais_api.utils import send_api_error_report
+
 from pipelines.utils.credential_injector import authenticated_task as task
 import requests
 
@@ -83,6 +85,12 @@ def authenticate_fetch(
                 "Possível manutenção ou instabilidade na API"
             )
             log(message, level="warning")
+
+            send_api_error_report(
+                status_code=results_response.status_code, 
+                source=source, 
+                environment=environment
+            )
 
 
             return {"lote": {"status": results_response.status_code, "mensagem": "API Fora do Ar"}}
