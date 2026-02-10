@@ -16,6 +16,17 @@ from prefeitura_rio.pipelines_utils.logging import log
 from requests import Session
 from unidecode import unidecode
 
+
+import time
+from typing import List, Optional, Tuple
+from urllib.parse import urlparse
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 # Internos
 from pipelines.datalake.extract_load.sisreg_afastamentos import constants
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -57,20 +68,108 @@ def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 10) ->
     return res
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=5))
-def init_client_request_base() -> httpx.Client:
-    client = httpx.Client()
 
-    res = client.get(
-        "https://sisregiii.saude.gov.br/",
-        headers=constants.REQUEST_HEADERS,
-    )
-
-    return client
+def _host_from_url(url: str) -> str:
+    return urlparse(url).hostname or ""
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=5))
-def login_sisreg(usuario: str, senha: str, client: httpx.Client) -> httpx.Client:
+def _build_firefox_driver(page_load_timeout_s: int = 45) -> webdriver.Firefox:
+    options = FirefoxOptions()
+    #options.add_argument("-headless")
+
+    # Mantém o user-agent consistente com o que o pipeline já usa nos headers,
+    # reduzindo discrepâncias entre o login (browser) e o scraping (httpx).
+    ua = constants.REQUEST_HEADERS.get("User-Agent")
+    if ua:
+        options.set_preference("general.useragent.override", ua)
+
+    # Reduz variação de HTML e ajuda a estabilizar alguns fluxos.
+    options.set_preference("intl.accept_languages", "pt-BR,pt,en-US,en")
+
+    # Timeouts de rede do Firefox para evitar travamentos silenciosos.
+    options.set_preference("network.http.connection-timeout", 30)
+    options.set_preference("network.http.response.timeout", 30)
+
+    driver = webdriver.Firefox(options=options)
+    driver.set_page_load_timeout(page_load_timeout_s)
+    return driver
+
+
+def _selenium_login_and_export_state(
+    usuario: str,
+    senha: str,
+    wait_s: int = 30,
+) -> Tuple[List[dict], str]:
+    """Faz login via Firefox (Selenium) e retorna (cookies, user_agent)."""
+    driver = _build_firefox_driver()
+    try:
+        driver.get(constants.SISREG_LOGIN_URL)
+        wait = WebDriverWait(driver, wait_s)
+
+        # Tentativa mais robusta de achar os campos, sem depender de um único seletor.
+        usuario_el = wait.until(
+            EC.any_of(
+                EC.presence_of_element_located((By.NAME, "usuario")),
+                EC.presence_of_element_located((By.ID, "usuario")),
+                EC.presence_of_element_located((By.CSS_SELECTOR, "input[name='usuario']")),
+            )
+        )
+        senha_el = wait.until(
+            EC.any_of(
+                EC.presence_of_element_located((By.NAME, "senha")),
+                EC.presence_of_element_located((By.ID, "senha")),
+                EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password']")),
+            )
+        )
+
+        usuario_el.clear()
+        usuario_el.send_keys(usuario)
+        senha_el.clear()
+        senha_el.send_keys(senha)
+
+        # Submissão: tenta botão submit; se não existir, ENTER no campo de senha.
+        try:
+            driver.find_element(By.CSS_SELECTOR, "button[type='submit'], input[type='submit'], input[name='entrar']").click()
+        except Exception:
+            senha_el.send_keys(Keys.ENTER)
+
+        # Confirmação mínima de que a sessão foi criada: cookie SESSION.
+        def _has_session_cookie(drv) -> bool:
+            try:
+                c = drv.get_cookie("SESSION")
+                return bool(c and c.get("value"))
+            except Exception:
+                return False
+
+        wait.until(_has_session_cookie)
+
+        # Warm-up em página pós-login para estabilizar cookies de borda/WAF.
+        #driver.get(constants.SISREG_POST_LOGIN_PROBE_URL)
+        #time.sleep(0.8)
+
+        cookies = driver.get_cookies()
+        user_agent = driver.execute_script("return navigator.userAgent;") or ""
+        return cookies, user_agent
+    finally:
+        driver.quit()
+
+
+def _apply_selenium_cookies_to_httpx_client(client: httpx.Client, cookies: List[dict]) -> None:
+    default_domain = getattr(constants, "SISREG_DEFAULT_DOMAIN", _host_from_url(constants.SISREG_BASE_URL))
+
+    for c in cookies:
+        name = c.get("name")
+        value = c.get("value")
+        if not name:
+            continue
+
+        domain = c.get("domain") or default_domain
+        path = c.get("path") or "/"
+        client.cookies.set(name, value, domain=domain, path=path)
+
+
+def _login_sisreg_via_http(usuario: str, senha: str, client: httpx.Client) -> httpx.Client:
+    """Fallback: login antigo via POST direto (mantido para resiliência)."""
     payload = (
         f"usuario={usuario}&"
         "senha=&"
@@ -79,9 +178,9 @@ def login_sisreg(usuario: str, senha: str, client: httpx.Client) -> httpx.Client
         "logout="
     )
 
-    log("Realizando autenticação")
+    log("Realizando autenticação via POST (fallback)")
     response = client.post(
-        "https://sisregiii.saude.gov.br/",
+        constants.SISREG_BASE_URL + "/",
         headers=constants.REQUEST_HEADERS | {
             "Content-Type": "application/x-www-form-urlencoded",
         },
@@ -90,11 +189,68 @@ def login_sisreg(usuario: str, senha: str, client: httpx.Client) -> httpx.Client
     )
 
     if usuario not in response.text:
-        log("Não logado")
-        raise Exception("Not logged in")
+        log("Não logado (fallback)")
+        raise Exception("Not logged in (fallback)")
 
-    log("Login com sucesso")
+    log("Login com sucesso (fallback)")
     return client
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
+def init_client_request_base() -> httpx.Client:
+    # Importante: não faz request aqui, porque o cenário reportado é timeout na primeira
+    # requisição HTTP a partir da nuvem. O primeiro contato “humano” fica com o Selenium.
+    timeout = httpx.Timeout(connect=10.0, read=35.0, write=35.0, pool=10.0)
+    limits = httpx.Limits(max_connections=20, max_keepalive_connections=10, keepalive_expiry=20.0)
+
+    client = httpx.Client(
+        headers=constants.REQUEST_HEADERS,
+        follow_redirects=True,
+        trust_env=False,
+        timeout=timeout,
+        limits=limits,
+        http2=False,
+    )
+    return client
+
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
+def login_sisreg(usuario: str, senha: str, client: httpx.Client) -> httpx.Client:
+    """
+    Estratégia híbrida:
+    - Selenium (Firefox) realiza o login "de verdade" e obtém cookies de sessão / WAF.
+    - HTTPX reaproveita esses cookies para fazer as requisições do scraping.
+    """
+    try:
+        log("Realizando autenticação via Selenium (Firefox) para obter cookies válidos de sessão")
+        cookies, user_agent = _selenium_login_and_export_state(usuario=usuario, senha=senha)
+
+        _apply_selenium_cookies_to_httpx_client(client, cookies)
+
+        # Mantém o UA do client alinhado com o browser (mesmo que os requests passem headers).
+        if user_agent:
+            client.headers["User-Agent"] = user_agent
+
+        # Probe pós-login: falhar aqui é melhor do que passar horas raspando HTML de login.
+        probe = client.get(constants.SISREG_POST_LOGIN_PROBE_URL, headers=constants.REQUEST_HEADERS)
+
+        if "(CAPTCHA)" in probe.text:
+            raise Exception("SISREG está pedindo CAPTCHA")
+
+        # Critério “fraco” mas útil: o HTML pós-login costuma conter o usuário em algum ponto.
+        if usuario not in probe.text:
+            log("Login via Selenium possivelmente realizado, mas a verificação textual não confirmou o usuário")
+
+        log("Login híbrido com sucesso")
+        return client
+
+    except Exception as e:
+        # Em caso de ambiente sem Firefox/geckodriver, ou mudança na tela de login,
+        # mantemos o método antigo como fallback.
+        log(f"Falha no login via Selenium: {e!r}. Tentando fallback via POST.")
+        return _login_sisreg_via_http(usuario=usuario, senha=senha, client=client)
+
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
@@ -102,7 +258,7 @@ def search_afastamentos(
     cpf: str, client: httpx.Client, extraction_date: datetime
 ) -> pd.DataFrame | None:
     res = client.get(
-        f"https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?cpf={cpf}&mostrar_antigos=1",
+        f"{constants.SISREG_BASE_URL}/cgi-bin/af_medicos.pl?cpf={cpf}&mostrar_antigos=1",
         headers=constants.REQUEST_HEADERS,
     )
 
@@ -155,7 +311,7 @@ def search_historico_afastamentos(
     cpf: str, client: httpx.Client, extraction_date: datetime
 ) -> pd.DataFrame | None:
     res = client.get(
-        ("https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?" f"cpf={cpf}&op=Log"),
+        (f"{constants.SISREG_BASE_URL}/cgi-bin/af_medicos.pl?cpf={cpf}&op=Log"),
         headers=constants.REQUEST_HEADERS,
     )
 
