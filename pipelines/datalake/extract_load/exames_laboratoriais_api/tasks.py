@@ -91,7 +91,6 @@ def authenticate_fetch(
                 status_code=results_response.status_code, 
                 source=source, 
                 environment=environment,
-                api_response=results_response.text
             )
 
             return {"lote": {"status": results_response.status_code, "mensagem": "API Fora do Ar"}}
