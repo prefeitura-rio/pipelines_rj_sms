@@ -87,16 +87,8 @@ def authenticate_fetch(
             )
             log(message, level="warning")
 
-            send_api_error_report(
-                status_code=results_response.status_code, 
-                source=source, 
-                environment=environment,
-            )
 
             return {"lote": {"status": results_response.status_code, "mensagem": "API Fora do Ar"}}
-
-        print(f"Status code da resposta de resultados: {results_response.status_code}")
-        print(f"Resposta de resultados: {results_response.text}")
 
         results = results_response.json()
 
