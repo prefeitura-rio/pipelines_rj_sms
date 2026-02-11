@@ -371,10 +371,10 @@ cases:
     params:
       dataset: 'brutos_exames_laboratoriais'
       environment: 'dev'
-      dt_inicio: '2025-07-23T18:00:00-03:00'
-      dt_fim: '2025-07-23T19:30:00-03:00'
+      dt_inicio: '2026-02-08T20:00:00-03:00'
+      dt_fim: '2026-02-08T21:59:59-03:00'
       rename_flow: False
-      ap: '33'
+      ap: '52'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
