@@ -7,7 +7,8 @@ from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
-from prefect.schedules import UnionSchedule
+from prefect.schedules import Schedule
+
 
 
 from pipelines.constants import constants
@@ -131,4 +132,5 @@ sms_execute_dbt.run_config = KubernetesRun(
     ],
 )
 
-sms_execute_dbt.schedule = UnionSchedule(schedules = [dbt_schedules, cdi_schedules])
+all_clocks = dbt_schedules.clocks + cdi_schedules.clocks
+sms_execute_dbt.schedule = Schedule(clocks=all_clocks)
