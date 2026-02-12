@@ -371,10 +371,10 @@ cases:
     params:
       dataset: 'brutos_exames_laboratoriais'
       environment: 'dev'
-      dt_inicio: '2025-07-23T18:00:00-03:00'
-      dt_fim: '2025-07-23T19:30:00-03:00'
+      dt_inicio: '2026-02-08T20:00:00-03:00'
+      dt_fim: '2026-02-08T21:59:59-03:00'
       rename_flow: False
-      ap: '33'
+      ap: '52'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
@@ -385,10 +385,11 @@ cases:
     flow_name: "sms_siscan_web_operator"
     params:
       environment: "dev"
-      data_inicial: "03/08/2025"
-      data_final: "03/08/2025"
+      data_inicial: "03/06/2025"
+      data_final: "15/06/2025"
       bq_dataset: "brutos_siscan_web"
-      bq_table: "laudos"
+      bq_table: "laudos_histo_mama"
+      opcao_exame: "histo_mama"
   - case_slug: "siscan_web_laudos_manager"
     flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
     flow_name: "sms_siscan_web_manager"
@@ -652,3 +653,8 @@ cases:
       table_id: "pgm_2026"
       url: "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4"
       url_type: "google_sheet"
+  - case_slug: hci_freshness_check
+    flow_path: pipelines.reports.alerta_atualizacao_tabelas.flows
+    flow_name: report_alerta_atualizacao_hci
+    params:
+      environment: "dev"

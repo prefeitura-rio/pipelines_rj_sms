@@ -42,13 +42,13 @@ def create_dou_params_dict(environment: str = "prod", date: Optional[str] = None
 @task
 def create_dbt_params_dict(environment: str = "prod"):
     # Queremos executar o seguinte comando:
-    # $ dbt build --select +tag:cdi+ --target ENV
+    # $ dbt build --select +tag:cdi_vps+ --target ENV
     return {
         "environment": environment,
         "rename_flow": True,
         "send_discord_report": False,
         "command": "build",
-        "select": "+tag:cdi+",
+        "select": "+tag:cdi_vps+",
         "exclude": None,
         "flag": None,
     }
@@ -164,7 +164,11 @@ WHERE data_publicacao = '{DATE}'
     tcm_cases = dict()
     if len(tcm_case_numbers) > 0:
         log(f"Looking for TCM cases: {tcm_case_numbers}")
-        if len(tcm_df) > 0:
+        if len(tcm_df) > 0 and (
+            "processo_id" in tcm_df.columns
+            and "decisao_data" in tcm_df.columns
+            and "voto_conselheiro" in tcm_df.columns
+        ):
             # Pega os votos, se tivermos essa informação
             relevant_tcm_df = tcm_df[tcm_df["processo_id"].isin(tcm_case_numbers)]
             relevant_tcm_df = relevant_tcm_df.reset_index()
@@ -310,18 +314,16 @@ WHERE data_publicacao = '{DATE}'
                 CURRENT_VPS_EDITION,
                 True,
                 f"""
-<font face="sans-serif">
-    <p>
-        <b>Atenção!</b>
-        Não foi possível extrair automaticamente {error_at} de hoje.
-        É possível que o website estivesse fora do ar no momento da extração.
-        Por favor, confira manualmente.
-    </p>{success_at}
-    <p>
-        Email gerado às
-        {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
-    </p>
-</font>
+<p style="font-family:sans-serif">
+    <b>Atenção!</b>
+    Não foi possível extrair automaticamente {error_at} de hoje.
+    É possível que o website estivesse fora do ar no momento da extração.
+    Por favor, confira manualmente.
+</p>{success_at}
+<p style="font-family:sans-serif">
+    Email gerado às
+    {datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")}.
+</p>
                 """,
             )
         # Caso contrário, só não temos artigos relevantes hoje; retorna vazio
@@ -350,36 +352,35 @@ WHERE data_publicacao = '{DATE}'
     # garantir que suas modificações não quebrarão nada.
     formatted_date = DO_DATETIME.strftime("%d.%m.%Y")
     final_email_string = f"""
-        <font face="sans-serif">
-            <table style="max-width:650px;min-width:300px">
-                <tr>
-                    <td>
-                        <img alt="Você Precisa Saber" width="650" style="width:100%"
-                            src="{constants.BANNER_VPS.value}"/>
-                    </td>
-                </tr>
+        <table style="font-family:sans-serif;max-width:650px;min-width:300px">
+            <tr>
+                <td>
+                    <img alt="Você Precisa Saber" width="650" style="width:100%"
+                        src="{constants.BANNER_VPS.value}"/>
+                </td>
+            </tr>
     """
     if CURRENT_VPS_EDITION > 0:
         final_email_string += f"""
-                <tr>
-                    <td>
-                        <p style="font-size:12px;color:#888;margin:0">
-                            <span style="margin-right:6px">Edição nº{CURRENT_VPS_EDITION}</span>
-                            &middot;
-                            <span style="margin-left:6px">Ano {CURRENT_YEAR}</span>
-                        </p>
-                    </td>
-                </tr>
+            <tr>
+                <td>
+                    <p style="font-size:12px;color:#888;margin:0">
+                        <span style="margin-right:6px">Edição nº{CURRENT_VPS_EDITION}</span>
+                        &middot;
+                        <span style="margin-left:6px">Ano {CURRENT_YEAR}</span>
+                    </p>
+                </td>
+            </tr>
         """
     final_email_string += f"""
-                <tr><td><hr/></td></tr>
-                <tr>
-                    <td style="padding:18px 0px">
-                        <h2 style="margin:0;text-align:center">
-                            <font color="#13335a" size="5">DESTAQUES &ndash; D.O. RIO de {formatted_date}</font>
-                        </h2>
-                    </td>
-                </tr>
+            <tr><td><hr/></td></tr>
+            <tr>
+                <td style="padding:18px 0px">
+                    <h2 style="margin:0;text-align:center;color:#13335a;font-size:24px">
+                        DESTAQUES &ndash; D.O. RIO de {formatted_date}
+                    </h2>
+                </td>
+            </tr>
     """
 
     for header, body in email_blocks.items():
@@ -390,19 +391,19 @@ WHERE data_publicacao = '{DATE}'
         s = "" if len(body) < 2 else "s"
         # Escreve cabeçalho, abre lista de conteúdos
         final_email_string += f"""
-            <tr>
-                <th style="background-color:#eceded;padding:9px">
-                    <font color="#13335a">{header}</font>
-                </th>
-            </tr>
-            <tr>
-                <td>
-                    <small>{len(body)} artigo{s} relevante{s} encontrado{s}:</small>
-                </td>
-            </tr>
-            <tr>
-                <td style="padding:9px 18px">
-                    <ul style="padding-left:9px">
+        <tr>
+            <th style="background-color:#eceded;padding:9px;color:#13335a">
+                {header}
+            </th>
+        </tr>
+        <tr>
+            <td>
+                <small>{len(body)} artigo{s} relevante{s} encontrado{s}:</small>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:9px 18px">
+                <ul style="padding-left:9px">
         """
         for content in sorted(body, key=str.lower):
             filtered_content = format_relevant_entry(content)
@@ -425,28 +426,27 @@ WHERE data_publicacao = '{DATE}'
     # Rodapé
     timestamp = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).strftime("%H:%M:%S de %d/%m/%Y")
     final_email_string += f"""
-                <tr><td><hr/></td></tr>
-                <tr>
-                    <td>
-                        <p style="color:#13335a;margin:0">
-                            <b style="font-size:15px">Coordenadoria de Demandas Institucionais</b><br/>
-                            S/SUBG/CDI/Gerência de Atendimento a Demandas de Controle Interno e Externo
-                        </p>
-                    </td>
-                </tr>
-                <tr><td><hr></td></tr>
-                <tr>
-                    <td>
-                        <img alt="DIT-SMS" width="100" align="right" style="margin-left:18px;margin-bottom:70px"
-                            src="{constants.LOGO_DIT_HORIZONTAL_COLORIDO.value}"/>
-                        <p style="font-size:13px;color:#888;margin:0">
-                            Apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT).<br/>
-                            Email gerado às {timestamp}.
-                        </p>
-                    </td>
-                </tr>
-            </table>
-        </font>
+            <tr><td><hr/></td></tr>
+            <tr>
+                <td>
+                    <p style="color:#13335a;margin:0">
+                        <b style="font-size:15px">Coordenadoria de Demandas Institucionais</b><br/>
+                        S/SUBG/CDI/Gerência de Atendimento a Demandas de Controle Interno e Externo
+                    </p>
+                </td>
+            </tr>
+            <tr><td><hr></td></tr>
+            <tr>
+                <td>
+                    <img alt="DIT-SMS" width="100" align="right" style="margin-left:18px;margin-bottom:70px"
+                        src="{constants.LOGO_DIT_HORIZONTAL_COLORIDO.value}"/>
+                    <p style="font-size:13px;color:#888;margin:0">
+                        Apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT).<br/>
+                        Email gerado às {timestamp}.
+                    </p>
+                </td>
+            </tr>
+        </table>
     """
     return (CURRENT_VPS_EDITION, False, re.sub(r"\s{2,}\<", "<", final_email_string))
 

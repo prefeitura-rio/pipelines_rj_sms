@@ -21,7 +21,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
 
-from .config import DIRETORIO_DOWNLOADS, HEADLESS_PADRAO, LOGGER, TEMPO_ESPERA_PADRAO
+from prefeitura_rio.pipelines_utils.logging import log
+
+from .config import DIRETORIO_DOWNLOADS, HEADLESS_PADRAO, TEMPO_ESPERA_PADRAO
+
+import time
 
 _T = TypeVar("_T")
 
@@ -47,7 +51,7 @@ def init_firefox(*, headless: bool | None = None) -> Firefox:
     servico = FirefoxService()
     driver = Firefox(service=servico, options=opcoes)
     driver.set_page_load_timeout(TEMPO_ESPERA_PADRAO)
-    LOGGER.info("Driver Firefox inicializado (headless=%s).", headless)
+    log(f"Driver Firefox inicializado (headless={headless}).")
     return driver
 
 
@@ -141,13 +145,13 @@ def clicar_com_retry(
             elem.click()
             return True
         except ElementClickInterceptedException:  # ➋ trata bloqueio
-            LOGGER.debug("Elemento %s bloqueado por overlay – aguardando…", locator)
+            log(f"Elemento {locator} bloqueado por overlay - aguardando…")
             try:
-                esperar_overlay_sumir(driver, 30)
+                esperar_overlay_sumir(driver, 300)
             except TimeoutException:
                 pass
         except (StaleElementReferenceException, TimeoutException):
-            LOGGER.debug("Tentativa extra de clique em %s.", locator)
+            log(f"Tentativa extra de clique em {locator}.")
     return False
 
 
@@ -168,6 +172,8 @@ def navegar_seguro(driver: Firefox, url: str):
         WebDriverWait(driver, 30).until(lambda d: len(d.window_handles) > 1)
     except TimeoutException:
         pass
+
+    time.sleep(4)
     _fechar_janelas_extras(driver)
 
     # Trata página de mensagens informativas
