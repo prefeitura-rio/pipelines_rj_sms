@@ -25,7 +25,6 @@ from pipelines.datalake.utils.tasks import (
     extrair_fim,
     extrair_inicio,
     prepare_df_from_disk,
-    rename_current_flow_run,
     upload_from_disk,
 )
 from pipelines.utils.credential_injector import (
@@ -125,18 +124,10 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev")
     RELATIVE_DATE = Parameter("relative_date", default="D-1")
     DIAS_POR_FAIXA = Parameter("range", default=1)
-    RENAME_FLOW = Parameter("rename_flow", default=True)
     OPCAO_EXAME = Parameter("opcao_exame", default="mamografia")
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
     BQ_TABLE = Parameter("bq_table", default="laudos_mamografia")
 
-
-    with case(RENAME_FLOW, True):
-        rename_current_flow_run(
-            environment=ENVIRONMENT,
-            relative_date=RELATIVE_DATE,
-            range=DIAS_POR_FAIXA,
-        )
 
     ###########################
     # Flow
@@ -195,20 +186,11 @@ with Flow(
     ###########################
     ENVIRONMENT = Parameter("environment", default="dev")
     DIAS_POR_FAIXA = Parameter("range", default=1)
-    RENAME_FLOW = Parameter("rename_flow", default=True)
     START_DATE = Parameter("start_date", default="01/01/2025")
     END_DATE = Parameter("end_date", default="31/01/2025")
     OPCAO_EXAME = Parameter("opcao_exame", default="mamografia")
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
     BQ_TABLE = Parameter("bq_table", default="laudos_mamografia")
-
-    with case(RENAME_FLOW, True):
-        rename_current_flow_run(
-            environment=ENVIRONMENT,
-            start_date=START_DATE,
-            end_date=END_DATE,
-            range=DIAS_POR_FAIXA,
-        )
 
     ###########################
     # Flow
