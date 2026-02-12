@@ -4,10 +4,10 @@
 Schedules for the dbt execute pipeline
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 import pytz
-from prefect.schedules import Schedule
+from prefect.schedules import Schedule, filters
 
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
@@ -31,6 +31,16 @@ every_30_minutes_parameters = [
         "environment": "prod",
         "rename_flow": True,
         "select": "tag:alerta_doencas",
+        "send_discord_report": False,
+    },
+]
+
+every_4_hours_parameters = [
+    {
+        "command": "build",
+        "environment": "prod",
+        "rename_flow": True,
+        "select": "tag:cdi-4hours",
         "send_discord_report": False,
     },
 ]
@@ -75,7 +85,25 @@ dbt_every_30_minutes_clocks = generate_dump_api_schedules(
     flow_run_parameters=every_30_minutes_parameters,
     runs_interval_minutes=0,
 )
+# schedule 4 hours
+dbt_every_4_hours_clocks = generate_dump_api_schedules(
+    interval=timedelta(hours=4),
+    start_date=datetime(2024, 12, 18, 9, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+    labels=[
+        constants.RJ_SMS_AGENT_LABEL.value,
+    ],
+    flow_run_parameters=every_4_hours_parameters,
+    runs_interval_minutes=0,
+)
 
 dbt_clocks = dbt_daily_clocks + dbt_weekly_clocks + dbt_monthly_clocks + dbt_every_30_minutes_clocks
+cdi_clocks = dbt_every_4_hours_clocks
 
 dbt_schedules = Schedule(clocks=untuple_clocks(dbt_clocks))
+cdi_schedules = Schedule(
+    clocks=untuple_clocks(cdi_clocks),
+    filters=[filters.is_weekday],
+    or_filters=[
+        filters.between_times(time(9), time(9)),
+        filters.between_times(time(21), time(21)),
+    ])
