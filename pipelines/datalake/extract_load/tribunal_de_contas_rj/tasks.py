@@ -14,7 +14,6 @@ from pipelines.utils.tasks import upload_df_to_datalake
 from .utils import (
     cleanup_text,
     find_h5_from_text,
-    get_counselors_initials,
     get_table_rows_from_h5,
     send_request,
     split_case_number,
@@ -86,29 +85,8 @@ def get_latest_vote(ctid: str):
         log("Received no ctid; skipping vote", level="warning")
         return None
 
-    # Situação:
-    # - Para pegar o voto, às vezes é preciso primeiro mandar um
-    #   POST /InteiroTeor/Index?ctid=xxxx com FormData:
-    #       Processo.ContainerID=xxxx (ctid)
-    #       RecaptchaToken=xxxx, __RequestVerificationToken=xxxx
-    # - Não temos como fazer isso por código porque requer Recaptcha
-    # - Se você achar uma forma de burlar: GET /InteiroTeor/EstaLiberado?ctid=xxxx
-    #   - Isso retorna ou:
-    #     {"redirectUrl":"/InteiroTeor/Arquivos?ctid=xxxx"}
-    #     - Já pode pegar o voto, GET /InteiroTeor/Arquivos?ctid=xxxx
-    #   - Ou erro 404
-    #     - Talvez o voto exista mas precise do POST; talvez não exista
-
-    # - Como estamos bloqueados pelo Recaptcha, pegamos direto /Arquivos
-    # - Pode retornar um <div> com erros:
-    #   - "Processo não liberado para consulta."
-    #       - Não temos como pegar votos desse processo; retorna nulo
-    #   - "O inteiro teor desse processo foi solicitado mas ainda não está disponível.
-    #      Por favor, aguarde mais alguns minutos e refaça a consulta."
-    #       - Pegar os votos requer o POST; retorna o URL do botão
-    # - Se não houver <div> de erro, então melhor caso: podemos pegar o URL do PDF
     HOST = "https://etcm.tcmrio.tc.br"
-    file_path = f"/InteiroTeor/Arquivos?ctid={ctid}"
+    file_path = f"/InteiroTeor/Visualizar?ctid={ctid}"
     (_, html) = send_request("GET", f"{HOST}{file_path}")
     html: BeautifulSoup
     # Se existe <div> de erro
@@ -119,79 +97,12 @@ def get_latest_vote(ctid: str):
         if not_allowed_text in div.get_text():
             log("Votes not available for this case", level="warning")
             return f"{HOST}/processo/Ficha?ctid={ctid}"
-        # Caso contrário, presume que existe voto disponível, retorna o URL
-        log("Votes are available but unreachable for this case", level="warning")
-        return f"{HOST}/InteiroTeor/Index?ctid={ctid}"
-
-    # Se estamos aqui, então provavelmente temos como pegar o URL do PDF
-    # Portanto, precisamos das iniciais dos conselheiros
-    initials = get_counselors_initials()
-
-    def get_table_contents_from_h5_text(
-        root: BeautifulSoup, match: str, throw: Optional[str] = None
-    ):
-        # Encontra <h5> com o conteúdo textual especificado
-        h5 = find_h5_from_text(root, match)
-        if h5 is None:
-            if throw is not None:
-                raise RuntimeError(throw)
-            return None
-        # Pega <table> logo após o <h5> (nessa página são irmãos imediatos)
-        table = h5.find_next_sibling("table")
-        # Pega todos os <tr> dentro da tabela
-        rows = table.find_all("tr")
-        if rows is None or len(rows) < 1:
-            if throw is not None:
-                raise RuntimeError(throw)
-            return None
-
-        table_contents = []
-        # Para cada <tr>, de baixo para cima
-        for row in reversed(rows):
-            values = []
-            # Filhos são algo como: ["\n", <td>, "\n", <td>, "\n"]
-            for child in row.children:
-                # Pula text nodes (e.g. "\n")
-                if child.name is None:
-                    continue
-                # Se existe um <a href="...download..."> no elemento
-                a = child.find("a", attrs={"href": re.compile("download", re.IGNORECASE)})
-                if a:
-                    # Pega `href` dele
-                    values.append(f"{HOST}{a.get('href')}")
-                    continue
-                # Caso contrário, pega o conteúdo textual do elemento
-                values.append(child.get_text().strip())
-            table_contents.append(values)
-        return table_contents
-
-    contents = get_table_contents_from_h5_text(html, r"^peças do processo")
-    if contents is None:
-        # Alguns casos possuem arquivos mas não são o que a gente espera
-        # Ex.: https://etcm.tcmrio.tc.br/InteiroTeor/Arquivos?ctid=422431
-        # Avisa e retorna só o /Index mesmo
-        log("Unable to find case pieces in page", level="warning")
-        return f"{HOST}/InteiroTeor/Index?ctid={ctid}"
-
-    for row in contents:
-        # [ Ordem, Descrição, Extensão, Tamanho, Download ]
-        # Estamos em busca de algo como 'GCS-5 DCPN / 184 / 2024',
-        # onde DCPN é uma sigla de conselheiro
-        # Queremos, portanto:
-        # - Para cada descrição, pegar as 3 primeiras palavras (separadas por espaço)
-        description = row[1]
-        download = row[4]
-
-        first_words = description.split(" ")[:3]
-        for word in first_words:
-            # Se encontramos uma delas na lista de siglas
-            if word in initials:
-                log(f"Found initials '{word}' in '{description}'")
-                # Pega o URL de download
-                return download
-
-    log("Could not find counselor vote", level="warning")
-    return f"{HOST}/InteiroTeor/Index?ctid={ctid}"
+    # Caso contrário, presume que existe voto disponível, retorna o URL
+    # > Infelizmente, o TCM foi mudado em ~fev/2026 e não mais permite que os
+    # > arquivos sejam acessados diretamente via URL. Assim, não temos como
+    # > obter o link para o voto do conselheiro, então nos limitamos a devolver
+    # > o (novo) URL que lista arquivos ("peças") do processo.
+    return f"{HOST}/InteiroTeor/Visualizar?ctid={ctid}"
 
 
 @task()

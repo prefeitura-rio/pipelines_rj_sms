@@ -40,7 +40,7 @@ TABLES_CONFIG = [
         IFNULL(:cns_cadastrante, ''), :id_tb_situacao, LEFT(:origem, 1)
         WHERE NOT EXISTS (
                 SELECT 1
-                FROM tb_sintomatico s
+                FROM subpav_sinanrio.tb_sintomatico s
                 WHERE (
                     (:cpf IS NOT NULL AND :cpf <> '' AND s.cpf = :cpf)
                     OR (:cns IS NOT NULL AND :cns <> '' AND s.cns = :cns)
@@ -273,7 +273,7 @@ def build_param(config: dict) -> dict:
         "rename_flow": True,
         "if_exists": config.get("if_exists", "append"),
         "project": config.get("project", ""),
-        "environment": config.get("environment", "dev"),
+        "environment": config.get("environment", "prod"),
     }
     # Só adiciona se tiver valor!
     if config.get("secret_name") is not None:
