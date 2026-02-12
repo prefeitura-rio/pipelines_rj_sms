@@ -7,9 +7,11 @@ from prefect import Parameter, case
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
+from prefect.schedules import UnionSchedule
+
 
 from pipelines.constants import constants
-from pipelines.datalake.transform.dbt.schedules import dbt_schedules
+from pipelines.datalake.transform.dbt.schedules import dbt_schedules, cdi_schedules
 from pipelines.datalake.transform.dbt.tasks import (
     check_if_dbt_artifacts_upload_is_needed,
     create_dbt_report,
@@ -129,4 +131,4 @@ sms_execute_dbt.run_config = KubernetesRun(
     ],
 )
 
-sms_execute_dbt.schedule = dbt_schedules
+sms_execute_dbt.schedule = UnionSchedule(schedules = [dbt_schedules, cdi_schedules])
