@@ -4,10 +4,10 @@
 Schedules for the dbt execute pipeline
 """
 
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 
 import pytz
-from prefect.schedules import Schedule, filters
+from prefect.schedules import Schedule
 
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
