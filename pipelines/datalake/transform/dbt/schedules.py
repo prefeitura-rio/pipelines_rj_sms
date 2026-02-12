@@ -104,6 +104,6 @@ cdi_schedules = Schedule(
     clocks=untuple_clocks(cdi_clocks),
     filters=[filters.is_weekday],
     or_filters=[
-        filters.between_times(time(9), time(9)),
-        filters.between_times(time(21), time(21)),
-    ])
+        filters.between_times(time(9), time(21))    
+        ])
+
