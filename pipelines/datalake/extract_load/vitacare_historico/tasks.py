@@ -3,6 +3,7 @@
 Tasks para extração e transformação de dados do Vitacare Historic SQL Server
 """
 
+import time
 from datetime import timedelta
 
 import pandas as pd
@@ -12,7 +13,11 @@ from sqlalchemy import create_engine
 from pipelines.datalake.extract_load.vitacare_historico.constants import (
     vitacare_constants,
 )
-from pipelines.datalake.extract_load.vitacare_historico.utils import transform_dataframe
+from pipelines.datalake.extract_load.vitacare_historico.utils import (
+    get_instance_status,
+    set_instance_activation_policy,
+    transform_dataframe,
+)
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
 from pipelines.utils.tasks import upload_df_to_datalake
@@ -182,3 +187,37 @@ def build_dbt_paramns(env: str):
         "select": "tag:vitacare_historico",
         "send_discord_report": False,
     }
+
+
+@task(max_retries=2, retry_delay=timedelta(seconds=30))
+def start_cloudsql_instance():
+    status = get_instance_status()
+    log("Iniciando a instância do Cloud SQL...")
+    if status["state"] == "RUNNABLE" and status["activationPolicy"] == "ALWAYS":
+        log("Instância já está no estado RUNNABLE.", level="info")
+        return
+    set_instance_activation_policy("ALWAYS")
+
+
+@task
+def wait_for_instance_runnable(max_wait_minutes: int = 10):
+    log("Aguardando a instância ficar no estado RUNNABLE...")
+    start_time = time.time()
+    timeout = max_wait_minutes * 60
+
+    while time.time() - start_time < timeout:
+        status = get_instance_status()
+        log(f"Status atual da instância: {status}")
+        if status["state"] == "RUNNABLE" and status["activationPolicy"] == "ALWAYS":
+
+            log("Instância ativada", level="info")
+            return
+        time.sleep(30)
+
+    raise TimeoutError(f"A instância não atingiu o estado RUNNABLE em {max_wait_minutes} minutos.")
+
+
+@task(max_retries=2, retry_delay=timedelta(seconds=30))
+def stop_cloudsql_instance():
+    log("Desligando a instância do Cloud SQL...")
+    set_instance_activation_policy("NEVER")
