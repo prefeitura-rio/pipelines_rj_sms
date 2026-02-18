@@ -52,7 +52,7 @@ DET_MAE = (By.ID, "form:Mae")
 DET_UF_PACIENTE = (By.ID, "form:UFPaciente")
 DET_BAIRRO = (By.ID, "form:Bairro")
 DET_NUMERO = (By.ID, "form:Numero")
-DET_CEP = (By.ID, "form:cep2") # id="form:CEP"
+DET_CEP = (By.ID, "form:cep2")  # id="form:CEP"
 DET_SEXO = (By.ID, "form:Sexo")
 DET_IDADE = (By.ID, "form:Idade")
 DET_TELEFONE = (By.ID, "form:Telefone")

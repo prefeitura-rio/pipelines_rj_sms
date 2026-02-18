@@ -90,7 +90,6 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "unidade_municipio": get_txt(driver, DET_MUNICIPIO),  # noqa: F403
         "n_prontuario": get_txt(driver, DET_NPRONT),  # noqa: F403
         "n_protocolo": get_txt(driver, DET_NPROTO),  # noqa: F403
-
         # ------------------------------- Paciente -------------------------- #
         "paciente_cartao_sus": get_val(driver, DET_CARTAO_SUS),  # noqa: F403
         "paciente_nome": get_val(driver, DET_NOME_PACIENTE),  # noqa: F403
@@ -106,7 +105,6 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "paciente_municipio": get_val(driver, DET_MUNICIPIO_PACIENTE),  # noqa: F403
         "paciente_logradouro": get_val(driver, DET_ENDERECO),  # noqa: F403
         "paciente_endereco_complemento": get_val(driver, DET_COMPLEMENTO),  # noqa: F403
-
         # ------------------------------ Prestador -------------------------- #
         "prestador_nome": get_val(driver, DET_NOME_PRESTADOR),  # noqa: F403
         "prestador_cnpj": get_val(driver, DET_CNPJ),  # noqa: F403
@@ -114,13 +112,11 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "prestador_cnes": get_val(driver, DET_CNES_PRESTADOR),  # noqa: F403
         "data_realizacao": get_val(driver, DET_DATA_RECEBIMENTO),  # noqa: F403
         "prestador_municipio": get_val(driver, DET_MUNICIPIO_PRESTADOR),  # noqa: F403
-
-
         # ----------------------------- Resultados -------------------------- #
-        "profissional_responsavel_nome" : get_val(driver, DET_RESPONSAVEL_RESULTADO),  # noqa: F403
-        "profissional_responsavel_cns": get_val(driver, DET_CNS_RESULTADO), # noqa: F403
-        "profissional_responsavel_crm" : get_val(driver, DET_CONSELHO),  # noqa: F403
-        "data_liberacao_resultado": get_val(driver, DET_DATA_LIBERACAO_RESULTADO)  # noqa: F403                                 
+        "profissional_responsavel_nome": get_val(driver, DET_RESPONSAVEL_RESULTADO),  # noqa: F403
+        "profissional_responsavel_cns": get_val(driver, DET_CNS_RESULTADO),  # noqa: F403
+        "profissional_responsavel_crm": get_val(driver, DET_CONSELHO),  # noqa: F403
+        "data_liberacao_resultado": get_val(driver, DET_DATA_LIBERACAO_RESULTADO),  # noqa: F403
     }
 
     return detalhes
@@ -130,45 +126,46 @@ def _extrair_detalhes_especificos_mamo(driver: Firefox, detalhes: Dict[str, Any]
     """Extrai campos específicos para mamografia e atualiza o dicionário."""
     detalhes.update(
         {
-
-        # ------------------------------ Indicação -------------------------- #
-        "mamografia_tipo": get_val(driver, DET_TIPO_MAMOGRAFIA),  # noqa: F403
-        "mamografia_rastreamento_tipo": get_val(
-            driver, DET_TIPO_MAMOGRAFIA_RASTREAMENTO
-        ),  # noqa: F403
-        "achado_exame_clinico": get_val(driver, DET_ACHADO_EXAME_CLINICO),  # noqa: F403
-        "achado_exame_direita": get_val(driver, DET_ACHADO_EXAME_DIREITA),  # noqa: F403
-        "data_ultima_menstruacao": get_val(driver, DET_DATA_ULTIMA_MENSTRUACAO),  # noqa: F403
-
-        # ------------------------------ Mamografia ------------------------- #
-        "numero_filmes": get_val(driver, DET_NUMERO_FILMES),  # noqa: F403
-        "mama_direita_pele": get_val(driver, DET_MAMA_DIREITA_PELE),  # noqa: F403
-        "tipo_mama_direita": get_val(driver, DET_TIPO_MAMA_DIREITA),  # noqa: F403
-        "microcalcificacoes": get_val(driver, DET_MICROCALCIFICACOES),  # noqa: F403
-        "linfonodos_axiliares_direita": get_val(
-            driver, DET_LINFONODOS_AXILIARES_DIREITA
-        ),  # noqa: F403
-        "achados_benignos_direita": get_val(driver, DET_ACHADOS_BENIGNOS_DIREITA),  # noqa: F403
-        "mama_esquerda_pele": get_val(driver, DET_MAMA_ESQUERDA_PELE),  # noqa: F403
-        "tipo_mama_esquerda": get_val(driver, DET_TIPO_MAMA_ESQUERDA),  # noqa: F403
-        "linfonodos_axiliares_esquerda": get_val(
-            driver, DET_LINFONODOS_AXILIARES_ESQUERDA
-        ),  # noqa: F403
-        "achados_benignos_esquerda": get_val(driver, DET_ACHADOS_BENIGNOS_ESQUERDA),  # noqa: F403
-        # --------------------- Classificação Radiológica ------------------- #
-        "classif_radiologica_direita": get_val(
-            driver, DET_CLASSIF_RADIOLOGICA_DIREITA
-        ),  # noqa: F403
-        "classif_radiologica_esquerda": get_val(
-            driver, DET_CLASSIF_RADIOLOGICA_ESQUERDA
-        ),  # noqa: F403
-        "texto_mamas_labels": get_txt(driver, DET_MAMAS_LABELS),  # noqa: F403
-        # ---------------------------- Recomendações ------------------------ #
-        "recomendacoes": get_val(driver, DET_RECOMENDACOES),  # noqa: F403
-        # -------------------------- Observações Gerais --------------------- #
-        "observacoes_gerais": get_txt(driver, DET_OBSERVACOES_GERAIS),  # noqa: F403
+            # ------------------------------ Indicação -------------------------- #
+            "mamografia_tipo": get_val(driver, DET_TIPO_MAMOGRAFIA),  # noqa: F403
+            "mamografia_rastreamento_tipo": get_val(
+                driver, DET_TIPO_MAMOGRAFIA_RASTREAMENTO
+            ),  # noqa: F403
+            "achado_exame_clinico": get_val(driver, DET_ACHADO_EXAME_CLINICO),  # noqa: F403
+            "achado_exame_direita": get_val(driver, DET_ACHADO_EXAME_DIREITA),  # noqa: F403
+            "data_ultima_menstruacao": get_val(driver, DET_DATA_ULTIMA_MENSTRUACAO),  # noqa: F403
+            # ------------------------------ Mamografia ------------------------- #
+            "numero_filmes": get_val(driver, DET_NUMERO_FILMES),  # noqa: F403
+            "mama_direita_pele": get_val(driver, DET_MAMA_DIREITA_PELE),  # noqa: F403
+            "tipo_mama_direita": get_val(driver, DET_TIPO_MAMA_DIREITA),  # noqa: F403
+            "microcalcificacoes": get_val(driver, DET_MICROCALCIFICACOES),  # noqa: F403
+            "linfonodos_axiliares_direita": get_val(
+                driver, DET_LINFONODOS_AXILIARES_DIREITA
+            ),  # noqa: F403
+            "achados_benignos_direita": get_val(driver, DET_ACHADOS_BENIGNOS_DIREITA),  # noqa: F403
+            "mama_esquerda_pele": get_val(driver, DET_MAMA_ESQUERDA_PELE),  # noqa: F403
+            "tipo_mama_esquerda": get_val(driver, DET_TIPO_MAMA_ESQUERDA),  # noqa: F403
+            "linfonodos_axiliares_esquerda": get_val(
+                driver, DET_LINFONODOS_AXILIARES_ESQUERDA
+            ),  # noqa: F403
+            "achados_benignos_esquerda": get_val(
+                driver, DET_ACHADOS_BENIGNOS_ESQUERDA
+            ),  # noqa: F403
+            # --------------------- Classificação Radiológica ------------------- #
+            "classif_radiologica_direita": get_val(
+                driver, DET_CLASSIF_RADIOLOGICA_DIREITA
+            ),  # noqa: F403
+            "classif_radiologica_esquerda": get_val(
+                driver, DET_CLASSIF_RADIOLOGICA_ESQUERDA
+            ),  # noqa: F403
+            "texto_mamas_labels": get_txt(driver, DET_MAMAS_LABELS),  # noqa: F403
+            # ---------------------------- Recomendações ------------------------ #
+            "recomendacoes": get_val(driver, DET_RECOMENDACOES),  # noqa: F403
+            # -------------------------- Observações Gerais --------------------- #
+            "observacoes_gerais": get_txt(driver, DET_OBSERVACOES_GERAIS),  # noqa: F403
         }
     )
+
 
 def _extrair_detalhes_especificos_histo_mama(driver: Firefox, detalhes: Dict[str, Any]) -> None:
     """Extrai campos específicos para histopatologia de mama e atualiza o dicionário."""
@@ -295,9 +292,7 @@ def iterate_patients(driver: Firefox, opcao_exame: str) -> List[Dict[str, Any]]:
         # Encerra o loop para evitar duplicações ou laço infinito.           #
         # ------------------------------------------------------------------ #
         if novos_na_pagina == 0:
-            log(
-                f"Nenhum laudo inédito na página {pagina} - última página alcançada."
-            )
+            log(f"Nenhum laudo inédito na página {pagina} - última página alcançada.")
             break
 
         log("Avançando para a próxima página…")

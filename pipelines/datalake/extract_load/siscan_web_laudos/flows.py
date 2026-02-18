@@ -130,7 +130,6 @@ with Flow(
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
     BQ_TABLE = Parameter("bq_table", default="laudos_mamografia")
 
-
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
             environment=ENVIRONMENT,
