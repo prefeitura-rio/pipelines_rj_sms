@@ -113,9 +113,14 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "prestador_uf": get_val(driver, DET_UF_PRESTADOR),  # noqa: F403
         "prestador_cnes": get_val(driver, DET_CNES_PRESTADOR),  # noqa: F403
         "data_realizacao": get_val(driver, DET_DATA_RECEBIMENTO),  # noqa: F403
-        "prestador_municipio": get_val(driver, DET_MUNICIPIO_PRESTADOR)  # noqa: F403
+        "prestador_municipio": get_val(driver, DET_MUNICIPIO_PRESTADOR),  # noqa: F403
 
 
+        # ----------------------------- Resultados -------------------------- #
+        "profissional_responsavel_nome" : get_val(driver, DET_RESPONSAVEL_RESULTADO),  # noqa: F403
+        "profissional_responsavel_cns": get_val(driver, DET_CNS_RESULTADO), # noqa: F403
+        "profissional_responsavel_crm" : get_val(driver, DET_CONSELHO),  # noqa: F403
+        "data_liberacao_resultado": get_val(driver, DET_DATA_LIBERACAO_RESULTADO)  # noqa: F403                                 
     }
 
     return detalhes
