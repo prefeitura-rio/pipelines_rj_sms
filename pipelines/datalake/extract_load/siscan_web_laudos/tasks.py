@@ -41,7 +41,7 @@ def run_siscan_scraper(
     """
 
     try:
-        log(f"Iniciando tarefa de coleta de dados do SISCAN")
+        log("Iniciando tarefa de coleta de dados do SISCAN")
         log(f"Período: {start_date} a {end_date}")
         log(f"Tipo de exame: {opcao_exame}")
         log(f"Diretório de saída: {output_dir}")
