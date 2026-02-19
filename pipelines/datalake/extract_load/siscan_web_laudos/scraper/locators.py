@@ -52,7 +52,7 @@ DET_MAE = (By.ID, "form:Mae")
 DET_UF_PACIENTE = (By.ID, "form:UFPaciente")
 DET_BAIRRO = (By.ID, "form:Bairro")
 DET_NUMERO = (By.ID, "form:Numero")
-DET_CEP = (By.ID, "form:cep2") # id="form:CEP"
+DET_CEP = (By.ID, "form:cep2")  # id="form:CEP"
 DET_SEXO = (By.ID, "form:Sexo")
 DET_IDADE = (By.ID, "form:Idade")
 DET_TELEFONE = (By.ID, "form:Telefone")
@@ -84,7 +84,7 @@ DET_DATA_LIBERACAO_RESULTADO = (By.ID, "form:dataLiberacaoResultado")
 # Botão
 BOTAO_VOLTAR = (By.CSS_SELECTOR, "input[title='Voltar']")
 
-####################################### CAMPOS ESPECÍFICOS POR TIPO DE EXAME
+# CAMPOS ESPECÍFICOS POR TIPO DE EXAME
 # OPCAO_EXAME_MAMO
 DET_NUMERO_FILMES = (By.ID, "form:numeroFilmes")
 DET_MAMA_DIREITA_PELE = (By.ID, "form:mamaDireitaPele")
@@ -122,4 +122,3 @@ DET_RECEPTOR_ESTROGENO = (By.ID, "form:receptorEstrogeno")
 DET_RECEPTOR_PROGESTERONA = (By.ID, "form:receptorProgesterona")
 DET_ESTUDOS_IMUNO = (By.ID, "form:estudoImuno")
 DET_OBSERVACOES_GERAIS_HISTO = (By.ID, "form:j_id278")
-#######################################

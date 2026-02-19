@@ -38,15 +38,15 @@ def run_scraper(
         log("Realizando login...")
         login(email, password, driver)
         log("Login realizado com sucesso.")
-        
+
         log("Navegando para página de laudos...")
         goto_laudo_page(driver)
         log("Página de laudos carregada.")
-        
+
         log("Aplicando filtros...")
         set_filters(driver, opcao_exame, start_date, end_date)
         log("Filtros aplicados.")
-        
+
         log("Iterando por pacientes...")
         laudos = iterate_patients(driver, opcao_exame)
         log(f"Scraper finalizado. Total de laudos: {len(laudos)}")

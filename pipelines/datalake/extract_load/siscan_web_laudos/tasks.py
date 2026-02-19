@@ -19,7 +19,12 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def run_siscan_scraper(
-    email: str, password: str, opcao_exame: str, start_date: str, end_date: str, output_dir: str = "."
+    email: str,
+    password: str,
+    opcao_exame: str,
+    start_date: str,
+    end_date: str,
+    output_dir: str = ".",
 ):
     """
     Executa o scraper do SISCAN para coletar dados de pacientes em um intervalo de datas.
@@ -36,13 +41,18 @@ def run_siscan_scraper(
     """
 
     try:
-        log(f"Iniciando tarefa de coleta de dados do SISCAN")
+        log("Iniciando tarefa de coleta de dados do SISCAN")
         log(f"Período: {start_date} a {end_date}")
         log(f"Tipo de exame: {opcao_exame}")
         log(f"Diretório de saída: {output_dir}")
 
         pacientes = run_scraper(
-            email=email, password=password, opcao_exame=opcao_exame, start_date=start_date, end_date=end_date, headless=True
+            email=email,
+            password=password,
+            opcao_exame=opcao_exame,
+            start_date=start_date,
+            end_date=end_date,
+            headless=True,
         )
         log(f"Dados coletados com sucesso. Total de registros: {len(pacientes)}")
 
@@ -54,7 +64,7 @@ def run_siscan_scraper(
 
         filename = f"siscan_extraction_{begin}_{end_}.parquet"
         filepath = os.path.join(output_dir, filename)
-        
+
         log(f"Salvando arquivo: {filename}")
         df.to_parquet(filepath, index=False)
 
@@ -118,12 +128,12 @@ def generate_extraction_windows(start_date: datetime, end_date: datetime, interv
 
 @task
 def build_operator_parameters(
-    start_dates: tuple, 
-    end_dates: tuple,  
-    bq_table:str,
-    bq_dataset:str,
-    opcao_exame:str,
-    environment: str = "dev"
+    start_dates: tuple,
+    end_dates: tuple,
+    bq_table: str,
+    bq_dataset: str,
+    opcao_exame: str,
+    environment: str = "dev",
 ) -> list:
     """Gera lista de parâmetros para o(s) operator(s).
 
@@ -137,12 +147,12 @@ def build_operator_parameters(
     """
     return [
         {
-            "environment": environment, 
-            "data_inicial": start, 
+            "environment": environment,
+            "data_inicial": start,
             "data_final": end,
             "bq_dataset": bq_dataset,
             "bq_table": bq_table,
-            "opcao_exame": opcao_exame
+            "opcao_exame": opcao_exame,
         }
         for start, end in zip(start_dates, end_dates)
     ]
