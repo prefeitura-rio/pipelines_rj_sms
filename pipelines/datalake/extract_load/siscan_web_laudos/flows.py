@@ -3,8 +3,6 @@
 Fluxo
 """
 
-from datetime import datetime
-
 from prefect import Parameter, case, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
@@ -129,7 +127,6 @@ with Flow(
     OPCAO_EXAME = Parameter("opcao_exame", default="mamografia")
     BQ_DATASET = Parameter("bq_dataset", default="brutos_siscan_web")
     BQ_TABLE = Parameter("bq_table", default="laudos_mamografia")
-
 
     with case(RENAME_FLOW, True):
         rename_current_flow_run(
