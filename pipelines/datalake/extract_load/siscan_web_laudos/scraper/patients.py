@@ -97,8 +97,8 @@ def _extrair_detalhes(driver: Firefox) -> Dict[str, Any]:
         "paciente_mae": get_val(driver, DET_MAE),  # noqa: F403
         "paciente_uf": get_val(driver, DET_UF_PACIENTE),  # noqa: F403
         "paciente_bairro": get_val(driver, DET_BAIRRO),  # noqa: F403
-        "paciente_endereco_numero": get_val(driver, DET_NUMERO),  # noqa: F403
-        "paciente_cep": get_val(driver, DET_CEP),  # noqa: F403
+        # noqa: F403
+        "paciente_cep": get_val(driver, DET_CEP) or get_val(driver, DET_CEP2),  # noqa: F403
         "paciente_sexo": get_val(driver, DET_SEXO),  # noqa: F403
         "paciente_idade": get_val(driver, DET_IDADE),  # noqa: F403
         "paciente_telefone": get_val(driver, DET_TELEFONE),  # noqa: F403
