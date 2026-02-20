@@ -19,10 +19,15 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def run_siscan_scraper(
-    email: str, password: str, start_date: str, end_date: str, output_dir: str = "."
+    email: str,
+    password: str,
+    opcao_exame: str,
+    start_date: str,
+    end_date: str,
+    output_dir: str = ".",
 ):
     """
-    Executa o scraper do SISCaN para coletar dados de pacientes em um intervalo de datas.
+    Executa o scraper do SISCAN para coletar dados de pacientes em um intervalo de datas.
 
     Parâmetros:
         email (str): E-mail de acesso ao sistema SISCAN.
@@ -36,27 +41,41 @@ def run_siscan_scraper(
     """
 
     try:
-        log(f"Iniciando coleta de dados do SISCaN de {start_date} a {end_date}.")
+        log("Iniciando tarefa de coleta de dados do SISCAN")
+        log(f"Período: {start_date} a {end_date}")
+        log(f"Tipo de exame: {opcao_exame}")
+        log(f"Diretório de saída: {output_dir}")
 
         pacientes = run_scraper(
-            email=email, password=password, start_date=start_date, end_date=end_date, headless=True
+            email=email,
+            password=password,
+            opcao_exame=opcao_exame,
+            start_date=start_date,
+            end_date=end_date,
+            headless=True,
         )
+        log(f"Dados coletados com sucesso. Total de registros: {len(pacientes)}")
+
         df = pd.DataFrame(pacientes)
+        log(f"DataFrame criado com {len(df)} linhas")
 
         begin = datetime.strptime(start_date, "%d/%m/%Y").strftime("%Y%m%d")
         end_ = datetime.strptime(end_date, "%d/%m/%Y").strftime("%Y%m%d")
 
         filename = f"siscan_extraction_{begin}_{end_}.parquet"
         filepath = os.path.join(output_dir, filename)
+
+        log(f"Salvando arquivo: {filename}")
         df.to_parquet(filepath, index=False)
 
-        log(f"📁 Arquivo salvo: {filepath} ({len(df)} registros)")
-        log(f"✅ Coleta concluída de {start_date} a {end_date}.")
+        log(f"Arquivo salvo com sucesso: {filepath}")
+        log(f"Registros processados: {len(df)}")
+        log(f"Coleta concluída para o período de {start_date} a {end_date}")
 
         return filepath
 
     except Exception as e:
-        log(f"Erro durante a execução do scraper: {e}", level="error")
+        log(f"Erro durante a execução do scraper: {e}")
         raise
 
 
@@ -74,9 +93,9 @@ def check_records(file_path: str) -> bool:
     df = pd.read_parquet(file_path)
 
     if df.empty:
-        log("⚠️ Não há registros para processar.")
+        log("Não há registros para processar.")
         delete_file.run(file_path=file_path)
-        log("⚠️ O arquivo vazio foi excluído.")
+        log("O arquivo vazio foi excluído.")
         return False
 
     return True
@@ -109,7 +128,12 @@ def generate_extraction_windows(start_date: datetime, end_date: datetime, interv
 
 @task
 def build_operator_parameters(
-    start_dates: tuple, end_dates: tuple, environment: str = "dev"
+    start_dates: tuple,
+    end_dates: tuple,
+    bq_table: str,
+    bq_dataset: str,
+    opcao_exame: str,
+    environment: str = "dev",
 ) -> list:
     """Gera lista de parâmetros para o(s) operator(s).
 
@@ -122,7 +146,14 @@ def build_operator_parameters(
         List[dict]: Lista com os parâmetros do(s) operator(s).
     """
     return [
-        {"environment": environment, "data_inicial": start, "data_final": end}
+        {
+            "environment": environment,
+            "data_inicial": start,
+            "data_final": end,
+            "bq_dataset": bq_dataset,
+            "bq_table": bq_table,
+            "opcao_exame": opcao_exame,
+        }
         for start, end in zip(start_dates, end_dates)
     ]
 

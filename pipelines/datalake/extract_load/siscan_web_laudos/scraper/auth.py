@@ -5,28 +5,41 @@ from __future__ import annotations
 
 from selenium.common.exceptions import TimeoutException, WebDriverException
 
+from prefeitura_rio.pipelines_utils.logging import log
+
 from . import ScraperError
-from .config import LOGGER, TENTATIVAS_LOGIN, URL_BASE
+from .config import TENTATIVAS_LOGIN, URL_BASE
 from .driver import safe_click, safe_get, wait_clickable
 from .locators import BOTAO_ENTRAR, CAMPO_EMAIL, CAMPO_SENHA
 
 
 def login(email: str, senha: str, driver):  # type: ignore[arg-type]
     """Efetua login no sistema; tenta novamente em caso de lentidão."""
-    LOGGER.info("Iniciando login…")
+    log("Iniciando login…")
     tentativa = 0
     while tentativa <= TENTATIVAS_LOGIN:
         tentativa += 1
         try:
+            log(f"Tentativa {tentativa} de {TENTATIVAS_LOGIN + 1}")
             safe_get(driver, URL_BASE)
+            log("URL base acessada com sucesso")
+
             campo_email = wait_clickable(driver, CAMPO_EMAIL)
+            log("Campo de email localizado")
             campo_email.clear()
             campo_email.send_keys(email)
+            log("Email inserido")
 
             driver.find_element(*CAMPO_SENHA).send_keys(senha)
+            log("Senha inserida")
+
             safe_click(driver, BOTAO_ENTRAR)
-            LOGGER.info("Login concluído.")
+            log("Botão de entrada clicado")
+
+            log("Login concluído com sucesso.")
             return
         except (TimeoutException, WebDriverException) as exc:
-            LOGGER.warning("Falha no login (%s) – tentativa %d.", exc, tentativa)
+            log(f"Falha no login ({exc}) - tentativa {tentativa} de {TENTATIVAS_LOGIN + 1}.")
+
+    log(f"Falha ao autenticar após {TENTATIVAS_LOGIN + 1} tentativas.")
     raise ScraperError("Não foi possível autenticar após múltiplas tentativas.")
