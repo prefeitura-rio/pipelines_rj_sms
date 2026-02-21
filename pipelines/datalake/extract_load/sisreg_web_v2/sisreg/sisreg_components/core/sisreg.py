@@ -14,6 +14,9 @@ from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.page
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.pages.pagina_afastamentos import (
     PaginaAfastamentos,
 )
+from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.pages.pagina_executados import (
+    PaginaExecutados,
+)
 from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.pages.pagina_login import (
     PaginaLogin,
 )
@@ -22,7 +25,7 @@ from pipelines.datalake.extract_load.sisreg_web_v2.sisreg.sisreg_components.page
 )
 
 
-class Sisreg(BasePage, PaginaLogin, PaginaOfertaProgramada, PaginaAfastamentos):
+class Sisreg(BasePage, PaginaLogin, PaginaOfertaProgramada, PaginaAfastamentos, PaginaExecutados):
     """
     Classe principal que orquestra a interação com o SISREG.
     Agrega e gerencia as páginas do sistema.

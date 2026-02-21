@@ -21,5 +21,6 @@ class constants(Enum):
 METODO_TABELA = {
     "baixar_oferta_programada": "oferta_programada",
     "baixar_afastamentos": "afastamentos",
+    "baixar_executados": "executados",
     # adicione novos métodos e os respectivos nomes de suas tabelas aqui
 }
