@@ -658,3 +658,11 @@ cases:
     flow_name: report_alerta_atualizacao_hci
     params:
       environment: "dev"
+
+  - case_slug: rnds_historico
+    flow_path: pipelines.datalake.extract_load.rnds_historico.flows
+    flow_name: flow_rnds_historico
+    params:
+      environment: "dev"
+      db_schema: "dbo"
+      partition_column: "extracted_at"
