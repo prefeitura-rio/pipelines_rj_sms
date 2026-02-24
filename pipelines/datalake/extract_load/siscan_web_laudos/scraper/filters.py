@@ -23,22 +23,22 @@ from .locators import (
     MENU_GERENCIAR_LAUDO,
     OPCAO_FILTRO_DATA,
     OPCAO_MUNICIPIO,
-
     OPCAO_EXAME_CITO_COLO,
     OPCAO_EXAME_CITO_MAMA,
     OPCAO_EXAME_HISTO_COLO,
     OPCAO_EXAME_HISTO_MAMA,
-    OPCAO_EXAME_MAMO,    
+    OPCAO_EXAME_MAMO,
 )
 
-import time 
+import time
+
 
 def goto_laudo_page(driver: Firefox) -> None:
     """Abre a tela *Gerenciar Laudo* a partir do menu principal."""
 
     log("Navegando até a tela Gerenciar Laudo…")
     time.sleep(3)
-    
+
     log("Aguardando menu de exame…")
     wait_until(driver, lambda d: d.find_elements(*MENU_EXAME))
     log("Clicando no menu de exame…")
@@ -112,13 +112,13 @@ def set_filters(driver: Firefox, opcao_exame: str, data_inicio: str, data_fim: s
 
     log("Selecionando município")
     safe_click(driver, OPCAO_MUNICIPIO)
-    
+
     log("Selecionando filtro por data")
     safe_click(driver, OPCAO_FILTRO_DATA)
 
     log(f"Definindo data de início: {data_inicio}")
     _definir_data_js(driver, CAMPO_DATA_INICIO, data_inicio)
-    
+
     log(f"Definindo data de fim: {data_fim}")
     _definir_data_js(driver, CAMPO_DATA_FIM, data_fim)
 

@@ -18,10 +18,9 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 exames = [
     "mamografia",
     "histo_mama",
-    
-#    "cito_mama", # apenas 17 resultados no siscan em 2025 inteiro
-#    "cito_colo", # por enquanto estamos trabalhando apenas em mama
-#    "histo_colo", # por enquanto estamos trabalhando apenas em mama
+    #    "cito_mama", # apenas 17 resultados no siscan em 2025 inteiro
+    #    "cito_colo", # por enquanto estamos trabalhando apenas em mama
+    #    "histo_colo", # por enquanto estamos trabalhando apenas em mama
 ]
 
 operator_flow_parameters = [
@@ -37,41 +36,41 @@ operator_flow_parameters = [
 ]
 
 monthly_manager_parameters = [
-        {
-            "environment": "prod", 
-            "relative_date": "M-1", 
-            "range": 7,
-            "opcao_exame": "mamografia",
-            "bq_dataset": "brutos_siscan_web",
-            "bq_table": "laudos_mamografia"
-        },
-        {
-            "environment": "prod", 
-            "relative_date": "M-1", 
-            "range": 7,
-            "opcao_exame": "histo_mama",
-            "bq_dataset": "brutos_siscan_web",
-            "bq_table": "laudos_histo_mama"
-        }
-    ]
+    {
+        "environment": "prod",
+        "relative_date": "M-1",
+        "range": 7,
+        "opcao_exame": "mamografia",
+        "bq_dataset": "brutos_siscan_web",
+        "bq_table": "laudos_mamografia",
+    },
+    {
+        "environment": "prod",
+        "relative_date": "M-1",
+        "range": 7,
+        "opcao_exame": "histo_mama",
+        "bq_dataset": "brutos_siscan_web",
+        "bq_table": "laudos_histo_mama",
+    },
+]
 
 daily_flow_parameters = [
     {
-        "environment": "prod", 
-        "relative_date": "D-5", 
+        "environment": "prod",
+        "relative_date": "D-5",
         "range": 5,
         "opcao_exame": "mamografia",
         "bq_dataset": "brutos_siscan_web",
-        "bq_table": "laudos_mamografia"
+        "bq_table": "laudos_mamografia",
     },
     {
-        "environment": "prod", 
-        "relative_date": "D-5", 
+        "environment": "prod",
+        "relative_date": "D-5",
         "range": 5,
         "opcao_exame": "histo_mama",
         "bq_dataset": "brutos_siscan_web",
-        "bq_table": "laudos_histo_mama"
-    }
+        "bq_table": "laudos_histo_mama",
+    },
 ]
 
 monthly_manager_clock = generate_dump_api_schedules(
