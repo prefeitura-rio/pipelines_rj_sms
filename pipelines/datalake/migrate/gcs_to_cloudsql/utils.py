@@ -27,18 +27,35 @@ def get_info_from_filename(filename: str):
     # "HISTÓRICO_PEPVITA_RJ/AP10/vitacare_historic_2269953_20250301_034009.bak"
     # Às vezes termina com "_old.bak"
     file = filename.strip().rsplit("/", maxsplit=1)[1].lower()
-    regex = re.compile(
+
+    regex_with_cnes = re.compile(
         r"^(?P<name>[a-z_]+)_(?P<cnes>[0-9]+)_(?P<date>[0-9]{8})_(?P<time>[0-9]{6})(_old)?\.[a-z]+$"
     )
-    m = regex.match(file)
-    if m is None:
-        log(file, level="error")
-    return {
-        "name": m.group("name"),
-        "cnes": m.group("cnes"),
-        "date": m.group("date"),
-        "time": m.group("time"),
-    }
+
+    regex_rnds = re.compile(
+        r"^rnds_vaccine_historic_(?P<date>[0-9]{8})_(?P<time>[0-9]{6})\.bak$"
+    )
+
+    m = regex_with_cnes.match(file)
+    if m:
+        return {
+            "name": m.group("name"),
+            "cnes": m.group("cnes"),
+            "date": m.group("date"),
+            "time": m.group("time"),
+        }
+
+    m = regex_rnds.match(file)
+    if m:
+        return {
+            "name": "rnds_historic",
+            "cnes": None,
+            "date": m.group("date"),
+            "time": m.group("time"),
+        }
+
+    log(file, level="error")
+    raise ValueError(f"Filename '{file}' does not match expected patterns")
 
 
 def check_db_name(name: str):
