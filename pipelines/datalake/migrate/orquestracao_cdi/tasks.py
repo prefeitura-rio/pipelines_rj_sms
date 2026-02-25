@@ -438,10 +438,10 @@ WHERE data_publicacao = '{DATE}'
             <tr><td><hr></td></tr>
             <tr>
                 <td>
-                    <img alt="DIT-SMS" width="100" align="right" style="margin-left:18px;margin-bottom:70px"
-                        src="{constants.LOGO_DIT_HORIZONTAL_COLORIDO.value}"/>
+                    <img alt="S/CIT-SMS" width="125" align="right" style="margin-left:18px;margin-bottom:70px"
+                        src="{constants.LOGO_CIT_HORIZONTAL_COLORIDO.value}"/>
                     <p style="font-size:13px;color:#888;margin:0">
-                        Apoio técnico da <b>Diretoria de Inovação e Tecnologia</b> (DIT).<br/>
+                        Apoio técnico do <b>Comitê de Inovação e Tecnologia</b> (S/CIT).<br/>
                         Email gerado às {timestamp}.
                     </p>
                 </td>
