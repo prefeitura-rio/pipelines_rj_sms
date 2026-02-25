@@ -20,6 +20,13 @@ flow_parameters = [
         "file_pattern": "HISTÓRICO_PEPVITA_RJ/AP*/vitacare_historic_*_*_*.bak",
         "limit_files": -1,
     },
+    {
+        "environment": "dev",
+        "bucket_name": "vitacare_backups_gdrive",
+        "instance_name": "vitacare",
+        "file_pattern": "HISTÓRICO_PEPVITA_RJ/RNDS/RNDS_Vaccine_Historic_*.bak",
+        "limit_files": -1,
+    }
 ]
 
 clocks = generate_dump_api_schedules(
