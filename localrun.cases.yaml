@@ -247,8 +247,14 @@ cases:
     flow_name: "sms_migrate_vitacare_db"
     params:
       environment: "dev"
-      last_update_start_date: "2025-03-01"
-      last_update_end_date: "2025-03-24"
+      last_update_start_date: "2024-10-20"
+      last_update_end_date: "2024-11-30"
+  - case_slug: "standardize-allergy-vitai"
+    flow_path: "pipelines.datalake.transform.gemini.alergias_vitai.flows"
+    flow_name: "sms_prontuarios_vitai_alergias_padronizacao"
+    params:
+      environment: "dev"
+      is_historical: true
   - case_slug: "datalake-extract_load-metabase"
     flow_path: "pipelines.datalake.extract_load.ser_metabase.flows"
     flow_name: "ser_metabase_flow"
