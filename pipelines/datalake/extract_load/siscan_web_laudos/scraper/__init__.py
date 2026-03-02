@@ -52,7 +52,7 @@ def run_scraper(
         log(f"Scraper finalizado. Total de laudos: {len(laudos)}")
         return laudos
     except Exception as e:
-        log(f"Erro durante execução do scraper: {e}", exc_info=True)
+        log(f"Erro durante execução do scraper: {e}")
         raise
     finally:
         driver.quit()
