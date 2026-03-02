@@ -386,7 +386,7 @@ cases:
     params:
       environment: "dev"
       data_inicial: "03/06/2025"
-      data_final: "05/06/2025"
+      data_final: "03/06/2025"
       bq_dataset: "brutos_siscan_web"
       bq_table: "laudos_mamografia"
       opcao_exame: "mamografia"
