@@ -200,7 +200,7 @@ def _login_sisreg_via_http(usuario: str, senha: str, client: httpx.Client) -> ht
 def init_client_request_base() -> httpx.Client:
     # Importante: não faz request aqui, porque o cenário reportado é timeout na primeira
     # requisição HTTP a partir da nuvem. O primeiro contato “humano” fica com o Selenium.
-    timeout = httpx.Timeout(connect=10.0, read=35.0, write=35.0, pool=10.0)
+    timeout = httpx.Timeout(connect=100.0, read=35.0, write=35.0, pool=10.0)
     limits = httpx.Limits(max_connections=20, max_keepalive_connections=10, keepalive_expiry=20.0)
 
     client = httpx.Client(
