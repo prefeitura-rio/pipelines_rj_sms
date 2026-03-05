@@ -12,6 +12,7 @@ from .config import TENTATIVAS_LOGIN, URL_BASE
 from .driver import safe_click, safe_get, wait_clickable
 from .locators import BOTAO_ENTRAR, CAMPO_EMAIL, CAMPO_SENHA
 
+
 def login(email: str, senha: str, driver):  # type: ignore[arg-type]
     """Efetua login no sistema; tenta novamente em caso de lentidão."""
     log("Iniciando login…")
@@ -22,7 +23,7 @@ def login(email: str, senha: str, driver):  # type: ignore[arg-type]
             log(f"Tentativa {tentativa} de {TENTATIVAS_LOGIN + 1}")
             safe_get(driver, URL_BASE)
             log("URL base acessada com sucesso")
-            
+
             campo_email = wait_clickable(driver, CAMPO_EMAIL)
             log("Campo de email localizado")
             campo_email.clear()
@@ -31,14 +32,14 @@ def login(email: str, senha: str, driver):  # type: ignore[arg-type]
 
             driver.find_element(*CAMPO_SENHA).send_keys(senha)
             log("Senha inserida")
-            
+
             safe_click(driver, BOTAO_ENTRAR)
             log("Botão de entrada clicado")
-            
+
             log("Login concluído com sucesso.")
             return
         except (TimeoutException, WebDriverException) as exc:
             log(f"Falha no login ({exc}) - tentativa {tentativa} de {TENTATIVAS_LOGIN + 1}.")
-    
+
     log(f"Falha ao autenticar após {TENTATIVAS_LOGIN + 1} tentativas.")
     raise ScraperError("Não foi possível autenticar após múltiplas tentativas.")

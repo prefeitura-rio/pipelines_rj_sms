@@ -89,11 +89,12 @@ def get_latest_vote(ctid: str):
     file_path = f"/InteiroTeor/Visualizar?ctid={ctid}"
     (_, html) = send_request("GET", f"{HOST}{file_path}")
     html: BeautifulSoup
-    # Se existe <div> de erro
-    div = html.find("div", {"class": "validation-summary-errors"})
+    # Se existe <div> de alerta
+    div = html.find("div", {"class": "alert-warning"})
     if div:
-        # Se é o primeiro caso
-        not_allowed_text = "não liberado para consulta"
+        # Se é processo de interesse pessoal
+        # :: Há 2 <div>s de alerta com texto similar na página
+        not_allowed_text = "interesse pessoal"
         if not_allowed_text in div.get_text():
             log("Votes not available for this case", level="warning")
             return f"{HOST}/processo/Ficha?ctid={ctid}"
