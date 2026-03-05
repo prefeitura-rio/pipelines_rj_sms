@@ -4,6 +4,7 @@ from collections import Counter
 from datetime import timedelta
 
 from google.cloud import storage
+from tables import file
 
 import pipelines.datalake.migrate.gcs_to_cloudsql.utils as utils
 from pipelines.utils.credential_injector import authenticated_task as task
@@ -30,18 +31,30 @@ def find_all_filenames_from_pattern(environment: str, file_pattern: str, bucket_
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def get_most_recent_filenames(files):
-    # Aqui não temos como ser muito genéricos; queremos os backups mais recentes
+ # Aqui não temos como ser muito genéricos; queremos os backups mais recentes
     # de cada CNES. O formato dos nomes é o seguinte (ênfase no importante):
     # HISTÓRICO_PEPVITA_RJ/AP32/vitacare_historic_6808077_20250401_051630.bak
     #                                             ^^^^^^^ ^^^^^^^^
     #                                              CNES   YYYYMMDD
     most_recent_dict = {}
+    rnds_files = []
+
     for file in files:
         info = utils.get_info_from_filename(filename=file)
         date = info["date"]
         cnes = info["cnes"]
-        if cnes not in most_recent_dict or date > most_recent_dict[cnes][0]:
-            most_recent_dict[cnes] = (date, file)
+
+        if cnes is None:
+            rnds_files.append((date, file))
+        else:
+            if cnes not in most_recent_dict or date > most_recent_dict[cnes][0]:
+                most_recent_dict[cnes] = (date, file)
+
+    if rnds_files:
+        most_recent_rnds = max(rnds_files, key=lambda x: x[0])[1]
+        log("RNDS mode detected")
+        log(f"Selected file: {most_recent_rnds}")
+        return [most_recent_rnds]
 
     log(f"Found {len(most_recent_dict.keys())} distinct CNES")
     most_recent_filenames = [filename for _, filename in list(most_recent_dict.values())]
@@ -135,7 +148,11 @@ def send_sequential_api_requests(
             # Prepara parâmetros da requisição
             full_file_uri = f"gs://{bucket_name}/{file}"
             info = utils.get_info_from_filename(filename=file)
-            database_name = "_".join([info["name"], info["cnes"]])
+
+            if info["cnes"] is None:
+                database_name = info["name"]
+            else:
+                database_name = "_".join([info["name"], info["cnes"]])
 
             log(
                 f"[send_sequential_api_requests] Attempting to delete database '{database_name}'..."
