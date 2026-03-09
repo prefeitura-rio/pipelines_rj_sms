@@ -197,6 +197,17 @@ def _login_sisreg_via_http(usuario: str, senha: str, client: httpx.Client) -> ht
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
+def test_request(url: str) -> httpx.Client:
+    client = httpx.Client(
+        follow_redirects=True,
+    )
+
+    client.get(url=url)
+
+    return client
+
+
+@task(max_retries=3, retry_delay=timedelta(minutes=5))
 def init_client_request_base() -> httpx.Client:
     # Importante: não faz request aqui, porque o cenário reportado é timeout na primeira
     # requisição HTTP a partir da nuvem. O primeiro contato “humano” fica com o Selenium.
