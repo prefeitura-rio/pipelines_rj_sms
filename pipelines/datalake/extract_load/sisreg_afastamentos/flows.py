@@ -58,12 +58,17 @@ with Flow(
     HISTORICO_TABLE_ID = Parameter(
         "historico_table_id", default=constants.DEFAULT_HISTORICO_TABLE_ID, required=False
     )
+    TEST_URL = Parameter(
+        "test_url",
+        default="https://www.google.com/",
+        required=True,
+    )
 
     # Data de extração das tabelas
     extraction_date = get_extraction_date()
 
     # Task criada para teste e debugging
-    _ = test_request("https://www.google.com/")
+    _ = test_request(url=TEST_URL)
 
     # Requisição base do SISREG
     client = init_client_request_base()
