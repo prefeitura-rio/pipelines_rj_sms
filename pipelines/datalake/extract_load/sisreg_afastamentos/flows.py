@@ -20,7 +20,6 @@ from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
     search_afastamentos,
     search_historico_afastamentos,
     close_httpx_client,
-    test_request,
 )
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 
@@ -61,17 +60,14 @@ with Flow(
     TEST_URL = Parameter(
         "test_url",
         default="https://www.google.com/",
-        required=True,
+        required=False,
     )
 
     # Data de extração das tabelas
     extraction_date = get_extraction_date()
 
-    # Task criada para teste e debugging
-    _ = test_request(url=TEST_URL)
-
     # Requisição base do SISREG
-    client = init_client_request_base()
+    client = init_client_request_base(test_url=TEST_URL)
 
     # Buscando os CPFs dos profissionais,
     # com limite adicionado para questẽs de teste.

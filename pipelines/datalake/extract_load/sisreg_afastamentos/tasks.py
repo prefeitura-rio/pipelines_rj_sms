@@ -68,7 +68,6 @@ def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 10) ->
     return res
 
 
-
 def _host_from_url(url: str) -> str:
     return urlparse(url).hostname or ""
 
@@ -196,7 +195,6 @@ def _login_sisreg_via_http(usuario: str, senha: str, client: httpx.Client) -> ht
     return client
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=5))
 def test_request(url: str) -> httpx.Client:
     client = httpx.Client(
         follow_redirects=True,
@@ -208,7 +206,13 @@ def test_request(url: str) -> httpx.Client:
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def init_client_request_base() -> httpx.Client:
+def init_client_request_base(test_url: str) -> httpx.Client:
+    if test_url is not None:
+        log(f"Fazendo request para {test_url}")
+        test_request(test_url)
+        log("Teste feito com sucesso")
+        raise Exception()
+
     # Importante: não faz request aqui, porque o cenário reportado é timeout na primeira
     # requisição HTTP a partir da nuvem. O primeiro contato “humano” fica com o Selenium.
     timeout = httpx.Timeout(connect=100.0, read=35.0, write=35.0, pool=10.0)
