@@ -208,10 +208,13 @@ def test_request(url: str) -> httpx.Client:
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def init_client_request_base(test_url: str) -> httpx.Client:
     if test_url is not None:
-        log(f"Fazendo request para {test_url}")
-        test_request(test_url)
-        log("Teste feito com sucesso")
-        raise Exception()
+        try:
+            log(level="debug", msg=f"Fazendo request para {test_url}")
+            test_request(test_url)
+            log(level="debug", msg="Teste feito com sucesso")
+        except:
+            log(level="debug", msg="Teste falhou")
+            raise
 
     # Importante: não faz request aqui, porque o cenário reportado é timeout na primeira
     # requisição HTTP a partir da nuvem. O primeiro contato “humano” fica com o Selenium.
