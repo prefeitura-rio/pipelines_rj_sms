@@ -5,7 +5,7 @@
 Tasks para migração de dados do BigQuery para o MySQL da SUBPAV.
 """
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -44,6 +44,11 @@ DF_FILTERS = {
     "exames_update_sintomatico": filter_exames_update_sintomatico,
 }
 
+SAO_PAULO_TZ = timezone(timedelta(hours=-3))
+
+def now_sp() -> datetime:
+    """Retorna datetime atual no fuso de São Paulo."""
+    return datetime.now(SAO_PAULO_TZ)
 
 @task
 def resolve_notify(project: str, notify_param) -> bool:
@@ -182,7 +187,7 @@ def query_bq_table(
         metrics = default_metrics()
         metrics["errors"].append(msg)
         metrics["failed"] = metrics["total"]
-        metrics["run_id"] = f"{table_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        metrics["run_id"] = f"{table_id}_{now_sp().strftime('%Y%m%d%H%M%S')}"
         metrics["execution_time"] = 0.0
         return {"df": None, "metrics": metrics}
 
@@ -258,7 +263,7 @@ def _mark_empty_df_metrics(
     msg = f"[{environment.upper()}] sem registros para inserir em {table_name}"
     log(msg, level="info")
     metrics["notes"].append(msg)
-    metrics["execution_time"] = (datetime.now() - start).total_seconds()
+    metrics["execution_time"] = (now_sp() - start).total_seconds()
     return metrics
 
 
@@ -276,7 +281,7 @@ def _prepare_custom_insert(
         log(msg, level="error")
         metrics["errors"].append("Query customizada fora do padrão permitido.")
         metrics["failed"] = metrics["total"]
-        metrics["execution_time"] = (datetime.now() - start).total_seconds()
+        metrics["execution_time"] = (now_sp() - start).total_seconds()
         return None, None
 
     required_columns = extract_query_params(query)
@@ -285,7 +290,7 @@ def _prepare_custom_insert(
         log(msg, level="error")
         metrics["errors"].append(msg)
         metrics["failed"] = metrics["total"]
-        metrics["execution_time"] = (datetime.now() - start).total_seconds()
+        metrics["execution_time"] = (now_sp() - start).total_seconds()
         return None, None
 
     df_req = ensure_dataframe_columns(df, required_columns, fill_value=None, notes=metrics["notes"])
@@ -366,13 +371,12 @@ def insert_df_into_mysql(
     if metrics is None:
         metrics = default_metrics()
 
-    start = datetime.now()
+    start = now_sp()
 
+    metrics["run_id"] = f"{table_name}_{start.strftime('%d-%m-%Y_%H%M%S')}"
     if df is None or df.empty:
         return _mark_empty_df_metrics(metrics, environment, table_name, start)
-
     metrics["total"] = len(df)
-    metrics["run_id"] = f"{table_name}_{start.strftime('%d-%m-%Y_%H%M%S')}"
 
     try:
         engine = create_engine(mysql_uri)
@@ -406,7 +410,7 @@ def insert_df_into_mysql(
         metrics["failed"] = metrics["total"]
         metrics["errors"] = [msg]
 
-    metrics["execution_time"] = (datetime.now() - start).total_seconds()
+    metrics["execution_time"] = (now_sp() - start).total_seconds()
     log(
         f"[{environment.upper()}] inserção finalizada: "
         f"inseridos={metrics['inserted']}, falhas={metrics['failed']}, "
@@ -443,7 +447,7 @@ def _build_report_lines(project_clean: str, metrics: Dict[str, Any]) -> List[str
     emoji = _status_emoji(total, inserted, failed, notes)
 
     lines = [
-        f"## {emoji} **{project_clean}** - {datetime.now().strftime('%d/%m/%Y - %H:%M:%S')}",
+        f"## {emoji} **{project_clean}** - {now_sp().strftime('%d/%m/%Y - %H:%M:%S')}",
         "",
         "**Resumo:**",
         f"- Total de registros: `{total}`",
@@ -479,12 +483,8 @@ def generate_report(metrics: dict, context: Optional[Dict[str, Any]] = None) -> 
     log(report, level="info")
 
     notify = bool(ctx.get("notify"))
-    environment = str(ctx.get("environment", "dev"))
-    failed = int(metrics.get("failed", 0))
-    errors = metrics.get("errors", []) or []
-    notes = metrics.get("notes", []) or []
 
-    if notify and (environment == "dev" or failed > 0 or errors or notes):
+    if notify:
         send_message(
             title=str(ctx.get("pipeline_name", DEFAULT_REPORT_CONTEXT["pipeline_name"])),
             message=report,
