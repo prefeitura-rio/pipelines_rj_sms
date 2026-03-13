@@ -263,12 +263,13 @@ def _is_non_empty_str(s: pd.Series) -> pd.Series:
 
 def filter_exames_update_sintomatico(
     df: pd.DataFrame,
-    _notes: Optional[List[str]] = None,
+    notes: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """
     Mantém somente exames que já conseguiram amarrar com um id_sintomatico
     e ordena os registros para atualização consistente no MySQL.
     """
+    del notes
     if df is None or df.empty:
         return df
 

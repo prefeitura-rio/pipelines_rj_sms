@@ -495,7 +495,7 @@ def generate_report(metrics: dict, context: Optional[Dict[str, Any]] = None) -> 
 
 
 @task
-def apply_df_filter(df, filter_name: str | None, notes: list | None = None):
+def apply_df_filter(df, filter_name: Optional[str], notes: Optional[List[str]] = None):
     """Aplica um filtro opcional no DF, controlado por config."""
     if df is None or getattr(df, "empty", True) or not filter_name:
         return df
@@ -508,4 +508,13 @@ def apply_df_filter(df, filter_name: str | None, notes: list | None = None):
             notes.append(msg)
         return df
 
-    return fn(df, notes=notes)
+    try:
+        return fn(df, notes=notes)
+    except Exception as exc:
+        msg = summarize_error(
+            f"Erro ao aplicar df_filter_name='{filter_name}': {type(exc).__name__}: {exc}"
+        )
+        log(msg, level="error")
+        if notes is not None:
+            notes.append(msg)
+        raise ValueError(msg)
