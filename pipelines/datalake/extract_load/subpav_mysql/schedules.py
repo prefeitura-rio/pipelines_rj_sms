@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103
+# pylint: disable=import-error
 """
 Schedules for the subpav dump pipeline de extração e carga de dados do SUBPAV.
 
@@ -62,15 +62,11 @@ TABELAS_CONFIG: list[tuple] = [
         },
     ),
     ("equipes", "subpav_cnes", "monthly"),
-    ("equipes_profissionais", "subpav_cnes", "monthly",
-        {"relative_date_filter": "D-60"}
-    ),
+    ("equipes_profissionais", "subpav_cnes", "monthly", {"relative_date_filter": "D-60"}),
     ("equipes_tipos", "subpav_cnes", "monthly"),
     ("horarios_atendimentos", "subpav_cnes", "monthly"),
     ("profissionais", "subpav_cnes", "monthly"),
-    ("profissionais_unidades", "subpav_cnes", "monthly",
-        {"relative_date_filter": "D-60"}
-    ),
+    ("profissionais_unidades", "subpav_cnes", "monthly", {"relative_date_filter": "D-60"}),
     ("unidades", "subpav_cnes", "monthly"),
     ("unidades_auxiliares", "subpav_cnes", "monthly"),
     ("unidades_estruturas_fisicas", "subpav_cnes", "monthly"),
@@ -91,57 +87,53 @@ TABELAS_CONFIG: list[tuple] = [
     # -----
     # SISARE
     # -----
-    ("altas","subpav_altas_referenciadas","daily",
-            {"id_column": "id_alta"}
+    ("vw_altas", "subpav_altas_referenciadas", "daily", {"id_column": "id_alta"}),
+    ("altas", "subpav_altas_referenciadas", "daily", {"id_column": "id_alta"}),
+    ("altas_arquivos", "subpav_altas_referenciadas", "daily", {"id_column": "id_alta_arquivo"}),
+    (
+        "altas_medicamentos",
+        "subpav_altas_referenciadas",
+        "daily",
+        {"id_column": "id_alta_medicamento"},
     ),
-    ("altas_arquivos","subpav_altas_referenciadas","daily",
-        {"id_column": "id_alta_arquivo"}
-    ),
-    ("altas_medicamentos","subpav_altas_referenciadas","daily",
-        {"id_column": "id_alta_medicamento"}
-    ),
-    ("altas_pendentes","subpav_altas_referenciadas","daily",
-        {"id_column": "id_alta_pendente"}
-    ),
+    ("altas_pendentes", "subpav_altas_referenciadas", "daily", {"id_column": "id_alta_pendente"}),
     (
         "altas_pendentes_referenciadas",
         "subpav_altas_referenciadas",
         "daily",
         {"id_column": "id_alta_pendente_referenciada"},
     ),
-    ("apgars","subpav_altas_referenciadas","monthly",
-        {"id_column": "id_apgar"}
+    ("apgars", "subpav_altas_referenciadas", "monthly", {"id_column": "id_apgar"}),
+    ("comorbidades", "subpav_altas_referenciadas", "monthly", {"id_column": "id_comorbidade"}),
+    ("dashboard", "subpav_altas_referenciadas", "monthly", {"id_column": "visualizacao"}),
+    ("dashboard_feedback", "subpav_altas_referenciadas", "monthly"),
+    (
+        "desfechos_gestacao",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_desfecho_gestacao"},
     ),
-    ("comorbidades","subpav_altas_referenciadas","monthly",
-        {"id_column": "id_comorbidade"}
+    (
+        "desfechos_internacao",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_desfecho_internacao"},
     ),
-    ("dashboard","subpav_altas_referenciadas","monthly",
-        {"id_column": "visualizacao"}
+    ("exames", "subpav_altas_referenciadas", "monthly", {"id_column": "id_exame"}),
+    ("feedbacks", "subpav_altas_referenciadas", "daily", {"id_column": "id_feedback"}),
+    (
+        "feridas_cirurgicas",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_ferida_cirurgica"},
     ),
-    ("dashboard_feedback","subpav_altas_referenciadas","monthly"),
-    ("desfechos_gestacao","subpav_altas_referenciadas","monthly",
-        {"id_column": "id_desfecho_gestacao"}
-    ),
-    ("desfechos_internacao","subpav_altas_referenciadas","monthly",
-        {"id_column": "id_desfecho_internacao"}
-    ),
-    ("exames","subpav_altas_referenciadas","monthly",
-        {"id_column": "id_exame"}
-    ),
-    ("feedbacks","subpav_altas_referenciadas","daily",
-        {"id_column": "id_feedback"}
-    ),
-    ("feridas_cirurgicas","subpav_altas_referenciadas","monthly",
-        {"id_column": "id_ferida_cirurgica"}
-    ),
-    ("formas_entrada","subpav_altas_referenciadas","monthly",
-        {"id_column": "id_forma_entrada"}
-    ),
-    ("formularios","subpav_altas_referenciadas","monthly",
-        {"id_column": "id_formulario"}
-    ),
-    ("formularios_exames","subpav_altas_referenciadas","monthly",
-        {"id_column": "id_formulario_exame"}
+    ("formas_entrada", "subpav_altas_referenciadas", "monthly", {"id_column": "id_forma_entrada"}),
+    ("formularios", "subpav_altas_referenciadas", "monthly", {"id_column": "id_formulario"}),
+    (
+        "formularios_exames",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_formulario_exame"},
     ),
     (
         "formularios_motivos_internacao",
@@ -149,18 +141,15 @@ TABELAS_CONFIG: list[tuple] = [
         "monthly",
         {"id_column": "id_formulario_motivo_internacao"},
     ),
-    ("gestantes", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_gestante"}
+    ("gestantes", "subpav_altas_referenciadas", "daily", {"id_column": "id_gestante"}),
+    (
+        "gestantes_patologias",
+        "subpav_altas_referenciadas",
+        "daily",
+        {"id_column": "id_gestante_patologia"},
     ),
-    ("gestantes_patologias", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_gestante_patologia"}
-    ),
-    ("gestantes_rn", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_gestante_rn"}
-    ),
-    ("gestantes_uti", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_gestante_uti"}
-    ),
+    ("gestantes_rn", "subpav_altas_referenciadas", "daily", {"id_column": "id_gestante_rn"}),
+    ("gestantes_uti", "subpav_altas_referenciadas", "daily", {"id_column": "id_gestante_uti"}),
     (
         "gestantes_uti_hemoderivados",
         "subpav_altas_referenciadas",
@@ -179,24 +168,32 @@ TABELAS_CONFIG: list[tuple] = [
         "daily",
         {"id_column": "id_gestante_uti_ventilatorio"},
     ),
-    ("hemoderivados", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_hemoderivado"}
+    ("hemoderivados", "subpav_altas_referenciadas", "monthly", {"id_column": "id_hemoderivado"}),
+    (
+        "histerectomia_causas",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_histerectomia_causa"},
     ),
-    ("histerectomia_causas", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_histerectomia_causa"}
+    (
+        "histerectomia_tipos",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_histerectomia_tipo"},
     ),
-    ("histerectomia_tipos", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_histerectomia_tipo"}
+    (
+        "historico_edicao",
+        "subpav_altas_referenciadas",
+        "daily",
+        {"id_column": "id_historico_edicao"},
     ),
-    ("historico_edicao", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_historico_edicao"}
+    (
+        "intercorrencias",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_intercorrencia"},
     ),
-    ("intercorrencias", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_intercorrencia"}
-    ),
-    ("internacoes", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_internacao"}
-    ),
+    ("internacoes", "subpav_altas_referenciadas", "daily", {"id_column": "id_internacao"}),
     (
         "internacoes_comorbidades",
         "subpav_altas_referenciadas",
@@ -209,8 +206,11 @@ TABELAS_CONFIG: list[tuple] = [
         "daily",
         {"id_column": "id_internacao_diagnostico"},
     ),
-    ("internacoes_exames", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_internacao_exame"}
+    (
+        "internacoes_exames",
+        "subpav_altas_referenciadas",
+        "daily",
+        {"id_column": "id_internacao_exame"},
     ),
     (
         "internacoes_intercorrencias",
@@ -218,123 +218,157 @@ TABELAS_CONFIG: list[tuple] = [
         "daily",
         {"id_column": "id_internacao_intercorrencia"},
     ),
-    ("log", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_log"}
-    ),
+    ("log", "subpav_altas_referenciadas", "daily", {"id_column": "id_log"}),
     ("log_dashboard", "subpav_altas_referenciadas", "daily"),
-    ("log_tabelas", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_log_tabela"}
+    ("log_tabelas", "subpav_altas_referenciadas", "monthly", {"id_column": "id_log_tabela"}),
+    ("motivos_alta", "subpav_altas_referenciadas", "monthly", {"id_column": "id_motivo_alta"}),
+    (
+        "motivos_clinicos",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_motivo_clinico"},
     ),
-    ("motivos_alta", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_motivo_alta"}
+    (
+        "motivos_internacao",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_motivo_internacao"},
     ),
-    ("motivos_clinicos", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_motivo_clinico"}
+    ("pacientes", "subpav_altas_referenciadas", "daily", {"id_column": "id_paciente"}),
+    (
+        "patologias_gestantes",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_patologia_gestante"},
     ),
-    ("motivos_internacao", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_motivo_internacao"}
+    (
+        "protocolos_hemorragia",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_protocolo_hemorragia"},
     ),
-    ("pacientes", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_paciente"}
+    ("racas_cores", "subpav_altas_referenciadas", "monthly", {"id_column": "id_raca_cor"}),
+    (
+        "rn_intercorrencias",
+        "subpav_altas_referenciadas",
+        "daily",
+        {"id_column": "id_rn_intercorrencia"},
     ),
-    ("patologias_gestantes", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_patologia_gestante"}
+    (
+        "sulfato_magnesio",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_sulfato_magnesio"},
     ),
-    ("protocolos_hemorragia", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_protocolo_hemorragia"}
+    (
+        "suportes_ventilatorios",
+        "subpav_altas_referenciadas",
+        "monthly",
+        {"id_column": "id_suporte_ventilatorio"},
     ),
-    ("racas_cores", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_raca_cor"}
-    ),
-    ("rn_intercorrencias", "subpav_altas_referenciadas", "daily",
-        {"id_column": "id_rn_intercorrencia"}
-    ),
-    ("sulfato_magnesio", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_sulfato_magnesio"}
-    ),
-    ("suportes_ventilatorios", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_suporte_ventilatorio"}
-    ),
-    ("tipos_feedback", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_tipo_feedback"}
-    ),
-    ("tipos_gravidez", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_tipo_gravidez"}
-    ),
-    ("vias_parto", "subpav_altas_referenciadas", "monthly",
-        {"id_column": "id_via_parto"}
-    ),
+    ("tipos_feedback", "subpav_altas_referenciadas", "monthly", {"id_column": "id_tipo_feedback"}),
+    ("tipos_gravidez", "subpav_altas_referenciadas", "monthly", {"id_column": "id_tipo_gravidez"}),
+    ("vias_parto", "subpav_altas_referenciadas", "monthly", {"id_column": "id_via_parto"}),
     # ---------
     # SISCegonha
     # ---------
     ("agendamento_gestantes", "subpav_cegonha", "daily",
-        {"id_column": "id_agendamento_gestante"}
+        {
+            "id_column": "id_agendamento_gestante",
+            "if_exists": "replace",
+        },
     ),
-    ("agendamento_profissional", "subpav_cegonha", "monthly",
-        {"id_column": "id_agendamento_profissional"}
+    (
+        "agendamento_profissional",
+        "subpav_cegonha",
+        "monthly",
+        {"id_column": "id_agendamento_profissional", "if_exists": "replace",},
     ),
-    ("cadastro_gestante", "subpav_cegonha", "daily"),
-    ("cadastro_gestante_log", "subpav_cegonha", "daily"),
+    ("cadastro_gestante", "subpav_cegonha", "daily",{"if_exists": "replace",}),
+    ("cadastro_gestante_log", "subpav_cegonha", "daily",{"if_exists": "replace",}),
     ("cegonha_feriados", "subpav_cegonha", "monthly",
-        {"id_column": "id_feriado"}
+        {"id_column": "id_feriado","if_exists": "replace",}
     ),
     ("cnes_dias_sem_visita", "subpav_cegonha", "monthly",
-        {"id_column": "id_cnes_dias_sem_visita"}
+        {"id_column": "id_cnes_dias_sem_visita","if_exists": "replace",}
     ),
-    ("dados_maternidade_gestantes", "subpav_cegonha", "daily",
-        {"id_column": "id_dados_maternidade_gestante"}
+    (
+        "dados_maternidade_gestantes",
+        "subpav_cegonha",
+        "daily",
+        {
+            "id_column": "id_dados_maternidade_gestante",
+            "if_exists": "replace",
+        },
     ),
     ("dias_sem_visita", "subpav_cegonha", "monthly",
-        {"id_column": "id_dias_sem_visita"}
+        {"id_column": "id_dias_sem_visita","if_exists": "replace",}
     ),
     ("gestacao_tipos", "subpav_cegonha", "monthly",
-        {"id_column": "id_gestacao_tipo"}
+        {"id_column": "id_gestacao_tipo","if_exists": "replace",}
     ),
     ("gestante_acompanhante", "subpav_cegonha", "monthly",
-        {"id_column": "id_acompanhante"}
+        {"id_column": "id_acompanhante","if_exists": "replace",}
     ),
     ("gestante_excecoes", "subpav_cegonha", "daily",
-        {"id_column": "id_gestante_excecao"}
+        {"id_column": "id_gestante_excecao","if_exists": "replace",}
     ),
     ("gestantes", "subpav_cegonha", "daily",
-        {"id_column": "id_gestante"}
+        {"id_column": "id_gestante","if_exists": "replace",}
     ),
-    ("gestantes_videos_historico_login", "subpav_cegonha", "monthly"),
-    ("gestantes_videos_unidades", "subpav_cegonha", "monthly"),
+    ("gestantes_videos_historico_login", "subpav_cegonha", "monthly",
+        {"if_exists": "replace",}
+    ),
+    ("gestantes_videos_unidades", "subpav_cegonha", "monthly",
+        {"if_exists": "replace",}
+    ),
     ("horarios", "subpav_cegonha", "monthly",
-        {"id_column": "id_horario"}
+        {"id_column": "id_horario","if_exists": "replace",}
     ),
-    ("maternidade_tipo_gestantes", "subpav_cegonha", "monthly",
-        {"id_column": "id_maternidade_tipos_gestante"}
+    (
+        "maternidade_tipo_gestantes",
+        "subpav_cegonha",
+        "monthly",
+        {"id_column": "id_maternidade_tipos_gestante",
+        "if_exists": "replace",
+        },
     ),
-    ("maternidade_video", "subpav_cegonha", "monthly"),
+    ("maternidade_video", "subpav_cegonha", "monthly",
+        {"if_exists": "replace",}
+    ),
     ("profissionais", "subpav_cegonha", "monthly",
-        {"id_column": "id_profissionais"}
+        {"id_column": "id_profissionais","if_exists": "replace",}
     ),
-    ("raca_cor", "subpav_cegonha", "monthly"),
+    ("raca_cor", "subpav_cegonha", "monthly",{"if_exists": "replace",}),
     ("semana_dias", "subpav_cegonha", "monthly",
-        {"id_column": "id_semana_dia"}
+        {"id_column": "id_semana_dia","if_exists": "replace",}
     ),
     ("situacao_excecoes", "subpav_cegonha", "monthly",
-        {"id_column": "id_situacao_excecao"}
+        {"id_column": "id_situacao_excecao","if_exists": "replace",}
     ),
     ("turnos", "subpav_cegonha", "monthly",
-        {"id_column": "id_turno"}
+        {"id_column": "id_turno","if_exists": "replace",}
     ),
-    ("unidades_agendamento_vagas", "subpav_cegonha", "daily",
-        {"id_column": "id_unidades_agendamento_vagas"}
+    (
+        "unidades_agendamento_vagas",
+        "subpav_cegonha",
+        "daily",
+        {"id_column": "id_unidades_agendamento_vagas","if_exists": "replace",},
     ),
-    ("unidades_referencia_encaminha", "subpav_cegonha", "daily",
-        {"id_column": "id_unidades_referencia_encaminha"}
+    (
+        "unidades_referencia_encaminha",
+        "subpav_cegonha",
+        "daily",
+        {"id_column": "id_unidades_referencia_encaminha"},
     ),
     ("unidades_turnos_horarios", "subpav_cegonha", "daily",
-        {"id_column": "id_turnos_horario"}
+        {"id_column": "id_turnos_horario","if_exists": "replace",}
     ),
     ("unidades_videos", "subpav_cegonha", "monthly",
-        {"id_column": "id_unidade_video"}
+        {"id_column": "id_unidade_video","if_exists": "replace",}
     ),
     ("visita_gestantes_tipos", "subpav_cegonha", "daily",
-        {"id_column": "id_visita_gestante_tipo"}
+        {"id_column": "id_visita_gestante_tipo","if_exists": "replace",}
     ),
     # -------------------
     # Sinan Rio (Legado)
@@ -342,30 +376,36 @@ TABELAS_CONFIG: list[tuple] = [
     ("tuberculose_sinan", "subpav_sinan", "daily"),
     (
         "tb_estabelecimento_saude",
-        "subpav_sinan", 
+        "subpav_sinan",
         "monthly",
         {"id_column": "co_estabelecimento"},
     ),
     # ----------------
     # Sinan Rio (Novo)
     # ----------------
-    ("notificacao", "subpav_sinanrio", "daily",
+    (
+        "notificacao",
+        "subpav_sinanrio",
+        "daily",
         {
-            "id_column":"nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao",
-            "infisical_path": "/plataforma-subpav"
-        }
+            "id_column": "nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao",
+            "infisical_path": "/plataforma-subpav",
+        },
     ),
-    ("tb_investiga", "subpav_sinanrio", "daily",
+    (
+        "tb_investiga",
+        "subpav_sinanrio",
+        "daily",
         {
-            "id_column":"nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao",
-            "infisical_path": "/plataforma-subpav"
-        }
+            "id_column": "nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao",
+            "infisical_path": "/plataforma-subpav",
+        },
     ),
-    ("tb_sintomatico", "subpav_sinanrio", "daily",
-        {
-            "id_column":"id_sintomatico",
-            "infisical_path": "/plataforma-subpav"
-        }
+    (
+        "tb_sintomatico",
+        "subpav_sinanrio",
+        "daily",
+        {"id_column": "id_sintomatico", "infisical_path": "/plataforma-subpav"},
     ),
 ]
 
