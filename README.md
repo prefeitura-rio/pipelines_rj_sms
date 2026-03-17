@@ -18,7 +18,7 @@ Administrador: [Pedro Marques](@TanookiVerde)
 > **Clone o repositório**
 > ```bash
 > git clone https://github.com/prefeitura-rio/pipelines_rj_sms
-> cd queries-sms-rj
+> cd pipelines_rj_sms
 > ```
 
 ---
