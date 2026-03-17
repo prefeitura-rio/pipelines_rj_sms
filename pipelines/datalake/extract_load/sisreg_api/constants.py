@@ -15,3 +15,5 @@ CONFIG = {
     "memory_limit": "12Gi",
     "num_workers": 3,
 }
+
+TEST = "test"
