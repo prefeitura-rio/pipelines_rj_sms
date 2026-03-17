@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import zipfile
+import zlib
 from datetime import timedelta
 
 from google.cloud import storage
@@ -50,19 +51,16 @@ def download_to_gcs(file_info: dict, bucket_name: str, folder_name: str):
         try:
             with zipfile.ZipFile(file_info["path"], "r") as zip_ref:
                 current_dir = os.path.dirname(file_info["path"])
-                zip_ref.extractall(current_dir)
-
-                # Remove the zip file
-                os.remove(file_info["path"])
-                log(f"Removed zip file {file_info['path']}", level="info")
-
-                # Discover the files from the zip
-                files = zip_ref.namelist()
-                files = [os.path.join(current_dir, file) for file in files]
-                log(f"Extracted files: {files}", level="info")
+                for member in zip_ref.namelist():
+                    try:
+                        zip_ref.extract(member, current_dir)
+                        files.append(os.path.join(current_dir, member))
+                    except (zipfile.BadZipFile, zlib.error) as e:
+                        log(f"Skipping corrupted file {member}: {e}", level="error")
+                
+                os.remove(file_info["path"]) 
         except Exception as e:
-            log(f"Error extracting zip file {file_info['path']}: {e}", level="error")
-            raise e
+            log(f"Zip archive is unreadable: {e}", level="error")
     else:
         files = [file_info["path"]]
 
