@@ -126,7 +126,7 @@ def extract_postgres_data(
     os.makedirs(upload_path, exist_ok=True)
 
     postgres_folder = [
-        folder_name for folder_name in os.listdir(data_dir) if "VISUAL" in folder_name
+        folder_name for folder_name in os.listdir(data_dir) if "sql" in folder_name
     ][0]
 
     sql_path = os.path.join(data_dir, postgres_folder, sql_file)
@@ -386,20 +386,23 @@ def list_files_from_bucket(environment, bucket_name, folder):
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
     files = bucket.list_blobs(prefix=f"{folder}/hospub")
-
+    
     # Extrai o nome dos blobs no bucket
-    files_path = [str(f.name) for f in files]
+    files_name = [str(f.name) for f in files]
 
     # Faz a relação CNES - Prefixo
     cnes_prefix = {}
 
-    for file in files_path:
-        cnes_matches = re.search(r"hospub-(\d+)", file)
+    for name in files_name:
+        cnes_matches = re.search(r"hospub.*?-(\d+)", name)
+        if not cnes_matches:
+            continue
+        
+        cnes = cnes_matches.group(1)
 
-        cnes_match = cnes_matches.group(0)  # Ex: hospub-2269945
-        cnes = cnes_match.split("-")[1]  # 2269945
-
-        prefix_match = re.search(r".*hospub-\d+", file)
+        prefix_match = re.search(fr".*hospub.*-{cnes}", name)
+        if not prefix_match:
+            continue
         prefix = prefix_match.group(0)
 
         cnes_prefix[cnes] = prefix

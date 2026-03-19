@@ -57,7 +57,7 @@ def handle_others(field_bytes, attrs):
 
 def find_openbase_folder(data_dir: str) -> str:
     """Localiza a pasta OpenBase no diretório de dados."""
-    folders = [name for name in os.listdir(data_dir) if "BASE" in name]
+    folders = [name for name in os.listdir(data_dir) if "openbase" in name]
     if not folders:
         raise ValueError(f"Nenhuma pasta OpenBase encontrada em {data_dir}")
     return os.path.join(data_dir, folders[0])

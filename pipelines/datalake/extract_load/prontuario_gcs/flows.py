@@ -77,7 +77,7 @@ with Flow(
             environment=ENVIRONMENT,
             blob_prefix=BLOB_PREFIX,
             wait_for=folders_created,
-            blob_type="BASE",
+            blob_type="openbase",
         )
 
         # 2.2 - Descompressão dos arquivos
@@ -112,7 +112,7 @@ with Flow(
             environment=ENVIRONMENT,
             blob_prefix=BLOB_PREFIX,
             wait_for=openbase_file if not SKIP_OPENBASE else folders_created,
-            blob_type="VISUAL",
+            blob_type="sql",
         )
 
         # 3.2 - Descompressão do arquivo hospub.sql
