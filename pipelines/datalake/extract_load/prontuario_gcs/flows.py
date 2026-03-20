@@ -137,27 +137,28 @@ with Flow(
             target_tables=prontuario_constants.SELECTED_HOSPUB_TABLES.value,
         )
 
+        # Os backups mais recentes não contém este arquivo
         # 3.4 - Descompressão do arquivo prescricao_medica3.sql
-        unpacked_prescricao = unpack_files(
-            tar_files=postgres_file,
-            output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-            files_to_extract=["prescricao_medica3.sql"],
-            exclude_origin=True,
-            wait_for=hospub_extraction_finished,
-        )
+        # unpacked_prescricao = unpack_files(
+        #     tar_files=postgres_file,
+        #     output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        #     files_to_extract=["prescricao_medica3.sql"],
+        #     exclude_origin=True,
+        #     wait_for=hospub_extraction_finished,
+        # )
 
-        # 3.5 Extração das tabelas do arquivo prescricao.sql
-        prescricao_extraction_finished = extract_postgres_data(
-            data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-            output_dir=prontuario_constants.UPLOAD_PATH.value,
-            wait_for=unpacked_prescricao,
-            lines_per_chunk=LINES_PER_CHUNK,
-            dataset_id=DATASET,
-            cnes=CNES,
-            environment=ENVIRONMENT,
-            sql_file="prescricao_medica3.sql",
-            target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value,
-        )
+        # # 3.5 Extração das tabelas do arquivo prescricao.sql
+        # prescricao_extraction_finished = extract_postgres_data(
+        #     data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        #     output_dir=prontuario_constants.UPLOAD_PATH.value,
+        #     wait_for=unpacked_prescricao,
+        #     lines_per_chunk=LINES_PER_CHUNK,
+        #     dataset_id=DATASET,
+        #     cnes=CNES,
+        #     environment=ENVIRONMENT,
+        #     sql_file="prescricao_medica3.sql",
+        #     target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value,
+        # )
 
     # 4 - Deletar arquivos e diretórios
     delete_temp_folders(
@@ -166,7 +167,7 @@ with Flow(
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
             prontuario_constants.UPLOAD_PATH.value,
         ],
-        wait_for=prescricao_extraction_finished if not SKIP_POSTGRES else openbase_finished,
+        wait_for=hospub_extraction_finished if not SKIP_POSTGRES else openbase_finished,
     )
 
 ######################################################################################
