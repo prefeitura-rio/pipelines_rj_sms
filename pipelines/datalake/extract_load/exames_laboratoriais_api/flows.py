@@ -7,13 +7,14 @@ from prefect.storage import GCS
 from pipelines.constants import constants
 from pipelines.datalake.extract_load.exames_laboratoriais_api.schedules import schedule
 from pipelines.datalake.extract_load.exames_laboratoriais_api.tasks import (
-    authenticate_fetch,
+    authenticate,
     build_operator_params,
     generate_time_windows,
     get_all_aps,
     get_credential_param,
     get_source_from_ap,
     parse_identificador,
+    process_all_windows,
     transform,
 )
 from pipelines.datalake.utils.tasks import upload_df_to_datalake
@@ -41,13 +42,11 @@ with Flow(
 
     ap = Parameter("ap", default="10")
     environment = Parameter("environment", default="dev")
-    dt_inicio = Parameter("dt_inicio", default="2025-10-21T10:00:00-0300")
-    dt_fim = Parameter("dt_fim", default="2025-10-21T11:30:00-0300")
+    windows = Parameter("windows", default=[])
     rename_flow = Parameter("rename_flow", default=True)
     dataset_id = Parameter("dataset", default="brutos_exames_laboratoriais", required=False)
 
     source = get_source_from_ap(ap=ap)
-
     credential = get_credential_param(source=source)
 
     INFISICAL_PATH = credential["INFISICAL_PATH"]
@@ -75,33 +74,24 @@ with Flow(
         secret_name=credential["INFISICAL_AP_LIS"],
         environment=environment,
     )
-
     with case(rename_flow, True):
         rename_current_flow_run(
-            name_template="(AP{ap}) INÍCIO: {dt_inicio} FIM: {dt_fim}",
-            dt_inicio=dt_inicio,
-            dt_fim=dt_fim,
+            name_template="(AP{ap}) todas as janelas",
             ap=ap,
-        )
+    )
 
     identificador_lis = parse_identificador(identificador=identificador_lis_secret, ap=ap)
 
-    # autenticação + busca
-    results = authenticate_fetch(
+    solicitacoes_df, exames_df, resultados_df = process_all_windows(
+        windows=windows,
         username=username_secret,
         password=password_secret,
         apccodigo=apccodigo_secret,
         identificador_lis=identificador_lis,
-        dt_start=dt_inicio,
-        dt_end=dt_fim,
-        environment=environment,
         source=source,
+        environment=environment,
     )
 
-    # transformação
-    solicitacoes_df, exames_df, resultados_df = transform(json_result=results, source=source)
-
-    # carga no Datalake
     solicitacoes_upload_task = upload_df_to_datalake(
         df=solicitacoes_df,
         dataset_id=dataset_id,
@@ -127,6 +117,7 @@ with Flow(
         partition_column="datalake_loaded_at",
         upstream_tasks=[exames_upload_task],
     )
+
 
 with Flow(
     "DataLake - Extração e Carga de Dados - Exames Laboratoriais (Manager)",
@@ -169,6 +160,7 @@ with Flow(
         stream_logs=unmapped(True),
         raise_final_state=unmapped(False),
     )
+
 
 exames_laboratoriais_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 exames_laboratoriais_operator.executor = LocalDaskExecutor(num_workers=1)

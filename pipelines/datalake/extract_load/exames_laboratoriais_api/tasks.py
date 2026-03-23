@@ -17,23 +17,18 @@ from pipelines.datalake.extract_load.exames_laboratoriais_api.utils import send_
 from pipelines.utils.credential_injector import authenticated_task as task
 import requests
 
-from pipelines.utils.monitor import send_email
-
-
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
-def authenticate_fetch(
+def authenticate(
     username: str,
     apccodigo: str,
     password: str,
-    identificador_lis: str,
-    dt_start: str,
-    dt_end: str,
-    environment: str,
     source: str,
 ) -> dict:
-
+    """
+    Realiza apenas a autenticação e retorna o token com o timestamp de criação.
+    """
     auth_headers = {"emissor": username, "apccodigo": apccodigo, "pass": password}
 
     if source == "cientificalab":
@@ -41,88 +36,192 @@ def authenticate_fetch(
     else:
         base_url = "https://biomega-api.lisnet.com.br/lisnetws"
 
-    try:
-        token_response = requests.get(
-            f"{base_url}/tokenlisnet/apccodigo",
-            headers=auth_headers,
+    token_response = requests.get(
+        f"{base_url}/tokenlisnet/apccodigo",
+        headers=auth_headers,
+    )
+
+    token_data = token_response.json()
+
+    if token_data.get("status") != 200:
+        message = f"(authenticate) Erro ao obter token: {token_data.get('mensagem')}"
+        raise Exception(message)
+
+    log("Autenticação realizada com sucesso.")
+
+    return {
+        "token": token_data["token"],
+        "base_url": base_url,
+        "created_at": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).timestamp(),
+    }
+
+
+def fetch_window(
+    auth: dict,
+    apccodigo: str,
+    identificador_lis: str,
+    dt_start: str,
+    dt_end: str,
+    source: str,
+    environment: str,
+) -> dict:
+    """
+    Busca os dados de uma janela de tempo usando um token já existente.
+    Função simples (não é task) — será chamada dentro do loop do Operator.
+    """
+    token = auth["token"]
+    base_url = auth["base_url"]
+
+    results_headers = {"codigo": apccodigo, "token": token}
+
+    request_body = {
+        "lote": {
+            "identificadorLis": identificador_lis,
+            "dataResultado": {"inicial": dt_start, "final": dt_end},
+            "parametros": {
+                "retorno": "ESTRUTURADO/LINK",
+                "parcial": "N",
+                "sigiloso": "S",
+            },
+        }
+    }
+
+    results_response = requests.post(
+        f"{base_url}/APOIO/DTL/resultado",
+        headers=results_headers,
+        json=request_body,
+    )
+
+    if results_response.status_code in [502, 503]:
+        message = (
+            f"(fetch_window) Service Unavailable (Status {results_response.status_code}). "
+            "Possível manutenção ou instabilidade na API"
+        )
+        log(message, level="warning")
+
+        send_api_error_report(
+            status_code=results_response.status_code,
+            source=source,
+            environment=environment,
         )
 
-        token_data = token_response.json()
+        return {"lote": {"status": results_response.status_code, "mensagem": "API Fora do Ar"}}
 
-        if token_data.get("status") != 200:
-            message = f"(authenticate_and_fetch) Error getting token: {token_data.get('mensagem')}"
+    results = results_response.json()
+
+    if isinstance(results, str):
+        error_message = f"(fetch_window) request falhou: {results}"
+        log(error_message, level="error")
+        raise Exception(error_message)
+
+    if "lote" in results and results["lote"].get("status") != 200:
+        lote_status = results["lote"].get("status")
+        lote_mensagem = results["lote"].get("mensagem")
+
+        if (
+            lote_status == 501
+            and "Resultado não disponíveis para data solicitada" in lote_mensagem
+        ):
+            log(f"(fetch_window) Status 501: {lote_mensagem}", level="warning")
+            return results
+
+        elif lote_status is not None and lote_status != 200:
+            message = f"(fetch_window) Falha ao buscar resultados: Status: {lote_status} Mensagem: {lote_mensagem}"
             raise Exception(message)
 
-        token = token_data['token']
+    return results
 
-        log("Authentication was successful")
+@task(nout=3, max_retries=3, retry_delay=timedelta(minutes=1))
+def process_all_windows(
+    windows: list,
+    username: str,
+    apccodigo: str,
+    password: str,
+    identificador_lis: str,
+    source: str,
+    environment: str,
+) -> tuple:
+    """
+    Processa todas as janelas de uma AP em sequência, reaproveitando o token
+    e reautenticando automaticamente quando necessário.
+    Retorna os DataFrames acumulados de todas as janelas.
+    """
+    TOKEN_TTL = 420  # 480s de validade, usamos 420 pra ter margem de segurança
 
-        results_headers = {"codigo": apccodigo, "token": token}
+    solicitacoes_acc = []
+    exames_acc = []
+    resultados_acc = []
 
-        request_body = {
-            "lote": {
-                "identificadorLis": identificador_lis,
-                "dataResultado": {"inicial": dt_start, "final": dt_end},
-                "parametros": {
-                    "retorno": "ESTRUTURADO/LINK",
-                    "parcial": "N",
-                    "sigiloso": "S",
-                },
-            }
-        }
+    # Autenticação inicial
+    auth = authenticate.run(
+        username=username,
+        apccodigo=apccodigo,
+        password=password,
+        source=source,
+    )
 
-        results_response = requests.post(
-            f"{base_url}/APOIO/DTL/resultado",
-            headers=results_headers,
+    for i, window in enumerate(windows):
+        dt_start = window["dt_inicio"]
+        dt_end = window["dt_fim"]
 
-            json=request_body
+        # Verifica se o token ainda é válido, reautentica se necessário
+        elapsed = datetime.now(tz=pytz.timezone("America/Sao_Paulo")).timestamp() - auth["created_at"]
+        if elapsed >= TOKEN_TTL:
+            log(f"Token expirado após {elapsed:.0f}s. Reautenticando...")
+            auth = authenticate.run(
+                username=username,
+                apccodigo=apccodigo,
+                password=password,
+                source=source,
+            )
 
+        log(f"[{i+1}/{len(windows)}] Buscando janela {dt_start} → {dt_end}")
+
+        try:
+            result = fetch_window(
+                auth=auth,
+                apccodigo=apccodigo,
+                identificador_lis=identificador_lis,
+                dt_start=dt_start,
+                dt_end=dt_end,
+                source=source,
+                environment=environment,
+            )
+        except Exception as e:
+            log(f"Erro na janela {dt_start} → {dt_end}: {str(e)}. Pulando.", level="warning")
+            continue
+
+        # Pula janelas sem dados (status 501 ou API fora do ar)
+        lote = result.get("lote", {})
+        lote_status = lote.get("status")
+        if lote_status in [501, 502, 503]:
+            log(f"Janela {dt_start} → {dt_end} sem dados (status {lote_status}). Pulando.")
+            continue
+
+        solicitacoes_df, exames_df, resultados_df = transform.run(
+            json_result=result,
+            source=source,
         )
-        
-        if results_response.status_code in [502, 503]:
-            message = (
-                f"(authenticate_fetch) Service Unavailable (Status {results_response.status_code}). "
-                "Possível manutenção ou instabilidade na API"
-            )
-            log(message, level="warning")
 
-            send_api_error_report(
-                status_code=results_response.status_code, 
-                source=source, 
-                environment=environment
-            )
+        if not solicitacoes_df.empty:
+            solicitacoes_acc.append(solicitacoes_df)
+        if not exames_df.empty:
+            exames_acc.append(exames_df)
+        if not resultados_df.empty:
+            resultados_acc.append(resultados_df)
 
+    log("Todas as janelas processadas. Consolidando DataFrames...")
 
-            return {"lote": {"status": results_response.status_code, "mensagem": "API Fora do Ar"}}
+    solicitacoes_final = pd.concat(solicitacoes_acc, ignore_index=True) if solicitacoes_acc else pd.DataFrame()
+    exames_final = pd.concat(exames_acc, ignore_index=True) if exames_acc else pd.DataFrame()
+    resultados_final = pd.concat(resultados_acc, ignore_index=True) if resultados_acc else pd.DataFrame()
 
-        results = results_response.json()
+    log(
+        f"Totais acumulados → solicitacoes: {len(solicitacoes_final)}, "
+        f"exames: {len(exames_final)}, resultados: {len(resultados_final)}"
+    )
 
-        if isinstance(results, str):
-            error_message = f"(authenticate_fetch) request failed: {results}"
-            log(error_message, level="error")
-            raise Exception(error_message)
-
-        if "lote" in results and results["lote"].get("status") != 200:
-            lote_status = results["lote"].get("status")
-            lote_mensagem = results["lote"].get("mensagem")
-
-            if (
-                lote_status == 501
-                and "Resultado não disponíveis para data solicitada" in lote_mensagem
-            ):
-                log(f"(authenticate_fetch) Status 501: {lote_mensagem}", level="warning")
-                return results
-
-            elif lote_status is not None and lote_status != 200:
-                message = f"(authenticate_and_fetch) Failed to get results: Status: {lote_status} Message: {lote_mensagem}"
-                raise Exception(message)
-
-        return results
-
-    except Exception as e:
-        error_message = str(e)
-        log(f"(authenticate_and_fetch) Unexpected error: {error_message}", level="error")
-        raise
+    return solicitacoes_final, exames_final, resultados_final
 
 
 @task(nout=3)
@@ -313,23 +412,20 @@ def generate_time_windows(start_date: pd.Timestamp, end_date: str, hours_per_win
 @task
 def build_operator_params(windows: list, aps: list, env: str, dataset: str):
     """
-    Cria a lista de dicionários de parâmetros para o flow operator
-    Pra cada AP cria uma entrada para cada janela de tempo
+    Cria a lista de dicionários de parâmetros para o flow operator.
+    Para cada AP, passa todas as janelas de tempo de uma vez.
     """
     params = []
 
-    for window in windows:
-        for ap in aps:
-            params.append(
-                {
-                    "dt_inicio": window["dt_inicio"],
-                    "dt_fim": window["dt_fim"],
-                    "ap": ap,
-                    "environment": env,
-                    "dataset": dataset,
-                }
-            )
+    for ap in aps:
+        params.append(
+            {
+                "windows": windows,
+                "ap": ap,
+                "environment": env,
+                "dataset": dataset,
+            }
+        )
 
-    log(f"Parâmetros gerados para {len(params)} combinações (AP x Janela).")
+    log(f"Parâmetros gerados para {len(params)} APs, cada uma com {len(windows)} janelas.")
     return params
-
