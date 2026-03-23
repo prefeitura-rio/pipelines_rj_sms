@@ -18,7 +18,7 @@ def send_api_error_report(status_code, source, environment):
     message += "---\n"
     message += "*O fluxo continuará tentando a extração automaticamente conforme a política de retries.*"
 
-    recipients = ["daniel.lira@dados.rio"]
+    recipients = ["daniel.lira@prefeitura.rio"]
 
     try:
         send_email(
