@@ -25,11 +25,15 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
 # Internos
 from pipelines.datalake.extract_load.sisreg_afastamentos import constants
 from pipelines.utils.credential_injector import authenticated_task as task
+
+from pipelines.datalake.extract_load.sisreg_afastamentos.sisreg.sisreg_components.core.sisreg import Sisreg
 
 
 @task
@@ -74,7 +78,23 @@ def _host_from_url(url: str) -> str:
 
 def _build_firefox_driver(page_load_timeout_s: int = 45) -> webdriver.Firefox:
     options = FirefoxOptions()
-    #options.add_argument("-headless")
+    options.add_argument("-headless")
+    options.set_preference("browser.download.folderList", 2)
+    options.set_preference("browser.download.useDownloadDir", True)
+    options.set_preference("browser.download.manager.showWhenStarting", False)
+    options.set_preference("browser.download.manager.showAlertOnComplete", False)
+    options.set_preference("browser.download.panel.shown", False)
+    options.set_preference("browser.download.manager.scanWhenDone", False)
+
+    # MIME types para não perguntar durante download
+    csv_mime_types = (
+        "text/csv,"
+        "application/csv,"
+        "text/plain,"
+        "application/vnd.ms-excel,"
+        "application/octet-stream"
+    )
+    options.set_preference("browser.helperApps.neverAsk.saveToDisk", csv_mime_types)
 
     # Mantém o user-agent consistente com o que o pipeline já usa nos headers,
     # reduzindo discrepâncias entre o login (browser) e o scraping (httpx).
@@ -89,12 +109,13 @@ def _build_firefox_driver(page_load_timeout_s: int = 45) -> webdriver.Firefox:
     options.set_preference("network.http.connection-timeout", 30)
     options.set_preference("network.http.response.timeout", 30)
 
-    driver = webdriver.Firefox(options=options)
+    service = Service()
+    driver = webdriver.Firefox(service=service, options=options)
     driver.set_page_load_timeout(page_load_timeout_s)
     return driver
 
 
-def _selenium_login_and_export_state(
+def selenium_login_and_export_state(
     usuario: str,
     senha: str,
     wait_s: int = 30,
@@ -207,14 +228,6 @@ def test_request(url: str) -> httpx.Client:
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def init_client_request_base(test_url: str) -> httpx.Client:
-    if test_url is not None:
-        try:
-            log(level="debug", msg=f"Fazendo request para {test_url}")
-            test_request(test_url)
-            log(level="debug", msg="Teste feito com sucesso")
-        except:
-            log(level="debug", msg="Teste falhou")
-            raise
 
     # Importante: não faz request aqui, porque o cenário reportado é timeout na primeira
     # requisição HTTP a partir da nuvem. O primeiro contato “humano” fica com o Selenium.
@@ -231,6 +244,25 @@ def init_client_request_base(test_url: str) -> httpx.Client:
     )
     return client
 
+
+@task()
+def login_sisreg_class(
+    usuario: str,
+    senha: str,
+    client: httpx.Client,
+    tempo_carregamento: int = 180
+) -> httpx.Client:
+    sisreg = Sisreg(
+        usuario=usuario,
+        senha=senha,
+        tempo_carregamento=tempo_carregamento,
+        caminho_download=""
+    )
+    sisreg.fazer_login()
+    cookies = sisreg.browser.get_cookies()
+    _apply_selenium_cookies_to_httpx_client(client, cookies)
+    sisreg.encerrar()
+    return client
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))

@@ -17,6 +17,7 @@ from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
     init_client_request_base,
     log_df,
     login_sisreg,
+    login_sisreg_class,
     search_afastamentos,
     search_historico_afastamentos,
     close_httpx_client,
@@ -75,7 +76,7 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    client_after_login = login_sisreg(
+    client_after_login = login_sisreg_class(
         usuario=usuario,
         senha=senha,
         client=client,
