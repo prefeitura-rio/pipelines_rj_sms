@@ -88,11 +88,16 @@ def get_siclom_period_data(base_url: str, endpoint: str, api_key: str, period: s
         else:
             response.raise_for_status()
     else:
-        return get_siclom_prep_data.run(endpoint=endpoint, api_key=api_key, period=period)
+        return get_siclom_prep_data.run(
+            base_url=base_url, 
+            endpoint=endpoint, 
+            api_key=api_key, 
+            period=period
+        )
 
 
 @task
-def get_siclom_prep_data(endpoint: str, api_key: str, period: str) -> DataFrame:
+def get_siclom_prep_data(base_url: str, endpoint: str, api_key: str, period: str) -> DataFrame:
     """Faz a requisição para a API do SICLOM utilizando a busca por mês e ano para dados de PREP.
     Este endpoint é paginado e possui uma lógica de extração diferente dos demais, por isso foi necessário criar uma task específica para ele.
     """
@@ -100,7 +105,6 @@ def get_siclom_prep_data(endpoint: str, api_key: str, period: str) -> DataFrame:
 
     headers = {"Accept": "application/json", "X-API-KEY": api_key}
 
-    base_url = constants.BASE_URL.value
     url = f"{base_url}{endpoint}{period}?page=1&numItemsPerPage=50"
     extracted_data = []
     response = make_request(url=url, headers=headers)
