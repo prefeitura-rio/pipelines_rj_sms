@@ -171,10 +171,10 @@ def fix_RELACAO_CRIANCAS_MENORES_5_ANOS(csv_text: str, sep: str):
     corrige para que a tabela e=seja atualizada
     TODO - Rever lógica num futuro proximo - 24 Mar 2026 hoje
     '''
-    NOME_NOVO = "N_REGISTRO_AVALIAÇÃO_DESENVOLVIMENTO_INTEGRAL_CRIANCA"
-    NOME_ANTIGO = "N_REGISTRO_AVALIAÇÃO_DESENVOLVIMENTO_INFANTIL_DENVER"
+    NOME_NOVO = "N_REGISTRO_AVALIACAO_DESENVOLVIMENTO_INTEGRAL_CRIANCA"
+    NOME_ANTIGO = "N_REGISTRO_AVALIACAO_DESENVOLVIMENTO_INFANTIL_DENVER"
 
-    csv_text = csv_text.replace(NOME_NOVO, NOME_ANTIGO, 1)  # só na primeira ocorrência (header)
+    csv_text = csv_text.replace(NOME_NOVO, NOME_ANTIGO, 1) # Só na primeira ocorrência (header)
 
     new_csv_file = tempfile.TemporaryFile()
     new_csv_file.write(csv_text.encode("utf-8"))
