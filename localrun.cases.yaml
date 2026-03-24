@@ -555,17 +555,18 @@ cases:
       html_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.html"
       plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"
 
-  - case_slug: cdi_extract_sheets_individual_2025
-    flow_path: pipelines.datalake.extract_load.google_sheets.flows
-    flow_name: sms_dump_url
+  - case_slug: siclom_extraction
+    flow_path: pipelines.datalake.extract_load.siclom_api.flows
+    flow_name: siclom_period_extraction
     params:
       environment: "dev"
-      csv_delimiter: ";"
-      dataset_id: "brutos_cdi"
-      gsheets_sheet_name: "Controle de Demandas - Equipe Individual"
-      table_id: "equipe_individual_2025"
-      url: "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8"
-      url_type: "google_sheet"
+      endpoint: "/tratamentoperiodo/"
+      annual: false
+      year: null
+      month: null
+      extraction_range: null
+      dataset_id: "brutos_siclom_api"
+      table_id: "carga_viral_teste"
 
   - case_slug: cdi_extract_sheets_individual_2026
     flow_path: pipelines.datalake.extract_load.google_sheets.flows
