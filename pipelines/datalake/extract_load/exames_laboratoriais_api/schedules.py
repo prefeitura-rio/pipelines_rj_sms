@@ -12,10 +12,10 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 flow_manager_parameters = [
     {
         "environment": "prod",
-        "relative_date": "D-1",
-        "dataset_id": "brutos_exames_laboratoriais",
-        "rename_flow": True,
-        "hours_per_window": 1.5,
+        "intervalo": "D-1",   
+        "dataset": "brutos_exames_laboratoriais",  
+        "hours_per_window": 2,
+        "end_date": None,
     }
 ]
 
