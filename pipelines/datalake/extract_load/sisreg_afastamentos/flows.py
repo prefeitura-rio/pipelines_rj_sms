@@ -76,16 +76,15 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    client_after_login = login_sisreg_class(
+    client = login_sisreg_class(
         usuario=usuario,
         senha=senha,
-        client=client,
     )
 
     # Pagina de afastamentos
     dfs_afastamentos = search_afastamentos.map(
         cpf=df_cpfs,
-        client=unmapped(client_after_login),
+        client=unmapped(client),
         extraction_date=unmapped(extraction_date),
     )
 
@@ -106,7 +105,7 @@ with Flow(
     # Mais detalhada
     dfs_historicos = search_historico_afastamentos.map(
         cpf=df_cpfs,
-        client=unmapped(client_after_login),
+        client=unmapped(client),
         extraction_date=unmapped(extraction_date),
     )
 
@@ -125,7 +124,7 @@ with Flow(
 
     # Fechando o client depois da produção dos dataframes
     close_httpx_client(
-        client=client_after_login,
+        client=client,
         wait_dfs=[df_historico, df_afastamento],
     )
 

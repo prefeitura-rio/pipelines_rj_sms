@@ -249,9 +249,9 @@ def init_client_request_base(test_url: str) -> httpx.Client:
 def login_sisreg_class(
     usuario: str,
     senha: str,
-    client: httpx.Client,
     tempo_carregamento: int = 180
 ) -> httpx.Client:
+    client = httpx.Client()
     sisreg = Sisreg(
         usuario=usuario,
         senha=senha,
