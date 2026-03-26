@@ -58,17 +58,12 @@ with Flow(
     HISTORICO_TABLE_ID = Parameter(
         "historico_table_id", default=constants.DEFAULT_HISTORICO_TABLE_ID, required=False
     )
-    TEST_URL = Parameter(
-        "test_url",
-        default="https://www.google.com/",
-        required=False,
-    )
 
     # Data de extração das tabelas
     extraction_date = get_extraction_date()
 
     # Requisição base do SISREG
-    client = init_client_request_base(test_url=TEST_URL)
+    # client = init_client_request_base()
 
     # Buscando os CPFs dos profissionais,
     # com limite adicionado para questẽs de teste.
