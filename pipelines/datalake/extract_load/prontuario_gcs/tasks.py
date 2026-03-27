@@ -41,14 +41,13 @@ def create_temp_folders(folders) -> None:
 
 
 @task
-def get_file(path, bucket_name, blob_prefix, environment, wait_for, blob_type) -> list:
+def get_file(path, bucket_name, blob_path, environment, wait_for, blob_type) -> list:
     """
-    Faz o download de arquivo no bucket
+    Faz o download do arquivo do bucket.
     """
-    prefix = f"{blob_prefix}-{blob_type}"
 
-    log(f"⬇️ Realizando download de {prefix}...")
-    filename = download_from_cloud_storage(path, bucket_name, prefix)
+    log(f"⬇️ Realizando download de {blob_path}...")
+    filename = download_from_cloud_storage(path, bucket_name, blob_path)
 
     log("✅ Download feito com sucesso.")
     return filename
@@ -385,35 +384,44 @@ def list_files_from_bucket(environment, bucket_name, folder):
     """
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
-    files = bucket.list_blobs(prefix=f"{folder}/hospub")
-    
-    # Extrai o nome dos blobs no bucket
-    files_name = [str(f.name) for f in files]
-
-    # Faz a relação CNES - Prefixo
-    cnes_prefix = {}
-
-    for name in files_name:
-        cnes_matches = re.search(r"hospub.*?-(\d+)", name)
-        if not cnes_matches:
-            continue
+    blobs = bucket.list_blobs(prefix=f"{folder}/hospub")
         
-        cnes = cnes_matches.group(1)
+    blobs = [b.name for b in bucket.list_blobs(prefix=f"2026-03/hospub")]
 
-        prefix_match = re.search(fr".*hospub.*-{cnes}", name)
-        if not prefix_match:
-            continue
-        prefix = prefix_match.group(0)
+    last_files = {}
+    pattern = re.compile(r'-(\d+)-(sql|openbase)-(\d{2}-\d{2}-\d{4}-\d{2}h\d{2}m)')
 
-        cnes_prefix[cnes] = prefix
-    return cnes_prefix
+    # Dicionário temporário para controle de datas: {(cnes, file_type): data_dt}
+    date_control = {}
 
+    for path in blobs:
+        match = pattern.search(path)
+        if match:
+            cnes, file_type, data_str = match.groups()
+            data_dt = datetime.strptime(data_str, "%d-%m-%Y-%Hh%Mm")
+            
+            key_control = (cnes, file_type)
+            
+            # Verifica se é o mais recente para aquele CNES e file_type
+            if key_control not in date_control or data_dt > date_control[key_control]:
+                date_control[key_control] = data_dt
+                
+                # Inicializa o CNES no dicionário final se não existir
+                if cnes not in last_files:
+                    last_files[cnes] = {}
+                
+                # Atribui o path ao file_type correspondente
+                last_files[cnes][file_type] = path
+                
+    # Retorna algo tipo { 'cnes': {'openbase': '/path/file', 'sql':'/path/file'} }
+    return last_files
 
 @task
 def build_operator_parameters(
-    files_per_cnes: dict,
+    last_files: dict,
     bucket_name: str,
     dataset_id: str,
+    folder: str,
     chunk_size: int,
     environment: str = "dev",
 ) -> list:
@@ -424,15 +432,16 @@ def build_operator_parameters(
             "dataset": dataset_id,
             "bucket_name": bucket_name,
             "cnes": cnes,
-            "blob_prefix": prefix,
-            "rename_flow": True,
             "lines_per_chunk": chunk_size,
+            "folder": folder,
             "skip_openbase": False,
+            "openbase_blob": blob["openbase"],
             "skip_postgres": (
                 True if cnes == "2273349" else False
             ),  # Este CNES não possui base POSTGRES
+            "postgres_blob": blob["sql"],
         }
-        for cnes, prefix in files_per_cnes.items()
+        for cnes, blob in last_files.items()
     ]
 
 
@@ -537,3 +546,11 @@ def upload_file_to_native_table(
 
     log(f"✅ Inserção de linhas feitas com sucesso")
     os.remove(file)
+
+@task
+def generate_current_folder(folder: str) -> str:
+    """Se a pasta do bucket não for especificada, retorna ano-mes atual. Útil para extrações semanais"""
+    if not folder:
+        current_date = datetime.now()
+        folder = current_date.strftime("%Y-%m")
+    return folder
