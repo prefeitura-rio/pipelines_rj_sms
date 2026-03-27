@@ -265,12 +265,17 @@ def login_sisreg_class(
         user=usuario,
         password=senha,
         download_path=caminho_download,
+
     )
-    breakpoint()
+    log("Criado instancia Sisreg")
     sisreg.login()
+    log("Login feito")
     cookies = sisreg.browser.get_cookies()
+    log("Cookies resgatados")
     _apply_selenium_cookies_to_httpx_client(client, cookies)
+    log("Cookies traduzidos")
     sisreg.browser.close()
+    log("Fechando browser")
     return client
 
 
