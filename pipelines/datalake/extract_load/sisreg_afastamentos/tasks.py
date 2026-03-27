@@ -33,10 +33,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from pipelines.datalake.extract_load.sisreg_afastamentos import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 
-from pipelines.datalake.extract_load.sisreg_afastamentos.sisreg.sisreg_components.core.sisreg import Sisreg
-from pipelines.datalake.extract_load.sisreg_afastamentos.sisreg.sisreg_components.utils.path_utils import (
-    definir_caminho_absoluto,
-)
+from pipelines.datalake.extract_load.sisreg_afastamentos.sisreg.sisreg import Sisreg
 
 
 @task
@@ -247,7 +244,7 @@ def init_client_request_base() -> httpx.Client:
     return client
 
 
-@task()
+@task
 def login_sisreg_class(
     usuario: str,
     senha: str,
@@ -256,7 +253,6 @@ def login_sisreg_class(
 ) -> httpx.Client:
     client = httpx.Client()
 
-    caminho_download = definir_caminho_absoluto(caminho_download)
 
     log(
         "Inicaindo selenium com sisreg. "
@@ -266,15 +262,15 @@ def login_sisreg_class(
         f"caminho_download = {caminho_download} "
     )
     sisreg = Sisreg(
-        usuario=usuario,
-        senha=senha,
-        tempo_carregamento=tempo_carregamento,
-        caminho_download=caminho_download,
+        user=usuario,
+        password=senha,
+        download_path=caminho_download,
     )
-    sisreg.fazer_login()
+    breakpoint()
+    sisreg.login()
     cookies = sisreg.browser.get_cookies()
     _apply_selenium_cookies_to_httpx_client(client, cookies)
-    sisreg.encerrar()
+    sisreg.browser.close()
     return client
 
 
