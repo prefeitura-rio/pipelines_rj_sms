@@ -440,6 +440,7 @@ def build_operator_parameters(
                 True if cnes == "2273349" else False
             ),  # Este CNES não possui base POSTGRES
             "postgres_blob": blob["sql"],
+            "skip_prescricao": True if cnes == "2273349" else False
         }
         for cnes, blob in last_files.items()
     ]
