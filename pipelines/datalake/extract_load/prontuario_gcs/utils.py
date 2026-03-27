@@ -57,7 +57,7 @@ def handle_others(field_bytes, attrs):
 
 def find_openbase_folder(data_dir: str) -> str:
     """Localiza a pasta OpenBase no diretório de dados."""
-    folders = [name for name in os.listdir(data_dir) if "BASE" in name]
+    folders = [name for name in os.listdir(data_dir) if "openbase" in name]
     if not folders:
         raise ValueError(f"Nenhuma pasta OpenBase encontrada em {data_dir}")
     return os.path.join(data_dir, folders[0])
@@ -151,14 +151,14 @@ def parse_record(rec: bytes, structured_dictionary: Dict) -> Dict:
 def write_csv_header(csv_path: str, metadata: List[str]) -> None:
     """Cria arquivo CSV e escreve cabeçalho."""
     with open(csv_path, "w") as f:
-        f.write(",".join(metadata) + "\n")
+        f.write("|".join(metadata) + "\r\n")
 
 
 def write_csv_row(csv_path: str, row: Dict) -> None:
     """Adiciona uma linha ao arquivo CSV."""
     with open(csv_path, "a") as f:
         line = [str(value) for value in row.values()]
-        f.write(",".join(line) + "\n")
+        f.write("|".join(line) + "\r\n")
 
 
 ##############################################################################################
@@ -311,12 +311,12 @@ def process_insert_statement(
     if not os.path.exists(csv_filename):
         # Cria novo arquivo e escreve cabeçalho
         with open(csv_filename, "w", encoding="utf-8", newline="") as csv_file:
-            csv_file.write(",".join(columns) + "\n")
+            csv_file.write("|".join(columns) + "\r\n")
 
     # Processa e grava os valores diretamente no arquivo
     with open(csv_filename, "a", encoding="utf-8", newline="") as csv_file:
         cleaned_values = [clean_value(v) for v in values]
-        csv_file.write(",".join(cleaned_values) + "\n")
+        csv_file.write("|".join(cleaned_values) + "\r\n")
 
     return True, csv_filename, table_name
 

@@ -528,12 +528,15 @@ cases:
     params:
       environment: "dev"
       bucket_name: "subhue_backups"
-      dataset: 'brutos_prontuario_prontuaRIO'
-      blob_prefix: '2025-11/hospub-2270609'
-      cnes: '2270609'
-      lines_per_chunk: 25000
-      skip_openbase: false
+      cnes: '2269945'
+      folder: '2026-03'
+      dataset: 'brutos_prontuario_prontuaRio_staging'
+      lines_per_chunk: 5000
+      skip_openbase: true
+      openbase_blob: '2026-03/hospubAF-mar-2269945-openbase-19-03-2026-05h00m.tar.gz'
       skip_postgres: false
+      postgres_blob: '2026-03/hospubAF-mar-2269945-sql-19-03-2026-06h01m.tar.gz'
+      skip_prescricao: true
 
   - case_slug: prontuario_extraction_manager
     flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
@@ -541,9 +544,10 @@ cases:
     params:
       environment: "dev"
       bucket_name: "subhue_backups"
-      folder: "2025-11"
-      dataset: 'brutos_prontuario_prontuaRIO'
-      chunk_size: 50000
+      folder: "2026-02"
+      dataset: 'brutos_prontuario_prontuaRio'
+      chunk_size: 25000
+
   - case_slug: emails-subgeral
     flow_path: pipelines.reports.emails_subgeral_gestao.flows
     flow_name: sms_emails_subgeral
