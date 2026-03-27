@@ -34,6 +34,9 @@ from pipelines.datalake.extract_load.sisreg_afastamentos import constants
 from pipelines.utils.credential_injector import authenticated_task as task
 
 from pipelines.datalake.extract_load.sisreg_afastamentos.sisreg.sisreg_components.core.sisreg import Sisreg
+from pipelines.datalake.extract_load.sisreg_afastamentos.sisreg.sisreg_components.utils.path_utils import (
+    definir_caminho_absoluto,
+)
 
 
 @task
@@ -248,14 +251,18 @@ def init_client_request_base() -> httpx.Client:
 def login_sisreg_class(
     usuario: str,
     senha: str,
-    tempo_carregamento: int = 180
+    tempo_carregamento: int = 180,
+    caminho_download: int = "./downloads"
 ) -> httpx.Client:
     client = httpx.Client()
+
+    caminho_download = definir_caminho_absoluto(caminho_download)
+
     sisreg = Sisreg(
         usuario=usuario,
         senha=senha,
         tempo_carregamento=tempo_carregamento,
-        caminho_download=""
+        caminho_download=caminho_download,
     )
     sisreg.fazer_login()
     cookies = sisreg.browser.get_cookies()
