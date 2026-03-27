@@ -258,6 +258,13 @@ def login_sisreg_class(
 
     caminho_download = definir_caminho_absoluto(caminho_download)
 
+    log(
+        "Inicaindo selenium com sisreg. "
+        f"|usuario| = {len(usuario)} "
+        f"|senha| = {len(senha)} "
+        f"tempo_carregamento = {tempo_carregamento} "
+        f"caminho_download = {caminho_download} "
+    )
     sisreg = Sisreg(
         usuario=usuario,
         senha=senha,
