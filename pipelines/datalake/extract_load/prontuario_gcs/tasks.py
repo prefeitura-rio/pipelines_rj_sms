@@ -81,10 +81,8 @@ def unpack_files(
         output_path = os.path.join(output_dir, os.path.basename(file).replace(".tar.gz", ""))
         try:
             with tarfile.open(file, "r:gz") as tar:
-                for file_in_tar in files_to_extract:
-                    if not file_in_tar in tar.getnames():
-                        continue
-                    tar.extract(file_in_tar, path=output_path)
+                for file_name in tar.getnames():
+                    tar.extract(file_name, path=output_path)
         except Exception as e:
             log(f"Erro ao descompactar o arquivo {file}: {e}")
     if exclude_origin:
@@ -267,13 +265,7 @@ def extract_openbase_data(
         tables_data, openbase_path, prontuario_constants.DICTIONARY_ENCODING.value
     )
 
-    # Processa cada tabela selecionada
-    selected_tables = prontuario_constants.SELECTED_OPENBASE_TABLES.value
-
     for table, _ in tables_data:
-        if table not in selected_tables:
-            continue
-
         table_path = os.path.join(openbase_path, table)
         structured_dictionary = dictionaries[table]
 
@@ -386,7 +378,7 @@ def list_files_from_bucket(environment, bucket_name, folder):
     bucket = client.get_bucket(bucket_name)
     blobs = bucket.list_blobs(prefix=f"{folder}/hospub")
         
-    blobs = [b.name for b in bucket.list_blobs(prefix=f"2026-03/hospub")]
+    blobs = [b.name for b in bucket.list_blobs(prefix=f"{folder}/hospub")]
 
     last_files = {}
     pattern = re.compile(r'-(\d+)-(sql|openbase)-(\d{2}-\d{2}-\d{4}-\d{2}h\d{2}m)')
@@ -553,5 +545,7 @@ def generate_current_folder(folder: str) -> str:
     """Se a pasta do bucket não for especificada, retorna ano-mes atual. Útil para extrações semanais"""
     if not folder:
         current_date = datetime.now()
+        if current_date.day < 7:
+            current_date = current_date - timedelta(month=1)
         folder = current_date.strftime("%Y-%m")
     return folder
