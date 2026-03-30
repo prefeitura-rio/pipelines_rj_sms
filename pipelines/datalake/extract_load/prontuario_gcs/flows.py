@@ -33,6 +33,7 @@ from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, rename_current_flow_run
+from pipelines.datalake.extract_load.prontuario_gcs.schedules import schedule
 
 ######################################################################################
 #                                   OPERATOR
@@ -243,6 +244,7 @@ prontuario_extraction_manager.executor = LocalDaskExecutor(num_workers=1)
 prontuario_extraction_manager.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
-    memory_limit="1Gi",
-    memory_request="1Gi",
+    memory_limit="2Gi",
+    memory_request="2Gi",
 )
+prontuario_extraction_manager.schedule = schedule
