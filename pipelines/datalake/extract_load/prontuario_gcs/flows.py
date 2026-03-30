@@ -54,7 +54,6 @@ with Flow(
     OPENBASE_BLOB = Parameter("openbase_blob", required=False)
     SKIP_POSTGRES = Parameter("skip_postgres", default=False, required=False)
     POSTGRES_BLOB = Parameter("postgres_blob", required=False)
-    SKIP_PRESCRICAO = Parameter("skip_prescricao", default=False, required=True)
     
     rename_current_flow_run(folder=FOLDER, cnes=CNES)
 
@@ -137,30 +136,30 @@ with Flow(
             sql_file="hospub.sql",
             target_tables=prontuario_constants.SELECTED_HOSPUB_TABLES.value,
         )
+    
+        # Os backups mais recentes não contém este arquivo
+        # TODO: Verifica se mantém trecho abaixo ou não
+        # 3.4 - Descompressão do arquivo prescricao_medica3.sql
+        # unpacked_prescricao = unpack_files(
+        #     tar_files=postgres_file,
+        #     output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        #     files_to_extract=["prescricao_medica3.sql"],
+        #     exclude_origin=True,
+        #     wait_for=hospub_extraction_finished,
+        # )
 
-        with case(SKIP_PRESCRICAO, False):
-            # Os backups mais recentes não contém este arquivo
-            # 3.4 - Descompressão do arquivo prescricao_medica3.sql
-            unpacked_prescricao = unpack_files(
-                tar_files=postgres_file,
-                output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-                files_to_extract=["prescricao_medica3.sql"],
-                exclude_origin=True,
-                wait_for=hospub_extraction_finished,
-            )
-
-            # # 3.5 Extração das tabelas do arquivo prescricao.sql
-            prescricao_extraction_finished = extract_postgres_data(
-                data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-                output_dir=prontuario_constants.UPLOAD_PATH.value,
-                wait_for=unpacked_prescricao,
-                lines_per_chunk=LINES_PER_CHUNK,
-                dataset_id=DATASET,
-                cnes=CNES,
-                environment=ENVIRONMENT,
-                sql_file="prescricao_medica3.sql",
-                target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value,
-            )
+        # # # 3.5 Extração das tabelas do arquivo prescricao.sql
+        # prescricao_extraction_finished = extract_postgres_data(
+        #     data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        #     output_dir=prontuario_constants.UPLOAD_PATH.value,
+        #     wait_for=unpacked_prescricao,
+        #     lines_per_chunk=LINES_PER_CHUNK,
+        #     dataset_id=DATASET,
+        #     cnes=CNES,
+        #     environment=ENVIRONMENT,
+        #     sql_file="prescricao_medica3.sql",
+        #     target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value,
+        # )
 
     # 4 - Deletar arquivos e diretórios
     delete_temp_folders(

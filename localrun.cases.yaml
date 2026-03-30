@@ -536,7 +536,6 @@ cases:
       openbase_blob: '2026-03/hospubAF-mar-2269945-openbase-19-03-2026-05h00m.tar.gz'
       skip_postgres: false
       postgres_blob: '2026-03/hospubAF-mar-2269945-sql-19-03-2026-06h01m.tar.gz'
-      skip_prescricao: true
 
   - case_slug: prontuario_extraction_manager
     flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
