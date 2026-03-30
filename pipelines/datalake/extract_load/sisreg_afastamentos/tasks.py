@@ -244,7 +244,7 @@ def init_client_request_base() -> httpx.Client:
     return client
 
 
-@task
+@task(max_retries=3, retry_delay=timedelta(seconds=1))
 def login_sisreg_class(
     usuario: str,
     senha: str,
@@ -253,19 +253,18 @@ def login_sisreg_class(
 ) -> httpx.Client:
     client = httpx.Client()
 
-
     log(
         "Inicaindo selenium com sisreg. "
-        f"|usuario| = {len(usuario)} "
-        f"|senha| = {len(senha)} "
-        f"tempo_carregamento = {tempo_carregamento} "
+        f"|usuario| = {len(usuario)}, "
+        f"|senha| = {len(senha)}, "
+        f"tempo_carregamento = {tempo_carregamento}, "
         f"caminho_download = {caminho_download} "
     )
     sisreg = Sisreg(
         user=usuario,
         password=senha,
         download_path=caminho_download,
-
+        timeout=600,
     )
     log("Criado instancia Sisreg")
     sisreg.login()

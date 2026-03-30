@@ -33,7 +33,7 @@ class Sisreg:
         download_escala: Downloads the escala from the Sisreg website.
     """
 
-    def __init__(self, user, password, download_path):
+    def __init__(self, user, password, download_path, timeout=60):
 
         self._options = FirefoxOptions()
         self._options.add_argument("--headless")
@@ -48,7 +48,7 @@ class Sisreg:
             service=FirefoxService(GeckoDriverManager().install()),
             options=self._options,
         )
-        self.browser.set_page_load_timeout(60)
+        self.browser.set_page_load_timeout(timeout)
 
         self.user = user
         self.password = password
