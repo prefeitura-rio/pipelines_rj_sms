@@ -2,35 +2,31 @@ from datetime import datetime, timedelta
 
 import pytz
 from prefect.schedules import Schedule
-
+from prefect.schedules.clocks import CronClock
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 
-flow_parameters = [
-    {
+flow_parameters = {
     "bucket_name": "subhue_backups",
     "chunk_size": 5000,
     "dataset": "brutos_prontuario_prontuaRio_staging",
     "environment": "prod",
     "folder": ""
-    } 
-]
+} 
 
-# 2026-04-06 Foi segunda-feira
-clocks = generate_dump_api_schedules(
-    interval=timedelta(days=7),
+clock = CronClock(
+    cron= "0 22 * * 0", # Todo domingo às 22h
     start_date=datetime(
         year=2026, 
         month=4, 
         day=6, 
-        hour=21, 
+        hour=22, 
         minute=0, 
         tzinfo=pytz.timezone("America/Sao_Paulo")
     ),
+    parameter_defaults=flow_parameters,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
-    flow_run_parameters=flow_parameters,
-    runs_interval_minutes=0,
 )
 
-schedule = Schedule(clocks=untuple_clocks(clocks))
+schedule = Schedule(clocks=untuple_clocks(clock))
