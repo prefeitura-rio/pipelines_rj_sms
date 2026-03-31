@@ -194,7 +194,7 @@ with Flow(
         
     # 1 - Listar os arquivos no bucket
     last_files = list_files_from_bucket(
-        environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=FOLDER
+        environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=folder
     )
 
     # 2 - Criar os operators para cara CNES
