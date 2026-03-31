@@ -29,4 +29,4 @@ clock = CronClock(
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
 
-schedule = Schedule(clocks=untuple_clocks(clock))
+schedule = Schedule(clocks=[clock])
