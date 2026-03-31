@@ -21,6 +21,7 @@ from pipelines.datalake.extract_load.prontuario_gcs.tasks import (
     get_file,
     list_files_from_bucket,
     unpack_files,
+    generate_current_folder
 )
 from pipelines.utils.credential_injector import (
     authenticated_create_flow_run as create_flow_run,
@@ -32,6 +33,7 @@ from pipelines.utils.flow import Flow
 from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, rename_current_flow_run
+from pipelines.datalake.extract_load.prontuario_gcs.schedules import schedule
 
 ######################################################################################
 #                                   OPERATOR
@@ -46,15 +48,15 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     CNES = Parameter("cnes", required=True)
-    RENAME_FLOW = Parameter("rename_flow", required=False)
-    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
-    BLOB_PREFIX = Parameter("blob_prefix", required=True)
-    LINES_PER_CHUNK = Parameter("lines_per_chunk", default=25_000)
+    FOLDER = Parameter('folder', required=True)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_staging", required=True)
+    LINES_PER_CHUNK = Parameter("lines_per_chunk", default=5_000)
     SKIP_OPENBASE = Parameter("skip_openbase", default=False, required=False)
+    OPENBASE_BLOB = Parameter("openbase_blob", required=False)
     SKIP_POSTGRES = Parameter("skip_postgres", default=False, required=False)
-
-    with case(RENAME_FLOW, value=True):
-        rename_current_flow_run(cnes=CNES, blob_prefix=BLOB_PREFIX)
+    POSTGRES_BLOB = Parameter("postgres_blob", required=False)
+    
+    rename_current_flow_run(folder=FOLDER, cnes=CNES)
 
     # 1 - Cria diretórios temporários
     folders_created = create_temp_folders(
@@ -75,16 +77,15 @@ with Flow(
             path=prontuario_constants.DOWNLOAD_DIR.value,
             bucket_name=BUCKET_NAME,
             environment=ENVIRONMENT,
-            blob_prefix=BLOB_PREFIX,
+            blob_path=OPENBASE_BLOB,
             wait_for=folders_created,
-            blob_type="BASE",
+            blob_type="openbase",
         )
 
         # 2.2 - Descompressão dos arquivos
         unpacked_openbase = unpack_files(
             tar_files=openbase_file,
             output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-            files_to_extract=prontuario_constants.SELECTED_BASE_FILES.value,
             exclude_origin=True,
             wait_for=openbase_file,
         )
@@ -110,9 +111,9 @@ with Flow(
             path=prontuario_constants.DOWNLOAD_DIR.value,
             bucket_name=BUCKET_NAME,
             environment=ENVIRONMENT,
-            blob_prefix=BLOB_PREFIX,
-            wait_for=openbase_finished,
-            blob_type="VISUAL",
+            blob_path=POSTGRES_BLOB,
+            wait_for=openbase_file if not SKIP_OPENBASE else folders_created,
+            blob_type="sql",
         )
 
         # 3.2 - Descompressão do arquivo hospub.sql
@@ -136,28 +137,30 @@ with Flow(
             sql_file="hospub.sql",
             target_tables=prontuario_constants.SELECTED_HOSPUB_TABLES.value,
         )
-
+    
+        # Os backups mais recentes não contém este arquivo
+        # TODO: Verifica se mantém trecho abaixo ou não
         # 3.4 - Descompressão do arquivo prescricao_medica3.sql
-        unpacked_prescricao = unpack_files(
-            tar_files=postgres_file,
-            output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-            files_to_extract=["prescricao_medica3.sql"],
-            exclude_origin=True,
-            wait_for=hospub_extraction_finished,
-        )
+        # unpacked_prescricao = unpack_files(
+        #     tar_files=postgres_file,
+        #     output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        #     files_to_extract=["prescricao_medica3.sql"],
+        #     exclude_origin=True,
+        #     wait_for=hospub_extraction_finished,
+        # )
 
-        # 3.5 Extração das tabelas do arquivo prescricao.sql
-        prescricao_extraction_finished = extract_postgres_data(
-            data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
-            output_dir=prontuario_constants.UPLOAD_PATH.value,
-            wait_for=unpacked_prescricao,
-            lines_per_chunk=LINES_PER_CHUNK,
-            dataset_id=DATASET,
-            cnes=CNES,
-            environment=ENVIRONMENT,
-            sql_file="prescricao_medica3.sql",
-            target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value,
-        )
+        # # # 3.5 Extração das tabelas do arquivo prescricao.sql
+        # prescricao_extraction_finished = extract_postgres_data(
+        #     data_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+        #     output_dir=prontuario_constants.UPLOAD_PATH.value,
+        #     wait_for=unpacked_prescricao,
+        #     lines_per_chunk=LINES_PER_CHUNK,
+        #     dataset_id=DATASET,
+        #     cnes=CNES,
+        #     environment=ENVIRONMENT,
+        #     sql_file="prescricao_medica3.sql",
+        #     target_tables=prontuario_constants.SELECTED_PRESCRICAO_TABLES.value,
+        # )
 
     # 4 - Deletar arquivos e diretórios
     delete_temp_folders(
@@ -166,7 +169,7 @@ with Flow(
             prontuario_constants.UNCOMPRESS_FILES_DIR.value,
             prontuario_constants.UPLOAD_PATH.value,
         ],
-        wait_for=[prescricao_extraction_finished, openbase_finished],
+        wait_for=hospub_extraction_finished if not SKIP_POSTGRES else openbase_finished,
     )
 
 ######################################################################################
@@ -182,22 +185,23 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     RENAME_FLOW = Parameter("rename_flow", required=False)
-    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRIO", required=True)
-    FOLDER = Parameter("folder", default="", required=True)
-    CHUNK_SIZE = Parameter("chunk_size", default=25_000)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_staging", required=True)
+    FOLDER = Parameter("folder", default="", required=False)
+    CHUNK_SIZE = Parameter("chunk_size", default=5_000)
 
-    with case(RENAME_FLOW, True):
-        rename_current_flow_run(folder=FOLDER, env=ENVIRONMENT)
-
+    folder = generate_current_folder(folder=FOLDER)
+    rename_current_flow_run(folder=folder, env=ENVIRONMENT)
+        
     # 1 - Listar os arquivos no bucket
-    prefix_p_cnes = list_files_from_bucket(
-        environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=FOLDER
+    last_files = list_files_from_bucket(
+        environment=ENVIRONMENT, bucket_name=BUCKET_NAME, folder=folder
     )
 
     # 2 - Criar os operators para cara CNES
     ## 2.1 Criar os parametros para cada flow
     operator_params = build_operator_parameters(
-        files_per_cnes=prefix_p_cnes,
+        last_files=last_files,
+        folder = folder,
         bucket_name=BUCKET_NAME,
         dataset_id=DATASET,
         environment=ENVIRONMENT,
@@ -230,8 +234,8 @@ prontuario_extraction_operator.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 prontuario_extraction_operator.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
-    memory_request="1Gi",
-    memory_limit="8Gi",
+    memory_request="13Gi",
+    memory_limit="13Gi",
 )
 
 # Manager
@@ -243,3 +247,4 @@ prontuario_extraction_manager.run_config = KubernetesRun(
     memory_limit="2Gi",
     memory_request="2Gi",
 )
+prontuario_extraction_manager.schedule = schedule
