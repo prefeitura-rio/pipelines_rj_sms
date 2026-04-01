@@ -32,9 +32,7 @@ def get_info_from_filename(filename: str):
         r"^(?P<name>[a-z_]+)_(?P<cnes>[0-9]+)_(?P<date>[0-9]{8})_(?P<time>[0-9]{6})(_old)?\.[a-z]+$"
     )
 
-    regex_rnds = re.compile(
-        r"^rnds_vaccine_historic_(?P<date>[0-9]{8})_(?P<time>[0-9]{6})\.bak$"
-    )
+    regex_rnds = re.compile(r"^rnds_vaccine_historic_(?P<date>[0-9]{8})_(?P<time>[0-9]{6})\.bak$")
 
     m = regex_with_cnes.match(file)
     if m:

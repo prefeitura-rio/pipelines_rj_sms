@@ -3,9 +3,8 @@
 
 from __future__ import annotations
 
-from selenium.common.exceptions import TimeoutException, WebDriverException
-
 from prefeitura_rio.pipelines_utils.logging import log
+from selenium.common.exceptions import TimeoutException, WebDriverException
 
 from . import ScraperError
 from .config import TENTATIVAS_LOGIN, URL_BASE
