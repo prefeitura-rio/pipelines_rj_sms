@@ -8,7 +8,6 @@ from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
-
 from pipelines.constants import constants
 from pipelines.datalake.transform.dbt.schedules import dbt_schedules
 from pipelines.datalake.transform.dbt.tasks import (

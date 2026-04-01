@@ -272,7 +272,10 @@ TABELAS_CONFIG: list[tuple] = [
     # ---------
     # SISCegonha
     # ---------
-    ("agendamento_gestantes", "subpav_cegonha", "daily",
+    (
+        "agendamento_gestantes",
+        "subpav_cegonha",
+        "daily",
         {
             "id_column": "id_agendamento_gestante",
             "if_exists": "replace",
@@ -282,15 +285,44 @@ TABELAS_CONFIG: list[tuple] = [
         "agendamento_profissional",
         "subpav_cegonha",
         "monthly",
-        {"id_column": "id_agendamento_profissional", "if_exists": "replace",},
+        {
+            "id_column": "id_agendamento_profissional",
+            "if_exists": "replace",
+        },
     ),
-    ("cadastro_gestante", "subpav_cegonha", "daily",{"if_exists": "replace",}),
-    ("cadastro_gestante_log", "subpav_cegonha", "daily",{"if_exists": "replace",}),
-    ("cegonha_feriados", "subpav_cegonha", "monthly",
-        {"id_column": "id_feriado","if_exists": "replace",}
+    (
+        "cadastro_gestante",
+        "subpav_cegonha",
+        "daily",
+        {
+            "if_exists": "replace",
+        },
     ),
-    ("cnes_dias_sem_visita", "subpav_cegonha", "monthly",
-        {"id_column": "id_cnes_dias_sem_visita","if_exists": "replace",}
+    (
+        "cadastro_gestante_log",
+        "subpav_cegonha",
+        "daily",
+        {
+            "if_exists": "replace",
+        },
+    ),
+    (
+        "cegonha_feriados",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_feriado",
+            "if_exists": "replace",
+        },
+    ),
+    (
+        "cnes_dias_sem_visita",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_cnes_dias_sem_visita",
+            "if_exists": "replace",
+        },
     ),
     (
         "dados_maternidade_gestantes",
@@ -301,59 +333,145 @@ TABELAS_CONFIG: list[tuple] = [
             "if_exists": "replace",
         },
     ),
-    ("dias_sem_visita", "subpav_cegonha", "monthly",
-        {"id_column": "id_dias_sem_visita","if_exists": "replace",}
+    (
+        "dias_sem_visita",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_dias_sem_visita",
+            "if_exists": "replace",
+        },
     ),
-    ("gestacao_tipos", "subpav_cegonha", "monthly",
-        {"id_column": "id_gestacao_tipo","if_exists": "replace",}
+    (
+        "gestacao_tipos",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_gestacao_tipo",
+            "if_exists": "replace",
+        },
     ),
-    ("gestante_acompanhante", "subpav_cegonha", "monthly",
-        {"id_column": "id_acompanhante","if_exists": "replace",}
+    (
+        "gestante_acompanhante",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_acompanhante",
+            "if_exists": "replace",
+        },
     ),
-    ("gestante_excecoes", "subpav_cegonha", "daily",
-        {"id_column": "id_gestante_excecao","if_exists": "replace",}
+    (
+        "gestante_excecoes",
+        "subpav_cegonha",
+        "daily",
+        {
+            "id_column": "id_gestante_excecao",
+            "if_exists": "replace",
+        },
     ),
-    ("gestantes", "subpav_cegonha", "daily",
-        {"id_column": "id_gestante","if_exists": "replace",}
+    (
+        "gestantes",
+        "subpav_cegonha",
+        "daily",
+        {
+            "id_column": "id_gestante",
+            "if_exists": "replace",
+        },
     ),
-    ("gestantes_videos_historico_login", "subpav_cegonha", "monthly",
-        {"if_exists": "replace",}
+    (
+        "gestantes_videos_historico_login",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "if_exists": "replace",
+        },
     ),
-    ("gestantes_videos_unidades", "subpav_cegonha", "monthly",
-        {"if_exists": "replace",}
+    (
+        "gestantes_videos_unidades",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "if_exists": "replace",
+        },
     ),
-    ("horarios", "subpav_cegonha", "monthly",
-        {"id_column": "id_horario","if_exists": "replace",}
+    (
+        "horarios",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_horario",
+            "if_exists": "replace",
+        },
     ),
     (
         "maternidade_tipo_gestantes",
         "subpav_cegonha",
         "monthly",
-        {"id_column": "id_maternidade_tipos_gestante",
-        "if_exists": "replace",
+        {
+            "id_column": "id_maternidade_tipos_gestante",
+            "if_exists": "replace",
         },
     ),
-    ("maternidade_video", "subpav_cegonha", "monthly",
-        {"if_exists": "replace",}
+    (
+        "maternidade_video",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "if_exists": "replace",
+        },
     ),
-    ("profissionais", "subpav_cegonha", "monthly",
-        {"id_column": "id_profissionais","if_exists": "replace",}
+    (
+        "profissionais",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_profissionais",
+            "if_exists": "replace",
+        },
     ),
-    ("raca_cor", "subpav_cegonha", "monthly",{"if_exists": "replace",}),
-    ("semana_dias", "subpav_cegonha", "monthly",
-        {"id_column": "id_semana_dia","if_exists": "replace",}
+    (
+        "raca_cor",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "if_exists": "replace",
+        },
     ),
-    ("situacao_excecoes", "subpav_cegonha", "monthly",
-        {"id_column": "id_situacao_excecao","if_exists": "replace",}
+    (
+        "semana_dias",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_semana_dia",
+            "if_exists": "replace",
+        },
     ),
-    ("turnos", "subpav_cegonha", "monthly",
-        {"id_column": "id_turno","if_exists": "replace",}
+    (
+        "situacao_excecoes",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_situacao_excecao",
+            "if_exists": "replace",
+        },
+    ),
+    (
+        "turnos",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_turno",
+            "if_exists": "replace",
+        },
     ),
     (
         "unidades_agendamento_vagas",
         "subpav_cegonha",
         "daily",
-        {"id_column": "id_unidades_agendamento_vagas","if_exists": "replace",},
+        {
+            "id_column": "id_unidades_agendamento_vagas",
+            "if_exists": "replace",
+        },
     ),
     (
         "unidades_referencia_encaminha",
@@ -361,14 +479,32 @@ TABELAS_CONFIG: list[tuple] = [
         "daily",
         {"id_column": "id_unidades_referencia_encaminha"},
     ),
-    ("unidades_turnos_horarios", "subpav_cegonha", "daily",
-        {"id_column": "id_turnos_horario","if_exists": "replace",}
+    (
+        "unidades_turnos_horarios",
+        "subpav_cegonha",
+        "daily",
+        {
+            "id_column": "id_turnos_horario",
+            "if_exists": "replace",
+        },
     ),
-    ("unidades_videos", "subpav_cegonha", "monthly",
-        {"id_column": "id_unidade_video","if_exists": "replace",}
+    (
+        "unidades_videos",
+        "subpav_cegonha",
+        "monthly",
+        {
+            "id_column": "id_unidade_video",
+            "if_exists": "replace",
+        },
     ),
-    ("visita_gestantes_tipos", "subpav_cegonha", "daily",
-        {"id_column": "id_visita_gestante_tipo","if_exists": "replace",}
+    (
+        "visita_gestantes_tipos",
+        "subpav_cegonha",
+        "daily",
+        {
+            "id_column": "id_visita_gestante_tipo",
+            "if_exists": "replace",
+        },
     ),
     # -------------------
     # Sinan Rio (Legado)

@@ -377,7 +377,7 @@ TABLES_CONFIG = [
         "infisical_path": "/plataforma-subpav/",
         "notify": True,
         "batch_size": 5000,
-        "df_filter_name": "exames_update_sintomatico",
+        "df_filter_name": "update_sintomatico_gal",
         "custom_insert_query": """
             UPDATE subpav_sinanrio.tb_sintomatico s
                 JOIN (

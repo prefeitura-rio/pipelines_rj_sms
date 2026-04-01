@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
+from datetime import datetime, timedelta
+
 import pandas as pd
+import pytz
 from prefect.triggers import all_finished
 from sqlalchemy import create_engine
-from pipelines.utils.tasks import upload_df_to_datalake
 
-from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.datalake.migrate.gcs_to_cloudsql import utils as cloudsql_utils
+from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
-from datetime import datetime, timedelta
-import pytz
+from pipelines.utils.tasks import upload_df_to_datalake
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=2))
@@ -63,6 +64,7 @@ def process_rnds_table(
         is_first_chunk = False
 
     return total_rows
+
 
 @task
 def start_rnds_instance(instance_name: str):

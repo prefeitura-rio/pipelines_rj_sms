@@ -11,7 +11,7 @@ flow_params = [
     {
         "environment": "prod",
         "db_schema": "dbo",
-        "partition_column": 'extracted_at',
+        "partition_column": "extracted_at",
     }
 ]
 

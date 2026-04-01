@@ -311,3 +311,42 @@ def filter_exames_update_sintomatico(
     df = df.drop_duplicates(subset=chaves_existentes, keep="last").reset_index(drop=True)
 
     return df
+
+
+def filter_update_sintomatico_gal(
+    df: pd.DataFrame,
+    notes: Optional[List[str]] = None,
+) -> pd.DataFrame:
+    """
+    Mantém somente exames elegíveis para atualização de sintomáticos criados via GAL.
+    """
+    del notes
+
+    if df is None or df.empty:
+        return df
+
+    df = df.copy()
+
+    df = df[
+        (df["id_tipo_exame"].isin([1, 2, 3]))
+        & (df["id_resultado"].notna())
+        & (df["dt_resultado"].notna())
+        & (df["paciente_cpf"].notna())
+        & (df["diagnostico"].isin([1]))
+    ].copy()
+
+    colunas_ordem = ["paciente_cpf", "id_tipo_exame", "dt_resultado"]
+    if "codigo_amostra" in df.columns:
+        colunas_ordem.append("codigo_amostra")
+
+    colunas_ordem = [c for c in colunas_ordem if c in df.columns]
+    df = df.sort_values(colunas_ordem, ascending=True)
+
+    chaves = ["paciente_cpf", "id_tipo_exame", "dt_resultado"]
+    if "codigo_amostra" in df.columns:
+        chaves.append("codigo_amostra")
+
+    chaves_existentes = [c for c in chaves if c in df.columns]
+    df = df.drop_duplicates(subset=chaves_existentes, keep="last").reset_index(drop=True)
+
+    return df

@@ -21,6 +21,7 @@ from pipelines.datalake.migrate.bq_to_subpav.utils import (
     ensure_dataframe_columns,
     extract_query_params,
     filter_exames_update_sintomatico,
+    filter_update_sintomatico_gal,
     format_query,
     inject_db_schema_in_query,
     should_notify,
@@ -42,13 +43,16 @@ DEFAULT_REPORT_CONTEXT = {
 
 DF_FILTERS = {
     "exames_update_sintomatico": filter_exames_update_sintomatico,
+    "update_sintomatico_gal": filter_update_sintomatico_gal,
 }
 
 SAO_PAULO_TZ = timezone(timedelta(hours=-3))
 
+
 def now_sp() -> datetime:
     """Retorna datetime atual no fuso de São Paulo."""
     return datetime.now(SAO_PAULO_TZ)
+
 
 @task
 def resolve_notify(project: str, notify_param) -> bool:
