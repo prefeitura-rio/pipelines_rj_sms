@@ -367,6 +367,147 @@ TABLES_CONFIG = [
                 )
         """,  # noqa: E501
     },
+    {  # Resultados de Exames (Atualização de sintomatico) - GAL
+        "project": "SINANRIO - Atualização de Exames Sintomaticos - GAL",
+        "dataset_id": "projeto_sinanrio",
+        "table_id": "resultado_exame",
+        "db_schema": "subpav_sinanrio",
+        "dest_table": "tb_sintomatico",
+        "frequency": "daily",
+        "infisical_path": "/plataforma-subpav/",
+        "notify": True,
+        "batch_size": 5000,
+        "df_filter_name": "exames_update_sintomatico",
+        "custom_insert_query": """
+            UPDATE subpav_sinanrio.tb_sintomatico s
+                JOIN (
+                        SELECT s2.id_sintomatico
+                        FROM subpav_sinanrio.tb_sintomatico s2
+                        WHERE :id_sintomatico IS NULL
+                        AND :diagnostico = 1
+                        AND :paciente_cpf IS NOT NULL
+                        AND TRIM(:paciente_cpf) <> ''
+                        AND s2.cpf = :paciente_cpf
+                        AND s2.id_origem = 10
+                        AND COALESCE(s2.dt_situacao, s2.dt_referencia, DATE(s2.created_at))
+                                BETWEEN DATE_SUB(:dt_resultado, INTERVAL 15 DAY) AND :dt_resultado
+                        ORDER BY
+                            COALESCE(s2.dt_situacao, s2.dt_referencia, DATE(s2.created_at)) DESC,
+                            s2.id_sintomatico DESC
+                        LIMIT 1
+                    ) alvo
+                        ON s.id_sintomatico = alvo.id_sintomatico
+            SET
+                s.id_trmtb = CASE
+                    WHEN :id_tipo_exame = 2
+                    AND (:dt_resultado >= IFNULL(s.dt_trmtb, '1000-01-01') OR s.id_trmtb IS NULL)
+                    THEN :id_resultado
+                    ELSE s.id_trmtb
+                END,
+
+                s.dt_trmtb = CASE
+                    WHEN :id_tipo_exame = 2
+                    AND (:dt_resultado >= IFNULL(s.dt_trmtb, '1000-01-01') OR s.dt_trmtb IS NULL)
+                    THEN :dt_resultado
+                    ELSE s.dt_trmtb
+                END,
+
+                s.id_bac_1 = CASE
+                    WHEN :id_tipo_exame = 1
+                    AND s.id_bac_1 IS NULL
+                    THEN :id_resultado
+                    ELSE s.id_bac_1
+                END,
+
+                s.dt_bac_1 = CASE
+                    WHEN :id_tipo_exame = 1
+                    AND s.dt_bac_1 IS NULL
+                    THEN :dt_resultado
+                    ELSE s.dt_bac_1
+                END,
+
+                s.id_bac_2 = CASE
+                    WHEN :id_tipo_exame = 1
+                    AND s.id_bac_1 IS NOT NULL
+                    AND s.id_bac_2 IS NULL
+                    THEN :id_resultado
+                    WHEN :id_tipo_exame = 1
+                    AND s.id_bac_2 IS NOT NULL
+                    AND :dt_resultado >= IFNULL(s.dt_bac_2, '1000-01-01')
+                    THEN :id_resultado
+                    ELSE s.id_bac_2
+                END,
+
+                s.dt_bac_2 = CASE
+                    WHEN :id_tipo_exame = 1
+                    AND s.id_bac_1 IS NOT NULL
+                    AND s.dt_bac_2 IS NULL
+                    THEN :dt_resultado
+                    WHEN :id_tipo_exame = 1
+                    AND s.dt_bac_2 IS NOT NULL
+                    AND :dt_resultado >= IFNULL(s.dt_bac_2, '1000-01-01')
+                    THEN :dt_resultado
+                    ELSE s.dt_bac_2
+                END,
+
+                s.id_cultura = CASE
+                    WHEN :id_tipo_exame = 3
+                    AND (:dt_resultado >= IFNULL(s.dt_cultura, '1000-01-01') OR s.id_cultura IS NULL)
+                    THEN :id_resultado
+                    ELSE s.id_cultura
+                END,
+
+                s.dt_cultura = CASE
+                    WHEN :id_tipo_exame = 3
+                    AND (:dt_resultado >= IFNULL(s.dt_cultura, '1000-01-01') OR s.dt_cultura IS NULL)
+                    THEN :dt_resultado
+                    ELSE s.dt_cultura
+                END,
+
+                s.n_sinan = CASE
+                    WHEN COALESCE(:notificacao_ativa, 0) = 1
+                    AND NULLIF(TRIM(:n_sinan), '') IS NOT NULL
+                    THEN :n_sinan
+                    ELSE s.n_sinan
+                END,
+
+                s.id_tb_situacao = CASE
+                    WHEN COALESCE(:notificacao_ativa, 0) = 1
+                    AND NULLIF(TRIM(:n_sinan), '') IS NOT NULL
+                    AND COALESCE(s.id_tb_situacao, 1) IN (1,2,5)
+                    THEN 3
+                    WHEN COALESCE(:notificacao_ativa, 0) = 0
+                    AND COALESCE(s.id_tb_situacao, 1) IN (1,5)
+                    THEN 2
+                    ELSE s.id_tb_situacao
+                END,
+
+                s.updated_at = CURRENT_TIMESTAMP
+            WHERE :id_sintomatico IS NULL
+            AND :diagnostico = 1
+            AND :paciente_cpf IS NOT NULL
+            AND TRIM(:paciente_cpf) <> ''
+            AND (
+                    (:id_tipo_exame = 1 AND :id_resultado IN (1,4,5))
+                OR (:id_tipo_exame = 2 AND :id_resultado IN (1,2))
+                OR (:id_tipo_exame = 3 AND :id_resultado = 1)
+            )
+            AND (
+                    (:id_tipo_exame = 2 AND (:dt_resultado >= IFNULL(s.dt_trmtb, '1000-01-01') OR s.id_trmtb IS NULL))
+                OR (:id_tipo_exame = 1 AND (
+                        s.id_bac_1 IS NULL
+                    OR (s.id_bac_1 IS NOT NULL AND s.id_bac_2 IS NULL)
+                    OR (:dt_resultado >= IFNULL(s.dt_bac_2, '1000-01-01'))
+                ))
+                OR (:id_tipo_exame = 3 AND (:dt_resultado >= IFNULL(s.dt_cultura, '1000-01-01') OR s.id_cultura IS NULL))
+                OR (
+                        COALESCE(:notificacao_ativa, 0) = 1
+                    AND NULLIF(TRIM(:n_sinan), '') IS NOT NULL
+                    AND NOT (s.n_sinan <=> :n_sinan)
+                )
+            )
+        """,  # noqa: E501
+    },
 ]
 
 
