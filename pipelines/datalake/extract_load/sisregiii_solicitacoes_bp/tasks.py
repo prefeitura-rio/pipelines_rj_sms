@@ -9,8 +9,6 @@ from datetime import datetime, timedelta
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import numpy as np
-
 import prefect
 from prefect import task
 from prefect.engine.signals import FAIL
@@ -21,8 +19,7 @@ from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import 
     BASE_URL,
     LOGIN_PAGE,
     GERENCIADOR_URL,
-    USER_AGENT,
-    PASTA_RESULTADOS
+    USER_AGENT
 )
 
 #Funções de tratamento, detecção de html, login, verificações e extrações.
@@ -252,7 +249,10 @@ def extrair_fase_reextracao(usuario: str, senha: str, resultados_fase1: dict):
         logger.info("Nenhum erro reportado na Fase 1. A saltar a Fase 2.")
         return {"dfs": dfs_totais, "erros": erros_definitivos}
 
-    logger.info(f"--- INÍCIO DA REEXTRAÇÃO DE {len(erros_pendentes)} FALHAS ---")
+    logger.info(
+        f"--- INÍCIO DA REEXTRAÇÃO DE {len(erros_pendentes)} FALHAS ---"
+    )
+
     MAX_TENTATIVAS_REEXTRA = 100 
     
     sessao = requests.Session()

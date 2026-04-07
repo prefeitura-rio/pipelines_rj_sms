@@ -76,7 +76,7 @@ sisreg_bp_flow.run_config = KubernetesRun(
     memory_limit="10Gi"
 )
 
-sisreg_bp_flow.schedule = None
+sisreg_bp_flow.schedule = schedule
 
 
     
