@@ -4,6 +4,7 @@ import os
 import time
 import hashlib
 import calendar
+import logging
 from datetime import datetime, timedelta
 
 import requests
@@ -12,19 +13,18 @@ import pandas as pd
 import prefect
 from prefect import task
 from prefect.engine.signals import FAIL
-
 from pipelines.utils.tasks import upload_df_to_datalake
 
 from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import (
     BASE_URL,
-    LOGIN_PAGE,
     GERENCIADOR_URL,
     USER_AGENT
 )
 
-#Funções de tratamento, detecção de html, login, verificações e extrações.
+# Funções de tratamento, detecção de html, login, verificações e extrações.
 def sha256_upper(txt: str) -> str:
     return hashlib.sha256(txt.upper().encode("utf-8")).hexdigest()
+
 
 def hidden(html: str) -> dict:
     soup = BeautifulSoup(html, "html.parser")
@@ -34,10 +34,12 @@ def hidden(html: str) -> dict:
         if i.get("name")
     }
 
-def extrair_cor_do_src(src):
+
+def extrair_cor_do_src(src: str) -> str:
     return os.path.splitext(os.path.basename(src))[0]
 
-def limpar_nomes_colunas(df):
+
+def limpar_nomes_colunas(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = (
         df.columns
         .str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8')
@@ -46,19 +48,29 @@ def limpar_nomes_colunas(df):
         .str.strip('_')                                
         .str.lower()                                   
     )
+
+    vistos = set()
+    novas_colunas = []
     
-    cols = pd.Series(df.columns)
-    for dup in cols[cols.duplicated()].unique(): 
-        cols[cols[cols == dup].index.values.tolist()] = [
-            dup if i == 0 else dup + '_' + str(i) 
-            for i in range(sum(cols == dup))
-        ]
-    df.columns = cols
+    for col in df.columns:
+        nova_col = col
+        contador = 1
+        
+        while nova_col in vistos:
+            nova_col = f"{col}_{contador}"
+            contador += 1
+            
+        vistos.add(nova_col)
+        novas_colunas.append(nova_col)
+        
+    df.columns = novas_colunas
+    
     return df
 
-def realizar_login(sessao: requests.Session, usuario, senha):
+
+def realizar_login(sessao: requests.Session, usuario: str, senha: str) -> bool:
     logger = prefect.context.get("logger")
-    r_get = sessao.get(LOGIN_PAGE, timeout=30)
+    r_get = sessao.get(BASE_URL, timeout=30)
     r_get.raise_for_status()
     
     soup = BeautifulSoup(r_get.text, "html.parser")
@@ -89,9 +101,7 @@ def realizar_login(sessao: requests.Session, usuario, senha):
 
 
 def _verificar_resposta_html(texto_html: str) -> str:
-    
     texto_lower = texto_html.lower()
-    
     
     if "sua sessão foi finalizada" in texto_lower or "efetue o logon novamente" in texto_lower:
         return "SESSAO_ZUMBI"
@@ -104,8 +114,8 @@ def _verificar_resposta_html(texto_html: str) -> str:
         
     return "OK"
 
-def _processar_pagina_sisreg(sessao, usuario, senha, data_req, periodo_req, status_req, cod_situacao_req, logger):
 
+def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str, data_req: str, periodo_req: str, status_req: str, cod_situacao_req: str, logger: logging.Logger) -> pd.DataFrame:
     url_consulta = (
         f"{GERENCIADOR_URL}?etapa=LISTAR_SOLICITACOES"
         f"&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&cnes_executante=&co_proc_unificado="
@@ -160,9 +170,9 @@ def _processar_pagina_sisreg(sessao, usuario, senha, data_req, periodo_req, stat
         raise ValueError("A tabela não foi renderizada no HTML, mesmo com status OK.")
 
 
-#Tasks
+# Tasks
 @task
-def gerar_roteiro_extracao(data_especifica: str = None):
+def gerar_roteiro_extracao(data_especifica: str | None = None) -> dict:
     logger = prefect.context.get("logger")
     
     if data_especifica:
@@ -196,7 +206,7 @@ def gerar_roteiro_extracao(data_especifica: str = None):
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def extrair_fase_principal(usuario: str, senha: str, roteiro: dict):
+def extrair_fase_principal(usuario: str, senha: str, roteiro: dict) -> dict:
     logger = prefect.context.get("logger")
     datas, configs_extracao = roteiro["datas"], roteiro["configs"]
     
@@ -241,7 +251,7 @@ def extrair_fase_principal(usuario: str, senha: str, roteiro: dict):
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
-def extrair_fase_reextracao(usuario: str, senha: str, resultados_fase1: dict):
+def extrair_fase_reextracao(usuario: str, senha: str, resultados_fase1: dict) -> dict:
     logger = prefect.context.get("logger")
     dfs_totais = resultados_fase1["dfs_sucesso"]
     erros_pendentes = resultados_fase1["erros_para_reextrair"]
@@ -293,7 +303,7 @@ def extrair_fase_reextracao(usuario: str, senha: str, resultados_fase1: dict):
 
 
 @task
-def salvar_resultados(dados_extraidos, status_desejado):
+def salvar_resultados(dados_extraidos: dict, status_desejado: str) -> None:
     logger = prefect.context.get("logger")
     dfs = dados_extraidos["dfs"]
     datas_com_erro = dados_extraidos["erros"]
