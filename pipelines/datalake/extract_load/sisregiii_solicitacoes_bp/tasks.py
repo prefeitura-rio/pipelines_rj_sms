@@ -120,7 +120,9 @@ def _processar_pagina_sisreg(sessao, usuario, senha, data_req, periodo_req, stat
     status_pagina = _verificar_resposta_html(resposta.text)
 
     if status_pagina == "SESSAO_ZUMBI":
-        logger.warning(f"Sessão zumbi detetada. A voltar a iniciar sessão para {data_req}...")
+        logger.warning(
+            f"Sessão zumbi detectada. Relogando para {data_req}..."
+        )
         realizar_login(sessao, usuario, senha)
         resposta = sessao.get(url_consulta, timeout=180)
         status_pagina = _verificar_resposta_html(resposta.text)
@@ -322,7 +324,9 @@ def salvar_resultados(dados_extraidos, status_desejado):
         df_final = pd.concat(dfs_traduzidos, ignore_index=True)
         df_final['data_particao'] = datetime.now().strftime('%Y-%m-%d')
         
-        logger.info(f"A iniciar o envio para o DataLake... ({len(df_final)} registos totais extraídos)")
+        logger.info(
+            f"Iniciando envio para o DataLake... ({len(df_final)} registros totais extraídos)"
+        )
 
         upload_df_to_datalake.run(
             df=df_final,
