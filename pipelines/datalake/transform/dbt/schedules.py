@@ -30,7 +30,7 @@ every_30_minutes_parameters = [
         "command": "build",
         "environment": "prod",
         "rename_flow": True,
-        "select": "tag:alerta_doencas",
+        "select": "tag:every_30_minutes",
         "send_discord_report": False,
     },
 ]
