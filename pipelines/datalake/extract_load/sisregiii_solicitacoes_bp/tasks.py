@@ -6,7 +6,7 @@ import hashlib
 import calendar
 import logging
 from datetime import datetime, timedelta
-
+import urllib3
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -98,6 +98,30 @@ def realizar_login(sessao: requests.Session, usuario: str, senha: str) -> bool:
         return True
     else:
         raise FAIL("Falha no login do Sisreg.")
+
+
+def criar_sessao_autenticada(usuario: str, senha: str) -> requests.Session:
+    # Desativa avisos de SSL inseguro no console
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
+    HEADERS_DISFARCE = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1"
+    }
+
+    sessao = requests.Session()
+    sessao.headers.update(HEADERS_DISFARCE)
+    sessao.verify = False  
+    
+    realizar_login(sessao, usuario, senha)
+    return sessao
 
 
 def _verificar_resposta_html(texto_html: str) -> str:
@@ -214,9 +238,7 @@ def extrair_fase_principal(usuario: str, senha: str, roteiro: dict) -> dict:
     datas_com_erro = []
     contador_requisicoes = 0
     
-    sessao = requests.Session()
-    sessao.headers.update({'User-Agent': USER_AGENT})
-    realizar_login(sessao, usuario, senha)
+    sessao = criar_sessao_autenticada(usuario, senha)
 
     for data_do_dia in datas:
         for config in configs_extracao:
@@ -225,9 +247,7 @@ def extrair_fase_principal(usuario: str, senha: str, roteiro: dict) -> dict:
             if contador_requisicoes > 0 and contador_requisicoes % 15 == 0:
                 logger.info("A renovar a sessão proativamente...")
                 sessao.close()
-                sessao = requests.Session()
-                sessao.headers.update({'User-Agent': USER_AGENT})
-                realizar_login(sessao, usuario, senha)
+                sessao = criar_sessao_autenticada(usuario, senha)
 
             logger.info(f"[FASE 1] Extração: {data_do_dia} | Período: {tipo_per} | Status: {nome_stat}")
             
@@ -267,9 +287,7 @@ def extrair_fase_reextracao(usuario: str, senha: str, resultados_fase1: dict) ->
 
     MAX_TENTATIVAS_REEXTRA = 100 
     
-    sessao = requests.Session()
-    sessao.headers.update({'User-Agent': USER_AGENT})
-    realizar_login(sessao, usuario, senha)
+    sessao = criar_sessao_autenticada(usuario, senha)
 
     for erro in erros_pendentes:
         data_erro, nome_erro, cod_erro, per_erro = erro["data"], erro["nome_status"], erro["codigo_situacao"], erro["tipo_periodo"]
