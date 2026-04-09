@@ -179,6 +179,7 @@ def fix_RELACAO_CRIANCAS_MENORES_5_ANOS(csv_text: str, sep: str):
     new_csv_file = tempfile.TemporaryFile()
     new_csv_file.write(csv_text.encode("utf-8"))
     new_csv_file.seek(0)
+    log(f'campo{NOME_NOVO} padronizado')
     return new_csv_file
 
 def shorten_column_name(column_name: str, max_len: int = 30) -> str:
