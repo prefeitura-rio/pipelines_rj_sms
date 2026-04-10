@@ -32,6 +32,17 @@ STATUS_SISREG = {
     "REENVIADO": "5", "NEGADO": "6", "APROVADO": "7", "CANCELADO2": "10"
 }
 
+CONFIGS_EXTRACAO_BASE = [
+    {"tipo_periodo": "A", "codigo_situacao": "7", "status_coluna": "AUTORIZADO"},
+    {"tipo_periodo": "E", "codigo_situacao": "7", "status_coluna": "EXECUTADO"},
+]
+
+for nome, cod in STATUS_SISREG.items():
+    CONFIGS_EXTRACAO_BASE.append({
+        "tipo_periodo": "S", "codigo_situacao": cod,
+        "status_coluna": "CANCELADO" if nome == "CANCELADO2" else nome
+    })
+
 TRADUTOR_COLUNAS_SISREG = {
     'cod_solicitac': 'cod_solicitacao', 
     'cod_solicitacao': 'cod_solicitacao',

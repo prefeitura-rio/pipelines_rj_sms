@@ -34,7 +34,6 @@ with Flow(
 ) as sisreg_bp_flow:
     
     ENVIRONMENT = Parameter("environment", default="dev")
-    status_desejado = Parameter("status_desejado", default="TODOS_OS_STATUS")
     data_especifica = Parameter("data_especifica", default=None)
 
     usuario_infisical = get_secret_key(
@@ -64,7 +63,6 @@ with Flow(
 
     salvar_resultados(
         dados_extraidos=dados_finais,
-        status_desejado=status_desejado,
         dataset_id=DATASET_ID_BRUTO,
         table_id=TABLE_ID_BP
     )

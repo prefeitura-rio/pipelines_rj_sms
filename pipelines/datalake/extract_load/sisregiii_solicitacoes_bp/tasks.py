@@ -25,11 +25,11 @@ from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import 
     LIMITE_REQUISICOES_SESSAO,
     MAX_TENTATIVAS_REEXTRA,
     HEADERS_DISFARCE,
-    STATUS_SISREG,
-    TRADUTOR_COLUNAS_SISREG
+    TRADUTOR_COLUNAS_SISREG,
+    CONFIGS_EXTRACAO_BASE
 )
 
-# Funções de tratamento, detecção de html, login, verificações e extrações.
+# --- FUNÇÕES UTILITÁRIAS ---
 def sha256_upper(txt: str) -> str:
     return hashlib.sha256(txt.upper().encode("utf-8")).hexdigest()
 
@@ -71,6 +71,7 @@ def limpar_nomes_colunas(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = novas_colunas
     return df
 
+# --- REDE E AUTENTICAÇÃO ---
 def realizar_login(sessao: requests.Session, usuario: str, senha: str) -> bool:
     logger = prefect.context.get("logger")
     r_get = sessao.get(BASE_URL, timeout=TIMEOUT_LOGIN)
@@ -125,30 +126,10 @@ def _verificar_resposta_html(texto_html: str) -> str:
         
     return "OK"
 
-def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str, data_req: str, periodo_req: str, status_req: str, cod_situacao_req: str, logger: logging.Logger) -> pd.DataFrame:
-    url_consulta = (
-        f"{GERENCIADOR_URL}?etapa=LISTAR_SOLICITACOES"
-        f"&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&cnes_executante=&co_proc_unificado="
-        f"&co_pa_interno=&ds_procedimento=&tipo_periodo={periodo_req}"
-        f"&dt_inicial={data_req}&dt_final={data_req}"
-        f"&cmb_situacao={cod_situacao_req}&qtd_itens_pag=0&co_seq_solicitacao=&ordenacao=2&pagina=0"
-    )
-
-    resposta = sessao.get(url_consulta, timeout=TIMEOUT_CONSULTA)
-    time.sleep(TEMPO_ESPERA_SISREG)
-    
-    status_pagina = _verificar_resposta_html(resposta.text)
-
-    if status_pagina == "SESSAO_ZUMBI":
-        logger.warning(f"Sessão zumbi detectada. Relogando para {data_req}...")
-        realizar_login(sessao, usuario, senha)
-        resposta = sessao.get(url_consulta, timeout=TIMEOUT_CONSULTA)
-        status_pagina = _verificar_resposta_html(resposta.text)
-
-    if status_pagina == "VAZIO":
-        return pd.DataFrame()
-
-    soup = BeautifulSoup(resposta.text, 'html.parser')
+# --- EXTRAÇÃO E PARSER (SEPARADOS) ---
+def _extrair_tabela_do_html(texto_html: str, status_req: str) -> pd.DataFrame:
+    """Isola a lógica de leitura do HTML (BeautifulSoup)."""
+    soup = BeautifulSoup(texto_html, 'html.parser')
     tables = soup.find_all('table', class_='table_listagem')
     
     if len(tables) > 1:
@@ -177,8 +158,35 @@ def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str,
     else:
         raise ValueError("A tabela não foi renderizada no HTML, mesmo com status OK.")
 
+def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str, data_req: str, periodo_req: str, status_req: str, cod_situacao_req: str, logger: logging.Logger) -> pd.DataFrame:
+    """Isola a lógica de requisição HTTP e estabilidade de sessão."""
+    url_consulta = (
+        f"{GERENCIADOR_URL}?etapa=LISTAR_SOLICITACOES"
+        f"&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&cnes_executante=&co_proc_unificado="
+        f"&co_pa_interno=&ds_procedimento=&tipo_periodo={periodo_req}"
+        f"&dt_inicial={data_req}&dt_final={data_req}"
+        f"&cmb_situacao={cod_situacao_req}&qtd_itens_pag=0&co_seq_solicitacao=&ordenacao=2&pagina=0"
+    )
 
-# --- TASKS PRINCIPAIS ---
+    resposta = sessao.get(url_consulta, timeout=TIMEOUT_CONSULTA)
+    time.sleep(TEMPO_ESPERA_SISREG)
+    
+    status_pagina = _verificar_resposta_html(resposta.text)
+
+    if status_pagina == "SESSAO_ZUMBI":
+        logger.warning(f"Sessão zumbi detectada. Relogando para {data_req}...")
+        realizar_login(sessao, usuario, senha)
+        resposta = sessao.get(url_consulta, timeout=TIMEOUT_CONSULTA)
+        status_pagina = _verificar_resposta_html(resposta.text)
+
+    if status_pagina == "VAZIO":
+        return pd.DataFrame()
+
+    # Passa a bola para o parser de HTML
+    return _extrair_tabela_do_html(resposta.text, status_req)
+
+
+# --- TASKS PRINCIPAIS (PREFECT) ---
 @task
 def gerar_roteiro_extracao(data_especifica: str | None = None) -> dict:
     logger = prefect.context.get("logger")
@@ -200,18 +208,7 @@ def gerar_roteiro_extracao(data_especifica: str | None = None) -> dict:
         datas = [(f"{dia:02d}/{mes:02d}/{ano}") for dia in range(1, ultimo_dia + 1)]
         logger.info(f"Foram geradas {len(datas)} datas para a extração do mês {mes:02d}/{ano}.")
 
-    configs_extracao = [
-        {"tipo_periodo": "A", "codigo_situacao": "7", "status_coluna": "AUTORIZADO"},
-        {"tipo_periodo": "E", "codigo_situacao": "7", "status_coluna": "EXECUTADO"},
-    ]
-    
-    for nome, cod in STATUS_SISREG.items():
-        configs_extracao.append({
-            "tipo_periodo": "S", "codigo_situacao": cod,
-            "status_coluna": "CANCELADO" if nome == "CANCELADO2" else nome
-        })
-
-    return {"datas": datas, "configs": configs_extracao}
+    return {"datas": datas, "configs": CONFIGS_EXTRACAO_BASE}
 
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
@@ -302,7 +299,7 @@ def extrair_fase_reextracao(usuario: str, senha: str, resultados_fase1: dict) ->
 
 
 @task
-def salvar_resultados(dados_extraidos: dict, status_desejado: str, dataset_id: str, table_id: str) -> None:
+def salvar_resultados(dados_extraidos: dict, dataset_id: str, table_id: str) -> None:
     logger = prefect.context.get("logger")
     dfs = dados_extraidos["dfs"]
     datas_com_erro = dados_extraidos["erros"]
