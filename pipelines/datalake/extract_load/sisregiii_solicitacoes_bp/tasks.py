@@ -19,13 +19,19 @@ from pipelines.utils.tasks import upload_df_to_datalake
 from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import (
     BASE_URL,
     GERENCIADOR_URL,
-    USER_AGENT
+    TIMEOUT_LOGIN,
+    TIMEOUT_CONSULTA,
+    TEMPO_ESPERA_SISREG,
+    LIMITE_REQUISICOES_SESSAO,
+    MAX_TENTATIVAS_REEXTRA,
+    HEADERS_DISFARCE,
+    STATUS_SISREG,
+    TRADUTOR_COLUNAS_SISREG
 )
 
 # Funções de tratamento, detecção de html, login, verificações e extrações.
 def sha256_upper(txt: str) -> str:
     return hashlib.sha256(txt.upper().encode("utf-8")).hexdigest()
-
 
 def hidden(html: str) -> dict:
     soup = BeautifulSoup(html, "html.parser")
@@ -35,10 +41,8 @@ def hidden(html: str) -> dict:
         if i.get("name")
     }
 
-
 def extrair_cor_do_src(src: str) -> str:
     return os.path.splitext(os.path.basename(src))[0]
-
 
 def limpar_nomes_colunas(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = (
@@ -65,13 +69,11 @@ def limpar_nomes_colunas(df: pd.DataFrame) -> pd.DataFrame:
         novas_colunas.append(nova_col)
         
     df.columns = novas_colunas
-    
     return df
-
 
 def realizar_login(sessao: requests.Session, usuario: str, senha: str) -> bool:
     logger = prefect.context.get("logger")
-    r_get = sessao.get(BASE_URL, timeout=30)
+    r_get = sessao.get(BASE_URL, timeout=TIMEOUT_LOGIN)
     r_get.raise_for_status()
     
     soup = BeautifulSoup(r_get.text, "html.parser")
@@ -91,7 +93,7 @@ def realizar_login(sessao: requests.Session, usuario: str, senha: str) -> bool:
         "etapa": "ACESSO", "entrar": "Entrar"
     }
     
-    r_post = sessao.post(url_post_real, data=payload, allow_redirects=True, timeout=30)
+    r_post = sessao.post(url_post_real, data=payload, allow_redirects=True, timeout=TIMEOUT_LOGIN)
     texto_pagina = r_post.text.lower()
     
     if "sair" in texto_pagina or "menu" in texto_pagina or "bem-vindo" in texto_pagina:
@@ -100,30 +102,14 @@ def realizar_login(sessao: requests.Session, usuario: str, senha: str) -> bool:
     else:
         raise FAIL("Falha no login do Sisreg.")
 
-
 def criar_sessao_autenticada(usuario: str, senha: str) -> requests.Session:
-    # Desativa avisos de SSL inseguro no console
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    
-    HEADERS_DISFARCE = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1"
-    }
-
     sessao = requests.Session()
     sessao.headers.update(HEADERS_DISFARCE)
     sessao.verify = False  
     
     realizar_login(sessao, usuario, senha)
     return sessao
-
 
 def _verificar_resposta_html(texto_html: str) -> str:
     texto_lower = texto_html.lower()
@@ -139,7 +125,6 @@ def _verificar_resposta_html(texto_html: str) -> str:
         
     return "OK"
 
-
 def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str, data_req: str, periodo_req: str, status_req: str, cod_situacao_req: str, logger: logging.Logger) -> pd.DataFrame:
     url_consulta = (
         f"{GERENCIADOR_URL}?etapa=LISTAR_SOLICITACOES"
@@ -149,17 +134,15 @@ def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str,
         f"&cmb_situacao={cod_situacao_req}&qtd_itens_pag=0&co_seq_solicitacao=&ordenacao=2&pagina=0"
     )
 
-    resposta = sessao.get(url_consulta, timeout=180)
-    time.sleep(8.5)
+    resposta = sessao.get(url_consulta, timeout=TIMEOUT_CONSULTA)
+    time.sleep(TEMPO_ESPERA_SISREG)
     
     status_pagina = _verificar_resposta_html(resposta.text)
 
     if status_pagina == "SESSAO_ZUMBI":
-        logger.warning(
-            f"Sessão zumbi detectada. Relogando para {data_req}..."
-        )
+        logger.warning(f"Sessão zumbi detectada. Relogando para {data_req}...")
         realizar_login(sessao, usuario, senha)
-        resposta = sessao.get(url_consulta, timeout=180)
+        resposta = sessao.get(url_consulta, timeout=TIMEOUT_CONSULTA)
         status_pagina = _verificar_resposta_html(resposta.text)
 
     if status_pagina == "VAZIO":
@@ -195,7 +178,7 @@ def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str,
         raise ValueError("A tabela não foi renderizada no HTML, mesmo com status OK.")
 
 
-# Tasks
+# --- TASKS PRINCIPAIS ---
 @task
 def gerar_roteiro_extracao(data_especifica: str | None = None) -> dict:
     logger = prefect.context.get("logger")
@@ -216,11 +199,6 @@ def gerar_roteiro_extracao(data_especifica: str | None = None) -> dict:
         ultimo_dia = calendar.monthrange(ano, mes)[1]
         datas = [(f"{dia:02d}/{mes:02d}/{ano}") for dia in range(1, ultimo_dia + 1)]
         logger.info(f"Foram geradas {len(datas)} datas para a extração do mês {mes:02d}/{ano}.")
-
-    STATUS_SISREG = {
-        "PENDENTE": "1", "CANCELADO": "3", "DEVOLVIDO": "4",
-        "REENVIADO": "5", "NEGADO": "6", "APROVADO": "7", "CANCELADO2": "10"
-    }
 
     configs_extracao = [
         {"tipo_periodo": "A", "codigo_situacao": "7", "status_coluna": "AUTORIZADO"},
@@ -251,7 +229,7 @@ def extrair_fase_principal(usuario: str, senha: str, roteiro: dict) -> dict:
         for config in configs_extracao:
             tipo_per, cod_sit, nome_stat = config["tipo_periodo"], config["codigo_situacao"], config["status_coluna"]
             
-            if contador_requisicoes > 0 and contador_requisicoes % 15 == 0:
+            if contador_requisicoes > 0 and contador_requisicoes % LIMITE_REQUISICOES_SESSAO == 0:
                 logger.info("A renovar a sessão proativamente...")
                 sessao.close()
                 sessao = criar_sessao_autenticada(usuario, senha)
@@ -288,11 +266,7 @@ def extrair_fase_reextracao(usuario: str, senha: str, resultados_fase1: dict) ->
         logger.info("Nenhum erro reportado na Fase 1. A saltar a Fase 2.")
         return {"dfs": dfs_totais, "erros": erros_definitivos}
 
-    logger.info(
-        f"--- INÍCIO DA REEXTRAÇÃO DE {len(erros_pendentes)} FALHAS ---"
-    )
-
-    MAX_TENTATIVAS_REEXTRA = 100 
+    logger.info(f"--- INÍCIO DA REEXTRAÇÃO DE {len(erros_pendentes)} FALHAS ---")
     
     sessao = criar_sessao_autenticada(usuario, senha)
 
@@ -328,45 +302,27 @@ def extrair_fase_reextracao(usuario: str, senha: str, resultados_fase1: dict) ->
 
 
 @task
-def salvar_resultados(dados_extraidos: dict, status_desejado: str) -> None:
+def salvar_resultados(dados_extraidos: dict, status_desejado: str, dataset_id: str, table_id: str) -> None:
     logger = prefect.context.get("logger")
     dfs = dados_extraidos["dfs"]
     datas_com_erro = dados_extraidos["erros"]
 
     if dfs:
-        tradutor_colunas = {
-            'cod_solicitac': 'cod_solicitacao', 
-            'cod_solicitacao': 'cod_solicitacao',
-            'data': 'data_da_solicitacao', 
-            'data_solicitacao': 'data_da_solicitacao',
-            'municipio_residencia': 'municipio', 
-            'municipio': 'municipio',
-            'situacao_atual': 'situacao', 
-            'sit': 'situacao',
-            'situacao': 'situacao',
-            'data_execucao': 'data_da_execucao', 
-            'dt_exec': 'data_da_execucao',
-            'data_autorizacao': 'data_da_autorizacao', 
-            'dt_aut': 'data_da_autorizacao'
-        }
-        
         dfs_traduzidos = []
         for df in dfs:
-            df.rename(columns=tradutor_colunas, inplace=True)
+            df.rename(columns=TRADUTOR_COLUNAS_SISREG, inplace=True)
             df = df.loc[:, ~df.columns.str.contains('^unnamed|erro', case=False)]
             dfs_traduzidos.append(df)
 
         df_final = pd.concat(dfs_traduzidos, ignore_index=True)
         df_final['data_particao'] = datetime.now().strftime('%Y-%m-%d')
         
-        logger.info(
-            f"Iniciando envio para o DataLake... ({len(df_final)} registros totais extraídos)"
-        )
+        logger.info(f"Iniciando envio para o DataLake: {dataset_id}.{table_id} ({len(df_final)} registros)")
 
         upload_df_to_datalake.run(
             df=df_final,
-            dataset_id='brutos_sisreg_solicitacoes', 
-            table_id='tb_sisreg_solicitacoes_bp',    
+            dataset_id=dataset_id, 
+            table_id=table_id,    
             partition_column='data_particao',        
             source_format="parquet",
         )

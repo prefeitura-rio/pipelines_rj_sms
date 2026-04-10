@@ -14,6 +14,8 @@ from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import 
     INFISICAL_PATH,
     INFISICAL_VITACARE_USERNAME,
     INFISICAL_VITACARE_PASSWORD,
+    DATASET_ID_BRUTO,
+    TABLE_ID_BP
 )
 
 from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.tasks import (
@@ -46,10 +48,8 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    
     roteiro = gerar_roteiro_extracao(data_especifica=data_especifica)
 
-    
     resultados_fase1 = extrair_fase_principal(
         usuario=usuario_infisical, 
         senha=senha_infisical, 
@@ -64,11 +64,12 @@ with Flow(
 
     salvar_resultados(
         dados_extraidos=dados_finais,
-        status_desejado=status_desejado
+        status_desejado=status_desejado,
+        dataset_id=DATASET_ID_BRUTO,
+        table_id=TABLE_ID_BP
     )
 
-
-#Configuração do Vertex
+# Configuração do Vertex
 sisreg_bp_flow.executor = LocalDaskExecutor(num_workers=1)
 sisreg_bp_flow.storage = GCS(pipeline_constants.GCS_FLOWS_BUCKET.value)
 
