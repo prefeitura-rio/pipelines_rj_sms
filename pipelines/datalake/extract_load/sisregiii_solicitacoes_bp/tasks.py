@@ -4,6 +4,7 @@ import os
 import time
 import hashlib
 import calendar
+import pytz
 import logging
 from datetime import datetime, timedelta
 import urllib3
@@ -198,12 +199,18 @@ def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str,
 @task
 def gerar_roteiro_extracao(data_especifica: str | None = None) -> dict:
     logger = prefect.context.get("logger")
+    fuso_br = pytz.timezone("America/Sao_Paulo")
     
     if data_especifica:
-        logger.info(f"Modo de teste ativado: A extrair apenas a data {data_especifica}")
+        if data_especifica.lower() == "ontem":
+            dia_anterior = datetime.now(fuso_br) - timedelta(days=1)
+            data_especifica = dia_anterior.strftime("%d/%m/%Y")
+            logger.info(f"Modo Diário ativado: Calculado 'ontem' como {data_especifica}")
+
+        logger.info(f"A extrair apenas a data {data_especifica}")
         datas = [data_especifica]
     else:
-        hoje = datetime.now()
+        hoje = datetime.now(fuso_br)
         mes_anterior = hoje.replace(day=1) - timedelta(days=1)
         ano, mes = mes_anterior.year, mes_anterior.month
         ultimo_dia = calendar.monthrange(ano, mes)[1]
