@@ -2,7 +2,7 @@
 
 from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
-from prefect.run_configs import KubernetesRun
+from prefect.run_configs import VertexRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants as pipeline_constants
@@ -67,13 +67,19 @@ with Flow(
         status_desejado=status_desejado
     )
 
+
+#Configuração do Vertex
 sisreg_bp_flow.executor = LocalDaskExecutor(num_workers=1)
 sisreg_bp_flow.storage = GCS(pipeline_constants.GCS_FLOWS_BUCKET.value)
-sisreg_bp_flow.run_config = KubernetesRun(
-    image=pipeline_constants.DOCKER_IMAGE.value,
-    labels=[pipeline_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_request="10Gi",
-    memory_limit="10Gi"
+
+sisreg_bp_flow.run_config = VertexRun(
+    image=pipeline_constants.DOCKER_VERTEX_IMAGE.value,
+    labels=[pipeline_constants.RJ_SMS_VERTEX_AGENT_LABEL.value],
+    machine_type="e2-standard-4",
+    env={
+        "INFISICAL_ADDRESS": pipeline_constants.INFISICAL_ADDRESS.value,
+        "INFISICAL_TOKEN": pipeline_constants.INFISICAL_TOKEN.value,
+    },
 )
 
 sisreg_bp_flow.schedule = schedule
