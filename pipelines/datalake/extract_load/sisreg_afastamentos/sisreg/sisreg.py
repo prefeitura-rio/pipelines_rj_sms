@@ -7,10 +7,13 @@ from time import sleep
 
 from prefeitura_rio.pipelines_utils.logging import log
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
 
 from pipelines.datalake.extract_load.sisreg_web.sisreg.utils import get_first_csv
@@ -74,6 +77,11 @@ class Sisreg:
 
         self.browser.get(url)
 
+        wait = WebDriverWait(self.browser, 30)
+
+        # Espera explicitamente o form de login carregar antes de interagir.
+        wait.until(EC.presence_of_element_located((By.NAME, "usuario")))
+
         username_field = self.browser.find_element(By.NAME, "usuario")
         password_field = self.browser.find_element(By.NAME, "senha")
 
@@ -86,27 +94,61 @@ class Sisreg:
         entrar_button.click()
 
         log("Entrar button clicked", level="debug")
+
+        # Aguarda a URL mudar após o clique (navegação assíncrona).
+        try:
+            wait.until(lambda drv: drv.current_url != url)
+        except TimeoutException:
+            log(
+                f"URL did not change after clicking 'entrar'. Current url: {self.browser.current_url}",
+                level="error",
+            )
+
         log(f"Current url: {self.browser.current_url}", level="debug")
 
         if self.browser.current_url == "https://sisregiii.saude.gov.br/cgi-bin/index":
 
-            self.browser.switch_to.frame("f_main")
-            log("Switched to frame f_main", level="debug")
+            # Aguarda o frame f_main ficar disponível antes de trocar de contexto.
+            try:
+                wait.until(EC.frame_to_be_available_and_switch_to_it((By.NAME, "f_main")))
+                log("Switched to frame f_main", level="debug")
+            except TimeoutException:
+                log("Timeout waiting for frame f_main. Proceeding with default content.", level="error")
 
-            if "Leia com regularidade" in self.browser.page_source:
-                log("Logged in successfully")
-            elif "Senha expirada" in self.browser.page_source:
+            # Dá um pequeno tempo extra para o conteúdo do frame renderizar.
+            sleep(2)
+
+            page_source = self.browser.page_source or ""
+
+            if "Senha expirada" in page_source:
                 log("Password expired. Please change your password.", level="error")
                 self.browser.quit()
                 raise PermissionError("Password expired. Please change your password.")
-            else:
-                log("Unknow login error", level="error")
+
+            if "(CAPTCHA)" in page_source or "captcha" in page_source.lower():
+                log("SISREG está pedindo CAPTCHA", level="error")
                 self.browser.quit()
-                raise PermissionError("Unknown login error")
-        else:
-            log("Failed to log in", level="error")
-            self.browser.quit()
-            raise PermissionError("Failed to log in. Incorrect username or password")
+                raise PermissionError("SISREG está pedindo CAPTCHA")
+
+            if "Leia com regularidade" in page_source:
+                log("Logged in successfully")
+                return
+
+            # Critério tolerante: se a URL é a de pós-login e não caímos em nenhum
+            # indicador de erro explícito, consideramos a sessão como válida.
+            # Logamos um trecho do HTML para diagnóstico caso algo quebre depois.
+            log(
+                "Welcome text not found, but URL indicates successful login. "
+                f"Page source (first 500 chars): {page_source[:500]}",
+                level="warning",
+            )
+            log("Login assumed successful (URL-based check)")
+            return
+
+        log("Failed to log in", level="error")
+        log(f"Page source (first 500 chars): {(self.browser.page_source or '')[:500]}", level="debug")
+        self.browser.quit()
+        raise PermissionError("Failed to log in. Incorrect username or password")
 
     def download_escala(self):
         """

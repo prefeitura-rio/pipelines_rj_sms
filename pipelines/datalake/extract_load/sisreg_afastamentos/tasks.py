@@ -263,7 +263,7 @@ def init_client_request_base() -> httpx.Client:
     return client
 
 
-@task(max_retries=3, retry_delay=timedelta(seconds=1))
+@task(max_retries=3, retry_delay=timedelta(minutes=2))
 def login_sisreg_class(
     usuario: str,
     senha: str,
