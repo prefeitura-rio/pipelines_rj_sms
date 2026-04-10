@@ -5,11 +5,14 @@ Flow
 # Prefect
 from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
-from prefect.run_configs import KubernetesRun
+from prefect.run_configs import VertexRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants as pipeline_constants
-from pipelines.datalake.extract_load.sisreg_afastamentos import constants, schedules
+from pipelines.datalake.extract_load.sisreg_afastamentos import (
+    constants,
+    schedules,
+)
 from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
     concat_dfs,
     get_cpf_profissionais,
@@ -49,7 +52,8 @@ with Flow(
     )
 
     # Nome do dataset e tabela no datalake
-    DATASET_ID = Parameter("dataset_id", default=constants.DEFAULT_DATASET_ID, required=False)
+    DATASET_ID = Parameter(
+        "dataset_id", default=constants.DEFAULT_DATASET_ID, required=False)
     AFASTAMENTO_TABLE_ID = Parameter(
         "afastamento_table_id", default=constants.DEFAULT_AFASTAMENTO_TABLE_ID, required=False
     )
@@ -118,11 +122,18 @@ with Flow(
 
 
 sisreg_afastamentos_flow.executor = LocalDaskExecutor(num_workers=16)
-sisreg_afastamentos_flow.storage = GCS(pipeline_constants.GCS_FLOWS_BUCKET.value)
-sisreg_afastamentos_flow.run_config = KubernetesRun(
-    image=pipeline_constants.DOCKER_IMAGE.value,
-    labels=[pipeline_constants.RJ_SMS_AGENT_LABEL.value],
-    memory_request="10Gi",
-    memory_limit="10Gi",
+sisreg_afastamentos_flow.storage = GCS(
+    pipeline_constants.GCS_FLOWS_BUCKET.value)
+sisreg_afastamentos_flow.run_config = VertexRun(
+    image=pipeline_constants.DOCKER_VERTEX_IMAGE.value,
+    labels=[
+        pipeline_constants.RJ_SMS_VERTEX_AGENT_LABEL.value,
+    ],
+    # https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+    machine_type="e2-standard-4",
+    env={
+        "INFISICAL_ADDRESS": pipeline_constants.INFISICAL_ADDRESS.value,
+        "INFISICAL_TOKEN": pipeline_constants.INFISICAL_TOKEN.value,
+    },
 )
 sisreg_afastamentos_flow.schedule = schedules.schedule
