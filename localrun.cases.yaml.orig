@@ -371,10 +371,10 @@ cases:
     params:
       dataset: 'brutos_exames_laboratoriais'
       environment: 'dev'
-      dt_inicio: '2026-02-08T20:00:00-03:00'
-      dt_fim: '2026-02-08T21:59:59-03:00'
+      dt_inicio: '2025-07-23T18:00:00-03:00'
+      dt_fim: '2025-07-23T19:30:00-03:00'
       rename_flow: False
-      ap: '52'
+      ap: '33'
   - case_slug: "datalake-extract-vitacare_gdrive"
     flow_path: "pipelines.datalake.extract_load.vitacare_gdrive.flows"
     flow_name: "sms_dump_vitacare_reports"
@@ -386,10 +386,10 @@ cases:
     params:
       environment: "dev"
       data_inicial: "03/06/2025"
-      data_final: "03/06/2025"
+      data_final: "15/06/2025"
       bq_dataset: "brutos_siscan_web"
-      bq_table: "laudos_mamografia"
-      opcao_exame: "mamografia"
+      bq_table: "laudos_histo_mama"
+      opcao_exame: "histo_mama"
   - case_slug: "siscan_web_laudos_manager"
     flow_path: "pipelines.datalake.extract_load.siscan_web_laudos.flows"
     flow_name: "sms_siscan_web_manager"
@@ -555,18 +555,17 @@ cases:
       html_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.html"
       plain_body_path: "mail_templates/gerencia_cancer/gerencia_cancer.txt"
 
-  - case_slug: siclom_extraction
-    flow_path: pipelines.datalake.extract_load.siclom_api.flows
-    flow_name: siclom_period_extraction
+  - case_slug: cdi_extract_sheets_individual_2025
+    flow_path: pipelines.datalake.extract_load.google_sheets.flows
+    flow_name: sms_dump_url
     params:
       environment: "dev"
-      endpoint: "/tratamentoperiodo/"
-      annual: false
-      year: null
-      month: null
-      extraction_range: null
-      dataset_id: "brutos_siclom_api"
-      table_id: "carga_viral_teste"
+      csv_delimiter: ";"
+      dataset_id: "brutos_cdi"
+      gsheets_sheet_name: "Controle de Demandas - Equipe Individual"
+      table_id: "equipe_individual_2025"
+      url: "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8"
+      url_type: "google_sheet"
 
   - case_slug: cdi_extract_sheets_individual_2026
     flow_path: pipelines.datalake.extract_load.google_sheets.flows
@@ -654,21 +653,16 @@ cases:
       table_id: "pgm_2026"
       url: "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4"
       url_type: "google_sheet"
+<<<<<<< HEAD
   - case_slug: "datalake-extract_load-sisreg_afastamentos"
     flow_path: "pipelines.datalake.extract_load.sisreg_afastamentos.flows"
     flow_name: "sisreg_afastamentos_flow"
     params:
       environment: "dev"
+=======
   - case_slug: hci_freshness_check
     flow_path: pipelines.reports.alerta_atualizacao_tabelas.flows
     flow_name: report_alerta_atualizacao_hci
     params:
       environment: "dev"
-
-  - case_slug: rnds_historico
-    flow_path: pipelines.datalake.extract_load.rnds_historico.flows
-    flow_name: flow_rnds_historico
-    params:
-      environment: "dev"
-      db_schema: "dbo"
-      partition_column: "extracted_at"
+>>>>>>> d8427261 (feat: add HCI freshness check flow and related tasks for alerting)
