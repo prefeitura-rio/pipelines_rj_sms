@@ -13,7 +13,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S",
 )
-LOGGER = logging.getLogger("scraper")
 
 # Configurações gerais                                                        #
 URL_BASE: str = "https://siscan.saude.gov.br/"

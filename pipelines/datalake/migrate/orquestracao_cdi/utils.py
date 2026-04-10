@@ -39,6 +39,16 @@ def format_tcm_case(case_num: str) -> str | None:
 def format_relevant_entry(content: str):
     # Remove quebras de linha duplicadas
     content = re.sub(r"\n{2,}", "\n", content.replace("\r", "")).strip()
+    # Limita texto a 500 caracteres (muito mais do que o suficiente e normal)
+    # Fazemos um split para não cortar fora o link no final do texto
+    MAX_CHARS = 500
+    start, sep, end = content.rpartition("<br/><a href=")
+    content = "".join([
+        # Limita só o texto antes do link
+        f"{start[:MAX_CHARS]}..." if len(start) > MAX_CHARS else start,
+        sep,
+        end
+    ])
     # Negrito em decisões de TCM
     content = re.sub(
         r"^([^\n\r]+)\s+nos\s+termos\s+do\s+voto\s+do\s+Relator",

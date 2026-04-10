@@ -104,13 +104,17 @@ def execute_dbt(
         )
 
         if select:
-            cli_args.extend(["--select", select])
+            trimmed_select = select.strip()
+            cli_args.extend(["--select", trimmed_select])
         if exclude:
-            cli_args.extend(["--exclude", exclude])
+            trimmed_exclude = exclude.strip()
+            cli_args.extend(["--exclude", trimmed_exclude])
         if state:
-            cli_args.extend(["--state", state])
+            trimmed_state = state.strip()
+            cli_args.extend(["--state", trimmed_state])
         if flag:
-            cli_args.extend([flag])
+            trimmed_flag = flag.strip()
+            cli_args.extend([trimmed_flag])
 
         log(f"Executing dbt command: {' '.join(cli_args)}", level="info")
 

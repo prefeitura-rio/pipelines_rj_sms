@@ -73,3 +73,44 @@ def send_discord_alert(environment: str, results: list):
         monitor_slug="freshness",
         suppress_embeds=True,
     )
+
+@task 
+def verify_hci_last_episodes(environment: str) -> list:
+    sql = """
+        select  
+            provider,
+            max(entry_datetime) as last_episode
+        from `rj-sms.app_historico_clinico.episodio_assistencial` 
+        group by provider
+        order by provider asc
+    """
+    df = bigquery.Client().query(sql).to_dataframe()
+    df['last_episode'] = pd.to_datetime(df['last_episode'])
+    last_episodes = [dict(df.iloc[row]) for row in range(0, len(df))]
+    
+    return last_episodes
+
+@task 
+def send_hci_discord_alert(environment: str, last_episodes: list):
+    lines = []
+    
+    for record in last_episodes:
+        provider = record['provider']
+        last_episode = pytz.timezone("America/Sao_Paulo").localize(record['last_episode'])
+        days_diff = (datetime.now(pytz.timezone("America/Sao_Paulo")) - last_episode).days
+        
+        if days_diff > 1:
+            lines.append(
+                f"- 🔴 `{provider}` *Último Episódio: {last_episode.strftime('%d/%m/%Y %H:%M:%S')}* ({days_diff} dias atrás)"
+            )
+        else: 
+            lines.append(
+                f"- 🟢 `{provider}` *Último Episódio: {last_episode.strftime('%d/%m/%Y %H:%M:%S')}* ({days_diff} dias atrás)"
+            )
+        
+    send_message(
+        title="Alerta de Últimos Episódios Assistenciais - HCI",
+        message="\n".join(lines),
+        monitor_slug="freshness",
+        suppress_embeds=True,
+    )
