@@ -10,6 +10,7 @@ from io import StringIO
 import pandas as pd
 # import requests
 import httpx
+import tls_client
 from bs4 import BeautifulSoup
 from google.cloud import bigquery
 from prefeitura_rio.pipelines_utils.logging import log
@@ -188,6 +189,24 @@ def _apply_selenium_cookies_to_httpx_client(client: httpx.Client, cookies: List[
         client.cookies.set(name, value, domain=domain, path=path)
 
 
+def _apply_selenium_cookies_to_tls_client_session(
+    session: tls_client.Session, cookies: List[dict]
+) -> None:
+    default_domain = getattr(
+        constants, "SISREG_DEFAULT_DOMAIN", _host_from_url(constants.SISREG_BASE_URL)
+    )
+
+    for c in cookies:
+        name = c.get("name")
+        value = c.get("value")
+        if not name:
+            continue
+
+        domain = c.get("domain") or default_domain
+        path = c.get("path") or "/"
+        session.cookies.set(name, value, domain=domain, path=path)
+
+
 def _login_sisreg_via_http(usuario: str, senha: str, client: httpx.Client) -> httpx.Client:
     """Fallback: login antigo via POST direto (mantido para resiliência)."""
     payload = (
@@ -250,8 +269,12 @@ def login_sisreg_class(
     senha: str,
     tempo_carregamento: int = 180,
     caminho_download: int = "./downloads"
-) -> httpx.Client:
-    client = httpx.Client()
+) -> tls_client.Session:
+    session = tls_client.Session(
+        client_identifier="firefox_120",
+        random_tls_extension_order=True,
+    )
+    session.headers.update(constants.REQUEST_HEADERS)
 
     log(
         "Inicaindo selenium com sisreg. "
@@ -271,11 +294,11 @@ def login_sisreg_class(
     log("Login feito")
     cookies = sisreg.browser.get_cookies()
     log("Cookies resgatados")
-    _apply_selenium_cookies_to_httpx_client(client, cookies)
+    _apply_selenium_cookies_to_tls_client_session(session, cookies)
     log("Cookies traduzidos")
     sisreg.browser.close()
     log("Fechando browser")
-    return client
+    return session
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
@@ -318,7 +341,7 @@ def login_sisreg(usuario: str, senha: str, client: httpx.Client) -> httpx.Client
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def search_afastamentos(
-    cpf: str, client: httpx.Client, extraction_date: datetime
+    cpf: str, client: tls_client.Session, extraction_date: datetime
 ) -> pd.DataFrame | None:
     res = client.get(
         f"{constants.SISREG_BASE_URL}/cgi-bin/af_medicos.pl?cpf={cpf}&mostrar_antigos=1",
@@ -329,7 +352,7 @@ def search_afastamentos(
         log(f"Profissional de cpf '{cpf}' não encontrado")
         return None
 
-    html_tables = BeautifulSoup(res.content, "lxml").find_all(class_="table_listagem")
+    html_tables = BeautifulSoup(res.text, "lxml").find_all(class_="table_listagem")
 
     if len(html_tables) <= 1:
         log(f"Listagem vazia para cpf {cpf}")
@@ -371,7 +394,7 @@ def search_afastamentos(
 
 @task(max_retries=3, retry_delay=timedelta(minutes=500))
 def search_historico_afastamentos(
-    cpf: str, client: httpx.Client, extraction_date: datetime
+    cpf: str, client: tls_client.Session, extraction_date: datetime
 ) -> pd.DataFrame | None:
     res = client.get(
         (f"{constants.SISREG_BASE_URL}/cgi-bin/af_medicos.pl?cpf={cpf}&op=Log"),
@@ -386,7 +409,7 @@ def search_historico_afastamentos(
         raise Exception("SISREG está pedindo CAPTCHA")
 
     df = pd.read_html(
-        StringIO(BeautifulSoup(res.content, "lxml").find(class_="table_listagem").__str__())
+        StringIO(BeautifulSoup(res.text, "lxml").find(class_="table_listagem").__str__())
     )[0]
 
     df.columns = df.iloc[1]
@@ -418,10 +441,13 @@ def log_df(df: pd.DataFrame, name: str):
 
 
 @task
-def close_httpx_client(client: httpx.Client, wait_dfs: list[pd.DataFrame]):
+def close_httpx_client(client: tls_client.Session, wait_dfs: list[pd.DataFrame]):
     """
     O wait_dfs é para garantir que todos os dados já foram buscados antes
     da execução dessa task
     """
-    log("Fechando o cliente httpx criado na execução do flow")
-    client.close()
+    log("Fechando o cliente tls_client criado na execução do flow")
+    try:
+        client.close()
+    except Exception as e:  # pylint: disable=broad-except
+        log(f"Falha ao fechar sessão tls_client (ignorando): {e!r}", level="debug")
