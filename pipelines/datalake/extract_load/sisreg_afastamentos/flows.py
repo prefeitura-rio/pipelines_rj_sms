@@ -17,13 +17,11 @@ from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
     concat_dfs,
     get_cpf_profissionais,
     get_extraction_date,
-    init_client_request_base,
+    init_session_request_base,
     log_df,
     login_sisreg,
-    login_sisreg_class,
     search_afastamentos,
     search_historico_afastamentos,
-    close_httpx_client,
 )
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 
@@ -67,7 +65,7 @@ with Flow(
     extraction_date = get_extraction_date()
 
     # Requisição base do SISREG
-    # client = init_client_request_base()
+    session = init_session_request_base()
 
     # Buscando os CPFs dos profissionais,
     # com limite adicionado para questẽs de teste.
@@ -75,15 +73,16 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    client = login_sisreg_class(
+    session_after_login = login_sisreg(
         usuario=usuario,
         senha=senha,
+        session=session,
     )
 
     # Pagina de afastamentos
     dfs_afastamentos = search_afastamentos.map(
         cpf=df_cpfs,
-        client=unmapped(client),
+        session=unmapped(session_after_login),
         extraction_date=unmapped(extraction_date),
     )
 
@@ -104,7 +103,7 @@ with Flow(
     # Mais detalhada
     dfs_historicos = search_historico_afastamentos.map(
         cpf=df_cpfs,
-        client=unmapped(client),
+        session=unmapped(session_after_login),
         extraction_date=unmapped(extraction_date),
     )
 
@@ -119,12 +118,6 @@ with Flow(
         table_id=HISTORICO_TABLE_ID,
         partition_column=constants.EXTRACTION_DATE_COLUMN,
         source_format="parquet",
-    )
-
-    # Fechando o client depois da produção dos dataframes
-    close_httpx_client(
-        client=client,
-        wait_dfs=[df_historico, df_afastamento],
     )
 
 
