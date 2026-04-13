@@ -35,6 +35,8 @@ with Flow(
     
     ENVIRONMENT = Parameter("environment", default="dev")
     data_especifica = Parameter("data_especifica", default=None)
+    data_inicial = Parameter("data_inicial", default=None)
+    data_final = Parameter("data_final", default=None)
 
     usuario_infisical = get_secret_key(
         secret_path=INFISICAL_PATH,
@@ -47,7 +49,11 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    roteiro = gerar_roteiro_extracao(data_especifica=data_especifica)
+    roteiro = gerar_roteiro_extracao(
+        data_especifica=data_especifica,
+        data_inicial=data_inicial,
+        data_final=data_final
+    )
 
     resultados_fase1 = extrair_fase_principal(
         usuario=usuario_infisical, 

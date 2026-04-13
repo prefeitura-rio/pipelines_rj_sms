@@ -188,11 +188,31 @@ def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str,
 
 # --- TASKS PRINCIPAIS (PREFECT) ---
 @task
-def gerar_roteiro_extracao(data_especifica: str | None = None) -> dict:
+def gerar_roteiro_extracao(data_especifica: str | None = None, data_inicial: str | None = None, data_final: str | None = None) -> dict:
     logger = prefect.context.get("logger")
     fuso_br = pytz.timezone("America/Sao_Paulo")
     
-    if data_especifica:
+    datas = []
+
+    if data_inicial and data_final:
+        try:
+            dt_inicio = datetime.strptime(data_inicial, "%d/%m/%Y")
+            dt_fim = datetime.strptime(data_final, "%d/%m/%Y")
+            
+            if dt_inicio > dt_fim:
+                raise ValueError("A data_inicial não pode ser maior que a data_final.")
+                
+            delta = dt_fim - dt_inicio
+            for i in range(delta.days + 1):
+                dia = dt_inicio + timedelta(days=i)
+                datas.append(dia.strftime("%d/%m/%Y"))
+                
+            logger.info(f"Modo Período ativado: Extraindo de {data_inicial} até {data_final} ({len(datas)} dias).")
+        except ValueError as e:
+            logger.error(f"Erro de formato nas datas. Use DD/MM/AAAA. Detalhe: {e}")
+            raise FAIL(f"Erro ao processar período: {e}")
+
+    elif data_especifica:
         if data_especifica.lower() == "ontem":
             dia_anterior = datetime.now(fuso_br) - timedelta(days=1)
             data_especifica = dia_anterior.strftime("%d/%m/%Y")
@@ -200,13 +220,14 @@ def gerar_roteiro_extracao(data_especifica: str | None = None) -> dict:
 
         logger.info(f"A extrair apenas a data {data_especifica}")
         datas = [data_especifica]
+
     else:
         hoje = datetime.now(fuso_br)
         mes_anterior = hoje.replace(day=1) - timedelta(days=1)
         ano, mes = mes_anterior.year, mes_anterior.month
         ultimo_dia = calendar.monthrange(ano, mes)[1]
         datas = [(f"{dia:02d}/{mes:02d}/{ano}") for dia in range(1, ultimo_dia + 1)]
-        logger.info(f"Foram geradas {len(datas)} datas para a extração do mês {mes:02d}/{ano}.")
+        logger.info(f"Modo Mensal ativado: Foram geradas {len(datas)} datas para o mês {mes:02d}/{ano}.")
 
     return {"datas": datas, "configs": CONFIGS_EXTRACAO_BASE}
 
