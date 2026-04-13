@@ -14,6 +14,8 @@ from google.cloud import bigquery
 from prefeitura_rio.pipelines_utils.logging import log
 from requests import Session
 from unidecode import unidecode
+from random import randint
+from time import sleep
 
 # Internos
 from pipelines.datalake.extract_load.sisreg_afastamentos import constants
@@ -26,7 +28,8 @@ def get_extraction_date() -> datetime:
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 10) -> list[str]:
+def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 100) -> list[str]:
+    environment = "staging"
     client = bigquery.Client()
     log("Cliente Big Query OK")
 
@@ -96,10 +99,18 @@ def login_sisreg(usuario: str, senha: str, session: Session) -> Session:
     return session
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=5))
+@task(max_retries=1, retry_delay=timedelta(minutes=5), )
 def search_afastamentos(
-    cpf: str, session: Session, extraction_date: datetime
+    cpf: str,
+    session: Session,
+    extraction_date: datetime,
+    min_task_wait: int,
+    max_task_wait: int,
 ) -> pd.DataFrame | None:
+    sleep(randint(
+        min_task_wait, max_task_wait
+    ))
+
     res = session.get(
         f"https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?cpf={cpf}&mostrar_antigos=1",
         headers=constants.REQUEST_HEADERS,
@@ -108,8 +119,11 @@ def search_afastamentos(
     if "Profissional nao encontrado!" in res.text:
         log(f"Profissional de cpf '{cpf}' não encontrado")
         return None
+    if "(CAPTCHA)" in res.text:
+        raise Exception("SISREG está pedindo CAPTCHA")
 
-    html_tables = BeautifulSoup(res.content, "lxml").find_all(class_="table_listagem")
+    html_tables = BeautifulSoup(
+        res.content, "lxml").find_all(class_="table_listagem")
 
     if len(html_tables) <= 1:
         log(f"Listagem vazia para cpf {cpf}")
@@ -138,23 +152,34 @@ def search_afastamentos(
     df["data_inicio"] = df["data_inicio"].apply(
         lambda value: datetime.strptime(value, "%d/%m/%Y").date()
     )
-    df["data_fim"] = df["data_fim"].apply(lambda value: datetime.strptime(value, "%d/%m/%Y").date())
+    df["data_fim"] = df["data_fim"].apply(
+        lambda value: datetime.strptime(value, "%d/%m/%Y").date())
     df["hora_inicio"] = df["hora_inicio"].apply(
         lambda value: datetime.strptime(value, "%H:%M").time()
     )
-    df["hora_fim"] = df["hora_fim"].apply(lambda value: datetime.strptime(value, "%H:%M").time())
+    df["hora_fim"] = df["hora_fim"].apply(
+        lambda value: datetime.strptime(value, "%H:%M").time())
     df["cpf"] = cpf
     df[constants.EXTRACTION_DATE_COLUMN] = extraction_date
 
     return df
 
 
-@task(max_retries=3, retry_delay=timedelta(minutes=500))
+@task(max_retries=1, retry_delay=timedelta(minutes=500))
 def search_historico_afastamentos(
-    cpf: str, session: Session, extraction_date: datetime
+    cpf: str,
+    session: Session,
+    extraction_date: datetime,
+    min_task_wait: int,
+    max_task_wait: int,
 ) -> pd.DataFrame | None:
+    sleep(randint(
+        min_task_wait, max_task_wait
+    ))
+
     res = session.get(
-        ("https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?" f"cpf={cpf}&op=Log"),
+        "https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?"
+        f"cpf={cpf}&op=Log",
         headers=constants.REQUEST_HEADERS,
     )
 
@@ -166,7 +191,8 @@ def search_historico_afastamentos(
         raise Exception("SISREG está pedindo CAPTCHA")
 
     df = pd.read_html(
-        StringIO(BeautifulSoup(res.content, "lxml").find(class_="table_listagem").__str__())
+        StringIO(BeautifulSoup(res.content, "lxml").find(
+            class_="table_listagem").__str__())
     )[0]
 
     df.columns = df.iloc[1]
@@ -174,12 +200,14 @@ def search_historico_afastamentos(
         df.drop([0, 1])
         .reset_index(drop=True)
         .rename(
-            lambda name: (unidecode(name).replace("Codigo", "codigo_afastamento").lower()),
+            lambda name: (unidecode(name).replace(
+                "Codigo", "codigo_afastamento").lower()),
             axis=1,
         )
     )
 
-    df["data"] = df["data"].apply(lambda value: datetime.strptime(value, "%d/%m/%Y - %H:%M"))
+    df["data"] = df["data"].apply(
+        lambda value: datetime.strptime(value, "%d/%m/%Y - %H:%M"))
 
     df["cpf"] = cpf
     df[constants.EXTRACTION_DATE_COLUMN] = extraction_date

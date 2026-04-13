@@ -60,6 +60,16 @@ with Flow(
     HISTORICO_TABLE_ID = Parameter(
         "historico_table_id", default=constants.DEFAULT_HISTORICO_TABLE_ID, required=False
     )
+    MIN_TASK_WAIT = Parameter(
+        "min_task_wait",
+        default=constants.MIN_TASK_WAIT,
+        required=False,
+    )
+    MAX_TASK_WAIT = Parameter(
+        "max_task_wait",
+        default=constants.MAX_TASK_WAIT,
+        required=False,
+    )
 
     # Data de extração das tabelas
     extraction_date = get_extraction_date()
@@ -84,6 +94,8 @@ with Flow(
         cpf=df_cpfs,
         session=unmapped(session_after_login),
         extraction_date=unmapped(extraction_date),
+        min_task_wait=unmapped(MIN_TASK_WAIT),
+        max_task_wait=unmapped(MAX_TASK_WAIT),
     )
 
     # Junção dos dados de afastamento gerados
@@ -99,26 +111,28 @@ with Flow(
         source_format="parquet",
     )
 
-    # Pagina de histórico de afastamentos
-    # Mais detalhada
-    dfs_historicos = search_historico_afastamentos.map(
-        cpf=df_cpfs,
-        session=unmapped(session_after_login),
-        extraction_date=unmapped(extraction_date),
-    )
-
-    # Junção dos dados de historico gerados
-    # Incluindo preparação e upload dos mesmo
-    df_historico = concat_dfs(dfs=dfs_historicos)
-    df_historico_ok = handle_columns_to_bq(df=df_historico)
-    log_df(df=df_historico_ok, name=HISTORICO_TABLE_ID)
-    upload_df_to_datalake(
-        df=df_historico_ok,
-        dataset_id=DATASET_ID,
-        table_id=HISTORICO_TABLE_ID,
-        partition_column=constants.EXTRACTION_DATE_COLUMN,
-        source_format="parquet",
-    )
+    # # Pagina de histórico de afastamentos
+    # # Mais detalhada
+    # dfs_historicos = search_historico_afastamentos.map(
+    #     cpf=df_cpfs,
+    #     session=unmapped(session_after_login),
+    #     extraction_date=unmapped(extraction_date),
+    #     min_task_wait=unmapped(MIN_TASK_WAIT*2),
+    #     max_task_wait=unmapped(MAX_TASK_WAIT*2),
+    # )
+    #
+    # # Junção dos dados de historico gerados
+    # # Incluindo preparação e upload dos mesmo
+    # df_historico = concat_dfs(dfs=dfs_historicos)
+    # df_historico_ok = handle_columns_to_bq(df=df_historico)
+    # log_df(df=df_historico_ok, name=HISTORICO_TABLE_ID)
+    # upload_df_to_datalake(
+    #     df=df_historico_ok,
+    #     dataset_id=DATASET_ID,
+    #     table_id=HISTORICO_TABLE_ID,
+    #     partition_column=constants.EXTRACTION_DATE_COLUMN,
+    #     source_format="parquet",
+    # )
 
 
 sisreg_afastamentos_flow.executor = LocalDaskExecutor(num_workers=16)
