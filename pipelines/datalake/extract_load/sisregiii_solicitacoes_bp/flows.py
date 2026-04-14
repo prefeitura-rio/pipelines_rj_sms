@@ -37,6 +37,12 @@ with Flow(
     data_especifica = Parameter("data_especifica", default=None)
     data_inicial = Parameter("data_inicial", default=None)
     data_final = Parameter("data_final", default=None)
+    status_especifico = Parameter("status_especifico", default=None)
+    timeout_login = Parameter("timeout_login", default=30)
+    timeout_consulta = Parameter("timeout_consulta", default=180)
+    tempo_espera_sisreg = Parameter("tempo_espera_sisreg", default=8.5)
+    limite_requisicoes_sessao = Parameter("limite_requisicoes_sessao", default=15)
+    max_tentativas_reextra = Parameter("max_tentativas_reextra", default=100)
 
     usuario_infisical = get_secret_key(
         secret_path=INFISICAL_PATH,
@@ -52,19 +58,28 @@ with Flow(
     roteiro = gerar_roteiro_extracao(
         data_especifica=data_especifica,
         data_inicial=data_inicial,
-        data_final=data_final
+        data_final=data_final,
+        status_especifico=status_especifico
     )
 
     resultados_fase1 = extrair_fase_principal(
         usuario=usuario_infisical, 
         senha=senha_infisical, 
-        roteiro=roteiro
+        roteiro=roteiro,
+        timeout_login=timeout_login,
+        timeout_consulta=timeout_consulta,
+        tempo_espera=tempo_espera_sisreg,
+        limite_requisicoes=limite_requisicoes_sessao
     )
     
     dados_finais = extrair_fase_reextracao(
         usuario=usuario_infisical, 
         senha=senha_infisical, 
-        resultados_fase1=resultados_fase1
+        resultados_fase1=resultados_fase1,
+        timeout_login=timeout_login,
+        timeout_consulta=timeout_consulta,
+        tempo_espera=tempo_espera_sisreg,
+        max_tentativas=max_tentativas_reextra
     )
 
     salvar_resultados(

@@ -672,3 +672,6 @@ cases:
     flow_name: sisreg_bp_flow
     params:
       environment: "dev"
+      data_inicial: null
+      data_final: null
+      status_especifico: null
