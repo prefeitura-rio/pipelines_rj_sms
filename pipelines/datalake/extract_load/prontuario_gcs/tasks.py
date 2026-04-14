@@ -25,7 +25,7 @@ from pipelines.datalake.extract_load.prontuario_gcs.utils import (
     parse_record,
     process_insert_statement,
     write_csv_header,
-    write_csv_row,
+    openbase_write_csv_row
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import download_from_cloud_storage
@@ -297,7 +297,7 @@ def extract_openbase_data(
                     break
 
                 row = parse_record(rec, structured_dictionary)
-                write_csv_row(csv_path, row)
+                openbase_write_csv_row(csv_path, row)
                 line_count += 1
 
                 if line_count >= lines_per_chunk:
@@ -376,7 +376,6 @@ def list_files_from_bucket(environment, bucket_name, folder):
     """
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
-    blobs = bucket.list_blobs(prefix=f"{folder}/hospub")
         
     blobs = [b.name for b in bucket.list_blobs(prefix=f"{folder}/hospub")]
 
@@ -472,7 +471,7 @@ def upload_file_to_native_table(
             tamanho_bytes = sys.getsizeof(row)
             tamanho_mb = tamanho_bytes / (1024 * 1024)
 
-            if tamanho_mb > 1:
+            if tamanho_mb > 10:
                 log("O dicionário tem mais de 10MB")
                 log(row)
                 raise Exception
@@ -543,7 +542,7 @@ def upload_file_to_native_table(
 def generate_current_folder(folder: str) -> str:
     """Se a pasta do bucket não for especificada, retorna ano-mes atual. Útil para extrações semanais"""
     if not folder:
-        current_date = datetime.now()
+        current_date = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         if current_date.day < 7:
             current_date = current_date - timedelta(month=1)
         folder = current_date.strftime("%Y-%m")

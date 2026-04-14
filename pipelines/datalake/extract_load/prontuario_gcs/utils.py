@@ -3,7 +3,6 @@ import os
 import re
 from datetime import datetime
 from typing import Dict, List, Tuple
-
 from pipelines.utils.logger import log
 
 ##############################################################################################
@@ -150,13 +149,13 @@ def parse_record(rec: bytes, structured_dictionary: Dict) -> Dict:
 
 def write_csv_header(csv_path: str, metadata: List[str]) -> None:
     """Cria arquivo CSV e escreve cabeçalho."""
-    with open(csv_path, "w") as f:
+    with open(csv_path, "w", encoding="utf-8", newline="") as f:
         f.write("|".join(metadata) + "\r\n")
 
 
-def write_csv_row(csv_path: str, row: Dict) -> None:
+def openbase_write_csv_row(csv_path: str, row: Dict) -> None:
     """Adiciona uma linha ao arquivo CSV."""
-    with open(csv_path, "a") as f:
+    with open(csv_path, "a", encoding="utf-8", newline="") as f:
         line = [str(value) for value in row.values()]
         f.write("|".join(line) + "\r\n")
 
