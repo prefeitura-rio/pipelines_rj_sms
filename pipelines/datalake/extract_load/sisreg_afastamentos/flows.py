@@ -20,8 +20,8 @@ from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
     init_session_request_base,
     log_df,
     login_sisreg,
-    search_afastamentos,
-    search_historico_afastamentos,
+    get_afastamentos,
+    get_historico_afastamentos,
 )
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 
@@ -60,14 +60,9 @@ with Flow(
     HISTORICO_TABLE_ID = Parameter(
         "historico_table_id", default=constants.DEFAULT_HISTORICO_TABLE_ID, required=False
     )
-    MIN_TASK_WAIT = Parameter(
+    SLEEP_TIME = Parameter(
         "min_task_wait",
-        default=constants.MIN_TASK_WAIT,
-        required=False,
-    )
-    MAX_TASK_WAIT = Parameter(
-        "max_task_wait",
-        default=constants.MAX_TASK_WAIT,
+        default=constants.SLEEP_TIME,
         required=False,
     )
 
@@ -79,7 +74,7 @@ with Flow(
 
     # Buscando os CPFs dos profissionais,
     # com limite adicionado para questẽs de teste.
-    df_cpfs = get_cpf_profissionais(
+    cpf_list = get_cpf_profissionais(
         environment=ENVIRONMENT,
     )
 
@@ -90,44 +85,43 @@ with Flow(
     )
 
     # Pagina de afastamentos
-    dfs_afastamentos = search_afastamentos.map(
-        cpf=df_cpfs,
-        session=unmapped(session_after_login),
-        extraction_date=unmapped(extraction_date),
-        min_task_wait=unmapped(MIN_TASK_WAIT),
-        max_task_wait=unmapped(MAX_TASK_WAIT),
+    df_afastamentos = get_afastamentos(
+        session=session,
+        cpf_list=cpf_list,
+        extraction_date=extraction_date,
+        sleep_time=SLEEP_TIME,
     )
 
-    # Junção dos dados de afastamento gerados
-    # Incluindo preparação e upload dos mesmo
-    df_afastamento = concat_dfs(dfs=dfs_afastamentos)
-    df_afastamento_ok = handle_columns_to_bq(df=df_afastamento)
-    log_df(df=df_afastamento_ok, name=AFASTAMENTO_TABLE_ID)
+    # Tratamento das colunas dos dados de afastamento
+    df_afastamentos_ok = handle_columns_to_bq(df=df_afastamentos)
+    # Log do dado obtido
+    log_df(df=df_afastamentos_ok, name=AFASTAMENTO_TABLE_ID)
+    # Upload do dado de afastamento
     upload_df_to_datalake(
-        df=df_afastamento_ok,
+        df=df_afastamentos_ok,
         dataset_id=DATASET_ID,
         table_id=AFASTAMENTO_TABLE_ID,
         partition_column=constants.EXTRACTION_DATE_COLUMN,
         source_format="parquet",
     )
 
-    # Pagina de histórico de afastamentos
-    # Mais detalhada
-    dfs_historicos = search_historico_afastamentos.map(
-        cpf=df_cpfs,
-        session=unmapped(session_after_login),
-        extraction_date=unmapped(extraction_date),
-        min_task_wait=unmapped(MIN_TASK_WAIT),
-        max_task_wait=unmapped(MAX_TASK_WAIT),
+    # Pagina de historico de afastamentos
+    df_historico_afastamentos = get_historico_afastamentos(
+        session=session,
+        cpf_list=cpf_list,
+        extraction_date=extraction_date,
+        sleep_time=SLEEP_TIME,
     )
 
-    # Junção dos dados de historico gerados
-    # Incluindo preparação e upload dos mesmo
-    df_historico = concat_dfs(dfs=dfs_historicos)
-    df_historico_ok = handle_columns_to_bq(df=df_historico)
-    log_df(df=df_historico_ok, name=HISTORICO_TABLE_ID)
+    # Tratamento das colunas dos dados de historico de afastamento
+    df_historico_afastamentos_ok = handle_columns_to_bq(
+        df=df_historico_afastamentos
+    )
+    # Log do dado obtido
+    log_df(df=df_historico_afastamentos_ok, name=HISTORICO_TABLE_ID)
+    # Upload do dado de historico_afastamento
     upload_df_to_datalake(
-        df=df_historico_ok,
+        df=df_historico_afastamentos_ok,
         dataset_id=DATASET_ID,
         table_id=HISTORICO_TABLE_ID,
         partition_column=constants.EXTRACTION_DATE_COLUMN,

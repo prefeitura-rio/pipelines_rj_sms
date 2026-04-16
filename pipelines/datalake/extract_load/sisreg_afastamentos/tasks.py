@@ -28,8 +28,11 @@ def get_extraction_date() -> datetime:
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 100) -> list[str]:
-    environment = "staging"
+def get_cpf_profissionais(
+    environment: str,
+    sample: int = 1,
+    slice: int = 100
+) -> list[str]:
     client = bigquery.Client()
     log("Cliente Big Query OK")
 
@@ -38,7 +41,8 @@ def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 100) -
         log("Invalid sample, querying all data")
 
     sql_sample = (
-        "" if environment != "dev" or sample is None else f"TABLESAMPLE SYSTEM ({sample} PERCENT)"
+        "" if environment != "dev" or sample is None
+        else f"TABLESAMPLE SYSTEM ({sample} PERCENT)"
     )
     sql = f"""
         SELECT distinct
@@ -63,7 +67,7 @@ def get_cpf_profissionais(environment: str, sample: int = 1, slice: int = 100) -
 def init_session_request_base() -> requests.Session:
     session = requests.session()
 
-    res = session.get(
+    session.get(
         "https://sisregiii.saude.gov.br/",
         headers=constants.REQUEST_HEADERS,
     )
@@ -100,17 +104,59 @@ def login_sisreg(usuario: str, senha: str, session: Session) -> Session:
 
 
 @task(max_retries=1, retry_delay=timedelta(minutes=5), )
-def search_afastamentos(
+def get_afastamentos(
+    session: Session,
+    cpf_list: list[str],
+    extraction_date: datetime,
+    sleep_time: int,
+    sleep_time_window: int = 4,
+) -> pd.DataFrame:
+    log("iniciando extração dos afastamentos")
+    df = None
+    for cpf in cpf_list:
+        sleep(randint(sleep_time, sleep_time+sleep_time_window))
+        ret = search_afastamento(
+            cpf,
+            session,
+            extraction_date,
+        )
+        if df is None:
+            df = ret
+        elif ret is not None:
+            df = pd.concat((df, ret))
+
+    return df
+
+
+@task(max_retries=1, retry_delay=timedelta(minutes=5), )
+def get_historico_afastamentos(
+    session: Session,
+    cpf_list: list[str],
+    extraction_date: datetime,
+    sleep_time: int,
+    sleep_time_window: int = 4,
+) -> pd.DataFrame:
+    df = None
+    for cpf in cpf_list:
+        sleep(randint(sleep_time, sleep_time+sleep_time_window))
+        ret = search_historico_afastamento(
+            cpf,
+            session,
+            extraction_date,
+        )
+        if df is None:
+            df = ret
+        elif ret is not None:
+            df = pd.concat((df, ret))
+
+    return df
+
+
+def search_afastamento(
     cpf: str,
     session: Session,
     extraction_date: datetime,
-    min_task_wait: int,
-    max_task_wait: int,
 ) -> pd.DataFrame | None:
-    sleep(randint(
-        min_task_wait, max_task_wait
-    ))
-
     res = session.get(
         f"https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?cpf={cpf}&mostrar_antigos=1",
         headers=constants.REQUEST_HEADERS,
@@ -165,18 +211,11 @@ def search_afastamentos(
     return df
 
 
-@task(max_retries=1, retry_delay=timedelta(minutes=500))
-def search_historico_afastamentos(
+def search_historico_afastamento(
     cpf: str,
     session: Session,
     extraction_date: datetime,
-    min_task_wait: int,
-    max_task_wait: int,
 ) -> pd.DataFrame | None:
-    sleep(randint(
-        min_task_wait, max_task_wait
-    ))
-
     res = session.get(
         "https://sisregiii.saude.gov.br/cgi-bin/af_medicos.pl?"
         f"cpf={cpf}&op=Log",
