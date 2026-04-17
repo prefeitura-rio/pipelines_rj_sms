@@ -444,7 +444,7 @@ def upload_file_to_native_table(
     base_type: str,
     cnes: str,
 ):
-    """Envia arquivo CS para tabela nativa do bigquery.
+    """Envia arquivo CSV para tabela nativa do bigquery.
     Utilizado para o envio de arquivos com número de colunas variável.
 
     Args:
@@ -496,7 +496,9 @@ def upload_file_to_native_table(
 
     # Faz o envio dos dados para o BigQuery
     log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
-    client = bigquery.Client()
+    
+    project = "rj-sms" if environment == "prod" else "rj-sms-dev"
+    client = bigquery.Client(project=project)
     dataset_ref = client.dataset(dataset_id)
 
     try:
