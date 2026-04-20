@@ -86,6 +86,7 @@ with Flow(
         unpacked_openbase = unpack_files(
             tar_files=openbase_file,
             output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
+            files_to_extract=[],
             exclude_origin=True,
             wait_for=openbase_file,
         )

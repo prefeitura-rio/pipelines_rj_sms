@@ -530,12 +530,12 @@ cases:
       bucket_name: "subhue_backups"
       cnes: '2269945'
       folder: '2026-03'
-      dataset: 'brutos_prontuario_prontuaRio_staging'
-      lines_per_chunk: 5000
-      skip_openbase: true
-      openbase_blob: '2026-03/hospubAF-mar-2269945-openbase-19-03-2026-05h00m.tar.gz'
+      dataset: 'brutos_prontuario_prontuaRio_dev_staging'
+      lines_per_chunk: 100
+      skip_openbase: false
+      openbase_blob: '2026-03/hospubAF-mar-2269945-openbase-26-03-2026-05h00m.tar.gz'
       skip_postgres: false
-      postgres_blob: '2026-03/hospubAF-mar-2269945-sql-19-03-2026-06h01m.tar.gz'
+      postgres_blob: '2026-03/hospubAF-mar-2269945-sql-26-03-2026-06h01m.tar.gz'
 
   - case_slug: prontuario_extraction_manager
     flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
