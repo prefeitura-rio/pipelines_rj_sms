@@ -483,7 +483,7 @@ def upload_file_to_native_table(
         {
             "cnes": cnes,
             "data": json.dumps(data),
-            "loaded_at": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).isoformat(),
+            "loaded_at": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None).isoformat(),
             "base_type": base_type,
         }
         for data in data_list
@@ -513,16 +513,20 @@ def upload_file_to_native_table(
     schema = [
         bigquery.SchemaField("cnes", "STRING"),
         bigquery.SchemaField("data", "STRING"),
-        bigquery.SchemaField("loaded_at", "STRING"),
+        bigquery.SchemaField("loaded_at", "DATETIME"),
         bigquery.SchemaField("base_type", "STRING"),
     ]
 
     try:
         client.get_table(table_ref)
     except NotFound:
-        table = bigquery.Table(table_ref, schema=schema)
-        client.create_table(table)
-        log(f"Criada tabela {table}")
+        table_obj = bigquery.Table(table_ref, schema=schema)
+        table_obj.time_partitioning = bigquery.TimePartitioning(
+            type_=bigquery.TimePartitioningType.DAY,
+            field="loaded_at",
+        )
+        client.create_table(table_obj)
+        log(f"Criada tabela {table_obj}")
 
     job_config = bigquery.LoadJobConfig(
         schema=schema,
