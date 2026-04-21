@@ -50,7 +50,7 @@ def find_all_file_names_from_pattern(
         return []
         
     # Ordena pelo arquivo mais recente e retorna apenas o nome dele em uma lista (para manter compatibilidade com o fluxo mapeado)
-    files.sort(key=lambda x: x.name)
+    files.sort(key=lambda x: x.updated)
     most_recent_file = files[-1].name
 
     log(f"Found files, returning most recent: {most_recent_file}")
