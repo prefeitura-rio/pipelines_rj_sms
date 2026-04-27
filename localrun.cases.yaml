@@ -658,6 +658,14 @@ cases:
       table_id: "pgm_2026"
       url: "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4"
       url_type: "google_sheet"
+<<<<<<< Updated upstream
+=======
+  - case_slug: "datalake-extract_load-sisreg_afastamentos"
+    flow_path: "pipelines.datalake.extract_load.sisreg_afastamentos.flows"
+    flow_name: "sisreg_afastamentos_flow"
+    params:
+      environment: "dev"
+>>>>>>> Stashed changes
   - case_slug: hci_freshness_check
     flow_path: pipelines.reports.alerta_atualizacao_tabelas.flows
     flow_name: report_alerta_atualizacao_hci
@@ -670,4 +678,14 @@ cases:
     params:
       environment: "dev"
       db_schema: "dbo"
+<<<<<<< Updated upstream
       partition_column: "extracted_at"
+=======
+      partition_column: "extracted_at"
+
+  - case_slug: Renatinho_BI
+    flow_path: pipelines.datalake.extract_load.sisreg_preparos.flows
+    flow_name: sisreg_preparos_flow
+    params:
+      environment: "dev"
+>>>>>>> Stashed changes
