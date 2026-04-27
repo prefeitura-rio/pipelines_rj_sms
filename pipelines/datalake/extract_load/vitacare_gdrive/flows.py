@@ -33,10 +33,12 @@ with Flow(
     FILE_PATTERN = Parameter("file_pattern", default=False, required=False)
     DESIRED_DATASET_NAME = Parameter("desired_dataset_name", default="brutos_prontuario_vitacare")
     DESIRED_TABLE_NAME = Parameter("desired_table_name", default=None)
+    GET_ALL_FILES = Parameter("get_all_files", default=False, required=False)
 
     file_names = find_all_file_names_from_pattern(
         file_pattern=FILE_PATTERN,
         environment=ENVIRONMENT,
+        get_all_files=GET_ALL_FILES,
     )
 
     most_recent_schema = get_most_recent_schema(
