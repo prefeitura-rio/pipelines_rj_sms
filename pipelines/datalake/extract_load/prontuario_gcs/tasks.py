@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 import csv
+import json
 import os
 import re
 import shutil
+import sys
 import tarfile
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
-from google.cloud import storage
+import pytz
+from google.api_core.exceptions import NotFound
+from google.cloud import bigquery, storage
 from pandas.errors import EmptyDataError
 
 from pipelines.datalake.extract_load.prontuario_gcs.constants import (
@@ -21,7 +25,7 @@ from pipelines.datalake.extract_load.prontuario_gcs.utils import (
     parse_record,
     process_insert_statement,
     write_csv_header,
-    write_csv_row,
+    openbase_write_csv_row
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.googleutils import download_from_cloud_storage
@@ -37,14 +41,13 @@ def create_temp_folders(folders) -> None:
 
 
 @task
-def get_file(path, bucket_name, blob_prefix, environment, wait_for, blob_type) -> list:
+def get_file(path, bucket_name, blob_path, environment, wait_for, blob_type) -> list:
     """
-    Faz o download de arquivo no bucket
+    Faz o download do arquivo do bucket.
     """
-    prefix = f"{blob_prefix}-{blob_type}"
 
-    log(f"⬇️ Realizando download de {prefix}...")
-    filename = download_from_cloud_storage(path, bucket_name, prefix)
+    log(f"⬇️ Realizando download de {blob_path}...")
+    filename = download_from_cloud_storage(path, bucket_name, blob_path)
 
     log("✅ Download feito com sucesso.")
     return filename
@@ -78,10 +81,9 @@ def unpack_files(
         output_path = os.path.join(output_dir, os.path.basename(file).replace(".tar.gz", ""))
         try:
             with tarfile.open(file, "r:gz") as tar:
-                for file_in_tar in files_to_extract:
-                    if not file_in_tar in tar.getnames():
-                        continue
-                    tar.extract(file_in_tar, path=output_path)
+                for file_name in tar.getnames():
+                    if file_name in files_to_extract:
+                        tar.extract(file_name, path=output_path)
         except Exception as e:
             log(f"Erro ao descompactar o arquivo {file}: {e}")
     if exclude_origin:
@@ -122,7 +124,7 @@ def extract_postgres_data(
     os.makedirs(upload_path, exist_ok=True)
 
     postgres_folder = [
-        folder_name for folder_name in os.listdir(data_dir) if "VISUAL" in folder_name
+        folder_name for folder_name in os.listdir(data_dir) if "sql" in folder_name
     ][0]
 
     sql_path = os.path.join(data_dir, postgres_folder, sql_file)
@@ -180,7 +182,7 @@ def extract_postgres_data(
                 log(f"Linhas processadas: {processed_count}")
                 log(f"Tabela atual: {table_name}")
                 log(f"Tabela anterior: {previous_table}")
-                upload_file_to_datalake.run(
+                upload_file_to_native_table.run(
                     file=previous_csv_name,
                     dataset_id=dataset_id,
                     cnes=cnes,
@@ -192,7 +194,7 @@ def extract_postgres_data(
 
             # Verifica se bateu o limite de linhas por upload
             elif processed_count >= lines_per_chunk:
-                upload_file_to_datalake.run(
+                upload_file_to_native_table.run(
                     file=csv_name,
                     dataset_id=dataset_id,
                     cnes=cnes,
@@ -211,7 +213,7 @@ def extract_postgres_data(
             current_insert, upload_path, target_tables
         )
         if flag:
-            upload_file_to_datalake.run(
+            upload_file_to_native_table.run(
                 file=csv_name,
                 dataset_id=dataset_id,
                 cnes=cnes,
@@ -232,6 +234,7 @@ def extract_openbase_data(
     environment: str,
     lines_per_chunk: str,
     dataset_id: str,
+    tables_to_extract: list,
     wait_for,
 ) -> str:
     """
@@ -264,13 +267,9 @@ def extract_openbase_data(
         tables_data, openbase_path, prontuario_constants.DICTIONARY_ENCODING.value
     )
 
-    # Processa cada tabela selecionada
-    selected_tables = prontuario_constants.SELECTED_OPENBASE_TABLES.value
-
     for table, _ in tables_data:
-        if table not in selected_tables:
+        if table not in tables_to_extract:
             continue
-
         table_path = os.path.join(openbase_path, table)
         structured_dictionary = dictionaries[table]
 
@@ -291,7 +290,7 @@ def extract_openbase_data(
 
                 if not rec:
                     # Upload final do arquivo restante
-                    upload_file_to_datalake.run(
+                    upload_file_to_native_table.run(
                         file=csv_path,
                         dataset_id=dataset_id,
                         environment=environment,
@@ -302,11 +301,11 @@ def extract_openbase_data(
                     break
 
                 row = parse_record(rec, structured_dictionary)
-                write_csv_row(csv_path, row)
+                openbase_write_csv_row(csv_path, row)
                 line_count += 1
 
                 if line_count >= lines_per_chunk:
-                    upload_file_to_datalake.run(
+                    upload_file_to_native_table.run(
                         file=csv_path,
                         dataset_id=dataset_id,
                         environment=environment,
@@ -381,32 +380,43 @@ def list_files_from_bucket(environment, bucket_name, folder):
     """
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
-    files = bucket.list_blobs(prefix=f"{folder}/hospub")
+        
+    blobs = [b.name for b in bucket.list_blobs(prefix=f"{folder}/hospub")]
 
-    # Extrai o nome dos blobs no bucket
-    files_path = [str(f.name) for f in files]
+    last_files = {}
+    pattern = re.compile(r'-(\d+)-(sql|openbase)-(\d{2}-\d{2}-\d{4}-\d{2}h\d{2}m)')
 
-    # Faz a relação CNES - Prefixo
-    cnes_prefix = {}
+    # Dicionário temporário para controle de datas: {(cnes, file_type): data_dt}
+    date_control = {}
 
-    for file in files_path:
-        cnes_matches = re.search(r"hospub-(\d+)", file)
-
-        cnes_match = cnes_matches.group(0)  # Ex: hospub-2269945
-        cnes = cnes_match.split("-")[1]  # 2269945
-
-        prefix_match = re.search(r".*hospub-\d+", file)
-        prefix = prefix_match.group(0)
-
-        cnes_prefix[cnes] = prefix
-    return cnes_prefix
-
+    for path in blobs:
+        match = pattern.search(path)
+        if match:
+            cnes, file_type, data_str = match.groups()
+            data_dt = datetime.strptime(data_str, "%d-%m-%Y-%Hh%Mm")
+            
+            key_control = (cnes, file_type)
+            
+            # Verifica se é o mais recente para aquele CNES e file_type
+            if key_control not in date_control or data_dt > date_control[key_control]:
+                date_control[key_control] = data_dt
+                
+                # Inicializa o CNES no dicionário final se não existir
+                if cnes not in last_files:
+                    last_files[cnes] = {}
+                
+                # Atribui o path ao file_type correspondente
+                last_files[cnes][file_type] = path
+                
+    # Retorna algo tipo { 'cnes': {'openbase': '/path/file', 'sql':'/path/file'} }
+    return last_files
 
 @task
 def build_operator_parameters(
-    files_per_cnes: dict,
+    last_files: dict,
     bucket_name: str,
     dataset_id: str,
+    folder: str,
     chunk_size: int,
     environment: str = "dev",
 ) -> list:
@@ -417,22 +427,133 @@ def build_operator_parameters(
             "dataset": dataset_id,
             "bucket_name": bucket_name,
             "cnes": cnes,
-            "blob_prefix": prefix,
-            "rename_flow": True,
             "lines_per_chunk": chunk_size,
+            "folder": folder,
             "skip_openbase": False,
+            "openbase_blob": blob["openbase"],
             "skip_postgres": (
                 True if cnes == "2273349" else False
             ),  # Este CNES não possui base POSTGRES
+            "postgres_blob": blob["sql"]
         }
-        for cnes, prefix in files_per_cnes.items()
+        for cnes, blob in last_files.items()
     ]
 
 
+@task(max_retries=2, retry_delay=timedelta(minutes=1))
+def upload_file_to_native_table(
+    environment: str,
+    dataset_id: str,
+    file: str,
+    base_type: str,
+    cnes: str,
+):
+    """Envia arquivo CSV para tabela nativa do bigquery.
+    Utilizado para o envio de arquivos com número de colunas variável.
+
+    Args:
+        environment (str): Variável de ambiente
+        dataset_id (str): Dataset de destino
+        file (str): Caminho do arquivo CSV
+        base_type (str): Tipo de base (openbase ou postgres)
+        cnes (str): CNES da unidade de saúde
+    """
+
+    # Lê e prepara os dados para envio
+    data_list = []
+    csv.field_size_limit(sys.maxsize)
+
+    with open(file, "r") as f:
+        reader = csv.DictReader(
+            [line.replace("\x00", "") for line in f],  # Remove null bytes
+            delimiter="|",
+            quotechar='"',
+            skipinitialspace=True,
+        )
+        for row in reader:
+
+            tamanho_bytes = sys.getsizeof(row)
+            tamanho_mb = tamanho_bytes / (1024 * 1024)
+
+            if tamanho_mb > 10:
+                log("O dicionário tem mais de 10MB")
+                log(row)
+                raise Exception
+            else:
+                data_list.append(row)
+
+    table = file.split("/")[-1].replace(".csv", "")
+    lines = [
+        {
+            "cnes": cnes,
+            "data": json.dumps(data),
+            "loaded_at": datetime.now(tz=pytz.timezone("America/Sao_Paulo")).replace(tzinfo=None).isoformat(),
+            "base_type": base_type,
+        }
+        for data in data_list
+    ]
+
+    if not lines:
+        log(f"⚠️ O arquivo {file} está vázio. Não há linhas a inserir.")
+        os.remove(file)
+        return
+
+    # Faz o envio dos dados para o BigQuery
+    log(f"⬆️ Iniciando upload de {len(lines)} linhas para a tabela {table}...")
+    
+    project = "rj-sms" if environment == "prod" else "rj-sms-dev"
+    client = bigquery.Client(project=project)
+    dataset_ref = client.dataset(dataset_id)
+
+    try:
+        client.get_dataset(dataset_ref)
+    except NotFound:
+        dataset = bigquery.Dataset(dataset_ref)
+        client.create_dataset(dataset)
+        log(f"Dataset {dataset_id} criado.")
+
+    table_ref = dataset_ref.table(table)
+
+    schema = [
+        bigquery.SchemaField("cnes", "STRING"),
+        bigquery.SchemaField("data", "STRING"),
+        bigquery.SchemaField("loaded_at", "DATETIME"),
+        bigquery.SchemaField("base_type", "STRING"),
+    ]
+
+    try:
+        client.get_table(table_ref)
+    except NotFound:
+        table_obj = bigquery.Table(table_ref, schema=schema)
+        table_obj.time_partitioning = bigquery.TimePartitioning(
+            type_=bigquery.TimePartitioningType.DAY,
+            field="loaded_at",
+        )
+        client.create_table(table_obj)
+        log(f"Criada tabela {table_obj}")
+
+    job_config = bigquery.LoadJobConfig(
+        schema=schema,
+        source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+    )
+
+    try:
+        load_job = client.load_table_from_json(lines, table_ref, job_config=job_config)
+        result = load_job.result()
+    except Exception as e:
+        log(result)
+        log(f"❌ Erro ao inserir linhas na tabela: {e}")
+        raise e
+
+    log(f"✅ Inserção de linhas feitas com sucesso")
+    os.remove(file)
+
 @task
-def dumb_task(vars):
-    return
-
-
-if __name__ == "__main__":
-    files = list_files_from_bucket(environment=None, bucket_name="subhue_backups")
+def generate_current_folder(folder: str) -> str:
+    """Se a pasta do bucket não for especificada, retorna ano-mes atual. Útil para extrações semanais"""
+    if not folder:
+        current_date = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
+        if current_date.day < 7:
+            current_date = current_date - timedelta(month=1)
+        folder = current_date.strftime("%Y-%m")
+    return folder
