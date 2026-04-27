@@ -82,7 +82,8 @@ def unpack_files(
         try:
             with tarfile.open(file, "r:gz") as tar:
                 for file_name in tar.getnames():
-                    tar.extract(file_name, path=output_path)
+                    if file_name in files_to_extract:
+                        tar.extract(file_name, path=output_path)
         except Exception as e:
             log(f"Erro ao descompactar o arquivo {file}: {e}")
     if exclude_origin:
@@ -233,6 +234,7 @@ def extract_openbase_data(
     environment: str,
     lines_per_chunk: str,
     dataset_id: str,
+    tables_to_extract: list,
     wait_for,
 ) -> str:
     """
@@ -266,6 +268,8 @@ def extract_openbase_data(
     )
 
     for table, _ in tables_data:
+        if table not in tables_to_extract:
+            continue
         table_path = os.path.join(openbase_path, table)
         structured_dictionary = dictionaries[table]
 
