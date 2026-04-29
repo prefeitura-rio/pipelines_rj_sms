@@ -4,6 +4,7 @@ Tasks
 """
 # Geral
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from hashlib import sha256
 from io import StringIO
 
@@ -24,15 +25,22 @@ from pipelines.utils.credential_injector import authenticated_task as task
 
 @task
 def get_extraction_date() -> datetime:
-    return datetime.now()
+    return datetime.now(ZoneInfo("America/Sao_Paulo"))
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
 def get_cpf_profissionais(
     environment: str,
+    extraction_date: datetime,
     sample: int = 1,
-    slice: int = 100
+    slice: int = 10,
+    initial_date_offset: int = 30,
 ) -> list[str]:
+    procedimento_vigencia_inicial_data = (
+        extraction_date.date()
+        - timedelta(initial_date_offset)
+    ).strftime("%Y-%m-%d")
+
     client = bigquery.Client()
     log("Cliente Big Query OK")
 
@@ -41,8 +49,10 @@ def get_cpf_profissionais(
         log("Invalid sample, querying all data")
 
     sql_sample = (
-        "" if environment != "dev" or sample is None
-        else f"TABLESAMPLE SYSTEM ({sample} PERCENT)"
+        "WHERE procedimento_vigencia_inicial_data <= "
+        f"\"{procedimento_vigencia_inicial_data}\""
+        if environment != "dev" or sample is None
+        else f"TABLESAMPLE SYSTEM ({sample} PERCENT) LIMIT {slice}"
     )
     sql = f"""
         SELECT distinct
@@ -109,17 +119,30 @@ def get_afastamentos(
     cpf_list: list[str],
     extraction_date: datetime,
     sleep_time: int,
+    historico: bool,
     sleep_time_window: int = 4,
 ) -> pd.DataFrame:
     log("iniciando extração dos afastamentos")
     df = None
     for cpf in cpf_list:
-        sleep(randint(sleep_time, sleep_time+sleep_time_window))
-        ret = search_afastamento(
-            cpf,
-            session,
-            extraction_date,
+        tempo_espera_sorteado = randint(
+            sleep_time,
+            sleep_time+sleep_time_window
         )
+        sleep(tempo_espera_sorteado)
+        if historico:
+            ret = search_historico_afastamento(
+                cpf,
+                session,
+                extraction_date,
+            )
+        else:
+            ret = search_afastamento(
+                cpf,
+                session,
+                extraction_date,
+            )
+
         if df is None:
             df = ret
         elif ret is not None:
@@ -128,28 +151,28 @@ def get_afastamentos(
     return df
 
 
-@task(max_retries=1, retry_delay=timedelta(minutes=5), )
-def get_historico_afastamentos(
-    session: Session,
-    cpf_list: list[str],
-    extraction_date: datetime,
-    sleep_time: int,
-    sleep_time_window: int = 4,
-) -> pd.DataFrame:
-    df = None
-    for cpf in cpf_list:
-        sleep(randint(sleep_time, sleep_time+sleep_time_window))
-        ret = search_historico_afastamento(
-            cpf,
-            session,
-            extraction_date,
-        )
-        if df is None:
-            df = ret
-        elif ret is not None:
-            df = pd.concat((df, ret))
-
-    return df
+# @task(max_retries=1, retry_delay=timedelta(minutes=5), )
+# def get_historico_afastamentos(
+#     session: Session,
+#     cpf_list: list[str],
+#     extraction_date: datetime,
+#     sleep_time: int,
+#     sleep_time_window: int = 4,
+# ) -> pd.DataFrame:
+#     df = None
+#     for cpf in cpf_list:
+#         sleep(randint(sleep_time, sleep_time+sleep_time_window))
+#         ret = search_historico_afastamento(
+#             cpf,
+#             session,
+#             extraction_date,
+#         )
+#         if df is None:
+#             df = ret
+#         elif ret is not None:
+#             df = pd.concat((df, ret))
+#
+#     return df
 
 
 def search_afastamento(
@@ -252,11 +275,6 @@ def search_historico_afastamento(
     df[constants.EXTRACTION_DATE_COLUMN] = extraction_date
 
     return df
-
-
-@task
-def concat_dfs(dfs: list[pd.DataFrame]) -> pd.DataFrame:
-    return pd.concat(dfs)
 
 
 @task

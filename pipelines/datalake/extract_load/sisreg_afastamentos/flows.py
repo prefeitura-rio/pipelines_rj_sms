@@ -3,35 +3,33 @@
 Flow
 """
 # Prefect
-from prefect import Parameter, unmapped
+from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import VertexRun
 from prefect.storage import GCS
 
+# Internos
 from pipelines.constants import constants as pipeline_constants
+from pipelines.datalake.utils.tasks import handle_columns_to_bq
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
+from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
+
 from pipelines.datalake.extract_load.sisreg_afastamentos import (
     constants,
     schedules,
 )
 from pipelines.datalake.extract_load.sisreg_afastamentos.tasks import (
-    concat_dfs,
     get_cpf_profissionais,
     get_extraction_date,
     init_session_request_base,
     log_df,
     login_sisreg,
     get_afastamentos,
-    get_historico_afastamentos,
 )
-from pipelines.datalake.utils.tasks import handle_columns_to_bq
-
-# Internos
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 with Flow(
-    name="SUBGERAL - Extract & Load - SISREG AFASTAMENTOS",
+    name="SUBGERAL/CR/NTI - Extract & Load - SISREG Afastamentos",
     state_handlers=[handle_flow_state_change],
     owners=[
         pipeline_constants.MATHEUS_ID.value,
@@ -39,21 +37,10 @@ with Flow(
 ) as sisreg_afastamentos_flow:
     ENVIRONMENT = Parameter("environment", default="staging", required=True)
 
-    # Resgatando usuário e senha do das secrets
-    usuario = get_secret_key(
-        secret_path=constants.INFISICAL_SISREG_PATH,
-        secret_name=constants.INFISICAL_SISREG_USERNAME,
-        environment=ENVIRONMENT,
-    )
-    senha = get_secret_key(
-        secret_path=constants.INFISICAL_SISREG_PATH,
-        secret_name=constants.INFISICAL_SISREG_PASSWORD,
-        environment=ENVIRONMENT,
-    )
-
     # Nome do dataset e tabela no datalake
     DATASET_ID = Parameter(
-        "dataset_id", default=constants.DEFAULT_DATASET_ID, required=False)
+        "dataset_id", default=constants.DEFAULT_DATASET_ID, required=False
+    )
     AFASTAMENTO_TABLE_ID = Parameter(
         "afastamento_table_id", default=constants.DEFAULT_AFASTAMENTO_TABLE_ID, required=False
     )
@@ -66,6 +53,18 @@ with Flow(
         required=False,
     )
 
+    # Resgatando usuário e senha das secrets
+    usuario = get_secret_key(
+        secret_path=constants.INFISICAL_SISREG_PATH,
+        secret_name=constants.INFISICAL_SISREG_USERNAME,
+        environment=ENVIRONMENT,
+    )
+    senha = get_secret_key(
+        secret_path=constants.INFISICAL_SISREG_PATH,
+        secret_name=constants.INFISICAL_SISREG_PASSWORD,
+        environment=ENVIRONMENT,
+    )
+
     # Data de extração das tabelas
     extraction_date = get_extraction_date()
 
@@ -73,9 +72,10 @@ with Flow(
     session = init_session_request_base()
 
     # Buscando os CPFs dos profissionais,
-    # com limite adicionado para questẽs de teste.
+    # com limite adicionado para questões de teste.
     cpf_list = get_cpf_profissionais(
         environment=ENVIRONMENT,
+        extraction_date=extraction_date,
     )
 
     session_after_login = login_sisreg(
@@ -90,6 +90,7 @@ with Flow(
         cpf_list=cpf_list,
         extraction_date=extraction_date,
         sleep_time=SLEEP_TIME,
+        historico=False,
     )
 
     # Tratamento das colunas dos dados de afastamento
@@ -106,11 +107,12 @@ with Flow(
     )
 
     # Pagina de historico de afastamentos
-    df_historico_afastamentos = get_historico_afastamentos(
+    df_historico_afastamentos = get_afastamentos(
         session=session,
         cpf_list=cpf_list,
         extraction_date=extraction_date,
         sleep_time=SLEEP_TIME,
+        historico=True,
     )
 
     # Tratamento das colunas dos dados de historico de afastamento
