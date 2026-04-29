@@ -1,0 +1,154 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+from datetime import datetime
+import time
+import hashlib
+from google.cloud import bigquery
+
+headers = {
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "accept-encoding": "gzip, deflate, br, zstd",
+    "accept-language": "pt-BR,pt;q=0.9",
+    "cache-control": "max-age=0",
+    "connection": "keep-alive",
+    "content-type": "application/x-www-form-urlencoded",
+    "cookie": "SESSION=1a816734302faab789e8448941c71dff9252fce883bebef2b4a08d408f10e254; ID=672940; TS019395b4=0140e3e4e5c7f99efa51dab5f4babdc6ef500fce4fc9552593d8ec5110b6279a2cc409f4fb2241e332827a86f7bc94e8eef5f8b0e4",
+    "host": "sisregiii.saude.gov.br",
+    "origin": "https://sisregiii.saude.gov.br",
+    "referer": "https://sisregiii.saude.gov.br/cgi-bin/index?logout=1",
+    "sec-ch-ua": '"Not(A:Brand";v="99", "Opera GX";v="118", "Chromium";v="133"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "same-origin",
+    "sec-fetch-user": "?1",
+    "upgrade-insecure-requests": "1",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 OPR/118.0.0.0"
+}
+
+def fix_characters(datainfo):
+    if not datainfo: return ""
+    return datainfo.replace(";", " - ").replace("►", " - ").replace("–", " - ").replace(",", " - ")
+
+# URL base
+BASE_URL = "http://sisregiii.saude.gov.br/cgi-bin/config_preparo"
+LOGIN_URL = "https://sisregiii.saude.gov.br"
+
+# 1. Iniciar Sessão+++
+session = requests.Session()
+
+# 2. Realizar Login
+
+payload = {
+    'usuario': 'CR.AMBULATORIOADM',
+    'senha_256': '7140d1314b6b310142b290043096b8e549e712d39ab0daa6fb7870b2a55e8901',
+    'etapa' : "ACESSO"
+}
+
+print("Realizando login...")
+response = session.post(LOGIN_URL, data=payload, headers=headers)
+if "Efetue o logon novamente" in response.text:
+    raise Exception("Erro no login. Verifique as credenciais ou o site.")
+
+print("Acessando lista de unidades...")
+res = session.get(BASE_URL)
+soup = BeautifulSoup(res.text, 'lxml')
+
+form = soup.find('form')
+if form:
+    table = form.find('table')
+    if table:
+        rows = table.find_all('tr')
+        if len(rows) > 1:
+            unidade_options = rows[1].find_all('option')
+        else:
+            print("Tabela não tem linhas suficientes.")
+            unidade_options = []
+    else:
+        print("Tabela não encontrada.")
+        unidade_options = []
+else:
+    print("Formulário não encontrado.")
+    unidade_options = []
+
+data = []
+
+for index, unidade in enumerate(unidade_options):
+    nome_unidade = unidade.text.strip()
+    valor_unidade = unidade['value']
+    
+    if not valor_unidade: continue
+    
+    print(f"Unidade {index}: {nome_unidade}")
+
+    params_proc = {
+        'etapa': 'LISTAR_PROCEDIMENTOS',
+        'unidade': valor_unidade
+    }
+    
+    try:
+        res_proc = session.get(BASE_URL, params=params_proc)
+        soup_proc = BeautifulSoup(res_proc.text, 'lxml')
+        procedimentos_unidade = soup_proc.form.table('tr')[2]('option')
+    except Exception as e:
+        print(f"Erro ao buscar procedimentos da unidade {nome_unidade}: {e}")
+        continue
+
+    for index_j, procedimento in enumerate(procedimentos_unidade):
+        if index_j < 1: continue
+
+        nome_procedimento = procedimento.text.strip()
+        valor_procedimento = procedimento['value']
+        
+        print(f"\tProcedimento {index_j}: {nome_procedimento}")
+
+        params_prep = {
+            'etapa': 'FRM_PREPARO',
+            'unidade': valor_unidade,
+            'procedimento': valor_procedimento
+        }
+
+        try:
+            res_prep = session.get(BASE_URL, params=params_prep)
+            soup_prep = BeautifulSoup(res_prep.text, 'lxml')
+            
+            iframe = soup_prep.find('iframe', {'name': 'preparo_ifr'})
+            
+            if iframe:
+                url_iframe = "http://sisregiii.saude.gov.br" + iframe['src']
+                res_info = session.get(url_iframe)
+                soup_info = BeautifulSoup(res_info.text, 'lxml')
+            else:
+                soup_info = soup_prep
+
+            descricao_preparo_tags = str(soup_info.body)
+            descricao_preparo = soup_info.body.get_text(separator=" ").strip() if soup_info.body else ""
+
+        except Exception as e:
+            print(f"Erro no procedimento {nome_procedimento}: {e}")
+            descricao_preparo = "ERRO"
+            descricao_preparo_tags = ""
+
+        data.append({
+            "cnes": valor_unidade,
+            "nomeUnidade": nome_unidade,
+            "codProcedimento": valor_procedimento,
+            "nomeProcedimento": nome_procedimento,
+            "descricaoPreparo": fix_characters(descricao_preparo),
+            "descricaoPreparoTags": fix_characters(descricao_preparo_tags)
+        })
+        
+        time.sleep(0.5)
+
+# 6. Salvar Dados no BigQuery
+print("Registrando dados no BigQuery...")
+client = bigquery.Client()
+table_id = "seu_projeto.seu_dataset.preparos_unidades"  # ajuste para seu projeto/dataset/tabela
+
+df = pd.DataFrame(data)
+job = client.load_table_from_dataframe(df, table_id)
+job.result()
+
+print("Processo finalizado com sucesso! Dados inseridos no BigQuery.")
