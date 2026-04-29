@@ -20,10 +20,9 @@ from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import 
     BASE_URL,
     GERENCIADOR_URL,
     HEADERS_DISFARCE,
-    TRADUTOR_COLUNAS_SISREG,
+    COLUNAS_SISREG_MAPPING,
     CONFIGS_EXTRACAO_BASE
 )
-
 
 # Funções de tratamento, html, login e verificação
 def sha256_upper(txt: str) -> str:
@@ -338,7 +337,7 @@ def salvar_resultados(dados_extraidos: dict, dataset_id: str, table_id: str) -> 
     if dfs:
         dfs_traduzidos = []
         for df in dfs:
-            df.rename(columns=TRADUTOR_COLUNAS_SISREG, inplace=True)
+            df.rename(columns=COLUNAS_SISREG_MAPPING, inplace=True)
             df = df.loc[:, ~df.columns.str.contains('^unnamed|erro', case=False)]
             dfs_traduzidos.append(df)
 

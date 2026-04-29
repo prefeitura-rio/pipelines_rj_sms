@@ -12,8 +12,8 @@ from pipelines.utils.state_handlers import handle_flow_state_change
 
 from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import (
     INFISICAL_PATH,
-    INFISICAL_VITACARE_USERNAME,
-    INFISICAL_VITACARE_PASSWORD,
+    INFISICAL_USERNAME,
+    INFISICAL_PASSWORD,
     DATASET_ID_BRUTO,
     TABLE_ID_BP
 )
@@ -46,12 +46,12 @@ with Flow(
 
     usuario_infisical = get_secret_key(
         secret_path=INFISICAL_PATH,
-        secret_name=INFISICAL_VITACARE_USERNAME,
+        secret_name=INFISICAL_USERNAME,
         environment=ENVIRONMENT,
     )
     senha_infisical = get_secret_key(
         secret_path=INFISICAL_PATH,
-        secret_name=INFISICAL_VITACARE_PASSWORD,
+        secret_name=INFISICAL_PASSWORD,
         environment=ENVIRONMENT,
     )
 

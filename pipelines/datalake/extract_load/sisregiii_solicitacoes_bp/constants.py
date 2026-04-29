@@ -5,8 +5,8 @@ GERENCIADOR_URL = BASE_URL + "/cgi-bin/gerenciador_solicitacao"
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 INFISICAL_PATH = "/sisreg"
-INFISICAL_VITACARE_USERNAME = "SISREG_USER"
-INFISICAL_VITACARE_PASSWORD = "SISREG_PASSWORD"
+INFISICAL_USERNAME = "SISREG_USER"
+INFISICAL_PASSWORD = "SISREG_PASSWORD"
 
 HEADERS_DISFARCE = {
     "User-Agent": USER_AGENT,
@@ -20,9 +20,14 @@ HEADERS_DISFARCE = {
     "Sec-Fetch-User": "?1"
 }
 
-STATUS_SISREG = {
-    "PENDENTE": "1", "CANCELADO": "3", "DEVOLVIDO": "4",
-    "REENVIADO": "5", "NEGADO": "6", "APROVADO": "7", "CANCELADO2": "10"
+STATUS_SISREG_MAPPING = {
+    "PENDENTE": "1",
+    "CANCELADO": "3",
+    "DEVOLVIDO": "4",
+    "REENVIADO": "5",
+    "NEGADO": "6",
+    "APROVADO": "7",
+    "CANCELADO2": "10"
 }
 
 CONFIGS_EXTRACAO_BASE = [
@@ -30,13 +35,14 @@ CONFIGS_EXTRACAO_BASE = [
     {"tipo_periodo": "E", "codigo_situacao": "7", "status_coluna": "EXECUTADO"},
 ]
 
-for nome, cod in STATUS_SISREG.items():
+for nome, cod in STATUS_SISREG_MAPPING.items():
     CONFIGS_EXTRACAO_BASE.append({
-        "tipo_periodo": "S", "codigo_situacao": cod,
+        "tipo_periodo": "S",
+        "codigo_situacao": cod,
         "status_coluna": "CANCELADO" if nome == "CANCELADO2" else nome
     })
 
-TRADUTOR_COLUNAS_SISREG = {
+COLUNAS_SISREG_MAPPING = {
     'cod_solicitac': 'cod_solicitacao', 
     'cod_solicitacao': 'cod_solicitacao',
     'data': 'data_da_solicitacao', 
