@@ -184,6 +184,15 @@ flow_parameters = [
         "partition_column": "datalake_loaded_at",
         "batch_size": 10000,
     },
+    {
+        "environment": "prod",
+        "table_name": "fat_recem_nascido",
+        "schema_name": "dtw",
+        "datetime_column": "created_at",
+        "target_name": "dtw__fat_recem_nascido_eventos",
+        "partition_column": "datalake_loaded_at",
+        "batch_size": 10000,
+    },
 ]
 
 
