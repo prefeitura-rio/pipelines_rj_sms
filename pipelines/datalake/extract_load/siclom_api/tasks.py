@@ -89,7 +89,10 @@ def get_siclom_period_data(base_url: str, endpoint: str, api_key: str, period: s
             response.raise_for_status()
     else:
         return get_siclom_prep_data.run(
-            base_url=base_url, endpoint=endpoint, api_key=api_key, period=period
+            base_url=base_url, 
+            endpoint=endpoint, 
+            api_key=api_key, 
+            period=period
         )
 
 
@@ -159,7 +162,7 @@ def get_patient_data(environment: str, table_id, batch: int, retry: bool):
 
     if retry:
         sql = f"""
-                with
+                with 
                     pacientes_hci as (
                         select distinct paciente_cpf as cpf
                         from `rj-sms.saude_historico_clinico.episodio_assistencial`
@@ -168,9 +171,9 @@ def get_patient_data(environment: str, table_id, batch: int, retry: bool):
                         'B221','B24','B209','B220','B219','B210','B230','B207','B21','B22','F024','B232',
                         'B23','B206','Z717','R75','B218','B202','B227')
                     )
-                select distinct cpf
-                from pacientes_hci
-                where cpf not in (select cpf from rj-sms.brutos_siclom_api.{table_id})
+                select distinct cpf 
+                from pacientes_hci 
+                where cpf not in (select cpf from rj-sms.brutos_siclom_api.{table_id})       
         """
     else:
         sql = """

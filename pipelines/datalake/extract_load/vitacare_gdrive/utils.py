@@ -165,23 +165,21 @@ def fix_INDICADORES_VARIAVEL_3(csv_text, sep):
     new_csv_file.seek(0)
     return new_csv_file
 
-
 def fix_RELACAO_CRIANCAS_MENORES_5_ANOS(csv_text: str, sep: str):
-    """
+    '''
     Vitacare mudou o campo em um dos informes, essa funcao (quebra galho)
     corrige para que a tabela e=seja atualizada
     TODO - Rever lógica num futuro proximo - 24 Mar 2026 hoje
-    """
+    '''
     NOME_NOVO = "N_REGISTRO_AVALIACAO_DESENVOLVIMENTO_INTEGRAL_CRIANCA"
     NOME_ANTIGO = "N_REGISTRO_AVALIACAO_DESENVOLVIMENTO_INFANTIL_DENVER"
 
-    csv_text = csv_text.replace(NOME_NOVO, NOME_ANTIGO, 1)  # Só na primeira ocorrência (header)
+    csv_text = csv_text.replace(NOME_NOVO, NOME_ANTIGO, 1) # Só na primeira ocorrência (header)
 
     new_csv_file = tempfile.TemporaryFile()
     new_csv_file.write(csv_text.encode("utf-8"))
     new_csv_file.seek(0)
     return new_csv_file
-
 
 def shorten_column_name(column_name: str, max_len: int = 30) -> str:
     """
@@ -448,7 +446,7 @@ def download_file(bucket, file_name, extra_safe=True):
             csv_file = fix_INDICADORES_VARIAVEL_3(csv_text, sep)
         elif "LISTAGEM_ATENDIMENTOS_PACIENTES_TEA" in file_name:
             csv_file = fix_LISTAGEM_ATENDIMENTOS_PACIENTES_TEA(io.StringIO(csv_text))
-        elif "RELACAO_CRIANCAS_VITAhisCARE" in file_name:
+        elif "RELACAO_CRIANCAS_VITAhisCARE" in file_name:                       
             csv_file = fix_RELACAO_CRIANCAS_MENORES_5_ANOS(csv_text, sep)
         else:
             csv_text = fix_csv(csv_text, sep)

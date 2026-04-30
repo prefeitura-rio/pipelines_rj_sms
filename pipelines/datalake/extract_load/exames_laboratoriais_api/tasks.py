@@ -5,18 +5,21 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
-import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.exames_laboratoriais_api.constants import (
     AREA_PROGRAMATICA,
     CREDENTIALS,
 )
-from pipelines.datalake.extract_load.exames_laboratoriais_api.utils import (
-    send_api_error_report,
-)
+
+from pipelines.datalake.extract_load.exames_laboratoriais_api.utils import send_api_error_report
+
 from pipelines.utils.credential_injector import authenticated_task as task
+import requests
+
 from pipelines.utils.monitor import send_email
+
+
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=1))
@@ -50,7 +53,7 @@ def authenticate_fetch(
             message = f"(authenticate_and_fetch) Error getting token: {token_data.get('mensagem')}"
             raise Exception(message)
 
-        token = token_data["token"]
+        token = token_data['token']
 
         log("Authentication was successful")
 
@@ -69,9 +72,13 @@ def authenticate_fetch(
         }
 
         results_response = requests.post(
-            f"{base_url}/APOIO/DTL/resultado", headers=results_headers, json=request_body
-        )
+            f"{base_url}/APOIO/DTL/resultado",
+            headers=results_headers,
 
+            json=request_body
+
+        )
+        
         if results_response.status_code in [502, 503]:
             message = (
                 f"(authenticate_fetch) Service Unavailable (Status {results_response.status_code}). "
@@ -80,8 +87,11 @@ def authenticate_fetch(
             log(message, level="warning")
 
             send_api_error_report(
-                status_code=results_response.status_code, source=source, environment=environment
+                status_code=results_response.status_code, 
+                source=source, 
+                environment=environment
             )
+
 
             return {"lote": {"status": results_response.status_code, "mensagem": "API Fora do Ar"}}
 
@@ -322,3 +332,4 @@ def build_operator_params(windows: list, aps: list, env: str, dataset: str):
 
     log(f"Parâmetros gerados para {len(params)} combinações (AP x Janela).")
     return params
+

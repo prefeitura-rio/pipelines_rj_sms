@@ -5,10 +5,12 @@
 Schedules for the Google Sheets extraction flows
 """
 
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 
 import pytz
 from prefect.schedules import Schedule
+from datetime import time
+
 
 from pipelines.constants import constants
 from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
@@ -24,7 +26,8 @@ hourly_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
         "url_type": "google_sheet",
     },
-    {
+
+     {
         "csv_delimiter": ",",
         "dataset_id": "brutos_cdi",
         "environment": "prod",
@@ -34,6 +37,7 @@ hourly_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
         "url_type": "google_sheet",
     },
+
     {
         "csv_delimiter": ",",
         "dataset_id": "brutos_cdi",
@@ -44,7 +48,9 @@ hourly_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
         "url_type": "google_sheet",
     },
-    {
+
+
+     {
         "csv_delimiter": ",",
         "dataset_id": "brutos_cdi",
         "environment": "prod",
@@ -54,11 +60,16 @@ hourly_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
         "url_type": "google_sheet",
     },
+
+
+
+
+    
     {
         "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
         "url_type": "google_sheet",
         "gsheets_sheet_name": "Controle de Demandas - Equipe Individual",
-        "table_id": "equipe_tutela_individual_2025",  # 2025
+        "table_id": "equipe_tutela_individual_2025", # 2025
         "dataset_id": "brutos_cdi",
         "csv_delimiter": "|",
         "environment": "prod",
@@ -72,9 +83,9 @@ hourly_parameters = [
         "rename_flow": True,
         "table_id": "equipe_tutela_individual_2026",
         "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
-        "url_type": "google_sheet",
+        "url_type": "google_sheet"
     },
-    {
+         {
         "csv_delimiter": ";",
         "dataset_id": "brutos_cdi",
         "environment": "prod",
@@ -82,7 +93,7 @@ hourly_parameters = [
         "rename_flow": True,
         "table_id": "equipe_tutela_coletiva_2025",
         "url": "https://docs.google.com/spreadsheets/d/1JirkDMgtYUIiJ7z5Zcxnn3sCUAneWwVfgT6u-M3QHE8",
-        "url_type": "google_sheet",
+        "url_type": "google_sheet"
     },
     {
         "csv_delimiter": ";",
@@ -92,8 +103,9 @@ hourly_parameters = [
         "rename_flow": True,
         "table_id": "equipe_tutela_coletiva_2026",
         "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
-        "url_type": "google_sheet",
-    },
+        "url_type": "google_sheet"
+    }
+
 ]
 
 daily_parameters = [
@@ -327,7 +339,7 @@ daily_parameters = [
         "url": "https://docs.google.com/spreadsheets/d/1Af1SvIhQgvRr_da22Qpveb9VNvwLZai_KR69v8eJ1a8",
         "url_type": "google_sheet",
     },
-    {
+        {
         "url": "https://docs.google.com/spreadsheets/d/1gCVtBz0udlcgFKtKJHvjsGwI0wA8kQyNU_bUSGHN8Hw",
         "url_type": "google_sheet",
         "gsheets_sheet_name": "cids",
@@ -336,7 +348,7 @@ daily_parameters = [
         "csv_delimiter": "|",
         "environment": "prod",
         "rename_flow": True,
-    },
+    }
 ]
 
 weekly_parameters = [
@@ -393,7 +405,7 @@ semiannual_parameters = [
 
 hourly_clocks = generate_dump_api_schedules(
     interval=timedelta(hours=4),
-    start_date=datetime.combine(datetime.today(), time(hour=8, minute=0)),
+    start_date = datetime.combine(datetime.today(), time(hour=8, minute=0)),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
     ],
@@ -433,7 +445,7 @@ monthly_clocks = generate_dump_api_schedules(
 )
 
 semiannual_clocks = generate_dump_api_schedules(
-    interval=timedelta(days=6 * 30),
+    interval=timedelta(days=6*30),
     start_date=datetime(2026, 3, 1, 0, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,

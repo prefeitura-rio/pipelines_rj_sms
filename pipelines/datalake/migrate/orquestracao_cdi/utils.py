@@ -43,14 +43,12 @@ def format_relevant_entry(content: str):
     # Fazemos um split para não cortar fora o link no final do texto
     MAX_CHARS = 500
     start, sep, end = content.rpartition("<br/><a href=")
-    content = "".join(
-        [
-            # Limita só o texto antes do link
-            f"{start[:MAX_CHARS]}..." if len(start) > MAX_CHARS else start,
-            sep,
-            end,
-        ]
-    )
+    content = "".join([
+        # Limita só o texto antes do link
+        f"{start[:MAX_CHARS]}..." if len(start) > MAX_CHARS else start,
+        sep,
+        end
+    ])
     # Negrito em decisões de TCM
     content = re.sub(
         r"^([^\n\r]+)\s+nos\s+termos\s+do\s+voto\s+do\s+Relator",

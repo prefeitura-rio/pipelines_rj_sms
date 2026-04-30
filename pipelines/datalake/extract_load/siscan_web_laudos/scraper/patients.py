@@ -8,13 +8,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Set
 
-from prefeitura_rio.pipelines_utils.logging import log
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import Firefox
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from prefeitura_rio.pipelines_utils.logging import log
 
 from .driver import (
     clicar_com_retry,

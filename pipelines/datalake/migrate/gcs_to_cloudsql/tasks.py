@@ -31,7 +31,7 @@ def find_all_filenames_from_pattern(environment: str, file_pattern: str, bucket_
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
 def get_most_recent_filenames(files):
-    # Aqui não temos como ser muito genéricos; queremos os backups mais recentes
+ # Aqui não temos como ser muito genéricos; queremos os backups mais recentes
     # de cada CNES. O formato dos nomes é o seguinte (ênfase no importante):
     # HISTÓRICO_PEPVITA_RJ/AP32/vitacare_historic_6808077_20250401_051630.bak
     #                                             ^^^^^^^ ^^^^^^^^

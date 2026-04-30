@@ -7,18 +7,23 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants as global_constants
-from pipelines.datalake.extract_load.rnds_historico.constants import rnds_constants
-from pipelines.datalake.extract_load.rnds_historico.schedules import (
-    rnds_historico_schedule,
+from pipelines.datalake.extract_load.rnds_historico.constants import (
+    rnds_constants,
 )
+
+from pipelines.datalake.extract_load.rnds_historico.schedules import (
+    rnds_historico_schedule
+)
+from pipelines.utils.flow import Flow
+from pipelines.utils.state_handlers import handle_flow_state_change
+from pipelines.utils.tasks import get_secret_key
+
 from pipelines.datalake.extract_load.rnds_historico.tasks import (
     process_rnds_table,
     start_rnds_instance,
     stop_rnds_instance,
 )
-from pipelines.utils.flow import Flow
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.utils.tasks import get_secret_key
+
 
 with Flow(
     "Datalake - Extração e Carga de Dados - RNDS Historico (Cloud SQL)",
@@ -27,7 +32,9 @@ with Flow(
 ) as flow_rnds_historico:
 
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-    DB_SCHEMA = Parameter("db_schema", default=rnds_constants.DB_SCHEMA.value)
+    DB_SCHEMA = Parameter(
+        "db_schema", default=rnds_constants.DB_SCHEMA.value
+    )
     PARTITION_COLUMN = Parameter(
         "partition_column",
         default=rnds_constants.BQ_PARTITION_COLUMN.value,

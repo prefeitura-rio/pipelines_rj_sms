@@ -11,9 +11,9 @@ from pipelines.reports.alerta_atualizacao_tabelas.schedules import (
 )
 from pipelines.reports.alerta_atualizacao_tabelas.tasks import (
     send_discord_alert,
-    send_hci_discord_alert,
-    verify_hci_last_episodes,
     verify_tables_freshness,
+    verify_hci_last_episodes,
+    send_hci_discord_alert
 )
 from pipelines.utils.flow import Flow
 from pipelines.utils.state_handlers import handle_flow_state_change
@@ -60,4 +60,4 @@ report_alerta_atualizacao_hci.run_config = KubernetesRun(
     image=constants.DOCKER_IMAGE.value,
     labels=[constants.RJ_SMS_AGENT_LABEL.value],
 )
-report_alerta_atualizacao_hci.schedule = freshness_hci_schedule
+report_alerta_atualizacao_hci.schedule =  freshness_hci_schedule
