@@ -6,6 +6,7 @@ Funções utilitárias para pipeline de migração BigQuery → MySQL da SUBPAV.
 Inclui helpers de ambiente, validação de query, batch execution, métricas e validação de colunas.
 """
 import re
+import time
 import unicodedata
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -14,6 +15,14 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from pipelines.utils.logger import log
+
+RETRYABLE_MYSQL_PATTERNS = (
+    "lock wait timeout exceeded",
+    "deadlock found",
+    "try restarting transaction",
+    "(1205,",
+    "(1213,",
+)
 
 
 def should_notify(project: str = None) -> bool:
@@ -50,43 +59,65 @@ def format_query(query: str) -> bool:
     return True
 
 
+def _is_retryable_mysql_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return any(pattern in msg for pattern in RETRYABLE_MYSQL_PATTERNS)
+
+
 def _execute_batches(
-    conn,
+    engine,
     query: str,
     records: List[Dict[str, Any]],
-    batch_size: int,
-    max_retries: int = 1,
+    execution_config: Dict[str, int],
 ) -> Tuple[int, int, List[str]]:
     """
     Executa inserts/updates em lotes usando SQLAlchemy.
+    Cada lote é confirmado separadamente para reduzir janela de lock.
     Retorna: (success, failure, errors_resumidos).
     """
     total = len(records)
     success = 0
     failure = 0
     errors: List[str] = []
+    batch_size = execution_config["batch_size"]
+    max_retries = execution_config["max_retries"]
+    retry_backoff_seconds = execution_config["retry_backoff_seconds"]
 
     for i in range(0, total, batch_size):
         batch = records[i : i + batch_size]
-        msg = f"Processing batch {i}-{i + len(batch) - 1} " f"({len(batch)} records)..."
-        log(msg, level="info")
+        log(f"Processing batch {i}-{i + len(batch) - 1} ({len(batch)} records)...", level="info")
 
         attempt = 0
         while attempt < max_retries:
+            attempt += 1
             try:
-                conn.execute(text(query), batch)
+                with engine.begin() as conn:
+                    conn.execute(text(query), batch)
                 success += len(batch)
                 break
             except SQLAlchemyError as exc:
-                attempt += 1
-                if attempt >= max_retries:
-                    failure += len(batch)
-                    err_msg = (
-                        f"❌ Batch {i}-{i + len(batch) - 1} failed: " f"{str(exc).splitlines()[0]}"
+                retryable = _is_retryable_mysql_error(exc)
+
+                if retryable and attempt < max_retries:
+                    wait_seconds = retry_backoff_seconds * attempt
+                    log(
+                        (
+                            f"Batch {i}-{i + len(batch) - 1} com erro transitório "
+                            f"(tentativa {attempt}/{max_retries}): {str(exc).splitlines()[0]}. "
+                            f"Novo retry em {wait_seconds}s."
+                        ),
+                        level="warning",
                     )
-                    log(err_msg, level="error")
-                    if len(errors) < 5:
-                        errors.append(err_msg)
+                    time.sleep(wait_seconds)
+                    continue
+
+                failure += len(batch)
+                err_msg = f"❌ Batch {i}-{i + len(batch) - 1} failed: {str(exc).splitlines()[0]}"
+                log(err_msg, level="error")
+                if len(errors) < 5:
+                    errors.append(err_msg)
+                break
+
     return success, failure, errors
 
 
@@ -137,16 +168,22 @@ def validate_bq_columns(bq_columns: Optional[List[str]]) -> List[str]:
     """
     if not bq_columns:
         return []
+
     valid = []
     for c in bq_columns:
-        c = c.strip()
+        if c is None:
+            continue
+        c = str(c).strip()
         if c:
             valid.append(c)
     return valid
 
 
 def ensure_dataframe_columns(
-    df: pd.DataFrame, required: List[str], fill_value=None, notes: list = None
+    df: pd.DataFrame,
+    required: List[str],
+    fill_value=None,
+    notes: Optional[List[str]] = None,
 ):
     """
     Garante que todas as colunas obrigatórias estejam presentes no DataFrame.
@@ -211,48 +248,105 @@ def inject_db_schema_in_query(query: str, db_schema: str) -> str:
 
     return pattern.sub(replacer, query, count=1)
 
+
 def _col(df: pd.DataFrame, name: str, default=None) -> pd.Series:
     """Retorna uma Series do tamanho do DF mesmo se a coluna não existir."""
     if name in df.columns:
         return df[name]
     return pd.Series([default] * len(df), index=df.index)
 
+
 def _is_non_empty_str(s: pd.Series) -> pd.Series:
     """True para strings não vazias (tratando NaN)."""
     return s.fillna("").astype(str).str.strip().ne("")
 
-def filter_exames_update_sintomatico(df: pd.DataFrame, notes: list | None = None) -> pd.DataFrame:
+
+def filter_exames_update_sintomatico(
+    df: pd.DataFrame,
+    notes: Optional[List[str]] = None,
+) -> pd.DataFrame:
     """
-    Mantém só linhas que podem de fato atualizar tb_sintomatico.
-    Regras:
-    - diagnostico == 1
-    - id_tipo_exame in (1,2)
-    - dt_resultado e id_resultado válidos
-    - tem pelo menos cpf ou cns preenchido
+    Mantém somente exames que já conseguiram amarrar com um id_sintomatico
+    e ordena os registros para atualização consistente no MySQL.
     """
+    del notes
     if df is None or df.empty:
         return df
 
-    before = len(df)
+    df = df.copy()
 
-    diagnostico = pd.to_numeric(_col(df, "diagnostico"), errors="coerce").fillna(0).astype(int)
-    diagnostico_ok = diagnostico.eq(1)
+    # garante tipos mínimos
+    if "id_sintomatico" in df.columns:
+        df["id_sintomatico"] = pd.to_numeric(df["id_sintomatico"], errors="coerce")
 
-    tipo = pd.to_numeric(_col(df, "id_tipo_exame"), errors="coerce")
-    tipo_ok = tipo.isin([1, 2])
+    if "id_tipo_exame" in df.columns:
+        df["id_tipo_exame"] = pd.to_numeric(df["id_tipo_exame"], errors="coerce")
 
-    dt_ok = pd.to_datetime(_col(df, "dt_resultado"), errors="coerce").notna()
+    if "id_resultado" in df.columns:
+        df["id_resultado"] = pd.to_numeric(df["id_resultado"], errors="coerce")
 
-    id_resultado = _col(df, "id_resultado")
-    id_resultado_ok = id_resultado.notna() & _is_non_empty_str(id_resultado)
+    if "dt_resultado" in df.columns:
+        df["dt_resultado"] = pd.to_datetime(df["dt_resultado"], errors="coerce").dt.date
 
-    cns_ok = _is_non_empty_str(_col(df, "paciente_cns"))
-    cpf_ok = _is_non_empty_str(_col(df, "paciente_cpf"))
-    id_ok = cns_ok | cpf_ok
+    # só atualiza sintomático quando já houver vínculo explícito
+    df = df[
+        df["id_sintomatico"].notna()
+        & df["id_tipo_exame"].isin([1, 2, 3])
+        & df["id_resultado"].notna()
+        & df["dt_resultado"].notna()
+    ].copy()
 
-    df2 = df.loc[diagnostico_ok & tipo_ok & dt_ok & id_resultado_ok & id_ok].copy()
+    colunas_ordem = ["id_sintomatico", "id_tipo_exame", "dt_resultado"]
+    if "codigo_amostra" in df.columns:
+        colunas_ordem.append("codigo_amostra")
 
-    if notes is not None:
-        notes.append(f"Filtro exames_update_sintomatico: {before} → {len(df2)}")
+    colunas_ordem = [c for c in colunas_ordem if c in df.columns]
+    df = df.sort_values(colunas_ordem, ascending=True)
 
-    return df2
+    chaves = ["id_sintomatico", "id_tipo_exame", "dt_resultado"]
+    if "codigo_amostra" in df.columns:
+        chaves.append("codigo_amostra")
+
+    chaves_existentes = [c for c in chaves if c in df.columns]
+    df = df.drop_duplicates(subset=chaves_existentes, keep="last").reset_index(drop=True)
+
+    return df
+
+
+def filter_update_sintomatico_gal(
+    df: pd.DataFrame,
+    notes: Optional[List[str]] = None,
+) -> pd.DataFrame:
+    """
+    Mantém somente exames elegíveis para atualização de sintomáticos criados via GAL.
+    """
+    del notes
+
+    if df is None or df.empty:
+        return df
+
+    df = df.copy()
+
+    df = df[
+        (df["id_tipo_exame"].isin([1, 2, 3]))
+        & (df["id_resultado"].notna())
+        & (df["dt_resultado"].notna())
+        & (df["paciente_cpf"].notna())
+        & (df["diagnostico"].isin([1]))
+    ].copy()
+
+    colunas_ordem = ["paciente_cpf", "id_tipo_exame", "dt_resultado"]
+    if "codigo_amostra" in df.columns:
+        colunas_ordem.append("codigo_amostra")
+
+    colunas_ordem = [c for c in colunas_ordem if c in df.columns]
+    df = df.sort_values(colunas_ordem, ascending=True)
+
+    chaves = ["paciente_cpf", "id_tipo_exame", "dt_resultado"]
+    if "codigo_amostra" in df.columns:
+        chaves.append("codigo_amostra")
+
+    chaves_existentes = [c for c in chaves if c in df.columns]
+    df = df.drop_duplicates(subset=chaves_existentes, keep="last").reset_index(drop=True)
+
+    return df
