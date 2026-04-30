@@ -30,6 +30,7 @@ from pipelines.datalake.extract_load.rnds_historico.flows import *
 from pipelines.datalake.extract_load.ser_metabase.flows import *
 from pipelines.datalake.extract_load.siclom_api.flows import *
 from pipelines.datalake.extract_load.siscan_web_laudos.flows import *
+from pipelines.datalake.extract_load.sisreg_afastamentos.flows import *
 from pipelines.datalake.extract_load.sisreg_api.flows import *
 from pipelines.datalake.extract_load.sisreg_web.flows import *
 from pipelines.datalake.extract_load.smsrio_mysql.flows import *
