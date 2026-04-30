@@ -26,26 +26,38 @@ TABLES_CONFIG = [
         "infisical_path": "/plataforma-subpav/",
         "notify": True,
         "custom_insert_query": """
-        INSERT INTO tb_sintomatico (cpf, cns, nome, dt_nascimento,
-        id_raca_cor, id_sexo, id_escolaridade,
-        telefone, cep, logradouro, numero, complemento,
-        id_bairro, cidade, cnes, ine, nao_municipe,
-        n_prontuario, cnes_cadastrante,
-        cpf_cadastrante, cns_cadastrante, id_tb_situacao, origem)
-        SELECT :cpf, :cns, :nome, :dt_nascimento, :id_raca_cor, :id_sexo,
-        :id_escolaridade, :telefone, :cep, :logradouro, :numero,
-        :complemento, :id_bairro, :cidade, :cnes, :ine,
-        :nao_municipe, :n_prontuario,
-        IFNULL(:cnes_cadastrante, ''), IFNULL(:cpf_cadastrante, ''),
-        IFNULL(:cns_cadastrante, ''), :id_tb_situacao, LEFT(:origem, 1)
-        WHERE NOT EXISTS (
+            INSERT INTO tb_sintomatico (
+                cpf, cns, nome, dt_nascimento,
+                id_raca_cor, id_sexo, id_escolaridade,
+                telefone, cep, logradouro, numero, complemento,
+                id_bairro, cidade, cnes, ine, nao_municipe,
+                n_prontuario, cnes_cadastrante, cpf_cadastrante, cns_cadastrante,
+                id_tb_situacao, id_origem, dt_referencia, dt_situacao
+            )
+            SELECT
+                :cpf, :cns, :nome, :dt_nascimento,
+                :id_raca_cor, :id_sexo, :id_escolaridade,
+                :telefone, :cep, :logradouro, :numero, :complemento,
+                :id_bairro, :cidade, :cnes, :ine, :nao_municipe,
+                :n_prontuario,
+                NULLIF(:cnes_cadastrante, ''),
+                NULLIF(:cpf_cadastrante, ''),
+                NULLIF(:cns_cadastrante, ''),
+                :id_tb_situacao,
+                :id_origem,
+                :dt_referencia,
+                :dt_situacao
+            WHERE NOT EXISTS (
                 SELECT 1
                 FROM subpav_sinanrio.tb_sintomatico s
                 WHERE (
-                    (:cpf IS NOT NULL AND :cpf <> '' AND s.cpf = :cpf)
+                        (:cpf IS NOT NULL AND :cpf <> '' AND s.cpf = :cpf)
                     OR (:cns IS NOT NULL AND :cns <> '' AND s.cns = :cns)
                 )
-                AND s.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                AND COALESCE(s.dt_situacao, s.dt_referencia, DATE(s.created_at))
+                >= DATE_SUB(COALESCE(:dt_situacao, :dt_referencia), INTERVAL 15 DAY)
+                AND COALESCE(s.dt_situacao, s.dt_referencia, DATE(s.created_at))
+                <= COALESCE(:dt_situacao, :dt_referencia)
             )
         """,
     },
@@ -59,6 +71,10 @@ TABLES_CONFIG = [
         "infisical_path": "/plataforma-subpav/",
         "notify": True,
         "batch_size": 10000,
+        "bq_datetime_column": "timestamp",
+        "relative_date_filter": 180,
+        "mysql_max_retries": 3,
+        "mysql_retry_backoff_seconds": 2,
         "custom_insert_query": """
             INSERT IGNORE INTO notificacao (
                 nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao, co_unidade_notificacao,
@@ -115,6 +131,10 @@ TABLES_CONFIG = [
         "infisical_path": "/plataforma-subpav/",
         "notify": True,
         "batch_size": 10000,
+        "bq_datetime_column": "datalake_loaded_at",
+        "relative_date_filter": 180,
+        "mysql_max_retries": 3,
+        "mysql_retry_backoff_seconds": 2,
         "custom_insert_query": """
             INSERT IGNORE INTO tb_investiga (
                 nu_notificacao, dt_notificacao, co_cid, co_municipio_notificacao, nu_prontuario, tp_entrada,
@@ -161,11 +181,15 @@ TABLES_CONFIG = [
         "custom_insert_query": """
             INSERT INTO tb_resultado_exame (
                 codigo_amostra, paciente_cpf, paciente_cns, cnes, id_tipo_exame, id_resultado,
-                dt_resultado, notificacao_ativa, diagnostico
+                dt_resultado, notificacao_ativa, diagnostico, dt_coleta, dt_diagnostico,
+                resultado_texto, dt_liberacao, dt_processamento, dt_inicio_processamento,
+                dt_recebimento, dt_solicitacao
             )
             VALUES (
                 :codigo_amostra, :paciente_cpf, :paciente_cns, :cnes, :id_tipo_exame, :id_resultado,
-                :dt_resultado, :notificacao_ativa, :diagnostico
+                :dt_resultado, :notificacao_ativa, :diagnostico, :dt_coleta, :dt_diagnostico,
+                :resultado_texto, :dt_liberacao, :dt_processamento, :dt_inicio_processamento,
+                :dt_recebimento, :dt_solicitacao
             )
             ON DUPLICATE KEY UPDATE
                 paciente_cpf = IF(paciente_cpf <=> VALUES(paciente_cpf), paciente_cpf, VALUES(paciente_cpf)),
@@ -173,16 +197,31 @@ TABLES_CONFIG = [
                 id_resultado = IF(id_resultado <=> VALUES(id_resultado), id_resultado, VALUES(id_resultado)),
                 notificacao_ativa = IF(notificacao_ativa <=> VALUES(notificacao_ativa), notificacao_ativa, VALUES(notificacao_ativa)),
                 diagnostico = IF(diagnostico <=> VALUES(diagnostico), diagnostico, VALUES(diagnostico)),
+                dt_coleta = IF(dt_coleta <=> VALUES(dt_coleta), dt_coleta, VALUES(dt_coleta)),
+                dt_diagnostico = IF(dt_diagnostico <=> VALUES(dt_diagnostico), dt_diagnostico, VALUES(dt_diagnostico)),
+                resultado_texto = IF(resultado_texto <=> VALUES(resultado_texto), resultado_texto, VALUES(resultado_texto)),
+                dt_liberacao = IF(dt_liberacao <=> VALUES(dt_liberacao), dt_liberacao, VALUES(dt_liberacao)),
+                dt_processamento = IF(dt_processamento <=> VALUES(dt_processamento), dt_processamento, VALUES(dt_processamento)),
+                dt_inicio_processamento = IF(dt_inicio_processamento <=> VALUES(dt_inicio_processamento), dt_inicio_processamento, VALUES(dt_inicio_processamento)),
+                dt_recebimento = IF(dt_recebimento <=> VALUES(dt_recebimento), dt_recebimento, VALUES(dt_recebimento)),
+                dt_solicitacao = IF(dt_solicitacao <=> VALUES(dt_solicitacao), dt_solicitacao, VALUES(dt_solicitacao)),
                 updated_at = IF(
                     (paciente_cpf <=> VALUES(paciente_cpf)) AND
                     (cnes <=> VALUES(cnes)) AND
                     (id_resultado <=> VALUES(id_resultado)) AND
                     (notificacao_ativa <=> VALUES(notificacao_ativa)) AND
-                    (diagnostico <=> VALUES(diagnostico)),
+                    (diagnostico <=> VALUES(diagnostico)) AND
+                    (dt_coleta <=> VALUES(dt_coleta)) AND
+                    (dt_diagnostico <=> VALUES(dt_diagnostico)) AND
+                    (resultado_texto <=> VALUES(resultado_texto)) AND
+                    (dt_liberacao <=> VALUES(dt_liberacao)) AND
+                    (dt_processamento <=> VALUES(dt_processamento)) AND
+                    (dt_inicio_processamento <=> VALUES(dt_inicio_processamento)) AND
+                    (dt_recebimento <=> VALUES(dt_recebimento)) AND
+                    (dt_solicitacao <=> VALUES(dt_solicitacao)),
                     updated_at,
                     CURRENT_TIMESTAMP
                 )
-
         """,  # noqa: E501
     },
     {  # Resultados de Exames (Atualização de sintomatico)
@@ -200,39 +239,39 @@ TABLES_CONFIG = [
             UPDATE tb_sintomatico s
             SET
                 s.id_trmtb = CASE
-                    WHEN :id_tipo_exame = 1
+                    WHEN :id_tipo_exame = 2
                     AND (:dt_resultado >= IFNULL(s.dt_trmtb, '1000-01-01') OR s.id_trmtb IS NULL)
                     THEN :id_resultado
                     ELSE s.id_trmtb
                 END,
 
                 s.dt_trmtb = CASE
-                    WHEN :id_tipo_exame = 1
+                    WHEN :id_tipo_exame = 2
                     AND (:dt_resultado >= IFNULL(s.dt_trmtb, '1000-01-01') OR s.dt_trmtb IS NULL)
                     THEN :dt_resultado
                     ELSE s.dt_trmtb
                 END,
 
                 s.id_bac_1 = CASE
-                    WHEN :id_tipo_exame = 2
+                    WHEN :id_tipo_exame = 1
                     AND s.id_bac_1 IS NULL
                     THEN :id_resultado
                     ELSE s.id_bac_1
                 END,
 
                 s.dt_bac_1 = CASE
-                    WHEN :id_tipo_exame = 2
+                    WHEN :id_tipo_exame = 1
                     AND s.dt_bac_1 IS NULL
                     THEN :dt_resultado
                     ELSE s.dt_bac_1
                 END,
 
                 s.id_bac_2 = CASE
-                    WHEN :id_tipo_exame = 2
+                    WHEN :id_tipo_exame = 1
                     AND s.id_bac_1 IS NOT NULL
                     AND s.id_bac_2 IS NULL
                     THEN :id_resultado
-                    WHEN :id_tipo_exame = 2
+                    WHEN :id_tipo_exame = 1
                     AND s.id_bac_2 IS NOT NULL
                     AND :dt_resultado >= IFNULL(s.dt_bac_2, '1000-01-01')
                     THEN :id_resultado
@@ -240,20 +279,232 @@ TABLES_CONFIG = [
                 END,
 
                 s.dt_bac_2 = CASE
-                    WHEN :id_tipo_exame = 2
+                    WHEN :id_tipo_exame = 1
                     AND s.id_bac_1 IS NOT NULL
                     AND s.dt_bac_2 IS NULL
                     THEN :dt_resultado
-                    WHEN :id_tipo_exame = 2
+                    WHEN :id_tipo_exame = 1
                     AND s.dt_bac_2 IS NOT NULL
                     AND :dt_resultado >= IFNULL(s.dt_bac_2, '1000-01-01')
                     THEN :dt_resultado
                     ELSE s.dt_bac_2
-                END
+                END,
 
-            WHERE (
-                    ( :paciente_cns IS NOT NULL AND :paciente_cns <> '' AND s.cns = :paciente_cns )
-                OR ( :paciente_cpf IS NOT NULL AND :paciente_cpf <> '' AND s.cpf = :paciente_cpf )
+                s.id_cultura = CASE
+                    WHEN :id_tipo_exame = 3
+                    AND (:dt_resultado >= IFNULL(s.dt_cultura, '1000-01-01') OR s.id_cultura IS NULL)
+                    THEN :id_resultado
+                    ELSE s.id_cultura
+                END,
+
+                s.dt_cultura = CASE
+                    WHEN :id_tipo_exame = 3
+                    AND (:dt_resultado >= IFNULL(s.dt_cultura, '1000-01-01') OR s.dt_cultura IS NULL)
+                    THEN :dt_resultado
+                    ELSE s.dt_cultura
+                END,
+
+                s.n_sinan = CASE
+                    WHEN (
+                            (:id_tipo_exame = 1 AND :id_resultado IN (1,4,5))
+                        OR (:id_tipo_exame = 2 AND :id_resultado IN (1,2))
+                        OR (:id_tipo_exame = 3 AND :id_resultado = 1)
+                    )
+                    AND COALESCE(:notificacao_ativa, 0) = 1
+                    AND NULLIF(TRIM(:n_sinan), '') IS NOT NULL
+                    THEN :n_sinan
+                    ELSE s.n_sinan
+                END,
+
+                s.id_tb_situacao = CASE
+                    WHEN (
+                            (:id_tipo_exame = 1 AND :id_resultado IN (1,4,5))
+                        OR (:id_tipo_exame = 2 AND :id_resultado IN (1,2))
+                        OR (:id_tipo_exame = 3 AND :id_resultado = 1)
+                    )
+                    AND COALESCE(:notificacao_ativa, 0) = 1
+                    AND NULLIF(TRIM(:n_sinan), '') IS NOT NULL
+                    AND COALESCE(s.id_tb_situacao, 1) IN (1,2,5)
+                    THEN 3
+
+                    WHEN (
+                            (:id_tipo_exame = 1 AND :id_resultado IN (1,4,5))
+                        OR (:id_tipo_exame = 2 AND :id_resultado IN (1,2))
+                        OR (:id_tipo_exame = 3 AND :id_resultado = 1)
+                    )
+                    AND COALESCE(:notificacao_ativa, 0) = 0
+                    AND COALESCE(s.id_tb_situacao, 1) IN (1,5)
+                    THEN 2
+
+                    ELSE s.id_tb_situacao
+                END,
+
+                s.updated_at = CURRENT_TIMESTAMP
+
+            WHERE s.id_sintomatico = :id_sintomatico
+                AND :id_sintomatico IS NOT NULL
+                AND (
+                        (:id_tipo_exame = 2 AND (:dt_resultado >= IFNULL(s.dt_trmtb, '1000-01-01') OR s.id_trmtb IS NULL))
+                    OR (:id_tipo_exame = 1 AND (
+                            s.id_bac_1 IS NULL
+                        OR (s.id_bac_1 IS NOT NULL AND s.id_bac_2 IS NULL)
+                        OR (:dt_resultado >= IFNULL(s.dt_bac_2, '1000-01-01'))
+                    ))
+                    OR (:id_tipo_exame = 3 AND (:dt_resultado >= IFNULL(s.dt_cultura, '1000-01-01') OR s.id_cultura IS NULL))
+                    OR (
+                            (
+                                (:id_tipo_exame = 1 AND :id_resultado IN (1,4,5))
+                            OR (:id_tipo_exame = 2 AND :id_resultado IN (1,2))
+                            OR (:id_tipo_exame = 3 AND :id_resultado = 1)
+                            )
+                        AND COALESCE(s.id_tb_situacao, 1) IN (1,2,5)
+                    )
+                    OR (
+                            COALESCE(:notificacao_ativa, 0) = 1
+                        AND NULLIF(TRIM(:n_sinan), '') IS NOT NULL
+                        AND NOT (s.n_sinan <=> :n_sinan)
+                    )
+                )
+        """,  # noqa: E501
+    },
+    {  # Resultados de Exames (Atualização de sintomatico) - GAL
+        "project": "SINANRIO - Atualização de Exames Sintomaticos - GAL",
+        "dataset_id": "projeto_sinanrio",
+        "table_id": "resultado_exame",
+        "db_schema": "subpav_sinanrio",
+        "dest_table": "tb_sintomatico",
+        "frequency": "daily",
+        "infisical_path": "/plataforma-subpav/",
+        "notify": True,
+        "batch_size": 5000,
+        "df_filter_name": "update_sintomatico_gal",
+        "custom_insert_query": """
+            UPDATE subpav_sinanrio.tb_sintomatico s
+                JOIN (
+                        SELECT s2.id_sintomatico
+                        FROM subpav_sinanrio.tb_sintomatico s2
+                        WHERE :id_sintomatico IS NULL
+                        AND :diagnostico = 1
+                        AND :paciente_cpf IS NOT NULL
+                        AND TRIM(:paciente_cpf) <> ''
+                        AND s2.cpf = :paciente_cpf
+                        AND s2.id_origem = 10
+                        AND COALESCE(s2.dt_situacao, s2.dt_referencia, DATE(s2.created_at))
+                                BETWEEN DATE_SUB(:dt_resultado, INTERVAL 15 DAY) AND :dt_resultado
+                        ORDER BY
+                            COALESCE(s2.dt_situacao, s2.dt_referencia, DATE(s2.created_at)) DESC,
+                            s2.id_sintomatico DESC
+                        LIMIT 1
+                    ) alvo
+                        ON s.id_sintomatico = alvo.id_sintomatico
+            SET
+                s.id_trmtb = CASE
+                    WHEN :id_tipo_exame = 2
+                    AND (:dt_resultado >= IFNULL(s.dt_trmtb, '1000-01-01') OR s.id_trmtb IS NULL)
+                    THEN :id_resultado
+                    ELSE s.id_trmtb
+                END,
+
+                s.dt_trmtb = CASE
+                    WHEN :id_tipo_exame = 2
+                    AND (:dt_resultado >= IFNULL(s.dt_trmtb, '1000-01-01') OR s.dt_trmtb IS NULL)
+                    THEN :dt_resultado
+                    ELSE s.dt_trmtb
+                END,
+
+                s.id_bac_1 = CASE
+                    WHEN :id_tipo_exame = 1
+                    AND s.id_bac_1 IS NULL
+                    THEN :id_resultado
+                    ELSE s.id_bac_1
+                END,
+
+                s.dt_bac_1 = CASE
+                    WHEN :id_tipo_exame = 1
+                    AND s.dt_bac_1 IS NULL
+                    THEN :dt_resultado
+                    ELSE s.dt_bac_1
+                END,
+
+                s.id_bac_2 = CASE
+                    WHEN :id_tipo_exame = 1
+                    AND s.id_bac_1 IS NOT NULL
+                    AND s.id_bac_2 IS NULL
+                    THEN :id_resultado
+                    WHEN :id_tipo_exame = 1
+                    AND s.id_bac_2 IS NOT NULL
+                    AND :dt_resultado >= IFNULL(s.dt_bac_2, '1000-01-01')
+                    THEN :id_resultado
+                    ELSE s.id_bac_2
+                END,
+
+                s.dt_bac_2 = CASE
+                    WHEN :id_tipo_exame = 1
+                    AND s.id_bac_1 IS NOT NULL
+                    AND s.dt_bac_2 IS NULL
+                    THEN :dt_resultado
+                    WHEN :id_tipo_exame = 1
+                    AND s.dt_bac_2 IS NOT NULL
+                    AND :dt_resultado >= IFNULL(s.dt_bac_2, '1000-01-01')
+                    THEN :dt_resultado
+                    ELSE s.dt_bac_2
+                END,
+
+                s.id_cultura = CASE
+                    WHEN :id_tipo_exame = 3
+                    AND (:dt_resultado >= IFNULL(s.dt_cultura, '1000-01-01') OR s.id_cultura IS NULL)
+                    THEN :id_resultado
+                    ELSE s.id_cultura
+                END,
+
+                s.dt_cultura = CASE
+                    WHEN :id_tipo_exame = 3
+                    AND (:dt_resultado >= IFNULL(s.dt_cultura, '1000-01-01') OR s.dt_cultura IS NULL)
+                    THEN :dt_resultado
+                    ELSE s.dt_cultura
+                END,
+
+                s.n_sinan = CASE
+                    WHEN COALESCE(:notificacao_ativa, 0) = 1
+                    AND NULLIF(TRIM(:n_sinan), '') IS NOT NULL
+                    THEN :n_sinan
+                    ELSE s.n_sinan
+                END,
+
+                s.id_tb_situacao = CASE
+                    WHEN COALESCE(:notificacao_ativa, 0) = 1
+                    AND NULLIF(TRIM(:n_sinan), '') IS NOT NULL
+                    AND COALESCE(s.id_tb_situacao, 1) IN (1,2,5)
+                    THEN 3
+                    WHEN COALESCE(:notificacao_ativa, 0) = 0
+                    AND COALESCE(s.id_tb_situacao, 1) IN (1,5)
+                    THEN 2
+                    ELSE s.id_tb_situacao
+                END,
+
+                s.updated_at = CURRENT_TIMESTAMP
+            WHERE :id_sintomatico IS NULL
+            AND :diagnostico = 1
+            AND :paciente_cpf IS NOT NULL
+            AND TRIM(:paciente_cpf) <> ''
+            AND (
+                    (:id_tipo_exame = 1 AND :id_resultado IN (1,4,5))
+                OR (:id_tipo_exame = 2 AND :id_resultado IN (1,2))
+                OR (:id_tipo_exame = 3 AND :id_resultado = 1)
+            )
+            AND (
+                    (:id_tipo_exame = 2 AND (:dt_resultado >= IFNULL(s.dt_trmtb, '1000-01-01') OR s.id_trmtb IS NULL))
+                OR (:id_tipo_exame = 1 AND (
+                        s.id_bac_1 IS NULL
+                    OR (s.id_bac_1 IS NOT NULL AND s.id_bac_2 IS NULL)
+                    OR (:dt_resultado >= IFNULL(s.dt_bac_2, '1000-01-01'))
+                ))
+                OR (:id_tipo_exame = 3 AND (:dt_resultado >= IFNULL(s.dt_cultura, '1000-01-01') OR s.id_cultura IS NULL))
+                OR (
+                        COALESCE(:notificacao_ativa, 0) = 1
+                    AND NULLIF(TRIM(:n_sinan), '') IS NOT NULL
+                    AND NOT (s.n_sinan <=> :n_sinan)
+                )
             )
         """,  # noqa: E501
     },
@@ -290,6 +541,14 @@ def build_param(config: dict) -> dict:
         param["batch_size"] = config["batch_size"]
     if config.get("df_filter_name") is not None:
         param["df_filter_name"] = config["df_filter_name"]
+    if config.get("bq_datetime_column") is not None:
+        param["bq_datetime_column"] = config["bq_datetime_column"]
+    if config.get("relative_date_filter") is not None:
+        param["relative_date_filter"] = config["relative_date_filter"]
+    if config.get("mysql_max_retries") is not None:
+        param["mysql_max_retries"] = config["mysql_max_retries"]
+    if config.get("mysql_retry_backoff_seconds") is not None:
+        param["mysql_retry_backoff_seconds"] = config["mysql_retry_backoff_seconds"]
 
     return param
 
