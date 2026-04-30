@@ -151,30 +151,6 @@ def get_afastamentos(
     return df
 
 
-# @task(max_retries=1, retry_delay=timedelta(minutes=5), )
-# def get_historico_afastamentos(
-#     session: Session,
-#     cpf_list: list[str],
-#     extraction_date: datetime,
-#     sleep_time: int,
-#     sleep_time_window: int = 4,
-# ) -> pd.DataFrame:
-#     df = None
-#     for cpf in cpf_list:
-#         sleep(randint(sleep_time, sleep_time+sleep_time_window))
-#         ret = search_historico_afastamento(
-#             cpf,
-#             session,
-#             extraction_date,
-#         )
-#         if df is None:
-#             df = ret
-#         elif ret is not None:
-#             df = pd.concat((df, ret))
-#
-#     return df
-
-
 def search_afastamento(
     cpf: str,
     session: Session,

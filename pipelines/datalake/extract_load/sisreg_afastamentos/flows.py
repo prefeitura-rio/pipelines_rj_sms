@@ -78,6 +78,7 @@ with Flow(
         extraction_date=extraction_date,
     )
 
+    # Fazendo login no SISREG
     session_after_login = login_sisreg(
         usuario=usuario,
         senha=senha,
