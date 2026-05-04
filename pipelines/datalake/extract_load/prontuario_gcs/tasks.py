@@ -412,7 +412,7 @@ def list_files_from_bucket(environment, bucket_name, folder):
     return last_files
 
 @task
-def build_operator_parameters(
+def build_openbase_parameters(
     last_files: dict,
     bucket_name: str,
     dataset_id: str,
@@ -420,7 +420,7 @@ def build_operator_parameters(
     chunk_size: int,
     environment: str = "dev",
 ) -> list:
-    """Gera lista de parâmetros para o(s) operator(s)."""
+    """Gera lista de parâmetros para o operator do Openbase."""
     return [
         {
             "environment": environment,
@@ -429,14 +429,35 @@ def build_operator_parameters(
             "cnes": cnes,
             "lines_per_chunk": chunk_size,
             "folder": folder,
-            "skip_openbase": False,
-            "openbase_blob": blob["openbase"],
-            "skip_postgres": (
-                True if cnes == "2273349" else False
-            ),  # Este CNES não possui base POSTGRES
-            "postgres_blob": blob["sql"]
+            "blob_path": blob.get("openbase"),
         }
         for cnes, blob in last_files.items()
+        if blob.get("openbase")
+    ]
+
+
+@task
+def build_postgres_parameters(
+    last_files: dict,
+    bucket_name: str,
+    dataset_id: str,
+    folder: str,
+    chunk_size: int,
+    environment: str = "dev",
+) -> list:
+    """Gera lista de parâmetros para o operator do Postgres."""
+    return [
+        {
+            "environment": environment,
+            "dataset": dataset_id,
+            "bucket_name": bucket_name,
+            "cnes": cnes,
+            "lines_per_chunk": chunk_size,
+            "folder": folder,
+            "blob_path": blob.get("sql"),
+        }
+        for cnes, blob in last_files.items()
+        if blob.get("sql") and cnes != "2273349"  # Este CNES não possui base POSTGRES
     ]
 
 

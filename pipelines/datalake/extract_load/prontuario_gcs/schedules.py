@@ -1,16 +1,15 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytz
 from prefect.schedules import Schedule
 from prefect.schedules.clocks import CronClock
 from pipelines.constants import constants
-from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clocks
 
 
 flow_parameters = {
     "bucket_name": "subhue_backups",
     "chunk_size": 5000,
-    "dataset": "brutos_prontuario_prontuaRio_staging",
+    "dataset": "brutos_prontuario_prontuaRio_continuo_staging",
     "environment": "prod",
     "folder": ""
 } 

@@ -541,15 +541,39 @@ cases:
       skip_postgres: false
       postgres_blob: '2026-03/hospubAF-mar-2269945-sql-26-03-2026-06h01m.tar.gz'
 
+  - case_slug: prontuario_extraction_openbase
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_openbase_operator
+    params:
+      environment: "dev"
+      bucket_name: "subhue_backups"
+      folder: "2026-03"
+      cnes: "2269945"
+      dataset: "brutos_prontuario_prontuaRio_dev_staging"
+      lines_per_chunk: 5000
+      blob_path: "2026-03/hospubAF-mar-2269945-openbase-26-03-2026-05h00m.tar.gz"
+  
+  - case_slug: prontuario_extraction_postgres
+    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
+    flow_name: prontuario_postgres_operator
+    params:
+      environment: "dev"
+      bucket_name: "subhue_backups"
+      folder: "2026-03"
+      cnes: "2269945"
+      dataset: "brutos_prontuario_prontuaRio_dev_staging"
+      lines_per_chunk: 1000
+      blob_path: "2026-03/hospubAF-mar-2269945-sql-26-03-2026-06h01m.tar.gz"
+
   - case_slug: prontuario_extraction_manager
     flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
     flow_name: prontuario_extraction_manager
     params:
       environment: "dev"
       bucket_name: "subhue_backups"
-      folder: "2026-02"
+      folder: "2026-03"
       dataset: 'brutos_prontuario_prontuaRio'
-      chunk_size: 25000
+      chunk_size: 1000
 
   - case_slug: emails-subgeral
     flow_path: pipelines.reports.emails_subgeral_gestao.flows
