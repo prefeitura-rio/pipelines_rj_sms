@@ -575,6 +575,6 @@ def generate_current_folder(folder: str) -> str:
     if not folder:
         current_date = datetime.now(tz=pytz.timezone("America/Sao_Paulo"))
         if current_date.day < 7:
-            current_date = current_date - timedelta(month=1)
+            current_date = current_date - timedelta(weeks=1)
         folder = current_date.strftime("%Y-%m")
     return folder
