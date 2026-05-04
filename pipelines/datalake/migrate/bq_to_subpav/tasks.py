@@ -5,8 +5,8 @@
 Tasks para migração de dados do BigQuery para o MySQL da SUBPAV.
 """
 import re
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from google.api_core.exceptions import GoogleAPIError
@@ -20,12 +20,13 @@ from pipelines.datalake.migrate.bq_to_subpav.utils import (
     default_metrics,
     ensure_dataframe_columns,
     extract_query_params,
+    filter_exames_update_sintomatico,
+    filter_update_sintomatico_gal,
     format_query,
     inject_db_schema_in_query,
     should_notify,
     summarize_error,
     validate_bq_columns,
-    filter_exames_update_sintomatico
 )
 from pipelines.utils.credential_injector import authenticated_task as task
 from pipelines.utils.logger import log
@@ -42,7 +43,16 @@ DEFAULT_REPORT_CONTEXT = {
 
 DF_FILTERS = {
     "exames_update_sintomatico": filter_exames_update_sintomatico,
+    "update_sintomatico_gal": filter_update_sintomatico_gal,
 }
+
+SAO_PAULO_TZ = timezone(timedelta(hours=-3))
+
+
+def now_sp() -> datetime:
+    """Retorna datetime atual no fuso de São Paulo."""
+    return datetime.now(SAO_PAULO_TZ)
+
 
 @task
 def resolve_notify(project: str, notify_param) -> bool:
@@ -57,21 +67,78 @@ def _safe_bq_column(column: str) -> str:
     return re.sub(r"[^\w\.\s]", "", column)
 
 
+def _build_bq_incremental_where(
+    bq_datetime_column: Optional[str] = None,
+    relative_date_filter: Optional[int] = None,
+) -> str:
+    """
+    Monta cláusula WHERE incremental para BigQuery.
+
+    Exemplo:
+    - relative_date_filter=120
+    - bq_datetime_column="ts_atualizacao"
+
+    Resultado:
+    WHERE COALESCE(
+        SAFE_CAST(ts_atualizacao AS DATE),
+        DATE(SAFE_CAST(ts_atualizacao AS DATETIME)),
+        DATE(SAFE_CAST(ts_atualizacao AS TIMESTAMP), 'America/Sao_Paulo')
+    ) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 120 DAY)
+    """
+    if relative_date_filter is None:
+        return ""
+
+    if relative_date_filter < 0:
+        raise ValueError("relative_date_filter deve ser maior ou igual a zero.")
+
+    if not bq_datetime_column:
+        raise ValueError(
+            "bq_datetime_column é obrigatório quando relative_date_filter for informado."
+        )
+
+    safe_column = _safe_bq_column(bq_datetime_column)
+
+    date_expr = (
+        "COALESCE("
+        f"SAFE_CAST({safe_column} AS DATE), "
+        f"DATE(SAFE_CAST({safe_column} AS DATETIME)), "
+        f"DATE(SAFE_CAST({safe_column} AS TIMESTAMP), 'America/Sao_Paulo')"
+        ")"
+    )
+
+    return (
+        "WHERE "
+        f"{date_expr} >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), "
+        f"INTERVAL {relative_date_filter} DAY)"
+    )
+
+
 def _build_bq_select_query(
     project_id: str,
     dataset_id: str,
     table_id: str,
     bq_columns: Optional[List[str]] = None,
     limit: Optional[int] = None,
-) -> tuple[str, str]:
+    bq_datetime_column: Optional[str] = None,
+    relative_date_filter: Optional[int] = None,
+) -> Tuple[str, str]:
     """Monta a query SELECT e retorna também o full_ref (para logs)."""
     full_ref = f"{project_id}.{dataset_id}.{table_id}"
 
     cols = validate_bq_columns(bq_columns)
     columns_clause = ", ".join(_safe_bq_column(c) for c in cols) if cols else "*"
+    where_clause = _build_bq_incremental_where(
+        bq_datetime_column=bq_datetime_column,
+        relative_date_filter=relative_date_filter,
+    )
     limit_clause = f"LIMIT {limit}" if limit else ""
 
-    query = f"SELECT {columns_clause} FROM `{full_ref}` {limit_clause}"
+    query = f"SELECT {columns_clause} FROM `{full_ref}`"
+    if where_clause:
+        query += f" {where_clause}"
+    if limit_clause:
+        query += f" {limit_clause}"
+
     return query, full_ref
 
 
@@ -82,27 +149,39 @@ def query_bq_table(
     environment: str,
     bq_columns: Optional[List[str]] = None,
     limit: Optional[int] = None,
+    bq_datetime_column: Optional[str] = None,
+    relative_date_filter: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Executa a consulta no BigQuery.
     """
     project_id = "rj-sms-dev" if environment.lower() == "dev" else "rj-sms"
-    query, full_ref = _build_bq_select_query(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        table_id=table_id,
-        bq_columns=bq_columns,
-        limit=limit,
-    )
-
+    full_ref = f"{project_id}.{dataset_id}.{table_id}"
     try:
+        query, full_ref = _build_bq_select_query(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            table_id=table_id,
+            bq_columns=bq_columns,
+            limit=limit,
+            bq_datetime_column=bq_datetime_column,
+            relative_date_filter=relative_date_filter,
+        )
         client = bigquery.Client(project=project_id)
         df = client.query(query).to_dataframe()
         log(f"[{environment.upper()}] {full_ref} → {len(df)} registros", level="info")
+        if relative_date_filter is not None and bq_datetime_column:
+            log(
+                (
+                    f"[{environment.upper()}] filtro incremental aplicado em {full_ref}: "
+                    f"{bq_datetime_column} >= D-{relative_date_filter}"
+                ),
+                level="info",
+            )
         metrics = default_metrics()
         return {"df": df, "metrics": metrics}
 
-    except GoogleAPIError as exc:
+    except (GoogleAPIError, ValueError) as exc:
         msg = (
             f"[{environment.upper()}] Erro ao consultar BigQuery ({full_ref}): "
             f"{type(exc).__name__}: {exc}"
@@ -112,7 +191,7 @@ def query_bq_table(
         metrics = default_metrics()
         metrics["errors"].append(msg)
         metrics["failed"] = metrics["total"]
-        metrics["run_id"] = f"{table_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        metrics["run_id"] = f"{table_id}_{now_sp().strftime('%Y%m%d%H%M%S')}"
         metrics["execution_time"] = 0.0
         return {"df": None, "metrics": metrics}
 
@@ -142,7 +221,14 @@ def build_insert_config(db_schema: str, table_name: str, **kwargs: Any) -> Dict[
         batch_size
     ).
     """
-    allowed = {"if_exists", "custom_insert_query", "environment", "batch_size"}
+    allowed = {
+        "if_exists",
+        "custom_insert_query",
+        "environment",
+        "batch_size",
+        "mysql_max_retries",
+        "mysql_retry_backoff_seconds",
+    }
     unknown = set(kwargs) - allowed
     if unknown:
         raise ValueError(f"Chaves inválidas em config: {', '.join(sorted(unknown))}")
@@ -157,6 +243,8 @@ DEFAULT_INSERT_CONFIG: Dict[str, Any] = {
     "custom_insert_query": None,
     "environment": "dev",
     "batch_size": 1000,
+    "mysql_max_retries": 3,
+    "mysql_retry_backoff_seconds": 2,
 }
 
 
@@ -179,7 +267,7 @@ def _mark_empty_df_metrics(
     msg = f"[{environment.upper()}] sem registros para inserir em {table_name}"
     log(msg, level="info")
     metrics["notes"].append(msg)
-    metrics["execution_time"] = (datetime.now() - start).total_seconds()
+    metrics["execution_time"] = (now_sp() - start).total_seconds()
     return metrics
 
 
@@ -197,7 +285,7 @@ def _prepare_custom_insert(
         log(msg, level="error")
         metrics["errors"].append("Query customizada fora do padrão permitido.")
         metrics["failed"] = metrics["total"]
-        metrics["execution_time"] = (datetime.now() - start).total_seconds()
+        metrics["execution_time"] = (now_sp() - start).total_seconds()
         return None, None
 
     required_columns = extract_query_params(query)
@@ -206,7 +294,7 @@ def _prepare_custom_insert(
         log(msg, level="error")
         metrics["errors"].append(msg)
         metrics["failed"] = metrics["total"]
-        metrics["execution_time"] = (datetime.now() - start).total_seconds()
+        metrics["execution_time"] = (now_sp() - start).total_seconds()
         return None, None
 
     df_req = ensure_dataframe_columns(df, required_columns, fill_value=None, notes=metrics["notes"])
@@ -224,14 +312,23 @@ def _prepare_custom_insert(
 
 
 def _run_custom_insert(
-    conn,
+    engine,
     df_req: pd.DataFrame,
     query: str,
-    batch_size: int,
     metrics: Dict[str, Any],
+    cfg: Dict[str, Any],
 ) -> None:
     recs = df_req.where(pd.notnull(df_req), None).to_dict(orient="records")
-    ok, err, batch_errors = _execute_batches(conn, query, recs, batch_size)
+    ok, err, batch_errors = _execute_batches(
+        engine=engine,
+        query=query,
+        records=recs,
+        execution_config={
+            "batch_size": cfg["batch_size"],
+            "max_retries": cfg["mysql_max_retries"],
+            "retry_backoff_seconds": cfg["mysql_retry_backoff_seconds"],
+        },
+    )
     metrics["inserted"] = ok
     metrics["failed"] = err
     metrics["errors"].extend(batch_errors)
@@ -278,31 +375,37 @@ def insert_df_into_mysql(
     if metrics is None:
         metrics = default_metrics()
 
-    start = datetime.now()
+    start = now_sp()
 
+    metrics["run_id"] = f"{table_name}_{start.strftime('%d-%m-%Y_%H%M%S')}"
     if df is None or df.empty:
         return _mark_empty_df_metrics(metrics, environment, table_name, start)
-
     metrics["total"] = len(df)
-    metrics["run_id"] = f"{table_name}_{start.strftime('%d-%m-%Y_%H%M%S')}"
 
     try:
         engine = create_engine(mysql_uri)
         log(f"[{environment.upper()}] conectando ao MySQL...", level="info")
 
-        with engine.begin() as conn:
-            if cfg["custom_insert_query"]:
-                df_req, query = _prepare_custom_insert(
-                    df=df,
-                    custom_insert_query=cfg["custom_insert_query"],
-                    db_schema=db_schema,
-                    metrics=metrics,
-                    start=start,
-                )
-                if df_req is None or query is None:
-                    return metrics
-                _run_custom_insert(conn, df_req, query, cfg["batch_size"], metrics)
-            else:
+        if cfg["custom_insert_query"]:
+            df_req, query = _prepare_custom_insert(
+                df=df,
+                custom_insert_query=cfg["custom_insert_query"],
+                db_schema=db_schema,
+                metrics=metrics,
+                start=start,
+            )
+            if df_req is None or query is None:
+                return metrics
+
+            _run_custom_insert(
+                engine=engine,
+                df_req=df_req,
+                query=query,
+                metrics=metrics,
+                cfg=cfg,
+            )
+        else:
+            with engine.begin() as conn:
                 _run_to_sql_insert(conn, df, cfg, metrics)
 
     except SQLAlchemyError as exc:
@@ -311,7 +414,7 @@ def insert_df_into_mysql(
         metrics["failed"] = metrics["total"]
         metrics["errors"] = [msg]
 
-    metrics["execution_time"] = (datetime.now() - start).total_seconds()
+    metrics["execution_time"] = (now_sp() - start).total_seconds()
     log(
         f"[{environment.upper()}] inserção finalizada: "
         f"inseridos={metrics['inserted']}, falhas={metrics['failed']}, "
@@ -348,7 +451,7 @@ def _build_report_lines(project_clean: str, metrics: Dict[str, Any]) -> List[str
     emoji = _status_emoji(total, inserted, failed, notes)
 
     lines = [
-        f"## {emoji} **{project_clean}** - {datetime.now().strftime('%d/%m/%Y - %H:%M:%S')}",
+        f"## {emoji} **{project_clean}** - {now_sp().strftime('%d/%m/%Y - %H:%M:%S')}",
         "",
         "**Resumo:**",
         f"- Total de registros: `{total}`",
@@ -384,12 +487,8 @@ def generate_report(metrics: dict, context: Optional[Dict[str, Any]] = None) -> 
     log(report, level="info")
 
     notify = bool(ctx.get("notify"))
-    environment = str(ctx.get("environment", "dev"))
-    failed = int(metrics.get("failed", 0))
-    errors = metrics.get("errors", []) or []
-    notes = metrics.get("notes", []) or []
 
-    if notify and (environment == "dev" or failed > 0 or errors or notes):
+    if notify:
         send_message(
             title=str(ctx.get("pipeline_name", DEFAULT_REPORT_CONTEXT["pipeline_name"])),
             message=report,
@@ -398,8 +497,9 @@ def generate_report(metrics: dict, context: Optional[Dict[str, Any]] = None) -> 
 
     return report
 
+
 @task
-def apply_df_filter(df, filter_name: str | None, notes: list | None = None):
+def apply_df_filter(df, filter_name: Optional[str], notes: Optional[List[str]] = None):
     """Aplica um filtro opcional no DF, controlado por config."""
     if df is None or getattr(df, "empty", True) or not filter_name:
         return df
@@ -412,4 +512,13 @@ def apply_df_filter(df, filter_name: str | None, notes: list | None = None):
             notes.append(msg)
         return df
 
-    return fn(df, notes=notes)
+    try:
+        return fn(df, notes=notes)
+    except Exception as exc:
+        msg = summarize_error(
+            f"Erro ao aplicar df_filter_name='{filter_name}': {type(exc).__name__}: {exc}"
+        )
+        log(msg, level="error")
+        if notes is not None:
+            notes.append(msg)
+        raise ValueError(msg)
