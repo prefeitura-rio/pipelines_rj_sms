@@ -526,21 +526,6 @@ cases:
     params:
       environment: "dev"
 
-  - case_slug: prontuario_extraction_operator
-    flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
-    flow_name: prontuario_extraction_operator
-    params:
-      environment: "dev"
-      bucket_name: "subhue_backups"
-      cnes: '2269945'
-      folder: '2026-03'
-      dataset: 'brutos_prontuario_prontuaRio_dev_staging'
-      lines_per_chunk: 100
-      skip_openbase: false
-      openbase_blob: '2026-03/hospubAF-mar-2269945-openbase-26-03-2026-05h00m.tar.gz'
-      skip_postgres: false
-      postgres_blob: '2026-03/hospubAF-mar-2269945-sql-26-03-2026-06h01m.tar.gz'
-
   - case_slug: prontuario_extraction_openbase
     flow_path: pipelines.datalake.extract_load.prontuario_gcs.flows
     flow_name: prontuario_openbase_operator
@@ -549,7 +534,7 @@ cases:
       bucket_name: "subhue_backups"
       folder: "2026-03"
       cnes: "2269945"
-      dataset: "brutos_prontuario_prontuaRio_dev_staging"
+      dataset: "brutos_prontuario_prontuaRio_continuo_staging"
       lines_per_chunk: 5000
       blob_path: "2026-03/hospubAF-mar-2269945-openbase-26-03-2026-05h00m.tar.gz"
   
@@ -561,7 +546,7 @@ cases:
       bucket_name: "subhue_backups"
       folder: "2026-03"
       cnes: "2269945"
-      dataset: "brutos_prontuario_prontuaRio_dev_staging"
+      dataset: "brutos_prontuario_prontuaRio_continuo_staging"
       lines_per_chunk: 1000
       blob_path: "2026-03/hospubAF-mar-2269945-sql-26-03-2026-06h01m.tar.gz"
 
@@ -572,7 +557,7 @@ cases:
       environment: "dev"
       bucket_name: "subhue_backups"
       folder: "2026-03"
-      dataset: 'brutos_prontuario_prontuaRio'
+      dataset: 'brutos_prontuario_prontuaRio_continuo_staging'
       chunk_size: 1000
 
   - case_slug: emails-subgeral
