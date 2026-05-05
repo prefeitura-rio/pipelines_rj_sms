@@ -566,7 +566,7 @@ def upload_file_to_native_table(
         log(f"❌ Erro ao inserir linhas na tabela: {e}")
         raise e
 
-    log(f"✅ Inserção de linhas feitas com sucesso")
+    log(f"✅ Inserção de linhas feitas com sucesso em {dataset_id}.{table}")
     os.remove(file)
 
 @task
