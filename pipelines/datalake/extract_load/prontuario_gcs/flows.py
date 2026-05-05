@@ -50,7 +50,7 @@ with Flow(
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     CNES = Parameter("cnes", required=True)
     FOLDER = Parameter('folder', required=True)
-    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_staging", required=True)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_continuo_staging", required=True)
     LINES_PER_CHUNK = Parameter("lines_per_chunk", default=5_000)
     BLOB_PATH = Parameter("blob_path", required=True)
 
@@ -117,7 +117,7 @@ with Flow(
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     CNES = Parameter("cnes", required=True)
     FOLDER = Parameter('folder', required=True)
-    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_staging", required=True)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_continuo_staging", required=True)
     LINES_PER_CHUNK = Parameter("lines_per_chunk", default=1_000)
     BLOB_PATH = Parameter("blob_path", required=True)
 
@@ -147,7 +147,7 @@ with Flow(
         tar_files=postgres_file,
         output_dir=prontuario_constants.UNCOMPRESS_FILES_DIR.value,
         files_to_extract=["hospub.sql"],
-        exclude_origin=False,
+        exclude_origin=True,
         wait_for=postgres_file,
     )
 
