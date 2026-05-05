@@ -8,15 +8,20 @@ DEFAULT_DATASET_ID = "brutos_sisreg_preparos"
 DEFAULT_PREPAROS_TABLE_ID = "tb_preparos"
 DEFAULT_HISTORICO_TABLE_ID = "tb_historicos_preparos"
 
+# Quantidade padrão de unidades a processar (None = todas)
+DEFAULT_UNIDADES_LIMIT = None
+
+
 INFISICAL_SISREG_PATH = "/sisreg"
 INFISICAL_SISREG_USERNAME = "SISREG_USER"
 INFISICAL_SISREG_PASSWORD = "SISREG_PASSWORD"
 
+ETAPA_PREPARO        = 'FRM_PREPARO'
 
 SISREG_BASE_URL = "https://sisregiii.saude.gov.br"
 SISREG_LOGIN_URL = f"{SISREG_BASE_URL}/cgi-bin/index"
-SISREG_POST_LOGIN_PROBE_URL = f"{SISREG_BASE_URL}/cgi-bin/index#"
-SISREG_DEFAULT_DOMAIN = "sisregiii.saude.gov.br"
+SISREG_PREPAROS_URL = "http://sisregiii.saude.gov.br/cgi-bin/config_preparo"
+
 
 REQUEST_HEADERS = {
    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0',
@@ -34,6 +39,3 @@ REQUEST_HEADERS = {
 }
 import time
 
-# def delay_request():
-#     """Aplica o delay padrão entre requisições"""
-#     time.sleep(8.5)

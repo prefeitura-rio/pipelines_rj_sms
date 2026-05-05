@@ -7,20 +7,24 @@ Flow
 from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import VertexRun
-from prefect.storage import GCS
 
-from pipelines.utils.state_handlers import handle_flow_state_change
-from pipelines.constants import constants as pipeline_constants
+
+
 
 # Internos
+from pipelines.utils.state_handlers import handle_flow_state_change
+from pipelines.constants import constants as pipeline_constants
+from prefect.storage import GCS
 from prefeitura_rio.pipelines_utils.custom import Flow
-from pipelines.datalake.extract_load.sisreg_preparos import constants
+from pipelines.datalake.extract_load.sisreg_preparos import constants, schedules
 from pipelines.datalake.extract_load.sisreg_preparos.tasks import (
     login,
     coletar_unidades,
-    processar_unidades
+    processar_unidades,
+    DEFAULT_DATASET_ID,
+    DEFAULT_TABLE_ID,
+    DEFAULT_PARTITION_COLUMN
 )
-
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
@@ -28,10 +32,13 @@ from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 with Flow(
     name="SMS: SISREG-PREPAROS",
     state_handlers=[handle_flow_state_change],
+    owners=[
+        pipeline_constants.MATHEUS_ID.value]
 ) as sisreg_preparos_flow:
 
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
-
+    UNIDADES_LIMIT = Parameter("unidades_limit", default=constants.DEFAULT_UNIDADES_LIMIT, required=False)
+    
     # Secrets
     usuario = get_secret_key(
         secret_path=constants.INFISICAL_SISREG_PATH,
@@ -51,22 +58,22 @@ with Flow(
     df_preparos = processar_unidades(session, unidades)
     
     df_preparos_ajustados = handle_columns_to_bq(
-                            df=df_preparos[['cnes',
-                                            'nomeUnidade',
-                                            'codProcedimento',
-                                            'nomeProcedimento',
-                                            'descricaoPreparo']])
+        df=df_preparos[['cnes',
+                        'nomeUnidade',
+                        'codProcedimento',
+                        'nomeProcedimento',
+                        'descricaoPreparo']])
 
     upload_df_to_datalake(
         df=df_preparos_ajustados,
-        dataset_id="brutos_sisreg_preparos",
-        table_id="tb_sisreg_preparos",
-        partition_column="dt_extracao",
+        dataset_id = DEFAULT_DATASET_ID,
+        table_id= DEFAULT_TABLE_ID,
+        partition_column= DEFAULT_PARTITION_COLUMN,
         source_format="parquet",
     )
 
 
-sisreg_preparos_flow.executor = LocalDaskExecutor(num_workers=16)
+sisreg_preparos_flow.executor = LocalDaskExecutor(num_workers=1)
 sisreg_preparos_flow.storage = GCS(pipeline_constants.GCS_FLOWS_BUCKET.value)
 sisreg_preparos_flow.run_config = VertexRun(
     image=pipeline_constants.DOCKER_VERTEX_IMAGE.value,
@@ -78,4 +85,4 @@ sisreg_preparos_flow.run_config = VertexRun(
     },
 )
 
-sisreg_preparos_flow.schedule = None
+sisreg_preparos_flow.schedule = schedules.schedule
