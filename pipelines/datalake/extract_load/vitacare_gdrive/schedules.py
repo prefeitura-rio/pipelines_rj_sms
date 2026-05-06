@@ -20,6 +20,7 @@ flow_parameters = [
         "desired_table_name": "acompanhamento_mensal_gestantes",
         "environment": "prod",
         "rename_flow": True,
+        "get_all_files": False,
     },
     {
         "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_DISPENSAS_APARELHO_PRESSAO/*/*_DISPENSAS_APARELHO_PRESSAO_*.csv",
@@ -27,12 +28,14 @@ flow_parameters = [
         "desired_table_name": "dispensas_aparelho_pressao",
         "environment": "prod",
         "rename_flow": True,
+        "get_all_files": False,
     },
     {
         "file_pattern": "INFORMES-MENSAIS-ETSN/AP*/*/REPORT_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL/*/*_ACOMPANHAMENTO_MULHERES_IDADE_FERTIL_*.csv",
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "acompanhamento_mulheres_idade_fertil",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -40,6 +43,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "listagem_vacina_v2",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     # FICHA A
@@ -48,6 +52,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "ficha_a_vitahiscare",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -55,6 +60,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "ficha_a_v2",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -62,6 +68,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "ficha_c_v2",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -69,6 +76,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "criancas_menores_5_anos",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -76,6 +84,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "indicadores_cg_variavel_3",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -83,6 +92,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "indicadores_cg_variavel_2",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -90,6 +100,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "indicadores_cg_variavel_1",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -97,6 +108,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "estado_nutricional_sisvan",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -104,6 +116,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "listagem_pacientes_tea",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -111,6 +124,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "solicitacao_saude_bucal",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
     {
@@ -118,6 +132,7 @@ flow_parameters = [
         "desired_dataset_name": "brutos_informes_vitacare",
         "desired_table_name": "relacao_hasdm_vitahiscare",
         "environment": "prod",
+        "get_all_files": False,
         "rename_flow": True,
     },
 ]

@@ -15,14 +15,13 @@ from pipelines.datalake.migrate.bq_to_subpav.schedules import (
     bq_to_subpav_combined_schedule,
 )
 from pipelines.datalake.migrate.bq_to_subpav.tasks import (
+    apply_df_filter,
     build_insert_config,
     generate_report,
     get_db_uri,
     insert_df_into_mysql,
     query_bq_table,
     resolve_notify,
-    apply_df_filter
-    
 )
 from pipelines.datalake.utils.tasks import rename_current_flow_run
 from pipelines.utils.flow import Flow
@@ -52,6 +51,14 @@ with Flow(
     LIMIT = Parameter("limit", required=False, default=None)
     BATCH_SIZE = Parameter("batch_size", required=False, default=1000)
     DF_FILTER_NAME = Parameter("df_filter_name", required=False, default=None)
+    BQ_DATETIME_COLUMN = Parameter("bq_datetime_column", required=False, default=None)
+    RELATIVE_DATE_FILTER = Parameter("relative_date_filter", required=False, default=None)
+    MYSQL_MAX_RETRIES = Parameter("mysql_max_retries", required=False, default=3)
+    MYSQL_RETRY_BACKOFF_SECONDS = Parameter(
+        "mysql_retry_backoff_seconds",
+        required=False,
+        default=2,
+    )
 
     NOTIFY = Parameter("notify", default=None)
 
@@ -73,16 +80,14 @@ with Flow(
         environment=ENVIRONMENT,
         bq_columns=BQ_COLUMNS,
         limit=LIMIT,
+        bq_datetime_column=BQ_DATETIME_COLUMN,
+        relative_date_filter=RELATIVE_DATE_FILTER,
     )
 
     df_bq = result["df"]
     metrics = result["metrics"]
 
-    df_bq = apply_df_filter(
-        df=df_bq, 
-        filter_name=DF_FILTER_NAME, 
-        notes=metrics["notes"]
-        )
+    df_bq = apply_df_filter(df=df_bq, filter_name=DF_FILTER_NAME, notes=metrics["notes"])
 
     db_uri = get_db_uri(
         infisical_path=INFISICAL_PATH,
@@ -97,6 +102,8 @@ with Flow(
         custom_insert_query=CUSTOM_INSERT_QUERY,
         environment=ENVIRONMENT,
         batch_size=BATCH_SIZE,
+        mysql_max_retries=MYSQL_MAX_RETRIES,
+        mysql_retry_backoff_seconds=MYSQL_RETRY_BACKOFF_SECONDS,
     )
 
     result = insert_df_into_mysql(
