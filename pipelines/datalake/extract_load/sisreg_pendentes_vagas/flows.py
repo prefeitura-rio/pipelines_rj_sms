@@ -70,14 +70,13 @@ with Flow(
     es = get_elasticsearch_client(user=sisreg_api_user, password=sisreg_api_password)
     df_procedimentos = get_procedimentos(es=es, max_es_pages=MAX_ES_PAGES)
     session = initiate_session(user=sisreg_web_user, password=sisreg_web_password, request_delay=REQUEST_DELAY)
-    dfs_results_list = extract_vagas_info(
+
+    df_general_data, df_vagas_details = extract_vagas_info(
         session=session,
         df_procedimentos=df_procedimentos,
         request_delay=REQUEST_DELAY, 
         max_procedimentos=MAX_PROCEDIMENTOS
         )
-    
-    df_general_data, df_vagas_details = dfs_results_list[0], dfs_results_list[1]
     
     df_general_data_ok = handle_columns_to_bq(df=df_general_data)
     df_vagas_details_ok = handle_columns_to_bq(df=df_vagas_details)

@@ -140,7 +140,7 @@ def extract_vagas_info(
     df_procedimentos: pd.DataFrame,
     request_delay: float,
     max_procedimentos: int = None
-):
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     resultados = []
     vagas_detalhadas = []  # NOVO: lista para vagas detalhadas
 
@@ -345,4 +345,4 @@ def extract_vagas_info(
             "dt_hr_extracao": "datetime64[ns]"
         })
 
-    return [df_dados_gerais, df_vagas_detalhes]
+    return (df_dados_gerais, df_vagas_detalhes)
