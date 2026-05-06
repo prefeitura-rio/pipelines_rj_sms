@@ -19,7 +19,11 @@ from pipelines.utils.tasks import upload_df_to_datalake
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
-def find_all_file_names_from_pattern(file_pattern: str, environment: str):
+def find_all_file_names_from_pattern(
+    file_pattern: str, 
+    environment: str,
+    get_all_files: bool = False,
+    ):
     client = storage.Client()
 
     bucket_name = constants.GCS_BUCKET.value[environment]
@@ -29,12 +33,28 @@ def find_all_file_names_from_pattern(file_pattern: str, environment: str):
 
     log(f"Using pattern: {file_pattern}")
     files = []
+    
+    # Usado para pegar toda a lista de arquivos que batem com o padrão, sem filtrar apenas o mais recente
+    if get_all_files:
+        for blob in blobs:
+            if fnmatch.fnmatch(blob.name, file_pattern):
+                files.append(blob.name)
+        return files
+    
     for blob in blobs:
-        if fnmatch.fnmatch(blob.name, file_pattern):
-            files.append(blob.name)
+        if not file_pattern or fnmatch.fnmatch(blob.name, str(file_pattern)):
+            files.append(blob)
 
-    log(f"{len(files)} files were found. Their names:\n - " + "\n - ".join(files))
-    return files
+    if not files:
+        log("No files found matching the pattern.")
+        return []
+        
+    # Ordena pelo arquivo mais recente e retorna apenas o nome dele em uma lista (para manter compatibilidade com o fluxo mapeado)
+    files.sort(key=lambda x: x.updated)
+    most_recent_file = files[-1].name
+
+    log(f"Found files, returning most recent: {most_recent_file}")
+    return [most_recent_file]
 
 
 @task(max_retries=3, retry_delay=timedelta(seconds=30))
