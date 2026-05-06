@@ -9,7 +9,7 @@ from pipelines.constants import constants
 flow_parameters = {
     "bucket_name": "subhue_backups",
     "chunk_size": 1000,
-    "dataset": "brutos_prontuario_prontuaRio_continuo_staging",
+    "dataset": "brutos_prontuario_prontuaRio_staging",
     "environment": "prod",
     "folder": ""
 } 
