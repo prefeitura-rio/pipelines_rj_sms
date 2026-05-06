@@ -36,6 +36,3 @@ clock_diario = CronClock(
 )
 
 schedule = Schedule(clocks=[clock_mensal, clock_diario])
-
-
-schedule = Schedule(clocks=[clock_mensal])
