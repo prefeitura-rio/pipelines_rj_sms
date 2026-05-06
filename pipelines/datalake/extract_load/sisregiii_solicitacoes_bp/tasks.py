@@ -16,26 +16,34 @@ from prefect import task
 from prefect.engine.signals import FAIL
 from pipelines.utils.tasks import upload_df_to_datalake
 
+
 from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import (
     BASE_URL,
     GERENCIADOR_URL,
     HEADERS_DISFARCE,
     COLUNAS_SISREG_MAPPING,
-    CONFIGS_EXTRACAO_BASE
+    RUN_CONFIGS
 )
+
 
 # Funções de tratamento, html, login e verificação
 def sha256_upper(txt: str) -> str:
     return hashlib.sha256(txt.upper().encode("utf-8")).hexdigest()
 
-def hidden(html: str) -> dict:
+def extrair_campos_ocultos(html: str) -> dict:
     soup = BeautifulSoup(html, "html.parser")
-    return {
-        i["name"]: i.get("value", "")
-        for i in soup.find_all("input", type="hidden")
-        if i.get("name")
-    }
+    campos_ocultos = {}
+    
+    for campo in soup.find_all("input", type="hidden"):
+        nome_do_campo = campo.get("name")
+        valor_do_campo = campo.get("value", "")
+        
+        if nome_do_campo:
+            campos_ocultos[nome_do_campo] = valor_do_campo
+            
+    return campos_ocultos
 
+#Extrai o nome da imagem atribuída a cor a partir do link (src)
 def extrair_cor_do_src(src: str) -> str:
     return os.path.splitext(os.path.basename(src))[0]
 
@@ -43,8 +51,7 @@ def limpar_nomes_colunas(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = (
         df.columns
         .str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8')
-        .str.replace(r'[^a-zA-Z0-9]', '_', regex=True) 
-        .str.replace(r'_+', '_', regex=True)           
+        .str.replace(r'[^a-zA-Z0-9]+', '_', regex=True)
         .str.strip('_')                                
         .str.lower()                                   
     )
@@ -79,7 +86,7 @@ def realizar_login(sessao: requests.Session, usuario: str, senha: str, timeout_l
     else:
         raise FAIL("Não encontrei a tag <form> na página inicial.")
 
-    campos_ocultos = hidden(r_get.text)
+    campos_ocultos = extrair_campos_ocultos(r_get.text)
     payload = {
         **campos_ocultos,
         "usuario": usuario, "senha": "",
@@ -90,7 +97,8 @@ def realizar_login(sessao: requests.Session, usuario: str, senha: str, timeout_l
     r_post = sessao.post(url_post_real, data=payload, allow_redirects=True, timeout=timeout_login)
     texto_pagina = r_post.text.lower()
     
-    if "sair" in texto_pagina or "menu" in texto_pagina or "bem-vindo" in texto_pagina:
+    indicadores_de_sucesso = ("sair", "menu", "bem-vindo")
+    if any(p in texto_pagina for p in indicadores_de_sucesso):
         logger.info("Login realizado com sucesso.")
         return True
     else:
@@ -105,13 +113,18 @@ def criar_sessao_autenticada(usuario: str, senha: str, timeout_login: int) -> re
     realizar_login(sessao, usuario, senha, timeout_login)
     return sessao
 
+
 def _verificar_resposta_html(texto_html: str) -> str:
     texto_lower = texto_html.lower()
+    msgs_sessao_morta = ("sua sessão foi finalizada", "efetue o logon novamente")
+    msgs_erro_critico = ("erro não esperado", "erro nao esperado", "erro inesperado")
     
-    if "sua sessão foi finalizada" in texto_lower or "efetue o logon novamente" in texto_lower:
+    if any(msg in texto_lower for msg in msgs_sessao_morta):
         return "SESSAO_ZUMBI"
-    if "erro não esperado" in texto_lower or "erro nao esperado" in texto_lower or "erro inesperado" in texto_lower:
-        raise ValueError("Sisreg crashou com 'Erro não esperado'.")
+        
+    if any(msg in texto_lower for msg in msgs_erro_critico):
+        return "ERRO_CRITICO"
+        
     if "nenhum registro encontrado" in texto_lower:
         return "VAZIO"
         
@@ -121,20 +134,33 @@ def _extrair_tabela_do_html(texto_html: str, status_req: str) -> pd.DataFrame:
     soup = BeautifulSoup(texto_html, 'html.parser')
     tables = soup.find_all('table', class_='table_listagem')
     
-    if len(tables) > 1:
-        rows = tables[1].find_all('tr')
+    tabela_alvo = None
+    for tb in tables:
+        texto_tb = tb.text.lower()
+        if "cód. solicitação" in texto_tb and "data da solicitação" in texto_tb and "risco" in texto_tb:
+            tabela_alvo = tb
+            break
+
+    if tabela_alvo:
+        rows = tabela_alvo.find_all('tr')
         headers = [col.text.strip() for col in rows[1].find_all(['td', 'th'])]
+        
+        try:
+            risco_index = headers.index('Risco')
+        except ValueError:
+            risco_index = None
+
         data = []
         for row in rows[2:]:
             cols = row.find_all('td')
             if not cols: continue
+            
             row_data = [col.text.strip() for col in cols]
-            try:
-                risco_index = headers.index('Risco')
+            
+            if risco_index is not None and risco_index < len(cols):
                 img_tag = cols[risco_index].find('img')
                 row_data[risco_index] = extrair_cor_do_src(img_tag['src']) if img_tag else None
-            except ValueError:
-                pass 
+                
             data.append(row_data)
 
         if data:
@@ -147,7 +173,20 @@ def _extrair_tabela_do_html(texto_html: str, status_req: str) -> pd.DataFrame:
     else:
         raise ValueError("A tabela não foi renderizada no HTML, mesmo com status OK.")
 
-def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str, data_req: str, periodo_req: str, status_req: str, cod_situacao_req: str, logger: logging.Logger, timeout_consulta: int, tempo_espera: float, timeout_login: int) -> pd.DataFrame:
+def _processar_pagina_sisreg(
+    sessao: requests.Session,
+    usuario: str,
+    senha: str,
+    data_req: str,
+    periodo_req: str,
+    status_req: str,
+    cod_situacao_req: str,
+    logger: logging.Logger,
+    timeout_consulta: int,
+    tempo_espera: float,
+    timeout_login: int,
+) -> pd.DataFrame:
+    
     url_consulta = (
         f"{GERENCIADOR_URL}?etapa=LISTAR_SOLICITACOES"
         f"&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&cnes_executante=&co_proc_unificado="
@@ -156,23 +195,39 @@ def _processar_pagina_sisreg(sessao: requests.Session, usuario: str, senha: str,
         f"&cmb_situacao={cod_situacao_req}&qtd_itens_pag=0&co_seq_solicitacao=&ordenacao=2&pagina=0"
     )
 
-    resposta = sessao.get(url_consulta, timeout=timeout_consulta)
-    time.sleep(tempo_espera)
-    
-    status_pagina = _verificar_resposta_html(resposta.text)
-
-    if status_pagina == "SESSAO_ZUMBI":
-        logger.warning(f"Sessão zumbi detectada. Relogando para {data_req}...")
-        realizar_login(sessao, usuario, senha, timeout_login)
+    max_tentativas = 2
+    for tentativa in range(max_tentativas):
         resposta = sessao.get(url_consulta, timeout=timeout_consulta)
+        time.sleep(tempo_espera)
         status_pagina = _verificar_resposta_html(resposta.text)
 
+        if status_pagina == "SESSAO_ZUMBI":
+            logger.warning(f"Sessão zumbi detectada. Relogando para {data_req} (Tentativa {tentativa+1}/{max_tentativas})...")
+            realizar_login(sessao, usuario, senha, timeout_login)
+            continue
+            
+        break
+
+    if status_pagina in ("ERRO_CRITICO", "SESSAO_ZUMBI"):
+        raise ValueError("Sisreg indisponível ou crashou. Adicionando para fila de reextração.")
+        
     if status_pagina == "VAZIO":
         return pd.DataFrame()
 
     return _extrair_tabela_do_html(resposta.text, status_req)
 
-def _executar_com_retentativa(sessao: requests.Session, usuario: str, senha: str, erro_item: dict, logger: logging.Logger, timeout_consulta: int, tempo_espera: float, timeout_login: int, max_tentativas: int) -> pd.DataFrame | None:
+def _executar_com_retentativa(
+        sessao: requests.Session,
+        usuario: str,
+        senha: str,
+        erro_item: dict,
+        logger: logging.Logger,
+        timeout_consulta: int,
+        tempo_espera: float,
+        timeout_login: int,
+        max_tentativas: int
+) -> pd.DataFrame | None:
+    
     data_req, nome_req = erro_item["data"], erro_item["nome_status"]
     cod_req, per_req = erro_item["codigo_situacao"], erro_item["tipo_periodo"]
     
@@ -188,7 +243,8 @@ def _executar_com_retentativa(sessao: requests.Session, usuario: str, senha: str
             
     return None
 
-# TASKS
+
+#TASKS
 
 @task
 def gerar_roteiro_extracao(
@@ -237,19 +293,20 @@ def gerar_roteiro_extracao(
         datas = [(f"{dia:02d}/{mes:02d}/{ano}") for dia in range(1, ultimo_dia + 1)]
         logger.info(f"Modo Mensal ativado: Foram geradas {len(datas)} datas para o mês {mes:02d}/{ano}.")
 
-    configs_finais = CONFIGS_EXTRACAO_BASE
+    todas_configs = list(RUN_CONFIGS.values())
+    configs_finais = todas_configs
+    
     if status_especifico:
         status_upper = status_especifico.upper()
-        configs_finais = [c for c in CONFIGS_EXTRACAO_BASE if c["status_coluna"] == status_upper]
+        configs_finais = [c for c in todas_configs if c["status_coluna"] == status_upper]
         
         if not configs_finais:
-            logger.warning(f"Status '{status_upper}' não encontrado. Vai extrair todos os status por segurança.")
-            configs_finais = CONFIGS_EXTRACAO_BASE
+            logger.warning(f"Status '{status_upper}' não encontrado. Vai extrair todos por segurança.")
+            configs_finais = todas_configs
         else:
-            logger.info(f"Modo Filtro ativado: Extraindo APENAS o status '{status_upper}'.")
+            logger.info(f"Modo Filtro ativado: Extraindo APENAS '{status_upper}'.")
 
     return {"datas": datas, "configs": configs_finais}
-
 
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def extrair_fase_principal(
@@ -266,7 +323,7 @@ def extrair_fase_principal(
 
     for data_do_dia in datas:
         for config in configs_extracao:
-            tipo_per, cod_sit, nome_stat = config["tipo_periodo"], config["codigo_situacao"], config["status_coluna"]
+            tipo_per, cod_sit, nome_stat = config["tipo_pedido"], config["codigo_situacao"], config["status_coluna"]
             
             if contador_requisicoes > 0 and contador_requisicoes % limite_requisicoes == 0:
                 logger.info("A renovar a sessão proativamente...")
@@ -291,10 +348,15 @@ def extrair_fase_principal(
     sessao.close()
     return {"dfs_sucesso": dfs_fase1, "erros_para_reextrair": datas_com_erro}
 
-
 @task(max_retries=5, retry_delay=timedelta(minutes=3))
 def extrair_fase_reextracao(
-    usuario: str, senha: str, resultados_fase1: dict, timeout_login: int, timeout_consulta: int, tempo_espera: float, max_tentativas: int
+    usuario: str,
+    senha: str,
+    resultados_fase1: dict,
+    timeout_login: int,
+    timeout_consulta: int,
+    tempo_espera: float,
+    max_tentativas: int
 ) -> dict:
     
     logger = prefect.context.get("logger")
@@ -326,7 +388,6 @@ def extrair_fase_reextracao(
 
     sessao.close()
     return {"dfs": dfs_totais, "erros": erros_definitivos}
-
 
 @task
 def salvar_resultados(dados_extraidos: dict, dataset_id: str, table_id: str) -> None:

@@ -29,7 +29,7 @@ from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.schedules import 
 
 
 with Flow(
-    name="SMS-NTI: Sisreg Banco Producao",
+    name="SUBGERAL/CR/NTI - Extract & Load - SISREG Solicitações",
     state_handlers=[handle_flow_state_change]
 ) as sisreg_bp_flow:
     

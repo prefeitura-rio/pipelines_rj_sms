@@ -30,32 +30,40 @@ STATUS_SISREG_MAPPING = {
     "CANCELADO2": "10"
 }
 
-CONFIGS_EXTRACAO_BASE = [
-    {"tipo_periodo": "A", "codigo_situacao": "7", "status_coluna": "AUTORIZADO"},
-    {"tipo_periodo": "E", "codigo_situacao": "7", "status_coluna": "EXECUTADO"},
-]
+
+RUN_CONFIGS = {
+    "solicitacoes_autorizadas": {
+        "tipo_pedido": "A",
+        "codigo_situacao": "7",
+        "status_coluna": "AUTORIZADO"
+    },
+    "solicitacoes_executadas": {
+        "tipo_pedido": "E",
+        "codigo_situacao": "7",
+        "status_coluna": "EXECUTADO"
+    }
+}
+
 
 for nome, cod in STATUS_SISREG_MAPPING.items():
-    CONFIGS_EXTRACAO_BASE.append({
-        "tipo_periodo": "S",
+    chave = f"solicitacoes_{nome.lower()}"
+    RUN_CONFIGS[chave] = {
+        "tipo_pedido": "S",
         "codigo_situacao": cod,
         "status_coluna": "CANCELADO" if nome == "CANCELADO2" else nome
-    })
+    }
+
 
 COLUNAS_SISREG_MAPPING = {
     'cod_solicitac': 'cod_solicitacao', 
-    'cod_solicitacao': 'cod_solicitacao',
     'data': 'data_da_solicitacao', 
     'data_solicitacao': 'data_da_solicitacao',
-    'municipio_residencia': 'municipio', 
-    'municipio': 'municipio',
     'situacao_atual': 'situacao', 
     'sit': 'situacao',
-    'situacao': 'situacao',
-    'data_execucao': 'data_da_execucao', 
     'dt_exec': 'data_da_execucao',
-    'data_autorizacao': 'data_da_autorizacao', 
-    'dt_aut': 'data_da_autorizacao'
+    'data_execucao': 'data_da_execucao', 
+    'dt_aut': 'data_da_autorizacao',
+    'data_autorizacao': 'data_da_autorizacao'
 }
 
 DATASET_ID_BRUTO = 'brutos_sisreg_solicitacoes'
