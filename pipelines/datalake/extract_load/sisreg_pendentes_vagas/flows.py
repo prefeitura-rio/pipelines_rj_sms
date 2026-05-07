@@ -14,10 +14,8 @@ from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 from pipelines.datalake.extract_load.sisreg_pendentes_vagas import constants, schedules
 from pipelines.datalake.extract_load.sisreg_pendentes_vagas.tasks import (
-    get_elasticsearch_client,
-    get_procedimentos,
-    initiate_session,
-    extract_vagas_info
+    extract_vagas_info,
+    get_procedimentos
 )
 
 
@@ -67,15 +65,23 @@ with Flow(
     )
     
 
-    es = get_elasticsearch_client(user=sisreg_api_user, password=sisreg_api_password)
-    df_procedimentos = get_procedimentos(es=es, max_es_pages=MAX_ES_PAGES)
-    session = initiate_session(user=sisreg_web_user, password=sisreg_web_password, request_delay=REQUEST_DELAY)
+    # es = get_elasticsearch_client(user=sisreg_api_user, password=sisreg_api_password)
+    # df_procedimentos = get_procedimentos(es=es, max_es_pages=MAX_ES_PAGES)
+    # session = initiate_session(user=sisreg_web_user, password=sisreg_web_password, request_delay=REQUEST_DELAY)
+
+    df_procedimentos = get_procedimentos(
+        user=sisreg_api_user,
+        password=sisreg_api_password,
+        max_es_pages=MAX_ES_PAGES,
+    )
+    
 
     df_general_data, df_vagas_details = extract_vagas_info(
-        session=session,
+        user=sisreg_web_user,
+        password=sisreg_web_password,
         df_procedimentos=df_procedimentos,
-        request_delay=REQUEST_DELAY, 
-        max_procedimentos=MAX_PROCEDIMENTOS
+        request_delay=REQUEST_DELAY,
+        max_procedimentos=MAX_PROCEDIMENTOS,
         )
     
     df_general_data_ok = handle_columns_to_bq(df=df_general_data)
