@@ -498,7 +498,7 @@ def upload_file_to_native_table(
 
             if tamanho_mb > 10:
                 log("O dicionário tem mais de 10MB")
-                log(row)
+                log(row, level="error")
                 raise Exception
             else:
                 data_list.append(row)

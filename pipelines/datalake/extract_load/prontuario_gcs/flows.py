@@ -53,7 +53,7 @@ with Flow(
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     CNES = Parameter("cnes", required=True)
     FOLDER = Parameter('folder', required=True)
-    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_continuo_staging", required=True)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_staging", required=True)
     LINES_PER_CHUNK = Parameter("lines_per_chunk", default=5_000)
     BLOB_PATH = Parameter("blob_path", required=True)
 
@@ -120,7 +120,7 @@ with Flow(
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     CNES = Parameter("cnes", required=True)
     FOLDER = Parameter('folder', required=True)
-    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_continuo_staging", required=True)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_staging", required=True)
     LINES_PER_CHUNK = Parameter("lines_per_chunk", default=1_000)
     BLOB_PATH = Parameter("blob_path", required=True)
 
@@ -191,9 +191,9 @@ with Flow(
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
     BUCKET_NAME = Parameter("bucket_name", default="subhue_backups", required=True)
     RENAME_FLOW = Parameter("rename_flow", required=False)
-    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_continuo_staging", required=True)
+    DATASET = Parameter("dataset", default="brutos_prontuario_prontuaRio_staging", required=True)
     FOLDER = Parameter("folder", default="", required=False)
-    CHUNK_SIZE = Parameter("chunk_size", default=5_000)
+    CHUNK_SIZE = Parameter("chunk_size", default=1_000)
 
     folder = generate_current_folder(folder=FOLDER)
     rename_current_flow_run(folder=folder, env=ENVIRONMENT)
