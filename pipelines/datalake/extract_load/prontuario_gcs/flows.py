@@ -35,6 +35,9 @@ from pipelines.utils.prefect import get_current_flow_labels
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.utils.tasks import get_project_name, rename_current_flow_run
 from pipelines.datalake.extract_load.prontuario_gcs.schedules import schedule
+from pipelines.utils.credential_injector import authenticated_task as task
+from pipelines.utils.logger import log
+
 
 ######################################################################################
 #                                 OPERATORS
@@ -220,6 +223,22 @@ with Flow(
         chunk_size=CHUNK_SIZE,
     )
 
+
+    @task 
+    def log_params(params):
+        if not params:
+            log("Parâmetros vazios.", level='error')
+            return 
+        for param in params:
+            log(f"Params: {param}")
+
+    log_params(params=folder)
+    log_params(params=last_files)
+    log_params(params=openbase_params)
+    log_params(params=postgres_params)
+    log_params(params=prontuario_openbase_operator.name)
+    log_params(params=prontuario_postgres_operator.name)
+    
     prefect_project_name = get_project_name(environment=ENVIRONMENT)
     current_labels = get_current_flow_labels()
 
