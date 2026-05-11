@@ -15,16 +15,14 @@ from prefect.run_configs import VertexRun
 from pipelines.utils.state_handlers import handle_flow_state_change
 from pipelines.constants import constants as pipeline_constants
 from prefect.storage import GCS
-from prefeitura_rio.pipelines_utils.custom import Flow
+from pipelines.utils.flow import Flow
 from pipelines.datalake.extract_load.sisreg_preparos import constants, schedules
 from pipelines.datalake.extract_load.sisreg_preparos.tasks import (
     login,
     coletar_unidades,
-    processar_unidades,
-    DEFAULT_DATASET_ID,
-    DEFAULT_TABLE_ID,
-    DEFAULT_PARTITION_COLUMN
+    processar_unidades
 )
+
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
@@ -33,7 +31,8 @@ with Flow(
     name="SMS: SISREG-PREPAROS",
     state_handlers=[handle_flow_state_change],
     owners=[
-        pipeline_constants.MATHEUS_ID.value]
+        pipeline_constants.MATHEUS_ID.value,
+        ],
 ) as sisreg_preparos_flow:
 
     ENVIRONMENT = Parameter("environment", default="dev", required=True)
@@ -66,9 +65,9 @@ with Flow(
 
     upload_df_to_datalake(
         df=df_preparos_ajustados,
-        dataset_id = DEFAULT_DATASET_ID,
-        table_id= DEFAULT_TABLE_ID,
-        partition_column= DEFAULT_PARTITION_COLUMN,
+        dataset_id = constants.DEFAULT_DATASET_ID,
+        table_id= constants.DEFAULT_PREPAROS_TABLE_ID,
+        partition_column= constants.EXTRACTION_DATE_COLUMN,
         source_format="parquet",
     )
 

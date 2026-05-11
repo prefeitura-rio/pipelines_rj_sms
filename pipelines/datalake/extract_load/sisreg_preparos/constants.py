@@ -2,11 +2,11 @@
 """
 Constants
 """
-EXTRACTION_DATE_COLUMN = "data_extracao"
+EXTRACTION_DATE_COLUMN = "dt_extracao"
 
 DEFAULT_DATASET_ID = "brutos_sisreg_preparos"
 DEFAULT_PREPAROS_TABLE_ID = "tb_preparos"
-DEFAULT_HISTORICO_TABLE_ID = "tb_historicos_preparos"
+
 
 # Quantidade padrão de unidades a processar (None = todas)
 DEFAULT_UNIDADES_LIMIT = None
@@ -37,5 +37,3 @@ REQUEST_HEADERS = {
    'Sec-Fetch-User': '?1',
    'Priority': 'u=0 i'
 }
-import time
-

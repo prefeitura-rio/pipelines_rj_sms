@@ -672,7 +672,7 @@ cases:
       db_schema: "dbo"
       partition_column: "extracted_at"
 
-  - case_slug: Sisreg_preparos
+  - case_slug: sisreg_preparos
     flow_path: pipelines.datalake.extract_load.sisreg_preparos.flows
     flow_name: sisreg_preparos_flow
     params:
