@@ -11,6 +11,8 @@ import requests
 from google.cloud import bigquery
 
 from pipelines.datalake.extract_load.arcgis.utils import (
+    ArcGISFeatureContext,
+    ArcGISLayerVersionContext,
     build_feature_hash,
     build_layer_hash,
     build_metadata_url,
@@ -108,6 +110,70 @@ def fetch_arcgis_layer_features(
     return features
 
 
+def build_features_dataframe(
+    features: List[Dict[str, Any]],
+    context: ArcGISFeatureContext,
+) -> pd.DataFrame:
+    """
+    Build the historical feature DataFrame for a loaded ArcGIS layer.
+    """
+    rows = [
+        normalize_feature_row(
+            feature=feature,
+            context=context,
+        )
+        for feature in features
+    ]
+
+    return pd.DataFrame(rows)
+
+
+def build_version_dataframe(
+    features_df: pd.DataFrame,
+    metadata: Dict[str, Any],
+    context: ArcGISLayerVersionContext,
+) -> pd.DataFrame:
+    """
+    Build the ArcGIS layer version control DataFrame.
+
+    Args:
+        features_df: Historical features DataFrame produced for the layer.
+        metadata: ArcGIS layer metadata payload.
+        context: Version context used to identify and audit the extraction.
+
+    Returns:
+        DataFrame with one row describing the layer extraction version.
+    """
+    objectids = pd.to_numeric(features_df.get("objectid"), errors="coerce")
+
+    return pd.DataFrame(
+        [
+            {
+                "versao_id": context.versao_id,
+                "endpoint_url": context.endpoint_url.rstrip("/"),
+                "layer_id": metadata.get("id"),
+                "layer_name": metadata.get("name"),
+                "layer_hash": context.layer_hash,
+                "features_count": len(features_df),
+                "min_objectid": objectids.min() if not objectids.empty else None,
+                "max_objectid": objectids.max() if not objectids.empty else None,
+                "arcgis_geometry_type": metadata.get("geometryType"),
+                "arcgis_spatial_reference_wkid": (
+                    metadata.get("spatialReference") or {}
+                ).get("wkid"),
+                "arcgis_last_edit_date": (
+                    metadata.get("editingInfo") or {}
+                ).get("lastEditDate"),
+                "data_extracao": context.data_extracao,
+                "status": "pending",
+                "observacao": None,
+                "datalake_loaded_at": context.data_extracao,
+                "dataset_id": context.dataset_id,
+                "table_id": context.table_id,
+            }
+        ]
+    )
+
 @task
 def build_arcgis_dataframes(
     features: List[Dict[str, Any]],
@@ -135,10 +201,9 @@ def build_arcgis_dataframes(
     """
     if not features:
         raise ValueError("A camada ArcGIS não retornou features para carga.")
+
     data_extracao = now_rj_iso()
-    layer_name = metadata.get("name")
-    object_id_field = metadata.get("objectIdFieldName")
-    layer_id = metadata.get("id")
+    layer_id = metadata.get("id") or 0
 
     feature_hashes = [
         build_feature_hash(
@@ -151,53 +216,38 @@ def build_arcgis_dataframes(
     layer_hash = build_layer_hash(feature_hashes)
     versao_id = build_version_id(
         endpoint_url=endpoint_url,
-        layer_id=layer_id or 0,
+        layer_id=layer_id,
         layer_hash=layer_hash,
     )
 
-    rows = [
-        normalize_feature_row(
-            feature=feature,
-            endpoint_url=endpoint_url,
-            layer_id=layer_id or 0,
-            layer_name=layer_name,
-            layer_hash=layer_hash,
-            versao_id=versao_id,
-            data_extracao=data_extracao,
-            object_id_field=object_id_field,
-        )
-        for feature in features
-    ]
+    context = ArcGISFeatureContext(
+        endpoint_url=endpoint_url,
+        layer_id=layer_id,
+        layer_name=metadata.get("name"),
+        layer_hash=layer_hash,
+        versao_id=versao_id,
+        data_extracao=data_extracao,
+        object_id_field=metadata.get("objectIdFieldName"),
+    )
 
-    features_df = pd.DataFrame(rows)
-    objectids = pd.to_numeric(features_df.get("objectid"), errors="coerce")
+    features_df = build_features_dataframe(
+        features=features,
+        context=context,
+    )
 
-    versions_df = pd.DataFrame(
-        [
-            {
-                "versao_id": versao_id,
-                "endpoint_url": endpoint_url.rstrip("/"),
-                "layer_id": layer_id,
-                "layer_name": layer_name,
-                "layer_hash": layer_hash,
-                "features_count": len(features),
-                "min_objectid": objectids.min() if not objectids.empty else None,
-                "max_objectid": objectids.max() if not objectids.empty else None,
-                "arcgis_geometry_type": metadata.get("geometryType"),
-                "arcgis_spatial_reference_wkid": (
-                    metadata.get("spatialReference") or {}
-                ).get("wkid"),
-                "arcgis_last_edit_date": (
-                    metadata.get("editingInfo") or {}
-                ).get("lastEditDate"),
-                "data_extracao": data_extracao,
-                "status": "pending",
-                "observacao": None,
-                "datalake_loaded_at": data_extracao,
-                "dataset_id": dataset_id,
-                "table_id": table_id,
-            }
-        ]
+    version_context = ArcGISLayerVersionContext(
+        endpoint_url=endpoint_url,
+        dataset_id=dataset_id,
+        table_id=table_id,
+        layer_hash=layer_hash,
+        versao_id=versao_id,
+        data_extracao=data_extracao,
+    )
+
+    versions_df = build_version_dataframe(
+        features_df=features_df,
+        metadata=metadata,
+        context=version_context,
     )
 
     return {

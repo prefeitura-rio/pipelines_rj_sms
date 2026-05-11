@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103
+# pylint: disable=C0103, import-error
 """
 Schedules for ArcGIS FeatureServer extract/load flows.
 """
@@ -20,7 +20,10 @@ LABELS = [constants.RJ_SMS_AGENT_LABEL.value]
 TABLES_CONFIG = [
     {
         "project": "ArcGIS - Onde Ser Atendido - Equipes de APS",
-        "endpoint_url": "https://services1.arcgis.com/OlP4dGNtIcnD3RYf/arcgis/rest/services/OSA2/FeatureServer/1/query",
+        "endpoint_url": (
+            "https://services1.arcgis.com/OlP4dGNtIcnD3RYf/arcgis/rest/services/"
+            "OSA2/FeatureServer/1/query"
+        ),
         "dataset_id": arcgis_constants.DATASET_ID.value,
         "table_id": "osa__equipes_historico",
         "versions_table_id": arcgis_constants.VERSIONS_TABLE_ID.value,

@@ -7,9 +7,37 @@ import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
+from dataclasses import dataclass
 
 
 RJ_TZ = ZoneInfo("America/Sao_Paulo")
+@dataclass(frozen=True)
+class ArcGISFeatureContext:
+    """
+    Context required to normalize one ArcGIS feature.
+    """
+
+    endpoint_url: str
+    layer_id: int
+    layer_name: Optional[str]
+    layer_hash: str
+    versao_id: str
+    data_extracao: str
+    object_id_field: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class ArcGISLayerVersionContext:
+    """
+    Context required to build one ArcGIS layer version record.
+    """
+
+    endpoint_url: str
+    dataset_id: str
+    table_id: str
+    layer_hash: str
+    versao_id: str
+    data_extracao: str
 
 
 def stable_json_hash(value: Any) -> str:
@@ -140,13 +168,7 @@ def get_feature_objectid(feature: Dict[str, Any], object_id_field: Optional[str]
 
 def normalize_feature_row(
     feature: Dict[str, Any],
-    endpoint_url: str,
-    layer_id: int,
-    layer_name: Optional[str],
-    layer_hash: str,
-    versao_id: str,
-    data_extracao: str,
-    object_id_field: Optional[str] = None,
+    context: ArcGISFeatureContext,
 ) -> Dict[str, Any]:
     """
     Normalize an ArcGIS feature into the raw historical table structure.
@@ -157,13 +179,7 @@ def normalize_feature_row(
 
     Args:
         feature: Feature returned by the ArcGIS endpoint.
-        endpoint_url: ArcGIS query endpoint used for extraction.
-        layer_id: ArcGIS layer id obtained from metadata.
-        layer_name: ArcGIS layer name obtained from metadata.
-        layer_hash: Hash representing the complete layer content.
-        versao_id: Deterministic id of the loaded version.
-        data_extracao: Extraction datetime.
-        object_id_field: Object id field name informed by layer metadata.
+        context: Extraction context used to version and identify the feature.
 
     Returns:
         Dictionary representing one row in the historical raw table.
@@ -174,13 +190,13 @@ def normalize_feature_row(
     feature_hash = build_feature_hash(properties=properties, geometry=geometry)
 
     return {
-        "versao_id": versao_id,
-        "data_versao": data_extracao[:10],
-        "data_extracao": data_extracao,
-        "endpoint_url": endpoint_url.rstrip("/"),
-        "layer_id": layer_id,
-        "layer_name": layer_name,
-        "objectid": get_feature_objectid(feature, object_id_field),
+        "versao_id": context.versao_id,
+        "data_versao": context.data_extracao[:10],
+        "data_extracao": context.data_extracao,
+        "endpoint_url": context.endpoint_url.rstrip("/"),
+        "layer_id": context.layer_id,
+        "layer_name": context.layer_name,
+        "objectid": get_feature_objectid(feature, context.object_id_field),
         "global_id": properties.get("GlobalID"),
         "cap": properties.get("CAP"),
         "ap": properties.get("AP"),
@@ -203,8 +219,8 @@ def normalize_feature_row(
         "geometry_geojson": json.dumps(geometry, ensure_ascii=False) if geometry else None,
         "feature_json": json.dumps(feature, ensure_ascii=False),
         "feature_hash": feature_hash,
-        "layer_hash": layer_hash,
-        "datalake_loaded_at": data_extracao,
+        "layer_hash": context.layer_hash,
+        "datalake_loaded_at": context.data_extracao,
     }
 
 
