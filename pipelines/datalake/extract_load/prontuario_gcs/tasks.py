@@ -182,13 +182,15 @@ def extract_postgres_data(
                 log(f"Linhas processadas: {processed_count}")
                 log(f"Tabela atual: {table_name}")
                 log(f"Tabela anterior: {previous_table}")
-                upload_file_to_native_table.run(
-                    file=previous_csv_name,
-                    dataset_id=dataset_id,
-                    cnes=cnes,
-                    environment=environment,
-                    base_type="postgres",
-                )
+                
+                if previous_csv_name:
+                    upload_file_to_native_table.run(
+                        file=previous_csv_name,
+                        dataset_id=dataset_id,
+                        cnes=cnes,
+                        environment=environment,
+                        base_type="postgres",
+                    )
                 processed_count = 0
                 log("Retomando extração...")
 
