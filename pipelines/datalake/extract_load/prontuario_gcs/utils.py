@@ -296,7 +296,7 @@ def process_insert_statement(
 
     # Verifica se a tabela está na lista de tabelas desejadas
     if target_tables and table_name not in target_tables:
-        return False, "", table_name
+        return False, table_name, table_name
 
     columns = extract_columns(insert_stmt)
     values = extract_values(insert_stmt)
