@@ -14,8 +14,8 @@ from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
 
 from pipelines.datalake.extract_load.sisreg_pendentes_vagas import constants, schedules
 from pipelines.datalake.extract_load.sisreg_pendentes_vagas.tasks import (
-    extract_vagas_info,
-    get_procedimentos
+    get_procedimentos,
+    extract_vagas_info
 )
 
 
@@ -64,10 +64,6 @@ with Flow(
         secret_path=constants.INFISICAL_SISREG_PATH
     )
     
-
-    # es = get_elasticsearch_client(user=sisreg_api_user, password=sisreg_api_password)
-    # df_procedimentos = get_procedimentos(es=es, max_es_pages=MAX_ES_PAGES)
-    # session = initiate_session(user=sisreg_web_user, password=sisreg_web_password, request_delay=REQUEST_DELAY)
 
     df_procedimentos = get_procedimentos(
         user=sisreg_api_user,
