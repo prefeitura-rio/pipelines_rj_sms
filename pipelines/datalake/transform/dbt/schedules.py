@@ -25,25 +25,6 @@ monthly_parameters = [
     {"command": "build", "environment": "prod", "rename_flow": True, "select": "tag:monthly"},
 ]
 
-every_30_minutes_parameters = [
-    {
-        "command": "build",
-        "environment": "prod",
-        "rename_flow": True,
-        "select": "tag:every_30_minutes",
-        "send_discord_report": False,
-    },
-]
-
-every_4_hours_parameters = [
-    {
-        "command": "build",
-        "environment": "prod",
-        "rename_flow": True,
-        "select": "tag:cdi-4hours",
-        "send_discord_report": False,
-    },
-]
 
 
 dbt_daily_clocks = generate_dump_api_schedules(
@@ -76,26 +57,52 @@ dbt_monthly_clocks = generate_dump_api_schedules(
     runs_interval_minutes=30,
 )
 
-dbt_every_30_minutes_clocks = generate_dump_api_schedules(
-    interval=timedelta(minutes=30),
-    start_date=datetime(2024, 12, 18, 10, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
-    labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
-    ],
-    flow_run_parameters=every_30_minutes_parameters,
-    runs_interval_minutes=0,
-)
-# schedule 4 hours
-dbt_every_4_hours_clocks = generate_dump_api_schedules(
-    interval=timedelta(hours=4),
-    start_date=datetime(2024, 12, 18, 9, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
-    labels=[
-        constants.RJ_SMS_AGENT_LABEL.value,
-    ],
-    flow_run_parameters=every_4_hours_parameters,
-    runs_interval_minutes=0,
-)
-
-dbt_clocks = dbt_daily_clocks + dbt_weekly_clocks + dbt_monthly_clocks + dbt_every_30_minutes_clocks + dbt_every_4_hours_clocks
+dbt_clocks = dbt_daily_clocks + dbt_weekly_clocks + dbt_monthly_clocks
 
 dbt_schedules = Schedule(clocks=untuple_clocks(dbt_clocks))
+
+
+
+# Desabilitado, pois não há tabelas que necessitam desta frequência de atualização no momento.
+# every_30_minutes_parameters = [
+#     {
+#         "command": "build",
+#         "environment": "prod",
+#         "rename_flow": True,
+#         "select": "tag:every_30_minutes",
+#         "send_discord_report": False,
+#     },
+# ]
+
+
+# Schedules migrados para o pipelines V3
+
+# every_4_hours_parameters = [
+#     {
+#         "command": "build",
+#         "environment": "prod",
+#         "rename_flow": True,
+#         "select": "tag:cdi-4hours",
+#         "send_discord_report": False,
+#     },
+# ]
+
+# dbt_every_30_minutes_clocks = generate_dump_api_schedules(
+#     interval=timedelta(minutes=30),
+#     start_date=datetime(2024, 12, 18, 10, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+#     labels=[
+#         constants.RJ_SMS_AGENT_LABEL.value,
+#     ],
+#     flow_run_parameters=every_30_minutes_parameters,
+#     runs_interval_minutes=0,
+# )
+# schedule 4 hours
+# dbt_every_4_hours_clocks = generate_dump_api_schedules(
+#     interval=timedelta(hours=4),
+#     start_date=datetime(2024, 12, 18, 9, 0, tzinfo=pytz.timezone("America/Sao_Paulo")),
+#     labels=[
+#         constants.RJ_SMS_AGENT_LABEL.value,
+#     ],
+#     flow_run_parameters=every_4_hours_parameters,
+#     runs_interval_minutes=0,
+# )
