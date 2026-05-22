@@ -198,7 +198,7 @@ def extrair_item_sisreg(
 
     url_consulta = (
         f"{GERENCIADOR_URL}?etapa=LISTAR_SOLICITACOES"
-        f"&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&cnes_executante=&co_proc_unificado="
+        "&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&cnes_executante=&co_proc_unificado="
         f"&co_pa_interno=&ds_procedimento=&tipo_periodo={tipo_per}"
         f"&dt_inicial={data_req}&dt_final={data_req}"
         f"&cmb_situacao={cod_sit}&qtd_itens_pag=0&co_seq_solicitacao=&ordenacao=2&pagina=0"
@@ -211,7 +211,8 @@ def extrair_item_sisreg(
     except requests.exceptions.RequestException as e:
         sessao.close()
         raise ValueError(
-            f"Falha de conexão com o Sisreg ({type(e).__name__}). O Prefect ativará a retentativa automática."
+            f"Falha de conexão com o Sisreg ({type(e).__name__}). O Prefect ativará a retentativa"
+            " automática."
         ) from None
 
     status_pagina = _verificar_resposta_html(resposta.text)
@@ -261,7 +262,7 @@ def gerar_roteiro_extracao(
         mes_anterior = hoje.replace(day=1) - timedelta(days=1)
         ano, mes = mes_anterior.year, mes_anterior.month
         ultimo_dia = calendar.monthrange(ano, mes)[1]
-        datas = [(f"{dia:02d}/{mes:02d}/{ano}") for dia in range(1, ultimo_dia + 1)]
+        datas = [f"{dia:02d}/{mes:02d}/{ano}" for dia in range(1, ultimo_dia + 1)]
         log(f"Modo Mensal: Foram geradas {len(datas)} datas.")
 
     todas_configs = list(RUN_CONFIGS.values())
@@ -308,7 +309,8 @@ def consolidar_e_salvar(lista_de_dfs: list, dataset_id: str, table_id: str) -> N
         df_final["data_particao"] = datetime.now().strftime("%Y-%m-%d")
 
         log(
-            f"Iniciando envio para o DataLake: {dataset_id}.{table_id} ({len(df_final)} registros unificados)"
+            f"Iniciando envio para o DataLake: {dataset_id}.{table_id} ({len(df_final)} registros"
+            " unificados)"
         )
 
         upload_df_to_datalake.run(
