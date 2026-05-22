@@ -20,6 +20,7 @@ from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import 
 
 from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.tasks import (
     gerar_roteiro_extracao,
+    obter_sessao_autenticada,
     extrair_item_sisreg,
     consolidar_e_salvar,
 )
@@ -53,6 +54,12 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
+    sessao_autenticada = obter_sessao_autenticada(
+        usuario=usuario_infisical,
+        senha=senha_infisical,
+        timeout=timeout_login,
+    )
+
     lista_fichas_extracao = gerar_roteiro_extracao(
         data_especifica=data_especifica,
         data_inicial=data_inicial,
@@ -61,16 +68,19 @@ with Flow(
     )
 
     resultados_em_massa = extrair_item_sisreg.map(
-        usuario=unmapped(usuario_infisical),
-        senha=unmapped(senha_infisical),
-        ficha=lista_fichas_extracao,
-        timeout_login=unmapped(timeout_login),
-        timeout_consulta=unmapped(timeout_consulta),
-        tempo_espera=unmapped(tempo_espera_sisreg),
+    sessao=unmapped(sessao_autenticada),
+    usuario=unmapped(usuario_infisical),
+    senha=unmapped(senha_infisical),
+    ficha=lista_fichas_extracao,
+    timeout_login=unmapped(timeout_login),
+    timeout_consulta=unmapped(timeout_consulta),
+    tempo_espera=unmapped(tempo_espera_sisreg),
     )
 
     consolidar_e_salvar(
-        lista_de_dfs=resultados_em_massa, dataset_id=DATASET_ID_BRUTO, table_id=TABLE_ID_BP
+        lista_de_dfs=resultados_em_massa,
+        dataset_id=DATASET_ID_BRUTO,
+        table_id=TABLE_ID_BP,
     )
 
 # Configuração do Vertex

@@ -120,12 +120,12 @@ def criar_sessao_autenticada(usuario: str, senha: str, timeout_login: int) -> re
 
 def _verificar_resposta_html(texto_html: str) -> str:
     texto_lower = texto_html.lower()
-    if any(msg in texto_lower for msg in ("sua sessão foi finalizada", "efetue o logon novamente")):
+    if any(msg in texto_lower for msg in ("erro não esperado", "erro nao esperado", "erro inesperado")):
         return "SESSAO_ZUMBI"
     if any(
-        msg in texto_lower for msg in ("erro não esperado", "erro nao esperado", "erro inesperado")
+        msg in texto_lower for msg in ("sua sessão foi finalizada", "efetue o logon novamente")
     ):
-        return "ERRO_CRITICO"
+        return "Houve logout"
     if "nenhum registro encontrado" in texto_lower:
         return "VAZIO"
     return "OK"
@@ -177,8 +177,13 @@ def _extrair_tabela_do_html(texto_html: str, status_req: str) -> pd.DataFrame:
 
 
 # TASKS
+@task
+def obter_sessao_autenticada(usuario: str, senha: str, timeout: int) -> requests.Session:
+    return criar_sessao_autenticada(usuario, senha, timeout)
+
 @task(max_retries=30, retry_delay=timedelta(seconds=20))
 def extrair_item_sisreg(
+    sessao: requests.Session,
     usuario: str,
     senha: str,
     ficha: dict,
@@ -186,7 +191,7 @@ def extrair_item_sisreg(
     timeout_consulta: int,
     tempo_espera: float,
 ) -> pd.DataFrame:
-
+    
     data_req = ficha["data"]
     tipo_per = ficha["config"]["tipo_pedido"]
     cod_sit = ficha["config"]["codigo_situacao"]
@@ -194,34 +199,35 @@ def extrair_item_sisreg(
 
     log(f"Iniciando requisição isolada: {data_req} [{nome_stat}]")
 
-    sessao = criar_sessao_autenticada(usuario, senha, timeout_login)
-
     url_consulta = (
         f"{GERENCIADOR_URL}?etapa=LISTAR_SOLICITACOES"
         "&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&"
-        "cnes_executante=&co_proc_unificado="
-        f"&co_pa_interno=&ds_procedimento=&tipo_periodo={tipo_per}"
-        f"&dt_inicial={data_req}&dt_final={data_req}"
-        f"&cmb_situacao={cod_sit}&qtd_itens_pag=0&co_seq_solicitacao=&ordenacao=2&pagina=0"
+        "cnes_executante=&co_proc_unificado=&co_pa_interno=&"
+        f"ds_procedimento=&tipo_periodo={tipo_per}&dt_inicial={data_req}"
+        f"&dt_final={data_req}&cmb_situacao={cod_sit}&qtd_itens_pag=0&"
+        "co_seq_solicitacao=&ordenacao=2&pagina=0"
     )
 
     try:
         resposta = sessao.get(url_consulta, timeout=timeout_consulta)
         time.sleep(tempo_espera)
-        sessao.close()
     except requests.exceptions.RequestException as e:
-        sessao.close()
-        raise ValueError(
-            f"Falha de conexão com o Sisreg ({type(e).__name__}). O Prefect ativará a retentativa"
-            " automática."
-        ) from None
+        raise ValueError(f"Falha de conexão: {type(e).__name__}") from None
 
     status_pagina = _verificar_resposta_html(resposta.text)
 
+    if status_pagina == "Houve logout":
+        log("Sessão expirada detectada. Tentando reautenticar...")
+        try:
+            realizar_login(sessao, usuario, senha, timeout_login)
+            resposta = sessao.get(url_consulta, timeout=timeout_consulta)
+            status_pagina = _verificar_resposta_html(resposta.text)
+        except Exception as e:
+            raise ValueError(f"Falha na reautenticação: {e}") from None
+
     if status_pagina == "SESSAO_ZUMBI":
-        raise ValueError("Sessão Zumbi detectada. O Prefect ativará a retentativa automática.")
-    if status_pagina == "ERRO_CRITICO":
-        raise ValueError("Erro interno do Sisreg. O Prefect ativará a retentativa automática.")
+        raise ValueError("Sessão Zumbi detectada. Retentativa do Prefect acionada.")
+    
     if status_pagina == "VAZIO":
         return pd.DataFrame()
 
