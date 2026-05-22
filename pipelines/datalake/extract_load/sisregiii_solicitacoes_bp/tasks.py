@@ -5,18 +5,18 @@ import time
 import hashlib
 import calendar
 import pytz
-import logging
 from datetime import datetime, timedelta
 import urllib3
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import prefect
+
 from prefect import task
 from prefect.engine.signals import FAIL
+from prefect.triggers import all_finished
 from pipelines.utils.tasks import upload_df_to_datalake
 
-
+from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import (
     BASE_URL,
     GERENCIADOR_URL,
@@ -25,7 +25,6 @@ from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import 
     RUN_CONFIGS
 )
 
-
 # Funções de tratamento, html, login e verificação
 def sha256_upper(txt: str) -> str:
     return hashlib.sha256(txt.upper().encode("utf-8")).hexdigest()
@@ -33,14 +32,10 @@ def sha256_upper(txt: str) -> str:
 def extrair_campos_ocultos(html: str) -> dict:
     soup = BeautifulSoup(html, "html.parser")
     campos_ocultos = {}
-    
     for campo in soup.find_all("input", type="hidden"):
         nome_do_campo = campo.get("name")
-        valor_do_campo = campo.get("value", "")
-        
         if nome_do_campo:
-            campos_ocultos[nome_do_campo] = valor_do_campo
-            
+            campos_ocultos[nome_do_campo] = campo.get("value", "")
     return campos_ocultos
 
 #Extrai o nome da imagem atribuída a cor a partir do link (src)
@@ -58,7 +53,6 @@ def limpar_nomes_colunas(df: pd.DataFrame) -> pd.DataFrame:
 
     vistos = set()
     novas_colunas = []
-    
     for col in df.columns:
         nova_col = col
         contador = 1
@@ -71,9 +65,7 @@ def limpar_nomes_colunas(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = novas_colunas
     return df
 
-
-def realizar_login(sessao: requests.Session, usuario: str, senha: str, timeout_login: int) -> bool:
-    logger = prefect.context.get("logger")
+def realizar_login(sessao: requests.Session, usuario: str, senha: str, timeout_login: int) -> None:
     r_get = sessao.get(BASE_URL, timeout=timeout_login)
     r_get.raise_for_status()
     
@@ -97,9 +89,9 @@ def realizar_login(sessao: requests.Session, usuario: str, senha: str, timeout_l
     r_post = sessao.post(url_post_real, data=payload, allow_redirects=True, timeout=timeout_login)
     texto_pagina = r_post.text.lower()
     
-    indicadores_de_sucesso = ("sair", "menu", "bem-vindo")
-    if any(p in texto_pagina for p in indicadores_de_sucesso):
-        logger.info("Login realizado com sucesso.")
+    texto_sucesso = ("sair", "menu", "bem-vindo")
+    if any(palavra in texto_pagina for palavra in texto_sucesso):
+        log("Login realizado com sucesso.")
         return True
     else:
         raise FAIL("Falha no login do Sisreg.")
@@ -109,25 +101,18 @@ def criar_sessao_autenticada(usuario: str, senha: str, timeout_login: int) -> re
     sessao = requests.Session()
     sessao.headers.update(HEADERS_DISFARCE)
     sessao.verify = False  
-    
     realizar_login(sessao, usuario, senha, timeout_login)
     return sessao
 
 
 def _verificar_resposta_html(texto_html: str) -> str:
     texto_lower = texto_html.lower()
-    msgs_sessao_morta = ("sua sessão foi finalizada", "efetue o logon novamente")
-    msgs_erro_critico = ("erro não esperado", "erro nao esperado", "erro inesperado")
-    
-    if any(msg in texto_lower for msg in msgs_sessao_morta):
+    if any(msg in texto_lower for msg in ("sua sessão foi finalizada", "efetue o logon novamente")):
         return "SESSAO_ZUMBI"
-        
-    if any(msg in texto_lower for msg in msgs_erro_critico):
+    if any(msg in texto_lower for msg in ("erro não esperado", "erro nao esperado", "erro inesperado")):
         return "ERRO_CRITICO"
-        
     if "nenhum registro encontrado" in texto_lower:
         return "VAZIO"
-        
     return "OK"
 
 def _extrair_tabela_do_html(texto_html: str, status_req: str) -> pd.DataFrame:
@@ -137,7 +122,8 @@ def _extrair_tabela_do_html(texto_html: str, status_req: str) -> pd.DataFrame:
     tabela_alvo = None
     for tb in tables:
         texto_tb = tb.text.lower()
-        if "cód. solicitação" in texto_tb and "data da solicitação" in texto_tb and "risco" in texto_tb:
+        colunas_obrigatorias = ("cód. solicitação", "data da solicitação", "risco")
+        if all(coluna in texto_tb for coluna in colunas_obrigatorias):
             tabela_alvo = tb
             break
 
@@ -166,95 +152,64 @@ def _extrair_tabela_do_html(texto_html: str, status_req: str) -> pd.DataFrame:
         if data:
             df_resultado = pd.DataFrame(data, columns=headers)
             df_resultado['status'] = status_req 
-            df_resultado = limpar_nomes_colunas(df_resultado) 
-            return df_resultado
+            return limpar_nomes_colunas(df_resultado) 
         else:
             return pd.DataFrame()
     else:
-        raise ValueError("A tabela não foi renderizada no HTML, mesmo com status OK.")
+        raise ValueError(f"A tabela não foi renderizada no HTML para o status {status_req}.")
 
-def _processar_pagina_sisreg(
-    sessao: requests.Session,
-    usuario: str,
-    senha: str,
-    data_req: str,
-    periodo_req: str,
-    status_req: str,
-    cod_situacao_req: str,
-    logger: logging.Logger,
-    timeout_consulta: int,
-    tempo_espera: float,
-    timeout_login: int,
+#TASKS
+@task(max_retries=30, retry_delay=timedelta(seconds=20))
+def extrair_item_sisreg(
+    usuario: str, senha: str, ficha: dict, 
+    timeout_login: int, timeout_consulta: int, tempo_espera: float
 ) -> pd.DataFrame:
     
+    data_req = ficha["data"]
+    tipo_per = ficha["config"]["tipo_pedido"]
+    cod_sit = ficha["config"]["codigo_situacao"]
+    nome_stat = ficha["config"]["status_coluna"]
+
+    log(f"Iniciando requisição isolada: {data_req} [{nome_stat}]")
+    
+    sessao = criar_sessao_autenticada(usuario, senha, timeout_login)
+
     url_consulta = (
         f"{GERENCIADOR_URL}?etapa=LISTAR_SOLICITACOES"
         f"&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&cnes_executante=&co_proc_unificado="
-        f"&co_pa_interno=&ds_procedimento=&tipo_periodo={periodo_req}"
+        f"&co_pa_interno=&ds_procedimento=&tipo_periodo={tipo_per}"
         f"&dt_inicial={data_req}&dt_final={data_req}"
-        f"&cmb_situacao={cod_situacao_req}&qtd_itens_pag=0&co_seq_solicitacao=&ordenacao=2&pagina=0"
+        f"&cmb_situacao={cod_sit}&qtd_itens_pag=0&co_seq_solicitacao=&ordenacao=2&pagina=0"
     )
 
-    max_tentativas = 2
-    for tentativa in range(max_tentativas):
+    try:
         resposta = sessao.get(url_consulta, timeout=timeout_consulta)
-        time.sleep(tempo_espera)
-        status_pagina = _verificar_resposta_html(resposta.text)
+        time.sleep(tempo_espera) 
+        sessao.close() 
+    except requests.exceptions.RequestException as e:
+        sessao.close()
+        raise ValueError(
+            f"Falha de conexão com o Sisreg ({type(e).__name__}). O Prefect ativará a retentativa automática."
+        ) from None
+    
+    status_pagina = _verificar_resposta_html(resposta.text)
 
-        if status_pagina == "SESSAO_ZUMBI":
-            logger.warning(f"Sessão zumbi detectada. Relogando para {data_req} (Tentativa {tentativa+1}/{max_tentativas})...")
-            realizar_login(sessao, usuario, senha, timeout_login)
-            continue
-            
-        break
-
-    if status_pagina in ("ERRO_CRITICO", "SESSAO_ZUMBI"):
-        raise ValueError("Sisreg indisponível ou crashou. Adicionando para fila de reextração.")
-        
+    if status_pagina == "SESSAO_ZUMBI":
+        raise ValueError("Sessão Zumbi detectada. O Prefect ativará a retentativa automática.")
+    if status_pagina == "ERRO_CRITICO":
+        raise ValueError("Erro interno do Sisreg. O Prefect ativará a retentativa automática.")
     if status_pagina == "VAZIO":
         return pd.DataFrame()
 
-    return _extrair_tabela_do_html(resposta.text, status_req)
+    return _extrair_tabela_do_html(resposta.text, nome_stat)
 
-def _executar_com_retentativa(
-        sessao: requests.Session,
-        usuario: str,
-        senha: str,
-        erro_item: dict,
-        logger: logging.Logger,
-        timeout_consulta: int,
-        tempo_espera: float,
-        timeout_login: int,
-        max_tentativas: int
-) -> pd.DataFrame | None:
-    
-    data_req, nome_req = erro_item["data"], erro_item["nome_status"]
-    cod_req, per_req = erro_item["codigo_situacao"], erro_item["tipo_periodo"]
-    
-    for tentativa in range(1, max_tentativas + 1):
-        logger.info(f"🔄 Tentativa {tentativa}/{max_tentativas} -> {data_req} [{per_req}-{nome_req}]")
-        try:
-            df = _processar_pagina_sisreg(sessao, usuario, senha, data_req, per_req, nome_req, cod_req, logger, timeout_consulta, tempo_espera, timeout_login)
-            logger.info(f"✅ Sucesso na reextração de {data_req}!")
-            return df
-        except Exception as e:
-            logger.error(f"Falha na tentativa {tentativa}: {e}")
-            time.sleep(10)
-            
-    return None
-
-
-#TASKS
 
 @task
 def gerar_roteiro_extracao(
-    data_especifica: str | None = None, 
-    data_inicial: str | None = None, 
-    data_final: str | None = None,
-    status_especifico: str | None = None
-) -> dict:
+    data_especifica: str | None = None, data_inicial: str | None = None, 
+    data_final: str | None = None, status_especifico: str | list | None = None
+) -> list:
     
-    logger = prefect.context.get("logger")
     fuso_br = pytz.timezone("America/Sao_Paulo")
     datas = []
 
@@ -262,27 +217,19 @@ def gerar_roteiro_extracao(
         try:
             dt_inicio = datetime.strptime(data_inicial, "%d/%m/%Y")
             dt_fim = datetime.strptime(data_final, "%d/%m/%Y")
-            
             if dt_inicio > dt_fim:
                 raise ValueError("A data_inicial não pode ser maior que a data_final.")
                 
             delta = dt_fim - dt_inicio
             for i in range(delta.days + 1):
-                dia = dt_inicio + timedelta(days=i)
-                datas.append(dia.strftime("%d/%m/%Y"))
-                
-            logger.info(f"Modo Período ativado: Extraindo de {data_inicial} até {data_final} ({len(datas)} dias).")
+                datas.append((dt_inicio + timedelta(days=i)).strftime("%d/%m/%Y"))
+            log(f"Modo Período: Extraindo {len(datas)} dias.")
         except ValueError as e:
-            logger.error(f"Erro de formato nas datas. Use DD/MM/AAAA. Detalhe: {e}")
             raise FAIL(f"Erro ao processar período: {e}")
 
     elif data_especifica:
         if data_especifica.lower() == "ontem":
-            dia_anterior = datetime.now(fuso_br) - timedelta(days=1)
-            data_especifica = dia_anterior.strftime("%d/%m/%Y")
-            logger.info(f"Modo Diário ativado: Calculado 'ontem' como {data_especifica}")
-
-        logger.info(f"A extrair apenas a data {data_especifica}")
+            data_especifica = (datetime.now(fuso_br) - timedelta(days=1)).strftime("%d/%m/%Y")
         datas = [data_especifica]
 
     else:
@@ -291,113 +238,43 @@ def gerar_roteiro_extracao(
         ano, mes = mes_anterior.year, mes_anterior.month
         ultimo_dia = calendar.monthrange(ano, mes)[1]
         datas = [(f"{dia:02d}/{mes:02d}/{ano}") for dia in range(1, ultimo_dia + 1)]
-        logger.info(f"Modo Mensal ativado: Foram geradas {len(datas)} datas para o mês {mes:02d}/{ano}.")
+        log(f"Modo Mensal: Foram geradas {len(datas)} datas.")
 
     todas_configs = list(RUN_CONFIGS.values())
     configs_finais = todas_configs
     
     if status_especifico:
-        status_upper = status_especifico.upper()
-        configs_finais = [c for c in todas_configs if c["status_coluna"] == status_upper]
-        
+        if isinstance(status_especifico, str):
+            lista_status = [s.strip().upper() for s in status_especifico.split(',')]
+        elif isinstance(status_especifico, list):
+            lista_status = [str(s).strip().upper() for s in status_especifico]
+        else:
+            lista_status = []
+
+        configs_finais = [c for c in todas_configs if c["status_coluna"] in lista_status]
         if not configs_finais:
-            logger.warning(f"Status '{status_upper}' não encontrado. Vai extrair todos por segurança.")
             configs_finais = todas_configs
-        else:
-            logger.info(f"Modo Filtro ativado: Extraindo APENAS '{status_upper}'.")
 
-    return {"datas": datas, "configs": configs_finais}
+    fichas_de_extracao = []
+    for d in datas:
+        for c in configs_finais:
+            fichas_de_extracao.append({"data": d, "config": c})
 
-@task(max_retries=5, retry_delay=timedelta(minutes=3))
-def extrair_fase_principal(
-    usuario: str, senha: str, roteiro: dict, timeout_login: int, timeout_consulta: int, tempo_espera: float, limite_requisicoes: int
-) -> dict:
+    return fichas_de_extracao
+
+# trigger=all_finished garante que o pipeline guarde os sucessos mesmo se houver falhas irrecuperáveis
+@task(trigger=all_finished) 
+def consolidar_e_salvar(lista_de_dfs: list, dataset_id: str, table_id: str) -> None:
     
-    logger = prefect.context.get("logger")
-    datas, configs_extracao = roteiro["datas"], roteiro["configs"]
-    dfs_fase1 = []
-    datas_com_erro = []
-    contador_requisicoes = 0
-    
-    sessao = criar_sessao_autenticada(usuario, senha, timeout_login)
+    dfs_validos = [df for df in lista_de_dfs if isinstance(df, pd.DataFrame) and not df.empty]
+    falhas = len(lista_de_dfs) - len(dfs_validos)
 
-    for data_do_dia in datas:
-        for config in configs_extracao:
-            tipo_per, cod_sit, nome_stat = config["tipo_pedido"], config["codigo_situacao"], config["status_coluna"]
-            
-            if contador_requisicoes > 0 and contador_requisicoes % limite_requisicoes == 0:
-                logger.info("A renovar a sessão proativamente...")
-                sessao.close()
-                sessao = criar_sessao_autenticada(usuario, senha, timeout_login)
+    if falhas > 0:
+        log(f"⚠️ Atenção: {falhas} requisições falharam completamente após 30 retentativas.")
 
-            logger.info(f"[FASE 1] Extração: {data_do_dia} | Período: {tipo_per} | Status: {nome_stat}")
-            
-            try:
-                df = _processar_pagina_sisreg(sessao, usuario, senha, data_do_dia, tipo_per, nome_stat, cod_sit, logger, timeout_consulta, tempo_espera, timeout_login)
-                if not df.empty:
-                    dfs_fase1.append(df)
-            except Exception as e:
-                logger.error(f"Erro ao extrair {data_do_dia} ({nome_stat}): {e}")
-                datas_com_erro.append({
-                    "data": data_do_dia, "nome_status": nome_stat, 
-                    "codigo_situacao": cod_sit, "tipo_periodo": tipo_per
-                })
-
-            contador_requisicoes += 1
-
-    sessao.close()
-    return {"dfs_sucesso": dfs_fase1, "erros_para_reextrair": datas_com_erro}
-
-@task(max_retries=5, retry_delay=timedelta(minutes=3))
-def extrair_fase_reextracao(
-    usuario: str,
-    senha: str,
-    resultados_fase1: dict,
-    timeout_login: int,
-    timeout_consulta: int,
-    tempo_espera: float,
-    max_tentativas: int
-) -> dict:
-    
-    logger = prefect.context.get("logger")
-    dfs_totais = resultados_fase1["dfs_sucesso"]
-    erros_pendentes = resultados_fase1["erros_para_reextrair"]
-    erros_definitivos = []
-    
-    if not erros_pendentes:
-        logger.info("Nenhum erro reportado na Fase 1. A saltar a Fase 2.")
-        return {"dfs": dfs_totais, "erros": erros_definitivos}
-
-    logger.info(f"--- INÍCIO DA REEXTRAÇÃO DE {len(erros_pendentes)} FALHAS ---")
-    sessao = criar_sessao_autenticada(usuario, senha, timeout_login)
-
-    for erro in erros_pendentes:
-        df_recuperado = _executar_com_retentativa(
-            sessao, usuario, senha, erro, logger, 
-            timeout_consulta, tempo_espera, timeout_login, max_tentativas
-        )
-        
-        if df_recuperado is not None:
-            if not df_recuperado.empty:
-                dfs_totais.append(df_recuperado)
-            else:
-                logger.info(f"📭 Nenhum registo (vazio) recuperado para {erro['data']}.")
-        else:
-            logger.error(f"❌ Desistência em relação a {erro['data']} [{erro['nome_status']}].")
-            erros_definitivos.append(f"{erro['data']} ({erro['tipo_periodo']}) - {erro['nome_status']}")
-
-    sessao.close()
-    return {"dfs": dfs_totais, "erros": erros_definitivos}
-
-@task
-def salvar_resultados(dados_extraidos: dict, dataset_id: str, table_id: str) -> None:
-    logger = prefect.context.get("logger")
-    dfs = dados_extraidos["dfs"]
-    datas_com_erro = dados_extraidos["erros"]
-
-    if dfs:
+    if dfs_validos:
         dfs_traduzidos = []
-        for df in dfs:
+        for df in dfs_validos:
             df.rename(columns=COLUNAS_SISREG_MAPPING, inplace=True)
             df = df.loc[:, ~df.columns.str.contains('^unnamed|erro', case=False)]
             dfs_traduzidos.append(df)
@@ -405,7 +282,7 @@ def salvar_resultados(dados_extraidos: dict, dataset_id: str, table_id: str) -> 
         df_final = pd.concat(dfs_traduzidos, ignore_index=True)
         df_final['data_particao'] = datetime.now().strftime('%Y-%m-%d')
         
-        logger.info(f"Iniciando envio para o DataLake: {dataset_id}.{table_id} ({len(df_final)} registros)")
+        log(f"Iniciando envio para o DataLake: {dataset_id}.{table_id} ({len(df_final)} registros unificados)")
 
         upload_df_to_datalake.run(
             df=df_final,
@@ -414,11 +291,6 @@ def salvar_resultados(dados_extraidos: dict, dataset_id: str, table_id: str) -> 
             partition_column='data_particao',        
             source_format="parquet",
         )
-        logger.info("✅ Dados enviados para o DataLake com sucesso!")
+        log("✅ Dados enviados para o DataLake com sucesso!")
     else:
-        logger.warning("Nenhuma tabela foi extraída. O DataLake não será atualizado.")
-
-    if datas_com_erro:
-        logger.error(f"ATENÇÃO: {len(datas_com_erro)} extrações falharam definitivamente.")
-        for erro in datas_com_erro:
-            logger.error(f"Falha não recuperada: {erro}")
+        log("Nenhuma tabela válida foi extraída. O DataLake não será atualizado.")

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from prefect import Parameter
+from prefect import Parameter, unmapped
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import VertexRun
 from prefect.storage import GCS
@@ -20,13 +20,11 @@ from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.constants import 
 
 from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.tasks import (
     gerar_roteiro_extracao,
-    extrair_fase_principal,    
-    extrair_fase_reextracao,   
-    salvar_resultados
+    extrair_item_sisreg,    
+    consolidar_e_salvar
 )
 
 from pipelines.datalake.extract_load.sisregiii_solicitacoes_bp.schedules import schedule
-
 
 with Flow(
     name="SUBGERAL/CR/NTI - Extract & Load - SISREG Solicitações",
@@ -38,52 +36,41 @@ with Flow(
     data_inicial = Parameter("data_inicial", default=None)
     data_final = Parameter("data_final", default=None)
     status_especifico = Parameter("status_especifico", default=None)
+    
     timeout_login = Parameter("timeout_login", default=30)
     timeout_consulta = Parameter("timeout_consulta", default=180)
     tempo_espera_sisreg = Parameter("tempo_espera_sisreg", default=8.5)
-    limite_requisicoes_sessao = Parameter("limite_requisicoes_sessao", default=15)
-    max_tentativas_reextra = Parameter("max_tentativas_reextra", default=100)
 
     usuario_infisical = get_secret_key(
         secret_path=INFISICAL_PATH,
         secret_name=INFISICAL_USERNAME,
         environment=ENVIRONMENT,
     )
+    
     senha_infisical = get_secret_key(
         secret_path=INFISICAL_PATH,
         secret_name=INFISICAL_PASSWORD,
         environment=ENVIRONMENT,
     )
 
-    roteiro = gerar_roteiro_extracao(
+    lista_fichas_extracao = gerar_roteiro_extracao(
         data_especifica=data_especifica,
         data_inicial=data_inicial,
         data_final=data_final,
         status_especifico=status_especifico
     )
 
-    resultados_fase1 = extrair_fase_principal(
-        usuario=usuario_infisical, 
-        senha=senha_infisical, 
-        roteiro=roteiro,
-        timeout_login=timeout_login,
-        timeout_consulta=timeout_consulta,
-        tempo_espera=tempo_espera_sisreg,
-        limite_requisicoes=limite_requisicoes_sessao
-    )
-    
-    dados_finais = extrair_fase_reextracao(
-        usuario=usuario_infisical, 
-        senha=senha_infisical, 
-        resultados_fase1=resultados_fase1,
-        timeout_login=timeout_login,
-        timeout_consulta=timeout_consulta,
-        tempo_espera=tempo_espera_sisreg,
-        max_tentativas=max_tentativas_reextra
+    resultados_em_massa = extrair_item_sisreg.map(
+        usuario=unmapped(usuario_infisical), 
+        senha=unmapped(senha_infisical), 
+        ficha=lista_fichas_extracao,
+        timeout_login=unmapped(timeout_login),
+        timeout_consulta=unmapped(timeout_consulta),
+        tempo_espera=unmapped(tempo_espera_sisreg)
     )
 
-    salvar_resultados(
-        dados_extraidos=dados_finais,
+    consolidar_e_salvar(
+        lista_de_dfs=resultados_em_massa,
         dataset_id=DATASET_ID_BRUTO,
         table_id=TABLE_ID_BP
     )
