@@ -7,7 +7,6 @@ from prefect.schedules.clocks import CronClock
 
 from pipelines.constants import constants
 
-
 clock_mensal = CronClock(
     cron="0 20 1 * *",
     start_date=datetime(2025, 1, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
@@ -17,13 +16,13 @@ clock_mensal = CronClock(
     parameter_defaults={
         "environment": "prod",
         "status_desejado": "TODOS_OS_STATUS",
-        "data_especifica": None
-    }
+        "data_especifica": None,
+    },
 )
 
 
 clock_diario = CronClock(
-    cron="0 2 * * *", 
+    cron="0 2 * * *",
     start_date=datetime(2025, 1, 1, tzinfo=pytz.timezone("America/Sao_Paulo")),
     labels=[
         constants.RJ_SMS_AGENT_LABEL.value,
@@ -31,8 +30,8 @@ clock_diario = CronClock(
     parameter_defaults={
         "environment": "prod",
         "status_desejado": "TODOS_OS_STATUS",
-        "data_especifica": "ontem"
-    }
+        "data_especifica": "ontem",
+    },
 )
 
 schedule = Schedule(clocks=[clock_mensal, clock_diario])
