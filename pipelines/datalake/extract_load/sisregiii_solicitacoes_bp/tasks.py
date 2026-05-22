@@ -198,7 +198,8 @@ def extrair_item_sisreg(
 
     url_consulta = (
         f"{GERENCIADOR_URL}?etapa=LISTAR_SOLICITACOES"
-        "&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&cnes_executante=&co_proc_unificado="
+        "&co_solicitacao=&cns_paciente=&no_usuario=&cnes_solicitante=&"
+        "cnes_executante=&co_proc_unificado="
         f"&co_pa_interno=&ds_procedimento=&tipo_periodo={tipo_per}"
         f"&dt_inicial={data_req}&dt_final={data_req}"
         f"&cmb_situacao={cod_sit}&qtd_itens_pag=0&co_seq_solicitacao=&ordenacao=2&pagina=0"

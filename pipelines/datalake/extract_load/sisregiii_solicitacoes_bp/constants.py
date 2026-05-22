@@ -14,7 +14,8 @@ INFISICAL_PASSWORD = "SISREG_PASSWORD"
 HEADERS_DISFARCE = {
     "User-Agent": USER_AGENT,
     "Accept": (
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+        "text/html,application/xhtml+xml,application/xml;"
+        "q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
     ),
     "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
     "Connection": "keep-alive",
