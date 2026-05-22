@@ -288,7 +288,7 @@ def gerar_roteiro_extracao(
     return fichas_de_extracao
 
 
-# trigger=all_finished garante que o pipeline guarde os sucessos mesmo se houver falhas irrecuperáveis
+# all_finished garante que o pipeline guarde os sucessos mesmo se houver falhas irrecuperáveis
 @task(trigger=all_finished)
 def consolidar_e_salvar(lista_de_dfs: list, dataset_id: str, table_id: str) -> None:
 
