@@ -1,3 +1,4 @@
+
 import re
 from prefect import task
 from datetime import timedelta
@@ -20,8 +21,6 @@ from pipelines.datalake.extract_load.sisreg_preparos.constants import (
     DEFAULT_UNIDADES_LIMIT
 )
 
-# Configurações globais
-
 
 def fix_characters(datainfo: str | None) -> str:
     if not datainfo:
@@ -30,27 +29,11 @@ def fix_characters(datainfo: str | None) -> str:
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def login(user: str, senha: str) -> Session:
-    senha = sha256(senha.upper().encode('utf-8')).hexdigest()
-    payload = {'usuario': user, 'senha_256': senha, 'etapa': "ACESSO"}
-
-    session = requests.Session()
-    response = session.post(SISREG_BASE_URL, data=payload, headers=REQUEST_HEADERS)
-
-    if "Efetue o logon novamente" in response.text:
-        raise Exception("Erro no login. Verifique as credenciais.")
-
-    return session
-
-
-@task(max_retries=3, retry_delay=timedelta(minutes=5))
 def coletar_unidades(session: Session) -> List[Tag]:
     res = session.get(SISREG_PREPAROS_URL)
     soup = BeautifulSoup(res.text, 'lxml')
-   # log(soup)
 
     form = soup.find('form')
-   # log(form)
 
     unidades = (
         form.find('table').find_all('tr')[1].find_all('option')
@@ -58,7 +41,6 @@ def coletar_unidades(session: Session) -> List[Tag]:
         else []
     )
 
-   # log(unidades)
     return unidades
 
 
@@ -72,13 +54,18 @@ def coletar_procedimentos(session: Session, unidade: Tag) -> Tuple[str, str, Lis
     soup_proc = BeautifulSoup(res_proc.text, 'lxml')
 
     procedimentos = soup_proc.form.table('tr')[2]('option')
+
     return nome_unidade, valor_unidade, procedimentos
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def coletar_preparos(session: Session, nome_unidade: str,
-                     valor_unidade: str,
-                     procedimentos: List[Tag]) -> List[Dict[str, str]]:
+def coletar_preparos(
+    session: Session,
+    nome_unidade: str,
+    valor_unidade: str,
+    procedimentos: List[Tag]
+) -> List[Dict[str, str]]:
+
     data = []
 
     for procedimento in procedimentos[1:]:
@@ -104,20 +91,53 @@ def coletar_preparos(session: Session, nome_unidade: str,
             "codProcedimento": valor_proc,
             "nomeProcedimento": nome_proc,
             "descricaoPreparo": fix_characters(descricao),
-          #  "dt_extracao": datetime.today()
         }
 
         data.append(data_details)
 
         log(data_details)
-        # dentro da task
-    # delay_request()
-        time.sleep(8.5)
+
+        time.sleep(1.0)
+
     return data
 
 
 @task(max_retries=3, retry_delay=timedelta(minutes=5))
-def processar_unidades(session: Session, unidades: List[Tag], unidades_limit: int | None = DEFAULT_UNIDADES_LIMIT) -> pd.DataFrame:
+def processar_unidades(
+    user: str,
+    senha: str,
+    unidades_limit: int | None = DEFAULT_UNIDADES_LIMIT
+) -> pd.DataFrame:
+
+    # =========================
+    # LOGIN EMBUTIDO AQUI
+    # =========================
+
+    senha_hash = sha256(senha.upper().encode('utf-8')).hexdigest()
+
+    payload = {
+        'usuario': user,
+        'senha_256': senha_hash,
+        'etapa': "ACESSO"
+    }
+
+    session = requests.Session()
+
+    response = session.post(
+        SISREG_BASE_URL,
+        data=payload,
+        headers=REQUEST_HEADERS
+    )
+
+    if "Efetue o logon novamente" in response.text:
+        raise Exception("Erro no login. Verifique as credenciais.")
+
+    # =========================
+    # FLUXO ORIGINAL
+    # =========================
+
+    unidades = coletar_unidades.run(session)
+
     if unidades_limit is not None:
         unidades_iter = unidades[:unidades_limit]
     else:
@@ -126,16 +146,36 @@ def processar_unidades(session: Session, unidades: List[Tag], unidades_limit: in
     log(f"Processando {len(unidades_iter)} unidades (limite={unidades_limit})")
 
     all_data = []
+
     for unidade in unidades_iter:
-        nome_unidade, valor_unidade, procedimentos = coletar_procedimentos.run(session, unidade)
+        nome_unidade, valor_unidade, procedimentos = coletar_procedimentos.run(
+            session,
+            unidade
+        )
+
         log(f"Unidade: {nome_unidade}, procedimentos encontrados: {len(procedimentos)}")
-        for prep in coletar_preparos.run(session, nome_unidade, valor_unidade, procedimentos):
+
+        for prep in coletar_preparos.run(
+            session,
+            nome_unidade,
+            valor_unidade,
+            procedimentos
+        ):
             log(f"Preparo coletado: {prep}")
             all_data.append(prep)
 
-    expected_cols = ["cnes","nomeUnidade","codProcedimento","nomeProcedimento","descricaoPreparo"]
+    expected_cols = [
+        "cnes",
+        "nomeUnidade",
+        "codProcedimento",
+        "nomeProcedimento",
+        "descricaoPreparo"
+    ]
+
     df = pd.DataFrame(all_data, columns=expected_cols)
+
     df["dt_extracao"] = datetime.today().strftime("%Y-%m-%d")
 
     log(f"Total de preparos coletados: {len(df)}")
+
     return df
