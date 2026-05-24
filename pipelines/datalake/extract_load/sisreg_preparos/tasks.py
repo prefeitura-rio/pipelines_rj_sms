@@ -97,7 +97,7 @@ def coletar_preparos(
 
         log(data_details)
 
-        time.sleep(1.0)
+        time.sleep(8.5)
 
     return data
 
