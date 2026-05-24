@@ -6,6 +6,7 @@ Tasks for execute_dbt
 """
 
 import os
+import secrets
 import shutil
 from datetime import datetime
 
@@ -90,6 +91,9 @@ def execute_dbt(
     Returns:
         dbtRunnerResult: The result of the dbt command execution.
     """
+    # Cria HASH_SECRET no ambiente se não existir
+    os.environ["HASH_SECRET"] = secrets.token_hex(32)
+
     commands = command.split(" ")
 
     cli_args = commands + ["--profiles-dir", repository_path, "--project-dir", repository_path]
@@ -150,7 +154,11 @@ def estimate_dbt_costs(execution_info: dict, environment: str) -> float:
     Estimates the costs of running dbt commands.
     """
     affected_datasets = []
-    for command_result in execution_info["running_result"].result:
+    running_result: dbtRunnerResult = execution_info["running_result"]
+    if not running_result.result:
+        log(f"Erro ao executar dbt! {repr(running_result)}", level="error")
+        raise running_result.exception
+    for command_result in running_result.result:
         affected_datasets.append(command_result.node.schema)
 
     # Convert to UTC
