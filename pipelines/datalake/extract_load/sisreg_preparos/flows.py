@@ -33,7 +33,7 @@ from pipelines.utils.tasks import (
 
 
 with Flow(
-    name="SMS: SISREG-PREPAROS",
+    name="SUBGERAL/CR/NTI - Extract & Load - SISREG-PREPAROS",
     state_handlers=[handle_flow_state_change],
     owners=[
         pipeline_constants.MATHEUS_ID.value,
