@@ -173,7 +173,7 @@ def get_procedimentos(user: str, password: str, max_es_pages: int = None) -> pd.
     ].reset_index(drop=True)
 
     log(f"{len(df)} procedimentos encontrados.")
-    # df.to_csv("procedimentos.csv", index=False)
+    
     return df
 
 
@@ -460,7 +460,5 @@ def extract_vagas_info(
         log("Nenhuma vaga detalhada foi extraída. Retornando DataFrame vazio com schema correto.")
         df_vagas_detalhes = pd.DataFrame(columns=VAGAS_DETALHADAS_COLUMNS)
 
-    # df_dados_gerais.to_csv("dados_gerais.csv", index=False)
-    # df_vagas_detalhes.to_csv("vagas_detalhadas.csv", index=False)
 
     return (df_dados_gerais, df_vagas_detalhes)
