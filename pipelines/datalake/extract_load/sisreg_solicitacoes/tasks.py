@@ -182,7 +182,7 @@ def _extrair_tabela_do_html(texto_html: str, status_req: str) -> pd.DataFrame:
 def obter_sessao_autenticada(usuario: str, senha: str, timeout: int) -> requests.Session:
     return criar_sessao_autenticada(usuario, senha, timeout)
 
-@task(max_retries=30, retry_delay=timedelta(seconds=20))
+@task(max_retries=100, retry_delay=timedelta(seconds=20))
 def extrair_item_sisreg(
     sessao: requests.Session,
     usuario: str,
@@ -316,7 +316,7 @@ def consolidar_e_salvar(lista_de_dfs: list, dataset_id: str, table_id: str) -> N
             dfs_traduzidos.append(df)
 
         df_final = pd.concat(dfs_traduzidos, ignore_index=True)
-        df_final = handle_columns_to_bq.run(df_final)
+        df_final = handle_columns_to_bq.run(df=df_final)
         df_final["data_particao"] = datetime.now().strftime("%Y-%m-%d")
 
         log(
