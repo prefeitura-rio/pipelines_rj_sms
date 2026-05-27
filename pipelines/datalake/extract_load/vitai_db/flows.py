@@ -8,9 +8,6 @@ from pipelines.constants import constants as global_constants
 from pipelines.datalake.extract_load.vitai_db.constants import (
     constants as vitai_db_constants,
 )
-from pipelines.datalake.extract_load.vitai_db.schedules import (
-    vitai_db_extraction_schedule,
-)
 from pipelines.datalake.extract_load.vitai_db.tasks import (
     build_param_list,
     create_working_time_range,
@@ -146,7 +143,6 @@ with Flow(
             upstream_tasks=[upload_to_datalake_task],
         )
 
-datalake_extract_vitai_db_operator.schedule = vitai_db_extraction_schedule
 datalake_extract_vitai_db_operator.storage = GCS(global_constants.GCS_FLOWS_BUCKET.value)
 datalake_extract_vitai_db_operator.executor = LocalDaskExecutor(num_workers=2)
 datalake_extract_vitai_db_operator.run_config = KubernetesRun(
