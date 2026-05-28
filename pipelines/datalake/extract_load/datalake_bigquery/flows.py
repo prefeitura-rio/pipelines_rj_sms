@@ -10,7 +10,6 @@ from prefect.run_configs import KubernetesRun
 from prefect.storage import GCS
 
 from pipelines.constants import constants
-from pipelines.datalake.extract_load.datalake_bigquery.schedules import schedule
 from pipelines.datalake.extract_load.datalake_bigquery.tasks import clone_bigquery_table
 from pipelines.utils.basics import is_null_or_empty
 from pipelines.utils.credential_injector import (
@@ -82,7 +81,6 @@ with Flow(
         )
         wait_for_flow_run(flow_run_id=dbt_run_flow)
 
-datalake_bigquery_clone.schedule = schedule
 datalake_bigquery_clone.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 datalake_bigquery_clone.executor = LocalDaskExecutor(num_workers=1)
 datalake_bigquery_clone.run_config = KubernetesRun(
