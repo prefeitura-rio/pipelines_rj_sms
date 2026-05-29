@@ -64,12 +64,19 @@ with Flow(
         secret_name=constants.INFISICAL_SISREG_PASSWORD,
         environment=ENVIRONMENT,
     )
+    usuario_regulador = get_secret_key(
+        secret_path=constants.INFISICAL_SISREG_REGULADOR_PATH,
+        secret_name=constants.INFISICAL_SISREG_REGULADOR_USERNAME,
+        environment=ENVIRONMENT,
+    )
+    senha_regulador = get_secret_key(
+        secret_path=constants.INFISICAL_SISREG_REGULADOR_PATH,
+        secret_name=constants.INFISICAL_SISREG_REGULADOR_PASSWORD,
+        environment=ENVIRONMENT,
+    )
 
     # Data de extração das tabelas
     extraction_date = get_extraction_date()
-
-    # Requisição base do SISREG
-    session = init_session_request_base()
 
     # Buscando os CPFs dos profissionais,
     # com limite adicionado para questões de teste.
@@ -78,16 +85,25 @@ with Flow(
         extraction_date=extraction_date,
     )
 
+    # Requisição base do SISREG
+    session_afastamentos = init_session_request_base()
+    session_historico_afastamentos = init_session_request_base()
+
     # Fazendo login no SISREG
-    session_after_login = login_sisreg(
+    session_afastamentos = login_sisreg(
+        usuario=usuario_regulador,
+        senha=senha_regulador,
+        session=session_historico_afastamentos,
+    )
+    session_historico_afastamentos = login_sisreg(
         usuario=usuario,
         senha=senha,
-        session=session,
+        session=session_afastamentos,
     )
 
     # Pagina de afastamentos
     df_afastamentos = get_afastamentos(
-        session=session,
+        session=session_afastamentos,
         cpf_list=cpf_list,
         extraction_date=extraction_date,
         sleep_time=SLEEP_TIME,
@@ -109,7 +125,7 @@ with Flow(
 
     # Pagina de historico de afastamentos
     df_historico_afastamentos = get_afastamentos(
-        session=session,
+        session=session_historico_afastamentos,
         cpf_list=cpf_list,
         extraction_date=extraction_date,
         sleep_time=SLEEP_TIME,
@@ -120,6 +136,7 @@ with Flow(
     df_historico_afastamentos_ok = handle_columns_to_bq(
         df=df_historico_afastamentos
     )
+
     # Log do dado obtido
     log_df(df=df_historico_afastamentos_ok, name=HISTORICO_TABLE_ID)
     # Upload do dado de historico_afastamento

@@ -15,12 +15,17 @@ from google.cloud import bigquery
 from prefeitura_rio.pipelines_utils.logging import log
 from requests import Session
 from unidecode import unidecode
-from random import randint
+from random import random
 from time import sleep
 
 # Internos
 from pipelines.datalake.extract_load.sisreg_afastamentos import constants
 from pipelines.utils.credential_injector import authenticated_task as task
+
+
+def randfloat(a: float, b: float) -> float:
+    (a, b) = (a, b) if a < b else (b, a)
+    return (b - a)*random() + a
 
 
 @task
@@ -118,14 +123,27 @@ def get_afastamentos(
     session: Session,
     cpf_list: list[str],
     extraction_date: datetime,
-    sleep_time: int,
+    sleep_time: float,
     historico: bool,
-    sleep_time_window: int = 4,
+    sleep_time_window: int = 1,
 ) -> pd.DataFrame:
-    log("iniciando extração dos afastamentos")
+    if historico:
+        log(f"iniciando extração dos históricos de afastamentos")
+    else:
+        log(f"iniciando extração dos afastamentos")
     df = None
-    for cpf in cpf_list:
-        tempo_espera_sorteado = randint(
+
+    print_rate = .1
+    print_state = 0
+    for index, cpf in enumerate(cpf_list):
+        if index/len(cpf_list) >= print_state:
+            if historico:
+                log(f"históricos de afastamentos em {100*index/len(cpf_list)}")
+            else:
+                log(f"afastamentos em {100*index/len(cpf_list)}")
+            print_state += print_rate
+
+        tempo_espera_sorteado = randfloat(
             sleep_time,
             sleep_time+sleep_time_window
         )
@@ -245,7 +263,8 @@ def search_historico_afastamento(
     )
 
     df["data"] = df["data"].apply(
-        lambda value: datetime.strptime(value, "%d/%m/%Y - %H:%M"))
+        lambda value: datetime.strptime(value, "%d/%m/%Y - %H:%M")
+    )
 
     df["cpf"] = cpf
     df[constants.EXTRACTION_DATE_COLUMN] = extraction_date
