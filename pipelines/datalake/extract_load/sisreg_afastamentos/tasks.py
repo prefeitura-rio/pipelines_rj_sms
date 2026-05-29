@@ -138,9 +138,9 @@ def get_afastamentos(
     for index, cpf in enumerate(cpf_list):
         if index/len(cpf_list) >= print_state:
             if historico:
-                log(f"históricos de afastamentos em {100*index/len(cpf_list)}")
+                log(f"históricos de afastamentos em {100*index/len(cpf_list)}%")
             else:
-                log(f"afastamentos em {100*index/len(cpf_list)}")
+                log(f"afastamentos em {100*index/len(cpf_list)}%")
             print_state += print_rate
 
         tempo_espera_sorteado = randfloat(
