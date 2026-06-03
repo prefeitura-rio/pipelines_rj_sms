@@ -683,8 +683,8 @@ cases:
       db_schema: "dbo"
       partition_column: "extracted_at"
 
-  - case_slug: "bp_solicitacoes"
-    flow_path: "pipelines.datalake.extract_load.sisreg_solicitacoes.flows"
-    flow_name: "sisreg_bp_flow"
+  - case_slug: sisreg_fila_vagas
+    flow_path: pipelines.datalake.extract_load.sisreg_pendentes_vagas.flows
+    flow_name: sisreg_fila_vagas_flow
     params:
       environment: "dev"
