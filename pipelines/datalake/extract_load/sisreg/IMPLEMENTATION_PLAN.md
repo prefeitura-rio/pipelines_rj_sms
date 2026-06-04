@@ -254,7 +254,7 @@ and must not risk the account). Conservative choices, locked:
 
 ### [ ] EPIC 1 — Scaffolding & shared core
 
-- [ ] **C1 `chore: scaffold unified sisreg package`** — create the tree in §6 (empty
+- [x] **C1 `chore: scaffold unified sisreg package`** — create the tree in §6 (empty
       `__init__.py`, `tests/`, `tests/fixtures/`), each `.py` with the encoding pragma.
       DoR: branch ready. DoD: package imports cleanly; `tests/` discoverable. Gates: hooks (lint only).
 - [ ] **C2 `feat: add sisreg error taxonomy`** — `errors.py`: `ErroSisreg` base (carries
