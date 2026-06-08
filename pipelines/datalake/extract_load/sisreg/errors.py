@@ -4,8 +4,8 @@ Taxonomia de erros do SISREG.
 
 Cada subclasse carrega contexto estruturado (conjunto, etapa, item, url, detalhe)
 para que o log de falha identifique exatamente o que quebrou sem precisar vasculhar
-tracebacks. A categoria do erro guia a logica de retry/failover/circuit-break nas
-tasks genericas.
+tracebacks. A categoria do erro guia a logica de retry/circuit-break nas
+tasks genericas e nos extratores.
 """
 
 

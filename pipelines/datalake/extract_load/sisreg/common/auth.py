@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Autenticacao, sessao e failover de conta do SISREG.
+Autenticacao e sessao do SISREG.
 
 Implementa o login canonico (GET pagina -> extrair campos ocultos -> POST com
 sha256 da senha em maiusculo) conforme o flow sisreg_solicitacoes (o mais
@@ -10,9 +10,12 @@ limpo do legado). Adiciona:
   governamentais. Se a cadeia de certificados estiver incompleta, pinamos o
   bundle correto via certifi, nunca desabilitamos a verificacao.
 - raise_for_status() em toda resposta.
-- Failover gateado por categoria: apenas ErroAutenticacao (problema de conta)
-  justifica rotacao; ErroBloqueio (problema de IP) nao deve rotacionar - o
-  mesmo IP bloquearia a segunda conta tambem.
+- Reautenticacao inline (reautenticar_se_deslogado): se a sessao expirar no
+  meio de um loop longo, refaz o login reutilizando o mesmo cookie jar.
+
+Nao ha failover entre contas: cada perfil de credencial usa uma unica conta
+(/sisreg ou /sisreg_regulacao). Um ErroBloqueio e tratado como circuit-break
+no extrator, nunca com troca de conta (o mesmo IP bloquearia a outra conta).
 """
 
 import hashlib

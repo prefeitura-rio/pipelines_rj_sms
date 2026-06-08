@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Testes de autenticacao e failover de conta (common/auth.py).
+Testes de autenticacao e sessao (common/auth.py).
 
 Todos offline: requests.Session e mockada, nenhuma chamada real ao SISREG.
 """

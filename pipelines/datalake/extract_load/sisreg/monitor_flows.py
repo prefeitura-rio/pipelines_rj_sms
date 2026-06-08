@@ -66,11 +66,13 @@ sisreg_monitor_flow.schedule = _SCHEDULE_MONITOR
 sisreg_monitor_flow.executor = LocalDaskExecutor(num_workers=1)
 sisreg_monitor_flow.storage = GCS(pipeline_constants.GCS_FLOWS_BUCKET.value)
 
-# e2-standard-2: 2 vCPU, 8 GB - suficiente para uma task de leitura de BQ.
+# e2-standard-4: padrao do repo (todos os flows Vertex usam este tipo).
+# O monitor e leve (uma leitura de BQ), mas mantemos o tipo padrao por
+# consistencia e para nao introduzir um valor de infra nao testado.
 sisreg_monitor_flow.run_config = VertexRun(
     image=pipeline_constants.DOCKER_VERTEX_IMAGE.value,
     labels=[pipeline_constants.RJ_SMS_VERTEX_AGENT_LABEL.value],
-    machine_type="e2-standard-2",
+    machine_type="e2-standard-4",
     env={
         "INFISICAL_ADDRESS": pipeline_constants.INFISICAL_ADDRESS.value,
         "INFISICAL_TOKEN": pipeline_constants.INFISICAL_TOKEN.value,
