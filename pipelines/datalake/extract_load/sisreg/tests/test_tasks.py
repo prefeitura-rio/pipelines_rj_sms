@@ -15,6 +15,25 @@ import pandas as pd
 from pipelines.datalake.extract_load.sisreg.errors import ErroVazioSuspeito
 
 
+class TestObterDataExtracao(unittest.TestCase):
+    """Testa o computo da data de extracao em runtime."""
+
+    def test_retorna_formato_yyyy_mm_dd(self) -> None:
+        from pipelines.datalake.extract_load.sisreg.tasks import obter_data_extracao
+
+        resultado = obter_data_extracao.run()
+        # verifica formato YYYY-MM-DD sem importar re no topo do modulo
+        partes = resultado.split("-")
+        self.assertEqual(len(partes), 3)
+        self.assertTrue(partes[0].isdigit() and len(partes[0]) == 4)
+
+    def test_data_nao_vazia(self) -> None:
+        from pipelines.datalake.extract_load.sisreg.tasks import obter_data_extracao
+
+        resultado = obter_data_extracao.run()
+        self.assertTrue(resultado)
+
+
 class TestConsolidar(unittest.TestCase):
     """Testa o gate de completude e a logica de concatenacao."""
 

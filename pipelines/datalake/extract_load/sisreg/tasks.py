@@ -35,6 +35,22 @@ _FUSO_SP = ZoneInfo("America/Sao_Paulo")
 
 
 # ---------------------------------------------------------------------------
+# Task 0: data de extracao (computada em runtime para particionamento correto)
+# ---------------------------------------------------------------------------
+
+
+@task
+def obter_data_extracao() -> str:
+    """Retorna a data atual no fuso SP no formato YYYY-MM-DD.
+
+    Computada dentro de uma task para garantir que o valor reflita o momento
+    real da extracao, independentemente do horario de disparo do schedule.
+    Usada como coluna de particao em todas as tabelas.
+    """
+    return datetime.now(_FUSO_SP).strftime("%Y-%m-%d")
+
+
+# ---------------------------------------------------------------------------
 # Task 1: resolver credenciais
 # ---------------------------------------------------------------------------
 

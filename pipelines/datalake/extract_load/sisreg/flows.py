@@ -31,6 +31,7 @@ from pipelines.datalake.extract_load.sisreg.tasks import (
     consolidar,
     extrair_item,
     normalizar_e_subir,
+    obter_data_extracao,
     planejar_trabalho,
     registrar_log_execucao,
     resolver_credenciais,
@@ -62,11 +63,6 @@ with Flow(
     # Contem: data_inicial, data_final (window), limite de debug, etc.
     JANELA_DIAS = Parameter("janela_dias", default=C.JANELA_DIAS, required=False)
 
-    # Jitter de inicio: atraso aleatorio para evitar periocidade perfeita nos
-    # firings do schedule (generate_dump_api_schedules nao tem jitter nativo).
-    # Em producao o schedule ja staggers os clocks; o jitter e uma camada extra.
-    JITTER_MAXIMO_S = Parameter("jitter_maximo_s", default=30, required=False)
-
     # ---------------------------------------------------------------------------
     # DAG
     # ---------------------------------------------------------------------------
@@ -76,9 +72,9 @@ with Flow(
         environment=ENVIRONMENT,
     )
 
-    # Data de extracao em formato YYYY-MM-DD (fuso SP) - usada como particao.
-    # Obtida aqui uma vez e passada para consolidar/log para consistencia.
-    DATA_EXTRACAO = Parameter("data_extracao", default="", required=False)
+    # Data de extracao computada em runtime (fuso SP) - usada como particao.
+    # Task dedicada garante consistencia entre consolidar e o log de execucao.
+    data_extracao = obter_data_extracao()
 
     params = {"janela_dias": JANELA_DIAS, "environment": ENVIRONMENT}
 
@@ -104,7 +100,7 @@ with Flow(
     tabelas = consolidar(
         conjunto=CONJUNTO,
         fragmentos_lista=fragmentos,
-        data_extracao=DATA_EXTRACAO,
+        data_extracao=data_extracao,
         upstream_tasks=[fragmentos],
     )
 
