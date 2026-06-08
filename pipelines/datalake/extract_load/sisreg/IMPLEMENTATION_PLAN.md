@@ -324,11 +324,11 @@ and must not risk the account). Conservative choices, locked:
       -> `{ "afastamentos": df1, "afastamento_historico": df2 }`. DoR: C9, fixtures. DoD: tests
       for both page parsers + CPF query builder; suspicious-empty if CPF source empty.
       Gates: hooks + tests.
-- [ ] **C13 `feat: implement preparos extractor`** — `extractors/preparos.py`:
+- [x] **C13 `feat: implement preparos extractor`** — `extractors/preparos.py`:
       `planejar_trabalho` = all units (no hardcoded limit); `extrair_item` walks
       unit -> procedures -> `<textarea id=preparo>`. DoR: C9, fixtures. DoD: parser tests.
       Gates: hooks + tests.
-- [ ] **C14 `feat: implement solicitacoes extractor`** — `extractors/solicitacoes.py`:
+- [x] **C14 `feat: implement solicitacoes extractor`** — `extractors/solicitacoes.py`:
       `planejar_trabalho` = date x situacao roteiro over the rolling 180-day window;
       `extrair_item` = GET `gerenciador_solicitacao` -> table; bounded retry (not 100).
       DoR: C9, fixtures. DoD: parser + roteiro tests. Gates: hooks + tests.
