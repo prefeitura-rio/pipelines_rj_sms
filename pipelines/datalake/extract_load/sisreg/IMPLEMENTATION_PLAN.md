@@ -347,11 +347,11 @@ and must not risk the account). Conservative choices, locked:
 
 ### [ ] EPIC 4 — Schedules + freshness monitor
 
-- [ ] **C17 `chore: add per-dataset schedule clocks`** — `schedules.py`: daily for
+- [x] **C17 `chore: add per-dataset schedule clocks`** — `schedules.py`: daily for
       escalas/afastamentos/solicitacoes/fila_vagas, weekly for preparos; staggered start times;
       per-account grouping respected. DoR: C10-C16. DoD: schedule builds; clocks carry correct
       `parameter_defaults`. Gates: hooks + tests.
-- [ ] **C18 `feat: add freshness monitor and discord alerts`** — freshness check over the
+- [x] **C18 `feat: add freshness monitor and discord alerts`** — freshness check over the
       run-log table (alarm if no successful run within SLA) + `send_message`/`send_discord_embed`
       wiring (`data-ingestion` health, `warning` soft-block; `error` is automatic on failure).
       DoR: C8, C17. DoD: tests for SLA computation + alert formatting (mock the sender).
