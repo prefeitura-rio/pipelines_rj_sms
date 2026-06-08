@@ -283,7 +283,7 @@ and must not risk the account). Conservative choices, locked:
       `tabela_listagem_para_dataframe`, `normalizar_nomes_colunas` (ASCII, snake_case),
       landmark assertions raising `ErroEstrutura`. DoR: C2. DoD: tests against saved HTML
       fixtures (incl. a "renamed landmark" negative case). Gates: hooks + tests.
-- [ ] **C7 `feat: add sisreg dataset registry`** — `registry.py`: `SisregDataset` dataclass
+- [x] **C7 `feat: add sisreg dataset registry`** — `registry.py`: `SisregDataset` dataclass
       (`chave, dataset_id, tabelas, perfil_credencial, colunas_esperadas, planejar_trabalho,
       extrair_item`) + `DATASETS` (the 5). DoR: C3. DoD: tests assert registry integrity (unique
       keys, callables set, table names non-empty). Gates: hooks + tests.
