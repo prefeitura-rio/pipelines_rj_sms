@@ -193,15 +193,15 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
 **Fixes** field linking §1.2 findings. Default gates: `hooks` clean + `tests` green; "lint only"
 = no test gate.
 
-### [ ] EPIC 6 — Merge gates & correctness (in-scope, no design change)
+### [x] EPIC 6 — Merge gates & correctness (in-scope, no design change)
 
-- [ ] **C22 [IN-SCOPE] `test: fix lint in sisreg tests`** — **Fixes B1.**
+- [x] **C22 [IN-SCOPE] `test: fix lint in sisreg tests`** — **Fixes B1.**
       - Wrap the long line at `tests/test_afastamentos.py:74` to ≤ 100 chars; run `isort` over
         `tests/test_tasks.py` (the two `normalizar_e_subir` imports). Do **not** change test logic.
       - **DoR:** none. **DoD:** `task lint` exits clean on the whole `/sisreg/` tree; 116 tests
         still pass unchanged. **Gates:** hooks + tests.
 
-- [ ] **C23 [IN-SCOPE] `fix: compute extraction date at runtime for partitioning`** — **Fixes B2.**
+- [x] **C23 [IN-SCOPE] `fix: compute extraction date at runtime for partitioning`** — **Fixes B2.**
       - Add `@task obter_data_extracao() -> str` in `tasks.py` returning
         `datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%Y-%m-%d")` (mirror the sibling
         `sisreg_afastamentos` `get_extraction_date` pattern).
@@ -213,7 +213,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
         or assert the format/regex); `consolidar` test asserts the partition column is non-empty
         and equals the passed date. **Gates:** hooks + tests.
 
-- [ ] **C24 [IN-SCOPE] `fix: fail loudly on schema drift in consolidar`** — **Fixes S1.**
+- [x] **C24 [IN-SCOPE] `fix: fail loudly on schema drift in consolidar`** — **Fixes S1.**
       - In `consolidar`, when a table's `colunas_esperadas` is non-empty and required columns are
         missing, raise `ErroEstrutura(... etapa="consolidacao", item=tabela ...)` instead of
         logging a warning. Tables with an empty `frozenset()` (escalas, solicitacoes) skip the
@@ -224,7 +224,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
       - **DoR:** C23. **DoD:** test: missing required column ⇒ `ErroEstrutura`; complete schema
         ⇒ passes; empty-expected table ⇒ never raises. **Gates:** hooks + tests.
 
-- [ ] **C25 [IN-SCOPE] `fix: stop swallowing extractor import errors in registry`** — **Fixes B5.**
+- [x] **C25 [IN-SCOPE] `fix: stop swallowing extractor import errors in registry`** — **Fixes B5.**
       - In `registry._importar_extratores`, remove the `try/except ImportError: pass`. All five
         extractors now exist, so the import must succeed; a real `ImportError` must propagate and
         crash loudly (caught by the flow state-handler in prod), never degrade to no-op lambdas.
@@ -235,9 +235,9 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
         `planejar_trabalho`/`extrair_item` after `obter_conjunto`; test asserts a deliberately
         broken import surfaces (not swallowed). **Gates:** hooks + tests.
 
-### [ ] EPIC 7 — Extraction-result contract + truthful run-log
+### [x] EPIC 7 — Extraction-result contract + truthful run-log
 
-- [ ] **C26 [IN-SCOPE] `refactor: introduce ResultadoConjunto extraction contract`** —
+- [x] **C26 [IN-SCOPE] `refactor: introduce ResultadoConjunto extraction contract`** —
       **Enables A1/B3/S2 fixes.**
       - New `resultado.py` with two frozen dataclasses:
         - `ResultadoConjunto`: `tabelas: Dict[str, pd.DataFrame]`, `total: int`, `ok: int`,
@@ -254,7 +254,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
       - **DoR:** C25. **DoD:** `test_resultado.py` covers `incompleto`; existing extractor tests
         updated to the new return type; all green. **Gates:** hooks + tests.
 
-- [ ] **C27 [IN-SCOPE] `feat: skip overwrite on incomplete sub-items`** — **Fixes S2 (completeness
+- [x] **C27 [IN-SCOPE] `feat: skip overwrite on incomplete sub-items`** — **Fixes S2 (completeness
       at sub-item granularity).**
       - `consolidar` now consumes `List[Optional[ResultadoConjunto]]` and returns a `Consolidado`:
         - any `None` element ⇒ item-level failure ⇒ `tabelas=None` + alert (`warning`).
@@ -267,7 +267,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
         `ids_falhos` entry ⇒ tables `None`, metrics show the shortfall; one `None` element ⇒
         tables `None`. **Gates:** hooks + tests.
 
-- [ ] **C28 [IN-SCOPE] `fix: record real metrics and status in run log`** — **Fixes B3.**
+- [x] **C28 [IN-SCOPE] `fix: record real metrics and status in run log`** — **Fixes B3.**
       - `normalizar_e_subir` takes the `Consolidado`, uploads `consolidado.tabelas` (None ⇒ skip),
         returns a `bool subiu`.
       - `registrar_log_execucao` takes `consolidado` + `subiu` and derives the **real** row:
@@ -278,7 +278,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
         `status="FALHA_PARCIAL"`; upstream crash (consolidado `None`) ⇒ `status="FALHA"`. The
         freshness monitor's existing tests still pass against these rows. **Gates:** hooks + tests.
 
-### [ ] EPIC 8 — Anti-ban: coarsen to one reused session (login-churn fix)
+### [x] EPIC 8 — Anti-ban: coarsen to one reused session (login-churn fix)
 
 > Pattern for all four: `planejar_trabalho` returns **one** item carrying the full sub-work list
 > (CPFs / roteiro / procedures); `extrair_item` opens **one** session and loops internally, every
@@ -287,7 +287,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
 > per-sub-item errors append to `ids_falhos`; return a `ResultadoConjunto` with real
 > `total/ok/ids_falhos`. Assert "exactly one login" in tests.
 
-- [ ] **C29 [IN-SCOPE] `refactor: coarsen afastamentos to a single reused session`** —
+- [x] **C29 [IN-SCOPE] `refactor: coarsen afastamentos to a single reused session`** —
       **Fixes A1 (worst), A2 (afastamentos), wires D4.**
       - `planejar_trabalho_afastamentos` returns `[{"id": "todos_os_cpfs", "cpfs": [...]}]` (still
         runs the 30-day-active BQ query; raises `ErroVazioSuspeito` if empty). **Never** log raw
@@ -301,7 +301,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
         `ids_falhos` (does not abort); an injected `ErroBloqueio` aborts; no raw CPF in any log
         string. **Gates:** hooks + tests.
 
-- [ ] **C30 [IN-SCOPE] `refactor: coarsen solicitacoes to a single reused session`** —
+- [x] **C30 [IN-SCOPE] `refactor: coarsen solicitacoes to a single reused session`** —
       **Fixes A1, S3 (solicitacoes docstring).**
       - `planejar_trabalho_solicitacoes` returns `[{"id": "roteiro", "roteiro": _gerar_roteiro(janela_dias)}]`.
       - `extrair_item_solicitacoes` loops the date×status roteiro on one session (already via
@@ -311,7 +311,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
         then continues; bounded retry honored (≤ `MAX_TENTATIVAS_ITEM`); docstring matches behavior.
         **Gates:** hooks + tests.
 
-- [ ] **C31 [IN-SCOPE] `refactor: coarsen fila_vagas to a single reused session`** — **Fixes A1.**
+- [x] **C31 [IN-SCOPE] `refactor: coarsen fila_vagas to a single reused session`** — **Fixes A1.**
       - `planejar_trabalho_fila_vagas` returns `[{"id": "procedimentos", "procedimentos": <df rows>}]`
         (still the BQ discovery; trust codes not names; raises `ErroVazioSuspeito` if empty).
       - `extrair_item_fila_vagas` loops procedures on one session (already via `requisicao_educada`),
@@ -320,7 +320,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
         null-`qtd_pend` row in `ids_ok` (not a failure); structure error on one procedure ⇒
         `ids_falhos`. **Gates:** hooks + tests.
 
-- [ ] **C32 [IN-SCOPE] `fix: route escalas through polite http and correct docstring`** —
+- [x] **C32 [IN-SCOPE] `fix: route escalas through polite http and correct docstring`** —
       **Fixes A2 (escalas), S3 (escalas docstring).**
       - Replace the raw `sessao.get` (line ~96) with `requisicao_educada` (gains jitter + block
         detection even for the single request). Reading the CSV from `resposta.content` is fine.
@@ -330,9 +330,9 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
       - **DoR:** C28. **DoD:** test: the GET goes through `requisicao_educada`; a 403/CAPTCHA
         response raises `ErroBloqueio`; docstring no longer claims a date window. **Gates:** hooks + tests.
 
-### [ ] EPIC 9 — Observability done right & remove dead code
+### [x] EPIC 9 — Observability done right & remove dead code
 
-- [ ] **C33 [IN-SCOPE] `feat: add standalone freshness monitor flow`** — **Fixes B4.**
+- [x] **C33 [IN-SCOPE] `feat: add standalone freshness monitor flow`** — **Fixes B4.**
       - New `monitor_flows.py`: a tiny Prefect flow `sisreg_monitor_flow` whose only task is
         `verificar_frescor_conjuntos(dataset_id, environment)` (already in `monitor.py`), with the
         same `VertexRun`/`GCS`/`state_handlers`/`owners` infra as the main flow and its **own**
@@ -344,7 +344,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
         builds the flow and asserts its schedule/parameters; existing `test_monitor.py` SLA tests
         still pass. **Gates:** hooks + tests.
 
-- [ ] **C34 [IN-SCOPE] `chore: remove unused failover, snapshot and jitter scaffolding`** —
+- [x] **C34 [IN-SCOPE] `chore: remove unused failover, snapshot and jitter scaffolding`** —
       **Fixes D1, D2, D3.**
       - Delete `failover_por_categoria` from `auth.py` (D1 — no reserve account is fetched; dead
         and unusable) and its tests in `test_auth.py`.
@@ -355,7 +355,7 @@ Legend per commit: **DoR** (ready), **DoD** (done), **Commit** (exact message), 
         dangling imports; `flake8` reports no unused symbols; full suite green; README updated in
         C35 to drop the removed pieces. **Gates:** hooks + tests.
 
-- [ ] **C35 [IN-SCOPE] `docs: update readme and phase-2 plan for hardened architecture`** —
+- [x] **C35 [IN-SCOPE] `docs: update readme and phase-2 plan for hardened architecture`** —
       - Update `README.md` (pt-BR): the DAG now ends at `registrar_log_execucao`; the freshness
         monitor is a **separate** flow (update the Mermaid `I-->J` to a standalone diagram);
         failover/snapshot removed from the directory map and "anti-ban" section; document

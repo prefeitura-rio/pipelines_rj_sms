@@ -24,13 +24,26 @@ graph TD
 
     B --> C[resolver_credenciais]
     C --> D[planejar_trabalho]
-    D --> E[extrair_item.map x N]
-    E --> F[consolidar - gate 100%]
+    D --> E[extrair_item.map - 1 item/run]
+    E --> F[consolidar - gate 100% outer+sub-item]
     F -->|OK| G[normalizar_e_subir - overwrite]
     F -->|falha| H[SKIP - tabela anterior intacta]
-    G --> I[registrar_log_execucao]
-    I --> J[verificar_frescor_conjuntos]
+    G --> I[registrar_log_execucao - status real]
 ```
+
+### Monitor de frescor (fluxo proprio)
+
+```mermaid
+graph LR
+    M[Agendador 08:00 SP diario] --> MF[sisreg_monitor_flow]
+    MF --> VF[verificar_frescor_conjuntos]
+    VF -->|SLA violado em prod| DC[Discord data-ingestion]
+    VF -->|Tudo ok| LOG[log silencioso]
+```
+
+O monitor roda em fluxo **independente** do fluxo de extracao. Isso e essencial:
+o monitor existe para detectar quando o fluxo de extracao **parou de rodar** -
+se estivesse embutido no fluxo de extracao, nunca detectaria esse cenario.
 
 ---
 
@@ -52,28 +65,31 @@ graph TD
 
 ```
 sisreg/
-  flows.py          # Flow Prefect - DAG map-reduce + run config + schedule
-  tasks.py          # Tasks genericas (credenciais, planejamento, consolidacao, upload, log)
-  registry.py       # ConjuntoSisreg dataclass + CONJUNTOS (5 entradas)
-  constants.py      # URLs, cabecalhos, perfis, SLAs, janela de extracao
-  schedules.py      # Um clock por conjunto (diario/semanal)
-  errors.py         # Taxonomia de erros (ErroAutenticacao, ErroBloqueio, etc.)
-  monitor.py        # Monitor de frescor + alerta Discord
+  flows.py            # Flow Prefect - DAG map-reduce + run config + schedule
+  monitor_flows.py    # Fluxo de monitor de frescor (schedule proprio)
+  tasks.py            # Tasks genericas (credenciais, data, consolidacao, upload, log)
+  resultado.py        # Contratos ResultadoConjunto e Consolidado (metricas reais)
+  registry.py         # ConjuntoSisreg dataclass + CONJUNTOS (5 entradas)
+  constants.py        # URLs, cabecalhos, perfis, SLAs, janela de extracao
+  schedules.py        # Um clock por conjunto (diario/semanal)
+  errors.py           # Taxonomia de erros (ErroAutenticacao, ErroBloqueio, etc.)
+  monitor.py          # Monitor de frescor + alerta Discord
   common/
-    auth.py         # Login canonico, failover gateado por categoria
-    http.py         # requisicao_educada (jitter, retry, deteccao de bloqueio)
-    parsing.py      # tabela_listagem -> DataFrame, normalizar colunas, landmarks
+    auth.py           # Login canonico, reautenticacao inline (sem failover de conta)
+    http.py           # requisicao_educada (jitter, retry, deteccao de bloqueio)
+    parsing.py        # tabela_listagem -> DataFrame, normalizar colunas, landmarks
   extractors/
-    escalas.py      # GET EXPORTAR_ESCALAS -> CSV
-    afastamentos.py # CPFs ativos (BQ) -> af_medicos.pl por CPF
-    preparos.py     # Unidades -> procedimentos -> textarea#preparo
-    solicitacoes.py # Roteiro data x status -> gerenciador_solicitacao
-    fila_vagas.py   # Procedimentos (BQ) -> LISTAR + APLICAR autorizador
+    escalas.py        # GET EXPORTAR_ESCALAS -> CSV (1 item, 1 login/run)
+    afastamentos.py   # 1 item com todos os CPFs -> loop interno, 1 sessao
+    preparos.py       # 1 item -> Unidades -> procedimentos -> textarea#preparo
+    solicitacoes.py   # 1 item com roteiro completo -> loop interno, 1 sessao
+    fila_vagas.py     # 1 item com todos os procedimentos (BQ) -> loop interno
   tests/
-    fixtures/       # HTML/CSV minimos para testes offline
-    test_*.py       # stdlib unittest, sem pytest, sem chamadas reais ao SISREG
+    fixtures/         # HTML/CSV minimos para testes offline
+    test_*.py         # stdlib unittest, sem pytest, sem chamadas reais ao SISREG
   IMPLEMENTATION_PLAN.md
-  README.md         # este arquivo
+  IMPLEMENTATION_PLAN_PHASE2.md
+  README.md           # este arquivo
 ```
 
 ---
@@ -138,11 +154,16 @@ sequenceDiagram
 O SISREG detecta scrapers e pode banir o IP. A estrategia e **comportar-se como um
 cliente educado e de baixo impacto**, nao contornar o bloqueio:
 
-- **Delay jitterizado (8.5-9.5 s):** nunca delays exatos (identificam bots).
+- **Um login por run:** cada conjunto faz UM login e reutiliza a sessao para todos os
+  sub-itens (CPFs, fichas de data+status, procedimentos). Logins multiplos por run
+  eram o principal risco de ban; eliminado pelo coarsening dos extratores.
+- **Delay jitterizado (8.5-9.5 s):** todo request via `requisicao_educada` - nunca
+  delays exatos (identificam bots), nunca `sessao.get` direto.
 - **Single-flight por conta:** `num_workers=1`; nunca duas requisicoes simultaneas.
+- **Reautenticacao inline:** sessao expirada mid-run (REDIRECIONAMENTO_LOGIN) dispara
+  `reautenticar_se_deslogado` e continua o loop. Bloqueio genuino (403/429/CAPTCHA)
+  aborta o run imediatamente.
 - **Retreat-on-block:** CAPTCHA/403/429 acionam circuit-break imediato, nunca retry.
-- **Failover gateado:** somente `ErroAutenticacao` (conta) rotaciona para a conta
-  reserva. `ErroBloqueio` (IP) **nao** rotaciona - queimaria a reserva.
 - **Volume minimo:** fonte de procedimentos e CPFs migrada para BigQuery (sem scraping).
 
 ```mermaid
@@ -159,11 +180,17 @@ flowchart LR
 ## Modelo de escrita
 
 - **Overwrite latest:** cada execucao bem-sucedida substitui a tabela inteira.
-- **Gate de 100%:** se QUALQUER item falhar, o upload e cancelado. A tabela anterior
-  permanece intacta. Um dia ruim se corrige na proxima execucao.
+- **Gate de completude (duplo):**
+  - *Outer:* se qualquer task mapeada retornar None, upload cancelado.
+  - *Sub-item:* se qualquer CPF/ficha/procedimento for para `ids_falhos`,
+    upload cancelado. A tabela anterior permanece intacta.
+  - Um dia ruim se corrige na proxima execucao; o log registra o status real.
 - **Janela de 180 dias:** cada execucao re-extrai os ultimos 180 dias (linhas podem
   mudar na fonte). Nunca backfill completo.
-- **Particionamento:** coluna `data_extracao` (Hive-style no GCS).
+- **Particionamento:** coluna `data_extracao` computada em runtime (fuso SP).
+- **Log de execucao:** `registrar_log_execucao` grava o status real (`OK`,
+  `FALHA_PARCIAL`, `FALHA`) derivado do resultado efetivo da task, nunca constantes
+  hardcodadas. O monitor de frescor le este log.
 
 ---
 
