@@ -307,7 +307,7 @@ and must not risk the account). Conservative choices, locked:
       `pd.read_csv(BytesIO, sep=";")` -> `{ "escalas": df }`; `colunas_esperadas`.
       DoR: C9, synthetic escalas CSV fixture. DoD: test parses the CSV fixture into the schema.
       Gates: hooks + tests.
-- [ ] **C11 `chore: schedule escalas and register flow`** — `schedules.py` with the `escalas`
+- [x] **C11 `chore: schedule escalas and register flow`** — `schedules.py` with the `escalas`
       daily clock; register the flow in `pipelines/flows.py` (new name, e.g. `sms_sisreg_web`),
       running in parallel with the legacy flows. DoR: C10. DoD: schedule builds; flow registered;
       no collision with legacy datasets. Gates: hooks + tests.

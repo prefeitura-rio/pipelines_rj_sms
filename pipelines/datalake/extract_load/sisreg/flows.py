@@ -132,6 +132,11 @@ with Flow(
 
 # num_workers=1: single-flight dentro de uma execucao.
 # .map ainda oferece isolamento de retry por item - o beneficio real de usar .map.
+from pipelines.datalake.extract_load.sisreg.schedules import (  # noqa: E402
+    schedule as sisreg_schedule,
+)
+
+sisreg_web_flow.schedule = sisreg_schedule
 sisreg_web_flow.executor = LocalDaskExecutor(num_workers=1)
 
 sisreg_web_flow.storage = GCS(pipeline_constants.GCS_FLOWS_BUCKET.value)
