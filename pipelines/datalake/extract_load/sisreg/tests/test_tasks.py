@@ -48,12 +48,13 @@ class TestConsolidar(unittest.TestCase):
         )
 
     def test_100_por_cento_sucesso_retorna_dados(self) -> None:
+        # "solicitacoes" tem colunas_esperadas=frozenset() - sem validacao de schema
         df = pd.DataFrame({"col": [1, 2]})
-        frags = [{"escalas": df}, {"escalas": df}]
-        resultado = self._rodar("escalas", frags)
+        frags = [{"solicitacoes": df}, {"solicitacoes": df}]
+        resultado = self._rodar("solicitacoes", frags)
         self.assertIsNotNone(resultado)
-        self.assertIn("escalas", resultado)
-        self.assertEqual(len(resultado["escalas"]), 4)  # 2+2 linhas
+        self.assertIn("solicitacoes", resultado)
+        self.assertEqual(len(resultado["solicitacoes"]), 4)  # 2+2 linhas
 
     @patch("pipelines.utils.monitor.send_message", MagicMock())
     def test_qualquer_falha_retorna_none(self) -> None:
@@ -75,13 +76,32 @@ class TestConsolidar(unittest.TestCase):
         from pipelines.datalake.extract_load.sisreg import constants as C
 
         df = pd.DataFrame({"col": [1]})
-        resultado = self._rodar("escalas", [{"escalas": df}], data_extracao="2025-06-01")
-        self.assertIn(C.COLUNA_PARTICAO, resultado["escalas"].columns)
-        self.assertEqual(resultado["escalas"][C.COLUNA_PARTICAO].iloc[0], "2025-06-01")
+        resultado = self._rodar("solicitacoes", [{"solicitacoes": df}], data_extracao="2025-06-01")
+        self.assertIn(C.COLUNA_PARTICAO, resultado["solicitacoes"].columns)
+        self.assertEqual(resultado["solicitacoes"][C.COLUNA_PARTICAO].iloc[0], "2025-06-01")
 
     def test_fragmentos_none_upstream_retorna_none(self) -> None:
         resultado = self._rodar("escalas", None)
         self.assertIsNone(resultado)
+
+    def test_schema_drift_levanta_erro_estrutura(self) -> None:
+        """Colunas esperadas ausentes devem levantar ErroEstrutura."""
+        from pipelines.datalake.extract_load.sisreg.errors import ErroEstrutura
+
+        # afastamentos tem colunas_esperadas definidas (cpf, data_inicio, etc.)
+        # df sem essas colunas deve causar falha em voz alta
+        df = pd.DataFrame({"coluna_inesperada": [1, 2]})
+        frags = [{"afastamentos": df}]
+        with self.assertRaises(ErroEstrutura):
+            self._rodar("afastamentos", frags)
+
+    def test_tabela_sem_colunas_esperadas_nao_falha(self) -> None:
+        """Tabelas com colunas_esperadas=frozenset() passam sem validacao de schema."""
+        # "solicitacoes" tem frozenset() explicitamente no registry
+        df = pd.DataFrame({"qualquer_coluna": [1, 2]})
+        frags = [{"solicitacoes": df}]
+        resultado = self._rodar("solicitacoes", frags)
+        self.assertIsNotNone(resultado)
 
 
 class TestPlanejarTrabalho(unittest.TestCase):

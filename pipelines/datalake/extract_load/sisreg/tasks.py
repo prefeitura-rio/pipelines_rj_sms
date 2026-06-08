@@ -23,6 +23,7 @@ from prefeitura_rio.pipelines_utils.logging import log
 from pipelines.datalake.extract_load.sisreg import constants as C
 from pipelines.datalake.extract_load.sisreg.errors import (
     ErroBloqueio,
+    ErroEstrutura,
     ErroSisreg,
     ErroVazioSuspeito,
 )
@@ -241,7 +242,9 @@ def consolidar(
         tabelas_consolidadas[tabela] = df_concat
         log(f"[{conjunto}/{tabela}] {len(df_concat)} linhas consolidadas")
 
-    # Validar schema
+    # Validar schema: colunas obrigatorias ausentes falham em voz alta.
+    # Tabelas com colunas_esperadas vazio (ex.: escalas, solicitacoes) pulam
+    # a checagem - serao refinadas apos primeira execucao em staging.
     conj = obter_conjunto(conjunto)
     for tabela, df in tabelas_consolidadas.items():
         esperadas = conj.colunas_esperadas.get(tabela, frozenset())
@@ -249,9 +252,12 @@ def consolidar(
             presentes = set(df.columns)
             ausentes = esperadas - presentes
             if ausentes:
-                log(
-                    f"[{conjunto}/{tabela}] AVISO de schema: ausentes: {ausentes}",
-                    level="warning",
+                raise ErroEstrutura(
+                    f"Schema drift em '{tabela}': colunas ausentes: {sorted(ausentes)}",
+                    conjunto=conjunto,
+                    etapa="consolidacao",
+                    item=tabela,
+                    detalhe=f"esperadas={sorted(esperadas)}, ausentes={sorted(ausentes)}",
                 )
 
     return tabelas_consolidadas if tabelas_consolidadas else None
