@@ -257,7 +257,7 @@ and must not risk the account). Conservative choices, locked:
 - [x] **C1 `chore: scaffold unified sisreg package`** — create the tree in §6 (empty
       `__init__.py`, `tests/`, `tests/fixtures/`), each `.py` with the encoding pragma.
       DoR: branch ready. DoD: package imports cleanly; `tests/` discoverable. Gates: hooks (lint only).
-- [ ] **C2 `feat: add sisreg error taxonomy`** — `errors.py`: `ErroSisreg` base (carries
+- [x] **C2 `feat: add sisreg error taxonomy`** — `errors.py`: `ErroSisreg` base (carries
       `dataset/etapa/item/url/detalhe`) + `ErroAutenticacao`, `ErroBloqueio`, `ErroEstrutura`,
       `ErroVazioSuspeito`, `ErroUpload`, `ErroTransitorio`.
       DoR: C1. DoD: classes + docstrings; `test_errors.py` checks construction/context.
