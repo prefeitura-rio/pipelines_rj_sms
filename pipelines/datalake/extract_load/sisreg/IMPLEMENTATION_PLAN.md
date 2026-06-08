@@ -279,7 +279,7 @@ and must not risk the account). Conservative choices, locked:
       `failover_por_categoria` (rotate account only on `ErroAutenticacao`; circuit-break on
       `ErroBloqueio`). DoR: C2-C4. DoD: tests for hash, hidden-field parse, success/failure
       detection, failover gating (mocked). Gates: hooks + tests.
-- [ ] **C6 `feat: add html table parsing helpers`** — `common/parsing.py`:
+- [x] **C6 `feat: add html table parsing helpers`** — `common/parsing.py`:
       `tabela_listagem_para_dataframe`, `normalizar_nomes_colunas` (ASCII, snake_case),
       landmark assertions raising `ErroEstrutura`. DoR: C2. DoD: tests against saved HTML
       fixtures (incl. a "renamed landmark" negative case). Gates: hooks + tests.
