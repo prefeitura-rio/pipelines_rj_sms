@@ -5,20 +5,24 @@ Extrator de solicitacoes do SISREG.
 Substitui sisreg_solicitacoes. Correcoes em relacao ao legado:
 - max_retries=100 substituido por MAX_TENTATIVAS_ITEM=3 (politeness).
 - Janela rolling de 180 dias (parametrizavel) em vez de mes anterior fixo.
-- planejar_trabalho gera o produto cartesiano data x status (roteiro).
-- extrair_item e atomico: uma data + um status = um fragmento.
+- Um unico item de trabalho com o roteiro completo (anti-ban: 1 login/run).
+  O legado gerava 1 item por data+status (1.267 logins/dia para janela=180).
+- Reautenticacao inline em caso de expiracao de sessao mid-run (D4).
 
 Ref.: sisreg_solicitacoes/tasks.py e constants.py
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import List
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.datalake.extract_load.sisreg.common.auth import (
+    reautenticar_se_deslogado,
+)
 from pipelines.datalake.extract_load.sisreg.common.http import requisicao_educada
 from pipelines.datalake.extract_load.sisreg.common.parsing import (
     tabela_listagem_para_dataframe,
@@ -28,8 +32,9 @@ from pipelines.datalake.extract_load.sisreg.constants import (
     JANELA_DIAS,
     URL_GERENCIADOR_SOLICITACAO,
 )
-from pipelines.datalake.extract_load.sisreg.errors import ErroEstrutura
+from pipelines.datalake.extract_load.sisreg.errors import ErroBloqueio, ErroEstrutura
 from pipelines.datalake.extract_load.sisreg.registry import registrar_extrator
+from pipelines.datalake.extract_load.sisreg.resultado import ResultadoConjunto
 
 _FUSO_SP = ZoneInfo("America/Sao_Paulo")
 
@@ -65,11 +70,15 @@ def _gerar_roteiro(janela_dias: int) -> List[dict]:
 
 
 def planejar_trabalho_solicitacoes(credenciais: dict, params: dict) -> List[dict]:
-    """Retorna o roteiro de extracao: data x status sobre a janela de 180 dias."""
+    """Retorna UM unico item com o roteiro completo de extracao.
+
+    Um unico item garante um unico login por run (anti-ban). O loop sobre
+    datas x status ocorre dentro de extrair_item_solicitacoes com sessao reusada.
+    """
     janela = int(params.get("janela_dias", JANELA_DIAS))
     roteiro = _gerar_roteiro(janela)
     log(f"[solicitacoes] Roteiro gerado: {len(roteiro)} fichas (janela={janela}d)")
-    return roteiro
+    return [{"id": "roteiro", "roteiro": roteiro}]
 
 
 def _verificar_status_pagina(html: str) -> str:
@@ -87,29 +96,17 @@ def _verificar_status_pagina(html: str) -> str:
     return "OK"
 
 
-def extrair_item_solicitacoes(
+def _buscar_ficha(
     sessao: requests.Session,
-    item: dict,
-    params: dict,
-) -> Dict[str, pd.DataFrame]:
-    """Extrai solicitacoes para uma data e status especificos.
+    ficha: dict,
+    usuario: str,
+    senha: str,
+) -> pd.DataFrame:
+    """Busca uma ficha (data+status) e retorna o DataFrame correspondente.
 
-    Usa requisicao_educada (jitter + retry limitado). Reautentica se sessao
-    expirou (uma vez). Retorna DataFrame vazio para datas sem registros.
-
-    Args:
-        sessao: Sessao requests autenticada com perfil padrao.
-        item: Dict com 'data', 'tipo_pedido', 'codigo_situacao', 'status_coluna'.
-        params: Parametros do fluxo.
-
-    Returns:
-        {"solicitacoes": DataFrame} com as linhas da tabela.
+    Lida com LOGOUT fazendo reautenticacao inline e tentando mais uma vez.
     """
-    data = item["data"]
-    tipo_pedido = item["tipo_pedido"]
-    codigo_situacao = item["codigo_situacao"]
-    status_coluna = item["status_coluna"]
-    item_id = item.get("id", f"{data}_{status_coluna}")
+    item_id = ficha.get("id", f"{ficha['data']}_{ficha['status_coluna']}")
 
     query = {
         "etapa": "LISTAR_SOLICITACOES",
@@ -121,28 +118,38 @@ def extrair_item_solicitacoes(
         "co_proc_unificado": "",
         "co_pa_interno": "",
         "ds_procedimento": "",
-        "tipo_periodo": tipo_pedido,
-        "dt_inicial": data,
-        "dt_final": data,
-        "cmb_situacao": codigo_situacao,
+        "tipo_periodo": ficha["tipo_pedido"],
+        "dt_inicial": ficha["data"],
+        "dt_final": ficha["data"],
+        "cmb_situacao": ficha["codigo_situacao"],
         "qtd_itens_pag": "0",
         "co_seq_solicitacao": "",
         "ordenacao": "2",
         "pagina": "0",
     }
 
-    resposta = requisicao_educada(
-        sessao,
-        URL_GERENCIADOR_SOLICITACAO,
-        params=query,
-        conjunto="solicitacoes",
-        item=item_id,
-    )
+    try:
+        resposta = requisicao_educada(
+            sessao, URL_GERENCIADOR_SOLICITACAO, params=query,
+            conjunto="solicitacoes", item=item_id,
+        )
+    except ErroBloqueio as exc:
+        if exc.detalhe == "REDIRECIONAMENTO_LOGIN" and usuario:
+            log(f"[solicitacoes/{item_id}] Sessao expirada - reautenticando")
+            reautenticar_se_deslogado(
+                sessao, "efetue o logon novamente", usuario, senha, "solicitacoes"
+            )
+            resposta = requisicao_educada(
+                sessao, URL_GERENCIADOR_SOLICITACAO, params=query,
+                conjunto="solicitacoes", item=item_id,
+            )
+        else:
+            raise
 
     status = _verificar_status_pagina(resposta.text)
 
     if status == "VAZIO":
-        return {"solicitacoes": pd.DataFrame()}
+        return pd.DataFrame()
 
     if status in ("LOGOUT", "ZOMBIE"):
         raise ErroEstrutura(
@@ -169,9 +176,76 @@ def extrair_item_solicitacoes(
         ) from exc
 
     if not df.empty:
-        df["status"] = status_coluna
+        df["status"] = ficha["status_coluna"]
 
-    return {"solicitacoes": df}
+    return df
+
+
+def extrair_item_solicitacoes(
+    sessao: requests.Session,
+    item: dict,
+    params: dict,
+) -> ResultadoConjunto:
+    """Extrai todas as solicitacoes do roteiro com uma unica sessao reusada.
+
+    Percorre o produto cartesiano data x status sobre a janela de 180 dias
+    com uma sessao autenticada compartilhada. Um unico login por run em vez
+    de ~1.267 logins com a abordagem por-item-mapeado.
+
+    Args:
+        sessao: Sessao requests autenticada com perfil padrao.
+        item: Dict com 'roteiro' (lista de fichas) e 'id'.
+        params: Parametros do fluxo (inclui 'usuario' e 'senha' para re-auth).
+
+    Returns:
+        ResultadoConjunto com DataFrame de solicitacoes e metricas reais.
+    """
+    roteiro: List[dict] = item["roteiro"]
+    usuario = params.get("usuario", "")
+    senha = params.get("senha", "")
+
+    log(f"[solicitacoes] Iniciando loop: {len(roteiro)} fichas com sessao unica")
+
+    dfs: List[pd.DataFrame] = []
+    ids_falhos: List[str] = []
+    ok = 0
+
+    for ficha in roteiro:
+        item_id = ficha.get("id", "")
+        try:
+            df = _buscar_ficha(sessao, ficha, usuario, senha)
+            dfs.append(df)
+            ok += 1
+        except ErroBloqueio:
+            log(
+                f"[solicitacoes/{item_id}] BLOQUEIO - abortando run",
+                level="error",
+            )
+            raise
+        except Exception as exc:  # noqa: BLE001
+            log(
+                f"[solicitacoes/{item_id}] Erro: {type(exc).__name__}: {exc}",
+                level="warning",
+            )
+            ids_falhos.append(item_id)
+
+    df_final = (
+        pd.concat([d for d in dfs if not d.empty], ignore_index=True)
+        if any(not d.empty for d in dfs)
+        else pd.DataFrame()
+    )
+
+    log(
+        f"[solicitacoes] Loop concluido: {ok}/{len(roteiro)} ok, "
+        f"{len(ids_falhos)} falhas, {len(df_final)} linhas"
+    )
+
+    return ResultadoConjunto(
+        tabelas={"solicitacoes": df_final},
+        total=len(roteiro),
+        ok=ok,
+        ids_falhos=ids_falhos,
+    )
 
 
 # ---------------------------------------------------------------------------
