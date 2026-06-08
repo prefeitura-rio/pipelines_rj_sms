@@ -16,7 +16,6 @@ limpo do legado). Adiciona:
 """
 
 import hashlib
-from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -27,11 +26,7 @@ from pipelines.datalake.extract_load.sisreg.constants import (
     TIMEOUT_LOGIN_S,
     URL_BASE,
 )
-from pipelines.datalake.extract_load.sisreg.errors import (
-    ErroAutenticacao,
-    ErroBloqueio,
-    ErroEstrutura,
-)
+from pipelines.datalake.extract_load.sisreg.errors import ErroAutenticacao, ErroEstrutura
 
 # Palavras que confirmam login bem-sucedido na pagina pos-login.
 # Derivadas de sisreg_solicitacoes (o mais conservador).
@@ -207,55 +202,3 @@ def reautenticar_se_deslogado(
 
     log(f"[{conjunto}] Reautenticacao bem-sucedida")
     return True
-
-
-def failover_por_categoria(
-    erro: Exception,
-    usuario_reserva: Optional[str],
-    senha_reserva: Optional[str],
-    sessao_atual: requests.Session,
-    conjunto: str = "",
-) -> Optional[requests.Session]:
-    """Aplica failover de conta apenas para erros de autenticacao (escopo de conta).
-
-    Retorna uma nova sessao autenticada com a conta reserva se o erro for
-    ErroAutenticacao. Levanta ErroBloqueio sem modificacao para erros de IP
-    (nao faz sentido trocar de conta - o IP continuaria bloqueado).
-
-    Args:
-        erro: Excecao capturada na extracao.
-        usuario_reserva: Usuario da conta alternativa, ou None se indisponivel.
-        senha_reserva: Senha da conta alternativa, ou None se indisponivel.
-        sessao_atual: Sessao que falhou (retornada se nao houver failover).
-        conjunto: Contexto para log e erros.
-
-    Returns:
-        Nova sessao autenticada com conta reserva, ou None se nao aplicavel.
-    """
-    if isinstance(erro, ErroBloqueio):
-        # Bloqueio e por IP: trocar de conta nao resolve e queima a reserva.
-        # Re-levanta para o circuit-breaker do chamador.
-        log(
-            f"[{conjunto}] ErroBloqueio detectado - nao fazendo failover de conta "
-            "(bloqueio e por IP, nao por conta). Acionando circuit-break.",
-            level="warning",
-        )
-        raise erro
-
-    if not isinstance(erro, ErroAutenticacao):
-        # Apenas ErroAutenticacao justifica rotacao de conta.
-        return None
-
-    if not usuario_reserva or not senha_reserva:
-        log(
-            f"[{conjunto}] ErroAutenticacao mas sem conta reserva configurada.",
-            level="warning",
-        )
-        raise erro
-
-    log(f"[{conjunto}] ErroAutenticacao - tentando conta reserva '{usuario_reserva[:3]}...'")
-    return abrir_sessao_autenticada(
-        usuario=usuario_reserva,
-        senha=senha_reserva,
-        conjunto=conjunto,
-    )

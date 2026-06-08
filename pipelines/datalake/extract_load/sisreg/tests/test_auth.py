@@ -11,15 +11,10 @@ from pipelines.datalake.extract_load.sisreg.common.auth import (
     _extrair_action_formulario,
     _verificar_sucesso_login,
     extrair_campos_ocultos,
-    failover_por_categoria,
     reautenticar_se_deslogado,
     sha256_maiusculo,
 )
-from pipelines.datalake.extract_load.sisreg.errors import (
-    ErroAutenticacao,
-    ErroBloqueio,
-    ErroEstrutura,
-)
+from pipelines.datalake.extract_load.sisreg.errors import ErroAutenticacao, ErroEstrutura
 
 # ---------------------------------------------------------------------------
 # HTML minimo para testes de parsing
@@ -163,36 +158,6 @@ class TestReautenticarSeDeslogado(unittest.TestCase):
 
         resultado = reautenticar_se_deslogado(sessao, _HTML_SESSAO_EXPIRADA, "user", "senha")
         self.assertTrue(resultado)
-
-
-class TestFailoverPorCategoria(unittest.TestCase):
-    def test_erro_bloqueio_re_levanta(self) -> None:
-        erro = ErroBloqueio("bloqueado")
-        sessao = MagicMock()
-        with self.assertRaises(ErroBloqueio):
-            failover_por_categoria(erro, "u2", "p2", sessao)
-
-    def test_erro_generico_retorna_none(self) -> None:
-        erro = ValueError("algo errado")
-        sessao = MagicMock()
-        resultado = failover_por_categoria(erro, "u2", "p2", sessao)
-        self.assertIsNone(resultado)
-
-    def test_erro_autenticacao_sem_reserva_re_levanta(self) -> None:
-        erro = ErroAutenticacao("falha")
-        sessao = MagicMock()
-        with self.assertRaises(ErroAutenticacao):
-            failover_por_categoria(erro, None, None, sessao)
-
-    @patch("pipelines.datalake.extract_load.sisreg.common.auth.abrir_sessao_autenticada")
-    def test_erro_autenticacao_com_reserva_retorna_nova_sessao(self, mock_abrir) -> None:
-        nova_sessao = MagicMock()
-        mock_abrir.return_value = nova_sessao
-        erro = ErroAutenticacao("falha")
-        sessao = MagicMock()
-        resultado = failover_por_categoria(erro, "u2", "p2", sessao)
-        self.assertIs(resultado, nova_sessao)
-        mock_abrir.assert_called_once_with(usuario="u2", senha="p2", conjunto="")
 
 
 if __name__ == "__main__":

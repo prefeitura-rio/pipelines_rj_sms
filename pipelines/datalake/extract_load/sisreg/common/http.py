@@ -146,37 +146,3 @@ def requisicao_educada(
         url=url,
         detalhe=str(ultimo_erro),
     )
-
-
-def salvar_snapshot_html(
-    conteudo_html: str,
-    conjunto: str,
-    item: str,
-    run_id: str,
-    bucket_nome: str,
-) -> None:
-    """Persiste o HTML bruto no GCS para diagnostico de falhas estruturais.
-
-    Chamado apenas em ErroEstrutura ou ErroBloqueio para evitar ruido.
-    O armazenamento usa o caminho sisreg_debug/<conjunto>/<run_id>/<item>.html.
-
-    Args:
-        conteudo_html: Texto HTML a persistir.
-        conjunto: Chave do conjunto de dados.
-        item: Identificador do item (sem PII - nunca CPF bruto).
-        run_id: ID da execucao do fluxo Prefect.
-        bucket_nome: Nome do bucket GCS de destino.
-    """
-    from google.cloud import (
-        storage,  # importacao tardia - nao disponivel em testes offline
-    )
-
-    caminho = f"sisreg_debug/{conjunto}/{run_id}/{item}.html"
-    try:
-        cliente = storage.Client()
-        bucket = cliente.bucket(bucket_nome)
-        blob = bucket.blob(caminho)
-        blob.upload_from_string(conteudo_html, content_type="text/html; charset=utf-8")
-        log(f"Snapshot salvo em gs://{bucket_nome}/{caminho}")
-    except Exception as exc:  # noqa: BLE001 - snapshot e best-effort, nao pode derrubar o fluxo
-        log(f"Falha ao salvar snapshot (nao critico): {exc}", level="warning")
