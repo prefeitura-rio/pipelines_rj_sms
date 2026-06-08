@@ -316,7 +316,7 @@ and must not risk the account). Conservative choices, locked:
 
 ### [ ] EPIC 2 — Remaining HTTP extractors
 
-- [ ] **C12 `feat: implement afastamentos extractor`** — `extractors/afastamentos.py`:
+- [x] **C12 `feat: implement afastamentos extractor`** — `extractors/afastamentos.py`:
       `planejar_trabalho` runs the **30-day-active** CPF query on
       `rj-sms.saude_sisreg.oferta_programada` (~2-3k CPFs; treat vigencia columns as DATE, wrap
       in `PARSE_DATE` if text); `extrair_item` fetches current
