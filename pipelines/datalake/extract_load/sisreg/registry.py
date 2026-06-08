@@ -12,9 +12,29 @@ em tasks.py e common/. Nenhum conjunto precisa reimplementar isso.
 """
 
 from dataclasses import dataclass, field
-from typing import Callable, Dict, FrozenSet, List, Tuple
+from typing import Any, Callable, Dict, FrozenSet, List, Tuple
 
 from pipelines.datalake.extract_load.sisreg import constants as C
+
+
+# ---------------------------------------------------------------------------
+# Defaults que falham em voz alta se o extrator nao foi registrado.
+# Substitui lambdas silenciosas que mascaravam ImportErrors em producao.
+# ---------------------------------------------------------------------------
+
+
+def _planejar_nao_registrado(credenciais: dict, params: dict) -> list:
+    """Levantado quando o extrator ainda nao foi registrado no CONJUNTOS."""
+    raise NotImplementedError(
+        "planejar_trabalho nao registrado. Extrator nao importado ou falha em _importar_extratores."
+    )
+
+
+def _extrair_nao_registrado(sessao: Any, item: dict, params: dict) -> dict:
+    """Levantado quando o extrator ainda nao foi registrado no CONJUNTOS."""
+    raise NotImplementedError(
+        "extrair_item nao registrado. Extrator nao importado ou falha em _importar_extratores."
+    )
 
 
 @dataclass(frozen=True)
@@ -42,32 +62,30 @@ class ConjuntoSisreg:
 
     # Funcao que determina a lista de itens de trabalho para o .map.
     # Assinatura: (credenciais: dict, params: dict) -> List[dict]
-    planejar_trabalho: Callable = field(default=lambda credenciais, params: [{}])
+    planejar_trabalho: Callable = field(default=_planejar_nao_registrado)
 
     # Funcao que extrai um item e retorna fragmentos por tabela.
     # Assinatura: (sessao, item: dict, params: dict) -> Dict[str, pd.DataFrame]
-    extrair_item: Callable = field(default=lambda sessao, item, params: {})
+    extrair_item: Callable = field(default=_extrair_nao_registrado)
 
 
 def _importar_extratores() -> None:
     """Importa os modulos de extratores para que registrem suas funcoes.
 
     Importacao tardia para evitar ciclos: os extratores importam de registry,
-    entao registry nao pode importa-los no nivel de modulo. Tolerante a
-    ImportError durante desenvolvimento incremental (extratores adicionados
-    progressivamente nos commits C10-C16).
+    entao registry nao pode importa-los no nivel de modulo.
+
+    Nao tolera ImportError: um erro real de importacao (dependencia faltando,
+    typo, etc.) deve propagar e causar falha visivel, nunca degradar para os
+    defaults NotImplementedError que mascariam a falha como no-op silencioso.
     """
-    try:
-        from pipelines.datalake.extract_load.sisreg.extractors import (  # noqa: F401
-            afastamentos,
-            escalas,
-            fila_vagas,
-            preparos,
-            solicitacoes,
-        )
-    except ImportError:
-        # Normal durante desenvolvimento: extratores ainda nao implementados.
-        pass
+    from pipelines.datalake.extract_load.sisreg.extractors import (  # noqa: F401
+        afastamentos,
+        escalas,
+        fila_vagas,
+        preparos,
+        solicitacoes,
+    )
 
 
 # ---------------------------------------------------------------------------

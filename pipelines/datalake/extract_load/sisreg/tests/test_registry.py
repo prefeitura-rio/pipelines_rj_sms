@@ -122,6 +122,43 @@ class TestConjuntoSisregDataclass(unittest.TestCase):
         )
         self.assertEqual(conj.colunas_esperadas, {})
 
+    def test_default_planejar_levanta_not_implemented(self) -> None:
+        """Defaults levantam NotImplementedError para falhar em voz alta."""
+        conj = ConjuntoSisreg(chave="x", perfil_credencial="padrao", tabelas=("tb",))
+        with self.assertRaises(NotImplementedError):
+            conj.planejar_trabalho({}, {})
+
+    def test_default_extrair_levanta_not_implemented(self) -> None:
+        conj = ConjuntoSisreg(chave="x", perfil_credencial="padrao", tabelas=("tb",))
+        with self.assertRaises(NotImplementedError):
+            conj.extrair_item(None, {}, {})
+
+
+class TestExtratoresRegistrados(unittest.TestCase):
+    """Verifica que todos os extratores foram registrados com funcoes reais."""
+
+    def test_todos_conjuntos_tem_funcoes_reais(self) -> None:
+        from pipelines.datalake.extract_load.sisreg.registry import (
+            _planejar_nao_registrado,
+            obter_conjunto,
+        )
+
+        for chave in ["escalas", "afastamentos", "preparos", "solicitacoes", "fila_vagas"]:
+            conj = obter_conjunto(chave)
+            with self.subTest(chave=chave):
+                self.assertIsNot(
+                    conj.planejar_trabalho,
+                    _planejar_nao_registrado,
+                    msg=f"{chave}: planejar_trabalho ainda usa o default nao-registrado",
+                )
+
+    def test_importar_extratores_nao_levanta(self) -> None:
+        """Todos os 5 extratores existem - a importacao deve ser bem-sucedida."""
+        from pipelines.datalake.extract_load.sisreg.registry import _importar_extratores
+
+        # Nao deve levantar nenhuma excecao
+        _importar_extratores()
+
 
 if __name__ == "__main__":
     unittest.main()
