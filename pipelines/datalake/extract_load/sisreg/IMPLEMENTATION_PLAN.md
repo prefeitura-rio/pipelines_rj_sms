@@ -293,7 +293,7 @@ and must not risk the account). Conservative choices, locked:
       `handle_columns_to_bq` + `upload_df_to_datalake(dump_mode="overwrite")`), `registrar_log_execucao`.
       DoR: C5-C7. DoD: tests for completeness gate (writes only at 100%), suspicious-empty,
       consolidation. Gates: hooks + tests.
-- [ ] **C9 `feat: add single flow definition and run config`** — `flows.py`: the map-reduce DAG,
+- [x] **C9 `feat: add single flow definition and run config`** — `flows.py`: the map-reduce DAG,
       `LocalDaskExecutor(num_workers=1)`, `GCS` storage, `VertexRun` (image, Vertex label,
       machine, Infisical env), `state_handlers=[handle_flow_state_change]`,
       `owners=[constants.MATHEUS_ID.value]`, in-flow fire-time jitter, runtime cap, and the
