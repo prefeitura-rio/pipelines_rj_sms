@@ -267,7 +267,7 @@ and must not risk the account). Conservative choices, locked:
       Infisical-path map, per-dataset behavior profile (delay min/max, timeouts, budget),
       `JANELA_DIAS = 180`, agent label.
       DoR: C1. DoD: constants documented. Gates: hooks (lint only).
-- [ ] **C4 `feat: add polite http layer with block detection`** — `common/http.py`:
+- [x] **C4 `feat: add polite http layer with block detection`** — `common/http.py`:
       `requisicao_educada(...)` (jittered sleep 8.5-9.5 s, per-request timeout, bounded
       exponential backoff, `Retry-After`/429 handling), `detectar_bloqueio(resposta)` (CAPTCHA/
       403/429/login-redirect), `salvar_snapshot_html(...)`.
