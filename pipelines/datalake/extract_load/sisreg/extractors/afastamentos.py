@@ -3,11 +3,14 @@
 Extrator de afastamentos do SISREG.
 
 Substitui sisreg_afastamentos. Correcoes em relacao ao legado:
-- Uma unica sessao regulador para ambas as paginas (current + historico).
-  O legado criava duas sessoes com identidades trocadas por engano.
+- Uma unica sessao regulador para TODOS os CPFs (uma sessao por run).
+  O legado criava uma sessao por CPF, gerando ~2-3k logins/dia - principal
+  risco de ban. Esta versao faz um unico login e reutiliza a sessao.
 - Filtro de CPFs ativos nos ultimos 30 dias (~2-3k vs 8115 total, ~10-15h/dia).
 - LGPD: CPFs nunca logados em texto plano; usa indice numerico no log.
 - TLS verificado (verify=True herdado da sessao comum).
+- Requests via requisicao_educada (jitter + deteccao de bloqueio).
+- Reautenticacao inline em caso de expiracao de sessao mid-run (D4).
 
 Fontes:
   - CPFs: rj-sms.saude_sisreg.oferta_programada (curado, read-only)
@@ -18,7 +21,7 @@ Fontes:
 import re
 from datetime import datetime
 from io import StringIO
-from typing import Dict, List, Optional
+from typing import List, Optional
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -27,12 +30,18 @@ from bs4 import BeautifulSoup
 from google.cloud import bigquery
 from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.datalake.extract_load.sisreg.common.auth import (
+    reautenticar_se_deslogado,
+)
+from pipelines.datalake.extract_load.sisreg.common.http import requisicao_educada
 from pipelines.datalake.extract_load.sisreg.constants import URL_AF_MEDICOS
 from pipelines.datalake.extract_load.sisreg.errors import (
+    ErroBloqueio,
     ErroEstrutura,
     ErroVazioSuspeito,
 )
 from pipelines.datalake.extract_load.sisreg.registry import registrar_extrator
+from pipelines.datalake.extract_load.sisreg.resultado import ResultadoConjunto
 
 _FUSO_SP = ZoneInfo("America/Sao_Paulo")
 
@@ -78,12 +87,13 @@ def _obter_cpfs_ativos(params: dict) -> List[str]:
 
 
 def planejar_trabalho_afastamentos(credenciais: dict, params: dict) -> List[dict]:
-    """Retorna um item por CPF ativo.
+    """Retorna UM unico item com a lista completa de CPFs ativos.
 
-    Cada item contem o CPF e o indice para log sem PII.
+    Um unico item garante um unico login por run (anti-ban). O loop
+    por CPF ocorre dentro de extrair_item_afastamentos com sessao reusada.
     """
     cpfs = _obter_cpfs_ativos(params)
-    return [{"cpf": cpf, "cpf_idx": f"cpf_{i}"} for i, cpf in enumerate(cpfs)]
+    return [{"id": "todos_os_cpfs", "cpfs": cpfs}]
 
 
 def _parsear_afastamentos_current(
@@ -92,14 +102,9 @@ def _parsear_afastamentos_current(
     """Parseia a pagina de afastamentos atuais de um CPF.
 
     Retorna None se o profissional nao for encontrado ou nao tiver afastamentos.
-    Segue a logica de sisreg_afastamentos/tasks.py:search_afastamento.
     """
     if "Profissional nao encontrado!" in html:
         return None
-    if "(CAPTCHA)" in html:
-        from pipelines.datalake.extract_load.sisreg.errors import ErroBloqueio
-
-        raise ErroBloqueio("SISREG solicitou CAPTCHA", conjunto="afastamentos", etapa="parsing")
 
     soup = BeautifulSoup(html, "lxml")
     tabelas = soup.find_all(class_="table_listagem")
@@ -138,14 +143,9 @@ def _parsear_historico_afastamentos(
     """Parseia a pagina de historico de afastamentos de um CPF.
 
     Retorna None se nenhum log for encontrado.
-    Segue a logica de sisreg_afastamentos/tasks.py:search_historico_afastamento.
     """
     if "Nenhum Log Encontrado" in html:
         return None
-    if "(CAPTCHA)" in html:
-        from pipelines.datalake.extract_load.sisreg.errors import ErroBloqueio
-
-        raise ErroBloqueio("SISREG solicitou CAPTCHA", conjunto="afastamentos", etapa="parsing")
 
     soup = BeautifulSoup(html, "lxml")
     tabela = soup.find(class_="table_listagem")
@@ -177,53 +177,126 @@ def _parsear_historico_afastamentos(
     return df
 
 
+def _requisicao_com_reauth(
+    sessao: requests.Session,
+    url: str,
+    query: dict,
+    usuario: str,
+    senha: str,
+    cpf_idx: str,
+) -> requests.Response:
+    """Faz uma requisicao polite com reautenticacao em caso de logout.
+
+    Tenta a requisicao via requisicao_educada. Se ErroBloqueio com
+    REDIRECIONAMENTO_LOGIN (sessao expirou), reautentica e tenta mais uma vez.
+    Outros tipos de ErroBloqueio (IP/CAPTCHA/403) propagam imediatamente.
+    """
+    try:
+        return requisicao_educada(
+            sessao, url, params=query, conjunto="afastamentos", item=cpf_idx
+        )
+    except ErroBloqueio as exc:
+        if exc.detalhe == "REDIRECIONAMENTO_LOGIN" and usuario:
+            log(f"[afastamentos/{cpf_idx}] Sessao expirada - reautenticando mid-run")
+            reautenticar_se_deslogado(
+                sessao, "efetue o logon novamente", usuario, senha, "afastamentos"
+            )
+            # Uma nova tentativa apos reauth
+            return requisicao_educada(
+                sessao, url, params=query, conjunto="afastamentos", item=cpf_idx
+            )
+        raise  # Bloqueio genuino (IP/CAPTCHA) - propaga para circuit-break
+
+
 def extrair_item_afastamentos(
     sessao: requests.Session,
     item: dict,
     params: dict,
-) -> Dict[str, pd.DataFrame]:
-    """Extrai afastamentos atual e historico para um CPF com uma unica sessao.
+) -> ResultadoConjunto:
+    """Extrai afastamentos de TODOS os CPFs com uma unica sessao reusada.
 
-    Usa a sessao regulador para ambas as paginas - o legado usava duas sessoes
-    com identidades trocadas; aqui uma unica sessao elimina o risco de colisao.
+    Usa a sessao regulador para ambas as paginas de cada CPF. Um unico login
+    por run elimina o churn de ~2-3k logins que era o principal risco de ban.
 
     Args:
         sessao: Sessao requests autenticada com perfil regulador.
-        item: Dict com 'cpf' e 'cpf_idx' (para log sem PII).
-        params: Parametros do fluxo.
+        item: Dict com 'cpfs' (lista) e 'id'.
+        params: Parametros do fluxo (inclui 'usuario' e 'senha' para re-auth).
 
     Returns:
-        {"afastamentos": df_current, "afastamento_historico": df_historico}
-        DataFrames podem estar vazios se o CPF nao tiver registros.
+        ResultadoConjunto com afastamentos/afastamento_historico e metricas
+        de sub-itens (total CPFs, CPFs ok, ids de CPFs que falharam).
     """
-    cpf = item["cpf"]
-    cpf_idx = item.get("cpf_idx", "cpf_?")
+    cpfs: List[str] = item["cpfs"]
+    usuario = params.get("usuario", "")
+    senha = params.get("senha", "")
     data_extracao = datetime.now(_FUSO_SP)
 
-    log(f"[afastamentos] Processando {cpf_idx}")
+    log(f"[afastamentos] Iniciando loop: {len(cpfs)} CPFs com sessao unica")
 
-    # Pagina de afastamentos atuais
-    resp_atual = sessao.get(
-        URL_AF_MEDICOS,
-        params={"cpf": cpf, "mostrar_antigos": "1"},
-        timeout=180,
+    df_atuals: List[pd.DataFrame] = []
+    df_hists: List[pd.DataFrame] = []
+    ids_falhos: List[str] = []
+    ok = 0
+
+    for i, cpf in enumerate(cpfs):
+        cpf_idx = f"cpf_{i}"
+        try:
+            resp_atual = _requisicao_com_reauth(
+                sessao,
+                URL_AF_MEDICOS,
+                {"cpf": cpf, "mostrar_antigos": "1"},
+                usuario,
+                senha,
+                cpf_idx,
+            )
+            df_atual = _parsear_afastamentos_current(resp_atual.text, cpf, data_extracao)
+
+            resp_hist = _requisicao_com_reauth(
+                sessao,
+                URL_AF_MEDICOS,
+                {"cpf": cpf, "op": "Log"},
+                usuario,
+                senha,
+                cpf_idx,
+            )
+            df_hist = _parsear_historico_afastamentos(resp_hist.text, cpf, data_extracao)
+
+            if df_atual is not None:
+                df_atuals.append(df_atual)
+            if df_hist is not None:
+                df_hists.append(df_hist)
+            ok += 1
+
+        except ErroBloqueio:
+            # Bloqueio de IP - abort imediato; nao tente mais CPFs
+            log(
+                f"[afastamentos/{cpf_idx}] BLOQUEIO de IP detectado - abortando run",
+                level="error",
+            )
+            raise
+
+        except Exception as exc:  # noqa: BLE001
+            log(
+                f"[afastamentos/{cpf_idx}] Erro ao processar: {type(exc).__name__}: {exc}",
+                level="warning",
+            )
+            ids_falhos.append(cpf_idx)
+
+    df_af = pd.concat(df_atuals, ignore_index=True) if df_atuals else pd.DataFrame()
+    df_hist_final = pd.concat(df_hists, ignore_index=True) if df_hists else pd.DataFrame()
+
+    log(
+        f"[afastamentos] Loop concluido: {ok}/{len(cpfs)} ok, "
+        f"{len(ids_falhos)} falhas, {len(df_af)} linhas af, {len(df_hist_final)} linhas hist"
     )
-    resp_atual.raise_for_status()
-    df_atual = _parsear_afastamentos_current(resp_atual.text, cpf, data_extracao)
 
-    # Pagina de historico (mesma sessao, segundo request)
-    resp_hist = sessao.get(
-        URL_AF_MEDICOS,
-        params={"cpf": cpf, "op": "Log"},
-        timeout=180,
+    return ResultadoConjunto(
+        tabelas={"afastamentos": df_af, "afastamento_historico": df_hist_final},
+        total=len(cpfs),
+        ok=ok,
+        ids_falhos=ids_falhos,
     )
-    resp_hist.raise_for_status()
-    df_hist = _parsear_historico_afastamentos(resp_hist.text, cpf, data_extracao)
-
-    return {
-        "afastamentos": df_atual if df_atual is not None else pd.DataFrame(),
-        "afastamento_historico": df_hist if df_hist is not None else pd.DataFrame(),
-    }
 
 
 # ---------------------------------------------------------------------------

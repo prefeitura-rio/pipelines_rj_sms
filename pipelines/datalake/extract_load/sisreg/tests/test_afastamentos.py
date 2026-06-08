@@ -9,7 +9,8 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pipelines.datalake.extract_load.sisreg.errors import ErroVazioSuspeito
+from pipelines.datalake.extract_load.sisreg.errors import ErroBloqueio, ErroVazioSuspeito
+from pipelines.datalake.extract_load.sisreg.resultado import ResultadoConjunto
 
 _FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
 
@@ -19,17 +20,12 @@ def _html(nome: str) -> str:
         return f.read()
 
 
-def _mock_sessao(html_atual: str, html_hist: str) -> MagicMock:
-    def _resp(texto):
-        r = MagicMock()
-        r.status_code = 200
-        r.text = texto
-        r.raise_for_status = MagicMock()
-        return r
-
-    sessao = MagicMock()
-    sessao.get.side_effect = [_resp(html_atual), _resp(html_hist)]
-    return sessao
+def _mock_resp(texto: str) -> MagicMock:
+    r = MagicMock()
+    r.status_code = 200
+    r.text = texto
+    r.raise_for_status = MagicMock()
+    return r
 
 
 class TestParsearAfastamentosCurrentPage(unittest.TestCase):
@@ -84,19 +80,18 @@ class TestParsearAfastamentosCurrentPage(unittest.TestCase):
 
 class TestPlanejarTrabalhoAfastamentos(unittest.TestCase):
     @patch("pipelines.datalake.extract_load.sisreg.extractors.afastamentos._obter_cpfs_ativos")
-    def test_retorna_um_item_por_cpf(self, mock_cpfs) -> None:
+    def test_retorna_item_unico_com_lista_cpfs(self, mock_cpfs) -> None:
+        """Apos o coarsening, planejar retorna EXATAMENTE 1 item com todos os CPFs."""
         from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
             planejar_trabalho_afastamentos,
         )
 
         mock_cpfs.return_value = ["11111111111", "22222222222", "33333333333"]
         items = planejar_trabalho_afastamentos(credenciais={}, params={})
-        self.assertEqual(len(items), 3)
-        # CPF deve estar presente mas o id de log nao deve ser o CPF bruto
-        for item in items:
-            self.assertIn("cpf", item)
-            self.assertIn("cpf_idx", item)
-            self.assertFalse(item["cpf_idx"].startswith(item["cpf"]))
+        self.assertEqual(len(items), 1)
+        self.assertIn("cpfs", items[0])
+        self.assertEqual(len(items[0]["cpfs"]), 3)
+        self.assertEqual(items[0]["id"], "todos_os_cpfs")
 
     @patch("pipelines.datalake.extract_load.sisreg.extractors.afastamentos._obter_cpfs_ativos")
     def test_lista_vazia_levanta_erro_vazio_suspeito(self, mock_cpfs) -> None:
@@ -107,6 +102,116 @@ class TestPlanejarTrabalhoAfastamentos(unittest.TestCase):
         mock_cpfs.side_effect = ErroVazioSuspeito("zero CPFs", conjunto="afastamentos")
         with self.assertRaises(ErroVazioSuspeito):
             planejar_trabalho_afastamentos(credenciais={}, params={})
+
+
+class TestExtrairItemAfastamentos(unittest.TestCase):
+    """Testa extrair_item_afastamentos com sessao unica e multiplos CPFs."""
+
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada"
+    )
+    def test_loop_usa_sessao_unica(self, mock_req) -> None:
+        """Confirma que a sessao e reusada para todos os CPFs (anti-ban)."""
+        from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
+            extrair_item_afastamentos,
+        )
+
+        html_af = _html("afastamentos.html")
+        html_hist = "<html><body>Nenhum Log Encontrado</body></html>"
+        mock_req.return_value = _mock_resp(html_af)
+        # Alterna: af, hist, af, hist para 2 CPFs
+        mock_req.side_effect = [
+            _mock_resp(html_af),
+            _mock_resp(html_hist),
+            _mock_resp(html_af),
+            _mock_resp(html_hist),
+        ]
+        sessao = MagicMock()
+
+        item = {"id": "todos_os_cpfs", "cpfs": ["11111111111", "22222222222"]}
+        resultado = extrair_item_afastamentos(sessao=sessao, item=item, params={})
+
+        self.assertIsInstance(resultado, ResultadoConjunto)
+        self.assertEqual(resultado.total, 2)
+        self.assertEqual(resultado.ok, 2)
+        self.assertEqual(resultado.ids_falhos, [])
+        self.assertIn("afastamentos", resultado.tabelas)
+        self.assertIn("afastamento_historico", resultado.tabelas)
+
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada"
+    )
+    def test_bloqueio_ip_aborta_run(self, mock_req) -> None:
+        """ErroBloqueio (IP) deve propagar imediatamente."""
+        from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
+            extrair_item_afastamentos,
+        )
+
+        mock_req.side_effect = ErroBloqueio(
+            "403 bloqueado", conjunto="afastamentos", detalhe="HTTP_403"
+        )
+        item = {"id": "todos_os_cpfs", "cpfs": ["11111111111"]}
+        with self.assertRaises(ErroBloqueio):
+            extrair_item_afastamentos(sessao=MagicMock(), item=item, params={})
+
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada"
+    )
+    def test_erro_por_cpf_vai_para_ids_falhos(self, mock_req) -> None:
+        """Erros recuperaveis de um CPF nao abortam o loop - vao para ids_falhos."""
+        from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
+            extrair_item_afastamentos,
+        )
+
+        html_af = _html("afastamentos.html")
+        html_hist = "<html><body>Nenhum Log Encontrado</body></html>"
+        # Primeiro CPF falha com erro generico; segundo CPF ok
+        mock_req.side_effect = [
+            Exception("timeout de rede"),
+            _mock_resp(html_af),
+            _mock_resp(html_hist),
+        ]
+        item = {"id": "todos_os_cpfs", "cpfs": ["11111111111", "22222222222"]}
+        resultado = extrair_item_afastamentos(sessao=MagicMock(), item=item, params={})
+
+        self.assertEqual(resultado.total, 2)
+        self.assertEqual(resultado.ok, 1)
+        self.assertEqual(len(resultado.ids_falhos), 1)
+        self.assertEqual(resultado.ids_falhos[0], "cpf_0")  # primeiro CPF
+
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.afastamentos"
+        ".reautenticar_se_deslogado"
+    )
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada"
+    )
+    def test_logout_mid_run_reautentica(self, mock_req, mock_reauth) -> None:
+        """REDIRECIONAMENTO_LOGIN dispara reauth; a sessao continua."""
+        from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
+            extrair_item_afastamentos,
+        )
+
+        html_af = _html("afastamentos.html")
+        html_hist = "<html><body>Nenhum Log Encontrado</body></html>"
+        logout_exc = ErroBloqueio(
+            "logout", conjunto="afastamentos", detalhe="REDIRECIONAMENTO_LOGIN"
+        )
+        mock_req.side_effect = [
+            logout_exc,           # 1a tentativa: sessao expirada
+            _mock_resp(html_af),  # apos reauth: ok
+            _mock_resp(html_hist),
+        ]
+        mock_reauth.return_value = True
+
+        item = {"id": "todos_os_cpfs", "cpfs": ["11111111111"]}
+        resultado = extrair_item_afastamentos(
+            sessao=MagicMock(), item=item, params={"usuario": "u", "senha": "p"}
+        )
+
+        mock_reauth.assert_called_once()
+        self.assertEqual(resultado.ok, 1)
+        self.assertEqual(resultado.ids_falhos, [])
 
 
 if __name__ == "__main__":
