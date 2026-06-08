@@ -262,7 +262,7 @@ and must not risk the account). Conservative choices, locked:
       `ErroVazioSuspeito`, `ErroUpload`, `ErroTransitorio`.
       DoR: C1. DoD: classes + docstrings; `test_errors.py` checks construction/context.
       Gates: hooks + tests.
-- [ ] **C3 `feat: add sisreg constants and behavior profiles`** — `constants.py`:
+- [x] **C3 `feat: add sisreg constants and behavior profiles`** — `constants.py`:
       `BRUTOS_SISREG_WEB`, default table names, base URLs, request headers, credential-profile ->
       Infisical-path map, per-dataset behavior profile (delay min/max, timeouts, budget),
       `JANELA_DIAS = 180`, agent label.
