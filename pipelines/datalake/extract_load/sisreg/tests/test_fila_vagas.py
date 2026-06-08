@@ -7,7 +7,10 @@ Todos offline: sessao mockada, HTML das fixtures ou inline.
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pipelines.datalake.extract_load.sisreg.errors import ErroBloqueio, ErroVazioSuspeito
+from pipelines.datalake.extract_load.sisreg.errors import (
+    ErroBloqueio,
+    ErroVazioSuspeito,
+)
 from pipelines.datalake.extract_load.sisreg.resultado import ResultadoConjunto
 
 
@@ -29,9 +32,7 @@ def _proc(id_sisreg: str = "P001") -> dict:
 
 
 class TestPlanejarTrabalhoFilaVagas(unittest.TestCase):
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq")
     def test_retorna_item_unico_com_procedimentos(self, mock_bq) -> None:
         """Apos o coarsening, planejar retorna 1 item com todos os procedimentos."""
         import pandas as pd
@@ -54,9 +55,7 @@ class TestPlanejarTrabalhoFilaVagas(unittest.TestCase):
         self.assertEqual(items[0]["id"], "procedimentos")
         self.assertEqual(len(items[0]["procedimentos"]), 2)
 
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq")
     def test_bq_vazio_levanta_erro(self, mock_bq) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
             planejar_trabalho_fila_vagas,
@@ -68,9 +67,7 @@ class TestPlanejarTrabalhoFilaVagas(unittest.TestCase):
 
 
 class TestExtrairItemFilaVagas(unittest.TestCase):
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada")
     def test_inexistentes_retorna_dataframes_com_nulos(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
             extrair_item_fila_vagas,
@@ -86,9 +83,7 @@ class TestExtrairItemFilaVagas(unittest.TestCase):
         self.assertIsNone(resultado.tabelas["fila_e_vagas"]["qtd_pend"].iloc[0])
         self.assertEqual(resultado.ok, 1)
 
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada")
     def test_nenhuma_vaga_encontrada_retorna_zero_vagas(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
             extrair_item_fila_vagas,
@@ -118,24 +113,18 @@ class TestExtrairItemFilaVagas(unittest.TestCase):
         self.assertEqual(resultado.tabelas["fila_e_vagas"]["qtd_vagas"].iloc[0], 0)
         self.assertEqual(resultado.ok, 1)
 
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada")
     def test_bloqueio_propaga(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
             extrair_item_fila_vagas,
         )
 
-        mock_req.side_effect = ErroBloqueio(
-            "403", conjunto="fila_vagas", detalhe="HTTP_403"
-        )
+        mock_req.side_effect = ErroBloqueio("403", conjunto="fila_vagas", detalhe="HTTP_403")
         item = {"id": "procedimentos", "procedimentos": [_proc("P001")]}
         with self.assertRaises(ErroBloqueio):
             extrair_item_fila_vagas(sessao=MagicMock(), item=item, params={})
 
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada")
     def test_erro_por_procedimento_vai_para_ids_falhos(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
             extrair_item_fila_vagas,

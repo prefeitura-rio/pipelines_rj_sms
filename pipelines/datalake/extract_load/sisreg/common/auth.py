@@ -26,7 +26,10 @@ from pipelines.datalake.extract_load.sisreg.constants import (
     TIMEOUT_LOGIN_S,
     URL_BASE,
 )
-from pipelines.datalake.extract_load.sisreg.errors import ErroAutenticacao, ErroEstrutura
+from pipelines.datalake.extract_load.sisreg.errors import (
+    ErroAutenticacao,
+    ErroEstrutura,
+)
 
 # Palavras que confirmam login bem-sucedido na pagina pos-login.
 # Derivadas de sisreg_solicitacoes (o mais conservador).

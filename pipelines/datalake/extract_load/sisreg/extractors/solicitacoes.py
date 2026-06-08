@@ -20,9 +20,7 @@ import pandas as pd
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.datalake.extract_load.sisreg.common.auth import (
-    reautenticar_se_deslogado,
-)
+from pipelines.datalake.extract_load.sisreg.common.auth import reautenticar_se_deslogado
 from pipelines.datalake.extract_load.sisreg.common.http import requisicao_educada
 from pipelines.datalake.extract_load.sisreg.common.parsing import (
     tabela_listagem_para_dataframe,
@@ -130,8 +128,11 @@ def _buscar_ficha(
 
     try:
         resposta = requisicao_educada(
-            sessao, URL_GERENCIADOR_SOLICITACAO, params=query,
-            conjunto="solicitacoes", item=item_id,
+            sessao,
+            URL_GERENCIADOR_SOLICITACAO,
+            params=query,
+            conjunto="solicitacoes",
+            item=item_id,
         )
     except ErroBloqueio as exc:
         if exc.detalhe == "REDIRECIONAMENTO_LOGIN" and usuario:
@@ -140,8 +141,11 @@ def _buscar_ficha(
                 sessao, "efetue o logon novamente", usuario, senha, "solicitacoes"
             )
             resposta = requisicao_educada(
-                sessao, URL_GERENCIADOR_SOLICITACAO, params=query,
-                conjunto="solicitacoes", item=item_id,
+                sessao,
+                URL_GERENCIADOR_SOLICITACAO,
+                params=query,
+                conjunto="solicitacoes",
+                item=item_id,
             )
         else:
             raise

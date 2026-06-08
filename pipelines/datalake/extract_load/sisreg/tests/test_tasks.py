@@ -13,7 +13,10 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 
 from pipelines.datalake.extract_load.sisreg.errors import ErroVazioSuspeito
-from pipelines.datalake.extract_load.sisreg.resultado import Consolidado, ResultadoConjunto
+from pipelines.datalake.extract_load.sisreg.resultado import (
+    Consolidado,
+    ResultadoConjunto,
+)
 
 
 class TestObterDataExtracao(unittest.TestCase):
@@ -116,9 +119,7 @@ class TestConsolidar(unittest.TestCase):
     def test_sub_item_falho_cancela_upload(self) -> None:
         """Gate de sub-itens: ids_falhos cancela o upload."""
         df = pd.DataFrame({"col": [1]})
-        r = ResultadoConjunto(
-            tabelas={"solicitacoes": df}, total=10, ok=9, ids_falhos=["cpf_3"]
-        )
+        r = ResultadoConjunto(tabelas={"solicitacoes": df}, total=10, ok=9, ids_falhos=["cpf_3"])
         resultado = self._rodar("solicitacoes", [r])
         self.assertIsNone(resultado.tabelas)
         self.assertEqual(resultado.metricas["status"], "FALHA_PARCIAL")
@@ -239,9 +240,7 @@ class TestNormalizarESubir(unittest.TestCase):
                     environment="staging",
                     conjunto="escalas",
                     dataset_id="brutos_sisreg_web",
-                    consolidado=Consolidado(
-                        tabelas={"escalas": df}, metricas={"status": "OK"}
-                    ),
+                    consolidado=Consolidado(tabelas={"escalas": df}, metricas={"status": "OK"}),
                 )
         self.assertTrue(resultado)
         mock_upload.run.assert_called_once()

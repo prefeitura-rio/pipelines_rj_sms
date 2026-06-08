@@ -9,7 +9,10 @@ import unittest
 
 import pandas as pd
 
-from pipelines.datalake.extract_load.sisreg.resultado import Consolidado, ResultadoConjunto
+from pipelines.datalake.extract_load.sisreg.resultado import (
+    Consolidado,
+    ResultadoConjunto,
+)
 
 
 class TestResultadoConjunto(unittest.TestCase):

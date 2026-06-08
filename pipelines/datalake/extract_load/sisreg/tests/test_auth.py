@@ -14,7 +14,10 @@ from pipelines.datalake.extract_load.sisreg.common.auth import (
     reautenticar_se_deslogado,
     sha256_maiusculo,
 )
-from pipelines.datalake.extract_load.sisreg.errors import ErroAutenticacao, ErroEstrutura
+from pipelines.datalake.extract_load.sisreg.errors import (
+    ErroAutenticacao,
+    ErroEstrutura,
+)
 
 # ---------------------------------------------------------------------------
 # HTML minimo para testes de parsing

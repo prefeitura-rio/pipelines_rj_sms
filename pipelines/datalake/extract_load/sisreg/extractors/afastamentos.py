@@ -30,9 +30,7 @@ from bs4 import BeautifulSoup
 from google.cloud import bigquery
 from prefeitura_rio.pipelines_utils.logging import log
 
-from pipelines.datalake.extract_load.sisreg.common.auth import (
-    reautenticar_se_deslogado,
-)
+from pipelines.datalake.extract_load.sisreg.common.auth import reautenticar_se_deslogado
 from pipelines.datalake.extract_load.sisreg.common.http import requisicao_educada
 from pipelines.datalake.extract_load.sisreg.constants import URL_AF_MEDICOS
 from pipelines.datalake.extract_load.sisreg.errors import (
@@ -192,9 +190,7 @@ def _requisicao_com_reauth(
     Outros tipos de ErroBloqueio (IP/CAPTCHA/403) propagam imediatamente.
     """
     try:
-        return requisicao_educada(
-            sessao, url, params=query, conjunto="afastamentos", item=cpf_idx
-        )
+        return requisicao_educada(sessao, url, params=query, conjunto="afastamentos", item=cpf_idx)
     except ErroBloqueio as exc:
         if exc.detalhe == "REDIRECIONAMENTO_LOGIN" and usuario:
             log(f"[afastamentos/{cpf_idx}] Sessao expirada - reautenticando mid-run")

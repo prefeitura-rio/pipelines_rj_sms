@@ -9,7 +9,10 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pipelines.datalake.extract_load.sisreg.errors import ErroBloqueio, ErroVazioSuspeito
+from pipelines.datalake.extract_load.sisreg.errors import (
+    ErroBloqueio,
+    ErroVazioSuspeito,
+)
 from pipelines.datalake.extract_load.sisreg.resultado import ResultadoConjunto
 
 _FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
@@ -107,9 +110,7 @@ class TestPlanejarTrabalhoAfastamentos(unittest.TestCase):
 class TestExtrairItemAfastamentos(unittest.TestCase):
     """Testa extrair_item_afastamentos com sessao unica e multiplos CPFs."""
 
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada")
     def test_loop_usa_sessao_unica(self, mock_req) -> None:
         """Confirma que a sessao e reusada para todos os CPFs (anti-ban)."""
         from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
@@ -138,9 +139,7 @@ class TestExtrairItemAfastamentos(unittest.TestCase):
         self.assertIn("afastamentos", resultado.tabelas)
         self.assertIn("afastamento_historico", resultado.tabelas)
 
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada")
     def test_bloqueio_ip_aborta_run(self, mock_req) -> None:
         """ErroBloqueio (IP) deve propagar imediatamente."""
         from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
@@ -154,9 +153,7 @@ class TestExtrairItemAfastamentos(unittest.TestCase):
         with self.assertRaises(ErroBloqueio):
             extrair_item_afastamentos(sessao=MagicMock(), item=item, params={})
 
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada")
     def test_erro_por_cpf_vai_para_ids_falhos(self, mock_req) -> None:
         """Erros recuperaveis de um CPF nao abortam o loop - vao para ids_falhos."""
         from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
@@ -183,9 +180,7 @@ class TestExtrairItemAfastamentos(unittest.TestCase):
         "pipelines.datalake.extract_load.sisreg.extractors.afastamentos"
         ".reautenticar_se_deslogado"
     )
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.afastamentos.requisicao_educada")
     def test_logout_mid_run_reautentica(self, mock_req, mock_reauth) -> None:
         """REDIRECIONAMENTO_LOGIN dispara reauth; a sessao continua."""
         from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
@@ -198,7 +193,7 @@ class TestExtrairItemAfastamentos(unittest.TestCase):
             "logout", conjunto="afastamentos", detalhe="REDIRECIONAMENTO_LOGIN"
         )
         mock_req.side_effect = [
-            logout_exc,           # 1a tentativa: sessao expirada
+            logout_exc,  # 1a tentativa: sessao expirada
             _mock_resp(html_af),  # apos reauth: ok
             _mock_resp(html_hist),
         ]

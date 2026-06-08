@@ -16,7 +16,6 @@ from typing import Any, Callable, Dict, FrozenSet, List, Tuple
 
 from pipelines.datalake.extract_load.sisreg import constants as C
 
-
 # ---------------------------------------------------------------------------
 # Defaults que falham em voz alta se o extrator nao foi registrado.
 # Substitui lambdas silenciosas que mascaravam ImportErrors em producao.

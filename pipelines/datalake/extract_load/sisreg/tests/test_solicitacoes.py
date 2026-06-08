@@ -103,22 +103,20 @@ class TestPlanejarTrabalhoSolicitacoes(unittest.TestCase):
             planejar_trabalho_solicitacoes,
         )
 
-        items = planejar_trabalho_solicitacoes(
-            credenciais={}, params={"janela_dias": 2}
-        )
+        items = planejar_trabalho_solicitacoes(credenciais={}, params={"janela_dias": 2})
         self.assertEqual(len(items), 1)
         self.assertIn("roteiro", items[0])
         self.assertEqual(items[0]["id"], "roteiro")
         # janela=2 -> 3 dias x 7 status = 21 fichas
-        from pipelines.datalake.extract_load.sisreg.constants import CONFIGS_SOLICITACOES
+        from pipelines.datalake.extract_load.sisreg.constants import (
+            CONFIGS_SOLICITACOES,
+        )
 
         self.assertEqual(len(items[0]["roteiro"]), 3 * len(CONFIGS_SOLICITACOES))
 
 
 class TestExtrairItemSolicitacoes(unittest.TestCase):
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.solicitacoes.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.solicitacoes.requisicao_educada")
     def test_parseia_fixture_retorna_resultado_conjunto(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.solicitacoes import (
             extrair_item_solicitacoes,
@@ -134,17 +132,13 @@ class TestExtrairItemSolicitacoes(unittest.TestCase):
         self.assertEqual(resultado.total, 1)
         self.assertEqual(resultado.ok, 1)
 
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.solicitacoes.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.solicitacoes.requisicao_educada")
     def test_vazio_retorna_df_vazio_ok_um(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.solicitacoes import (
             extrair_item_solicitacoes,
         )
 
-        mock_req.return_value = _mock_resp(
-            "<html><body>Nenhum registro encontrado</body></html>"
-        )
+        mock_req.return_value = _mock_resp("<html><body>Nenhum registro encontrado</body></html>")
         item = {"id": "roteiro", "roteiro": [_ficha()]}
         resultado = extrair_item_solicitacoes(sessao=MagicMock(), item=item, params={})
 
@@ -153,17 +147,13 @@ class TestExtrairItemSolicitacoes(unittest.TestCase):
         # VAZIO conta como ok (nao e um erro, data nao tinha registros)
         self.assertEqual(resultado.ok, 1)
 
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.solicitacoes.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.solicitacoes.requisicao_educada")
     def test_bloqueio_propaga(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.solicitacoes import (
             extrair_item_solicitacoes,
         )
 
-        mock_req.side_effect = ErroBloqueio(
-            "403", conjunto="solicitacoes", detalhe="HTTP_403"
-        )
+        mock_req.side_effect = ErroBloqueio("403", conjunto="solicitacoes", detalhe="HTTP_403")
         item = {"id": "roteiro", "roteiro": [_ficha()]}
         with self.assertRaises(ErroBloqueio):
             extrair_item_solicitacoes(sessao=MagicMock(), item=item, params={})
@@ -172,9 +162,7 @@ class TestExtrairItemSolicitacoes(unittest.TestCase):
         "pipelines.datalake.extract_load.sisreg.extractors.solicitacoes"
         ".reautenticar_se_deslogado"
     )
-    @patch(
-        "pipelines.datalake.extract_load.sisreg.extractors.solicitacoes.requisicao_educada"
-    )
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.solicitacoes.requisicao_educada")
     def test_logout_mid_run_reautentica(self, mock_req, mock_reauth) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.solicitacoes import (
             extrair_item_solicitacoes,
