@@ -2,13 +2,13 @@
 """
 Testes do extrator de escalas (extractors/escalas.py).
 
-Todos offline: sessao requests mockada, CSV parseado da fixture sintetica.
+Todos offline: requisicao_educada mockada, CSV parseado da fixture sintetica.
 """
 import os
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from pipelines.datalake.extract_load.sisreg.errors import ErroVazioSuspeito
+from pipelines.datalake.extract_load.sisreg.errors import ErroBloqueio, ErroVazioSuspeito
 
 _FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
 
@@ -18,47 +18,69 @@ def _csv_bytes(nome: str) -> bytes:
         return f.read()
 
 
-def _mock_sessao(conteudo: bytes, status: int = 200) -> MagicMock:
+def _mock_resp(conteudo: bytes, status: int = 200) -> MagicMock:
     resp = MagicMock()
     resp.status_code = status
     resp.content = conteudo
     resp.text = conteudo.decode("utf-8", errors="replace")
     resp.raise_for_status = MagicMock()
     resp.url = "https://sisregiii.saude.gov.br/cgi-bin/cons_escalas?etapa=EXPORTAR_ESCALAS"
-    sessao = MagicMock()
-    sessao.get.return_value = resp
-    return sessao
+    return resp
 
 
 class TestExtrairItemEscalas(unittest.TestCase):
-    def test_parseia_csv_fixture(self) -> None:
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.escalas.requisicao_educada"
+    )
+    def test_parseia_csv_fixture(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.escalas import (
             extrair_item_escalas,
         )
 
-        sessao = _mock_sessao(_csv_bytes("escalas.csv"))
-        resultado = extrair_item_escalas(sessao=sessao, item={"ibge": "330455"}, params={})
+        mock_req.return_value = _mock_resp(_csv_bytes("escalas.csv"))
+        resultado = extrair_item_escalas(sessao=MagicMock(), item={"ibge": "330455"}, params={})
         self.assertIn("escalas", resultado)
         df = resultado["escalas"]
         self.assertEqual(len(df), 3)
 
-    def test_resposta_vazia_levanta_erro(self) -> None:
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.escalas.requisicao_educada"
+    )
+    def test_resposta_vazia_levanta_erro(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.escalas import (
             extrair_item_escalas,
         )
 
-        sessao = _mock_sessao(b"")
+        mock_req.return_value = _mock_resp(b"")
         with self.assertRaises(ErroVazioSuspeito):
-            extrair_item_escalas(sessao=sessao, item={}, params={})
+            extrair_item_escalas(sessao=MagicMock(), item={}, params={})
 
-    def test_csv_sem_linhas_levanta_erro(self) -> None:
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.escalas.requisicao_educada"
+    )
+    def test_csv_sem_linhas_levanta_erro(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.escalas import (
             extrair_item_escalas,
         )
 
-        sessao = _mock_sessao(b"Col1;Col2\n")
+        mock_req.return_value = _mock_resp(b"Col1;Col2\n")
         with self.assertRaises(ErroVazioSuspeito):
-            extrair_item_escalas(sessao=sessao, item={}, params={})
+            extrair_item_escalas(sessao=MagicMock(), item={}, params={})
+
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.escalas.requisicao_educada"
+    )
+    def test_bloqueio_propaga_erro(self, mock_req) -> None:
+        """Qualquer ErroBloqueio de requisicao_educada deve propagar."""
+        from pipelines.datalake.extract_load.sisreg.extractors.escalas import (
+            extrair_item_escalas,
+        )
+
+        mock_req.side_effect = ErroBloqueio(
+            "403", conjunto="escalas", detalhe="HTTP_403"
+        )
+        with self.assertRaises(ErroBloqueio):
+            extrair_item_escalas(sessao=MagicMock(), item={}, params={})
 
 
 class TestPlanejarTrabalhoEscalas(unittest.TestCase):

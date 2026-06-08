@@ -8,7 +8,8 @@ o endpoint EXPORTAR_ESCALAS e identico ao usado no Selenium, so que acessado
 diretamente via requests. Ref.: sisreg_web/sisreg/sisreg.py:download_escala().
 
 O conjunto escalas tem apenas um item de trabalho (a exportacao completa da
-municipalidade). A janela de datas e passada como parametros de query.
+municipalidade). Nao ha janela de datas - o endpoint retorna todos os dados
+disponíveis para o IBGE do municipio em um unico CSV.
 """
 
 from io import BytesIO
@@ -18,6 +19,7 @@ import pandas as pd
 import requests
 from prefeitura_rio.pipelines_utils.logging import log
 
+from pipelines.datalake.extract_load.sisreg.common.http import requisicao_educada
 from pipelines.datalake.extract_load.sisreg.constants import URL_CONS_ESCALAS
 from pipelines.datalake.extract_load.sisreg.errors import (
     ErroEstrutura,
@@ -93,8 +95,11 @@ def extrair_item_escalas(
     }
 
     log(f"[escalas] Iniciando exportacao EXPORTAR_ESCALAS para ibge={ibge}")
-    resposta = sessao.get(URL_CONS_ESCALAS, params=query, timeout=180)
-    resposta.raise_for_status()
+    # requisicao_educada: jitter sleep + deteccao de 403/429/CAPTCHA/logout.
+    # Mesmo para um unico request, a deteccao de bloqueio e essencial.
+    resposta = requisicao_educada(
+        sessao, URL_CONS_ESCALAS, params=query, conjunto="escalas", item="exportacao_completa"
+    )
 
     conteudo = resposta.content
     if not conteudo:
