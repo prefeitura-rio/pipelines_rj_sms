@@ -335,11 +335,11 @@ and must not risk the account). Conservative choices, locked:
 
 ### [ ] EPIC 3 — fila_vagas (BigQuery discovery + autorizador scrape)
 
-- [ ] **C15 `feat: implement procedure source from bigquery`** — in `extractors/fila_vagas.py`:
+- [x] **C15 `feat: implement procedure source from bigquery`** — in `extractors/fila_vagas.py`:
       `obter_procedimentos` reads `rj-sms.saude_sisreg.solicitacoes` (situacao in P/R/D, PPI
       ends-with exclusion, dedup by code) -> distinct procedures. DoR: C9. DoD: test the query
       builder + dedup-by-code logic (mock BigQuery). Gates: hooks + tests.
-- [ ] **C16 `feat: implement fila_vagas extractor with autorizador scrape`** —
+- [x] **C16 `feat: implement fila_vagas extractor with autorizador scrape`** —
       `extrair_item` per procedure: `LISTAR` then `APLICAR`; parse units/slots; **match on
       codes, names are labels** -> `{ "fila_e_vagas": df1, "vagas_detalhadas": df2 }`.
       DoR: C15, fixtures. DoD: parser tests for LISTAR/APLICAR + empty/INEXISTENTES paths.
