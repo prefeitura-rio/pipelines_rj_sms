@@ -28,6 +28,10 @@ from pipelines.datalake.extract_load.sisreg.errors import (
     ErroVazioSuspeito,
 )
 from pipelines.datalake.extract_load.sisreg.registry import obter_conjunto
+from pipelines.datalake.extract_load.sisreg.resultado import (  # noqa: F401
+    Consolidado,
+    ResultadoConjunto,
+)
 from pipelines.datalake.utils.tasks import handle_columns_to_bq
 from pipelines.utils.credential_injector import authenticated_task as authed_task
 from pipelines.utils.tasks import get_secret_key, upload_df_to_datalake
@@ -122,8 +126,8 @@ def extrair_item(
     item: dict,
     credenciais: dict,
     params: dict,
-) -> Optional[Dict[str, pd.DataFrame]]:
-    """Extrai um unico item e retorna fragmentos por tabela.
+) -> Optional[ResultadoConjunto]:
+    """Extrai um unico item e retorna um ResultadoConjunto.
 
     Cada chamada e independente: falha de um item nao afeta os demais
     (o trigger all_finished em consolidar absorve os Nones).
@@ -131,8 +135,12 @@ def extrair_item(
     Levanta ErroBloqueio imediatamente (nao retriaria - seria contraproducente).
     Outros ErroSisreg sao logados e retornam None apos esgotar as retries do Prefect.
 
+    Adiciona usuario/senha ao params para que extratores de longa duracao
+    (afastamentos, solicitacoes, fila_vagas) possam reautenticar inline em
+    caso de expiracao de sessao sem precisar de uma assinatura extra.
+
     Retorna:
-        Dict {nome_tabela: DataFrame} com os dados extraidos, ou None em falha.
+        ResultadoConjunto com os dados e metricas de sub-itens, ou None em falha.
     """
     from pipelines.datalake.extract_load.sisreg.common.auth import (
         abrir_sessao_autenticada,
@@ -142,15 +150,32 @@ def extrair_item(
     item_id = str(item.get("id", item.get("cpf_idx", item.get("data", "item"))))
     log(f"[{conjunto}] Extraindo item: {item_id}")
 
+    # Injeta credenciais nos params para re-auth inline nos extratores longos.
+    # Nunca logado; o dict e in-memory e nao persiste alem desta task.
+    params_com_cred = {**params, "usuario": credenciais["usuario"], "senha": credenciais["senha"]}
+
     try:
         sessao = abrir_sessao_autenticada(
             usuario=credenciais["usuario"],
             senha=credenciais["senha"],
             conjunto=conjunto,
         )
-        fragmentos = conj.extrair_item(sessao=sessao, item=item, params=params)
-        log(f"[{conjunto}/{item_id}] Extracao ok - tabelas: {list(fragmentos.keys())}")
-        return fragmentos
+        resultado = conj.extrair_item(sessao=sessao, item=item, params=params_com_cred)
+
+        # Normaliza para o contrato ResultadoConjunto.
+        # Extratores coarsened (afastamentos, solicitacoes, fila_vagas) retornam
+        # ResultadoConjunto diretamente com metricas reais de sub-itens.
+        # Extratores simples (escalas, preparos) retornam dict; envolve como
+        # ResultadoConjunto(total=1, ok=1) para uniformidade.
+        if isinstance(resultado, ResultadoConjunto):
+            log(
+                f"[{conjunto}/{item_id}] ok - tabelas: {list(resultado.tabelas.keys())}"
+                f" ({resultado.ok}/{resultado.total} sub-itens)"
+            )
+            return resultado
+        # resultado e um dict padrao
+        log(f"[{conjunto}/{item_id}] Extracao ok - tabelas: {list(resultado.keys())}")
+        return ResultadoConjunto(tabelas=resultado, total=1, ok=1)
 
     except ErroBloqueio as exc:
         # Bloqueio de IP: nao retry, levantar para circuit-break no fluxo.
