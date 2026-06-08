@@ -302,7 +302,7 @@ and must not risk the account). Conservative choices, locked:
 
 ### [ ] EPIC 1.5 — Walking skeleton: `escalas` end-to-end
 
-- [ ] **C10 `feat: implement escalas extractor`** — `extractors/escalas.py`: `planejar_trabalho`
+- [x] **C10 `feat: implement escalas extractor`** — `extractors/escalas.py`: `planejar_trabalho`
       = single item; `extrair_item` = authenticated GET of `cons_escalas...EXPORTAR_ESCALAS` ->
       `pd.read_csv(BytesIO, sep=";")` -> `{ "escalas": df }`; `colunas_esperadas`.
       DoR: C9, synthetic escalas CSV fixture. DoD: test parses the CSV fixture into the schema.
