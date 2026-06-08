@@ -273,7 +273,7 @@ and must not risk the account). Conservative choices, locked:
       403/429/login-redirect), `salvar_snapshot_html(...)`.
       DoR: C2, C3. DoD: deterministic-with-seed tests for jitter bounds, block detection, retry,
       timeout (mock `requests`). Gates: hooks + tests.
-- [ ] **C5 `feat: add sisreg auth, session and gated failover`** — `common/auth.py`:
+- [x] **C5 `feat: add sisreg auth, session and gated failover`** — `common/auth.py`:
       `sha256_maiusculo`, `extrair_campos_ocultos`, `abrir_sessao_autenticada` (GET -> hidden
       fields -> POST -> success check, `verify=True`, `raise_for_status`), `reautenticar_se_deslogado`,
       `failover_por_categoria` (rotate account only on `ErroAutenticacao`; circuit-break on
