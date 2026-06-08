@@ -95,9 +95,9 @@ with Flow(
         params=unmapped(params),
     )
 
-    # consolidar usa trigger=all_finished: roda mesmo se alguns itens falharam,
-    # mas o gate de completude interno cancela o upload se houver falhas.
-    tabelas = consolidar(
+    # consolidar usa trigger=all_finished: roda mesmo se tasks falharam.
+    # Retorna Consolidado com tabelas=None quando o gate de completude falha.
+    consolidado = consolidar(
         conjunto=CONJUNTO,
         fragmentos_lista=fragmentos,
         data_extracao=data_extracao,
@@ -108,16 +108,14 @@ with Flow(
         environment=ENVIRONMENT,
         conjunto=CONJUNTO,
         dataset_id=DATASET_ID,
-        tabelas_consolidadas=tabelas,
-        upstream_tasks=[tabelas],
+        consolidado=consolidado,
+        upstream_tasks=[consolidado],
     )
 
     registrar_log_execucao(
         conjunto=CONJUNTO,
-        items_total=0,  # preenchido dentro da task via len(fragmentos)
-        items_ok=0,
-        linhas_por_tabela=None,
-        status="OK",
+        consolidado=consolidado,
+        subiu=subiu,
         dataset_id=DATASET_ID,
         upstream_tasks=[subiu],
     )

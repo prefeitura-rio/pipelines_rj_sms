@@ -13,6 +13,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 
 from pipelines.datalake.extract_load.sisreg.errors import ErroVazioSuspeito
+from pipelines.datalake.extract_load.sisreg.resultado import Consolidado, ResultadoConjunto
 
 
 class TestObterDataExtracao(unittest.TestCase):
@@ -37,6 +38,9 @@ class TestObterDataExtracao(unittest.TestCase):
 class TestConsolidar(unittest.TestCase):
     """Testa o gate de completude e a logica de concatenacao."""
 
+    def _resultado(self, tabelas: dict, total: int = 1, ok: int = 1) -> ResultadoConjunto:
+        return ResultadoConjunto(tabelas=tabelas, total=total, ok=ok)
+
     def _rodar(self, conjunto, fragmentos_lista, data_extracao="2025-01-01"):
         """Executa consolidar.run() com os argumentos dados."""
         from pipelines.datalake.extract_load.sisreg.tasks import consolidar
@@ -50,58 +54,82 @@ class TestConsolidar(unittest.TestCase):
     def test_100_por_cento_sucesso_retorna_dados(self) -> None:
         # "solicitacoes" tem colunas_esperadas=frozenset() - sem validacao de schema
         df = pd.DataFrame({"col": [1, 2]})
-        frags = [{"solicitacoes": df}, {"solicitacoes": df}]
+        frags = [
+            self._resultado({"solicitacoes": df}),
+            self._resultado({"solicitacoes": df}),
+        ]
         resultado = self._rodar("solicitacoes", frags)
-        self.assertIsNotNone(resultado)
-        self.assertIn("solicitacoes", resultado)
-        self.assertEqual(len(resultado["solicitacoes"]), 4)  # 2+2 linhas
+        self.assertIsNotNone(resultado.tabelas)
+        self.assertIn("solicitacoes", resultado.tabelas)
+        self.assertEqual(len(resultado.tabelas["solicitacoes"]), 4)  # 2+2 linhas
 
     @patch("pipelines.utils.monitor.send_message", MagicMock())
-    def test_qualquer_falha_retorna_none(self) -> None:
-        """Gate de completude: um None cancela o upload."""
+    def test_qualquer_falha_task_cancela_upload(self) -> None:
+        """Gate outer: None (task failure) cancela o upload."""
         df = pd.DataFrame({"col": [1]})
-        frags = [{"escalas": df}, None]
-        resultado = self._rodar("escalas", frags)
-        self.assertIsNone(resultado)
+        frags = [self._resultado({"solicitacoes": df}), None]
+        resultado = self._rodar("solicitacoes", frags)
+        self.assertIsNone(resultado.tabelas)
 
-    def test_lista_vazia_retorna_none(self) -> None:
+    def test_lista_vazia_retorna_tabelas_none(self) -> None:
         resultado = self._rodar("preparos", [])
-        self.assertIsNone(resultado)
+        self.assertIsNone(resultado.tabelas)
 
-    def test_todos_none_retorna_none(self) -> None:
+    @patch("pipelines.utils.monitor.send_message", MagicMock())
+    def test_todos_none_retorna_tabelas_none(self) -> None:
         resultado = self._rodar("solicitacoes", [None, None])
-        self.assertIsNone(resultado)
+        self.assertIsNone(resultado.tabelas)
 
     def test_coluna_particao_adicionada(self) -> None:
         from pipelines.datalake.extract_load.sisreg import constants as C
 
         df = pd.DataFrame({"col": [1]})
-        resultado = self._rodar("solicitacoes", [{"solicitacoes": df}], data_extracao="2025-06-01")
-        self.assertIn(C.COLUNA_PARTICAO, resultado["solicitacoes"].columns)
-        self.assertEqual(resultado["solicitacoes"][C.COLUNA_PARTICAO].iloc[0], "2025-06-01")
+        resultado = self._rodar(
+            "solicitacoes",
+            [self._resultado({"solicitacoes": df})],
+            data_extracao="2025-06-01",
+        )
+        self.assertIn(C.COLUNA_PARTICAO, resultado.tabelas["solicitacoes"].columns)
+        self.assertEqual(resultado.tabelas["solicitacoes"][C.COLUNA_PARTICAO].iloc[0], "2025-06-01")
 
-    def test_fragmentos_none_upstream_retorna_none(self) -> None:
-        resultado = self._rodar("escalas", None)
-        self.assertIsNone(resultado)
+    def test_fragmentos_none_upstream_retorna_tabelas_none(self) -> None:
+        resultado = self._rodar("solicitacoes", None)
+        self.assertIsNone(resultado.tabelas)
 
     def test_schema_drift_levanta_erro_estrutura(self) -> None:
         """Colunas esperadas ausentes devem levantar ErroEstrutura."""
         from pipelines.datalake.extract_load.sisreg.errors import ErroEstrutura
 
-        # afastamentos tem colunas_esperadas definidas (cpf, data_inicio, etc.)
-        # df sem essas colunas deve causar falha em voz alta
         df = pd.DataFrame({"coluna_inesperada": [1, 2]})
-        frags = [{"afastamentos": df}]
+        frags = [self._resultado({"afastamentos": df})]
         with self.assertRaises(ErroEstrutura):
             self._rodar("afastamentos", frags)
 
     def test_tabela_sem_colunas_esperadas_nao_falha(self) -> None:
         """Tabelas com colunas_esperadas=frozenset() passam sem validacao de schema."""
-        # "solicitacoes" tem frozenset() explicitamente no registry
         df = pd.DataFrame({"qualquer_coluna": [1, 2]})
-        frags = [{"solicitacoes": df}]
+        frags = [self._resultado({"solicitacoes": df})]
         resultado = self._rodar("solicitacoes", frags)
-        self.assertIsNotNone(resultado)
+        self.assertIsNotNone(resultado.tabelas)
+
+    @patch("pipelines.utils.monitor.send_message", MagicMock())
+    def test_sub_item_falho_cancela_upload(self) -> None:
+        """Gate de sub-itens: ids_falhos cancela o upload."""
+        df = pd.DataFrame({"col": [1]})
+        r = ResultadoConjunto(
+            tabelas={"solicitacoes": df}, total=10, ok=9, ids_falhos=["cpf_3"]
+        )
+        resultado = self._rodar("solicitacoes", [r])
+        self.assertIsNone(resultado.tabelas)
+        self.assertEqual(resultado.metricas["status"], "FALHA_PARCIAL")
+
+    def test_metricas_status_ok_em_sucesso(self) -> None:
+        df = pd.DataFrame({"col": [1]})
+        r = self._resultado({"solicitacoes": df}, total=5, ok=5)
+        resultado = self._rodar("solicitacoes", [r])
+        self.assertEqual(resultado.metricas["status"], "OK")
+        self.assertEqual(resultado.metricas["items_total"], 5)
+        self.assertEqual(resultado.metricas["items_ok"], 5)
 
 
 class TestPlanejarTrabalho(unittest.TestCase):
@@ -166,21 +194,18 @@ class TestNormalizarESubir(unittest.TestCase):
     """Testa a logica de normalizar_e_subir via a funcao interna (offline).
 
     authenticated_task exige contexto Prefect completo; testamos a logica de
-    decisao (skip em None, chamada a upload em dados presentes) mockando as
-    dependencias no nivel de modulo.
+    decisao (skip em Consolidado vazio, chamada a upload em dados presentes).
     """
 
     @patch("pipelines.datalake.extract_load.sisreg.tasks.upload_df_to_datalake")
     @patch("pipelines.datalake.extract_load.sisreg.tasks.handle_columns_to_bq")
-    def test_none_pula_upload(self, mock_handle, mock_upload) -> None:
-        """Com tabelas_consolidadas=None a funcao deve retornar False sem chamar upload."""
+    def test_consolidado_sem_tabelas_pula_upload(self, mock_handle, mock_upload) -> None:
+        """Com consolidado.tabelas=None a funcao deve retornar False sem chamar upload."""
         import prefect
 
         df = pd.DataFrame({"col": [1]})
         mock_handle.run.return_value = df
 
-        # authenticated_task exige prefect.context + inject_bd_credentials.
-        # Patchamos no ponto de uso dentro do credential_injector.
         with patch("pipelines.utils.credential_injector.inject_bd_credentials", MagicMock()):
             with prefect.context(parameters={"environment": "staging"}, logger=MagicMock()):
                 from pipelines.datalake.extract_load.sisreg.tasks import (
@@ -191,7 +216,7 @@ class TestNormalizarESubir(unittest.TestCase):
                     environment="staging",
                     conjunto="escalas",
                     dataset_id="brutos_sisreg_web",
-                    tabelas_consolidadas=None,
+                    consolidado=Consolidado(tabelas=None, metricas={"status": "FALHA"}),
                 )
         self.assertFalse(resultado)
         mock_upload.run.assert_not_called()
@@ -214,7 +239,9 @@ class TestNormalizarESubir(unittest.TestCase):
                     environment="staging",
                     conjunto="escalas",
                     dataset_id="brutos_sisreg_web",
-                    tabelas_consolidadas={"escalas": df},
+                    consolidado=Consolidado(
+                        tabelas={"escalas": df}, metricas={"status": "OK"}
+                    ),
                 )
         self.assertTrue(resultado)
         mock_upload.run.assert_called_once()

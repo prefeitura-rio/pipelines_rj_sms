@@ -199,42 +199,75 @@ def extrair_item(
 @task(trigger=all_finished)
 def consolidar(
     conjunto: str,
-    fragmentos_lista: List[Optional[Dict[str, pd.DataFrame]]],
+    fragmentos_lista: List[Optional[ResultadoConjunto]],
     data_extracao: str,
-) -> Optional[Dict[str, pd.DataFrame]]:
-    """Concatena fragmentos por tabela, valida schema e aplica gate de completude.
+) -> Consolidado:
+    """Concatena ResultadoConjunto por tabela, valida schema e aplica gate de completude.
 
-    O trigger all_finished garante que esta task roda mesmo quando alguns
-    itens falharam. Fragmentos None (falhas) sao descartados antes de
-    concatenar.
+    O trigger all_finished garante execucao mesmo quando tasks upstream falharam.
+    None na lista indica falha total de uma task mapeada; ResultadoConjunto com
+    ids_falhos indica falhas parciais de sub-itens (ex.: alguns CPFs nao extraidos).
 
-    Gate de completude: overwrite so ocorre quando TODOS os itens tiverem
-    retornado dados. Qualquer falha resulta em SKIP do upload e alerta.
-    Dados medicos nao devem ser parcialmente sobrescritos.
+    Gate de completude (nivel outer): qualquer None → upload cancelado.
+    Gate de completude (nivel sub-item): qualquer ids_falhos → upload cancelado.
+    Dados medicos nao devem ser parcialmente sobrescritos; um dia ruim se corrige
+    na proxima execucao bem-sucedida.
 
     Retorna:
-        Dict {tabela: DataFrame consolidado} pronto para upload, ou None se
-        o gate de completude falhar ou nao houver dados.
+        Consolidado com tabelas e metricas. tabelas=None quando o gate falhou.
     """
     from pipelines.utils.monitor import send_message
 
+    _metricas_vazias: Dict[str, Any] = {
+        "items_total": 0,
+        "items_ok": 0,
+        "linhas_por_tabela": {},
+        "ids_falhos": [],
+        "status": "FALHA",
+    }
+
     if fragmentos_lista is None:
         log(f"[{conjunto}] consolidar: fragmentos_lista e None (upstream falhou)", level="error")
-        return None
+        return Consolidado(tabelas=None, metricas=_metricas_vazias)
 
     validos = [f for f in fragmentos_lista if f is not None]
-    total = len(fragmentos_lista)
-    ok = len(validos)
-    falhas = total - ok
+    total_outer = len(fragmentos_lista)
+    ok_outer = len(validos)
+    falhas_outer = total_outer - ok_outer
 
-    log(f"[{conjunto}] Consolidando: {ok}/{total} itens bem-sucedidos ({falhas} falhas)")
+    log(f"[{conjunto}] Consolidando: {ok_outer}/{total_outer} tasks ok")
 
-    # Gate de completude: exige 100% de sucesso antes de sobrescrever.
-    # Dados medicos parcialmente sobrescritos podem causar decisoes erradas.
-    if falhas > 0:
+    # Gate outer: qualquer task que retornou None (falha total da task)
+    if falhas_outer > 0:
         msg = (
-            f"[{conjunto}] Gate de completude FALHOU: {falhas}/{total} itens com erro. "
-            "Upload cancelado - tabela anterior permanece intacta."
+            f"[{conjunto}] Gate de completude FALHOU: {falhas_outer}/{total_outer} tasks com erro."
+            " Upload cancelado - tabela anterior permanece intacta."
+        )
+        log(msg, level="error")
+        try:
+            send_message(
+                title=f"SISREG - {conjunto}: task failure",
+                message=msg,
+                monitor_slug="warning",
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        return Consolidado(tabelas=None, metricas={**_metricas_vazias, "status": "FALHA_PARCIAL"})
+
+    if not validos:
+        log(f"[{conjunto}] Nenhum fragmento valido - SKIP", level="warning")
+        return Consolidado(tabelas=None, metricas=_metricas_vazias)
+
+    # Agrega metricas de sub-itens de todos os ResultadoConjunto
+    items_total = sum(r.total for r in validos)
+    items_ok = sum(r.ok for r in validos)
+    ids_falhos = [id_ for r in validos for id_ in r.ids_falhos]
+
+    # Gate de sub-itens: qualquer falha parcial dentro de um extrator coarsened
+    if ids_falhos:
+        msg = (
+            f"[{conjunto}] Gate de completude (sub-itens): {len(ids_falhos)} falha(s)."
+            " Upload cancelado."
         )
         log(msg, level="error")
         try:
@@ -244,21 +277,30 @@ def consolidar(
                 monitor_slug="warning",
             )
         except Exception:  # noqa: BLE001
-            pass  # alerta e best-effort
-        return None
-
-    if not validos:
-        log(f"[{conjunto}] Nenhum fragmento valido apos consolidacao - SKIP", level="warning")
-        return None
+            pass
+        return Consolidado(
+            tabelas=None,
+            metricas={
+                "items_total": items_total,
+                "items_ok": items_ok,
+                "linhas_por_tabela": {},
+                "ids_falhos": ids_falhos,
+                "status": "FALHA_PARCIAL",
+            },
+        )
 
     # Concatenar por tabela
     tabelas_consolidadas: Dict[str, pd.DataFrame] = {}
     todas_tabelas: set = set()
-    for frag in validos:
-        todas_tabelas.update(frag.keys())
+    for r in validos:
+        todas_tabelas.update(r.tabelas.keys())
 
     for tabela in todas_tabelas:
-        dfs = [f[tabela] for f in validos if tabela in f and not f[tabela].empty]
+        dfs = [
+            r.tabelas[tabela]
+            for r in validos
+            if tabela in r.tabelas and not r.tabelas[tabela].empty
+        ]
         if not dfs:
             log(f"[{conjunto}/{tabela}] Tabela vazia apos consolidacao - SKIP")
             continue
@@ -268,8 +310,6 @@ def consolidar(
         log(f"[{conjunto}/{tabela}] {len(df_concat)} linhas consolidadas")
 
     # Validar schema: colunas obrigatorias ausentes falham em voz alta.
-    # Tabelas com colunas_esperadas vazio (ex.: escalas, solicitacoes) pulam
-    # a checagem - serao refinadas apos primeira execucao em staging.
     conj = obter_conjunto(conjunto)
     for tabela, df in tabelas_consolidadas.items():
         esperadas = conj.colunas_esperadas.get(tabela, frozenset())
@@ -285,7 +325,20 @@ def consolidar(
                     detalhe=f"esperadas={sorted(esperadas)}, ausentes={sorted(ausentes)}",
                 )
 
-    return tabelas_consolidadas if tabelas_consolidadas else None
+    linhas = {t: len(df) for t, df in tabelas_consolidadas.items()}
+    if not tabelas_consolidadas:
+        return Consolidado(tabelas=None, metricas={**_metricas_vazias, "items_total": items_total})
+
+    return Consolidado(
+        tabelas=tabelas_consolidadas,
+        metricas={
+            "items_total": items_total,
+            "items_ok": items_ok,
+            "linhas_por_tabela": linhas,
+            "ids_falhos": [],
+            "status": "OK",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -298,21 +351,21 @@ def normalizar_e_subir(
     environment: str,
     conjunto: str,
     dataset_id: str,
-    tabelas_consolidadas: Optional[Dict[str, pd.DataFrame]],
+    consolidado: Optional[Consolidado],
 ) -> bool:
     """Normaliza colunas e faz upload de cada tabela no datalake.
 
     Usa dump_mode="overwrite" para garantir idempotencia: cada execucao
-    bem-sucedida substitui a tabela inteira. So executa se tabelas_consolidadas
-    nao for None (gate de completude ja garantido em consolidar).
+    bem-sucedida substitui a tabela inteira. So executa se consolidado.tabelas
+    nao for None (gate de completude garantido em consolidar).
 
     Retorna True se o upload foi executado, False se foi pulado.
     """
-    if tabelas_consolidadas is None:
-        log(f"[{conjunto}] normalizar_e_subir: sem dados (gate anterior falhou) - SKIP")
+    if consolidado is None or consolidado.tabelas is None:
+        log(f"[{conjunto}] normalizar_e_subir: sem dados (gate falhou ou erro upstream) - SKIP")
         return False
 
-    for nome_tabela, df in tabelas_consolidadas.items():
+    for nome_tabela, df in consolidado.tabelas.items():
         log(f"[{conjunto}] Normalizando e subindo tabela '{nome_tabela}' ({len(df)} linhas)")
         df_bq = handle_columns_to_bq.run(df=df)
         upload_df_to_datalake.run(
@@ -336,41 +389,54 @@ def normalizar_e_subir(
 @task(trigger=all_finished)
 def registrar_log_execucao(
     conjunto: str,
-    items_total: int,
-    items_ok: int,
-    linhas_por_tabela: Optional[Dict[str, int]],
-    status: str,
+    consolidado: Optional[Consolidado],
+    subiu: bool,
     dataset_id: str,
 ) -> None:
     """Persiste o registro de saude da execucao no datalake (tabela de log).
 
     Registrado com trigger all_finished para capturar tambem as execucoes
-    que falharam. O monitor de frescor (C18) le esta tabela para alertar
-    quando uma execucao nao ocorreu dentro do SLA.
+    que falharam. O monitor de frescor le esta tabela para alertar quando
+    uma execucao nao ocorreu dentro do SLA.
+
+    Deriva o status a partir do Consolidado e do bool subiu, garantindo que
+    o log reflita a realidade: status="OK" somente quando os dados foram
+    efetivamente enviados ao datalake.
 
     Args:
         conjunto: Chave do conjunto de dados.
-        items_total: Total de itens planejados.
-        items_ok: Itens extraidos com sucesso.
-        linhas_por_tabela: {tabela: nlinhas} ou None se o upload nao ocorreu.
-        status: "OK", "FALHA_PARCIAL" ou "FALHA".
+        consolidado: Resultado de consolidar (contem metricas reais).
+        subiu: True se normalizar_e_subir executou o upload com sucesso.
         dataset_id: Dataset de destino do log.
     """
     agora = datetime.now(_FUSO_SP)
+    metricas = consolidado.metricas if consolidado else {}
+
+    # Status derivado do resultado real da execucao:
+    # - "OK" somente se os dados foram carregados
+    # - "FALHA_PARCIAL" se consolidar detectou falhas parciais
+    # - "FALHA" em erro total ou upstream crash
+    if subiu:
+        status = "OK"
+    else:
+        status = metricas.get("status", "FALHA")
+
+    items_total = metricas.get("items_total", 0)
+    items_ok = metricas.get("items_ok", 0)
+    linhas = str(metricas.get("linhas_por_tabela", {}))
+
     registro: Dict[str, Any] = {
         "conjunto": [conjunto],
         "as_of": [agora.strftime("%Y-%m-%dT%H:%M:%S")],
         "items_total": [items_total],
         "items_ok": [items_ok],
-        "linhas_por_tabela": [str(linhas_por_tabela or {})],
+        "linhas_por_tabela": [linhas],
         "status": [status],
         C.COLUNA_PARTICAO: [agora.strftime("%Y-%m-%d")],
     }
     df_log = pd.DataFrame(registro)
 
-    log(
-        f"[{conjunto}] Registrando log de execucao: status={status}, items={items_ok}/{items_total}"
-    )
+    log(f"[{conjunto}] Log de execucao: status={status}, items={items_ok}/{items_total}")
 
     try:
         upload_df_to_datalake.run(
