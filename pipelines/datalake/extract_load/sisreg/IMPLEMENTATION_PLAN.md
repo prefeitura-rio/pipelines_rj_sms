@@ -359,7 +359,7 @@ and must not risk the account). Conservative choices, locked:
 
 ### [ ] EPIC 5 — README, parity, cutover (no PRs)
 
-- [ ] **C19 `docs: add sisreg readme with mermaid diagrams`** — `README.md` (Brazilian
+- [x] **C19 `docs: add sisreg readme with mermaid diagrams`** — `README.md` (Brazilian
       Portuguese). Must contain: initiative overview; **directory map describing each item**;
       **all repository conventions** (commits, language/naming, code style, gates, write model,
       anti-ban rules); **Mermaid diagrams** (the DAG; per-account single-flight; the
