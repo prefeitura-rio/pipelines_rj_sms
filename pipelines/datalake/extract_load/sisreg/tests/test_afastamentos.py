@@ -71,7 +71,11 @@ class TestParsearAfastamentosCurrentPage(unittest.TestCase):
             _parsear_afastamentos_current,
         )
 
-        html = "<html><body><table class='table_listagem'><tr><td>Titulo</td></tr></table></body></html>"
+        html = (
+            "<html><body>"
+            "<table class='table_listagem'><tr><td>Titulo</td></tr></table>"
+            "</body></html>"
+        )
         resultado = _parsear_afastamentos_current(
             html, "11111111111", datetime.now(ZoneInfo("America/Sao_Paulo"))
         )

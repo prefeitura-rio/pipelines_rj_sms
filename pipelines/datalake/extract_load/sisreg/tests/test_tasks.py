@@ -144,7 +144,9 @@ class TestNormalizarESubir(unittest.TestCase):
         # Patchamos no ponto de uso dentro do credential_injector.
         with patch("pipelines.utils.credential_injector.inject_bd_credentials", MagicMock()):
             with prefect.context(parameters={"environment": "staging"}, logger=MagicMock()):
-                from pipelines.datalake.extract_load.sisreg.tasks import normalizar_e_subir
+                from pipelines.datalake.extract_load.sisreg.tasks import (
+                    normalizar_e_subir,
+                )
 
                 resultado = normalizar_e_subir.run(
                     environment="staging",
@@ -165,7 +167,9 @@ class TestNormalizarESubir(unittest.TestCase):
 
         with patch("pipelines.utils.credential_injector.inject_bd_credentials", MagicMock()):
             with prefect.context(parameters={"environment": "staging"}, logger=MagicMock()):
-                from pipelines.datalake.extract_load.sisreg.tasks import normalizar_e_subir
+                from pipelines.datalake.extract_load.sisreg.tasks import (
+                    normalizar_e_subir,
+                )
 
                 resultado = normalizar_e_subir.run(
                     environment="staging",
