@@ -8,8 +8,9 @@ eliminando a dependencia de ES e reduzindo a superficie de ataque anti-ban.
 
 Fluxo:
   1. planejar_trabalho: busca procedimentos distintos do BQ (situacao P/R/D,
-     excluindo PPI). Confia nos codigos, nao nos nomes (nomes podem divergir).
-  2. extrair_item: para cada procedimento:
+     excluindo PPI). Retorna UM item com todos os procedimentos (anti-ban:
+     1 login/run em vez de 1 login por procedimento).
+  2. extrair_item: para cada procedimento na lista:
      a. LISTAR -> obtem qtd_sol e codigo_solicitacao
      b. APLICAR -> obtem vagas por unidade (ou registra 0 se nao houver)
 
@@ -18,7 +19,7 @@ Ref.: sisreg_pendentes_vagas/tasks.py (STEP 1 substituido, STEP 2 mantido).
 
 import re
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -33,10 +34,12 @@ from pipelines.datalake.extract_load.sisreg.constants import (
     URL_AUTORIZADOR,
 )
 from pipelines.datalake.extract_load.sisreg.errors import (
+    ErroBloqueio,
     ErroEstrutura,
     ErroVazioSuspeito,
 )
 from pipelines.datalake.extract_load.sisreg.registry import registrar_extrator
+from pipelines.datalake.extract_load.sisreg.resultado import ResultadoConjunto
 
 _FUSO_SP = ZoneInfo("America/Sao_Paulo")
 
@@ -98,16 +101,14 @@ def _obter_procedimentos_bq() -> pd.DataFrame:
 
 
 def planejar_trabalho_fila_vagas(credenciais: dict, params: dict) -> List[dict]:
-    """Retorna um item por procedimento distinto do BQ.
+    """Retorna UM unico item com todos os procedimentos do BQ.
 
-    Cada item contem os campos do procedimento para uso no extrair_item.
+    Um unico item garante um unico login por run (anti-ban). O loop por
+    procedimento ocorre dentro de extrair_item_fila_vagas com sessao reusada.
     """
     df = _obter_procedimentos_bq()
-    items = df.to_dict(orient="records")
-    # Adiciona id para log/contexto de erro (codigo, nao nome)
-    for item in items:
-        item["id"] = str(item.get("id_procedimento_sisreg", "proc_?"))
-    return items
+    procedimentos = df.to_dict(orient="records")
+    return [{"id": "procedimentos", "procedimentos": procedimentos}]
 
 
 def _listar_procedimento(
@@ -256,36 +257,19 @@ def _aplicar_procedimento(
     return resultados, vagas_detalhadas
 
 
-def extrair_item_fila_vagas(
+def _processar_procedimento(
     sessao: requests.Session,
-    item: dict,
-    params: dict,
-) -> Dict[str, pd.DataFrame]:
-    """Extrai fila e vagas para um procedimento (LISTAR + APLICAR).
-
-    Confia nos codigos: id_procedimento_sisreg -> autorizador nu_procedimento.
-    Nomes sao labels descritivos apenas (nao usados para match/join).
-
-    Args:
-        sessao: Sessao requests autenticada com perfil regulador.
-        item: Dict com id_procedimento_sisreg, id_procedimento_grupo, etc.
-        params: Parametros do fluxo.
-
-    Returns:
-        {"fila_e_vagas": df_resumo, "vagas_detalhadas": df_detalhe}
-    """
+    proc: Dict[str, Any],
+    agora: datetime,
+) -> Tuple[List[dict], List[dict]]:
+    """LISTAR + APLICAR para um unico procedimento. Retorna (resumo, detalhe)."""
     # Trust the codes, not the names (R do design)
-    codigo_interno = str(item["id_procedimento_sisreg"])
-    codigo_grupo = item.get("id_procedimento_grupo")
-    nome_grupo = item.get("procedimento_grupo")
-    nome_proc = item.get("procedimento")
-    agora = datetime.now(_FUSO_SP)
-
+    codigo_interno = str(proc["id_procedimento_sisreg"])
     base_record = {
-        "id_procedimento_grupo": codigo_grupo,
-        "procedimento_grupo": nome_grupo,
+        "id_procedimento_grupo": proc.get("id_procedimento_grupo"),
+        "procedimento_grupo": proc.get("procedimento_grupo"),
         "id_procedimento_sisreg": codigo_interno,
-        "procedimento": nome_proc,
+        "procedimento": proc.get("procedimento"),
         COLUNA_PARTICAO: agora.strftime("%Y-%m-%d"),
         "dt_hr_extracao": agora.isoformat(),
     }
@@ -295,7 +279,7 @@ def extrair_item_fila_vagas(
 
     if qtd_sol is None:
         # Procedimento nao existe no autorizador - registra e continua
-        df_resumo = pd.DataFrame(
+        return (
             [
                 {
                     **base_record,
@@ -304,25 +288,77 @@ def extrair_item_fila_vagas(
                     "qtd_pend": None,
                     "qtd_vagas": None,
                 }
-            ]
+            ],
+            [],
         )
-        return {
-            "fila_e_vagas": df_resumo,
-            "vagas_detalhadas": pd.DataFrame(columns=_COLUNAS_VAGAS_DETALHADAS),
-        }
 
-    resultados, vagas_detalhadas = _aplicar_procedimento(
-        sessao, codigo_solicitacao, base_record, qtd_sol
-    )
+    return _aplicar_procedimento(sessao, codigo_solicitacao, base_record, qtd_sol)
 
-    df_resumo = pd.DataFrame(resultados)
+
+def extrair_item_fila_vagas(
+    sessao: requests.Session,
+    item: dict,
+    params: dict,
+) -> ResultadoConjunto:
+    """Extrai fila e vagas de TODOS os procedimentos com uma unica sessao.
+
+    Um unico login por run em vez de 1 login por procedimento. A sessao
+    e reusada para todas as chamadas LISTAR+APLICAR de cada procedimento.
+
+    Args:
+        sessao: Sessao requests autenticada com perfil regulador.
+        item: Dict com 'procedimentos' (lista de dicts do BQ) e 'id'.
+        params: Parametros do fluxo.
+
+    Returns:
+        ResultadoConjunto com fila_e_vagas/vagas_detalhadas e metricas reais.
+    """
+    procedimentos: List[Dict[str, Any]] = item["procedimentos"]
+    agora = datetime.now(_FUSO_SP)
+
+    log(f"[fila_vagas] Iniciando loop: {len(procedimentos)} procedimentos")
+
+    resumos: List[dict] = []
+    detalhes: List[dict] = []
+    ids_falhos: List[str] = []
+    ok = 0
+
+    for proc in procedimentos:
+        codigo_interno = str(proc.get("id_procedimento_sisreg", "?"))
+        try:
+            res, det = _processar_procedimento(sessao, proc, agora)
+            resumos.extend(res)
+            detalhes.extend(det)
+            ok += 1
+        except ErroBloqueio:
+            log(
+                f"[fila_vagas/{codigo_interno}] BLOQUEIO - abortando run",
+                level="error",
+            )
+            raise
+        except Exception as exc:  # noqa: BLE001
+            log(
+                f"[fila_vagas/{codigo_interno}] Erro: {type(exc).__name__}: {exc}",
+                level="warning",
+            )
+            ids_falhos.append(codigo_interno)
+
+    df_resumo = pd.DataFrame(resumos) if resumos else pd.DataFrame()
     df_detalhe = (
-        pd.DataFrame(vagas_detalhadas)
-        if vagas_detalhadas
-        else pd.DataFrame(columns=_COLUNAS_VAGAS_DETALHADAS)
+        pd.DataFrame(detalhes) if detalhes else pd.DataFrame(columns=_COLUNAS_VAGAS_DETALHADAS)
     )
 
-    return {"fila_e_vagas": df_resumo, "vagas_detalhadas": df_detalhe}
+    log(
+        f"[fila_vagas] Loop concluido: {ok}/{len(procedimentos)} ok, "
+        f"{len(ids_falhos)} falhas, {len(df_resumo)} linhas resumo"
+    )
+
+    return ResultadoConjunto(
+        tabelas={"fila_e_vagas": df_resumo, "vagas_detalhadas": df_detalhe},
+        total=len(procedimentos),
+        ok=ok,
+        ids_falhos=ids_falhos,
+    )
 
 
 # ---------------------------------------------------------------------------

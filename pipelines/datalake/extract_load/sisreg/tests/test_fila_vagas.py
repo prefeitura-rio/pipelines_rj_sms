@@ -7,7 +7,8 @@ Todos offline: sessao mockada, HTML das fixtures ou inline.
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pipelines.datalake.extract_load.sisreg.errors import ErroVazioSuspeito
+from pipelines.datalake.extract_load.sisreg.errors import ErroBloqueio, ErroVazioSuspeito
+from pipelines.datalake.extract_load.sisreg.resultado import ResultadoConjunto
 
 
 def _mock_resp(texto: str) -> MagicMock:
@@ -18,9 +19,21 @@ def _mock_resp(texto: str) -> MagicMock:
     return r
 
 
+def _proc(id_sisreg: str = "P001") -> dict:
+    return {
+        "id_procedimento_grupo": "G1",
+        "procedimento_grupo": "Cardiologia",
+        "id_procedimento_sisreg": id_sisreg,
+        "procedimento": "Consulta A",
+    }
+
+
 class TestPlanejarTrabalhoFilaVagas(unittest.TestCase):
-    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq")
-    def test_retorna_um_item_por_procedimento(self, mock_bq) -> None:
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq"
+    )
+    def test_retorna_item_unico_com_procedimentos(self, mock_bq) -> None:
+        """Apos o coarsening, planejar retorna 1 item com todos os procedimentos."""
         import pandas as pd
 
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
@@ -36,14 +49,14 @@ class TestPlanejarTrabalhoFilaVagas(unittest.TestCase):
             }
         )
         items = planejar_trabalho_fila_vagas(credenciais={}, params={})
-        self.assertEqual(len(items), 2)
-        for item in items:
-            self.assertIn("id_procedimento_sisreg", item)
-            self.assertIn("id", item)
-            # id deve ser o codigo, nao o nome
-            self.assertIn(item["id"], ["P001", "P002"])
+        self.assertEqual(len(items), 1)
+        self.assertIn("procedimentos", items[0])
+        self.assertEqual(items[0]["id"], "procedimentos")
+        self.assertEqual(len(items[0]["procedimentos"]), 2)
 
-    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq")
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq"
+    )
     def test_bq_vazio_levanta_erro(self, mock_bq) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
             planejar_trabalho_fila_vagas,
@@ -54,34 +67,33 @@ class TestPlanejarTrabalhoFilaVagas(unittest.TestCase):
             planejar_trabalho_fila_vagas(credenciais={}, params={})
 
 
-class TestExtrairItemInexistente(unittest.TestCase):
-    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada")
+class TestExtrairItemFilaVagas(unittest.TestCase):
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada"
+    )
     def test_inexistentes_retorna_dataframes_com_nulos(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
             extrair_item_fila_vagas,
         )
 
         mock_req.return_value = _mock_resp("<html><body>INEXISTENTES!</body></html>")
-        item = {
-            "id_procedimento_sisreg": "P999",
-            "id_procedimento_grupo": "G1",
-            "procedimento_grupo": "X",
-            "procedimento": "Y",
-        }
+        item = {"id": "procedimentos", "procedimentos": [_proc("P999")]}
         resultado = extrair_item_fila_vagas(sessao=MagicMock(), item=item, params={})
-        self.assertIn("fila_e_vagas", resultado)
-        self.assertIn("vagas_detalhadas", resultado)
-        # fila_e_vagas deve ter 1 linha com qtd_pend=None
-        self.assertEqual(len(resultado["fila_e_vagas"]), 1)
-        self.assertIsNone(resultado["fila_e_vagas"]["qtd_pend"].iloc[0])
 
-    @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada")
+        self.assertIsInstance(resultado, ResultadoConjunto)
+        self.assertIn("fila_e_vagas", resultado.tabelas)
+        self.assertEqual(len(resultado.tabelas["fila_e_vagas"]), 1)
+        self.assertIsNone(resultado.tabelas["fila_e_vagas"]["qtd_pend"].iloc[0])
+        self.assertEqual(resultado.ok, 1)
+
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada"
+    )
     def test_nenhuma_vaga_encontrada_retorna_zero_vagas(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
             extrair_item_fila_vagas,
         )
 
-        # Primeira chamada: LISTAR
         html_listar = """
         <html><body>
         <form>
@@ -96,20 +108,54 @@ class TestExtrairItemInexistente(unittest.TestCase):
         </form>
         </body></html>
         """
-        # Segunda chamada: APLICAR sem vagas
         html_aplicar = "<html><body>NENHUMA VAGA ENCONTRADA</body></html>"
         mock_req.side_effect = [_mock_resp(html_listar), _mock_resp(html_aplicar)]
 
+        item = {"id": "procedimentos", "procedimentos": [_proc("P001")]}
+        resultado = extrair_item_fila_vagas(sessao=MagicMock(), item=item, params={})
+
+        self.assertIn("fila_e_vagas", resultado.tabelas)
+        self.assertEqual(resultado.tabelas["fila_e_vagas"]["qtd_vagas"].iloc[0], 0)
+        self.assertEqual(resultado.ok, 1)
+
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada"
+    )
+    def test_bloqueio_propaga(self, mock_req) -> None:
+        from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
+            extrair_item_fila_vagas,
+        )
+
+        mock_req.side_effect = ErroBloqueio(
+            "403", conjunto="fila_vagas", detalhe="HTTP_403"
+        )
+        item = {"id": "procedimentos", "procedimentos": [_proc("P001")]}
+        with self.assertRaises(ErroBloqueio):
+            extrair_item_fila_vagas(sessao=MagicMock(), item=item, params={})
+
+    @patch(
+        "pipelines.datalake.extract_load.sisreg.extractors.fila_vagas.requisicao_educada"
+    )
+    def test_erro_por_procedimento_vai_para_ids_falhos(self, mock_req) -> None:
+        from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
+            extrair_item_fila_vagas,
+        )
+
+        html_listar = "<html><body>INEXISTENTES!</body></html>"
+        # P001 falha com erro generico; P002 retorna INEXISTENTES (ok)
+        mock_req.side_effect = [
+            Exception("timeout"),
+            _mock_resp(html_listar),
+        ]
         item = {
-            "id_procedimento_sisreg": "P001",
-            "id_procedimento_grupo": "G1",
-            "procedimento_grupo": "X",
-            "procedimento": "Y",
+            "id": "procedimentos",
+            "procedimentos": [_proc("P001"), _proc("P002")],
         }
         resultado = extrair_item_fila_vagas(sessao=MagicMock(), item=item, params={})
-        self.assertIn("fila_e_vagas", resultado)
-        # qtd_vagas = 0 quando nenhuma vaga encontrada
-        self.assertEqual(resultado["fila_e_vagas"]["qtd_vagas"].iloc[0], 0)
+
+        self.assertEqual(resultado.total, 2)
+        self.assertEqual(resultado.ok, 1)
+        self.assertIn("P001", resultado.ids_falhos)
 
 
 if __name__ == "__main__":
