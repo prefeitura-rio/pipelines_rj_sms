@@ -53,15 +53,21 @@ def _importar_extratores() -> None:
     """Importa os modulos de extratores para que registrem suas funcoes.
 
     Importacao tardia para evitar ciclos: os extratores importam de registry,
-    entao registry nao pode importa-los no nivel de modulo.
+    entao registry nao pode importa-los no nivel de modulo. Tolerante a
+    ImportError durante desenvolvimento incremental (extratores adicionados
+    progressivamente nos commits C10-C16).
     """
-    from pipelines.datalake.extract_load.sisreg.extractors import (  # noqa: F401
-        afastamentos,
-        escalas,
-        fila_vagas,
-        preparos,
-        solicitacoes,
-    )
+    try:
+        from pipelines.datalake.extract_load.sisreg.extractors import (  # noqa: F401
+            afastamentos,
+            escalas,
+            fila_vagas,
+            preparos,
+            solicitacoes,
+        )
+    except ImportError:
+        # Normal durante desenvolvimento: extratores ainda nao implementados.
+        pass
 
 
 # ---------------------------------------------------------------------------

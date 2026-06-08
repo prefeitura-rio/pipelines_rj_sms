@@ -287,7 +287,7 @@ and must not risk the account). Conservative choices, locked:
       (`chave, dataset_id, tabelas, perfil_credencial, colunas_esperadas, planejar_trabalho,
       extrair_item`) + `DATASETS` (the 5). DoR: C3. DoD: tests assert registry integrity (unique
       keys, callables set, table names non-empty). Gates: hooks + tests.
-- [ ] **C8 `feat: add generic flow tasks`** — `tasks.py`: `resolver_credenciais`,
+- [x] **C8 `feat: add generic flow tasks`** — `tasks.py`: `resolver_credenciais`,
       `planejar_trabalho`, `extrair_item`, `consolidar` (concat, drop failed, schema-validate,
       **100% completeness gate**, suspicious-empty), `normalizar_e_subir` (per-table
       `handle_columns_to_bq` + `upload_df_to_datalake(dump_mode="overwrite")`), `registrar_log_execucao`.
