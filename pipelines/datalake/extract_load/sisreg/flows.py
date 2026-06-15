@@ -2,10 +2,10 @@
 """
 Fluxo unificado SISREG - unico ponto de entrada para todos os conjuntos.
 
-DAG map-reduce:
+DAG:
   resolver_credenciais
     -> planejar_trabalho
-      -> extrair_item.map (num_workers=1 - single-flight por conta)
+      -> extrair_item (chamada direta - single-flight por conta)
         -> consolidar (trigger=all_finished)
           -> normalizar_e_subir
             -> registrar_log_execucao (trigger=all_finished)
@@ -15,12 +15,12 @@ do registry/constants para facilitar renomear sem alterar codigo. O conjunto
 (dataset key) tambem e um Parameter - cada clock de schedule passa o seu.
 
 Single-flight (R1): SISREG permite apenas uma sessao ativa por conta. O uso
-de num_workers=1 garante requisicoes seriais dentro de uma execucao. O soft-lock
-por conta (GCS TTL) impede duas execucoes do mesmo conjunto rodarem ao mesmo
-tempo - veja _adquirir_lock / _liberar_lock abaixo.
+de num_workers=1 garante requisicoes seriais. planejar_trabalho retorna um
+unico item; o loop sobre sub-itens (CPFs, roteiro, procedimentos) e feito
+dentro de extrair_item com a sessao reusada - 1 login por run.
 """
 
-from prefect import Parameter, unmapped
+from prefect import Parameter
 from prefect.executors import LocalDaskExecutor
 from prefect.run_configs import VertexRun
 from prefect.storage import GCS
@@ -78,30 +78,30 @@ with Flow(
 
     params = {"janela_dias": JANELA_DIAS, "environment": ENVIRONMENT}
 
-    items = planejar_trabalho(
+    item = planejar_trabalho(
         conjunto=CONJUNTO,
         credenciais=credenciais,
         params=params,
         upstream_tasks=[credenciais],
     )
 
-    # .map executa extrair_item para cada item da lista.
-    # num_workers=1 garante execucao serial - nunca duas requisicoes simultaneas
-    # na mesma conta (single-flight per account, R1 do design).
-    fragmentos = extrair_item.map(
-        conjunto=unmapped(CONJUNTO),
-        item=items,
-        credenciais=unmapped(credenciais),
-        params=unmapped(params),
+    # extrair_item executado diretamente (sem .map).
+    # O loop sobre sub-itens (CPFs, roteiro, procedimentos) ocorre dentro do
+    # extrator com a sessao reusada: 1 login por run (anti-ban, R1).
+    fragmento = extrair_item(
+        conjunto=CONJUNTO,
+        item=item,
+        credenciais=credenciais,
+        params=params,
     )
 
-    # consolidar usa trigger=all_finished: roda mesmo se tasks falharam.
+    # consolidar usa trigger=all_finished: roda mesmo se a task upstream falhou.
     # Retorna Consolidado com tabelas=None quando o gate de completude falha.
     consolidado = consolidar(
         conjunto=CONJUNTO,
-        fragmentos_lista=fragmentos,
+        fragmento=fragmento,
         data_extracao=data_extracao,
-        upstream_tasks=[fragmentos],
+        upstream_tasks=[fragmento],
     )
 
     subiu = normalizar_e_subir(
@@ -125,7 +125,6 @@ with Flow(
 # ---------------------------------------------------------------------------
 
 # num_workers=1: single-flight dentro de uma execucao.
-# .map ainda oferece isolamento de retry por item - o beneficio real de usar .map.
 from pipelines.datalake.extract_load.sisreg.schedules import (  # noqa: E402
     schedule as sisreg_schedule,
 )

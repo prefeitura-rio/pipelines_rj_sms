@@ -51,13 +51,13 @@ COLUNAS_ESPERADAS_ESCALAS = frozenset(
 IBGE_RIO = "330455"
 
 
-def planejar_trabalho_escalas(credenciais: dict, params: dict) -> list:
-    """Retorna um unico item de trabalho (exportacao completa da municipalidade).
+def planejar_trabalho_escalas(credenciais: dict, params: dict) -> dict:
+    """Retorna o item de trabalho (exportacao completa da municipalidade).
 
     Escalas nao tem fan-out: um GET exporta tudo de uma vez. O item contem
     os parametros de query que serao passados para extrair_item.
     """
-    return [{"id": "exportacao_completa", "ibge": IBGE_RIO}]
+    return {"id": "exportacao_completa", "ibge": IBGE_RIO}
 
 
 def extrair_item_escalas(

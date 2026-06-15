@@ -11,7 +11,7 @@ Fluxo: listar unidades -> para cada unidade, listar procedimentos ->
        para cada procedimento, buscar <textarea id=preparo>.
 """
 
-from typing import Dict, List
+from typing import Dict
 
 import pandas as pd
 import requests
@@ -116,14 +116,14 @@ def _obter_preparo(
     }
 
 
-def planejar_trabalho_preparos(credenciais: dict, params: dict) -> List[dict]:
-    """Retorna um item de trabalho (a coleta completa de todas as unidades).
+def planejar_trabalho_preparos(credenciais: dict, params: dict) -> dict:
+    """Retorna o item de trabalho (a coleta completa de todas as unidades).
 
     Preparos e processado inteiramente dentro de extrair_item (loop interno)
     porque as requisicoes sao encadeadas (unidade -> procedimentos -> preparo)
     e nao tem fan-out independente.
     """
-    return [{"id": "todas_as_unidades"}]
+    return {"id": "todas_as_unidades"}
 
 
 def extrair_item_preparos(

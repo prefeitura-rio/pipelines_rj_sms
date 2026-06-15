@@ -84,14 +84,15 @@ def _obter_cpfs_ativos(params: dict) -> List[str]:
     return cpfs
 
 
-def planejar_trabalho_afastamentos(credenciais: dict, params: dict) -> List[dict]:
-    """Retorna UM unico item com a lista completa de CPFs ativos.
+def planejar_trabalho_afastamentos(credenciais: dict, params: dict) -> dict:
+    """Retorna o item com a lista completa de CPFs ativos.
 
     Um unico item garante um unico login por run (anti-ban). O loop
     por CPF ocorre dentro de extrair_item_afastamentos com sessao reusada.
+    Levanta ErroVazioSuspeito (via _obter_cpfs_ativos) se nao houver CPFs.
     """
     cpfs = _obter_cpfs_ativos(params)
-    return [{"id": "todos_os_cpfs", "cpfs": cpfs}]
+    return {"id": "todos_os_cpfs", "cpfs": cpfs}
 
 
 def _parsear_afastamentos_current(

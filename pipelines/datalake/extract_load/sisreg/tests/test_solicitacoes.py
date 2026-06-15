@@ -97,22 +97,21 @@ class TestVerificarStatusPagina(unittest.TestCase):
 
 
 class TestPlanejarTrabalhoSolicitacoes(unittest.TestCase):
-    def test_retorna_item_unico_com_roteiro(self) -> None:
-        """Apos o coarsening, planejar retorna 1 item com o roteiro completo."""
+    def test_retorna_item_como_dict_com_roteiro(self) -> None:
+        """Apos o coarsening, planejar retorna 1 dict com o roteiro completo."""
+        from pipelines.datalake.extract_load.sisreg.constants import (
+            CONFIGS_SOLICITACOES,
+        )
         from pipelines.datalake.extract_load.sisreg.extractors.solicitacoes import (
             planejar_trabalho_solicitacoes,
         )
 
-        items = planejar_trabalho_solicitacoes(credenciais={}, params={"janela_dias": 2})
-        self.assertEqual(len(items), 1)
-        self.assertIn("roteiro", items[0])
-        self.assertEqual(items[0]["id"], "roteiro")
+        item = planejar_trabalho_solicitacoes(credenciais={}, params={"janela_dias": 2})
+        self.assertIsInstance(item, dict)
+        self.assertIn("roteiro", item)
+        self.assertEqual(item["id"], "roteiro")
         # janela=2 -> 3 dias x 7 status = 21 fichas
-        from pipelines.datalake.extract_load.sisreg.constants import (
-            CONFIGS_SOLICITACOES,
-        )
-
-        self.assertEqual(len(items[0]["roteiro"]), 3 * len(CONFIGS_SOLICITACOES))
+        self.assertEqual(len(item["roteiro"]), 3 * len(CONFIGS_SOLICITACOES))
 
 
 class TestExtrairItemSolicitacoes(unittest.TestCase):

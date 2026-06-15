@@ -100,15 +100,16 @@ def _obter_procedimentos_bq() -> pd.DataFrame:
     return df
 
 
-def planejar_trabalho_fila_vagas(credenciais: dict, params: dict) -> List[dict]:
-    """Retorna UM unico item com todos os procedimentos do BQ.
+def planejar_trabalho_fila_vagas(credenciais: dict, params: dict) -> dict:
+    """Retorna o item com todos os procedimentos do BQ.
 
     Um unico item garante um unico login por run (anti-ban). O loop por
     procedimento ocorre dentro de extrair_item_fila_vagas com sessao reusada.
+    Levanta ErroVazioSuspeito (via _obter_procedimentos_bq) se nao houver dados.
     """
     df = _obter_procedimentos_bq()
     procedimentos = df.to_dict(orient="records")
-    return [{"id": "procedimentos", "procedimentos": procedimentos}]
+    return {"id": "procedimentos", "procedimentos": procedimentos}
 
 
 def _listar_procedimento(

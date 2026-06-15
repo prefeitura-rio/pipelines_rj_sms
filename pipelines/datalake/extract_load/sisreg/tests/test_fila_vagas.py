@@ -33,8 +33,8 @@ def _proc(id_sisreg: str = "P001") -> dict:
 
 class TestPlanejarTrabalhoFilaVagas(unittest.TestCase):
     @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq")
-    def test_retorna_item_unico_com_procedimentos(self, mock_bq) -> None:
-        """Apos o coarsening, planejar retorna 1 item com todos os procedimentos."""
+    def test_retorna_item_como_dict_com_procedimentos(self, mock_bq) -> None:
+        """Apos o coarsening, planejar retorna 1 dict com todos os procedimentos."""
         import pandas as pd
 
         from pipelines.datalake.extract_load.sisreg.extractors.fila_vagas import (
@@ -49,11 +49,11 @@ class TestPlanejarTrabalhoFilaVagas(unittest.TestCase):
                 "procedimento": ["Consulta A", "Consulta B"],
             }
         )
-        items = planejar_trabalho_fila_vagas(credenciais={}, params={})
-        self.assertEqual(len(items), 1)
-        self.assertIn("procedimentos", items[0])
-        self.assertEqual(items[0]["id"], "procedimentos")
-        self.assertEqual(len(items[0]["procedimentos"]), 2)
+        item = planejar_trabalho_fila_vagas(credenciais={}, params={})
+        self.assertIsInstance(item, dict)
+        self.assertIn("procedimentos", item)
+        self.assertEqual(item["id"], "procedimentos")
+        self.assertEqual(len(item["procedimentos"]), 2)
 
     @patch("pipelines.datalake.extract_load.sisreg.extractors.fila_vagas._obter_procedimentos_bq")
     def test_bq_vazio_levanta_erro(self, mock_bq) -> None:

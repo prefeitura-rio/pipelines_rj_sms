@@ -44,43 +44,33 @@ class TestConsolidar(unittest.TestCase):
     def _resultado(self, tabelas: dict, total: int = 1, ok: int = 1) -> ResultadoConjunto:
         return ResultadoConjunto(tabelas=tabelas, total=total, ok=ok)
 
-    def _rodar(self, conjunto, fragmentos_lista, data_extracao="2025-01-01"):
+    def _rodar(self, conjunto, fragmento, data_extracao="2025-01-01"):
         """Executa consolidar.run() com os argumentos dados."""
         from pipelines.datalake.extract_load.sisreg.tasks import consolidar
 
         return consolidar.run(
             conjunto=conjunto,
-            fragmentos_lista=fragmentos_lista,
+            fragmento=fragmento,
             data_extracao=data_extracao,
         )
 
-    def test_100_por_cento_sucesso_retorna_dados(self) -> None:
+    def test_fragmento_ok_retorna_dados(self) -> None:
         # "solicitacoes" tem colunas_esperadas=frozenset() - sem validacao de schema
-        df = pd.DataFrame({"col": [1, 2]})
-        frags = [
-            self._resultado({"solicitacoes": df}),
-            self._resultado({"solicitacoes": df}),
-        ]
-        resultado = self._rodar("solicitacoes", frags)
+        df = pd.DataFrame({"col": [1, 2, 3, 4]})
+        resultado = self._rodar("solicitacoes", self._resultado({"solicitacoes": df}))
         self.assertIsNotNone(resultado.tabelas)
         self.assertIn("solicitacoes", resultado.tabelas)
-        self.assertEqual(len(resultado.tabelas["solicitacoes"]), 4)  # 2+2 linhas
+        self.assertEqual(len(resultado.tabelas["solicitacoes"]), 4)
 
-    @patch("pipelines.utils.monitor.send_message", MagicMock())
-    def test_qualquer_falha_task_cancela_upload(self) -> None:
-        """Gate outer: None (task failure) cancela o upload."""
-        df = pd.DataFrame({"col": [1]})
-        frags = [self._resultado({"solicitacoes": df}), None]
-        resultado = self._rodar("solicitacoes", frags)
+    def test_fragmento_none_cancela_upload(self) -> None:
+        """Gate de task: None (task failure) cancela o upload."""
+        resultado = self._rodar("solicitacoes", None)
         self.assertIsNone(resultado.tabelas)
 
-    def test_lista_vazia_retorna_tabelas_none(self) -> None:
-        resultado = self._rodar("preparos", [])
-        self.assertIsNone(resultado.tabelas)
-
-    @patch("pipelines.utils.monitor.send_message", MagicMock())
-    def test_todos_none_retorna_tabelas_none(self) -> None:
-        resultado = self._rodar("solicitacoes", [None, None])
+    def test_fragmento_com_tabelas_vazias_retorna_tabelas_none(self) -> None:
+        """Fragmento com todos os DataFrames vazios resulta em tabelas=None."""
+        r = self._resultado({"solicitacoes": pd.DataFrame()})
+        resultado = self._rodar("solicitacoes", r)
         self.assertIsNone(resultado.tabelas)
 
     def test_coluna_particao_adicionada(self) -> None:
@@ -89,30 +79,24 @@ class TestConsolidar(unittest.TestCase):
         df = pd.DataFrame({"col": [1]})
         resultado = self._rodar(
             "solicitacoes",
-            [self._resultado({"solicitacoes": df})],
+            self._resultado({"solicitacoes": df}),
             data_extracao="2025-06-01",
         )
         self.assertIn(C.COLUNA_PARTICAO, resultado.tabelas["solicitacoes"].columns)
         self.assertEqual(resultado.tabelas["solicitacoes"][C.COLUNA_PARTICAO].iloc[0], "2025-06-01")
-
-    def test_fragmentos_none_upstream_retorna_tabelas_none(self) -> None:
-        resultado = self._rodar("solicitacoes", None)
-        self.assertIsNone(resultado.tabelas)
 
     def test_schema_drift_levanta_erro_estrutura(self) -> None:
         """Colunas esperadas ausentes devem levantar ErroEstrutura."""
         from pipelines.datalake.extract_load.sisreg.errors import ErroEstrutura
 
         df = pd.DataFrame({"coluna_inesperada": [1, 2]})
-        frags = [self._resultado({"afastamentos": df})]
         with self.assertRaises(ErroEstrutura):
-            self._rodar("afastamentos", frags)
+            self._rodar("afastamentos", self._resultado({"afastamentos": df}))
 
     def test_tabela_sem_colunas_esperadas_nao_falha(self) -> None:
         """Tabelas com colunas_esperadas=frozenset() passam sem validacao de schema."""
         df = pd.DataFrame({"qualquer_coluna": [1, 2]})
-        frags = [self._resultado({"solicitacoes": df})]
-        resultado = self._rodar("solicitacoes", frags)
+        resultado = self._rodar("solicitacoes", self._resultado({"solicitacoes": df}))
         self.assertIsNotNone(resultado.tabelas)
 
     @patch("pipelines.utils.monitor.send_message", MagicMock())
@@ -120,14 +104,14 @@ class TestConsolidar(unittest.TestCase):
         """Gate de sub-itens: ids_falhos cancela o upload."""
         df = pd.DataFrame({"col": [1]})
         r = ResultadoConjunto(tabelas={"solicitacoes": df}, total=10, ok=9, ids_falhos=["cpf_3"])
-        resultado = self._rodar("solicitacoes", [r])
+        resultado = self._rodar("solicitacoes", r)
         self.assertIsNone(resultado.tabelas)
         self.assertEqual(resultado.metricas["status"], "FALHA_PARCIAL")
 
     def test_metricas_status_ok_em_sucesso(self) -> None:
         df = pd.DataFrame({"col": [1]})
         r = self._resultado({"solicitacoes": df}, total=5, ok=5)
-        resultado = self._rodar("solicitacoes", [r])
+        resultado = self._rodar("solicitacoes", r)
         self.assertEqual(resultado.metricas["status"], "OK")
         self.assertEqual(resultado.metricas["items_total"], 5)
         self.assertEqual(resultado.metricas["items_ok"], 5)
@@ -136,11 +120,11 @@ class TestConsolidar(unittest.TestCase):
 class TestPlanejarTrabalho(unittest.TestCase):
     """Testa a logica de suspicious-empty."""
 
-    def test_lista_vazia_em_conjunto_nunca_vazio_levanta_erro(self) -> None:
+    def test_item_vazio_em_conjunto_nunca_vazio_levanta_erro(self) -> None:
         from pipelines.datalake.extract_load.sisreg.tasks import planejar_trabalho
 
         mock_conj = MagicMock()
-        mock_conj.planejar_trabalho.return_value = []
+        mock_conj.planejar_trabalho.return_value = {}
 
         with patch(
             "pipelines.datalake.extract_load.sisreg.tasks.obter_conjunto",
@@ -153,31 +137,30 @@ class TestPlanejarTrabalho(unittest.TestCase):
                     params={},
                 )
 
-    def test_lista_vazia_em_preparos_nao_levanta(self) -> None:
-        """preparos pode ter lista vazia sem suspeita."""
+    def test_item_vazio_em_preparos_nao_levanta(self) -> None:
+        """preparos pode retornar dict vazio sem suspeita."""
         from pipelines.datalake.extract_load.sisreg.tasks import planejar_trabalho
 
         mock_conj = MagicMock()
-        mock_conj.planejar_trabalho.return_value = []
+        mock_conj.planejar_trabalho.return_value = {}
 
         with patch(
             "pipelines.datalake.extract_load.sisreg.tasks.obter_conjunto",
             return_value=mock_conj,
         ):
-            # Nao deve levantar
             resultado = planejar_trabalho.run(
                 conjunto="preparos",
                 credenciais={},
                 params={},
             )
-            self.assertEqual(resultado, [])
+            self.assertEqual(resultado, {})
 
-    def test_lista_nao_vazia_retorna_lista(self) -> None:
+    def test_item_nao_vazio_retorna_item(self) -> None:
         from pipelines.datalake.extract_load.sisreg.tasks import planejar_trabalho
 
-        items = [{"id": "1"}, {"id": "2"}]
+        item = {"id": "todos_os_cpfs", "cpfs": ["111"]}
         mock_conj = MagicMock()
-        mock_conj.planejar_trabalho.return_value = items
+        mock_conj.planejar_trabalho.return_value = item
 
         with patch(
             "pipelines.datalake.extract_load.sisreg.tasks.obter_conjunto",
@@ -188,7 +171,7 @@ class TestPlanejarTrabalho(unittest.TestCase):
                 credenciais={},
                 params={},
             )
-            self.assertEqual(resultado, items)
+            self.assertEqual(resultado, item)
 
 
 class TestNormalizarESubir(unittest.TestCase):

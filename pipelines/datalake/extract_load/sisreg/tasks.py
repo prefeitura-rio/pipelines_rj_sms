@@ -2,17 +2,17 @@
 """
 Tasks genericas do fluxo unificado SISREG.
 
-Cada task cobre uma etapa do DAG map-reduce:
-  resolver_credenciais -> planejar_trabalho -> extrair_item.map ->
+Cada task cobre uma etapa do DAG:
+  resolver_credenciais -> planejar_trabalho -> extrair_item ->
   consolidar -> normalizar_e_subir -> registrar_log_execucao
 
 As tasks nao conhecem os detalhes de cada conjunto: delegam ao registry
 (ConjuntoSisreg.planejar_trabalho e .extrair_item) e a common/ para a
-logica reusavel. O DAG em flows.py orquestra a ordem e o mapeamento.
+logica reusavel. O DAG em flows.py orquestra a ordem.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -90,29 +90,29 @@ def resolver_credenciais(conjunto: str, environment: str) -> dict:
 
 
 @task
-def planejar_trabalho(conjunto: str, credenciais: dict, params: dict) -> List[dict]:
-    """Determina a lista de itens de trabalho para o .map do extrator.
+def planejar_trabalho(conjunto: str, credenciais: dict, params: dict) -> dict:
+    """Determina o item de trabalho para o extrator.
 
     Delega ao ConjuntoSisreg.planejar_trabalho do registry. O resultado e
-    uma lista de dicts - cada dict e um 'item' passado para extrair_item.
+    um dict passado diretamente para extrair_item.
 
-    Levanta ErroVazioSuspeito se a lista estiver vazia para conjuntos que
-    nunca deveriam ter lista vazia (afastamentos, escalas).
+    Levanta ErroVazioSuspeito se o dict estiver vazio para conjuntos que
+    nunca deveriam ter item vazio (afastamentos, escalas, solicitacoes).
     """
     conj = obter_conjunto(conjunto)
-    items = conj.planejar_trabalho(credenciais=credenciais, params=params)
+    item = conj.planejar_trabalho(credenciais=credenciais, params=params)
 
     _conjuntos_nunca_vazios = {"escalas", "afastamentos", "solicitacoes"}
-    if not items and conjunto in _conjuntos_nunca_vazios:
+    if not item and conjunto in _conjuntos_nunca_vazios:
         raise ErroVazioSuspeito(
-            f"Lista de trabalho vazia para '{conjunto}' - suspeito de falha upstream",
+            f"Item de trabalho vazio para '{conjunto}' - suspeito de falha upstream",
             conjunto=conjunto,
             etapa="planejamento",
-            detalhe="0 itens retornados por planejar_trabalho",
+            detalhe="dict vazio retornado por planejar_trabalho",
         )
 
-    log(f"[{conjunto}] {len(items)} item(s) planejado(s) para extracao")
-    return items
+    log(f"[{conjunto}] Item de trabalho planejado: id={item.get('id', '?')}")
+    return item
 
 
 # ---------------------------------------------------------------------------
@@ -199,16 +199,16 @@ def extrair_item(
 @task(trigger=all_finished)
 def consolidar(
     conjunto: str,
-    fragmentos_lista: List[Optional[ResultadoConjunto]],
+    fragmento: Optional[ResultadoConjunto],
     data_extracao: str,
 ) -> Consolidado:
-    """Concatena ResultadoConjunto por tabela, valida schema e aplica gate de completude.
+    """Valida o ResultadoConjunto, adiciona particao e aplica gate de completude.
 
-    O trigger all_finished garante execucao mesmo quando tasks upstream falharam.
-    None na lista indica falha total de uma task mapeada; ResultadoConjunto com
-    ids_falhos indica falhas parciais de sub-itens (ex.: alguns CPFs nao extraidos).
+    O trigger all_finished garante execucao mesmo quando a task upstream falhou.
+    None em fragmento indica falha total da task extrair_item; ResultadoConjunto
+    com ids_falhos indica falhas parciais de sub-itens (ex.: alguns CPFs).
 
-    Gate de completude (nivel outer): qualquer None → upload cancelado.
+    Gate de completude (nivel task): fragmento None → upload cancelado.
     Gate de completude (nivel sub-item): qualquer ids_falhos → upload cancelado.
     Dados medicos nao devem ser parcialmente sobrescritos; um dia ruim se corrige
     na proxima execucao bem-sucedida.
@@ -226,47 +226,16 @@ def consolidar(
         "status": "FALHA",
     }
 
-    if fragmentos_lista is None:
-        log(f"[{conjunto}] consolidar: fragmentos_lista e None (upstream falhou)", level="error")
+    if fragmento is None:
+        log(f"[{conjunto}] consolidar: fragmento e None (task upstream falhou)", level="error")
         return Consolidado(tabelas=None, metricas=_metricas_vazias)
 
-    validos = [f for f in fragmentos_lista if f is not None]
-    total_outer = len(fragmentos_lista)
-    ok_outer = len(validos)
-    falhas_outer = total_outer - ok_outer
-
-    log(f"[{conjunto}] Consolidando: {ok_outer}/{total_outer} tasks ok")
-
-    # Gate outer: qualquer task que retornou None (falha total da task)
-    if falhas_outer > 0:
-        msg = (
-            f"[{conjunto}] Gate de completude FALHOU: {falhas_outer}/{total_outer} tasks com erro."
-            " Upload cancelado - tabela anterior permanece intacta."
-        )
-        log(msg, level="error")
-        try:
-            send_message(
-                title=f"SISREG - {conjunto}: task failure",
-                message=msg,
-                monitor_slug="warning",
-            )
-        except Exception:  # noqa: BLE001
-            pass
-        return Consolidado(tabelas=None, metricas={**_metricas_vazias, "status": "FALHA_PARCIAL"})
-
-    if not validos:
-        log(f"[{conjunto}] Nenhum fragmento valido - SKIP", level="warning")
-        return Consolidado(tabelas=None, metricas=_metricas_vazias)
-
-    # Agrega metricas de sub-itens de todos os ResultadoConjunto
-    items_total = sum(r.total for r in validos)
-    items_ok = sum(r.ok for r in validos)
-    ids_falhos = [id_ for r in validos for id_ in r.ids_falhos]
+    log(f"[{conjunto}] Consolidando: {fragmento.ok}/{fragmento.total} sub-itens ok")
 
     # Gate de sub-itens: qualquer falha parcial dentro de um extrator coarsened
-    if ids_falhos:
+    if fragmento.ids_falhos:
         msg = (
-            f"[{conjunto}] Gate de completude (sub-itens): {len(ids_falhos)} falha(s)."
+            f"[{conjunto}] Gate de completude (sub-itens): {len(fragmento.ids_falhos)} falha(s)."
             " Upload cancelado."
         )
         log(msg, level="error")
@@ -281,33 +250,24 @@ def consolidar(
         return Consolidado(
             tabelas=None,
             metricas={
-                "items_total": items_total,
-                "items_ok": items_ok,
+                "items_total": fragmento.total,
+                "items_ok": fragmento.ok,
                 "linhas_por_tabela": {},
-                "ids_falhos": ids_falhos,
+                "ids_falhos": fragmento.ids_falhos,
                 "status": "FALHA_PARCIAL",
             },
         )
 
-    # Concatenar por tabela
+    # Adicionar coluna de particao e filtrar tabelas vazias
     tabelas_consolidadas: Dict[str, pd.DataFrame] = {}
-    todas_tabelas: set = set()
-    for r in validos:
-        todas_tabelas.update(r.tabelas.keys())
-
-    for tabela in todas_tabelas:
-        dfs = [
-            r.tabelas[tabela]
-            for r in validos
-            if tabela in r.tabelas and not r.tabelas[tabela].empty
-        ]
-        if not dfs:
-            log(f"[{conjunto}/{tabela}] Tabela vazia apos consolidacao - SKIP")
+    for tabela, df in fragmento.tabelas.items():
+        if df.empty:
+            log(f"[{conjunto}/{tabela}] Tabela vazia - SKIP")
             continue
-        df_concat = pd.concat(dfs, ignore_index=True)
-        df_concat[C.COLUNA_PARTICAO] = data_extracao
-        tabelas_consolidadas[tabela] = df_concat
-        log(f"[{conjunto}/{tabela}] {len(df_concat)} linhas consolidadas")
+        df_copy = df.copy()
+        df_copy[C.COLUNA_PARTICAO] = data_extracao
+        tabelas_consolidadas[tabela] = df_copy
+        log(f"[{conjunto}/{tabela}] {len(df_copy)} linhas")
 
     # Validar schema: colunas obrigatorias ausentes falham em voz alta.
     conj = obter_conjunto(conjunto)
@@ -327,13 +287,15 @@ def consolidar(
 
     linhas = {t: len(df) for t, df in tabelas_consolidadas.items()}
     if not tabelas_consolidadas:
-        return Consolidado(tabelas=None, metricas={**_metricas_vazias, "items_total": items_total})
+        return Consolidado(
+            tabelas=None, metricas={**_metricas_vazias, "items_total": fragmento.total}
+        )
 
     return Consolidado(
         tabelas=tabelas_consolidadas,
         metricas={
-            "items_total": items_total,
-            "items_ok": items_ok,
+            "items_total": fragmento.total,
+            "items_ok": fragmento.ok,
             "linhas_por_tabela": linhas,
             "ids_falhos": [],
             "status": "OK",

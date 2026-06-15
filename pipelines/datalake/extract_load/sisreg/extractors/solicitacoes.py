@@ -67,8 +67,8 @@ def _gerar_roteiro(janela_dias: int) -> List[dict]:
     return roteiro
 
 
-def planejar_trabalho_solicitacoes(credenciais: dict, params: dict) -> List[dict]:
-    """Retorna UM unico item com o roteiro completo de extracao.
+def planejar_trabalho_solicitacoes(credenciais: dict, params: dict) -> dict:
+    """Retorna o item com o roteiro completo de extracao.
 
     Um unico item garante um unico login por run (anti-ban). O loop sobre
     datas x status ocorre dentro de extrair_item_solicitacoes com sessao reusada.
@@ -76,7 +76,7 @@ def planejar_trabalho_solicitacoes(credenciais: dict, params: dict) -> List[dict
     janela = int(params.get("janela_dias", JANELA_DIAS))
     roteiro = _gerar_roteiro(janela)
     log(f"[solicitacoes] Roteiro gerado: {len(roteiro)} fichas (janela={janela}d)")
-    return [{"id": "roteiro", "roteiro": roteiro}]
+    return {"id": "roteiro", "roteiro": roteiro}
 
 
 def _verificar_status_pagina(html: str) -> str:

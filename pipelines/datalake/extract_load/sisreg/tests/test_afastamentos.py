@@ -83,18 +83,18 @@ class TestParsearAfastamentosCurrentPage(unittest.TestCase):
 
 class TestPlanejarTrabalhoAfastamentos(unittest.TestCase):
     @patch("pipelines.datalake.extract_load.sisreg.extractors.afastamentos._obter_cpfs_ativos")
-    def test_retorna_item_unico_com_lista_cpfs(self, mock_cpfs) -> None:
-        """Apos o coarsening, planejar retorna EXATAMENTE 1 item com todos os CPFs."""
+    def test_retorna_item_como_dict_com_cpfs(self, mock_cpfs) -> None:
+        """Apos o coarsening, planejar retorna 1 dict com todos os CPFs."""
         from pipelines.datalake.extract_load.sisreg.extractors.afastamentos import (
             planejar_trabalho_afastamentos,
         )
 
         mock_cpfs.return_value = ["11111111111", "22222222222", "33333333333"]
-        items = planejar_trabalho_afastamentos(credenciais={}, params={})
-        self.assertEqual(len(items), 1)
-        self.assertIn("cpfs", items[0])
-        self.assertEqual(len(items[0]["cpfs"]), 3)
-        self.assertEqual(items[0]["id"], "todos_os_cpfs")
+        item = planejar_trabalho_afastamentos(credenciais={}, params={})
+        self.assertIsInstance(item, dict)
+        self.assertIn("cpfs", item)
+        self.assertEqual(len(item["cpfs"]), 3)
+        self.assertEqual(item["id"], "todos_os_cpfs")
 
     @patch("pipelines.datalake.extract_load.sisreg.extractors.afastamentos._obter_cpfs_ativos")
     def test_lista_vazia_levanta_erro_vazio_suspeito(self, mock_cpfs) -> None:

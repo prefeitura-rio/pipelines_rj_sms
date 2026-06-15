@@ -58,14 +58,14 @@ class TestLimparDescricao(unittest.TestCase):
 
 
 class TestPlanejarTrabalhoPreparos(unittest.TestCase):
-    def test_retorna_um_item(self) -> None:
+    def test_retorna_item_como_dict(self) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.preparos import (
             planejar_trabalho_preparos,
         )
 
-        items = planejar_trabalho_preparos(credenciais={}, params={})
-        self.assertEqual(len(items), 1)
-        self.assertEqual(items[0]["id"], "todas_as_unidades")
+        item = planejar_trabalho_preparos(credenciais={}, params={})
+        self.assertIsInstance(item, dict)
+        self.assertEqual(item["id"], "todas_as_unidades")
 
 
 if __name__ == "__main__":

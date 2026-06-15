@@ -22,7 +22,7 @@ from pipelines.datalake.extract_load.sisreg import constants as C
 # ---------------------------------------------------------------------------
 
 
-def _planejar_nao_registrado(credenciais: dict, params: dict) -> list:
+def _planejar_nao_registrado(credenciais: dict, params: dict) -> dict:
     """Levantado quando o extrator ainda nao foi registrado no CONJUNTOS."""
     raise NotImplementedError(
         "planejar_trabalho nao registrado. Extrator nao importado ou falha em _importar_extratores."
@@ -59,12 +59,14 @@ class ConjuntoSisreg:
     # Usadas em consolidar() para validar schema e detectar deriva silenciosa.
     colunas_esperadas: Dict[str, FrozenSet[str]] = field(default_factory=dict)
 
-    # Funcao que determina a lista de itens de trabalho para o .map.
-    # Assinatura: (credenciais: dict, params: dict) -> List[dict]
+    # Funcao que determina o item de trabalho (plano) do conjunto.
+    # Cada conjunto produz UM unico item por execucao (single-flight, uma
+    # sessao por run); o loop sobre sub-itens fica dentro do extrator.
+    # Assinatura: (credenciais: dict, params: dict) -> dict
     planejar_trabalho: Callable = field(default=_planejar_nao_registrado)
 
-    # Funcao que extrai um item e retorna fragmentos por tabela.
-    # Assinatura: (sessao, item: dict, params: dict) -> Dict[str, pd.DataFrame]
+    # Funcao que extrai o item e retorna os dados por tabela.
+    # Assinatura: (sessao, item: dict, params: dict) -> ResultadoConjunto | dict
     extrair_item: Callable = field(default=_extrair_nao_registrado)
 
 

@@ -77,14 +77,15 @@ class TestExtrairItemEscalas(unittest.TestCase):
 
 
 class TestPlanejarTrabalhoEscalas(unittest.TestCase):
-    def test_retorna_exatamente_um_item(self) -> None:
+    def test_retorna_item_como_dict(self) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.escalas import (
             planejar_trabalho_escalas,
         )
 
-        items = planejar_trabalho_escalas(credenciais={}, params={})
-        self.assertEqual(len(items), 1)
-        self.assertEqual(items[0]["id"], "exportacao_completa")
+        item = planejar_trabalho_escalas(credenciais={}, params={})
+        self.assertIsInstance(item, dict)
+        self.assertEqual(item["id"], "exportacao_completa")
+        self.assertIn("ibge", item)
 
 
 class TestRegistroNoRegistry(unittest.TestCase):
