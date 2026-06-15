@@ -11,9 +11,9 @@ from pipelines.constants import constants
 from pipelines.datalake.extract_load.sisreg_web.constants import (
     constants as sisreg_constants,
 )
-from pipelines.datalake.extract_load.sisreg_web.schedules import (
-    sisreg_daily_update_schedule,
-)
+# from pipelines.datalake.extract_load.sisreg_web.schedules import (
+#     sisreg_daily_update_schedule,
+# )
 from pipelines.datalake.extract_load.sisreg_web.tasks import (
     extract_data_from_sisreg,
     transform_data,
@@ -94,7 +94,7 @@ with Flow(
 
 
 # Storage and run configs
-sms_dump_sisreg.schedule = sisreg_daily_update_schedule
+# sms_dump_sisreg.schedule = sisreg_daily_update_schedule
 sms_dump_sisreg.storage = GCS(constants.GCS_FLOWS_BUCKET.value)
 sms_dump_sisreg.run_config = VertexRun(
     image=constants.DOCKER_VERTEX_IMAGE.value,
