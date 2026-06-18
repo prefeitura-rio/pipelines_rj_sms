@@ -104,7 +104,19 @@ hourly_parameters = [
         "table_id": "equipe_tutela_coletiva_2026",
         "url": "https://docs.google.com/spreadsheets/d/1iZ8z5HSy7OXRRBk5MhlzYpk1mP1y6A-4r2vzgPi-0k4",
         "url_type": "google_sheet"
-    }
+    },
+    {
+        "csv_delimiter": ";",
+        "dataset_id": "brutos_cdi",
+        "environment": "prod",
+        "gsheets_sheet_name": "Controle Geral - GAT-2 ",
+        "rename_flow": True,
+        "table_id": "controle_interno_externo",
+        "url": "https://docs.google.com/spreadsheets/d/1OkxKz-fjEyYmOoBOMwT6rrS87dTAmvtTAILR4Mr2V_A/",
+        "url_type": "google_sheet"
+} 
+    
+    
 
 ]
 
