@@ -327,14 +327,20 @@ def normalizar_e_subir(
         log(f"[{conjunto}] normalizar_e_subir: sem dados (gate falhou ou erro upstream) - SKIP")
         return False
 
+    # Modo de escrita por conjunto: "overwrite" (padrao) ou "append" (paginado).
+    modo_escrita = obter_conjunto(conjunto).modo_escrita
+
     for nome_tabela, df in consolidado.tabelas.items():
-        log(f"[{conjunto}] Normalizando e subindo tabela '{nome_tabela}' ({len(df)} linhas)")
+        log(
+            f"[{conjunto}] Normalizando e subindo tabela '{nome_tabela}' "
+            f"({len(df)} linhas, modo={modo_escrita})"
+        )
         df_bq = handle_columns_to_bq.run(df=df)
         upload_df_to_datalake.run(
             df=df_bq,
             dataset_id=dataset_id,
             table_id=nome_tabela,
-            dump_mode="overwrite",
+            dump_mode=modo_escrita,
             source_format="parquet",
             partition_column=C.COLUNA_PARTICAO,
         )

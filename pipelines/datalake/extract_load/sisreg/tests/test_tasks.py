@@ -228,6 +228,38 @@ class TestNormalizarESubir(unittest.TestCase):
         self.assertTrue(resultado)
         mock_upload.run.assert_called_once()
 
+    @patch("pipelines.datalake.extract_load.sisreg.tasks.upload_df_to_datalake")
+    @patch("pipelines.datalake.extract_load.sisreg.tasks.handle_columns_to_bq")
+    def test_modo_escrita_por_conjunto(self, mock_handle, mock_upload) -> None:
+        """escalas usa overwrite; preparos (paginado) usa append."""
+        import prefect
+
+        df = pd.DataFrame({"col": [1]})
+        mock_handle.run.return_value = df
+
+        with patch("pipelines.utils.credential_injector.inject_bd_credentials", MagicMock()):
+            with prefect.context(parameters={"environment": "staging"}, logger=MagicMock()):
+                from pipelines.datalake.extract_load.sisreg.tasks import (
+                    normalizar_e_subir,
+                )
+
+                normalizar_e_subir.run(
+                    environment="staging",
+                    conjunto="escalas",
+                    dataset_id="brutos_sisreg_web",
+                    consolidado=Consolidado(tabelas={"escalas": df}, metricas={}),
+                )
+                self.assertEqual(mock_upload.run.call_args.kwargs["dump_mode"], "overwrite")
+
+                mock_upload.reset_mock()
+                normalizar_e_subir.run(
+                    environment="staging",
+                    conjunto="preparos",
+                    dataset_id="brutos_sisreg_web",
+                    consolidado=Consolidado(tabelas={"preparos": df}, metricas={}),
+                )
+                self.assertEqual(mock_upload.run.call_args.kwargs["dump_mode"], "append")
+
 
 if __name__ == "__main__":
     unittest.main()

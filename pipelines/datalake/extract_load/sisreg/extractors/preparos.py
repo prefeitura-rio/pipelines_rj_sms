@@ -9,9 +9,20 @@ Substitui sisreg_preparos. Correcoes em relacao ao legado:
 
 Fluxo: listar unidades -> para cada unidade, listar procedimentos ->
        para cada procedimento, buscar <textarea id=preparo>.
+
+Paginacao (spike EPIC 11): sao ~424 unidades com dezenas de procedimentos cada,
+o que tornaria o scrape completo inviavel no ritmo educado (dias). Por isso
+preparos e PAGINADO por shard: cada execucao processa apenas um subconjunto
+deterministico das unidades (unidades[i] onde i % num_shards == shard), com o
+shard derivado da data do run. Ao longo de um ciclo de num_shards execucoes,
+todas as unidades sao cobertas. A escrita e "append" (nao overwrite) para nao
+apagar os shards anteriores; a deduplicacao "ultima versao por unidade" fica na
+camada de modelagem.
 """
 
+from datetime import datetime
 from typing import Dict
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -22,6 +33,13 @@ from pipelines.datalake.extract_load.sisreg.common.http import requisicao_educad
 from pipelines.datalake.extract_load.sisreg.constants import URL_CONFIG_PREPARO
 from pipelines.datalake.extract_load.sisreg.errors import ErroEstrutura
 from pipelines.datalake.extract_load.sisreg.registry import registrar_extrator
+
+_FUSO_SP = ZoneInfo("America/Sao_Paulo")
+
+# Numero de shards padrao: em quantas execucoes o conjunto completo de unidades
+# e coberto. Com ~424 unidades e 30 shards, ~14 unidades/run. Ajustavel por
+# param 'num_shards_preparos'. O ciclo completo leva num_shards execucoes.
+_NUM_SHARDS_PADRAO = 30
 
 _ETAPA_PREPARO = "FRM_PREPARO"
 _ETAPA_LISTAR_PROCEDIMENTOS = "LISTAR_PROCEDIMENTOS"
@@ -117,13 +135,17 @@ def _obter_preparo(
 
 
 def planejar_trabalho_preparos(credenciais: dict, params: dict) -> dict:
-    """Retorna o item de trabalho (a coleta completa de todas as unidades).
+    """Retorna o item com o shard de unidades a processar nesta execucao.
 
-    Preparos e processado inteiramente dentro de extrair_item (loop interno)
-    porque as requisicoes sao encadeadas (unidade -> procedimentos -> preparo)
-    e nao tem fan-out independente.
+    Preparos e paginado: cada run cobre apenas as unidades do shard atual,
+    derivado deterministicamente da data (dia ordinal % num_shards). O loop
+    interno (unidade -> procedimentos -> preparo) fica em extrair_item.
     """
-    return {"id": "todas_as_unidades"}
+    num_shards = int(params.get("num_shards_preparos", _NUM_SHARDS_PADRAO))
+    if num_shards < 1:
+        num_shards = 1
+    shard = datetime.now(_FUSO_SP).toordinal() % num_shards
+    return {"id": "lote_de_unidades", "shard": shard, "num_shards": num_shards}
 
 
 def extrair_item_preparos(
@@ -138,18 +160,25 @@ def extrair_item_preparos(
 
     Args:
         sessao: Sessao requests autenticada com perfil padrao.
-        item: Dict com 'id' = "todas_as_unidades".
+        item: Dict com 'shard' e 'num_shards' (paginacao por unidade).
         params: Parametros do fluxo.
 
     Returns:
-        {"preparos": DataFrame} com todos os registros coletados.
+        {"preparos": DataFrame} com os registros das unidades deste shard.
     """
-    log("[preparos] Iniciando extracao de todas as unidades")
+    shard = int(item.get("shard", 0))
+    num_shards = int(item.get("num_shards", 1))
+
     unidades = _obter_unidades(sessao)
-    log(f"[preparos] {len(unidades)} unidades encontradas")
+    # Seleciona apenas as unidades deste shard (paginacao deterministica).
+    lote = [u for i, u in enumerate(unidades) if i % num_shards == shard]
+    log(
+        f"[preparos] Shard {shard}/{num_shards}: "
+        f"{len(lote)} de {len(unidades)} unidades neste run"
+    )
 
     registros: list = []
-    for i, unidade in enumerate(unidades):
+    for i, unidade in enumerate(lote):
         valor_unidade = unidade.get("value", "")
         nome_unidade = unidade.get_text(strip=True)
         if not valor_unidade:
@@ -157,7 +186,7 @@ def extrair_item_preparos(
 
         procedimentos = _obter_procedimentos(sessao, valor_unidade)
         log(
-            f"[preparos] Unidade {i+1}/{len(unidades)} "
+            f"[preparos] Unidade {i+1}/{len(lote)} "
             f"({nome_unidade}): {len(procedimentos)} procedimentos"
         )
 

@@ -58,14 +58,48 @@ class TestLimparDescricao(unittest.TestCase):
 
 
 class TestPlanejarTrabalhoPreparos(unittest.TestCase):
-    def test_retorna_item_como_dict(self) -> None:
+    def test_retorna_item_com_shard(self) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.preparos import (
             planejar_trabalho_preparos,
         )
 
-        item = planejar_trabalho_preparos(credenciais={}, params={})
+        item = planejar_trabalho_preparos(credenciais={}, params={"num_shards_preparos": 7})
         self.assertIsInstance(item, dict)
-        self.assertEqual(item["id"], "todas_as_unidades")
+        self.assertEqual(item["id"], "lote_de_unidades")
+        self.assertEqual(item["num_shards"], 7)
+        self.assertIn("shard", item)
+        self.assertTrue(0 <= item["shard"] < 7)
+
+
+class _FakeOption:
+    """Simula uma tag <option> (get('value') e get_text())."""
+
+    def __init__(self, valor: str) -> None:
+        self._valor = valor
+
+    def get(self, chave, default=""):
+        return self._valor if chave == "value" else default
+
+    def get_text(self, strip: bool = False) -> str:
+        return f"unidade_{self._valor}"
+
+
+class TestExtrairItemPreparosSharding(unittest.TestCase):
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.preparos._obter_procedimentos")
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.preparos._obter_unidades")
+    def test_processa_apenas_as_unidades_do_shard(self, mock_unidades, mock_procs) -> None:
+        """Com num_shards=3 e shard=0, so as unidades de indice 0 e 3 sao processadas."""
+        from pipelines.datalake.extract_load.sisreg.extractors.preparos import (
+            extrair_item_preparos,
+        )
+
+        mock_unidades.return_value = [_FakeOption(str(i)) for i in range(6)]
+        mock_procs.return_value = []  # sem procedimentos -> nenhum GET de preparo
+
+        extrair_item_preparos(sessao=MagicMock(), item={"shard": 0, "num_shards": 3}, params={})
+
+        valores = [chamada.args[1] for chamada in mock_procs.call_args_list]
+        self.assertEqual(valores, ["0", "3"])
 
 
 if __name__ == "__main__":

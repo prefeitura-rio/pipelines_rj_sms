@@ -69,6 +69,14 @@ class ConjuntoSisreg:
     # Assinatura: (sessao, item: dict, params: dict) -> ResultadoConjunto | dict
     extrair_item: Callable = field(default=_extrair_nao_registrado)
 
+    # Modo de escrita no datalake: "overwrite" (padrao - substitui a tabela a
+    # cada execucao 100% completa) ou "append" (acrescenta as linhas do run).
+    # preparos usa "append" porque e paginado por shard (cada run cobre so um
+    # subconjunto de unidades); a deduplicacao "ultima por unidade" e resolvida
+    # na camada de modelagem. Nunca use overwrite com um extrator paginado - isso
+    # apagaria os shards das execucoes anteriores.
+    modo_escrita: str = "overwrite"
+
 
 def _importar_extratores() -> None:
     """Importa os modulos de extratores para que registrem suas funcoes.
@@ -125,6 +133,8 @@ CONJUNTO_PREPAROS = ConjuntoSisreg(
             ["cnes", "nome_unidade", "cod_procedimento", "nome_procedimento", "descricao_preparo"]
         ),
     },
+    # Paginado por shard de unidades -> append (nao overwrite). Ver preparos.py.
+    modo_escrita="append",
 )
 
 CONJUNTO_SOLICITACOES = ConjuntoSisreg(
