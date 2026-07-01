@@ -9,7 +9,13 @@ diretamente via requests. Ref.: sisreg_web/sisreg/sisreg.py:download_escala().
 
 O conjunto escalas tem apenas um item de trabalho (a exportacao completa da
 municipalidade). Nao ha janela de datas - o endpoint retorna todos os dados
-disponíveis para o IBGE do municipio em um unico CSV.
+disponiveis para o IBGE do municipio em um unico CSV.
+
+IMPORTANTE (confirmado no spike EPIC 11): o endpoint EXPORTAR_ESCALAS exporta a
+ULTIMA busca executada na sessao. Sem uma etapa LISTAR previa na mesma sessao,
+ele retorna 0 bytes. Por isso extrair_item faz LISTAR (aquecimento) antes de
+EXPORTAR. O CSV real tem 34 colunas (~245 MB, ~674k linhas) e CONTEM CPF
+(coluna "CPF PROFISSIONAL EXEC.") - portanto ha PII; nunca logar linhas.
 """
 
 from io import BytesIO
@@ -30,22 +36,12 @@ from pipelines.datalake.extract_load.sisreg.registry import (
     registrar_extrator,
 )
 
-# Colunas confiadas: derivadas do legado (sisreg_web). Nenhuma coluna de PII
-# (CPF nao aparece no CSV de escalas). Nomes em portugues com acento - sao
-# normalizados por normalizar_nomes_colunas antes do upload.
-COLUNAS_ESPERADAS_ESCALAS = frozenset(
-    [
-        "profissional",
-        "especialidade",
-        "cnes",
-        "unidade",
-        "tipo",
-        "procedimento",
-        "data_hora",
-        "vagas",
-        "disponiveis",
-    ]
-)
+# Colunas esperadas vazias = validacao de schema desativada para escalas (o gate
+# C24 so valida quando o frozenset e nao-vazio). O palpite antigo de 9 colunas
+# estava errado: o spike EPIC 11 mostrou 34 colunas reais no export (COD. ESCALA
+# AMBULATORIAL, CPF PROFISSIONAL EXEC., COD. CBO, ...). Mantido vazio ("confiado")
+# ate a paridade refinar o conjunto correto - conforme o plano.
+COLUNAS_ESPERADAS_ESCALAS: frozenset = frozenset()
 
 # IBGE do municipio do Rio de Janeiro - valor fixo usado no legado.
 IBGE_RIO = "330455"
@@ -65,10 +61,12 @@ def extrair_item_escalas(
     item: dict,
     params: dict,
 ) -> Dict[str, pd.DataFrame]:
-    """Faz GET do endpoint EXPORTAR_ESCALAS e retorna o CSV como DataFrame.
+    """Faz LISTAR (aquecimento) + EXPORTAR_ESCALAS e retorna o CSV como DataFrame.
 
-    O endpoint retorna um CSV separado por ";". Nao ha paginacao - tudo
-    em uma unica resposta. A sessao deve estar autenticada.
+    O endpoint EXPORTAR_ESCALAS exporta a ULTIMA busca da sessao. Por isso
+    executamos LISTAR antes (mesma sessao) para registrar a busca; sem isso o
+    export volta 0 bytes (confirmado no spike EPIC 11). A sessao deve estar
+    autenticada.
 
     Args:
         sessao: Sessao requests autenticada no SISREG.
@@ -80,7 +78,7 @@ def extrair_item_escalas(
     """
     ibge = item.get("ibge", IBGE_RIO)
 
-    query = {
+    base_query = {
         "radioFiltro": "cpf",
         "status": "",
         "dataInicial": "",
@@ -90,9 +88,21 @@ def extrair_item_escalas(
         "ibge": ibge,
         "ordenacao": "",
         "clas_lista": "ASC",
-        "etapa": "EXPORTAR_ESCALAS",
         "coluna": "",
     }
+
+    # Aquecimento: LISTAR registra a busca na sessao. O conteudo e descartado -
+    # so precisamos que o servidor guarde os filtros antes de exportar.
+    log(f"[escalas] LISTAR (aquecimento) para ibge={ibge}")
+    requisicao_educada(
+        sessao,
+        URL_CONS_ESCALAS,
+        params={**base_query, "etapa": "LISTAR"},
+        conjunto="escalas",
+        item="aquecimento_listar",
+    )
+
+    query = {**base_query, "etapa": "EXPORTAR_ESCALAS"}
 
     log(f"[escalas] Iniciando exportacao EXPORTAR_ESCALAS para ibge={ibge}")
     # requisicao_educada: jitter sleep + deteccao de 403/429/CAPTCHA/logout.

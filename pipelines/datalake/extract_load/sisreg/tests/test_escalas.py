@@ -45,6 +45,20 @@ class TestExtrairItemEscalas(unittest.TestCase):
         self.assertEqual(len(df), 3)
 
     @patch("pipelines.datalake.extract_load.sisreg.extractors.escalas.requisicao_educada")
+    def test_faz_listar_antes_de_exportar(self, mock_req) -> None:
+        """O export precisa de um LISTAR previo na mesma sessao (spike EPIC 11)."""
+        from pipelines.datalake.extract_load.sisreg.extractors.escalas import (
+            extrair_item_escalas,
+        )
+
+        mock_req.return_value = _mock_resp(_csv_bytes("escalas.csv"))
+        extrair_item_escalas(sessao=MagicMock(), item={"ibge": "330455"}, params={})
+
+        self.assertEqual(mock_req.call_count, 2)
+        etapas = [chamada.kwargs["params"]["etapa"] for chamada in mock_req.call_args_list]
+        self.assertEqual(etapas, ["LISTAR", "EXPORTAR_ESCALAS"])
+
+    @patch("pipelines.datalake.extract_load.sisreg.extractors.escalas.requisicao_educada")
     def test_resposta_vazia_levanta_erro(self, mock_req) -> None:
         from pipelines.datalake.extract_load.sisreg.extractors.escalas import (
             extrair_item_escalas,
