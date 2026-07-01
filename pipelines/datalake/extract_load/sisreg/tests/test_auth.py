@@ -47,6 +47,15 @@ _HTML_POS_LOGIN_SUCESSO = "<html><body>Bem-vindo ao SISREG - <a>sair</a></body><
 _HTML_POS_LOGIN_FALHA = "<html><body>Senha incorreta</body></html>"
 _HTML_SESSAO_EXPIRADA = "<html><body>Efetue o logon novamente</body></html>"
 
+# Pagina de troca obrigatoria de senha (spike EPIC 11). Autentica mas contem
+# "menu"/"sair" - passaria no teste de sucesso se nao for detectada antes.
+_HTML_SENHA_EXPIRADA = (
+    "<html><body>"
+    "<a>sair</a> menu "
+    "Senha expirada, informe uma nova senha. ALTERACAO DE SENHA"
+    "</body></html>"
+)
+
 
 # ---------------------------------------------------------------------------
 # Helpers de mock
@@ -144,6 +153,45 @@ class TestAbrirSessaoAutenticada(unittest.TestCase):
 
         with self.assertRaises(ErroAutenticacao):
             abrir_sessao_autenticada("user", "senhaerrada")
+
+    @patch("pipelines.datalake.extract_load.sisreg.common.auth.requests.Session")
+    def test_senha_expirada_levanta_erro_autenticacao(self, mock_session_cls) -> None:
+        """Pagina de troca obrigatoria de senha deve falhar loud, nao passar como sucesso."""
+        from pipelines.datalake.extract_load.sisreg.common.auth import (
+            abrir_sessao_autenticada,
+        )
+
+        sessao_mock = MagicMock()
+        mock_session_cls.return_value = sessao_mock
+        sessao_mock.get.return_value = _mock_resp(_HTML_LOGIN_OK)
+        sessao_mock.post.return_value = _mock_resp(_HTML_SENHA_EXPIRADA)
+
+        with self.assertRaises(ErroAutenticacao) as ctx:
+            abrir_sessao_autenticada("user", "senha", conjunto="fila_vagas")
+        self.assertIn("expirada", str(ctx.exception).lower())
+
+    @patch("pipelines.datalake.extract_load.sisreg.common.auth.requests.Session")
+    def test_pagina_login_reexibida_levanta_erro_autenticacao(self, mock_session_cls) -> None:
+        """Credencial invalida reexibe o login (senha/reCAPTCHA) - deve falhar loud."""
+        from pipelines.datalake.extract_load.sisreg.common.auth import (
+            abrir_sessao_autenticada,
+        )
+
+        # Pagina de login reexibida: contem "menu" (passaria no teste fraco) mas
+        # tem campo de senha + reCAPTCHA -> nao autenticou.
+        html_login_reexibido = (
+            "<html><body>menu "
+            '<form><input type="password" name="senha"></form>'
+            '<script src="https://www.google.com/recaptcha/api.js"></script>'
+            "</body></html>"
+        )
+        sessao_mock = MagicMock()
+        mock_session_cls.return_value = sessao_mock
+        sessao_mock.get.return_value = _mock_resp(_HTML_LOGIN_OK)
+        sessao_mock.post.return_value = _mock_resp(html_login_reexibido)
+
+        with self.assertRaises(ErroAutenticacao):
+            abrir_sessao_autenticada("user", "senhaerrada", conjunto="escalas")
 
 
 class TestReautenticarSeDeslogado(unittest.TestCase):

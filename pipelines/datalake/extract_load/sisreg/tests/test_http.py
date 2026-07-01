@@ -47,6 +47,26 @@ class TestDetectarBloqueio(unittest.TestCase):
         resp = _mock_response(200, "pagina com (CAPTCHA) obrigatorio")
         self.assertEqual(detectar_bloqueio(resp), "CAPTCHA")
 
+    def test_pagina_autenticada_com_meta_robots_nao_e_bloqueio(self) -> None:
+        """Regressao (spike EPIC 11): toda pagina autenticada do SISREG carrega
+        <meta name="robots">. O token "robot" NAO pode ser tratado como CAPTCHA,
+        senao toda requisicao em producao abortaria com falso-positivo.
+        """
+        html = (
+            "<html><head><title>SISREG III - Servidor de Producao</title>"
+            '<meta name="robots" content="noindex,follow" /></head>'
+            "<body>menu ... sair</body></html>"
+        )
+        resp = _mock_response(200, html)
+        self.assertIsNone(detectar_bloqueio(resp))
+
+    def test_palavra_captcha_sem_parenteses_nao_e_bloqueio(self) -> None:
+        """A forma nua "captcha" (ex.: nome de arquivo JS) nao deve disparar bloqueio;
+        somente a forma parentetica "(CAPTCHA)" do desafio real conta.
+        """
+        resp = _mock_response(200, '<script src="/js/captcha_helper.js"></script> menu')
+        self.assertIsNone(detectar_bloqueio(resp))
+
     def test_redirecionamento_logout(self) -> None:
         resp = _mock_response(200, "Efetue o logon novamente para continuar")
         self.assertEqual(detectar_bloqueio(resp), "REDIRECIONAMENTO_LOGIN")

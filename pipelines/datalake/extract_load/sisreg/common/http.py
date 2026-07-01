@@ -28,8 +28,13 @@ from pipelines.datalake.extract_load.sisreg.constants import (
 from pipelines.datalake.extract_load.sisreg.errors import ErroBloqueio, ErroTransitorio
 
 # Marcadores textuais que indicam bloqueio/CAPTCHA na resposta do SISREG.
-# Derivados dos flows legados (afastamentos detecta "(CAPTCHA)").
-_MARCADORES_CAPTCHA = ["(CAPTCHA)", "captcha", "robot", "acesso negado"]
+# Apenas a forma parentetica "(captcha)" (proveniente do legado afastamentos,
+# que detecta "(CAPTCHA)"). NAO usar tokens nus como "captcha"/"robot"/"acesso
+# negado": o spike EPIC 11 mostrou que toda pagina HTML autenticada do SISREG
+# carrega <meta name="robots" content="noindex,follow">, entao "robot" como
+# substring gera falso-positivo e abortaria TODA requisicao em producao. Os
+# bloqueios reais sao cobertos por status 403/429 e pelos marcadores de logout.
+_MARCADORES_CAPTCHA = ["(captcha)"]
 _MARCADORES_LOGOUT = [
     "efetue o logon novamente",
     "sua sessao foi finalizada",

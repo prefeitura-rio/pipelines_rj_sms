@@ -45,6 +45,23 @@ _PALAVRAS_SESSAO_EXPIRADA = (
     "sessao expirada",
 )
 
+# Frases que indicam que a conta AUTENTICOU mas o SISREG esta forcando uma troca
+# obrigatoria de senha (senha expirada). Essa pagina contem "menu"/"sair" e
+# passaria no teste de sucesso (falso-positivo), entao precisa ser detectada
+# explicitamente e tratada como falha de autenticacao - exige acao humana
+# (resetar a senha da conta no SISREG e atualizar o segredo no Infisical).
+# Confirmado no spike EPIC 11: a conta /sisreg_regulacao caiu nesta pagina.
+_PALAVRAS_SENHA_EXPIRADA = (
+    "senha expirada",
+    "informe uma nova senha",
+)
+
+
+def _detectar_senha_expirada(html: str) -> bool:
+    """Retorna True se a pagina e a tela de troca obrigatoria de senha."""
+    texto_lower = html.lower()
+    return any(p in texto_lower for p in _PALAVRAS_SENHA_EXPIRADA)
+
 
 def sha256_maiusculo(texto: str) -> str:
     """Calcula SHA-256 da string em maiusculo, em hex minusculo.
@@ -97,6 +114,21 @@ def _verificar_sucesso_login(html: str) -> bool:
     return any(p in texto_lower for p in _PALAVRAS_SUCESSO_LOGIN)
 
 
+def _parece_pagina_login(html: str) -> bool:
+    """Retorna True se a resposta e a pagina de login REEXIBIDA.
+
+    Um login bem-sucedido redireciona para fora da pagina de login. Se a resposta
+    ainda traz um campo de senha ou o widget reCAPTCHA, a autenticacao NAO passou
+    (credencial invalida ou desafio de captcha) - mesmo que a pagina contenha
+    "menu"/"sair". Detectado explicitamente para nao reportar sucesso falso.
+    Confirmado no spike EPIC 11: senha errada reexibe o login com reCAPTCHA.
+    """
+    if "recaptcha" in html.lower():
+        return True
+    soup = BeautifulSoup(html, "html.parser")
+    return bool(soup.find("input", {"type": "password"}))
+
+
 def abrir_sessao_autenticada(
     usuario: str,
     senha: str,
@@ -141,6 +173,28 @@ def abrir_sessao_autenticada(
         timeout=TIMEOUT_LOGIN_S,
     )
     r_post.raise_for_status()
+
+    # A pagina de troca obrigatoria de senha contem "menu"/"sair" e passaria no
+    # teste de sucesso. Detectar antes e falhar loud: nenhuma extracao funciona
+    # ate a senha ser trocada manualmente no SISREG.
+    if _detectar_senha_expirada(r_post.text):
+        raise ErroAutenticacao(
+            "Senha da conta SISREG expirada - troca obrigatoria necessaria (acao humana)",
+            conjunto=conjunto,
+            etapa="login",
+            url=url_post,
+            detalhe="pagina de troca obrigatoria de senha apos login",
+        )
+
+    # Pagina de login reexibida (campo de senha/reCAPTCHA) = credencial invalida.
+    if _parece_pagina_login(r_post.text):
+        raise ErroAutenticacao(
+            "Login falhou: pagina de login reexibida (credencial invalida ou reCAPTCHA)",
+            conjunto=conjunto,
+            etapa="login",
+            url=url_post,
+            detalhe="campo de senha ou reCAPTCHA presente apos POST de login",
+        )
 
     if not _verificar_sucesso_login(r_post.text):
         raise ErroAutenticacao(
@@ -197,6 +251,24 @@ def reautenticar_se_deslogado(
         timeout=TIMEOUT_LOGIN_S,
     )
     r_post.raise_for_status()
+
+    if _detectar_senha_expirada(r_post.text):
+        raise ErroAutenticacao(
+            "Senha da conta SISREG expirada - troca obrigatoria necessaria (acao humana)",
+            conjunto=conjunto,
+            etapa="reautenticacao",
+            url=url_post,
+            detalhe="pagina de troca obrigatoria de senha apos reautenticacao",
+        )
+
+    if _parece_pagina_login(r_post.text):
+        raise ErroAutenticacao(
+            "Reautenticacao falhou: pagina de login reexibida (credencial invalida ou reCAPTCHA)",
+            conjunto=conjunto,
+            etapa="reautenticacao",
+            url=url_post,
+            detalhe="campo de senha ou reCAPTCHA presente apos POST de reautenticacao",
+        )
 
     if not _verificar_sucesso_login(r_post.text):
         raise ErroAutenticacao(
