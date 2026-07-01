@@ -16,6 +16,20 @@ Perfis de credencial e seus conjuntos:
 
 Conjuntos de perfis distintos podem rodar em paralelo (contas independentes).
 Conjuntos do mesmo perfil sao serializados pelos starts escalonados.
+
+EXECUCAO EM PARALELO COM O LEGADO (temporario, ate o C38 desligar os schedules
+antigos): este fluxo escreve num dataset SEPARADO (brutos_sisreg_web), mas usa
+as MESMAS contas SISREG dos flows legados (SISREG permite 1 sessao por conta).
+Para nao competir, este fluxo roda num bloco de TARDE, bem depois dos horarios
+do legado (todos de madrugada):
+  - legado afastamentos (conta regulador): 00:01
+  - legado solicitacoes (conta padrao):    02:00 (+ 20:00 mensal)
+  - legado escala       (conta padrao):    05:50
+Ressalva honesta: afastamentos (novo) pode levar ~12h; nao ha 24h no dia para
+duas execucoes de afastamentos na mesma conta, entao sobreposicoes pontuais com
+o legado ainda podem ocorrer. Uma colisao apenas FALHA aquele run (logout ->
+ErroBloqueio -> sem escrita); o legado segue como fonte autoritativa e o run
+novo tenta de novo no dia seguinte. Sem risco de dados. Resolve de vez no C38.
 """
 
 from datetime import datetime, timedelta
@@ -30,19 +44,26 @@ from pipelines.utils.schedules import generate_dump_api_schedules, untuple_clock
 _FUSO_SP = pytz.timezone("America/Sao_Paulo")
 
 # ---------------------------------------------------------------------------
-# Hora de inicio base (UTC-3) para cada perfil
+# Hora de inicio base (UTC-3) para cada perfil - bloco de TARDE (ver docstring:
+# evita os horarios de madrugada do legado enquanto rodam em paralelo).
 # ---------------------------------------------------------------------------
 
-# Perfil padrao: inicia 00:01. Conjuntos escalonados de 180 em 180 min.
-_INICIO_PADRAO = datetime(2025, 1, 1, 0, 1, tzinfo=_FUSO_SP)
+# Perfil padrao (conta DATALAKE.ADM): inicia 10:00. Legado padrao roda de
+# madrugada (02:00 solicitacoes, 05:50 escala) e ja terminou pela manha.
+_INICIO_PADRAO = datetime(2025, 1, 1, 10, 0, tzinfo=_FUSO_SP)
 
-# Perfil regulador: inicia 00:31 para nao colidir com o padrao no mesmo IP.
-_INICIO_REGULADOR = datetime(2025, 1, 1, 0, 31, tzinfo=_FUSO_SP)
+# Perfil regulador (conta CGCR.AMBULATORIOREG): inicia 12:00. O legado
+# afastamentos comeca 00:01; ao meio-dia a execucao da madrugada geralmente
+# ja terminou. Comecar a tarde tambem faz o run novo (~12h) terminar antes
+# do proximo legado das 00:01.
+_INICIO_REGULADOR = datetime(2025, 1, 1, 12, 0, tzinfo=_FUSO_SP)
 
 # Intervalo de escalonamento entre conjuntos do MESMO perfil (em minutos).
-# 180 min = 3 h de folga entre inicios para evitar sobreposicao de execucoes
-# longas (afastamentos pode levar ~10-15h, por isso usa conta dedicada).
-_INTERVALO_STAGGER_MIN = 30
+# 210 min (3.5h) > runtime de solicitacoes (~3.2h) para serializar os conjuntos
+# padrao sem sobreposicao. afastamentos (~12h) nao cabe antes de fila_vagas por
+# nenhum stagger razoavel; a eventual sobreposicao intra-regulador e tolerada
+# (fail-skip, sem risco de dados) ate ajustarmos a cadencia/C38.
+_INTERVALO_STAGGER_MIN = 210
 
 # ---------------------------------------------------------------------------
 # Parametros padrao por conjunto
