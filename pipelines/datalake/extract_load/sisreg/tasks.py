@@ -7,11 +7,11 @@ Cada task cobre uma etapa do DAG:
   consolidar -> normalizar_e_subir -> registrar_log_execucao
 
 As tasks nao conhecem os detalhes de cada conjunto: delegam ao registry
-(ConjuntoSisreg.planejar_trabalho e .extrair_item) e a common/ para a
-logica reusavel. O DAG em flows.py orquestra a ordem.
+(ConjuntoSisreg.planejar_trabalho e .extrair_item) e a auth/http/parsing
+para a logica reusavel. O DAG em flows.py orquestra a ordem.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 from zoneinfo import ZoneInfo
 
@@ -21,14 +21,14 @@ from prefect.triggers import all_finished
 from prefeitura_rio.pipelines_utils.logging import log
 
 from pipelines.datalake.extract_load.sisreg import constants as C
-from pipelines.datalake.extract_load.sisreg.errors import (
+from pipelines.datalake.extract_load.sisreg.nucleo.auth import abrir_sessao_autenticada
+from pipelines.datalake.extract_load.sisreg.nucleo.errors import (
     ErroBloqueio,
     ErroEstrutura,
     ErroSisreg,
-    ErroVazioSuspeito,
 )
-from pipelines.datalake.extract_load.sisreg.registry import obter_conjunto
-from pipelines.datalake.extract_load.sisreg.resultado import (  # noqa: F401
+from pipelines.datalake.extract_load.sisreg.nucleo.registry import obter_conjunto
+from pipelines.datalake.extract_load.sisreg.nucleo.resultado import (  # noqa: F401
     Consolidado,
     ResultadoConjunto,
 )
@@ -94,23 +94,11 @@ def planejar_trabalho(conjunto: str, credenciais: dict, params: dict) -> dict:
     """Determina o item de trabalho para o extrator.
 
     Delega ao ConjuntoSisreg.planejar_trabalho do registry. O resultado e
-    um dict passado diretamente para extrair_item.
-
-    Levanta ErroVazioSuspeito se o dict estiver vazio para conjuntos que
-    nunca deveriam ter item vazio (afastamentos, escalas, solicitacoes).
+    um dict passado diretamente para extrair_item. Planos vazios por falha
+    upstream ja levantam ErroVazioSuspeito dentro do proprio extrator.
     """
     conj = obter_conjunto(conjunto)
     item = conj.planejar_trabalho(credenciais=credenciais, params=params)
-
-    _conjuntos_nunca_vazios = {"escalas", "afastamentos", "solicitacoes"}
-    if not item and conjunto in _conjuntos_nunca_vazios:
-        raise ErroVazioSuspeito(
-            f"Item de trabalho vazio para '{conjunto}' - suspeito de falha upstream",
-            conjunto=conjunto,
-            etapa="planejamento",
-            detalhe="dict vazio retornado por planejar_trabalho",
-        )
-
     log(f"[{conjunto}] Item de trabalho planejado: id={item.get('id', '?')}")
     return item
 
@@ -120,7 +108,7 @@ def planejar_trabalho(conjunto: str, credenciais: dict, params: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@task(max_retries=2, retry_delay=C.DELAY_MINIMO_S)
+@task(max_retries=2, retry_delay=timedelta(seconds=C.DELAY_MINIMO_S))
 def extrair_item(
     conjunto: str,
     item: dict,
@@ -142,10 +130,6 @@ def extrair_item(
     Retorna:
         ResultadoConjunto com os dados e metricas de sub-itens, ou None em falha.
     """
-    from pipelines.datalake.extract_load.sisreg.common.auth import (
-        abrir_sessao_autenticada,
-    )
-
     conj = obter_conjunto(conjunto)
     item_id = str(item.get("id", item.get("cpf_idx", item.get("data", "item"))))
     log(f"[{conjunto}] Extraindo item: {item_id}")

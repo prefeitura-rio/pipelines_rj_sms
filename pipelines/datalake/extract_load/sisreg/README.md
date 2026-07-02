@@ -1,9 +1,8 @@
 # SISREG - Extracao e Carga Unificada
 
-Fluxo unico e parametrizado que substitui seis scrapers legados
-(`sisreg_web`, `sisreg_afastamentos`, `sisreg_preparos`, `sisreg_solicitacoes`,
-`sisreg_pendentes_vagas`, `sisreg_afastamentos_web`) por um pipeline coeso,
-observavel e facil de manter.
+Fluxo unico e parametrizado que substitui os scrapers legados do SISREG
+(escalas, afastamentos, preparos, solicitacoes e fila de vagas) por um
+pipeline coeso, observavel e facil de manter.
 
 > **Dados medicos. Vidas reais.** Um erro silencioso pode levar a decisoes
 > erradas de regulacao de saude. Nunca suprima erros; nunca escreva dados
@@ -24,9 +23,9 @@ graph TD
 
     B --> C[resolver_credenciais]
     C --> D[planejar_trabalho]
-    D --> E[extrair_item.map - 1 item/run]
+    D --> E[extrair_item - 1 item/run]
     E --> F[consolidar - gate 100% outer+sub-item]
-    F -->|OK| G[normalizar_e_subir - overwrite]
+    F -->|OK| G[normalizar_e_subir]
     F -->|falha| H[SKIP - tabela anterior intacta]
     G --> I[registrar_log_execucao - status real]
 ```
@@ -61,65 +60,50 @@ se estivesse embutido no fluxo de extracao, nunca detectaria esse cenario.
 
 ---
 
-## Mapa de diretorios
+## Mapa de arquivos
+
+A raiz do pacote contem apenas a superficie Prefect; toda a implementacao vive
+em `nucleo/`.
 
 ```
 sisreg/
-  flows.py            # Flow Prefect - DAG map-reduce + run config + schedule
-  monitor_flows.py    # Fluxo de monitor de frescor (schedule proprio)
+  flows.py            # Flow Prefect - DAG + run config + schedule
   tasks.py            # Tasks genericas (credenciais, data, consolidacao, upload, log)
-  resultado.py        # Contratos ResultadoConjunto e Consolidado (metricas reais)
-  registry.py         # ConjuntoSisreg dataclass + CONJUNTOS (5 entradas)
   constants.py        # URLs, cabecalhos, perfis, SLAs, janela de extracao
   schedules.py        # Um clock por conjunto (diario/semanal)
-  errors.py           # Taxonomia de erros (ErroAutenticacao, ErroBloqueio, etc.)
-  monitor.py          # Monitor de frescor + alerta Discord
-  common/
-    auth.py           # Login canonico, reautenticacao inline (sem failover de conta)
-    http.py           # requisicao_educada (jitter, retry, deteccao de bloqueio)
-    parsing.py        # tabela_listagem -> DataFrame, normalizar colunas, landmarks
-  extractors/
-    escalas.py        # GET EXPORTAR_ESCALAS -> CSV (1 item, 1 login/run)
-    afastamentos.py   # 1 item com todos os CPFs -> loop interno, 1 sessao
-    preparos.py       # 1 item -> Unidades -> procedimentos -> textarea#preparo
-    solicitacoes.py   # 1 item com roteiro completo -> loop interno, 1 sessao
-    fila_vagas.py     # 1 item com todos os procedimentos (BQ) -> loop interno
-  tests/
-    fixtures/         # HTML/CSV minimos para testes offline
-    test_*.py         # stdlib unittest, sem pytest, sem chamadas reais ao SISREG
-  IMPLEMENTATION_PLAN.md
-  IMPLEMENTATION_PLAN_PHASE2.md
   README.md           # este arquivo
+  nucleo/
+    registry.py       # ConjuntoSisreg + CONJUNTOS (5 entradas, funcoes ligadas direto)
+    resultado.py      # Contratos ResultadoConjunto e Consolidado (metricas reais)
+    errors.py         # Taxonomia de erros (ErroAutenticacao, ErroBloqueio, etc.)
+    monitor.py        # Monitor de frescor: task + fluxo + schedule proprios
+    auth.py           # Login canonico, reauth inline, requisicao_com_reauth
+    http.py           # requisicao_educada (jitter, retry, deteccao de bloqueio)
+    parsing.py        # tabela_listagem -> DataFrame, normalizar colunas
+    extractors/
+      escalas.py      # GET EXPORTAR_ESCALAS -> CSV (1 item, 1 login/run)
+      afastamentos.py # 1 item com todos os CPFs -> loop interno, 1 sessao
+      preparos.py     # 1 item -> Unidades -> procedimentos -> textarea#preparo
+      solicitacoes.py # 1 item com roteiro completo -> loop interno, 1 sessao
+      fila_vagas.py   # 1 item com todos os procedimentos (BQ) -> loop interno
+    tests/
+      fixtures/       # HTML/CSV minimos para testes offline
+      test_*.py       # stdlib unittest, sem pytest, sem chamadas reais ao SISREG
 ```
+
+Dependencias entre camadas: os extratores importam apenas `constants`, `errors`,
+`resultado`, `auth`, `http` e `parsing`; o `nucleo/registry.py` importa os
+extratores e liga as funcoes de cada conjunto diretamente. `tasks.py` e
+`flows.py` so conhecem o registry.
 
 ---
 
 ## Convencoes de codigo
 
-### Commits
-
-Formato: `acao: descricao` (imperativo, minusculo, ingles, sem ponto final).
-
-| acao | uso |
-|---|---|
-| `feat` | novo comportamento / modulo |
-| `fix` | correcao de bug |
-| `refactor` | reestruturacao sem mudanca de comportamento |
-| `docs` | README, comentarios, plano |
-| `test` | somente testes |
-| `chore` | scaffolding, agendamento, cutover, dependencias |
-
-### Linguagem e nomenclatura
-
 - **Identificadores** (funcoes, variaveis, modulos): portugues brasileiro, **somente ASCII**
-  (sem acentos em nomes de funcao/variavel). Exemplos: `obter_sessao_autenticada`,
-  `extrair_afastamentos_por_cpf`, `lista_procedimentos`.
+  (sem acentos em nomes de funcao/variavel). Exemplos: `abrir_sessao_autenticada`,
+  `extrair_item_afastamentos`, `lista_procedimentos`.
 - **Docstrings e comentarios**: portugues brasileiro natural, acentos permitidos.
-  Evitar simbolos tipograficos fora do teclado brasileiro (`--`, aspas curvas, `...`).
-- **Este README**: portugues brasileiro.
-
-### Estilo de codigo
-
 - **SRP:** uma funcao, uma responsabilidade. Se precisar de "e" para descrever, divida.
 - **Tipos explicitos:** toda funcao tem anotacoes de parametro e retorno.
 - **Sem segredos no codigo:** credenciais somente via Infisical (`get_secret_key`).
@@ -161,7 +145,7 @@ cliente educado e de baixo impacto**, nao contornar o bloqueio:
   delays exatos (identificam bots), nunca `sessao.get` direto.
 - **Single-flight por conta:** `num_workers=1`; nunca duas requisicoes simultaneas.
 - **Reautenticacao inline:** sessao expirada mid-run (REDIRECIONAMENTO_LOGIN) dispara
-  `reautenticar_se_deslogado` e continua o loop. Bloqueio genuino (403/429/CAPTCHA)
+  `requisicao_com_reauth` e continua o loop. Bloqueio genuino (403/429/CAPTCHA)
   aborta o run imediatamente.
 - **Retreat-on-block:** CAPTCHA/403/429 acionam circuit-break imediato, nunca retry.
 - **Volume minimo:** fonte de procedimentos e CPFs migrada para BigQuery (sem scraping).
@@ -180,8 +164,10 @@ flowchart LR
 ## Modelo de escrita
 
 - **Overwrite latest:** cada execucao bem-sucedida substitui a tabela inteira.
+  Excecao: `preparos` e paginado por shard de unidades e usa **append**
+  (a deduplicacao "ultima por unidade" fica na camada de modelagem).
 - **Gate de completude (duplo):**
-  - *Outer:* se qualquer task mapeada retornar None, upload cancelado.
+  - *Outer:* se a task de extracao retornar None, upload cancelado.
   - *Sub-item:* se qualquer CPF/ficha/procedimento for para `ids_falhos`,
     upload cancelado. A tabela anterior permanece intacta.
   - Um dia ruim se corrige na proxima execucao; o log registra o status real.
@@ -196,18 +182,19 @@ flowchart LR
 
 ## Como adicionar um novo conjunto
 
-1. Crie `extractors/meu_conjunto.py` com:
-   - `planejar_trabalho_meu_conjunto(credenciais, params) -> List[dict]`
-   - `extrair_item_meu_conjunto(sessao, item, params) -> Dict[str, DataFrame]`
-   - Chamada a `registrar_extrator("meu_conjunto", ...)` no final do arquivo.
+1. Crie `nucleo/extractors/meu_conjunto.py` com duas funcoes puras (sem importar registry):
+   - `planejar_trabalho_meu_conjunto(credenciais, params) -> dict`
+   - `extrair_item_meu_conjunto(sessao, item, params) -> ResultadoConjunto | Dict[str, DataFrame]`
 
-2. Adicione a entrada `CONJUNTO_MEU_CONJUNTO` em `registry.py` e inclua no dict `CONJUNTOS`.
+2. Adicione a entrada em `nucleo/registry.py`: importe o modulo no bloco de imports
+   de `extractors` e inclua um `ConjuntoSisreg(...)` no dict `CONJUNTOS`, apontando
+   `planejar_trabalho`/`extrair_item` para as funcoes do passo 1.
 
 3. Adicione um clock em `schedules.py` com os `parameter_defaults` do conjunto.
 
 4. Adicione o SLA em `constants.py:SLA_FRESCOR_DIAS`.
 
-5. Escreva testes em `tests/test_meu_conjunto.py` com fixture HTML/CSV.
+5. Escreva testes em `nucleo/tests/test_meu_conjunto.py` com fixture HTML/CSV.
 
 ---
 
@@ -219,30 +206,9 @@ poetry run black . && poetry run isort . && poetry run flake8 .
 
 # Testes offline (sem acesso ao SISREG ou BigQuery)
 poetry run python -m unittest discover \
-  -s pipelines/datalake/extract_load/sisreg/tests \
+  -s pipelines/datalake/extract_load/sisreg/nucleo/tests \
   -p "test_*.py"
 ```
-
----
-
-## Como fazer um commit
-
-1. Verifique que as gates passam (lint + testes acima).
-2. Atualize o checkbox correspondente em `IMPLEMENTATION_PLAN.md`.
-3. Commite ambos juntos: `git add ... && git commit -m "feat: descricao"`.
-4. Nunca commite para `main`/`master` (o hook `no-commit-to-branch` bloqueia).
-5. Nunca abra PRs - apenas commits direto na branch de feature.
-
----
-
-## Como remover os flows legados (cutover)
-
-Veja EPIC 5 no `IMPLEMENTATION_PLAN.md` (C20-C21). Em resumo:
-
-1. Apos parity check verde e periodo de graca (~2-4 semanas com o monitor de frescor):
-2. Desabilitar schedules legados (C20).
-3. Deletar os 6 diretorios legados e atualizar `pipelines/flows.py` (C21 - fora de `/sisreg/`).
-4. Verificar que a leitura de CPFs em `saude_sisreg.oferta_programada` continua resolvendo.
 
 ---
 
@@ -253,7 +219,3 @@ Veja EPIC 5 no `IMPLEMENTATION_PLAN.md` (C20-C21). Em resumo:
 - **beautifulsoup4 + lxml** - parsing de HTML.
 - **google-cloud-bigquery** - leitura de CPFs e procedimentos do BQ curado.
 - **basedosdados** - upload para o datalake (`upload_df_to_datalake`).
-- **pendulum** - utilidades de data/hora (via dependencia transitiva do Prefect).
-
-Nenhuma dependencia nova foi instalada. `requests` e `lxml` eram transitivias e
-foram explicitadas; `curl_cffi` nao foi adicionada (sem evidencia de JA3 check).

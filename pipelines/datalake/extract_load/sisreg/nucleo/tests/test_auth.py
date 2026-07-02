@@ -1,0 +1,256 @@
+# -*- coding: utf-8 -*-
+"""
+Testes de autenticacao e sessao (auth.py).
+
+Todos offline: requests.Session e mockada, nenhuma chamada real ao SISREG.
+"""
+import unittest
+from unittest.mock import MagicMock, patch
+
+from pipelines.datalake.extract_load.sisreg.nucleo.auth import (
+    _extrair_action_formulario,
+    _verificar_sucesso_login,
+    extrair_campos_ocultos,
+    reautenticar_se_deslogado,
+    requisicao_com_reauth,
+    sha256_maiusculo,
+)
+from pipelines.datalake.extract_load.sisreg.nucleo.errors import (
+    ErroAutenticacao,
+    ErroBloqueio,
+    ErroEstrutura,
+)
+
+# ---------------------------------------------------------------------------
+# HTML minimo para testes de parsing
+# ---------------------------------------------------------------------------
+
+_HTML_LOGIN_OK = """
+<html><body>
+<form action="/cgi-bin/index">
+  <input type="hidden" name="token" value="abc123">
+  <input type="hidden" name="state" value="xyz">
+  <input type="text" name="usuario">
+</form>
+</body></html>
+"""
+
+_HTML_LOGIN_OK_ABSOLUTE = """
+<html><body>
+<form action="https://sisregiii.saude.gov.br/cgi-bin/index">
+  <input type="hidden" name="token" value="tok1">
+</form>
+</body></html>
+"""
+
+_HTML_LOGIN_SEM_FORM = "<html><body><p>nada aqui</p></body></html>"
+
+_HTML_POS_LOGIN_SUCESSO = "<html><body>Bem-vindo ao SISREG - <a>sair</a></body></html>"
+_HTML_POS_LOGIN_FALHA = "<html><body>Senha incorreta</body></html>"
+_HTML_SESSAO_EXPIRADA = "<html><body>Efetue o logon novamente</body></html>"
+
+# Pagina de troca obrigatoria de senha (spike EPIC 11). Autentica mas contem
+# "menu"/"sair" - passaria no teste de sucesso se nao for detectada antes.
+_HTML_SENHA_EXPIRADA = (
+    "<html><body>"
+    "<a>sair</a> menu "
+    "Senha expirada, informe uma nova senha. ALTERACAO DE SENHA"
+    "</body></html>"
+)
+
+
+# ---------------------------------------------------------------------------
+# Helpers de mock
+# ---------------------------------------------------------------------------
+
+
+def _mock_resp(text: str = "", status: int = 200) -> MagicMock:
+    resp = MagicMock()
+    resp.status_code = status
+    resp.text = text
+    resp.raise_for_status = MagicMock()
+    return resp
+
+
+# ---------------------------------------------------------------------------
+# Testes
+# ---------------------------------------------------------------------------
+
+
+class TestSha256Maiusculo(unittest.TestCase):
+    def test_hash_determinista(self) -> None:
+        h1 = sha256_maiusculo("senha123")
+        h2 = sha256_maiusculo("senha123")
+        self.assertEqual(h1, h2)
+
+    def test_equivale_maiusculo(self) -> None:
+        """sha256('senha'.upper()) deve ser igual a sha256_maiusculo('SENHA')."""
+        self.assertEqual(sha256_maiusculo("senha"), sha256_maiusculo("SENHA"))
+
+    def test_comprimento_hex(self) -> None:
+        self.assertEqual(len(sha256_maiusculo("x")), 64)
+
+
+class TestExtrairCamposOcultos(unittest.TestCase):
+    def test_extrai_campos(self) -> None:
+        campos = extrair_campos_ocultos(_HTML_LOGIN_OK)
+        self.assertEqual(campos["token"], "abc123")
+        self.assertEqual(campos["state"], "xyz")
+
+    def test_ignora_campos_sem_name(self) -> None:
+        html = '<input type="hidden" value="sem-name">'
+        self.assertEqual(extrair_campos_ocultos(html), {})
+
+    def test_html_sem_campos_retorna_dict_vazio(self) -> None:
+        self.assertEqual(extrair_campos_ocultos("<html></html>"), {})
+
+
+class TestExtrairActionFormulario(unittest.TestCase):
+    def test_action_relativo(self) -> None:
+        url = _extrair_action_formulario(_HTML_LOGIN_OK, "https://sisregiii.saude.gov.br")
+        self.assertTrue(url.startswith("https://sisregiii.saude.gov.br"))
+
+    def test_action_absoluto(self) -> None:
+        url = _extrair_action_formulario(_HTML_LOGIN_OK_ABSOLUTE, "https://sisregiii.saude.gov.br")
+        self.assertEqual(url, "https://sisregiii.saude.gov.br/cgi-bin/index")
+
+    def test_sem_form_levanta_erro_estrutura(self) -> None:
+        with self.assertRaises(ErroEstrutura):
+            _extrair_action_formulario(_HTML_LOGIN_SEM_FORM, "https://x.com")
+
+
+class TestVerificarSucessoLogin(unittest.TestCase):
+    def test_pagina_com_sair_e_sucesso(self) -> None:
+        self.assertTrue(_verificar_sucesso_login(_HTML_POS_LOGIN_SUCESSO))
+
+    def test_pagina_sem_indicadores_e_falha(self) -> None:
+        self.assertFalse(_verificar_sucesso_login(_HTML_POS_LOGIN_FALHA))
+
+
+class TestAbrirSessaoAutenticada(unittest.TestCase):
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.requests.Session")
+    def test_login_bem_sucedido_retorna_sessao(self, mock_session_cls) -> None:
+        from pipelines.datalake.extract_load.sisreg.nucleo.auth import (
+            abrir_sessao_autenticada,
+        )
+
+        sessao_mock = MagicMock()
+        mock_session_cls.return_value = sessao_mock
+        sessao_mock.get.return_value = _mock_resp(_HTML_LOGIN_OK)
+        sessao_mock.post.return_value = _mock_resp(_HTML_POS_LOGIN_SUCESSO)
+
+        resultado = abrir_sessao_autenticada("user", "senha", conjunto="escalas")
+        self.assertIs(resultado, sessao_mock)
+
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.requests.Session")
+    def test_login_com_falha_levanta_erro_autenticacao(self, mock_session_cls) -> None:
+        from pipelines.datalake.extract_load.sisreg.nucleo.auth import (
+            abrir_sessao_autenticada,
+        )
+
+        sessao_mock = MagicMock()
+        mock_session_cls.return_value = sessao_mock
+        sessao_mock.get.return_value = _mock_resp(_HTML_LOGIN_OK)
+        sessao_mock.post.return_value = _mock_resp(_HTML_POS_LOGIN_FALHA)
+
+        with self.assertRaises(ErroAutenticacao):
+            abrir_sessao_autenticada("user", "senhaerrada")
+
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.requests.Session")
+    def test_senha_expirada_levanta_erro_autenticacao(self, mock_session_cls) -> None:
+        """Pagina de troca obrigatoria de senha deve falhar loud, nao passar como sucesso."""
+        from pipelines.datalake.extract_load.sisreg.nucleo.auth import (
+            abrir_sessao_autenticada,
+        )
+
+        sessao_mock = MagicMock()
+        mock_session_cls.return_value = sessao_mock
+        sessao_mock.get.return_value = _mock_resp(_HTML_LOGIN_OK)
+        sessao_mock.post.return_value = _mock_resp(_HTML_SENHA_EXPIRADA)
+
+        with self.assertRaises(ErroAutenticacao) as ctx:
+            abrir_sessao_autenticada("user", "senha", conjunto="fila_vagas")
+        self.assertIn("expirada", str(ctx.exception).lower())
+
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.requests.Session")
+    def test_pagina_login_reexibida_levanta_erro_autenticacao(self, mock_session_cls) -> None:
+        """Credencial invalida reexibe o login (senha/reCAPTCHA) - deve falhar loud."""
+        from pipelines.datalake.extract_load.sisreg.nucleo.auth import (
+            abrir_sessao_autenticada,
+        )
+
+        # Pagina de login reexibida: contem "menu" (passaria no teste fraco) mas
+        # tem campo de senha + reCAPTCHA -> nao autenticou.
+        html_login_reexibido = (
+            "<html><body>menu "
+            '<form><input type="password" name="senha"></form>'
+            '<script src="https://www.google.com/recaptcha/api.js"></script>'
+            "</body></html>"
+        )
+        sessao_mock = MagicMock()
+        mock_session_cls.return_value = sessao_mock
+        sessao_mock.get.return_value = _mock_resp(_HTML_LOGIN_OK)
+        sessao_mock.post.return_value = _mock_resp(html_login_reexibido)
+
+        with self.assertRaises(ErroAutenticacao):
+            abrir_sessao_autenticada("user", "senhaerrada", conjunto="escalas")
+
+
+class TestReautenticarSeDeslogado(unittest.TestCase):
+    def test_sessao_valida_retorna_false(self) -> None:
+        sessao = MagicMock()
+        resultado = reautenticar_se_deslogado(sessao, "pagina normal", "u", "p")
+        self.assertFalse(resultado)
+        sessao.get.assert_not_called()
+
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.requests.Session")
+    def test_sessao_expirada_reautentica(self, _) -> None:
+        sessao = MagicMock()
+        sessao.get.return_value = _mock_resp(_HTML_LOGIN_OK)
+        sessao.post.return_value = _mock_resp(_HTML_POS_LOGIN_SUCESSO)
+
+        resultado = reautenticar_se_deslogado(sessao, _HTML_SESSAO_EXPIRADA, "user", "senha")
+        self.assertTrue(resultado)
+
+
+class TestRequisicaoComReauth(unittest.TestCase):
+    """Testa o helper compartilhado de requisicao com reautenticacao inline."""
+
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.reautenticar_se_deslogado")
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.requisicao_educada")
+    def test_logout_reautentica_e_tenta_de_novo(self, mock_req, mock_reauth) -> None:
+        resp_ok = _mock_resp("dados")
+        mock_req.side_effect = [
+            ErroBloqueio("logout", detalhe="REDIRECIONAMENTO_LOGIN"),
+            resp_ok,
+        ]
+        resultado = requisicao_com_reauth(
+            MagicMock(), "http://example.com", usuario="u", senha="p", conjunto="x"
+        )
+        self.assertIs(resultado, resp_ok)
+        mock_reauth.assert_called_once()
+        self.assertEqual(mock_req.call_count, 2)
+
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.reautenticar_se_deslogado")
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.requisicao_educada")
+    def test_bloqueio_genuino_propaga_sem_reauth(self, mock_req, mock_reauth) -> None:
+        """CAPTCHA/403/429 nao devem disparar reauth - circuit-break imediato."""
+        mock_req.side_effect = ErroBloqueio("403", detalhe="HTTP_403")
+        with self.assertRaises(ErroBloqueio):
+            requisicao_com_reauth(
+                MagicMock(), "http://example.com", usuario="u", senha="p", conjunto="x"
+            )
+        mock_reauth.assert_not_called()
+
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.reautenticar_se_deslogado")
+    @patch("pipelines.datalake.extract_load.sisreg.nucleo.auth.requisicao_educada")
+    def test_logout_sem_credencial_propaga(self, mock_req, mock_reauth) -> None:
+        """Sem usuario nos params, nao ha como reautenticar - propaga."""
+        mock_req.side_effect = ErroBloqueio("logout", detalhe="REDIRECIONAMENTO_LOGIN")
+        with self.assertRaises(ErroBloqueio):
+            requisicao_com_reauth(MagicMock(), "http://example.com", conjunto="x")
+        mock_reauth.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()
